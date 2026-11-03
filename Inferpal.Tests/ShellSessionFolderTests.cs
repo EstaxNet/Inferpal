@@ -101,4 +101,58 @@ public sealed class ShellSessionFolderTests : IDisposable
 
         Assert.True(ShellSession.SameFolder(_other, session.CurrentDirectory), session.CurrentDirectory);
     }
+
+    /// <summary>A command started in A that ends after B opened writes A's folder: set aside under A, never kept for B.</summary>
+    [Fact]
+    public async Task ACommandThatEndsAfterTheSwitch_LeavesItsFolderToItsOwnWorkspace()
+    {
+        var root    = _root;
+        var session = new ShellSession(() => root, new InferpalConfig());
+        var ran = session.RunAsync("cd only-here", null, CancellationToken.None);
+        root = _other;                                   // B opened while A's command runs
+        Assert.True(ShellSession.SameFolder(_other, session.CurrentDirectory), session.CurrentDirectory);
+        await ran;                                       // it ends, and writes A's folder
+
+        Assert.True(ShellSession.SameFolder(_other, session.CurrentDirectory), session.CurrentDirectory);
+        root = _root;
+        Assert.EndsWith("only-here", Path.TrimEndingDirectorySeparator(session.CurrentDirectory), StringComparison.Ordinal);
+    }
+
+    /// <summary>A command started in B that ends after the person came back to A writes B's set-aside state, never A's.</summary>
+    [Fact]
+    public async Task ACommandOfTheRootLeft_DoesNotOverwriteTheStateFoundAgain()
+    {
+        Directory.CreateDirectory(Path.Combine(_other, "there"));
+        var root    = _root;
+        var session = new ShellSession(() => root, new InferpalConfig());
+        await session.RunAsync("cd only-here", null, CancellationToken.None);
+        root = _other;
+        var ran = session.RunAsync("cd there", null, CancellationToken.None);   // B's command, still running…
+        root = _root;                                                           // …when the person goes back to A
+        Assert.EndsWith("only-here", Path.TrimEndingDirectorySeparator(session.CurrentDirectory), StringComparison.Ordinal);
+        await ran;
+
+        Assert.EndsWith("only-here", Path.TrimEndingDirectorySeparator(session.CurrentDirectory), StringComparison.Ordinal);
+        root = _other;
+        Assert.EndsWith("there", Path.TrimEndingDirectorySeparator(session.CurrentDirectory), StringComparison.Ordinal);
+    }
+
+    /// <summary>Set aside, not forgotten: back in the first solution, its folder holds again — and the other's stays its own.</summary>
+    [Fact]
+    public async Task BackInTheFirstWorkspace_ItsFolderHoldsAgain()
+    {
+        Directory.CreateDirectory(Path.Combine(_other, "there"));
+        var root    = _root;
+        var session = new ShellSession(() => root, new InferpalConfig());
+        await session.RunAsync("cd only-here", null, CancellationToken.None);
+
+        root = _other;
+        Assert.True(ShellSession.SameFolder(_other, session.CurrentDirectory), session.CurrentDirectory);
+        await session.RunAsync("cd there", null, CancellationToken.None);
+
+        root = _root;
+        Assert.EndsWith("only-here", Path.TrimEndingDirectorySeparator(session.CurrentDirectory), StringComparison.Ordinal);
+        root = _other;
+        Assert.EndsWith("there", Path.TrimEndingDirectorySeparator(session.CurrentDirectory), StringComparison.Ordinal);
+    }
 }

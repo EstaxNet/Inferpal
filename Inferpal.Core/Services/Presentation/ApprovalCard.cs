@@ -57,7 +57,7 @@ internal static class ApprovalCard
         "apply_edits", "rename_symbol",
     };
 
-    public static ApprovalCardModel Build(ApprovalPrompt prompt, string? root)
+    public static ApprovalCardModel Build(ApprovalPrompt prompt, string? root, bool keepsGrantsAcrossSolutions = false)
     {
         // A file tool's subject is its path; any other tool's is the string its rules match (an MCP call's raw JSON plus
         // its values), which is not for display: what it runs is in its details.
@@ -128,7 +128,10 @@ internal static class ApprovalCard
         }
 
         return new ApprovalCardModel(title, subject, meta, preview, more > 0 ? Strings.ApprovalMoreLines(more) : string.Empty,
-                                     Strings.ApprovalAlwaysTooltip(prompt.ToolName), prompt.Message,
+                                     // What "Always" lasts: across solutions in one Visual Studio; until the host restarts elsewhere.
+                                     keepsGrantsAcrossSolutions ? Strings.ApprovalAlwaysTooltip(prompt.ToolName)
+                                                                : Strings.ApprovalAlwaysTooltipUntilRestart(prompt.ToolName),
+                                     prompt.Message,
                                      prompt.Rule is { } rule ? Strings.ApprovalAlwaysRule(rule.Describe) : string.Empty,
                                      prompt.Rule is { } spelled ? Strings.ApprovalRuleTooltip(string.Join("\n", spelled.Lines)) : string.Empty);
     }

@@ -1432,7 +1432,9 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ApprovalUseTool" xml:space="preserve"><value>{0} 사용</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0}줄</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0}줄 더</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>이 작업 영역에서 다시 시작하거나 다른 작업 영역을 열 때까지 묻지 않고 {0}을(를) 허용합니다.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>이 작업 영역에서 다시 시작할 때까지 묻지 않고 {0}을(를) 허용합니다. 다른 솔루션에서 돌아와도 유지됩니다.</value></data>
+  <data name="ApprovalAlwaysTooltipUntilRestart" xml:space="preserve"><value>이 작업 영역에서 다시 시작할 때까지 묻지 않고 {0}을(를) 허용합니다.</value></data>
+  <data name="SolutionChangedNotice" xml:space="preserve"><value>솔루션이 바뀌었습니다. 이 대화는 이제 **{0}** (`{1}`)의 파일, 인덱스, 규칙, 도구로 작업합니다. 대화는 계속 **{2}**의 대화로 저장됩니다.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>차이 열기</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>새 대화</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>대화 목록</value></data>

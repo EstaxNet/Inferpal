@@ -6,7 +6,7 @@ namespace Inferpal.Tests;
 
 /// <summary>
 /// A text that promises a duration or a gesture says what the code does, in every language: "until the editor restarts"
-/// was false (an "Always" grant falls when another workspace opens), "Asked once for this workspace" too (asked again
+/// was false (an "Always" grant holds for its workspace until a restart), "Asked once for this workspace" too (asked again
 /// after a restart), and "/clear starts a new one" named a gesture an ACP thread refuses.
 /// </summary>
 [Collection(CultureSerialCollection.Name)]   // reads the localized sentences
@@ -33,14 +33,24 @@ public class PromisedDurationTextsTests
     private static string English(Func<string> read) => InEveryLanguage(read).First(t => t.Culture == "en").Text;
 
     [Fact]
-    public void TheAlwaysGrant_SaysItEndsWithTheWorkspace()
+    public void TheAlwaysGrant_SaysItHoldsForTheWorkspace_UntilARestart()
     {
+        // Where another folder restarts the host (VS Code, ACP), no promise of coming back; Visual Studio keeps it.
+        var tooltip = English(() => Inferpal.Services.Presentation.ApprovalCard.Build(
+            new Inferpal.Services.Presentation.ApprovalPrompt("run_command", "dotnet test", "dotnet test", null, "Run?"), "C:\\repo").AlwaysTooltip);
+        Assert.Equal(English(() => Strings.ApprovalAlwaysTooltipUntilRestart("run_command")), tooltip);
+        Assert.DoesNotContain("another solution", English(() => Strings.ApprovalAlwaysTooltipUntilRestart("run_command")), StringComparison.Ordinal);
+        var vs = ConventionCoverageTests.CodeOnly(System.IO.Path.Combine(ConventionCoverageTests.RepoRoot(),
+            "Inferpal", "Services", "VsIntegration", "VsApprovalService.cs"));
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(vs, @"ApprovalCard\.Build\(prompt, RootDir, keepsGrantsAcrossSolutions: true\)").Count);
+
         var english = English(() => Strings.ApprovalAlwaysTooltip("run_command"));
-        Assert.Contains("another workspace", english, StringComparison.Ordinal);
-        Assert.DoesNotContain("until the editor restarts", english, StringComparison.Ordinal);
+        Assert.Contains("until a restart", english, StringComparison.Ordinal);
+        Assert.Contains("kept when you come back from another solution", english, StringComparison.Ordinal);
+        Assert.DoesNotContain("until another workspace opens", english, StringComparison.Ordinal);
     }
 
-    /// <summary>The fact the texts state, read in the code: a grant read under another root is forgotten, and the
+    /// <summary>The fact the texts state, read in the code: a grant is read under its own root only, and the
     /// consent is kept for the process alone (a static, never a file).</summary>
     [Fact]
     public void TheDurationsTheTextsState_AreWhatTheCodeDoes()
@@ -48,8 +58,10 @@ public class PromisedDurationTextsTests
         var root = ConventionCoverageTests.RepoRoot();
         var approvals = ConventionCoverageTests.CodeOnly(
             System.IO.Path.Combine(root, "Inferpal.Core", "Services", "Execution", "ApprovalServiceBase.cs"));
+        // Read under the root open now, kept per root: never another workspace's, found again on coming back.
         var granted = approvals[approvals.IndexOf("private bool Granted(", StringComparison.Ordinal)..];
-        Assert.Contains("ForgetGrantsOfAnotherRoot()", granted[..granted.IndexOf('}')], StringComparison.Ordinal);
+        Assert.Contains("GrantsKey(_rootDir())", granted[..granted.IndexOf("}", StringComparison.Ordinal)], StringComparison.Ordinal);
+        Assert.Contains("Dictionary<string, HashSet<string>> _sessionAllowed = new(PathComparer.Default)", approvals, StringComparison.Ordinal);
 
         var consent = ConventionCoverageTests.CodeOnly(
             System.IO.Path.Combine(root, "Inferpal.Core", "Services", "Execution", "WorkspaceCodeConsent.cs"));

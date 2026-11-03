@@ -494,7 +494,8 @@ internal static class SlashCommandRouter
                 // /map <path>    → call-graph for that specific file (analyze_code mode=callgraph)
                 return parts.Length >= 2
                     ? new SlashToolAction("analyze_code", new { mode = "callgraph", path = RestOf(prompt) })
-                    : new SlashToolAction("generate_project_map", new { });
+                    // Typed by the person: the map of the code as it is now, never the model's cached one.
+                    : new SlashToolAction("generate_project_map", new { refresh = true });
 
             case "/solution":
                 return new SlashToolAction("get_solution_info",

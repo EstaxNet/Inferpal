@@ -154,6 +154,12 @@ internal static class Strings
     public static string ApprovalLineCount(int count) => Format(Get(nameof(ApprovalLineCount)), count);
     public static string ApprovalMoreLines(int count) => Format(Get(nameof(ApprovalMoreLines)), count);
     public static string ApprovalAlwaysTooltip(string tool) => Format(Get(nameof(ApprovalAlwaysTooltip)), tool);
+    /// <summary>"Always" where another folder restarts the host (VS Code, an ACP agent): the grant does not outlive it.</summary>
+    public static string ApprovalAlwaysTooltipUntilRestart(string tool) => Format(Get(nameof(ApprovalAlwaysTooltipUntilRestart)), tool);
+    /// <summary>Another solution opened under the conversation on screen: {0} its name, {1} its folder, {2} the name of the
+    /// solution the conversation is saved with.</summary>
+    public static string SolutionChangedNotice(string name, string folder, string savedWith) =>
+        Format(Get(nameof(SolutionChangedNotice)), name, folder, savedWith);
     public static string ApprovalOpenDiff => Get(nameof(ApprovalOpenDiff));
     public static string ChatNewConversation => Get(nameof(ChatNewConversation));
     public static string ChatConversations => Get(nameof(ChatConversations));

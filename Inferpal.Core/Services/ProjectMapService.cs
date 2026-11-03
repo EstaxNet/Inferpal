@@ -20,7 +20,9 @@ internal sealed class ProjectMapService
     // key = root dir, value = cached map
     // The time is kept as a value: written as text in the machine's culture and parsed back, a time separator that is
     // not ':' (Finnish) never parses, and the map is rebuilt on every call.
-    private readonly ConcurrentDictionary<string, (DateTime At, string Map)> _cache = new(PathComparer.Default);
+    // With the number of root switches it was made under: a map of a root left and come back to may be of code that is
+    // gone (a checkout, a pull meanwhile), whatever its age.
+    private readonly ConcurrentDictionary<string, (DateTime At, string Map, int Switches)> _cache = new(PathComparer.Default);
 
     public ProjectMapService(IEditorSurface editor, ProjectIndexService? index = null)
     {
@@ -44,12 +46,14 @@ internal sealed class ProjectMapService
         if (root is null)
             return null;
 
-        // Invalidation: re-generate after 120 s (simple TTL via timestamp prefix)
-        if (_cache.TryGetValue(root, out var cached) && (DateTime.UtcNow - cached.At).TotalSeconds < 120)
+        // Invalidation: re-generate after 120 s, and after the root moved away and back (made before the switch).
+        var switches = _index?.RootSwitches ?? 0;
+        if (_cache.TryGetValue(root, out var cached) && cached.Switches == switches
+            && (DateTime.UtcNow - cached.At).TotalSeconds < 120)
             return cached.Map;
 
         var map = await BuildMapAsync(root, ct);
-        _cache[root] = (DateTime.UtcNow, map);
+        _cache[root] = (DateTime.UtcNow, map, switches);
         return map;
     }
 

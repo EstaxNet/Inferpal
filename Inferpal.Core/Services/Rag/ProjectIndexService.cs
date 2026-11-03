@@ -65,6 +65,7 @@ internal sealed class ProjectIndexService : IDisposable
     private FileSystemWatcher?          _watcher;
     private FileSystemWatcher?          _dirWatcher;   // folders: see SetupFileWatcher
     private FileSystemWatcher?          _rootWatcher;  // the root's own files — its ignore files: see SetupFileWatcher
+    private FileSystemWatcher?          _profileWatcher;  // .inferpal/project.json — its indexExclude: see SetupFileWatcher
     private System.Threading.Timer?     _debounceTimer;
 
     // The watcher raises changes on several thread-pool threads at once, and Dispose can land in
@@ -177,6 +178,10 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>The exclusion patterns of <c>.inferpal/project.json</c> the index applies — what the settings page lists.</summary>
     public IReadOnlyList<string> ProfileExcludes => _profileExcludes;
 
+    /// <summary>How many times the root moved to another workspace: what was read under a root before a switch (a map in
+    /// cache) is not what that root holds after coming back.</summary>
+    public int RootSwitches { get; private set; }
+
     // ── Construction ──────────────────────────────────────────────────────────
 
     /// <param name="searchClient">The client of code search, when it is not <paramref name="client"/>: the embedding
@@ -212,8 +217,18 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>What pinning a root is, for <see cref="SetRoot"/> and <see cref="StartIndexing"/> alike.</summary>
     private void Pin(string rootDir)
     {
+        var previous = RootDir;
         RootDir          = rootDir;
-        _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
+        if (previous.Length > 0 && !PathComparer.SameDirectory(previous, rootDir))
+        {
+            RootSwitches++;
+            // ⚠ The C# index of a root is kept fresh by this service's watcher, which watches one root at a time: what
+            // changes in a root while another is open (a pull, the other editor) never enters its compilation — back
+            // there, rename_symbol would refuse "changed in the last seconds" for good, analyze_impact read code that is
+            // gone. The root left is forgotten (its memory too): rebuilt from its files at its next use.
+            Lsp.CSharpSemanticIndex.Forget(previous);
+        }
+        lock (_profileLock) _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
         // The workspace's ignore files apply below it, to everything that reads for the model (ContentExclusions). Both
         // front-ends and every ACP thread set their root here: one declaration per workspace.
         ContentExclusions.Declare(rootDir, () => _config.IgnoreFiles);
@@ -825,6 +840,8 @@ internal sealed class ProjectIndexService : IDisposable
         _dirWatcher  = null;
         _rootWatcher?.Dispose();
         _rootWatcher = null;
+        _profileWatcher?.Dispose();
+        _profileWatcher = null;
         _watchedRoot = null;
         try
         {
@@ -873,7 +890,8 @@ internal sealed class ProjectIndexService : IDisposable
             _rootWatcher = new FileSystemWatcher(rootDir)
             {
                 IncludeSubdirectories = false,
-                NotifyFilter          = NotifyFilters.LastWrite | NotifyFilters.FileName,
+                // DirectoryName too: the profile's folder (.inferpal) created or removed after the root was pinned.
+                NotifyFilter          = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName,
                 EnableRaisingEvents   = true,
             };
             _rootWatcher.Error   += OnWatcherError;
@@ -885,9 +903,84 @@ internal sealed class ProjectIndexService : IDisposable
                 OnRootFileChanged(e.OldFullPath);
                 OnRootFileChanged(e.FullPath);
             };
+            ArmProfileWatcher(rootDir);
             _watchedRoot = rootDir;
         }
         catch { /* file watching is best-effort */ }
+    }
+
+    /// <summary>
+    /// Watches <c>.inferpal/project.json</c> in its own folder — never the whole tree, whose build output would flood a
+    /// second recursive watcher. ⚠ Its indexExclude is read when the root is pinned, and an edit (by hand, by
+    /// <c>/onboard apply</c>, by a pull) would change nothing until a restart — while <c>/onboard</c> says "Applied". The
+    /// folder created or removed later is seen by the root watcher, which arms this one again.
+    /// </summary>
+    private void ArmProfileWatcher(string rootDir)
+    {
+        lock (_profileWatcherLock)
+        {
+            _profileWatcher?.Dispose();
+            _profileWatcher = null;
+            var folder = Path.GetDirectoryName(ProjectProfile.PathIn(rootDir))!;
+            if (_disposed || !Directory.Exists(folder)) return;
+            ArmProfileWatcherLocked(rootDir, folder);
+        }
+    }
+
+    private readonly object _profileWatcherLock = new();
+
+    private void ArmProfileWatcherLocked(string rootDir, string folder)
+    {
+        try
+        {
+            _profileWatcher = new FileSystemWatcher(folder, Path.GetFileName(ProjectProfile.PathIn(rootDir)))
+            {
+                IncludeSubdirectories = false,
+                NotifyFilter          = NotifyFilters.LastWrite | NotifyFilters.FileName,
+                EnableRaisingEvents   = true,
+            };
+            // Lost events: the file is read again — nothing else under the root depends on this watcher.
+            _profileWatcher.Error   += (_, _) => OnProfileChanged(ProjectProfile.PathIn(rootDir));
+            _profileWatcher.Changed += (_, e) => OnProfileChanged(e.FullPath);
+            _profileWatcher.Created += (_, e) => OnProfileChanged(e.FullPath);
+            _profileWatcher.Deleted += (_, e) => OnProfileChanged(e.FullPath);
+            _profileWatcher.Renamed += (_, e) =>
+            {
+                OnProfileChanged(e.OldFullPath);
+                OnProfileChanged(e.FullPath);
+            };
+        }
+        catch { /* file watching is best-effort */ }
+    }
+
+    // Pinning a root and an edit of its profile both set the exclusions: an event of the root left must not land on the
+    // root pinned since.
+    private readonly object _profileLock = new();
+
+    /// <summary>
+    /// When <paramref name="path"/> is the workspace's <c>.inferpal/project.json</c>, its <c>indexExclude</c> is read again
+    /// and, when it changed, the indexed files are judged again as for an ignore file (RAG on). The C# compilation does
+    /// not apply it. A file gone means no exclusion; a file that cannot be read (mid-save) keeps the ones in force.
+    /// </summary>
+    /// <returns>Whether the exclusions changed.</returns>
+    internal bool OnProfileChanged(string path)
+    {
+        string root;
+        lock (_profileLock)
+        {
+            root = RootDir;
+            if (root.Length == 0 || !PathComparer.Default.Equals(Path.GetFullPath(path), Path.GetFullPath(ProjectProfile.PathIn(root))))
+                return false;
+            // Truncated before it is written again (a save in two steps): mid-save, as an unreadable one.
+            var file = new FileInfo(ProjectProfile.PathIn(root));
+            if (file.Exists && file.Length == 0) return false;
+            var profile = ProjectProfile.Load(root);
+            if (profile.Problem is not null) return false;
+            if (profile.IndexExcludes.SequenceEqual(_profileExcludes, StringComparer.Ordinal)) return false;
+            _profileExcludes = profile.IndexExcludes;
+        }
+        if (!string.IsNullOrEmpty(IndexedRoot)) _ = Task.Run(() => RejudgeAsync(root));
+        return true;
     }
 
     /// <summary>
@@ -973,6 +1066,21 @@ internal sealed class ProjectIndexService : IDisposable
     /// <returns>Whether it was one.</returns>
     internal bool OnRootFileChanged(string path)
     {
+        // The profile's folder created or removed: its watcher follows, and the profile is read again — only when it came
+        // or went, never for a file written in it (each would dispose and re-create the watcher).
+        var root0 = RootDir;
+        var folder0 = root0.Length > 0 ? Path.GetDirectoryName(ProjectProfile.PathIn(root0))! : string.Empty;
+        if (root0.Length > 0 && PathComparer.Default.Equals(Path.GetFullPath(path), Path.GetFullPath(folder0)))
+        {
+            bool watched;
+            lock (_profileWatcherLock) watched = _profileWatcher is not null;
+            if (watched != Directory.Exists(folder0))
+            {
+                ArmProfileWatcher(root0);
+                OnProfileChanged(ProjectProfile.PathIn(root0));
+            }
+            return false;
+        }
         if (!ContentExclusions.Changed(path)) return false;
         var root = RootDir;
         _ = Task.Run(() => Lsp.CSharpSemanticIndex.NotifyExclusionsChanged(root));
@@ -1000,7 +1108,8 @@ internal sealed class ProjectIndexService : IDisposable
             var listed = ContentExclusions.Counting(() => WorkspaceScan.EnumerateFiles(root, "*").ToList(), out var ignored);
             ExcludedByIgnoreFiles = IgnoredSourceFiles.Of(ignored.Only(Source));
 
-            var changed = indexed.Where(f => ContentExclusions.Of(f) is not null)
+            // Excluded now, by an ignore file or the profile: their chunks leave the index.
+            var changed = indexed.Where(IsExcluded)
                                  .Concat(listed.Where(f => Source(f) && !indexed.Contains(f) && !IsExcluded(f) && !IsOversize(f)))
                                  .ToList();
             if (changed.Count == 0) return;
@@ -1278,9 +1387,9 @@ internal sealed class ProjectIndexService : IDisposable
                 continue;
             }
 
-            // ⚠ And excluded since it was indexed: its chunks would keep answering searches, the file the workspace
-            // asked to keep out of reach.
-            if (ContentExclusions.Of(file) is not null)
+            // ⚠ And excluded since it was indexed (an ignore file, the profile's indexExclude): its chunks would keep
+            // answering searches, the file the workspace asked to keep out of reach.
+            if (IsExcluded(file))
             {
                 await ForgetFileAsync(file, db, ct);
                 continue;
@@ -1388,7 +1497,7 @@ internal sealed class ProjectIndexService : IDisposable
 
     /// <summary>Whether the search index leaves <paramref name="path"/> out: the project profile's exclusions, and the
     /// workspace's ignore files (<see cref="ContentExclusions"/>) — what they exclude is never chunked nor embedded.</summary>
-    private bool IsExcluded(string path) =>
+    internal bool IsExcluded(string path) =>
         IndexExclusions.IsExcluded(path, RootDir, _profileExcludes) || ContentExclusions.Of(path) is not null;
 
     /// <summary>
@@ -1519,6 +1628,7 @@ internal sealed class ProjectIndexService : IDisposable
         _watcher?.Dispose();
         _dirWatcher?.Dispose();
         _rootWatcher?.Dispose();
+        lock (_profileWatcherLock) { _profileWatcher?.Dispose(); _profileWatcher = null; }
         _watchedRoot = null;
 
         // Deliberately NOT disposing _chunkLock/_shadowLock: a background indexing pass may still

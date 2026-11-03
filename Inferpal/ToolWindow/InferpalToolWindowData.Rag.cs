@@ -100,6 +100,8 @@ internal partial class InferpalToolWindowData
                 || action == RootPinAction.Index && !PathComparer.SameDirectory(root, current))
             {
                 _indexService.SetRoot(root!);
+                // The conversation on screen goes on in the new solution: said there, once per switch.
+                if (!string.IsNullOrEmpty(current) && !PathComparer.SameDirectory(current, root)) SaySolutionChanged(root!);
                 // Another workspace has its own modes: the composer's segment follows.
                 _ = RefreshModesQuietlyAsync();
                 // The repository's MCP servers are read from the root: a new one has its own to ask about — once the turn
@@ -110,6 +112,42 @@ internal partial class InferpalToolWindowData
             if (action == RootPinAction.Index) _indexService.StartIndexing(root!);
         }
         catch (Exception ex) { Diagnostics.Swallow("Rag.PinWorkspaceRoot", ex); }
+    }
+
+    /// <summary>
+    /// Another solution opened under the conversation on screen: it goes on there — that solution's files, index, rules
+    /// and tools —, and is still saved with the conversations of the one it belongs to (<see cref="ConversationRoot"/>).
+    /// Said once per switch; nothing for a window without a question, nor for a conversation saved nowhere.
+    /// </summary>
+    private void SaySolutionChanged(string root) => Post(() =>
+    {
+        // Back in the conversation's own solution: nothing to say, it works where it is saved.
+        if (_conversationRoot.Root is not { } owner || PathComparer.SameDirectory(owner, root))
+        {
+            _solutionChangeSaid = null;
+            return;
+        }
+        // Once per switch (the heartbeat and a send may both pin it), and never for a root that only grew or narrowed
+        // around the same solution (its folder corrected at the start), nor for a window without a question.
+        if (PathComparer.SameDirectory(_solutionChangeSaid, root) || Nested(owner, root)
+            || !Messages.Any(m => m.Role == "user")) return;
+        _solutionChangeSaid = root;
+        var notice = ChatMessageItem.NoticeMsg(Strings.SolutionChangedNotice(
+            Path.GetFileName(Path.TrimEndingDirectorySeparator(root)), root, Path.GetFileName(Path.TrimEndingDirectorySeparator(owner))));
+        ApplyItemTheme(notice);
+        Messages.Insert(Messages.Count - 2, notice);
+        ScrollToBottom();
+    });
+
+    /// <summary>The root the last solution change was said for (<see cref="SaySolutionChanged"/>), on the VM context.</summary>
+    private string? _solutionChangeSaid;
+
+    /// <summary>Whether one folder holds the other: the same solution, its root grown or narrowed.</summary>
+    private static bool Nested(string a, string b)
+    {
+        static string Folder(string p) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(p)) + Path.DirectorySeparatorChar;
+        var (fa, fb) = (Folder(a), Folder(b));
+        return fa.StartsWith(fb, PathComparer.Comparison) || fb.StartsWith(fa, PathComparer.Comparison);
     }
 
     // ── First-Run Auto-Discovery ───────────────────────────────────────────────

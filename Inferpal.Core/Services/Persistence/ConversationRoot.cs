@@ -24,6 +24,10 @@ public sealed class ConversationRoot
     /// that never did is the only one a late restore may fill: one emptied by <c>/clear</c> was emptied on purpose.</summary>
     public bool EverBound { get; private set; }
 
+    /// <summary>The workspace the conversation is written for, read without binding it: <c>null</c> when it is not bound
+    /// yet or belongs to no workspace.</summary>
+    public string? Root => _root is { Length: > 0 } root ? root : null;
+
     /// <summary>The conversation restored into the window now belongs to <paramref name="workspaceRoot"/>.</summary>
     public void Restored(string? workspaceRoot)
     {

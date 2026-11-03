@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.IO;
 using Inferpal.Config;
 using Inferpal.Localization;
@@ -24,14 +23,12 @@ internal abstract class ApprovalServiceBase : IApprovalService
     private readonly Func<string?>  _rootDir;
 
     /// <summary>
-    /// Tool names the user chose to "always allow" via the approval prompt.
-    /// Scoped to the current editor session on purpose: MCP and shell tools run arbitrary
-    /// external code, so the trust grant must NOT survive a restart (never persisted to config).
+    /// Tool names the user chose to "always allow" via the approval prompt, by the workspace root they were given under
+    /// (empty: no workspace). Scoped to the current editor session on purpose: MCP and shell tools run arbitrary
+    /// external code, so the trust grant must NOT survive a restart (never persisted to config). Kept per workspace: a
+    /// grant is never read in another one, and is found again when the person comes back to it (A → B → A).
     /// </summary>
-    private readonly ConcurrentDictionary<string, byte> _sessionAllowed = new(StringComparer.Ordinal);
-
-    // The workspace root the session grants were given under, and the lock that keeps the pair consistent.
-    private string?         _grantsRoot;
+    private readonly Dictionary<string, HashSet<string>> _sessionAllowed = new(PathComparer.Default);
     private readonly object _grantsLock = new();
 
     // Cached compiled policy, rebuilt only when the config rule text or the workspace overlay file
@@ -288,38 +285,31 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// <summary>Whether the user chose "Always" for <paramref name="toolName"/> — in THIS workspace.</summary>
     /// <remarks>
     /// ⚠ A grant is trust given to one workspace. Kept by tool name alone, "Always" on <c>run_command</c>, clicked in
-    /// solution A, ran the commands of a freshly cloned repository B without a prompt once the root moved under it:
-    /// Visual Studio keeps one approval service for the life of the process (VS Code restarts its host instead). Grants
-    /// given under another root are forgotten before any is read.
+    /// solution A, would run the commands of a freshly cloned repository B without a prompt once the root moves under it:
+    /// Visual Studio keeps one approval service for the life of the process (VS Code restarts its host instead). Read
+    /// under the root open now only.
     /// </remarks>
     private bool Granted(string toolName)
     {
         lock (_grantsLock)
-        {
-            ForgetGrantsOfAnotherRoot();
-            return _sessionAllowed.ContainsKey(toolName);
-        }
+            return _sessionAllowed.TryGetValue(GrantsKey(_rootDir()), out var tools) && tools.Contains(toolName);
     }
 
+    /// <summary>The key a workspace's grants are filed under: its folder, without a trailing separator; empty for none.</summary>
+    private static string GrantsKey(string? root) =>
+        string.IsNullOrEmpty(root) ? string.Empty : System.IO.Path.TrimEndingDirectorySeparator(root);
+
     /// <remarks>⚠ Filed under <paramref name="cardRoot"/>, the root the card was asked in: filed under the root of the
-    /// moment, an "Always" clicked on repository A's card after solution B opened let every call in B run unasked.</remarks>
+    /// moment, an "Always" clicked on repository A's card after solution B opened would let every call in B run unasked.
+    /// Answered after B opened, it is A's — found again back in A, never read in B.</remarks>
     private void Grant(string toolName, string? cardRoot)
     {
         lock (_grantsLock)
         {
-            // Answered after another workspace opened: trust for one no longer open, which the next read would forget —
-            // kept, it would only have cleared the grants of the workspace open now. This call alone is approved.
-            if (!PathComparer.SameDirectory(cardRoot, _rootDir())) return;
-            ForgetGrantsOfAnotherRoot();
-            _grantsRoot = cardRoot;
-            _sessionAllowed[toolName] = 0;
+            var key = GrantsKey(cardRoot);
+            if (!_sessionAllowed.TryGetValue(key, out var tools)) _sessionAllowed[key] = tools = new(StringComparer.Ordinal);
+            tools.Add(toolName);
         }
-    }
-
-    private void ForgetGrantsOfAnotherRoot()
-    {
-        if (!_sessionAllowed.IsEmpty && !PathComparer.SameDirectory(_grantsRoot, _rootDir()))
-            _sessionAllowed.Clear();
     }
 
     /// <summary>

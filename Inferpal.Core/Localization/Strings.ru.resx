@@ -1432,7 +1432,9 @@
   <data name="ApprovalUseTool" xml:space="preserve"><value>Использовать {0}</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>строк: {0}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… ещё строк: {0}</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Разрешает {0} без запроса в этой рабочей области до перезапуска или до открытия другой рабочей области.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Разрешает {0} без запроса в этой рабочей области до перезапуска — сохраняется, когда вы возвращаетесь из другого решения.</value></data>
+  <data name="ApprovalAlwaysTooltipUntilRestart" xml:space="preserve"><value>Разрешает {0} без запроса в этой рабочей области до перезапуска.</value></data>
+  <data name="SolutionChangedNotice" xml:space="preserve"><value>Решение сменилось: этот разговор теперь работает в **{0}** (`{1}`) — с его файлами, индексом, правилами и инструментами. Он по-прежнему сохраняется вместе с разговорами **{2}**.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Открыть diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Новый разговор</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Разговоры</value></data>

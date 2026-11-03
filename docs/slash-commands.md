@@ -71,7 +71,7 @@ editor with tools disabled).
 | `/build [path]` | Run a build and display errors |
 | `/fix-build [path]` | Compile → AI fixes errors → recompile, until clean (max 5 rounds) |
 | `/solution [path]` | Display the solution structure |
-| `/map [path]` | Without a path, the project's C# architecture map (namespaces, types, hotspots — `generate_project_map`); with one, the call graph of that file (`analyze_code mode=callgraph`) |
+| `/map [path]` | Without a path, the project's C# architecture map of the code as it is now (namespaces, types, hotspots — `generate_project_map`); with one, the call graph of that file (`analyze_code mode=callgraph`) |
 | `/git [path]` | Show git status, log, branches, diff summary |
 | `/commit` | Generate an AI commit message from `git diff` (pre-fills the prompt). Describes the staged changes, or with nothing staged the tracked changes — untracked files are named as left out, since `/commit-exec` does not add them |
 | `/commit-exec` | Execute the commit proposed by `/commit` (with nothing staged, stages tracked files only: `git add -u`) |

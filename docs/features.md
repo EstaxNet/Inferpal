@@ -932,10 +932,15 @@ for the model — each exclusion said, never silent. Writing one of these files 
 - **Approval prompts** — `write_file`, `apply_diff`, `apply_edits`, `delete_file`,
   `run_command`, `rename_symbol`, `fetch_url`, `web_search`, custom shell tools, and MCP calls
   each prompt **Allow once / Always this session / Deny** ("Always" allows the tool for this session in this
-  workspace, never written to disk). Edit prompts show the **actual diff** before you confirm. A command or a write that
+  workspace — another solution opened in Visual Studio asks again, and coming back finds it allowed — never written
+  to disk). Edit prompts show the **actual diff** before you confirm. A command or a write that
   one narrow rule describes also offers that rule (*commands that start with `dotnet test`*,
   *writes under `tests/`*), written to the per-machine rules when picked; `/permissions suggest`
   names the ones you keep granting.
+- **Switching solutions in Visual Studio** — the conversation on screen goes on in the new solution (its files,
+  index, rules and tools) and says so once; it is still saved with the solution it belongs to. Coming back to a
+  solution finds its "Always" approvals and its shell folder and variables as they were, and reads its C# code and
+  its map again.
 - **Permission rules** — `allow` / `deny` patterns classify a call before the prompt. The
   per-machine setting can do both; the committable `.inferpal/permissions.json` overlay can only
   *deny* (a cloned repository must not be able to grant itself auto-approval); a built-in denylist of

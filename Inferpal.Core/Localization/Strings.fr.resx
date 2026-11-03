@@ -1432,7 +1432,9 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ApprovalUseTool" xml:space="preserve"><value>Utiliser {0}</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:ligne|lignes}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:ligne|lignes} de plus</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Autorise {0} sans demander dans cet espace de travail, jusqu’à un redémarrage ou l’ouverture d’un autre espace de travail.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Autorise {0} sans demander dans cet espace de travail jusqu’à un redémarrage — gardé quand vous revenez d’une autre solution.</value></data>
+  <data name="ApprovalAlwaysTooltipUntilRestart" xml:space="preserve"><value>Autorise {0} sans demander dans cet espace de travail jusqu’à un redémarrage.</value></data>
+  <data name="SolutionChangedNotice" xml:space="preserve"><value>Solution changée : cette conversation travaille maintenant dans **{0}** (`{1}`) — ses fichiers, son index, ses règles et ses outils. Elle reste enregistrée avec les conversations de **{2}**.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Ouvrir le diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Nouvelle conversation</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Conversations</value></data>

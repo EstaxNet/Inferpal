@@ -35,7 +35,7 @@ internal class VsApprovalService : ApprovalServiceBase
         {
             try
             {
-                var card = ApprovalCard.Build(prompt, RootDir);
+                var card = ApprovalCard.Build(prompt, RootDir, keepsGrantsAcrossSolutions: true);
                 // The dialog the card's "Open diff" shows closes when the card is answered from the chat.
                 Func<CancellationToken, Task<ApprovalDecision?>>? openDiff = prompt.Diff is { } d
                     ? async answered =>
@@ -56,7 +56,7 @@ internal class VsApprovalService : ApprovalServiceBase
             }
         }
         // Outside a turn the dialog asks — offering the card's narrow rule too, as VS Code's dialog does.
-        return await AskInDialogAsync(prompt.Message, prompt.Diff, ApprovalCard.Build(prompt, RootDir), ct);
+        return await AskInDialogAsync(prompt.Message, prompt.Diff, ApprovalCard.Build(prompt, RootDir, keepsGrantsAcrossSolutions: true), ct);
     }
 
     protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct) =>

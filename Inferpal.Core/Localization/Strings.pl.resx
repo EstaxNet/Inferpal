@@ -1432,7 +1432,9 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="ApprovalUseTool" xml:space="preserve"><value>Użyj {0}</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>wiersze: {0}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… jeszcze wierszy: {0}</value></data>
-  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Zezwala na {0} bez pytania w tym obszarze roboczym, do ponownego uruchomienia lub otwarcia innego obszaru roboczego.</value></data>
+  <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Zezwala na {0} bez pytania w tym obszarze roboczym do ponownego uruchomienia — zachowane po powrocie z innego rozwiązania.</value></data>
+  <data name="ApprovalAlwaysTooltipUntilRestart" xml:space="preserve"><value>Zezwala na {0} bez pytania w tym obszarze roboczym do ponownego uruchomienia.</value></data>
+  <data name="SolutionChangedNotice" xml:space="preserve"><value>Zmieniono rozwiązanie: ta rozmowa działa teraz w **{0}** (`{1}`) — na jego plikach, indeksie, regułach i narzędziach. Nadal jest zapisywana z rozmowami **{2}**.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Otwórz różnice</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Nowa rozmowa</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Rozmowy</value></data>

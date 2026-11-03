@@ -13,7 +13,7 @@ namespace Inferpal.Services.Shell;
 /// the machine (resolved by <see cref="ShellLauncher"/>; see <see cref="ShellStateProtocol"/> for why
 /// there is no live REPL pipe). One instance lives for the lifetime of the tool registry — in Visual Studio, a whole
 /// devenv session, during which the solution and so the workspace root can change: the state belongs to the root it was
-/// captured under, and is dropped when the root moves.
+/// captured under: set aside when the root moves, found again when the person comes back.
 /// </summary>
 internal sealed class ShellSession
 {
@@ -26,6 +26,9 @@ internal sealed class ShellSession
     private Dictionary<string, string> _overrides = new(ShellStateProtocol.EnvNameComparer);
     // The workspace root _cwd and _overrides were captured under (null: nothing captured yet).
     private string? _stateRoot;
+    // The root seen at the last look, and the state of the roots left since — found again when the person comes back.
+    private string? _seenRoot;
+    private readonly Dictionary<string, (string? Cwd, Dictionary<string, string> Overrides)> _kept = new(PathComparer.Default);
 
     public ShellSession(Func<string> root, InferpalConfig config)
     {
@@ -48,16 +51,29 @@ internal sealed class ShellSession
         string.Equals(Path.TrimEndingDirectorySeparator(a), Path.TrimEndingDirectorySeparator(b), PathComparer.Comparison);
 
     /// <summary>
-    /// Forgets the folder and the environment captured under another workspace root. Called under <see cref="_lock"/>.
+    /// Sets aside the folder and the environment captured under the root left, and takes back those of the root open now
+    /// if it was open before. Called under <see cref="_lock"/>.
     /// </summary>
     /// <remarks>
     /// ⚠ Opening another solution in Visual Studio moves the root under this session: without this, the next command
-    /// runs in the previous solution's folder — <c>dotnet build</c>, <c>git commit -am</c> — while the system prompt names
-    /// the new root.
+    /// would run in the previous solution's folder — <c>dotnet build</c>, <c>git commit -am</c> — while the system prompt
+    /// names the new root. Set aside, not forgotten: back in the first solution, its <c>cd</c> and its variables hold.
     /// </remarks>
     private void DropIfRootMoved()
     {
-        if (_stateRoot is null || SameFolder(_stateRoot, _root())) return;
+        var root  = _root();
+        var moved = _seenRoot is not null && !SameFolder(_seenRoot, root);
+        _seenRoot = root;
+        if (!moved) return;
+        // The live state is the root left's (a command whose root was left before it ended writes there, ApplyState):
+        // set aside under it, never kept for this one — the next command would run in the other repository.
+        if (_stateRoot is not null)
+            _kept[Path.TrimEndingDirectorySeparator(_stateRoot)] = (_cwd, _overrides);
+        if (_kept.Remove(Path.TrimEndingDirectorySeparator(root), out var back))
+        {
+            (_cwd, _overrides, _stateRoot) = (back.Cwd, back.Overrides, root);
+            return;
+        }
         _cwd       = null;
         _overrides = new(ShellStateProtocol.EnvNameComparer);
         _stateRoot = null;
@@ -208,8 +224,19 @@ internal sealed class ShellSession
         if (!state.StateCaptured) return;
         lock (_lock)
         {
+            // The live slot is the root open now (another one's set aside): a command whose root was left before it ended
+            // writes that root's set-aside state, never the live one — it would overwrite the state found again since.
+            DropIfRootMoved();
+            var overrides = ShellStateProtocol.ComputeOverrides(_baselineEnv, state.EnvFull);
+            if (!SameFolder(startRoot, _root()))
+            {
+                var key = Path.TrimEndingDirectorySeparator(startRoot);
+                var kept = _kept.TryGetValue(key, out var k) ? k.Cwd : null;
+                _kept[key] = (state.Cwd is not null && !keepFolder ? state.Cwd : kept, overrides);
+                return;
+            }
             if (state.Cwd is not null && !keepFolder) _cwd = state.Cwd;
-            _overrides = ShellStateProtocol.ComputeOverrides(_baselineEnv, state.EnvFull);
+            _overrides = overrides;
             _stateRoot = startRoot;
         }
     }

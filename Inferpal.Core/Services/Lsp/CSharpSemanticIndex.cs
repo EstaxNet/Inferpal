@@ -312,6 +312,24 @@ internal sealed class CSharpSemanticIndex
         }
     }
 
+    /// <summary>Forgets the index of <paramref name="root"/>: rebuilt from its files at its next use.</summary>
+    /// <remarks>For a root its watcher stopped watching — another workspace opened: what changed there meanwhile never
+    /// reached the compilation.</remarks>
+    internal static void Forget(string root)
+    {
+        var folder = Path.TrimEndingDirectorySeparator(root);
+        lock (_byRoot)
+            foreach (var key in _byRoot.Keys.ToList())
+            {
+                var k = Path.TrimEndingDirectorySeparator(key);
+                // A subfolder's too: rename_symbol builds one for the narrower root it is given.
+                if (string.Equals(k, folder, PathComparer.Comparison)
+                    || k.StartsWith(folder + Path.DirectorySeparatorChar, PathComparer.Comparison)
+                    || k.StartsWith(folder + Path.AltDirectorySeparatorChar, PathComparer.Comparison))
+                    _byRoot.Remove(key);
+            }
+    }
+
     /// <summary>Test seam: forget every cached workspace index.</summary>
     internal static void ResetCacheForTests()
     {

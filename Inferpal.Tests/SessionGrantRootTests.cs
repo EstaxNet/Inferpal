@@ -11,9 +11,9 @@ namespace Inferpal.Tests;
 //
 //  The session grants were kept by tool name alone, in an approval service that Visual Studio builds
 //  once for the life of the process. "Always" on run_command, clicked in solution A, then let the
-//  commands of a freshly cloned repository B run without a prompt once the workspace root moved —
-//  while the shell session itself drops its state on that move. VS Code restarts its host on a root
-//  change, which is why only one front-end showed it.
+//  commands of a freshly cloned repository B run without a prompt once the workspace root moved.
+//  Grants are kept per workspace: never read in another, found again back in their own — as the shell
+//  session sets its folder aside on that move. VS Code restarts its host on a root change.
 // ──────────────────────────────────────────────────────────────────────────────────────────────
 public sealed class SessionGrantRootTests
 {
@@ -30,8 +30,9 @@ public sealed class SessionGrantRootTests
     private static readonly string RepoA = Path.Combine(Path.GetTempPath(), "inferpal-grant-a");
     private static readonly string RepoB = Path.Combine(Path.GetTempPath(), "inferpal-grant-b");
 
+    /// <summary>Not read in B; found again back in A (A → B → A), as the shell finds its folder again.</summary>
     [Fact]
-    public async Task AGrantGivenInOneWorkspace_DoesNotApproveInAnother()
+    public async Task AGrantGivenInOneWorkspace_DoesNotApproveInAnother_AndHoldsAgainBackThere()
     {
         var root     = RepoA;
         var approval = new MovingRootApproval(() => root);
@@ -46,7 +47,7 @@ public sealed class SessionGrantRootTests
 
         root = RepoA;
         await approval.RequestApprovalAsync("run_command", "npm test", CancellationToken.None);
-        Assert.Equal(3, approval.Prompts);                          // and A's grant did not come back with A
+        Assert.Equal(2, approval.Prompts);                          // back in A, A's grant holds again
     }
 
     /// <summary>⚠ An "Always" answered after another solution opened is trust given to the workspace the card was asked
@@ -60,6 +61,10 @@ public sealed class SessionGrantRootTests
         Assert.True(await approval.RequestApprovalAsync("run_command", "npm test", CancellationToken.None));   // A's card
         await approval.RequestApprovalAsync("run_command", "./install.sh", CancellationToken.None);          // asked in B
 
+        Assert.Equal(2, approval.Prompts);
+        // A's, found again back in A.
+        root = RepoA;
+        Assert.True(await approval.RequestApprovalAsync("run_command", "npm test", CancellationToken.None));
         Assert.Equal(2, approval.Prompts);
     }
 
@@ -123,5 +128,20 @@ public sealed class SessionGrantRootTests
         }
 
         Assert.Equal(1, approval.Prompts);
+    }
+
+    /// <summary>Visual Studio says the switch in the conversation on screen, once per switch, with the solution it is
+    /// still saved with — read on the source: the view model cannot be built in the suite.</summary>
+    [Fact]
+    public void VisualStudio_SaysTheSolutionSwitch_InTheConversation()
+    {
+        var rag = ConventionCoverageTests.CodeOnly(System.IO.Path.Combine(
+            ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs"));
+        Assert.Matches(@"_indexService\.SetRoot\(root!\);\s*if \(!string\.IsNullOrEmpty\(current\) && !PathComparer\.SameDirectory\(current, root\)\) SaySolutionChanged\(root!\);", rag);
+        Assert.Contains("_conversationRoot.Root is not { } owner", rag, StringComparison.Ordinal);
+        // Back in the conversation's own solution: nothing said; once per switch; not for a root that only grew or narrowed.
+        Assert.Contains("PathComparer.SameDirectory(owner, root)", rag, StringComparison.Ordinal);
+        Assert.Contains("PathComparer.SameDirectory(_solutionChangeSaid, root) || Nested(owner, root)", rag, StringComparison.Ordinal);
+        Assert.Contains("Strings.SolutionChangedNotice(", rag, StringComparison.Ordinal);
     }
 }
