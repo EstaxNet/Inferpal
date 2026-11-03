@@ -265,6 +265,8 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Około {0:N0} {0:token|tokeny|tokenów}. Przerywa po {1}, jeśli serwer milczy.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>Zwykle trwa to tu najwyżej około {0}. Jeśli serwer milczy, przerwie po {1} i powie dlaczego — Zatrzymaj kończy to teraz.</value></data>
   <data name="WaitDetailLongerNoStop" xml:space="preserve"><value>Zwykle trwa to tu najwyżej około {0}. Jeśli serwer milczy, przerwie po {1} i powie dlaczego.</value></data>
+  <data name="WaitLoadingModel" xml:space="preserve"><value>Wczytywanie modelu</value></data>
+  <data name="WaitDetailLoading" xml:space="preserve"><value>Modelu nie ma w pamięci: serwer go wczytuje, a potem czyta około {0:N0} {0:token|tokeny|tokenów}. Przerywa po {1}, jeśli serwer milczy.</value></data>
   <data name="CutNothingWritten" xml:space="preserve"><value>Nic nie zapisano: powyższe kroki tylko czytały pliki.</value></data>
   <data name="CutOpenTimeLimits" xml:space="preserve"><value>Otwórz limity czasu</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Brak odpowiedzi od {0} po {1}: wciąż wczytywał prompt o długości około {2:N0} {2:token|tokeny|tokenów}. Wolny serwer może wczytywać długi prompt przez minuty: następne żądanie do tego modelu poczeka dłużej, a „{3}” ustala najkrótsze oczekiwanie ({4} → {5}).</value></data>
@@ -496,7 +498,9 @@ Kopia zapasowa: {0}</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;fraza&gt;`, aby przeszukać treść sesji</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## Historia: „{0}” — sesje: {1}</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>pasujących wiadomości w tej sesji jest jeszcze: {0}</value></data>
+  <data name="HistoryAutoSaveHit" xml:space="preserve"><value>{0} w {1} — ostatnia rozmowa, zapisana automatycznie (wraca po otwarciu tam tego folderu)</value></data>
   <data name="AgeMinutesAgo" xml:space="preserve"><value>{0} min temu</value></data>
+  <data name="HistoryAutoSaveHitNoFolder" xml:space="preserve"><value>Okno bez folderu w {0} — ostatnia rozmowa, zapisana automatycznie (wraca w takim oknie)</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0} godz. temu</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0} dni temu</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## Dostępne szablony</value></data>

@@ -394,7 +394,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var reading   = PrefillRates.Shared.Describe(base_, model, size.Total);
         var firstWait = PrefillDeadline.For(deadline, reading.ColdRead);
         var toRead    = reading.Tokens;
-        wait = new PrefillWait(onWaiting, toRead, reading.Measured, firstWait);
+        wait = new PrefillWait(onWaiting, toRead, reading.Measured, firstWait, isLoaded: LoadedProbe(model));
         using var waitScope = wait;
         TimeSpan? firstUseful = null;
         // No first token when the wait ran out — never before the connection deadline (PrefillDeadline.AfterConnect): the

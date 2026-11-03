@@ -860,6 +860,8 @@ internal static class Strings
     public static string WaitDetailUnmeasured(int tokens, string bound) => Format(Get(nameof(WaitDetailUnmeasured)), tokens, bound);
     public static string WaitDetailLonger(string cold, string bound) => Format(Get(nameof(WaitDetailLonger)), cold, bound);
     public static string WaitDetailLongerNoStop(string cold, string bound) => Format(Get(nameof(WaitDetailLongerNoStop)), cold, bound);
+    public static string WaitLoadingModel => Get(nameof(WaitLoadingModel));
+    public static string WaitDetailLoading(int tokens, string bound) => Format(Get(nameof(WaitDetailLoading)), tokens, bound);
     public static string CutNothingWritten => Get(nameof(CutNothingWritten));
     public static string CutOpenTimeLimits => Get(nameof(CutOpenTimeLimits));
 
@@ -1371,6 +1373,8 @@ internal static class Strings
     public static string HistorySearchHint => Get(nameof(HistorySearchHint));
     public static string HistorySearchHeader(string term, int count) => Format(Get(nameof(HistorySearchHeader)), term, count);
     public static string HistorySearchMoreMatches(int count) => Format(Get(nameof(HistorySearchMoreMatches)), count);
+    public static string HistoryAutoSaveHit(string folder, string editor) => Format(Get(nameof(HistoryAutoSaveHit)), folder, editor);
+    public static string HistoryAutoSaveHitNoFolder(string editor) => Format(Get(nameof(HistoryAutoSaveHitNoFolder)), editor);
     public static string AgeMinutesAgo(int n) => Format(Get(nameof(AgeMinutesAgo)), n);
     public static string AgeHoursAgo(int n) => Format(Get(nameof(AgeHoursAgo)), n);
     public static string AgeDaysAgo(int n) => Format(Get(nameof(AgeDaysAgo)), n);

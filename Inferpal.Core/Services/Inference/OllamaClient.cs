@@ -154,7 +154,7 @@ internal class OllamaClient : InferenceProviderBase
         var reading   = PrefillRates.Shared.Describe(base_, model, size.Total);
         var firstWait = PrefillDeadline.For(deadline, reading.ColdRead);
         var toRead    = reading.Tokens;
-        using var wait = new PrefillWait(onWaiting, toRead, reading.Measured, firstWait);
+        using var wait = new PrefillWait(onWaiting, toRead, reading.Measured, firstWait, isLoaded: LoadedProbe(model));
         TimeSpan? firstUseful = null;
         // No first token when the wait ran out — never before the connection deadline (PrefillDeadline.AfterConnect): the
         // server was reached and as far as anyone can tell still reading. Said so, kept as "slower than this" so the next

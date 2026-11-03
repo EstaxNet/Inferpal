@@ -574,6 +574,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           text: tool.name,
           toolInput: tool.input,
           toolOutput: tool.output,
+          toolKept: tool.kept ?? undefined,
           toolDiff: tool.diff ?? undefined,
           hasErrors: tool.hasErrors,
           timestamp: ChatViewProvider.now(),
@@ -743,7 +744,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // next to the messages the model can no longer see — and not in the output channel.
       let rebuildFailure: string | null = null;
       try {
-        await host.sessionSave('last_session', this.snapshot());
+        await host.sessionSave('last_session', this.snapshot(true));
         const back = await host.sessionLoad('last_session');
         if (back && back.messages.length > 0) {
           this.applySession(back.messages, back.nextTurnTokens ?? 0);
@@ -1023,9 +1024,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   // ── Sessions ────────────────────────────────────────────────────────────────
 
-  /** Persistable view of the transcript (same shape the VS extension saves): the whole conversation, hidden part included. */
-  private snapshot(): SavedMessage[] {
-    return toSavedMessages(this.wholeTranscript());
+  /**
+   * Persistable view of the transcript (same shape the VS extension saves): the whole conversation, hidden part included.
+   * ⚠ `forScreen` for a snapshot the host hands back to be drawn again (a restarted host, a rewind, a branch): saved
+   * short, every tool card on screen would lose its output.
+   */
+  private snapshot(forScreen = false): SavedMessage[] {
+    return toSavedMessages(this.wholeTranscript(), forScreen);
   }
 
   /**
@@ -1067,7 +1072,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     try {
-      const result = await host.rewind(index, this.snapshot(), question, conversationOnly, expectedRuns);
+      const result = await host.rewind(index, this.snapshot(true), question, conversationOnly, expectedRuns);
       if (!result?.branch) {
         this.post({ type: 'rewindCard', ordinal, ...(result?.card ? { card: result.card } : {}), message: result?.message ?? undefined });
         return;
@@ -1166,7 +1171,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!host?.isRunning) {
       return [hostUnavailableMessage(), false];
     }
-    const messages = this.snapshot();
+    const messages = this.snapshot(true);
     const last = messages[messages.length - 1];
     if (last?.role === 'user' && looksLikeCommand(last.content)) {
       messages.pop();

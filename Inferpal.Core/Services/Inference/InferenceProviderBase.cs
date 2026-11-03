@@ -557,6 +557,17 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     public virtual async Task<IReadOnlyList<RunningModelInfo>?> ReadRunningModelsAsync(CancellationToken ct) =>
         await GetRunningModelsAsync(ct);
 
+    /// <summary>
+    /// Whether <paramref name="model"/> is in the server's memory now, for a wait to name a load (<see cref="PrefillWait"/>);
+    /// <c>null</c> for a server that publishes no loaded models — its empty list would read as "not loaded".
+    /// </summary>
+    /// <remarks>Ollama lists a model in <c>/api/ps</c> only once its load is done, never during it.</remarks>
+    internal virtual Func<CancellationToken, Task<bool?>>? LoadedProbe(string model) =>
+        !Capabilities.VramMonitoring ? null
+        : async ct => await ReadRunningModelsAsync(ct).ConfigureAwait(false) is { } running
+            ? running.Any(m => ModelCatalog.SameModelName(m.Name, model))
+            : null;
+
     /// <inheritdoc/>
     public virtual Task UnloadModelAsync(string model, CancellationToken ct) => Task.CompletedTask;
 

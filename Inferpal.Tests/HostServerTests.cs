@@ -36,7 +36,7 @@ public partial class HostServerTests
     /// <summary>The wait a fake call says: the card it draws is the Core's, read back by its title.</summary>
     private static readonly ModelWait TestWait = new ModelWait(1_000, TimeSpan.FromSeconds(9), null, TimeSpan.FromMinutes(5));
     private sealed record ThinkingNote(string? Text);
-    private sealed record ToolNote(string Name, string Input, string Output, bool HasErrors, string? Diff = null);
+    private sealed record ToolNote(string Name, string Input, string Output, bool HasErrors, string? Diff = null, string? Kept = null);
     private sealed record ApprovalNote(string Message);
 
     private sealed class ClientTarget
@@ -1960,6 +1960,85 @@ public partial class HostServerTests
     }
 
     // ── sessions ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// VS Code saved a tool's whole output: every search and file read rewritten at each turn. The host gives what a
+    /// session keeps with each call (<c>ToolNotice.Kept</c>), the way Visual Studio's bubble keeps it.
+    /// </summary>
+    [Fact]
+    public async Task AToolNotice_CarriesWhatASavedSessionKeeps()
+    {
+        using var h = CreateHarness(cfg => cfg.OodaTurnThreshold = 2);
+        await h.InitializeAsync();
+        var summary = "the session so far " + string.Join(' ', Enumerable.Range(0, 400).Select(i => $"word{i}"));
+        h.Fake.OnChatRequest = (_, messages, _, _) => Task.FromResult(new ChatTurnResult(
+            messages[^1].Content == Inferpal.Localization.Strings.OodaSummarizePrompt ? summary : "done", null, 3, 5));
+
+        foreach (var prompt in new[] { "first question", "second question" })
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt, agentMode = false })
+                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        // Notifications are one-way: a round-trip request guarantees they were dispatched.
+        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var recap = Assert.Single(h.Target.ToolNotes, n => n.Name == "ooda_recap");
+        Assert.Contains("word399", recap.Output, StringComparison.Ordinal);            // the screen gets it whole
+        Assert.Equal(Services.Agent.ChatTurnPolicy.BuildToolPreview(recap.Output), recap.Kept);
+        Assert.True(recap.Kept!.Length < recap.Output.Length, "the kept output is the whole output");
+        // An output kept whole is sent once.
+        Assert.Null(new ToolNotice("read_file", "", "three short lines", false).Kept);
+    }
+
+    /// <summary>VS Code saves what the host said to keep for a call it made, and a restored call as it was read: a call
+    /// Visual Studio saved (its input in front) or an ACP thread (2 000 characters) is never cut again.</summary>
+    [Fact]
+    public void VsCode_SavesTheKeptOutputOfALiveCall_AndARestoredCallAsRead()
+    {
+        string Ts(string file) => SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
+            File.ReadAllText(Path.Combine(ConventionCoverageTests.RepoRoot(), "vscode", "src", file)));
+        var provider = Ts("chatViewProvider.ts");
+        Assert.Contains("toolKept: tool.kept", provider, StringComparison.Ordinal);
+        var sessions = Ts("chatSessions.ts");
+        Assert.Contains("content: (wholeOutputs ? undefined : item.toolKept) ?? item.toolOutput ?? ''", sessions, StringComparison.Ordinal);
+        // ⚠ What the host hands back to be drawn again keeps the whole outputs: a restarted host, a rewind, a branch.
+        Assert.Contains("host.sessionSave('last_session', this.snapshot(true));\n        const back = await host.sessionLoad(",
+                        provider.Replace("\r\n", "\n"), StringComparison.Ordinal);
+        Assert.Contains("host.rewind(index, this.snapshot(true),", provider, StringComparison.Ordinal);
+        Assert.Contains("const branch = Number.isFinite(turn) ? await host.sessionBranch(turn, messages)", provider, StringComparison.Ordinal);
+        var branchAt = provider[provider.IndexOf("private async branchAtTurn(", StringComparison.Ordinal)..];
+        Assert.Contains("const messages = this.snapshot(true);", branchAt[..branchAt.IndexOf("sessionBranch(", StringComparison.Ordinal)],
+                        StringComparison.Ordinal);
+        Assert.DoesNotContain("toolKept", sessions[sessions.IndexOf("export function toTranscript", StringComparison.Ordinal)..],
+                              StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ASavedSession_KeepsAToolMessage_AsItWasSent()
+    {
+        var root  = Directory.CreateTempSubdirectory("inferpal-tooloutput-").FullName;
+        var store = new Inferpal.Services.Persistence.ConversationStore(
+            slotOwner: Inferpal.Services.Persistence.ConversationStore.VsCodeSlot);
+        try
+        {
+            using var h = CreateHarness();
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            // What Visual Studio saves for a call: its input, then the output it kept — read back and saved again here.
+            var asVisualStudioSaved = Strings.MsgToolOutput(new string('x', 600), "found 3 matches");
+            await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new
+            {
+                name     = "last_session",
+                messages = new object[]
+                {
+                    new { role = "user", content = "where is the total computed" },
+                    new { role = "tool", content = asVisualStudioSaved, toolName = "search_in_files" },
+                },
+            }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var slot = await store.LoadAutoSaveAsync(root, CancellationToken.None);
+            Assert.Equal(asVisualStudioSaved, slot!.Messages[1].Content);
+        }
+        finally { try { Directory.Delete(root, recursive: true); } catch { } }
+    }
 
     /// <summary>
     /// ⚠ A host started again (a crash, a restart) keeps the conversation's session name and its <c>/template</c>: VS Code

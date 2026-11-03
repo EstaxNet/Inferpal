@@ -265,6 +265,8 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Unos {0:N0} {0:token|tokens}. Se detiene a los {1} si el servidor no responde.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>Aquí suele tardar como mucho unos {0}. Si el servidor no responde, se detiene a los {1} y dice por qué; Detener lo termina ahora.</value></data>
   <data name="WaitDetailLongerNoStop" xml:space="preserve"><value>Aquí suele tardar como mucho unos {0}. Si el servidor no responde, se detiene a los {1} y dice por qué.</value></data>
+  <data name="WaitLoadingModel" xml:space="preserve"><value>Cargando el modelo</value></data>
+  <data name="WaitDetailLoading" xml:space="preserve"><value>El modelo no está en memoria: el servidor lo carga y luego lee unos {0:N0} {0:token|tokens}. Se detiene a los {1} si el servidor no responde.</value></data>
   <data name="CutNothingWritten" xml:space="preserve"><value>No se escribió nada: los pasos de arriba solo leyeron archivos.</value></data>
   <data name="CutOpenTimeLimits" xml:space="preserve"><value>Abrir los límites de tiempo</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Sin respuesta de {0} tras {1}: aún leía un prompt de unos {2:N0} {2:token|tokens}. Un servidor lento puede leer un prompt largo durante minutos: la próxima solicitud a este modelo esperará más, y «{3}» fija la espera más corta ({4} → {5}).</value></data>
@@ -496,7 +498,9 @@ Copia de seguridad: {0}</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;término&gt;` para buscar en el contenido de las sesiones</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## Historial: «{0}» — {1} sesión(es)</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>+{0} mensaje(s) coincidente(s) más en esta sesión</value></data>
+  <data name="HistoryAutoSaveHit" xml:space="preserve"><value>{0} en {1} — última conversación, guardada automáticamente (vuelve al abrir esta carpeta allí)</value></data>
   <data name="AgeMinutesAgo" xml:space="preserve"><value>hace {0} min</value></data>
+  <data name="HistoryAutoSaveHitNoFolder" xml:space="preserve"><value>Una ventana sin carpeta en {0} — última conversación, guardada automáticamente (vuelve en una ventana así)</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>hace {0} h</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>hace {0} d</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## Plantillas disponibles</value></data>

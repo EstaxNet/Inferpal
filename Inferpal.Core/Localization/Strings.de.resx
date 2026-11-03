@@ -265,6 +265,8 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Etwa {0:N0} {0:Token|Token}. Bricht nach {1} ab, wenn der Server stumm bleibt.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>Hier dauert es normalerweise höchstens etwa {0}. Bleibt der Server stumm, bricht es nach {1} ab und sagt warum — Stopp beendet es sofort.</value></data>
   <data name="WaitDetailLongerNoStop" xml:space="preserve"><value>Hier dauert es normalerweise höchstens etwa {0}. Bleibt der Server stumm, bricht es nach {1} ab und sagt warum.</value></data>
+  <data name="WaitLoadingModel" xml:space="preserve"><value>Modell wird geladen</value></data>
+  <data name="WaitDetailLoading" xml:space="preserve"><value>Das Modell ist nicht im Speicher: Der Server lädt es und liest dann etwa {0:N0} {0:Token|Token}. Bricht nach {1} ab, wenn der Server stumm bleibt.</value></data>
   <data name="CutNothingWritten" xml:space="preserve"><value>Nichts wurde geschrieben: Die Schritte oben haben nur Dateien gelesen.</value></data>
   <data name="CutOpenTimeLimits" xml:space="preserve"><value>Zeitlimits öffnen</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Keine Antwort von {0} nach {1}: Er las noch einen Prompt von etwa {2:N0} {2:Token|Token}. Ein langsamer Server kann einen langen Prompt minutenlang lesen: Die nächste Anfrage an dieses Modell wartet länger, und „{3}“ legt die kürzeste Wartezeit fest ({4} → {5}).</value></data>
@@ -496,7 +498,9 @@ Sicherung: {0}</value></data>
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;Begriff&gt;`, um im Inhalt der Sitzungen zu suchen</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## Verlauf: „{0}“ — {1} Sitzung(en)</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>+{0} weitere passende Nachricht(en) in dieser Sitzung</value></data>
+  <data name="HistoryAutoSaveHit" xml:space="preserve"><value>{0} in {1} — letzte Unterhaltung, automatisch gespeichert (sie kehrt zurück, wenn dieser Ordner dort geöffnet wird)</value></data>
   <data name="AgeMinutesAgo" xml:space="preserve"><value>vor {0} Min.</value></data>
+  <data name="HistoryAutoSaveHitNoFolder" xml:space="preserve"><value>Ein Fenster ohne Ordner in {0} — letzte Unterhaltung, automatisch gespeichert (sie kehrt in einem solchen Fenster zurück)</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>vor {0} Std.</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>vor {0} T.</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## Verfügbare Vorlagen</value></data>

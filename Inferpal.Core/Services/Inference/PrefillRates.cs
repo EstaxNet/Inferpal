@@ -318,6 +318,9 @@ internal sealed class PrefillWait : IDisposable
     /// <summary>How often the line is said again.</summary>
     internal static TimeSpan Beat { get; set; } = TimeSpan.FromSeconds(5);
 
+    /// <summary>How often the server is asked, and the line said, while the model loads: its end is caught within it.</summary>
+    internal static TimeSpan LoadingBeat { get; set; } = TimeSpan.FromSeconds(1);
+
     private readonly Action<ModelWait?>? _onWaiting;
     private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
     private readonly CancellationTokenSource _stop = new();
@@ -332,34 +335,80 @@ internal sealed class PrefillWait : IDisposable
     /// measured.</param>
     /// <param name="bound">When the request is given up if the server stays silent: said from the start.</param>
     /// <param name="firstSaid">The silence before the first line; <see cref="FirstSaid"/> when <c>null</c> (tests).</param>
-    public PrefillWait(Action<ModelWait?>? onWaiting, int tokens, TimeSpan? coldRead, TimeSpan bound, TimeSpan? firstSaid = null)
+    /// <param name="isLoaded">Whether the server has the model in memory now — <c>null</c> when it cannot say. Asked with
+    /// the request, then every <see cref="LoadingBeat"/> while the answer is "no": a load is named as such
+    /// (<see cref="ModelWait.Loading"/>). <c>null</c> for a server that publishes no loaded models.</param>
+    public PrefillWait(Action<ModelWait?>? onWaiting, int tokens, TimeSpan? coldRead, TimeSpan bound, TimeSpan? firstSaid = null,
+                       Func<CancellationToken, Task<bool?>>? isLoaded = null)
     {
         // Every call reaches this line, so the scope is read here once for both clients.
         _onWaiting = onWaiting ?? ModelWaitScope.Current;
-        if (_onWaiting is not null) _ = SayAsync(tokens, coldRead, bound, firstSaid ?? FirstSaid, _stop.Token);
+        if (_onWaiting is not null) _ = SayAsync(tokens, coldRead, bound, firstSaid ?? FirstSaid, isLoaded, _stop.Token);
     }
+
+    /// <summary>How long the question "is the model loaded?" may take before the line is said without the answer.</summary>
+    internal static TimeSpan LoadedAskBudget { get; set; } = TimeSpan.FromSeconds(2);
 
     /// <summary>The time since the request was sent.</summary>
     public TimeSpan Elapsed => _clock.Elapsed;
 
-    private async Task SayAsync(int tokens, TimeSpan? coldRead, TimeSpan bound, TimeSpan firstSaid, CancellationToken ct)
+    private async Task SayAsync(int tokens, TimeSpan? coldRead, TimeSpan bound, TimeSpan firstSaid,
+                                Func<CancellationToken, Task<bool?>>? isLoaded, CancellationToken ct)
     {
         try
         {
-            await Task.Delay(firstSaid, ct).ConfigureAwait(false);
+            // ⚠ Asked from the request on, then every LoadingBeat while the answer is "not loaded": asked only when the
+            // line is first said, a load shorter than that silence counts as reading time ("longer than usual" over a
+            // load), and one asked every Beat ends up to a Beat late, its read undercounted.
+            var loading  = false;
+            var asking   = isLoaded is not null;
+            var readFrom = TimeSpan.Zero;
+            var nextSay  = firstSaid;
             while (!ct.IsCancellationRequested)
             {
-                lock (_gate)
+                if (asking)
+                    (loading, asking, readFrom) = Next(await AskLoadedAsync(isLoaded!, ct).ConfigureAwait(false),
+                                                       loading, readFrom, _clock.Elapsed);
+                if (_clock.Elapsed >= nextSay)
                 {
-                    if (_stopped) return;
-                    _said = true;
-                    _onWaiting!(new ModelWait(tokens, _clock.Elapsed, coldRead, bound));
+                    lock (_gate)
+                    {
+                        if (_stopped) return;
+                        _said = true;
+                        _onWaiting!(new ModelWait(tokens, _clock.Elapsed, coldRead, bound, loading, readFrom));
+                    }
+                    nextSay = _clock.Elapsed + (loading ? LoadingBeat : Beat);
                 }
-                await Task.Delay(Beat, ct).ConfigureAwait(false);
+                var pause = nextSay - _clock.Elapsed;
+                if (asking && pause > LoadingBeat) pause = LoadingBeat;
+                if (pause > TimeSpan.Zero) await Task.Delay(pause, ct).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("PrefillWait", ex); }
+    }
+
+    /// <summary>
+    /// One answer to "is the model in memory?" applied to the wait: asked until it is, then the line is a read, timed from
+    /// <paramref name="now"/>. An unknown answer (<c>null</c>) stops the asking at the start, and changes nothing during a
+    /// load: one slow answer is not the load's end.
+    /// </summary>
+    internal static (bool Loading, bool Asking, TimeSpan ReadFrom) Next(bool? loaded, bool loading, TimeSpan readFrom, TimeSpan now) =>
+        loaded is { } inMemory ? (!inMemory, !inMemory, loading && inMemory ? now : readFrom)
+                               : (loading, loading, readFrom);
+
+    /// <summary>The server's answer within <see cref="LoadedAskBudget"/>, else <c>null</c>: the line is never held up by it.</summary>
+    private static async Task<bool?> AskLoadedAsync(Func<CancellationToken, Task<bool?>> isLoaded, CancellationToken ct)
+    {
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        budget.CancelAfter(LoadedAskBudget);
+        try { return await isLoaded(budget.Token).ConfigureAwait(false); }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return null; }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("PrefillWait.IsLoaded", ex);
+            return null;
+        }
     }
 
     /// <summary>The first token came: the line stops, and gives its place back if it was said.</summary>

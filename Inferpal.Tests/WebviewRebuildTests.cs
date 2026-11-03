@@ -378,7 +378,7 @@ public class WebviewRebuildTests
 
         // The saved session and the export read the whole conversation, the marker left out — and nothing saves the
         // view alone.
-        Assert.Contains("toSavedMessages(this.wholeTranscript())", Body(provider, "private snapshot("), StringComparison.Ordinal);
+        Assert.Contains("toSavedMessages(this.wholeTranscript(), forScreen)", Body(provider, "private snapshot("), StringComparison.Ordinal);
         Assert.Contains("[...this.hiddenEntries, ...(this.droppedEntries > 0 ? this.transcript.slice(1) : this.transcript)]",
                         Body(provider, "private wholeTranscript("), StringComparison.Ordinal);
         Assert.Contains("messages: this.wholeTranscript().map(", provider, StringComparison.Ordinal);

@@ -311,6 +311,22 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
            || entryId.StartsWith(requested + "@", StringComparison.OrdinalIgnoreCase)
            || requested.StartsWith(entryId + "@", StringComparison.OrdinalIgnoreCase);
 
+    /// <inheritdoc/>
+    /// <remarks>⚠ Asked on the legacy surface: <c>/api/v1</c> lists an instance from the start of a load, and only the
+    /// <c>state</c> of <c>/api/v0</c> tells <c>loading</c> from <c>loaded</c>. The model is matched by its key and variant
+    /// (<see cref="IdMatches"/>).</remarks>
+    internal override Func<CancellationToken, Task<bool?>>? LoadedProbe(string model) => async ct =>
+    {
+        using var req = new HttpRequestMessage(HttpMethod.Get, HostRootFor(null) + "/api/v0/models");
+        AddAuth(req);
+        using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+        if (!resp.IsSuccessStatusCode) return null;
+        var v0 = await resp.Content.ReadFromJsonAsync<LmStudioModelsResponse>(_jsonOpts, ct).ConfigureAwait(false);
+        // Every variant of the model: one of them in memory is the model in memory, whichever is listed first.
+        var entries = v0?.Data?.Where(m => !string.IsNullOrEmpty(m.Id) && IdMatches(m.Id, model)).ToList() ?? [];
+        return entries.Count == 0 ? null : entries.Any(m => string.Equals(m.State, "loaded", StringComparison.OrdinalIgnoreCase));
+    };
+
     // ── Model listing / loaded state (native /api/v1 or /api/v0 /models) ───────
 
     /// <inheritdoc/>

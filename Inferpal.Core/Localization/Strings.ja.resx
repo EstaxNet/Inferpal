@@ -265,6 +265,8 @@
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>約 {0:N0} トークン。サーバーが応答しないままなら {1} で停止します。</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>ここでは通常、最大で約 {0} かかります。サーバーが応答しないままなら {1} で停止して理由を示します。停止ですぐに終了できます。</value></data>
   <data name="WaitDetailLongerNoStop" xml:space="preserve"><value>ここでは通常、最大で約 {0} かかります。サーバーが応答しないままなら {1} で停止して理由を示します。</value></data>
+  <data name="WaitLoadingModel" xml:space="preserve"><value>モデルを読み込み中</value></data>
+  <data name="WaitDetailLoading" xml:space="preserve"><value>モデルがメモリにありません。サーバーが読み込んだ後、約 {0:N0} トークンを読みます。サーバーが応答しないままなら {1} で停止します。</value></data>
   <data name="CutNothingWritten" xml:space="preserve"><value>何も書き込まれていません。上の手順はファイルを読んだだけです。</value></data>
   <data name="CutOpenTimeLimits" xml:space="preserve"><value>制限時間を開く</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>{1} 経っても {0} から応答がありません。約 {2:N0} トークンのプロンプトをまだ読み込んでいました。遅いサーバーは長いプロンプトを何分もかけて読みます。このモデルへの次のリクエストはもっと長く待ちます。最短の待ち時間は「{3}」で設定します（{4} → {5}）。</value></data>
@@ -496,7 +498,9 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;語句&gt;` でセッションの内容を検索</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## 履歴: 「{0}」 — {1} 件のセッション</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>このセッションには一致するメッセージがあと {0} 件</value></data>
+  <data name="HistoryAutoSaveHit" xml:space="preserve"><value>{1} の {0} — 最後の会話（自動保存。このフォルダーをそこで開くと戻ります）</value></data>
   <data name="AgeMinutesAgo" xml:space="preserve"><value>{0} 分前</value></data>
+  <data name="HistoryAutoSaveHitNoFolder" xml:space="preserve"><value>{0} のフォルダーなしのウィンドウ — 最後の会話（自動保存。そのようなウィンドウで戻ります）</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0} 時間前</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0} 日前</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## 利用可能なテンプレート</value></data>

@@ -168,6 +168,9 @@ export interface ToolNotice {
   hasErrors: boolean;
   /** The change a writing call made, in the approval card's lines (`+ - …` prefixes); absent when it wrote nothing. */
   diff?: string | null;
+  /** What a saved session keeps of the output, as Visual Studio's bubble keeps it (the Core's `ToolNotice.Kept`); absent
+   *  or null when that is the whole output. */
+  kept?: string | null;
 }
 
 export interface PlanNotice {

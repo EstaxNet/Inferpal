@@ -18,7 +18,7 @@ public class StartupNoticeKeepsLastSessionTests
     {
         var ready = WebviewRebuildTests.Body(Provider(), "async onHostReady(");
         var poll  = ready.IndexOf("await this.pollBackendStatus();", StringComparison.Ordinal);
-        var save  = ready.IndexOf("await host.sessionSave('last_session', this.snapshot());", StringComparison.Ordinal);
+        var save  = ready.IndexOf("await host.sessionSave('last_session', this.snapshot(true));", StringComparison.Ordinal);
         Assert.True(poll >= 0 && save > poll, "the status poll or the rebuild moved: the rule reads nothing");   // WITNESS
 
         Assert.DoesNotContain("this.transcript.length > 0", ready, StringComparison.Ordinal);

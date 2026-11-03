@@ -66,6 +66,8 @@ export interface WvTranscriptItem {
   text: string;
   toolInput?: string;
   toolOutput?: string;
+  /** What a saved session keeps of a live call's output (`ToolNotice.kept`); absent on a restored one, kept as read. */
+  toolKept?: string;
   /** A writing call's change, in the approval card's lines (`ToolNotice.diff`). */
   toolDiff?: string;
   hasErrors?: boolean;

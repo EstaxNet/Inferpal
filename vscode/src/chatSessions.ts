@@ -7,14 +7,18 @@ import { HostClient } from './hostClient';
 import { SavedMessage } from './protocol';
 import { WvTranscriptItem } from './webviewMessages';
 
-/** Persistable view of a transcript (the shape the VS extension saves). */
-export function toSavedMessages(transcript: readonly WvTranscriptItem[]): SavedMessage[] {
+/**
+ * Persistable view of a transcript (the shape the VS extension saves). A live call's output is kept as Visual Studio
+ * keeps it (`toolKept`); `wholeOutputs` keeps it whole, for a snapshot whose answer comes back on screen.
+ */
+export function toSavedMessages(transcript: readonly WvTranscriptItem[], wholeOutputs = false): SavedMessage[] {
   // The line where a mode starts is screen only, as in Visual Studio: the selector says a restored conversation's mode.
   return transcript.filter((item) => !item.modeLine).map((item) =>
     item.savedAs
       ? item.savedAs
       : item.role === 'tool'
-        ? { role: 'tool', content: item.toolOutput ?? '', toolName: item.text, timestamp: item.timestamp }
+        // Saved as Visual Studio keeps it, never the whole output: every search and file read rewritten at each turn.
+        ? { role: 'tool', content: (wholeOutputs ? undefined : item.toolKept) ?? item.toolOutput ?? '', toolName: item.text, timestamp: item.timestamp }
         : item.role === 'input'
           // The Core's InputCard.ReceiptRole: the line an answered card left, never a question or an answer.
           ? { role: 'input', content: item.text, timestamp: item.timestamp }

@@ -251,7 +251,7 @@ internal sealed record RunReviewDto(
 /// <summary>What `run/file` answers: the sentence to show, and the card as it stands after (null: the run is gone).</summary>
 internal sealed record RunFileResult(string Message, RunReviewDto? Review);
 
-/// <summary>`chat/tool` notification — one executed tool call (uncapped output, like the VS bubble).</summary>
+/// <summary>`chat/tool` notification — one executed tool call (uncapped output, for the screen).</summary>
 /// <param name="Diff">The change a writing call made, in the lines the approval card showed (<c>+ - …</c> prefixes,
 /// context collapsed) — what Visual Studio draws in its tool bubble; null when the call wrote nothing.</param>
 internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors, string? Diff = null)
@@ -259,6 +259,12 @@ internal sealed record ToolNotice(string Name, string Input, string Output, bool
     /// <summary>The notice of an executed call, its diff rendered as the approval card renders it, every line kept.</summary>
     public static ToolNotice Of(ToolExecution te) => new(te.Name, te.Input, te.Output, te.HasErrors,
         te.Diff is { } d ? Services.CodeActions.DiffComputer.ComputeText(d.OldText, d.NewText, maxLines: int.MaxValue) : null);
+
+    /// <summary>What a saved session keeps of the output: what Visual Studio's bubble keeps
+    /// (<see cref="ChatTurnPolicy.BuildToolPreview"/>); <c>null</c> when that is the whole output, sent once.</summary>
+    /// <remarks>⚠ Saved whole, a session carries every search and file read — tens of kilobytes rewritten at every turn,
+    /// for a screen the reload never feeds to the model (a restored history holds questions and answers).</remarks>
+    public string? Kept => ChatTurnPolicy.BuildToolPreview(Output) is var kept && kept != Output ? kept : null;
 }
 
 /// <summary>`chat/compaction` — the conversation was made to fit before a question (<see cref="InitializeParams.CompactionEvents"/>).</summary>

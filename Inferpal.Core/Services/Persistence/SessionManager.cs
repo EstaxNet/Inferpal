@@ -357,7 +357,7 @@ internal static class SessionManager
 
         foreach (var m in matches)
         {
-            sb.AppendLine($"### {m.Name}  *({FormatAge(m.SavedAt, nowUtc)})*");
+            sb.AppendLine($"### {m.AutoSave ?? m.Name}  *({FormatAge(m.SavedAt, nowUtc)})*");
             foreach (var snip in m.Snippets)
                 sb.AppendLine($"  > {snip}");
             if (m.MoreMatches > 0)

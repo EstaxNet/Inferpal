@@ -265,6 +265,8 @@
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>约 {0:N0} 个令牌。若服务器一直没有响应，将在 {1} 时停止。</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>这里通常最多约 {0}。若服务器一直没有响应，将在 {1} 时停止并说明原因——点“停止”可立即结束。</value></data>
   <data name="WaitDetailLongerNoStop" xml:space="preserve"><value>这里通常最多约 {0}。若服务器一直没有响应，将在 {1} 时停止并说明原因。</value></data>
+  <data name="WaitLoadingModel" xml:space="preserve"><value>正在加载模型</value></data>
+  <data name="WaitDetailLoading" xml:space="preserve"><value>模型不在内存中：服务器先加载它，然后读取约 {0:N0} 个令牌。若服务器一直没有响应，将在 {1} 时停止。</value></data>
   <data name="CutNothingWritten" xml:space="preserve"><value>没有写入任何内容：上面的步骤只读取了文件。</value></data>
   <data name="CutOpenTimeLimits" xml:space="preserve"><value>打开时间限制</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>{1} 后仍未收到 {0} 的回复：它还在读取约 {2:N0} 个令牌的提示。慢速服务器读取长提示可能需要数分钟：对此模型的下一个请求会等待更久，最短等待时间由“{3}”设置（{4} → {5}）。</value></data>
@@ -496,7 +498,9 @@
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;关键词&gt;` 在会话内容中搜索</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## 历史：“{0}” — {1} 个会话</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>此会话中还有 {0} 条匹配消息</value></data>
+  <data name="HistoryAutoSaveHit" xml:space="preserve"><value>{1} 中的 {0} — 最后一次对话，自动保存（在那里打开此文件夹时会回来）</value></data>
   <data name="AgeMinutesAgo" xml:space="preserve"><value>{0} 分钟前</value></data>
+  <data name="HistoryAutoSaveHitNoFolder" xml:space="preserve"><value>{0} 中没有文件夹的窗口 — 最后一次对话，自动保存（在这样的窗口中会回来）</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0} 小时前</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0} 天前</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## 可用模板</value></data>

@@ -344,10 +344,13 @@ internal class ConversationStore
     /// with up to 3 surrounding snippets per session — and how many more messages match, said under them: three
     /// snippets read as "the word appears three times" otherwise.
     /// </summary>
+    /// <remarks>⚠ The auto-save slots too — every workspace's, both editors' (<see cref="AutoSaveFile(string?)"/>): the
+    /// conversation on screen lives there until <c>/clear</c> archives it, and "No sessions match" for the words just
+    /// read in the chat is a claim about the person's history made without reading it.</remarks>
     public async Task<SessionScan<SessionMatch>> SearchAsync(string term, CancellationToken ct)
     {
-        const int MaxSnippets = 3;
-        var results    = new List<SessionMatch>();
+        // Each hit with its file's last write: the list reads most recent first, the slots among the sessions.
+        var results    = new List<(SessionMatch Hit, DateTime Written)>();
         var unreadable = new List<string>();
         foreach (var name in ListSessions().Where(n => n != "last_session"))
         {
@@ -356,16 +359,7 @@ internal class ConversationStore
             {
                 var data = await LoadAsync(name, ct);
                 if (data is null) { if (File.Exists(SessionPath(name))) unreadable.Add(name); continue; }
-
-                var matching = data.Messages
-                    // What the chat shows: a word found only in the model's hidden reasoning is not a hit.
-                    .Select(m => MarkdownParser.ShownText(m.Role, m.Content))
-                    .Where(text => text.Contains(term, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-                var snippets = matching.Take(MaxSnippets).Select(text => ExtractSnippet(text, term, 90)).ToList();
-
-                if (snippets.Count > 0)
-                    results.Add(new SessionMatch(name, data.SavedAt, snippets, matching.Count - snippets.Count));
+                if (Match(name, data, term) is { } hit) results.Add((hit, File.GetLastWriteTimeUtc(SessionPath(name))));
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
@@ -376,7 +370,106 @@ internal class ConversationStore
                 Diagnostics.Swallow($"ConversationStore.Search({name})", ex);
             }
         }
-        return new SessionScan<SessionMatch>(results, unreadable);
+
+        var slotDir = Path.Combine(Dir, "autosave");
+        var slots   = new List<string>();
+        try
+        {
+            if (Directory.Exists(slotDir)) slots.AddRange(Directory.EnumerateFiles(slotDir, "*.json"));
+        }
+        catch (Exception ex)
+        {
+            // A folder not listed is a gap in the answer, said as one — never a search that throws away what it found.
+            unreadable.Add(slotDir);
+            Diagnostics.Swallow("ConversationStore.Search(autosave)", ex);
+        }
+        if (File.Exists(SessionPath(AutoSaveSlot))) slots.Add(SessionPath(AutoSaveSlot));
+        foreach (var file in slots)
+        {
+            ct.ThrowIfCancellationRequested();
+            var stem = Path.GetFileNameWithoutExtension(file);
+            try
+            {
+                var data = await LoadFileAsync(file, AutoSaveSlot, ct);
+                if (data is null) continue;
+                var editors = EditorsRestoring(file, data);
+                if (editors.Count > 0 && Match(stem, data, term, SlotTitle(file, data.WorkspaceRoot, editors)) is { } hit)
+                    results.Add((hit, File.GetLastWriteTimeUtc(file)));
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                // Its path: the copy set aside sits next to it, and a title holds the commas the list is joined with.
+                unreadable.Add(file);
+                Diagnostics.Swallow($"ConversationStore.Search({stem})", ex);
+            }
+        }
+        return new SessionScan<SessionMatch>(
+            results.OrderByDescending(r => r.Written).Select(r => r.Hit).ToList(), unreadable);
+    }
+
+    private static readonly (string Owner, string Name)[] Editors = [(VisualStudioSlot, "Visual Studio"), (VsCodeSlot, "VS Code")];
+
+    /// <summary>The editors a slot's file name says it belongs to: one, or both for a slot older versions kept.</summary>
+    private static List<string> EditorsOfName(string stem) =>
+        Editors.Where(e => stem.EndsWith("-" + e.Owner, StringComparison.Ordinal)).Select(e => e.Name).ToList()
+            is { Count: > 0 } one ? one : Editors.Select(e => e.Name).ToList();
+
+    /// <summary>
+    /// The editors that restore this slot when its folder opens (<see cref="LoadAutoSaveAsync"/>); none for a slot no
+    /// editor reads any more.
+    /// </summary>
+    /// <remarks>⚠ A slot older versions kept stays on disk once an editor writes its own, and is never read again:
+    /// listed, it repeats a conversation found elsewhere under a promise that is false.</remarks>
+    private List<string> EditorsRestoring(string file, SessionData data)
+    {
+        var stem = Path.GetFileNameWithoutExtension(file);
+        if (Editors.Any(e => stem.EndsWith("-" + e.Owner, StringComparison.Ordinal))) return EditorsOfName(stem);
+        var both = file;
+        if (string.Equals(file, SessionPath(AutoSaveSlot), PathComparer.Comparison))
+        {
+            // A window without a folder still writes the shared slot — Visual Studio's only: VS Code starts no host
+            // without a folder. A folder's comes after its workspace slots.
+            if (string.IsNullOrWhiteSpace(data.WorkspaceRoot)) return ["Visual Studio"];
+            both = AutoSaveFile(data.WorkspaceRoot, owner: null);
+            if (File.Exists(both)) return [];
+        }
+        var bare = both[..^".json".Length];
+        return Editors.Where(e => !File.Exists($"{bare}-{e.Owner}.json")).Select(e => e.Name).ToList();
+    }
+
+    /// <summary>What an auto-save slot is, for a person: its workspace's folder and the editors that bring it back.</summary>
+    /// <param name="root">The workspace the slot records; when it records none, the folder comes from the file
+    /// name (<c>&lt;folder&gt;-&lt;hash&gt;[-&lt;editor&gt;]</c>).</param>
+    private string SlotTitle(string file, string? root, IReadOnlyList<string> editors)
+    {
+        var editor = string.Join(", ", editors);
+        string folder;
+        if (!string.IsNullOrWhiteSpace(root))
+            folder = Path.GetFileName(SessionManager.NormalizeRoot(root)) is { Length: > 0 } name ? name : root;
+        else if (string.Equals(file, SessionPath(AutoSaveSlot), PathComparer.Comparison))
+            return Strings.HistoryAutoSaveHitNoFolder(editor);
+        else
+        {
+            var stem = Path.GetFileNameWithoutExtension(file);
+            foreach (var e in Editors)
+                if (stem.EndsWith("-" + e.Owner, StringComparison.Ordinal)) stem = stem[..^(e.Owner.Length + 1)];
+            var dash = stem.LastIndexOf('-');
+            folder = dash > 0 ? stem[..dash] : stem;
+        }
+        return Strings.HistoryAutoSaveHit(folder, editor);
+    }
+
+    private static SessionMatch? Match(string name, SessionData data, string term, string? autoSave = null)
+    {
+        const int MaxSnippets = 3;
+        var matching = data.Messages
+            // What the chat shows: a word found only in the model's hidden reasoning is not a hit.
+            .Select(m => MarkdownParser.ShownText(m.Role, m.Content))
+            .Where(text => text.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var snippets = matching.Take(MaxSnippets).Select(text => ExtractSnippet(text, term, 90)).ToList();
+        return snippets.Count == 0 ? null : new SessionMatch(name, data.SavedAt, snippets, matching.Count - snippets.Count, autoSave);
     }
 
     private static string ExtractSnippet(string content, string term, int maxLen)
@@ -448,7 +541,9 @@ internal record SessionSummary(string Name, DateTime SavedAt, int MessageCount, 
 
 /// <summary>Search hit returned by <see cref="ConversationStore.SearchAsync"/>.</summary>
 /// <param name="MoreMatches">Matching messages of the session beyond the snippets shown.</param>
-internal record SessionMatch(string Name, DateTime SavedAt, List<string> Snippets, int MoreMatches = 0);
+/// <param name="AutoSave">For an auto-save slot rather than a saved session: what it is, as the hit's title shows it
+/// (<see cref="Strings.HistoryAutoSaveHit"/>) — a slot is no name to load.</param>
+internal record SessionMatch(string Name, DateTime SavedAt, List<string> Snippets, int MoreMatches = 0, string? AutoSave = null);
 
 /// <summary>
 /// What a pass over the session folder found, <b>and what it could not read</b>.

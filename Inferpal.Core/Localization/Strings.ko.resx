@@ -265,6 +265,8 @@
   <data name="WaitDetailUnmeasured" xml:space="preserve"><value>약 {0:N0}개 토큰. 서버가 응답하지 않으면 {1}에 멈춥니다.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>이곳에서는 보통 최대 약 {0} 걸립니다. 서버가 응답하지 않으면 {1}에 멈추고 이유를 알려 줍니다. 중지를 누르면 지금 끝납니다.</value></data>
   <data name="WaitDetailLongerNoStop" xml:space="preserve"><value>이곳에서는 보통 최대 약 {0} 걸립니다. 서버가 응답하지 않으면 {1}에 멈추고 이유를 알려 줍니다.</value></data>
+  <data name="WaitLoadingModel" xml:space="preserve"><value>모델 불러오는 중</value></data>
+  <data name="WaitDetailLoading" xml:space="preserve"><value>모델이 메모리에 없습니다. 서버가 모델을 불러온 뒤 약 {0:N0}개 토큰을 읽습니다. 서버가 응답하지 않으면 {1}에 멈춥니다.</value></data>
   <data name="CutNothingWritten" xml:space="preserve"><value>아무것도 쓰지 않았습니다. 위 단계는 파일을 읽기만 했습니다.</value></data>
   <data name="CutOpenTimeLimits" xml:space="preserve"><value>시간 제한 열기</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>{1} 후에도 {0}에서 응답이 없습니다. 약 {2:N0}개 토큰의 프롬프트를 아직 읽고 있었습니다. 느린 서버는 긴 프롬프트를 몇 분 동안 읽을 수 있습니다. 이 모델에 대한 다음 요청은 더 오래 기다리며, 가장 짧은 대기는 "{3}"에서 정합니다({4} → {5}).</value></data>
@@ -496,7 +498,9 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="HistorySearchHint" xml:space="preserve"><value>→ `/history &lt;검색어&gt;`로 세션 내용 검색</value></data>
   <data name="HistorySearchHeader" xml:space="preserve"><value>## 기록: "{0}" — 세션 {1}개</value></data>
   <data name="HistorySearchMoreMatches" xml:space="preserve"><value>이 세션에 일치하는 메시지 {0}개 더</value></data>
+  <data name="HistoryAutoSaveHit" xml:space="preserve"><value>{1}의 {0} — 마지막 대화, 자동 저장됨 (거기서 이 폴더를 열면 다시 나타납니다)</value></data>
   <data name="AgeMinutesAgo" xml:space="preserve"><value>{0}분 전</value></data>
+  <data name="HistoryAutoSaveHitNoFolder" xml:space="preserve"><value>{0}의 폴더 없는 창 — 마지막 대화, 자동 저장됨 (그런 창에서 다시 나타납니다)</value></data>
   <data name="AgeHoursAgo" xml:space="preserve"><value>{0}시간 전</value></data>
   <data name="AgeDaysAgo" xml:space="preserve"><value>{0}일 전</value></data>
   <data name="TemplateListHeader" xml:space="preserve"><value>## 사용 가능한 템플릿</value></data>
