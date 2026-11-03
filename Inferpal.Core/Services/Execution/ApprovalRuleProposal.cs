@@ -59,10 +59,6 @@ internal static class ApprovalRuleProposal
     /// second command on the next line — the policy judging each line too must not be what holds the rule.</remarks>
     private const string Arguments = @"([ \t]+[^;&|`$<>(){}\r\n\v\f\u0085\u2028\u2029]*)?[ \t]*$";
 
-    /// <summary>A command with any of these is not one plain command.</summary>
-    internal static readonly char[] Metacharacters =
-        [';', '&', '|', '`', '$', '<', '>', '(', ')', '{', '}', '\r', '\n', '\v', '\f', '\u0085', '\u2028', '\u2029'];
-
     /// <summary>Programs that run whatever code they are given — a script, an option (<c>find -exec</c>): no rule on their
     /// name alone.</summary>
     private static readonly HashSet<string> Launchers = new(StringComparer.OrdinalIgnoreCase)
@@ -176,7 +172,7 @@ internal static class ApprovalRuleProposal
     private static Proposal? ForCommand(string command, string? root)
     {
         var trimmed = command.Trim();
-        if (trimmed.Length == 0 || trimmed.IndexOfAny(Metacharacters) >= 0) return null;
+        if (trimmed.Length == 0 || trimmed.IndexOfAny(CommandLine.Metacharacters) >= 0) return null;
         if (PermissionPolicy.IsOpaqueExecution(trimmed)) return null;
 
         var tokens = trimmed.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);

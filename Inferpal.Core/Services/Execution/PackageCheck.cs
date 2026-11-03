@@ -209,28 +209,6 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
 
     private static readonly IReadOnlyDictionary<string, string> NoOverrides = new Dictionary<string, string>();
 
-    /// <summary>
-    /// The steps of a command line, split at <c>&amp;&amp;</c>, <c>||</c>, <c>;</c>, <c>|</c>, a lone <c>&amp;</c> (a background job
-    /// in bash, a second command in pwsh 7) and line breaks — outside quotes only.
-    /// </summary>
-    /// <remarks>⚠ Inside quotes a separator is part of an argument: split there, <c>pip install "x @ git+https://h/r.git#a&amp;egg=x"</c>
-    /// became a bare <c>x</c>, asked of PyPI and refused as absent.</remarks>
-    internal static List<string> Steps(string command)
-    {
-        var steps = new List<string>();
-        var step  = new StringBuilder();
-        char? quote = null;
-        foreach (var c in command)
-        {
-            if (quote is { } open) { if (c == open) quote = null; }
-            else if (c is '"' or '\'') quote = c;
-            else if (c is '&' or '|' or ';' or '\r' or '\n') { steps.Add(step.ToString()); step.Clear(); continue; }
-            step.Append(c);
-        }
-        steps.Add(step.ToString());
-        return steps;
-    }
-
     /// <summary>The packages <paramref name="tool"/> called with <paramref name="args"/> adds, each with where it is asked from.</summary>
     /// <param name="tool">The tool called.</param>
     /// <param name="args">Its arguments, as the model wrote them.</param>
@@ -246,15 +224,20 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
             var start = shell is not null && Directory.Exists(shell.Directory) ? shell.Directory : root;
             var dir = ExistingFolder(args.Str("working_directory"), start) ?? start;
             // One step at a time, so that `cd web && npm install x` is asked from web/, and a pipe ends a step's arguments.
-            foreach (var part in Steps(command))
+            // Every command the line runs, in the order it runs them — those inside a subexpression too, before the step that
+            // holds them: the reader the rules read with.
+            foreach (var part in CommandLine.Read(command))
             {
-                var step = part.Trim();
+                var step = part.Text.Trim();
                 // A step that tells a package manager where to look changes the sources of everything after it.
                 if (PackageCommands.ChangesSources(step)) break;
                 var cd = Regex.Match(step, @"^(?:cd|chdir|pushd|Push-Location|Set-Location|sl)(?:\s+(?:/d|-Path|-LiteralPath))?(?:\s+(?<dir>.+))?$",
                                      RegexOptions.IgnoreCase, MatchTimeout);
                 if (cd.Success)
                 {
+                    // A folder changed inside a subexpression: a POSIX subshell keeps it, PowerShell does not — where the
+                    // rest runs is not known.
+                    if (part.Nested) break;
                     // A folder this reader cannot resolve (a variable, `~`, one an earlier step creates) leaves the rest unknown.
                     if (ExistingFolder(cd.Groups["dir"].Value.Trim().Trim('"', '\''), dir) is not { } next) break;
                     dir = next;

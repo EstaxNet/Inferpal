@@ -101,13 +101,13 @@ public class PermissionRuleCommentAndChainTests
     [InlineData("git log \"\\\"\" >(rm -rf src)")]
     [InlineData("git log $'\\'' $(rm -rf src) ''")]
     public void UnderAPosixShell_QuotesAreReadAsBashReadsThem(string command) =>
-        Assert.True(PermissionPolicy.HidesACommand(command, posix: true));
+        Assert.True(CommandLine.Hides(command, posix: true));
 
     /// <summary>Reference arm: under PowerShell a backslash is no escape — a quoted folder ending in a separator is a plain
     /// argument, allowed by the rule that allows its command.</summary>
     [Fact]
     public void UnderPowerShell_AFolderEndingInABackslash_IsAPlainArgument() =>
-        Assert.False(PermissionPolicy.HidesACommand("dotnet build \"C:\\src\\App\\\"", posix: false));
+        Assert.False(CommandLine.Hides("dotnet build \"C:\\src\\App\\\"", posix: false));
 
     [Theory]
     [InlineData("git commit -m \"feat(ui): x\"")]                  // a parenthesis inside double quotes is text

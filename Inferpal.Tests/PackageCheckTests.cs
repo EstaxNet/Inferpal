@@ -644,8 +644,8 @@ public class PackageCheckTests : IDisposable
         // A direct reference names no registry package: split at its `&egg=`, it became a bare `mypkg` asked of PyPI.
         Assert.Empty(PackageCheck.Added("run_command",
             Args(new { command = "pip install \"mypkg @ git+https://host/repo.git#subdirectory=a&egg=mypkg\"" }), _root));
-        Assert.Equal(["npm i lodash ", " npm i other"], PackageCheck.Steps("npm i lodash & npm i other"));
-        Assert.Equal(["echo 'a;b'", " npm i x"], PackageCheck.Steps("echo 'a;b'; npm i x"));
+        Assert.Equal(["npm i lodash ", " npm i other"], CommandLine.Steps("npm i lodash & npm i other"));
+        Assert.Equal(["echo 'a;b'", " npm i x"], CommandLine.Steps("echo 'a;b'; npm i x"));
     }
 
     [Fact]

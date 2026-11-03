@@ -319,36 +319,9 @@ internal sealed class PermissionPolicy
         // ⚠ A command inside a command (`$(…)`, `(…)`, a backtick) runs before the one a rule allowed, and a redirection
         // writes a file no rule saw: `git log $(Remove-Item -Recurse src)` and `git log > src/App.cs` are allowed by
         // `^git`, and no split shows either. Such a line goes to the card; nothing is blocked.
-        if (!sawPrompt && IsCommand(toolName) && HidesACommand(subject, Shell.ShellLauncher.Resolve().Dialect != Shell.ShellDialect.PowerShell))
+        if (!sawPrompt && IsCommand(toolName) && CommandLine.Hides(subject, Shell.ShellLauncher.Resolve().Dialect != Shell.ShellDialect.PowerShell))
             sawPrompt = true;
         return sawPrompt ? PermissionDecision.Prompt : PermissionDecision.Allow;
-    }
-
-    /// <summary>
-    /// Whether a command line runs or writes more than its split shows: a subexpression or grouping, a backtick, a
-    /// redirection — outside quotes. Inside double quotes only <c>$(</c> and the backtick count (both shells still expand
-    /// them there); inside single quotes nothing does: <c>git commit -m "feat(ui): x"</c> is one plain command.
-    /// ⚠ And whatever makes the quotes read otherwise than this scan reads them counts too: a typographic quote
-    /// (PowerShell takes <c>‘ ’ “ ”</c> for quotes) and, under a POSIX shell (<paramref name="posix"/>), a backslash before
-    /// a quote and <c>$'…'</c> — bash reads <c>\' $(rm -rf src) \'</c> with the <c>$(</c> outside quotes. Under PowerShell
-    /// a backslash is no escape: <c>"C:\repo\"</c> is a plain folder.
-    /// </summary>
-    internal static bool HidesACommand(string line, bool posix)
-    {
-        var quote = '\0';
-        for (var i = 0; i < line.Length; i++)
-        {
-            var c = line[i];
-            if (c is >= '\u2018' and <= '\u201E') return true;
-            if (quote == '\'') { if (c == '\'') quote = '\0'; continue; }
-            if (posix && i + 1 < line.Length && (c == '\\' && line[i + 1] is '\'' or '"' || c == '$' && line[i + 1] == '\''))
-                return true;
-            if (c == '`' || (c == '$' && i + 1 < line.Length && line[i + 1] == '(')) return true;
-            if (quote == '"') { if (c == '"') quote = '\0'; continue; }
-            if (c is '\'' or '"') { quote = c; continue; }
-            if (c is '(' or '>') return true;
-        }
-        return false;
     }
 
     private static bool IsCommand(string toolName) => toolName.Equals(CommandTool, StringComparison.OrdinalIgnoreCase);
@@ -359,17 +332,19 @@ internal sealed class PermissionPolicy
     /// <summary>The tool whose subject is a command line, judged command by command.</summary>
     private const string CommandTool = "run_command";
 
-    /// <summary>What separates two commands on one line, in PowerShell and POSIX shells alike.</summary>
-    private static readonly Regex CommandSeparator = new(@"&&|\|\||[;|&]", RegexOptions.None, BuiltInMatchTimeout);
-
     /// <summary>
     /// The units a subject is judged by — each one must be allowed for the call to be — or <c>null</c> when the
     /// subject is a single unit. A multi-line subject is one unit per line; a command line is also each of its
     /// commands, plus the line as written.
     /// </summary>
     /// <remarks>
-    /// Splitting a quoted separator (<c>git commit -m "a; b"</c>) yields a fragment no <c>allow</c> matches: the
-    /// call is prompted, never approved past a rule, which is the direction a misreading may err in.
+    /// ⚠ A command line is judged on EVERY reading of the shared reader (<see cref="CommandLine"/>), never one: each piece a
+    /// shell might read as a command, quotes or not (<see cref="CommandLine.Pieces"/>) — a quote the reader takes otherwise
+    /// than the shell (an escape, a string across two lines, a comment, <c>--%</c>) never hides a command from a deny —, and
+    /// each step as the shell runs it over the whole subject, the commands a subexpression runs included
+    /// (<see cref="CommandLine.Read(string, bool)"/>). A fragment of a quoted argument (<c>git commit -m "a; b"</c>) matches
+    /// no <c>allow</c>: such a call is prompted, never approved past a rule, the direction a misreading may err in. A lone
+    /// carriage return ends a statement for PowerShell too: <c>git status\rRemove-Item …</c> is two commands.
     /// </remarks>
     private static List<string>? PartsOf(string toolName, string subject)
     {
@@ -378,20 +353,13 @@ internal sealed class PermissionPolicy
 
         var parts = new List<string>();
         if (isCommand) parts.Add(subject);
-        // ⚠ A lone carriage return ends a statement for PowerShell too: `git status\rRemove-Item …` is two commands.
-        foreach (var line in subject.Split(isCommand ? ['\n', '\r'] : ['\n']))
+        IEnumerable<string> pieces = isCommand
+            ? CommandLine.Pieces(subject).Concat(CommandLine.Steps(subject))
+            : subject.Split('\n');
+        foreach (var piece in pieces)
         {
-            IEnumerable<string> pieces = [line];
-            if (isCommand)
-            {
-                try { pieces = CommandSeparator.Split(line); }
-                catch (RegexMatchTimeoutException) { }   // the whole line is still judged
-            }
-            foreach (var piece in pieces)
-            {
-                var part = piece.Trim('\r', ' ', '\t');
-                if (part.Length > 0) parts.Add(part);
-            }
+            var part = piece.Trim('\r', ' ', '\t');
+            if (part.Length > 0) parts.Add(part);
         }
         return parts;
     }

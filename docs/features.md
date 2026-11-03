@@ -916,6 +916,9 @@ suffix gets the answer the file's own name gets. A deny rule holds on every name
 the name as written. Writing in the repository's `.git` folder always asks — its settings run programs —, and
 Inferpal's own git readings never run the repository's `core.fsmonitor` or diff `textconv` programs. A file that is
 also, by a hard link, outside the workspace (a dependency store's) is read as the project has it, never written.
+A command line is read the same way by every check — the rules, the package check, the rule a card proposes: a command
+inside `$( )`, a grouping or a PowerShell block counts like one at the top of the line, and a deny rule judges every way
+a shell might read the line.
 
 <details>
 <summary><b>In detail: the sandbox, approvals, rules, ignore files, diagnostics</b></summary>
