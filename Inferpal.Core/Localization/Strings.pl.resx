@@ -1097,7 +1097,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="TaskForgot" xml:space="preserve"><value>Usunięto zakończone zadania: {0}.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Brak zadań w tle. `/task [cel]` uruchamia zadanie.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Zadania w tle</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` pokazuje raport · `/task stop [id]` anuluje · `/task clear` usuwa zakończone</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` pokazuje raport · `/task stop [id]` anuluje · `/task retry [id]` uruchamia nieudane ponownie pod nowym numerem · `/task clear` usuwa zakończone. Numer nigdy nie jest nadawany dwa razy, także po ponownym uruchomieniu.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>Stan</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Cel</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>w kolejce</value></data>
@@ -1115,6 +1115,15 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Zadanie w tle `{0}` zostało anulowane — nic nie powstało.</value></data>
   <data name="TaskCancelledWithProposals" xml:space="preserve"><value>Zadanie w tle `{0}` zostało zatrzymane — zachowano {1} {1:proponowaną zmianę|proponowane zmiany|proponowanych zmian}: `/task {0}` je wyświetli.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Zadanie w tle `{0}` zakończone — `/task {0}`, aby przeczytać raport.</value></data>
+  <data name="TaskStateWaitingAt" xml:space="preserve"><value>czeka na serwer (nr {0})</value></data>
+  <data name="TaskServerAt" xml:space="preserve"><value>{0} pod adresem {1}</value></data>
+  <data name="TaskQueueWaitsForServer" xml:space="preserve"><value>{0} nie odpowiada. {1} {2:czeka|czekają|czekają} na niego i {2:ruszy|ruszą|ruszą} {2:sama|same|same}, gdy wróci.</value></data>
+  <data name="TaskServerStopped" xml:space="preserve"><value>Zatrzymano po {0} {0:kroku|krokach|krokach}: serwer przestał odpowiadać o {1}.</value></data>
+  <data name="TaskStoppedByClose" xml:space="preserve"><value>Zatrzymano przy zamknięciu edytora, po {0} {0:kroku|krokach|krokach}.</value></data>
+  <data name="TaskStoppedByCloseBeforeStart" xml:space="preserve"><value>Zatrzymano przy zamknięciu edytora, przed startem.</value></data>
+  <data name="TaskRetried" xml:space="preserve"><value>Zadanie **{0}** uruchomione ponownie z `{1}`: {2}</value></data>
+  <data name="TaskRetryNotFinished" xml:space="preserve"><value>Zadanie `{0}` jeszcze się nie zakończyło: `/task stop {0}` je zatrzyma, potem można je uruchomić ponownie.</value></data>
+  <data name="TaskJournalSetAside" xml:space="preserve"><value>Nie udało się odczytać zadań w tle zapisanych dla tego obszaru roboczego: kopia jest zachowana w `{0}`.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Ogólne</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Akcje na kodzie</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Pliki</value></data>

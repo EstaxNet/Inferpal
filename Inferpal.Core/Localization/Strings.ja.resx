@@ -1097,7 +1097,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="TaskForgot" xml:space="preserve"><value>完了した {0} 件のタスクを破棄しました。</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>バックグラウンドタスクはありません。`/task [目的]` で開始できます。</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>バックグラウンドタスク</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` でレポート表示 · `/task stop [id]` でキャンセル · `/task clear` で完了分を破棄</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` でレポート表示 · `/task stop [id]` でキャンセル · `/task retry [id]` で失敗したタスクを新しい番号で再実行 · `/task clear` で完了分を破棄。番号は再起動後も二度と使われません。</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>状態</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>目的</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>待機中</value></data>
@@ -1115,6 +1115,15 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="TaskCancelledNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` はキャンセルされました — 何も生成されていません。</value></data>
   <data name="TaskCancelledWithProposals" xml:space="preserve"><value>バックグラウンド タスク `{0}` は停止されました — 提案済みの変更 {1} 件は保持されています: `/task {0}` で一覧を表示できます。</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>バックグラウンドタスク `{0}` が完了しました — `/task {0}` でレポートを確認できます。</value></data>
+  <data name="TaskStateWaitingAt" xml:space="preserve"><value>サーバー待ち (#{0})</value></data>
+  <data name="TaskServerAt" xml:space="preserve"><value>{1} の {0}</value></data>
+  <data name="TaskQueueWaitsForServer" xml:space="preserve"><value>{0} が応答していません。{1}（{2} 件）はサーバーを待っており、復帰すると自動で開始します。</value></data>
+  <data name="TaskServerStopped" xml:space="preserve"><value>{0} ステップ後に停止: サーバーが {1} に応答しなくなりました。</value></data>
+  <data name="TaskStoppedByClose" xml:space="preserve"><value>エディターを閉じたため {0} ステップ後に停止しました。</value></data>
+  <data name="TaskStoppedByCloseBeforeStart" xml:space="preserve"><value>エディターを閉じたため開始前に停止しました。</value></data>
+  <data name="TaskRetried" xml:space="preserve"><value>タスク **{0}** を `{1}` から再実行しました: {2}</value></data>
+  <data name="TaskRetryNotFinished" xml:space="preserve"><value>タスク `{0}` はまだ終了していません: `/task stop {0}` で停止すると再実行できます。</value></data>
+  <data name="TaskJournalSetAside" xml:space="preserve"><value>このワークスペースに保存されたバックグラウンドタスクを読み込めませんでした: コピーを `{0}` に保存しています。</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>全般</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>コードアクション</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>ファイル</value></data>

@@ -1097,7 +1097,7 @@
   <data name="TaskForgot" xml:space="preserve"><value>Забыто завершённых задач: {0}.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Фоновых задач нет. `/task [цель]` запускает задачу.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Фоновые задачи</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` — отчёт · `/task stop [id]` — отмена · `/task clear` — забыть завершённые</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` — отчёт · `/task stop [id]` — отмена · `/task retry [id]` — снова запустить неудачную под новым номером · `/task clear` — забыть завершённые. Номер никогда не выдаётся дважды, даже после перезапуска.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>Состояние</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Цель</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>в очереди</value></data>
@@ -1115,6 +1115,15 @@
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Фоновая задача `{0}` отменена — результата нет.</value></data>
   <data name="TaskCancelledWithProposals" xml:space="preserve"><value>Фоновая задача `{0}` остановлена — {1} {1:предложенное изменение сохранено|предложенных изменения сохранены|предложенных изменений сохранено}: `/task {0}` покажет их.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Фоновая задача `{0}` завершена — `/task {0}`, чтобы прочитать отчёт.</value></data>
+  <data name="TaskStateWaitingAt" xml:space="preserve"><value>ожидает сервер (№{0})</value></data>
+  <data name="TaskServerAt" xml:space="preserve"><value>{0} по адресу {1}</value></data>
+  <data name="TaskQueueWaitsForServer" xml:space="preserve"><value>{0} не отвечает. {2:Ждёт|Ждут|Ждут} его: {1} — {2:запустится сама|запустятся сами|запустятся сами}, когда он вернётся.</value></data>
+  <data name="TaskServerStopped" xml:space="preserve"><value>Остановлена после {0} {0:шага|шагов|шагов}: сервер перестал отвечать в {1}.</value></data>
+  <data name="TaskStoppedByClose" xml:space="preserve"><value>Остановлена при закрытии редактора, после {0} {0:шага|шагов|шагов}.</value></data>
+  <data name="TaskStoppedByCloseBeforeStart" xml:space="preserve"><value>Остановлена при закрытии редактора, до запуска.</value></data>
+  <data name="TaskRetried" xml:space="preserve"><value>Задача **{0}** перезапущена из `{1}`: {2}</value></data>
+  <data name="TaskRetryNotFinished" xml:space="preserve"><value>Задача `{0}` ещё не завершена: `/task stop {0}` остановит её, после чего её можно запустить снова.</value></data>
+  <data name="TaskJournalSetAside" xml:space="preserve"><value>Не удалось прочитать фоновые задачи, сохранённые для этой рабочей области: копия сохранена в `{0}`.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Общее</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Действия с кодом</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Файлы</value></data>

@@ -1097,7 +1097,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="TaskForgot" xml:space="preserve"><value>{0} attività terminate dimenticate.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Nessuna attività in background. `/task [obiettivo]` ne avvia una.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Attività in background</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` mostra un rapporto · `/task stop [id]` annulla · `/task clear` dimentica quelle terminate</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` mostra un rapporto · `/task stop [id]` annulla · `/task retry [id]` riesegue una fallita con un nuovo numero · `/task clear` dimentica quelle terminate. Un numero non viene mai riassegnato, nemmeno dopo un riavvio.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>Stato</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Obiettivo</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>in coda</value></data>
@@ -1115,6 +1115,15 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="TaskCancelledNotice" xml:space="preserve"><value>L'attività in background `{0}` è stata annullata — non è stato prodotto nulla.</value></data>
   <data name="TaskCancelledWithProposals" xml:space="preserve"><value>L'attività in background `{0}` è stata interrotta — {1} {1:modifica proposta è conservata|modifiche proposte sono conservate}: `/task {0}` le elenca.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>L'attività in background `{0}` è terminata — `/task {0}` per leggerne il rapporto.</value></data>
+  <data name="TaskStateWaitingAt" xml:space="preserve"><value>in attesa del server (n. {0})</value></data>
+  <data name="TaskServerAt" xml:space="preserve"><value>{0} su {1}</value></data>
+  <data name="TaskQueueWaitsForServer" xml:space="preserve"><value>{0} non risponde. {1} {2:lo attende|lo attendono} e {2:partirà|partiranno} da {2:sola|sole} quando tornerà.</value></data>
+  <data name="TaskServerStopped" xml:space="preserve"><value>Interrotta dopo {0} {0:passo|passi}: il server ha smesso di rispondere alle {1}.</value></data>
+  <data name="TaskStoppedByClose" xml:space="preserve"><value>Interrotta alla chiusura dell'editor, dopo {0} {0:passo|passi}.</value></data>
+  <data name="TaskStoppedByCloseBeforeStart" xml:space="preserve"><value>Interrotta alla chiusura dell'editor, prima di partire.</value></data>
+  <data name="TaskRetried" xml:space="preserve"><value>Attività **{0}** rilanciata da `{1}`: {2}</value></data>
+  <data name="TaskRetryNotFinished" xml:space="preserve"><value>L'attività `{0}` non è finita: `/task stop {0}` la ferma, poi potrà ripartire.</value></data>
+  <data name="TaskJournalSetAside" xml:space="preserve"><value>Le attività in background conservate per questo spazio di lavoro non sono leggibili: una copia è conservata in `{0}`.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Azioni sul codice</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>File</value></data>

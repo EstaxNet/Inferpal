@@ -1101,7 +1101,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="TaskForgot" xml:space="preserve"><value>{0} finished task(s) forgotten.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>No background task yet. `/task [objective]` starts one.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Background tasks</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` shows a report · `/task stop [id]` cancels · `/task clear` forgets the finished ones</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` shows a report · `/task stop [id]` cancels · `/task retry [id]` runs a failed one again under a new number · `/task clear` forgets the finished ones. A number is never given twice, a restart included.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>State</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Objective</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>queued</value></data>
@@ -1119,6 +1119,15 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Background task `{0}` was cancelled — nothing was produced.</value></data>
   <data name="TaskCancelledWithProposals" xml:space="preserve"><value>Background task `{0}` was stopped — {1} proposed {1:change is|changes are} kept: `/task {0}` lists them.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Background task `{0}` finished — `/task {0}` to read its report.</value></data>
+  <data name="TaskStateWaitingAt" xml:space="preserve"><value>waiting for the server (#{0})</value></data>
+  <data name="TaskServerAt" xml:space="preserve"><value>{0} at {1}</value></data>
+  <data name="TaskQueueWaitsForServer" xml:space="preserve"><value>{0} is not answering. {1} {2:waits|wait} for it, and {2:starts|start} on {2:its|their} own when it is back.</value></data>
+  <data name="TaskServerStopped" xml:space="preserve"><value>Stopped after {0} {0:step|steps}: the server stopped answering at {1}.</value></data>
+  <data name="TaskStoppedByClose" xml:space="preserve"><value>Stopped when the editor closed, after {0} {0:step|steps}.</value></data>
+  <data name="TaskStoppedByCloseBeforeStart" xml:space="preserve"><value>Stopped when the editor closed, before it started.</value></data>
+  <data name="TaskRetried" xml:space="preserve"><value>Task **{0}** started again from `{1}`: {2}</value></data>
+  <data name="TaskRetryNotFinished" xml:space="preserve"><value>Task `{0}` has not finished: `/task stop {0}` stops it, then it can run again.</value></data>
+  <data name="TaskJournalSetAside" xml:space="preserve"><value>The background tasks kept for this workspace could not be read: a copy is kept at `{0}`.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Code actions</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Files</value></data>

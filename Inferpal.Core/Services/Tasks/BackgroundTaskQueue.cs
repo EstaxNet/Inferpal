@@ -108,6 +108,9 @@ internal sealed class BackgroundTaskQueue : IDisposable
         public readonly List<string> Steps = [];
         public int StepsTaken;
         public CancellationTokenSource? Cts;
+        public TaskEndCause Cause;
+        /// <summary>Its report was opened.</summary>
+        public bool Read;
     }
 
     private readonly ProposingTaskRunner           _runner;
@@ -126,6 +129,22 @@ internal sealed class BackgroundTaskQueue : IDisposable
     private int   _seq;
     private bool  _disposed;
 
+    /// <summary>How long a queue waiting for its server waits between two questions to it.</summary>
+    internal static readonly TimeSpan ServerPollInterval = TimeSpan.FromSeconds(15);
+
+    private readonly Func<string?, TaskJournal?>?            _journalFor;
+    private readonly Func<CancellationToken, Task<string?>>? _serverDown;
+    private readonly Func<TimeSpan, CancellationToken, Task> _delay;
+    private readonly TaskJournal.Owner                       _owner;
+    /// <summary>The queues alive in this process, by id: an unfinished journal entry of one of them is its own.</summary>
+    private static readonly HashSet<string> LiveQueues = [];
+    /// <summary>The workspaces whose journal this queue has read.</summary>
+    private readonly HashSet<string> _loadedRoots = new(PathComparer.Default);
+    /// <summary>The server the queue waits for before its next task; <c>null</c> while it answers.</summary>
+    private string? _waitingFor;
+    /// <summary>The copies kept of journals that could not be read.</summary>
+    private readonly List<string> _setAside = [];
+
     /// <param name="runner">Executes a task (the real one drives <c>RunAgentAsync</c>).</param>
     /// <param name="waitForChatIdle">Yield point before taking the slot; defaults to the GPU scheduler.</param>
     /// <param name="now">Clock, overridable so tests can assert timings.</param>
@@ -133,32 +152,65 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <see cref="RunJobAsync"/>); <c>null</c> when the front-end's workspace cannot change.</param>
     /// <param name="submissionContext">The active-file block a question would carry now, read at submission
     /// (<see cref="BackgroundTaskSnapshot.Context"/>); <c>null</c> = none.</param>
+    /// <param name="journalFor">The journal of a workspace (<see cref="TaskJournal"/>); <c>null</c>, or a <c>null</c>
+    /// answer: tasks live in memory only.</param>
+    /// <param name="serverDown">Asked before a task starts: the server, named, when it does not answer; <c>null</c> when it
+    /// does. <c>null</c>: never asked.</param>
+    /// <param name="delay">The wait between two questions to a server that does not answer; overridable for tests.</param>
     internal BackgroundTaskQueue(
         TaskRunner runner,
         Func<CancellationToken, Task>? waitForChatIdle = null,
         Func<DateTimeOffset>? now = null,
         Func<string?>? currentRoot = null,
-        Func<string?>? submissionContext = null)
-        : this((task, onStep, _, ct) => runner(task, onStep, ct), waitForChatIdle, now, currentRoot, submissionContext) { }
+        Func<string?>? submissionContext = null,
+        Func<string?, TaskJournal?>? journalFor = null,
+        Func<CancellationToken, Task<string?>>? serverDown = null,
+        Func<TimeSpan, CancellationToken, Task>? delay = null)
+        : this((task, onStep, _, ct) => runner(task, onStep, ct), waitForChatIdle, now, currentRoot, submissionContext,
+               journalFor, serverDown, delay) { }
 
     /// <param name="runner">Executes a task, recording its proposals in the recorder the queue hands it.</param>
     /// <param name="waitForChatIdle">Yield point before taking the slot; defaults to the GPU scheduler.</param>
     /// <param name="now">Clock, overridable so tests can assert timings.</param>
     /// <param name="currentRoot">The workspace open now (see the other constructor).</param>
     /// <param name="submissionContext">The active-file block now (see the other constructor).</param>
+    /// <param name="journalFor">The journal of a workspace (see the other constructor).</param>
+    /// <param name="serverDown">Asked before a task starts (see the other constructor).</param>
+    /// <param name="delay">The wait between two questions to a silent server (see the other constructor).</param>
     internal BackgroundTaskQueue(
         ProposingTaskRunner runner,
         Func<CancellationToken, Task>? waitForChatIdle = null,
         Func<DateTimeOffset>? now = null,
         Func<string?>? currentRoot = null,
-        Func<string?>? submissionContext = null)
+        Func<string?>? submissionContext = null,
+        Func<string?, TaskJournal?>? journalFor = null,
+        Func<CancellationToken, Task<string?>>? serverDown = null,
+        Func<TimeSpan, CancellationToken, Task>? delay = null)
     {
         _runner            = runner;
         _waitForChatIdle   = waitForChatIdle ?? Hardware.GpuScheduler.WaitForChatIdleAsync;
         _now               = now ?? (() => DateTimeOffset.UtcNow);
         _currentRoot       = currentRoot;
         _submissionContext = submissionContext;
+        _journalFor        = journalFor;
+        _serverDown        = serverDown;
+        _delay             = delay ?? Task.Delay;
+        _owner             = new(Environment.ProcessId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), Guid.NewGuid().ToString("N"));
+        lock (LiveQueues) LiveQueues.Add(_owner.Queue);
+        EnsureLoaded();
     }
+
+    /// <summary>
+    /// The question a queue asks before a task starts, for both editors: the server, named, when it does not answer;
+    /// <c>null</c> when it answers. Refusing is answering — a 401 is a running server, and the task then says why.
+    /// </summary>
+    internal static Func<CancellationToken, Task<string?>> ServerDown(Inference.IInferenceProvider client, Config.InferpalConfig config) =>
+        async ct => await client.CheckConnectionAsync(config.BaseUrl, ct).ConfigureAwait(false) || client.ConnectionRefusal is not null
+            ? null
+            : Strings.TaskServerAt(Inference.InferenceProviderFactory.DisplayName(config.Provider), config.BaseUrl);
+
+    /// <summary>The copies kept of journals that could not be read — said by <c>/task</c>.</summary>
+    internal IReadOnlyList<string> SetAside { get { lock (_lock) return [.. _setAside]; } }
 
     /// <summary>Raised once per task when it reaches a terminal state — the front-end's notification
     /// hook. Invoked outside the lock; a throwing handler is swallowed, never fails the task.</summary>
@@ -176,25 +228,174 @@ internal sealed class BackgroundTaskQueue : IDisposable
         string? context = null;
         try { context = ActiveFileContext.ForFreshHistory(_submissionContext?.Invoke()); }
         catch (Exception ex) { Diagnostics.Swallow("BackgroundTaskQueue.SubmissionContext", ex); }
-        Job job;
+        return SubmitCore(objective, proposeWrites, string.IsNullOrWhiteSpace(context) ? null : context, _currentRoot?.Invoke());
+    }
+
+    /// <summary>
+    /// Submits a finished task's objective again, in its mode, with the context and in the workspace it was first
+    /// submitted with, under a new number. <c>null</c> when the queue is full or disposed.
+    /// </summary>
+    internal string? Retry(BackgroundTaskSnapshot task) =>
+        SubmitCore(task.Objective, task.ProposeWrites, task.Context, task.WorkspaceRoot ?? _currentRoot?.Invoke());
+
+    private string? SubmitCore(string objective, bool proposeWrites, string? context, string? root)
+    {
+        EnsureLoaded();
+        int known;
         lock (_lock)
         {
-            if (_disposed) return null;
-            if (_pending.Count + (_current is null ? 0 : 1) >= MaxPending) return null;
-
-            job = new Job
-            {
-                Id = "t" + (++_seq), Objective = objective, CreatedAt = _now(),
-                ProposeWrites = proposeWrites, WorkspaceRoot = _currentRoot?.Invoke(),
-                Context = string.IsNullOrWhiteSpace(context) ? null : context,
-            };
-            _pending.Enqueue(job);
-
-            // The worker retires when it drains the queue (under this same lock), so a null
-            // _worker here means nothing is pumping and this submission must restart it.
-            _worker ??= Task.Run(WorkerLoopAsync);
+            if (_disposed || _pending.Count + (_current is null ? 0 : 1) >= MaxPending) return null;
+            known = _seq;
         }
-        return job.Id;
+        var job = new Job
+        {
+            Id = string.Empty, Objective = objective, CreatedAt = _now(),
+            ProposeWrites = proposeWrites, WorkspaceRoot = root, Context = context,
+        };
+        // ⚠ The number is taken in the journal, under its lock: the file holds the numbers every window and every earlier
+        // process gave, and a number given twice sends "/task t2" in a saved notice to another task.
+        var journal = _journalFor?.Invoke(root);
+        var reserved = journal?.Reserve(known, id =>
+        {
+            job.Id = id;
+            return EntryOf(job);
+        });
+        if (journal?.TakeSetAside() is { } aside) lock (_lock) _setAside.Add(aside);
+
+        var refused = false;
+        lock (_lock)
+        {
+            if (_disposed || _pending.Count + (_current is null ? 0 : 1) >= MaxPending) refused = true;
+            else
+            {
+                job.Id = reserved ?? "t" + (_seq + 1);
+                _seq   = Math.Max(_seq, Number(job.Id));
+                _pending.Enqueue(job);
+
+                // The worker retires when it drains the queue (under this same lock), so a null
+                // _worker here means nothing is pumping and this submission must restart it.
+                _worker ??= Task.Run(WorkerLoopAsync);
+            }
+        }
+        if (!refused) return job.Id;
+        // Filled meanwhile, or closed: the number stays given, the entry goes.
+        if (reserved is not null) Write(journal!, entries => entries.RemoveAll(e => e.Id == reserved));
+        return null;
+    }
+
+    private static int Number(string id) => TaskJournal.Number(id);
+
+    /// <summary>Records that the report of <paramref name="id"/> was opened.</summary>
+    internal void MarkRead(string id)
+    {
+        Job? job;
+        lock (_lock)
+        {
+            job = FindLocked(id);
+            if (job is null || !IsTerminal(job.State) || job.Read) return;
+            job.Read = true;
+        }
+        Persist(job);
+    }
+
+    // ── The journal ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Reads the journal of the workspace open now, once per workspace: its finished tasks join the list, and the tasks it
+    /// holds unfinished whose queue is gone are the ones the closing stopped — recorded as such.
+    /// </summary>
+    private void EnsureLoaded()
+    {
+        var root = _currentRoot?.Invoke();
+        if (_journalFor is null || string.IsNullOrWhiteSpace(root)) return;
+        var key = Persistence.SessionManager.NormalizeRoot(root);
+        lock (_lock) if (!_loadedRoots.Add(key)) return;
+        if (_journalFor(root) is not { } journal) return;
+
+        var (entries, aside) = journal.Read();
+        var stopped = new List<Job>();
+        lock (_lock)
+        {
+            if (aside is not null) _setAside.Add(aside);
+            // Not read (a lock held too long, a disk error): asked again at the next look, never taken as empty.
+            if (entries is null) { _loadedRoots.Remove(key); return; }
+            foreach (var entry in entries.OrderBy(e => e.CreatedAt))
+            {
+                _seq = Math.Max(_seq, Number(entry.Id));
+                // The journal holds every workspace of this editor: a task joins the list with its own workspace.
+                if (!PathComparer.SameDirectory(entry.WorkspaceRoot, root) || FindLocked(entry.Id) is not null) continue;
+                if (!entry.IsFinished)
+                {
+                    if (OwnerAlive(entry.By)) continue;   // another window's: it is running there
+                    var job = JobOf(entry);
+                    job.State      = BackgroundTaskState.Cancelled;
+                    job.Cause      = TaskEndCause.EditorClosed;
+                    job.FinishedAt = entry.Updated ?? job.StartedAt;   // the last moment known of it
+                    _finished.Add(job);
+                    stopped.Add(job);
+                }
+                else _finished.Add(JobOf(entry));
+            }
+        }
+        foreach (var job in stopped) Persist(job);
+    }
+
+    /// <summary>Whether the queue that wrote an entry still runs: this process's own, or another process's still alive.</summary>
+    private static bool OwnerAlive(TaskJournal.Owner? owner)
+    {
+        if (owner is null) return false;
+        if (owner.Pid == Environment.ProcessId) lock (LiveQueues) return LiveQueues.Contains(owner.Queue);
+        return Signals.SignalFile.WriterAlive(owner.Pid, owner.Since);
+    }
+
+    /// <summary>Writes <paramref name="job"/> as it stands to its workspace's journal; never throws.</summary>
+    private void Persist(Job job)
+    {
+        if (_journalFor?.Invoke(job.WorkspaceRoot) is not { } journal) return;
+        Write(journal, entries =>
+        {
+            // ⚠ Taken under the journal's lock, never before it: two writes of one task — its end and its report opened —
+            // land in either order, and the one that took its copy first would write the older state last.
+            TaskJournal.Entry entry;
+            lock (_lock) entry = EntryOf(job);
+            var at = entries.FindIndex(e => string.Equals(e.Id, entry.Id, StringComparison.OrdinalIgnoreCase));
+            if (at >= 0) entries[at] = entry; else entries.Add(entry);
+            // The journal keeps what the list keeps, workspace by workspace: the newest finished tasks, and every one that
+            // proposed changes — never the one written now, whose report has not been read yet.
+            var finished = entries.Where(e => e.IsFinished && e.Id != entry.Id
+                                              && PathComparer.SameDirectory(e.WorkspaceRoot, entry.WorkspaceRoot))
+                                  .OrderBy(e => e.FinishedAt ?? e.CreatedAt).ToList();
+            foreach (var old in finished.Where(e => e.Proposals is not { Count: > 0 }).Take(Math.Max(0, finished.Count + 1 - MaxFinished)))
+                entries.Remove(old);
+            return true;
+        });
+    }
+
+    /// <summary>Changes <paramref name="journal"/>, keeping the path of a copy it had to set aside to say it.</summary>
+    private T? Write<T>(TaskJournal journal, Func<List<TaskJournal.Entry>, T> change)
+    {
+        var result = journal.Update(change);
+        if (journal.TakeSetAside() is { } aside) lock (_lock) _setAside.Add(aside);
+        return result;
+    }
+
+    private TaskJournal.Entry EntryOf(Job job) => new(
+        job.Id, job.Objective, job.State, job.CreatedAt, _owner, job.StartedAt, job.FinishedAt, job.Result, job.Error,
+        job.Cause, job.Steps.Count > 0 ? [.. job.Steps] : null, job.StepsTaken, job.ProposeWrites,
+        job.Proposals.Count > 0 ? [.. job.Proposals.Select(TaskJournal.SavedProposal.Of)] : null,
+        job.Context, job.WorkspaceRoot, job.Read, _now());
+
+    private static Job JobOf(TaskJournal.Entry e)
+    {
+        var job = new Job
+        {
+            Id = e.Id, Objective = e.Objective, CreatedAt = e.CreatedAt, WorkspaceRoot = e.WorkspaceRoot, Context = e.Context,
+            ProposeWrites = e.ProposeWrites, State = e.State, StartedAt = e.StartedAt, FinishedAt = e.FinishedAt,
+            Result = e.Result, Error = e.Error, Cause = e.Cause, StepsTaken = e.StepsTaken, Read = e.Read,
+            Proposals = e.Proposals is { Count: > 0 } saved ? [.. saved.Select(p => p.ToProposal())] : [],
+        };
+        if (e.Steps is { } steps) job.Steps.AddRange(steps);
+        return job;
     }
 
     // ── Inspection ──────────────────────────────────────────────────────────────
@@ -202,6 +403,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <summary>Every known task — running first, then queued in order, then finished (newest last).</summary>
     internal IReadOnlyList<BackgroundTaskSnapshot> List()
     {
+        EnsureLoaded();   // the workspace open now may be one whose journal was not read yet
         lock (_lock)
         {
             var snapshots = new List<BackgroundTaskSnapshot>();
@@ -215,6 +417,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <summary>The task with this id (case-insensitive), or null.</summary>
     internal BackgroundTaskSnapshot? Get(string id)
     {
+        EnsureLoaded();
         lock (_lock)
         {
             var job = FindLocked(id);
@@ -269,19 +472,31 @@ internal sealed class BackgroundTaskQueue : IDisposable
             }
         }
 
-        if (dropped is not null) RaiseFinished(dropped);
+        if (dropped is not null)
+        {
+            Job? droppedJob;
+            lock (_lock) droppedJob = FindLocked(id);
+            if (droppedJob is not null) Persist(droppedJob);
+            RaiseFinished(dropped);
+        }
         return true;
     }
 
-    /// <summary>Forgets every finished task. Running and queued ones are untouched.</summary>
+    /// <summary>Forgets every finished task — in the journals too. Running and queued ones are untouched.</summary>
     internal int ClearFinished()
     {
+        List<Job> forgotten;
         lock (_lock)
         {
-            var count = _finished.Count;
+            forgotten = [.. _finished];
             _finished.Clear();
-            return count;
         }
+        foreach (var root in forgotten.GroupBy(j => j.WorkspaceRoot))
+        {
+            var ids = root.Select(j => j.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (_journalFor?.Invoke(root.Key) is { } journal) Write(journal, entries => entries.RemoveAll(e => ids.Contains(e.Id)));
+        }
+        return forgotten.Count;
     }
 
     // ── Worker ──────────────────────────────────────────────────────────────────
@@ -298,7 +513,8 @@ internal sealed class BackgroundTaskQueue : IDisposable
             {
                 if (_pending.Count == 0 || _disposed)
                 {
-                    _worker = null;   // retire; the next Submit restarts a worker
+                    _worker     = null;   // retire; the next Submit restarts a worker
+                    _waitingFor = null;   // nothing waits for the server any more
                     return;
                 }
                 job = _pending.Dequeue();
@@ -323,8 +539,11 @@ internal sealed class BackgroundTaskQueue : IDisposable
 
         try
         {
-            // Chat first: hold the task at the gate while an interactive turn is in flight.
-            await _waitForChatIdle(cts.Token).ConfigureAwait(false);
+            // Chat first: hold the task at the gate while an interactive turn is in flight — and again after a wait for
+            // the server, which can last long enough for a chat turn to start.
+            // ⚠ A server that does not answer is waited for, never run into: otherwise each queued task starts, fails at
+            // once, and the next one follows — the queue empties itself in failures while the person is away.
+            await WaitForChatAndServerAsync(cts.Token).ConfigureAwait(false);
 
             // ⚠ Its objective is about the workspace it was submitted in. Queued behind another task while Visual Studio
             // opened another solution, it started there — its tools read the root live — and reported on a project it
@@ -346,16 +565,27 @@ internal sealed class BackgroundTaskQueue : IDisposable
                 job.Recorder  = job.ProposeWrites ? new ProposalRecorder() : null;
                 started       = SnapshotLocked(job);
             }
+            Persist(job);
 
             var outcome = await _runner(started, step => AppendStep(job, step), job.Recorder, cts.Token).ConfigureAwait(false);
 
+            // A run that failed because the server went away says so — and the tasks behind it wait for the server.
+            var serverStopped = false;
             if (outcome.Failure is { } failure)
+            {
                 Diagnostics.Record($"BackgroundTaskQueue({job.Id})", "The task's run failed: " + failure);
+                serverStopped = await AskServerAsync(_shutdown.Token).ConfigureAwait(false) is not null;
+            }
             lock (_lock)
             {
                 job.Proposals = outcome.Proposals;
+                if (serverStopped) job.Cause = TaskEndCause.ServerStopped;
                 if (outcome.Failure is { } cause) FinishLocked(job, BackgroundTaskState.Failed, null, cause);
-                else FinishLocked(job, BackgroundTaskState.Succeeded, outcome.Report, null);
+                else
+                {
+                    job.Cause = TaskEndCause.None;   // it finished before the closing reached it
+                    FinishLocked(job, BackgroundTaskState.Succeeded, outcome.Report, null);
+                }
                 return SnapshotLocked(job);
             }
         }
@@ -384,27 +614,68 @@ internal sealed class BackgroundTaskQueue : IDisposable
         finally
         {
             lock (_lock) job.Cts = null;
+            Persist(job);
+        }
+    }
+
+    /// <summary>Waits until the chat is idle and the server answers, both at once — saying meanwhile which server the queue
+    /// waits for.</summary>
+    private async Task WaitForChatAndServerAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (true)
+            {
+                await _waitForChatIdle(ct).ConfigureAwait(false);
+                if (await AskServerAsync(ct).ConfigureAwait(false) is not { } server) return;
+                lock (_lock) _waitingFor = server;
+                await _delay(ServerPollInterval, ct).ConfigureAwait(false);
+            }
+        }
+        // Stopped while waiting, the queue no longer says it waits: the next task asks the server again.
+        finally { lock (_lock) _waitingFor = null; }
+    }
+
+    /// <summary>The server, named, when it does not answer; <c>null</c> when it does or nothing asks it. A question that
+    /// fails is no reason to hold the tasks: it is traced, and the server taken as answering.</summary>
+    private async Task<string?> AskServerAsync(CancellationToken ct)
+    {
+        if (_serverDown is null) return null;
+        try { return await _serverDown(ct).ConfigureAwait(false); }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("BackgroundTaskQueue.ServerDown", ex);
+            return null;
         }
     }
 
     /// <summary>Whether the workspace open now is no longer the one <paramref name="job"/> was submitted in.</summary>
-    private bool WorkspaceLeft(Job job) =>
-        _currentRoot is not null && !string.IsNullOrWhiteSpace(job.WorkspaceRoot)
-        && !PathComparer.SameDirectory(job.WorkspaceRoot, _currentRoot());
+    private bool WorkspaceLeft(Job job) => WorkspaceLeft(job.WorkspaceRoot);
+
+    /// <summary>Whether a task submitted in <paramref name="root"/> would no longer run in the workspace open now — a retry
+    /// is refused at once rather than given a number it spends failing.</summary>
+    internal bool WorkspaceLeft(string? root) =>
+        _currentRoot is not null && !string.IsNullOrWhiteSpace(root) && !PathComparer.SameDirectory(root, _currentRoot());
 
     private void AppendStep(Job job, string step)
     {
         if (string.IsNullOrWhiteSpace(step)) return;
+        bool persist;
         lock (_lock)
         {
             job.StepsTaken++;
             job.Steps.Add(step);
-            if (job.Steps.Count <= MaxSteps) return;
-
             // Keep the tail: on a long run the recent steps explain where it got to.
-            job.Steps.RemoveRange(0, job.Steps.Count - MaxSteps);
+            if (job.Steps.Count > MaxSteps) job.Steps.RemoveRange(0, job.Steps.Count - MaxSteps);
+            persist = job.StepsTaken % StepsPerWrite == 0;
         }
+        // An editor closed mid-run writes nothing more: what the journal holds of its steps is what was written along.
+        if (persist) Persist(job);
     }
+
+    /// <summary>How many steps a running task takes between two writes of its journal entry.</summary>
+    private const int StepsPerWrite = 5;
 
     // ── Helpers (all callers hold _lock) ────────────────────────────────────────
 
@@ -438,9 +709,12 @@ internal sealed class BackgroundTaskQueue : IDisposable
     private BackgroundTaskSnapshot SnapshotLocked(Job job)
     {
         var position = 0;
-        if (job.State == BackgroundTaskState.Queued)
+        // Waiting for the server, the task the worker holds is the first to go when it answers.
+        var waiting  = job.State == BackgroundTaskState.Queued ? _waitingFor : null;
+        if (waiting is not null && ReferenceEquals(_current, job)) position = 1;
+        else if (job.State == BackgroundTaskState.Queued)
         {
-            var rank = 1;
+            var rank = waiting is not null && _current is { State: BackgroundTaskState.Queued } ? 2 : 1;
             foreach (var pending in _pending)
             {
                 if (ReferenceEquals(pending, job)) { position = rank; break; }
@@ -451,7 +725,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         return new BackgroundTaskSnapshot(
             job.Id, job.Objective, job.State, job.CreatedAt, job.StartedAt, job.FinishedAt,
             job.Result, job.Error, job.Steps.ToArray(), position,
-            job.ProposeWrites, job.Proposals, job.StepsTaken, job.Context);
+            job.ProposeWrites, job.Proposals, job.StepsTaken, job.Context, job.Cause, job.Read, waiting, job.WorkspaceRoot);
     }
 
     private void RaiseFinished(BackgroundTaskSnapshot snapshot)
@@ -461,9 +735,13 @@ internal sealed class BackgroundTaskQueue : IDisposable
     }
 
     /// <summary>Cancels everything in flight. Detached runs must not outlive the editor.</summary>
+    /// <remarks>Each is written as it stands — the running one with the steps it took: the process may end before its run
+    /// unwinds. Left unfinished in the journal with its queue gone, the next start reads it as the closing stopped it — the
+    /// same path as an editor killed without closing.</remarks>
     public void Dispose()
     {
         var dropped = new List<BackgroundTaskSnapshot>();
+        var write   = new List<Job>();
         lock (_lock)
         {
             if (_disposed) return;
@@ -473,8 +751,15 @@ internal sealed class BackgroundTaskQueue : IDisposable
             while (_pending.Count > 0)
             {
                 var job = _pending.Dequeue();
+                job.Cause = TaskEndCause.EditorClosed;
                 FinishLocked(job, BackgroundTaskState.Cancelled, null, null);
                 dropped.Add(SnapshotLocked(job));
+                write.Add(job);
+            }
+            if (_current is { } running && !IsTerminal(running.State))
+            {
+                running.Cause = TaskEndCause.EditorClosed;
+                write.Add(running);
             }
         }
 
@@ -483,6 +768,8 @@ internal sealed class BackgroundTaskQueue : IDisposable
         // with the job stuck in _current. A source without a timer holds nothing to release.
         try { _shutdown.Cancel(); } catch { }
 
+        foreach (var job in write) Persist(job);
+        lock (LiveQueues) LiveQueues.Remove(_owner.Queue);
         foreach (var snapshot in dropped) RaiseFinished(snapshot);
     }
 }

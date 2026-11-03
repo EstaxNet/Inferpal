@@ -2093,6 +2093,24 @@ internal static class Strings
     public static string TaskCancelledNotice(string id)      => Format(Get(nameof(TaskCancelledNotice)), id);
     public static string TaskCancelledWithProposals(string id, int count) => Format(Get(nameof(TaskCancelledWithProposals)), id, count);
     public static string TaskApplyWhileRunning(string id)    => Format(Get(nameof(TaskApplyWhileRunning)), id);
+    /// <summary>A queued task's state while the queue waits for its server, with its rank.</summary>
+    public static string TaskStateWaitingAt(int position)    => Format(Get(nameof(TaskStateWaitingAt)), position);
+    /// <summary>A server as the queue names it: the backend, then where it is ("LM Studio at localhost:1234").</summary>
+    public static string TaskServerAt(string backend, string address) => Format(Get(nameof(TaskServerAt)), backend, address);
+    /// <summary>The line above <c>/task</c> while its tasks wait for a server that does not answer.</summary>
+    public static string TaskQueueWaitsForServer(string server, string ids, int count) =>
+        Format(Get(nameof(TaskQueueWaitsForServer)), server, ids, count);
+    /// <summary>Why a task failed when its server stopped answering during its run.</summary>
+    public static string TaskServerStopped(int steps, string time) => Format(Get(nameof(TaskServerStopped)), steps, time);
+    /// <summary>Why a task that was running when the editor closed did not finish.</summary>
+    public static string TaskStoppedByClose(int steps)       => Format(Get(nameof(TaskStoppedByClose)), steps);
+    /// <summary>Why a task still queued when the editor closed did not run.</summary>
+    public static string TaskStoppedByCloseBeforeStart       => Get(nameof(TaskStoppedByCloseBeforeStart));
+    public static string TaskRetried(string id, string from, string objective) =>
+        Format(Get(nameof(TaskRetried)), id, from, objective);
+    public static string TaskRetryNotFinished(string id)     => Format(Get(nameof(TaskRetryNotFinished)), id);
+    /// <summary>A tasks journal that could not be read: where the copy kept of it is.</summary>
+    public static string TaskJournalSetAside(string path)    => Format(Get(nameof(TaskJournalSetAside)), path);
 
     // ── Inline diff preview ─────────────────────────────────────────────────────
     public static string CodeActionPreviewShown              => Get(nameof(CodeActionPreviewShown));

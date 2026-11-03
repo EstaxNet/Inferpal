@@ -484,10 +484,14 @@ public class BackgroundTaskQueueTests
         var vm   = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"));
         var host = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostSession.cs"));
         Assert.Contains("currentRoot: () => _indexService.RootDir,", vm, StringComparison.Ordinal);
-        Assert.Contains("new BackgroundTaskQueue(runner, currentRoot: () => RootDir, submissionContext: submissionContext)",
+        Assert.Contains("new BackgroundTaskQueue(runner, currentRoot: () => RootDir, submissionContext: submissionContext,",
                         host, StringComparison.Ordinal);
         // And the active file they were submitted with, whose instructions ride with the objective.
-        Assert.Contains("submissionContext: () => _taskSubmissionBlock);", vm, StringComparison.Ordinal);
+        Assert.Contains("submissionContext: () => _taskSubmissionBlock,", vm, StringComparison.Ordinal);
+        // Kept in the workspace's journal, waiting for a server that does not answer: in both editors.
+        Assert.Contains("journalFor: _store.TaskJournal,", vm, StringComparison.Ordinal);
+        Assert.Contains("journalFor: Store.TaskJournal, serverDown: BackgroundTaskQueue.ServerDown(Client, Config));", host, StringComparison.Ordinal);
+        Assert.Contains("serverDown: BackgroundTaskQueue.ServerDown(_client, _config));", vm, StringComparison.Ordinal);
         Assert.Contains("RunOnVMContextAsync(() => _taskSubmissionBlock = BuildActiveFileBlock());", vm, StringComparison.Ordinal);
         Assert.Contains("submissionContext: () => BuildActiveFileBlock(s));",
                         ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal.Host", "HostSlashCommands.cs")),

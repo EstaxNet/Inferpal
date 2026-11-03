@@ -1097,7 +1097,7 @@
   <data name="TaskForgot" xml:space="preserve"><value>已清除 {0} 个已完成的任务。</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>暂无后台任务。使用 `/task [目标]` 启动一个。</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>后台任务</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` 查看报告 · `/task stop [id]` 取消 · `/task clear` 清除已完成</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` 查看报告 · `/task stop [id]` 取消 · `/task retry [id]` 以新编号重新运行失败的任务 · `/task clear` 清除已完成。编号永不重复使用，重启后也是如此。</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>状态</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>目标</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>排队中</value></data>
@@ -1115,6 +1115,15 @@
   <data name="TaskCancelledNotice" xml:space="preserve"><value>后台任务 `{0}` 已取消 — 未产生任何结果。</value></data>
   <data name="TaskCancelledWithProposals" xml:space="preserve"><value>后台任务 `{0}` 已停止 — 已提出的 {1} 项更改已保留：使用 `/task {0}` 查看。</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>后台任务 `{0}` 已完成 —— 使用 `/task {0}` 查看报告。</value></data>
+  <data name="TaskStateWaitingAt" xml:space="preserve"><value>等待服务器 (#{0})</value></data>
+  <data name="TaskServerAt" xml:space="preserve"><value>{1} 上的 {0}</value></data>
+  <data name="TaskQueueWaitsForServer" xml:space="preserve"><value>{0} 没有响应。{1}（{2} 个）正在等待它，恢复后会自动开始。</value></data>
+  <data name="TaskServerStopped" xml:space="preserve"><value>执行 {0} 步后停止：服务器在 {1} 停止响应。</value></data>
+  <data name="TaskStoppedByClose" xml:space="preserve"><value>编辑器关闭时停止，已执行 {0} 步。</value></data>
+  <data name="TaskStoppedByCloseBeforeStart" xml:space="preserve"><value>编辑器关闭时停止，尚未开始。</value></data>
+  <data name="TaskRetried" xml:space="preserve"><value>任务 **{0}** 已从 `{1}` 重新开始：{2}</value></data>
+  <data name="TaskRetryNotFinished" xml:space="preserve"><value>任务 `{0}` 尚未结束：用 `/task stop {0}` 停止后即可重新运行。</value></data>
+  <data name="TaskJournalSetAside" xml:space="preserve"><value>无法读取为此工作区保存的后台任务：副本保存在 `{0}`。</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>常规</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>代码操作</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>文件</value></data>

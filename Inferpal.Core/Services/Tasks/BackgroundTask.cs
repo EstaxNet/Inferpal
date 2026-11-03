@@ -40,6 +40,11 @@ internal enum BackgroundTaskState
 /// (<c>ActiveFileContext</c>), sent before the objective; <c>null</c> = none. ⚠ Taken at SUBMISSION: the objective is
 /// about the file open when the user typed it, not the one open when the queue reaches it.
 /// </param>
+/// <param name="Cause">Why it stopped short: the editor closed, or the server stopped answering.</param>
+/// <param name="Read">Its report was opened.</param>
+/// <param name="WaitingForServer">The server it waits for, named as said ("LM Studio at localhost:1234"); <c>null</c>
+/// while the server answers.</param>
+/// <param name="WorkspaceRoot">The workspace it was submitted in — a retry runs there or not at all.</param>
 internal sealed record BackgroundTaskSnapshot(
     string              Id,
     string              Objective,
@@ -54,7 +59,11 @@ internal sealed record BackgroundTaskSnapshot(
     bool                ProposeWrites = false,
     IReadOnlyList<TaskProposal>? Proposals = null,
     int                 StepsTaken = 0,
-    string?             Context = null)
+    string?             Context = null,
+    TaskEndCause        Cause = TaskEndCause.None,
+    bool                Read = false,
+    string?             WaitingForServer = null,
+    string?             WorkspaceRoot = null)
 {
     /// <summary>Steps taken that the journal no longer holds.</summary>
     internal int StepsNotKept => Math.Max(0, StepsTaken - Steps.Count);

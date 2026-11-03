@@ -280,7 +280,9 @@ internal sealed class HostSession : IDisposable
     {
         if (_tasks is not null) return _tasks;
         // The session's root never changes (another folder is another host): given for the same rule as Visual Studio's.
-        _tasks = new BackgroundTaskQueue(runner, currentRoot: () => RootDir, submissionContext: submissionContext);
+        // Its tasks are kept in the workspace's journal, and wait for the server rather than fail one after another.
+        _tasks = new BackgroundTaskQueue(runner, currentRoot: () => RootDir, submissionContext: submissionContext,
+                                         journalFor: Store.TaskJournal, serverDown: BackgroundTaskQueue.ServerDown(Client, Config));
         _tasks.TaskFinished += onFinished;
         return _tasks;
     }

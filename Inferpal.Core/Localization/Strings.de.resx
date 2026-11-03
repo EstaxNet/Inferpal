@@ -1097,7 +1097,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="TaskForgot" xml:space="preserve"><value>{0} abgeschlossene Aufgabe(n) verworfen.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Noch keine Hintergrundaufgabe. `/task [Ziel]` startet eine.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Hintergrundaufgaben</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` zeigt einen Bericht · `/task stop [id]` bricht ab · `/task clear` verwirft abgeschlossene</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` zeigt einen Bericht · `/task stop [id]` bricht ab · `/task retry [id]` startet eine fehlgeschlagene erneut unter neuer Nummer · `/task clear` verwirft abgeschlossene. Eine Nummer wird nie zweimal vergeben, auch nicht nach einem Neustart.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>Status</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Ziel</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>in Warteschlange</value></data>
@@ -1115,6 +1115,15 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="TaskCancelledNotice" xml:space="preserve"><value>Hintergrundaufgabe `{0}` wurde abgebrochen — es wurde nichts erzeugt.</value></data>
   <data name="TaskCancelledWithProposals" xml:space="preserve"><value>Die Hintergrundaufgabe `{0}` wurde gestoppt — {1} {1:vorgeschlagene Änderung bleibt|vorgeschlagene Änderungen bleiben} erhalten: `/task {0}` listet sie auf.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>Hintergrundaufgabe `{0}` ist fertig — `/task {0}` zeigt den Bericht.</value></data>
+  <data name="TaskStateWaitingAt" xml:space="preserve"><value>wartet auf den Server (Nr. {0})</value></data>
+  <data name="TaskServerAt" xml:space="preserve"><value>{0} unter {1}</value></data>
+  <data name="TaskQueueWaitsForServer" xml:space="preserve"><value>{0} antwortet nicht. {1} {2:wartet|warten} darauf und {2:startet|starten} von selbst, sobald er wieder da ist.</value></data>
+  <data name="TaskServerStopped" xml:space="preserve"><value>Nach {0} {0:Schritt|Schritten} angehalten: Der Server antwortete ab {1} nicht mehr.</value></data>
+  <data name="TaskStoppedByClose" xml:space="preserve"><value>Beim Schließen des Editors angehalten, nach {0} {0:Schritt|Schritten}.</value></data>
+  <data name="TaskStoppedByCloseBeforeStart" xml:space="preserve"><value>Beim Schließen des Editors angehalten, bevor sie startete.</value></data>
+  <data name="TaskRetried" xml:space="preserve"><value>Aufgabe **{0}** erneut gestartet aus `{1}`: {2}</value></data>
+  <data name="TaskRetryNotFinished" xml:space="preserve"><value>Aufgabe `{0}` ist nicht beendet: `/task stop {0}` hält sie an, danach kann sie erneut laufen.</value></data>
+  <data name="TaskJournalSetAside" xml:space="preserve"><value>Die für diesen Arbeitsbereich gespeicherten Hintergrundaufgaben konnten nicht gelesen werden: Eine Kopie liegt unter `{0}`.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Code-Aktionen</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Dateien</value></data>

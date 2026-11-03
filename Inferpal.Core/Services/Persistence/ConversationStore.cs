@@ -185,6 +185,13 @@ internal class ConversationStore
     /// workspace, the shared slot older versions wrote.</summary>
     internal string AutoSaveFile(string? workspaceRoot) => AutoSaveFile(workspaceRoot, _slotOwner);
 
+    /// <summary>The background tasks journal of this instance's editor (<see cref="Tasks.TaskJournal"/>); <c>null</c>
+    /// without a workspace — tasks then live in memory only.</summary>
+    /// <remarks>⚠ One per editor, every workspace in it: a Visual Studio window that opens another solution lists the tasks
+    /// of both, and numbers given per workspace would name two tasks alike.</remarks>
+    internal Tasks.TaskJournal? TaskJournal(string? workspaceRoot) =>
+        string.IsNullOrWhiteSpace(workspaceRoot) ? null : new(Path.Combine(Dir, "tasks", (_slotOwner ?? "tasks") + ".json"));
+
     /// <remarks>
     /// ⚠ Per EDITOR as well: Visual Studio and VS Code on one folder have the same workspace root. Sharing its slot, the
     /// last conversation of the editor that wrote last is what both restore — the one closed first gets the other's at

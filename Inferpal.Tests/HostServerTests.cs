@@ -2749,15 +2749,17 @@ public partial class HostServerTests
             "command/slash", new { text = "/task audit the RAG layer" })
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
-        // The command returns immediately: the run is detached, not awaited by this turn.
+        // The command returns immediately: the run is detached, not awaited by this turn. Its number is the editor's next
+        // one — numbers are never given twice, so it is read, never assumed.
         Assert.True(submit.Handled);
-        Assert.Contains("t1", submit.Markdown);
+        var id = System.Text.RegularExpressions.Regex.Match(submit.Markdown!, @"\*\*(t\d+)\*\*").Groups[1].Value;
+        Assert.NotEmpty(id);
 
         var listing = await h.Client.InvokeWithParameterObjectAsync<SlashCommandResult>(
             "command/slash", new { text = "/task" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         Assert.True(listing.Handled);
-        Assert.Contains("`t1`", listing.Markdown);
+        Assert.Contains($"`{id}`", listing.Markdown);
         Assert.Contains("audit the RAG layer", listing.Markdown);
     }
 

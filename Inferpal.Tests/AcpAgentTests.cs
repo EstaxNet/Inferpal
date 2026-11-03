@@ -615,12 +615,15 @@ public sealed class AcpAgentTests : IDisposable
         await h.Client.RequestAsync("initialize", InitShowing(notices: true, compaction: true));
         var sid = await NewSessionAsync(h);
         Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "/task " + goal)));
+        // The editor's next number, read rather than assumed: numbers are never given twice.
+        var id = System.Text.RegularExpressions.Regex.Match(h.Client.Said(sid), @"\*\*(t\d+)\*\*").Groups[1].Value;
+        Assert.NotEmpty(id);
 
         var before = h.Client.Said(sid).Length;
         var noticesBefore = h.Client.Updates(sid, "notice").Count();
         release.SetResult();
         for (var i = 0; i < 300 && h.Client.Said(sid).Length == before; i++) await Task.Delay(100);
-        Assert.Contains("t1", h.Client.Said(sid)[before..], StringComparison.Ordinal);   // the report came, as text
+        Assert.Contains(id, h.Client.Said(sid)[before..], StringComparison.Ordinal);   // the report came, as text
         Assert.Equal(noticesBefore, h.Client.Updates(sid, "notice").Count());
     }
 

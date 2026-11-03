@@ -482,7 +482,11 @@ internal partial class InferpalToolWindowData
         // The workspace a task is submitted in is the one it runs in, or it does not run (another solution opened).
         currentRoot: () => _indexService.RootDir,
         // The active file the task was submitted with: its instructions ride with the objective, as with a question.
-        submissionContext: () => _taskSubmissionBlock);
+        submissionContext: () => _taskSubmissionBlock,
+        // Kept in the workspace's journal: a finished task outlives Visual Studio, and a number is never given twice.
+        journalFor: _store.TaskJournal,
+        // A server that does not answer is waited for.
+        serverDown: BackgroundTaskQueue.ServerDown(_client, _config));
 
         // A finished task must announce itself: its report is worthless if nobody knows it exists.
         _backgroundTasks.TaskFinished += snapshot =>

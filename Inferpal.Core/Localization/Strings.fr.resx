@@ -1097,7 +1097,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="TaskForgot" xml:space="preserve"><value>{0} tâche(s) terminée(s) oubliée(s).</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Aucune tâche en arrière-plan. `/task [objectif]` en lance une.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Tâches en arrière-plan</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` affiche un rapport · `/task stop [id]` annule · `/task clear` oublie les tâches terminées</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` affiche un rapport · `/task stop [id]` annule · `/task retry [id]` relance une tâche échouée sous un nouveau numéro · `/task clear` oublie les tâches terminées. Un numéro n'est jamais redonné, même après un redémarrage.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>État</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Objectif</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>en file</value></data>
@@ -1115,6 +1115,15 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="TaskCancelledNotice" xml:space="preserve"><value>La tâche de fond `{0}` a été annulée — rien n'a été produit.</value></data>
   <data name="TaskCancelledWithProposals" xml:space="preserve"><value>La tâche de fond `{0}` a été arrêtée — {1} {1:changement proposé est gardé|changements proposés sont gardés} : `/task {0}` les liste.</value></data>
   <data name="TaskFinishedNotice" xml:space="preserve"><value>La tâche de fond `{0}` est terminée — `/task {0}` pour lire son rapport.</value></data>
+  <data name="TaskStateWaitingAt" xml:space="preserve"><value>en attente du serveur (n°{0})</value></data>
+  <data name="TaskServerAt" xml:space="preserve"><value>{0} sur {1}</value></data>
+  <data name="TaskQueueWaitsForServer" xml:space="preserve"><value>{0} ne répond pas. {1} {2:l'attend|l'attendent} et {2:démarrera|démarreront} d'{2:elle-même|elles-mêmes} quand il répondra.</value></data>
+  <data name="TaskServerStopped" xml:space="preserve"><value>Arrêtée après {0} {0:étape|étapes} : le serveur a cessé de répondre à {1}.</value></data>
+  <data name="TaskStoppedByClose" xml:space="preserve"><value>Arrêtée à la fermeture de l'éditeur, après {0} {0:étape|étapes}.</value></data>
+  <data name="TaskStoppedByCloseBeforeStart" xml:space="preserve"><value>Arrêtée à la fermeture de l'éditeur, avant de démarrer.</value></data>
+  <data name="TaskRetried" xml:space="preserve"><value>Tâche **{0}** relancée depuis `{1}` : {2}</value></data>
+  <data name="TaskRetryNotFinished" xml:space="preserve"><value>La tâche `{0}` n'est pas terminée : `/task stop {0}` l'arrête, elle pourra ensuite repartir.</value></data>
+  <data name="TaskJournalSetAside" xml:space="preserve"><value>Les tâches de fond gardées pour cet espace de travail n'ont pas pu être lues : une copie est gardée dans `{0}`.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Méta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Actions de code</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Fichiers</value></data>

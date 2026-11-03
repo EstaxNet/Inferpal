@@ -10,8 +10,8 @@ namespace Inferpal.Services.Commands;
 /// </summary>
 /// <remarks>
 /// Sub-commands: <c>/task &lt;objective&gt;</c> submits, <c>/task</c> or <c>/task list</c> lists,
-/// <c>/task &lt;id&gt;</c> shows one report, <c>/task stop &lt;id&gt;</c> cancels, <c>/task clear</c>
-/// forgets finished ones. An argument is read as an id only when it looks like one *and* names a
+/// <c>/task &lt;id&gt;</c> shows one report, <c>/task stop &lt;id&gt;</c> cancels, <c>/task retry &lt;id&gt;</c> runs a
+/// finished one again under a new number, <c>/task clear</c> forgets finished ones. An argument is read as an id only when it looks like one *and* names a
 /// known task — otherwise "t1 is broken, investigate" would be swallowed as a lookup instead of
 /// being submitted as the objective it obviously is.
 /// </remarks>
@@ -76,9 +76,20 @@ internal static class TaskCommandHandler
         if (args.Length == 1 && IsWord(args[0], "clear"))
             return new(Strings.TaskForgot(queue.ClearFinished()));
 
-        // A lone, existing id reads as "show me that one".
+        // `/task retry <id>`: a finished task's objective again, under a new number. Same exact-shape rule as stop.
+        if (IsWord(args[0], "retry"))
+        {
+            if (args.Length == 1) return new(Strings.SlashUsage("/task retry <id>"));
+            if (args.Length == 2 && (LooksLikeId(args[1]) || queue.Get(args[1]) is not null))
+                return Retry(queue, args[1]);
+        }
+
+        // A lone, existing id reads as "show me that one" — and its report is then read.
         if (args.Length == 1 && queue.Get(args[0]) is { } known)
+        {
+            queue.MarkRead(known.Id);
             return new(RenderReport(known));
+        }
 
         var objective = string.Join(" ", args).Trim();
         var newId = queue.Submit(objective);
@@ -94,6 +105,17 @@ internal static class TaskCommandHandler
     /// answering "Unknown task", not become an objective.</summary>
     private static bool LooksLikeId(string arg) =>
         arg.Length >= 2 && (arg[0] is 't' or 'T') && arg[1..].All(char.IsAsciiDigit);
+
+    /// <summary><c>/task retry &lt;id&gt;</c>: refused for an unknown or unfinished task, never a second copy of a running one.</summary>
+    private static TaskCommandResult Retry(BackgroundTaskQueue queue, string id)
+    {
+        if (queue.Get(id) is not { } old) return new(Strings.TaskUnknown(id));
+        if (!old.IsFinished) return new(Strings.TaskRetryNotFinished(old.Id));
+        if (queue.WorkspaceLeft(old.WorkspaceRoot)) return new(Strings.TaskWorkspaceChanged);
+        return new(queue.Retry(old) is { } newId
+            ? Strings.TaskRetried(newId, old.Id, old.Objective)
+            : Strings.TaskQueueFull(BackgroundTaskQueue.MaxPending));
+    }
 
     /// <summary>Resolves <c>/task apply &lt;id&gt; &lt;n&gt;</c> to the one proposal it names.</summary>
     private static TaskCommandResult Apply(BackgroundTaskQueue queue, string[] args)
@@ -122,22 +144,47 @@ internal static class TaskCommandHandler
     internal static string RenderList(BackgroundTaskQueue queue)
     {
         var tasks = queue.List();
-        if (tasks.Count == 0) return Strings.TaskListEmpty;
+        // A journal that could not be read is said, whatever the list holds: the reports it kept are in the copy.
+        var setAside = string.Join("\n\n", queue.SetAside.Select(Strings.TaskJournalSetAside));
+        if (tasks.Count == 0) return setAside.Length > 0 ? setAside + "\n\n" + Strings.TaskListEmpty : Strings.TaskListEmpty;
 
         var sb = new StringBuilder();
         sb.AppendLine($"**{Strings.TaskListTitle}**").AppendLine();
+        // Said above the table: the tasks waiting are not stuck, and start on their own.
+        var waiting = tasks.Where(t => t.WaitingForServer is not null).OrderBy(t => Number(t.Id)).ToList();
+        if (waiting.Count > 0)
+            sb.AppendLine("> " + Strings.TaskQueueWaitsForServer(
+                waiting[0].WaitingForServer!, string.Join(", ", waiting.Select(t => $"`{t.Id}`")), waiting.Count)).AppendLine();
         sb.AppendLine($"| # | {Strings.TaskColumnState} | {Strings.TaskColumnObjective} |");
         sb.AppendLine("|---|---|---|");
 
-        foreach (var task in tasks)
+        // Newest first: the tasks waiting, then the one that just ended, then the older ones.
+        foreach (var task in tasks.OrderByDescending(t => Number(t.Id)))
         {
-            var state = StateLabel(task);
-            sb.AppendLine($"| `{task.Id}` | {state} | {Escape(Truncate(task.Objective, 70))} |");
+            var objective = Escape(Truncate(task.Objective, 70));
+            if (CauseLine(task) is { } cause) objective += $" — _{Escape(cause)}_";
+            if (task.State == BackgroundTaskState.Failed || task.Cause == TaskEndCause.EditorClosed)
+                objective += $" · `/task retry {task.Id}`";
+            sb.AppendLine($"| `{task.Id}` | {StateLabel(task)} | {objective} |");
         }
 
         sb.AppendLine().AppendLine(Strings.TaskListHint);
+        if (setAside.Length > 0) sb.AppendLine().AppendLine(setAside);
         return sb.ToString().TrimEnd();
     }
+
+    private static int Number(string id) => TaskJournal.Number(id);
+
+    /// <summary>Why a task stopped short, as said under it — the editor closed, the server stopped answering; <c>null</c>
+    /// when it ended on its own or by the person's Stop.</summary>
+    internal static string? CauseLine(BackgroundTaskSnapshot task) => task.Cause switch
+    {
+        TaskEndCause.ServerStopped => Strings.TaskServerStopped(
+            task.StepsTaken, (task.FinishedAt ?? DateTimeOffset.Now).ToLocalTime().ToString("t", System.Globalization.CultureInfo.CurrentCulture)),
+        TaskEndCause.EditorClosed => task.StartedAt is null ? Strings.TaskStoppedByCloseBeforeStart
+                                                            : Strings.TaskStoppedByClose(task.StepsTaken),
+        _ => null,
+    };
 
     /// <summary>Full report of one task — what a background run is ultimately for.</summary>
     internal static string RenderReport(BackgroundTaskSnapshot task)
@@ -148,6 +195,9 @@ internal static class TaskCommandHandler
 
         if (task.Duration is { } duration)
             sb.AppendLine(Strings.TaskDuration(FormatDuration(duration))).AppendLine();
+
+        if (CauseLine(task) is { } cause)
+            sb.AppendLine($"_{cause}_ `/task retry {task.Id}`").AppendLine();
 
         if (!string.IsNullOrWhiteSpace(task.Error))
             sb.AppendLine(Strings.MsgError(task.Error!)).AppendLine();
@@ -180,6 +230,8 @@ internal static class TaskCommandHandler
     /// <summary>Localized state, with the queue position while waiting ("queued (2nd)").</summary>
     internal static string StateLabel(BackgroundTaskSnapshot task) => task.State switch
     {
+        BackgroundTaskState.Queued when task.WaitingForServer is not null
+                                      => Strings.TaskStateWaitingAt(Math.Max(1, task.QueuePosition)),
         BackgroundTaskState.Queued    => task.QueuePosition > 0
                                              ? Strings.TaskStateQueuedAt(task.QueuePosition)
                                              : Strings.TaskStateQueued,
@@ -207,7 +259,7 @@ internal static class TaskCommandHandler
     /// </remarks>
     internal static string FinishedNotice(BackgroundTaskSnapshot task) => task.State switch
     {
-        BackgroundTaskState.Failed    => Strings.TaskFailedNotice(task.Id, FirstLine(task.Error)),
+        BackgroundTaskState.Failed    => Strings.TaskFailedNotice(task.Id, FirstLine(CauseLine(task) ?? task.Error)),
         BackgroundTaskState.Cancelled => task.PendingProposals.Count > 0
                                              ? Strings.TaskCancelledWithProposals(task.Id, task.PendingProposals.Count)
                                              : Strings.TaskCancelledNotice(task.Id),

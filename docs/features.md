@@ -492,8 +492,12 @@ sequenceDiagram
   returns at once and you keep working while it investigates. Tasks run one at a time and wait
   for the chat to be idle before taking the GPU, so interactive work is never blocked. A notice
   appears when the report is ready (`/task <id>` reads it, `/task` lists, `/task stop <id>`
-  cancels). Background runs are **read-only** — they explore and report, never write, execute or
-  reach the network, so nothing can interrupt you with an approval prompt.
+  cancels, `/task retry <id>` runs it again under a new number). Background runs are **read-only** — they explore and
+  report, never write, execute or reach the network, so nothing can interrupt you with an approval prompt.
+- **Kept across restarts** — finished tasks, their reports and their proposals are kept per workspace and editor; a
+  task that was running or queued when the editor closed comes back marked as stopped by the closing, ready for
+  `/task retry`. A number is never given twice. While the model server does not answer, queued tasks wait for it and
+  start on their own when it is back.
 - **`/task propose <objective>`** — a background run that can *describe* writes without making
   them: each write is recorded at the exact point it would have asked for approval, and never
   granted. `/task apply <id> <n>` replays one proposal through the ordinary approval prompt,
