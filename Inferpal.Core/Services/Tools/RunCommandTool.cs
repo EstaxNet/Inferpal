@@ -102,7 +102,10 @@ internal sealed class RunCommandTool : ITool, IDisposable
         // Permission rules keep matching the raw command (the documented subject for run_command).
         var runIn   = _session.StartDirectory(workDir).Directory;
         var details = ShellSession.SameFolder(runIn, _session.WorkspaceRoot) ? command : $"{command}\n[cwd: {runIn}]";
-        if (!await _approval.RequestApprovalAsync("run_command", details, ct, subject: command))
+        // ⚠ A rule judges the command line, never the folder: `allow run_command ^dotnet test` would run another
+        // repository's build outside the workspace without a card. Outside it, the card is always asked.
+        var outside = !PathSanitizer.IsUnderRoot(runIn, _session.WorkspaceRoot);
+        if (!await _approval.RequestApprovalAsync("run_command", details, ct, subject: command, forcePrompt: outside))
             return Strings.RunCancelled;
 
         var background = args.Bool("background", false);

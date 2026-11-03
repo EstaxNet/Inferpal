@@ -63,8 +63,9 @@ internal static class GitProcess
     {
         var trimmed = args.TrimStart();
         if (trimmed != "diff" && !trimmed.StartsWith("diff ", StringComparison.Ordinal)) return args;
+        // ⚠ --no-textconv: a repository's `diff.<driver>.textconv` names a PROGRAM git runs on each file it shows.
         return "-c color.ui=never -c color.diff=never -c diff.relative=false -c diff.noprefix=false -c diff.mnemonicPrefix=false "
-             + "diff --no-ext-diff --src-prefix=a/ --dst-prefix=b/" + trimmed["diff".Length..];
+             + "diff --no-ext-diff --no-textconv --src-prefix=a/ --dst-prefix=b/" + trimmed["diff".Length..];
     }
 
     /// <summary>
@@ -90,7 +91,9 @@ internal static class GitProcess
             // prints a file's content as the bytes the file holds, so a diff of a source saved in a legacy code page,
             // decoded as UTF-8 whole, reached /commit, /check and get_git_status as "caf�" — a line the model
             // cannot quote back into an edit, and that a review reads as corruption.
-            var psi = new ProcessStartInfo("git", "-c core.quotePath=false " + DiffShaped(args))
+            // ⚠ core.fsmonitor names a PROGRAM git runs at every status and diff: set by the repository, it would run at each
+            // of Inferpal's own readings — around every watched call. Off for them; a command the person runs keeps it.
+            var psi = new ProcessStartInfo("git", "-c core.quotePath=false -c core.fsmonitor=false " + DiffShaped(args))
             {
                 StandardOutputEncoding = Encoding.Latin1,
                 StandardErrorEncoding  = Encoding.UTF8,
@@ -142,6 +145,8 @@ internal static class GitProcess
         };
         psi.ArgumentList.Add("-c");
         psi.ArgumentList.Add("core.quotePath=false");
+        psi.ArgumentList.Add("-c");
+        psi.ArgumentList.Add("core.fsmonitor=false");   // the repository's program never runs at Inferpal's readings
         foreach (var arg in args) psi.ArgumentList.Add(arg);
         psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
         psi.Environment["LANG"]                = "en_US.UTF-8";

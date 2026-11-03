@@ -758,7 +758,19 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                     if (string.IsNullOrWhiteSpace(s)) return;
                     string full;
                     try { full = PathSanitizer.Sanitize(s, root); }
-                    catch (ArgumentException) { return; }   // not a path at all
+                    catch (ArgumentException)
+                    {
+                        // A spelling the built-in tools refuse (an NTFS stream, `secret.txt:hidden`) still reaches the file
+                        // for a server that is not ours: judged on what it reaches. Not a path at all: nothing to judge.
+                        try
+                        {
+                            var raw = s.Trim();
+                            if (Path.IsPathFullyQualified(raw)) full = Path.GetFullPath(raw);
+                            else if (!string.IsNullOrEmpty(root)) full = Path.GetFullPath(raw, Path.GetFullPath(root));
+                            else return;
+                        }
+                        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return; }
+                    }
                     // ⚠ Judged on the path it RESOLVES to, never on how it is written: `ab://../.env`, or `a/../` a
                     // thousand times, IS `.env` to the tool that reads it.
                     if (full.Length > 4096 || StaysAUrl(s, root, full)) return;
@@ -767,9 +779,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                     // judged by the walk that lists it.
                     // ⚠ And judged where it LEADS: through a linked folder, the excluded file reads as another path —
                     // a folder too, which a walk started inside it lists without a rule ever seeing the link.
-                    var folder = Directory.Exists(full);
-                    if ((folder ? Governance.ContentExclusions.OfLinked(full, isFolder: true)
-                                : Governance.ContentExclusions.Of(full) ?? Governance.ContentExclusions.OfLinked(full)) is { } why)
+                    if ((Directory.Exists(full) ? Governance.ContentExclusions.OfFolderReachedOtherwise(full)
+                                                : Governance.ContentExclusions.Of(full)) is { } why)
                         hit = (full, why);
                     break;
             }

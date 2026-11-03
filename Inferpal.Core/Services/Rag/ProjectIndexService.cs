@@ -1498,7 +1498,7 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>Whether the search index leaves <paramref name="path"/> out: the project profile's exclusions, and the
     /// workspace's ignore files (<see cref="ContentExclusions"/>) — what they exclude is never chunked nor embedded.</summary>
     internal bool IsExcluded(string path) =>
-        IndexExclusions.IsExcluded(path, RootDir, _profileExcludes) || ContentExclusions.Of(path) is not null;
+        IndexExclusions.IsExcluded(path, RootDir, _profileExcludes) || ContentExclusions.OfInWalk(path) is not null;
 
     /// <summary>
     /// Collects source files under <paramref name="rootDir"/>, skipping generated

@@ -910,6 +910,13 @@ behalf. And `.aiignore`, `.cursorignore` and the other tools' ignore files keep 
 for the model — each exclusion said, never silent. Writing one of these files always asks you first, even after
 "Always": emptied, it would lift every restriction it holds.
 
+**What is judged is what runs.** Each check looks at the file a call reaches, not only at how its path is written: a
+link or a junction, a hard link, a `\\?\` or `\\localhost\C$` spelling, a short name or an NTFS `::$INDEX_ALLOCATION`
+suffix gets the answer the file's own name gets. A deny rule holds on every name of the file; an allow rule answers on
+the name as written. Writing in the repository's `.git` folder always asks — its settings run programs —, and
+Inferpal's own git readings never run the repository's `core.fsmonitor` or diff `textconv` programs. A file that is
+also, by a hard link, outside the workspace (a dependency store's) is read as the project has it, never written.
+
 <details>
 <summary><b>In detail: the sandbox, approvals, rules, ignore files, diagnostics</b></summary>
 
@@ -924,7 +931,8 @@ for the model — each exclusion said, never silent. Writing one of these files 
   With no workspace — a file alone, or the few seconds before Visual Studio reports its solution —
   no tool reads or writes a file, builds, runs tests or runs a command in a folder nobody named:
   the refusal says to open a folder or a solution. `run_command` is not path-confined: when it
-  runs anywhere but the workspace root, its approval card names the folder.
+  runs anywhere but the workspace root, its approval card names the folder — and outside the
+  workspace it always asks, whatever your rules say: a rule judges the command, never the folder.
 - **Markup and generated code** — a rename follows the markup that binds the symbol (`.razor`,
   `.cshtml`, `.xaml`: bindings under a matching `x:DataType`, `Model.X` and `asp-for`, a component's
   own code, route parameter and attributes on its tag) and lists every other occurrence of the

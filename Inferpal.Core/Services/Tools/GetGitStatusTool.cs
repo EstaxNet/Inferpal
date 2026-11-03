@@ -246,7 +246,7 @@ internal class GetGitStatusTool : ITool
         var listed = await GitAsync($"ls-files --others --exclude-standard --directory{pathSpec}", root, ct);
         if (!listed.Ok || listed.Output.Length == 0) return null;
         var entries = listed.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.TrimEnd('\r')).ToList();
-        var readable = entries.Where(e => Governance.ContentExclusions.Of(Path.Combine(root, e), isFolder: e.EndsWith('/')) is null).ToList();
+        var readable = entries.Where(e => Governance.ContentExclusions.OfInWalk(Path.Combine(root, e), isFolder: e.EndsWith('/')) is null).ToList();
         var excluded = entries.Count - readable.Count;
         const int named = 20;
         var excludedNote = excluded > 0 ? $" ({excluded} more that the workspace's ignore files exclude)" : "";

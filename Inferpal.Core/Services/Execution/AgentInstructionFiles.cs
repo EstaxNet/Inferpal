@@ -63,9 +63,22 @@ internal static class AgentInstructionFiles
     /// Does this approval subject aim at a file that becomes the system prompt? The subject may
     /// carry several paths (<c>apply_edits</c> joins them with newlines) — one is enough.
     /// </summary>
-    internal static bool Targets(string? subject)
+    internal static bool Targets(string? subject) => Targets(subject, root: null);
+
+    /// <inheritdoc cref="Targets(string?)"/>
+    /// <param name="subject">The approval subject.</param>
+    /// <param name="root">The workspace a relative path in the subject is read against; <c>null</c> reads only rooted ones.</param>
+    /// <remarks>⚠ Judged on the FILE a path reaches too (<see cref="Tools.PathSanitizer.Canonical"/>) and on its other names:
+    /// a linked folder (<c>inflnk/memory.md</c>), an NTFS index suffix (<c>.inferpal::$INDEX_ALLOCATION/memory.md</c>) or a
+    /// hard link (<c>mem.md</c>) each writes the system prompt while its spelling names another file. Every line is
+    /// resolved first: an MCP subject's raw JSON line, split at its commas, would spend the budget before the values.</remarks>
+    internal static bool Targets(string? subject, string? root)
     {
         if (string.IsNullOrWhiteSpace(subject)) return false;
+        var lines = 0;
+        foreach (var line in subject.Split('\n'))
+            if (line.Trim().Length > 0 && lines++ < MaxReached && ReachesAnInstructionFile(line.Trim(), root)) return true;
+        var reached = 0;
 
         // Every run of consecutive parts, the whole line included: `rules/style,v2.md` is ONE file name, which its parts
         // alone never name — and a line may join it to another path with the same separator.
@@ -86,8 +99,27 @@ internal static class AgentInstructionFiles
             // subject is raw. Rooted, it is read in its long form.
             if (LongForm(token.Trim()) is { } full && IsInstructionFile(Resolved(full.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries))))
                 return true;
+            // Bounded: a long subject (a batch, a command line) is read for its paths, a few dozen of them at most.
+            if (reached++ < MaxReached && ReachesAnInstructionFile(token.Trim(), root)) return true;
         }
         return false;
+    }
+
+    private const int MaxReached = 64;
+
+    /// <summary>Whether <paramref name="token"/>, read as a path — rooted, or against <paramref name="root"/> — reaches an
+    /// instruction file under any of its names.</summary>
+    private static bool ReachesAnInstructionFile(string token, string? root)
+    {
+        if (token.Length is 0 or > 4096) return false;
+        var rooted = Path.IsPathFullyQualified(token);
+        if (!rooted && root is null) return false;
+        string full;
+        try { full = rooted ? Path.GetFullPath(token) : Path.GetFullPath(token, Path.GetFullPath(root!)); }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or IOException) { return false; }
+        var canonical = Tools.PathSanitizer.Canonical(full);
+        IEnumerable<string> names = [canonical, .. Tools.PathSanitizer.OtherNames(canonical)];
+        return names.Any(n => IsInstructionFile(Resolved(n.Replace('\\', '/').Split('/', StringSplitOptions.RemoveEmptyEntries))));
     }
 
     /// <summary>A rooted Windows path holding a short name, in its long form; <c>null</c> for any other.</summary>
@@ -113,6 +145,11 @@ internal static class AgentInstructionFiles
     private static bool IsInstructionFile(string[] segments)
     {
         if (segments.Length == 0) return false;
+
+        // ⚠ The repository's git folder: its settings RUN programs — `core.fsmonitor` at the next git status, a hook at the
+        // next commit, a filter driver at the next diff. Without the card, an "Always" given to write_file lets a write
+        // there run a program that no card ever named.
+        if (segments.Any(s => s.Equals(".git", StringComparison.OrdinalIgnoreCase))) return true;
 
         // The files that restrict the agent: the repository's deny rules, and the ignore files (the names the settings
         // give; anywhere — one prompt more, never one less).

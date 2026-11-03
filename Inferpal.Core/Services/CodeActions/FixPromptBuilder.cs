@@ -178,7 +178,7 @@ internal static class FixPromptBuilder
         foreach (var (path, lines) in sites.Take(MaxFiles))
         {
             // Excluded by the workspace's ignore files: never read, and said with the others left out.
-            if (Governance.ContentExclusions.Of(path) is { } why) { excluded.Add(path, why); continue; }
+            if (Governance.ContentExclusions.OfInWalk(path) is { } why) { excluded.Add(path, why); continue; }
             var content = tryReadFile(path);
             if (content is null) { unread.Add(path); continue; }
 

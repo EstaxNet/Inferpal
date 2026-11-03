@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using Inferpal.Localization;
 
@@ -122,9 +123,10 @@ internal static class PathSanitizer
 
         // Compare link-resolved paths: Path.GetFullPath normalises ./ and ../ but follows no
         // symlink or junction, so a link planted inside the workspace would otherwise let a
-        // write escape it while still passing a textual prefix check.
+        // write escape it while still passing a textual prefix check. A device prefix is taken off, and what follows it
+        // normalised: `\\?\C:\ws\..\outside` is outside.
         var rootBare = Trim(ResolveLinks(Path.GetFullPath(workspaceRoot)));
-        var target   = Trim(ResolveLinks(fullPath));
+        var target   = Trim(ResolveLinks(OperatingSystem.IsWindows() ? Path.GetFullPath(WithoutDevicePrefix(fullPath)) : fullPath));
 
         // The root directory itself is allowed.
         if (string.Equals(target, rootBare, PathComparison)) return;
@@ -137,6 +139,207 @@ internal static class PathSanitizer
                 $"  Requested : {fullPath}\n" +
                 $"  Workspace : {workspaceRoot}");
     }
+
+    /// <summary>
+    /// For a WRITE: throws when the file, under another of its names (a hard link), lives outside the workspace — writing
+    /// it changes that file too.
+    /// </summary>
+    /// <remarks>Writes only: a dependency manager links the files of a project's dependencies to its shared store (pnpm's
+    /// <c>node_modules</c>, uv's environments), and reading them reads what the project has; writing one changes every
+    /// project that shares it. Every write passes <c>FileHistoryService.BackUpBeforeChangeAsync</c>, which asks here.</remarks>
+    internal static void AssertEveryNameUnderRoot(string fullPath, string? workspaceRoot)
+    {
+        if (string.IsNullOrEmpty(workspaceRoot)) return;
+        var rootReached = Canonical(Path.GetFullPath(workspaceRoot));
+        foreach (var name in OtherNames(fullPath))
+        {
+            var reached = Canonical(name);
+            if (!string.Equals(reached, rootReached, PathComparison)
+                && !reached.StartsWith(rootReached + Path.DirectorySeparatorChar, PathComparison))
+                throw new ArgumentException(
+                    $"Access denied: this file is also {name}, outside the workspace root (a hard link): writing it changes "
+                    + $"that file too.\n  Requested : {fullPath}\n  Workspace : {workspaceRoot}");
+        }
+    }
+
+    /// <summary>
+    /// The file a rooted path reaches, as the file system resolves it: a device prefix (<c>\\?\</c>, <c>\\.\</c>) or
+    /// this machine's administrative share (<c>\\localhost\C$\</c>) taken back to its drive, a stream or index suffix
+    /// taken off each name (<c>.inferpal::$INDEX_ALLOCATION</c> IS the folder), trailing dots and spaces dropped; then,
+    /// under Windows, the system's own final path of the deepest part that exists (links, junctions, a <c>subst</c>
+    /// drive, a folder-mounted volume, short names, the case on disk), elsewhere the links resolved at every level.
+    /// Never throws: a path it cannot read comes back as given.
+    /// </summary>
+    /// <remarks>⚠ What every approval control judges besides the spelling — the ignore files, the forced card of the
+    /// agent's instructions, a rule: each of those spellings reaches the file while its text names another path.</remarks>
+    internal static string Canonical(string fullPath)
+    {
+        try
+        {
+            if (!OperatingSystem.IsWindows()) return Trim(ResolveLinks(Path.GetFullPath(fullPath)));
+            var path = Path.GetFullPath(WithoutStreamSuffixes(WithoutDevicePrefix(fullPath)));
+            return Trim(WithoutDevicePrefix(FinalPath(path) ?? ResolveLinks(path)));
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException or UnauthorizedAccessException)
+        {
+            return Trim(fullPath);
+        }
+    }
+
+    /// <summary>The system's final path of the deepest existing part of <paramref name="path"/>, the rest appended; null
+    /// when nothing can be opened (Windows).</summary>
+    private static string? FinalPath(string path)
+    {
+        var remainder = string.Empty;
+        var current = path;
+        for (var depth = 0; depth < 64; depth++)
+        {
+            if (File.Exists(current) || Directory.Exists(current))
+            {
+                using var handle = OpenForAttributes(current);
+                if (handle.IsInvalid) return null;
+                var buffer = new char[32768];
+                var length = GetFinalPathNameByHandleW(handle, buffer, (uint)buffer.Length, 0);
+                if (length == 0 || length >= buffer.Length) return null;
+                var head = new string(buffer, 0, (int)length);
+                return remainder.Length == 0 ? head : Path.Combine(head, remainder);
+            }
+            var parent = Path.GetDirectoryName(current);
+            if (string.IsNullOrEmpty(parent) || parent == current) return null;
+            remainder = remainder.Length == 0 ? Path.GetFileName(current) : Path.Combine(Path.GetFileName(current), remainder);
+            current = parent;
+        }
+        return null;
+    }
+
+    /// <summary>A Windows device path or this machine's administrative share, as the drive path it names; any other path
+    /// as given (a volume without a letter, a device namespace).</summary>
+    private static string WithoutDevicePrefix(string path)
+    {
+        foreach (var prefix in (string[])[@"\\?\", @"\\.\", "//?/", "//./"])
+        {
+            if (!path.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            var rest = path[prefix.Length..];
+            if (rest.StartsWith(@"UNC\", StringComparison.OrdinalIgnoreCase) || rest.StartsWith("UNC/", StringComparison.OrdinalIgnoreCase))
+                path = @"\\" + rest[4..];   // a share: this machine's administrative one is mapped below
+            else if (rest.Length >= 2 && char.IsAsciiLetter(rest[0]) && rest[1] == ':')
+                return rest;
+            else
+                return path;
+            break;
+        }
+        if (path.Length > 2 && path[0] is '\\' or '/' && path[1] is '\\' or '/')
+        {
+            var parts = path[2..].Split(['\\', '/'], 3);
+            if (parts.Length >= 2 && IsThisMachine(parts[0])
+                && parts[1].Length == 2 && char.IsAsciiLetter(parts[1][0]) && parts[1][1] == '$')
+                return parts[1][0] + @":\" + (parts.Length == 3 ? parts[2] : string.Empty);
+        }
+        return path;
+    }
+
+    private static bool IsThisMachine(string host) =>
+        host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || host is "127.0.0.1" or "::1" or "[::1]"
+        || host.Equals(Environment.MachineName, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Each name after the root without its stream or index suffix (everything from its first <c>:</c>) and
+    /// without trailing dots and spaces — what NTFS opens.</summary>
+    private static string WithoutStreamSuffixes(string path)
+    {
+        var root = Path.GetPathRoot(path) ?? string.Empty;
+        var names = path[root.Length..].Split(['\\', '/']);
+        for (var i = 0; i < names.Length; i++)
+        {
+            var name = names[i];
+            var colon = name.IndexOf(':');
+            if (colon >= 0) name = name[..colon];
+            if (name is not ("." or "..")) name = name.TrimEnd('.', ' ');
+            names[i] = name;
+        }
+        return root + string.Join('\\', names);
+    }
+
+    /// <summary>
+    /// The other names of the file <paramref name="fullPath"/> names — its hard links —, full paths on the drive that
+    /// holds the file; empty when it has one, does not exist, is a folder, lives on a share or a volume without a letter,
+    /// or the system does not say (only Windows lists them).
+    /// </summary>
+    /// <remarks>⚠ The names the system lists are relative to the VOLUME: read through a <c>subst</c> drive or a volume
+    /// mounted in a folder, the spelling's drive is not theirs — the drive comes from the file's final path.</remarks>
+    internal static IReadOnlyList<string> OtherNames(string fullPath)
+    {
+        if (!OperatingSystem.IsWindows()) return [];
+        try
+        {
+            if (!File.Exists(fullPath)) return [];
+            using var handle = OpenForAttributes(fullPath);
+            if (handle.IsInvalid || !GetFileInformationByHandle(handle, out var info) || info.NumberOfLinks <= 1) return [];
+            var buffer = new char[32768];
+            var finalLength = GetFinalPathNameByHandleW(handle, buffer, (uint)buffer.Length, 0);
+            if (finalLength == 0 || finalLength >= buffer.Length) return [];
+            var final = new string(buffer, 0, (int)finalLength);
+            var self = WithoutDevicePrefix(final);
+            if (self.Length < 3 || self[1] != ':') return [];
+            var volume = self[..2];
+            var names = new List<string>();
+            var length = (uint)buffer.Length;
+            var find = FindFirstFileNameW(final, 0, ref length, buffer);
+            if (find == new IntPtr(-1)) return [];
+            try
+            {
+                do
+                {
+                    var name = volume + new string(buffer, 0, (int)Math.Max(0, length - 1));
+                    if (!string.Equals(name, self, PathComparison)) names.Add(name);
+                    length = (uint)buffer.Length;
+                }
+                while (names.Count < 64 && FindNextFileNameW(find, ref length, buffer));
+            }
+            finally { FindClose(find); }
+            return names;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or EntryPointNotFoundException or DllNotFoundException)
+        {
+            Diagnostics.Swallow("PathSanitizer.OtherNames", ex);
+            return [];
+        }
+    }
+
+    /// <summary>A handle that reads nothing but the file's identity — a folder too, a file another process holds open too.</summary>
+    private static Microsoft.Win32.SafeHandles.SafeFileHandle OpenForAttributes(string path) =>
+        CreateFileW(path, FileReadAttributes, ShareAll, IntPtr.Zero, OpenExisting, BackupSemantics, IntPtr.Zero);
+
+    private const uint FileReadAttributes = 0x80, ShareAll = 0x7, OpenExisting = 3, BackupSemantics = 0x02000000;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct FileInformation
+    {
+        public uint Attributes;
+        public uint CreatedLow, CreatedHigh, AccessedLow, AccessedHigh, WrittenLow, WrittenHigh;
+        public uint VolumeSerialNumber, SizeHigh, SizeLow, NumberOfLinks, IndexHigh, IndexLow;
+    }
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFileW(
+        string fileName, uint access, uint share, IntPtr security, uint disposition, uint flags, IntPtr template);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetFileInformationByHandle(Microsoft.Win32.SafeHandles.SafeFileHandle handle, out FileInformation info);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern uint GetFinalPathNameByHandleW(Microsoft.Win32.SafeHandles.SafeFileHandle handle, [Out] char[] path, uint length, uint flags);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr FindFirstFileNameW(string fileName, uint flags, ref uint length, [Out] char[] linkName);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool FindNextFileNameW(IntPtr find, ref uint length, [Out] char[] linkName);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool FindClose(IntPtr find);
 
     /// <summary>
     /// <see cref="AssertUnderRoot"/>'s answer as a boolean — links and case included; a path that cannot be resolved

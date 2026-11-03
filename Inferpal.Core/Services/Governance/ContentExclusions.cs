@@ -78,8 +78,59 @@ internal static class ContentExclusions
         });
     }
 
-    /// <summary>What excludes <paramref name="path"/>; <c>null</c> when nothing does, or no declared root holds it.</summary>
+    /// <summary>
+    /// What excludes <paramref name="path"/> — the path a call, an editor or a reader NAMES —; <c>null</c> when nothing
+    /// does. Judged on its spelling, on the file it reaches (<see cref="Tools.PathSanitizer.Canonical"/>: a link, a device
+    /// prefix, an NTFS index suffix) and on every other name of that file (a hard link).
+    /// </summary>
+    /// <remarks>⚠ Judged on the spelling alone, each of those reads what the ignore files keep out. A LISTING — a walk, git's
+    /// status or diff, a compiler's diagnostics: names the system produced, thousands of them — is judged with
+    /// <see cref="OfInWalk"/>; a hard link a listing holds is judged by name only (stated limit).</remarks>
     internal static Exclusion? Of(string? path, bool isFolder = false)
+    {
+        if (OfSpelling(path, isFolder) is { } bySpelling) return bySpelling;
+        if (string.IsNullOrWhiteSpace(path) || Roots.IsEmpty) return null;
+        string full;
+        try { full = Path.GetFullPath(path); }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return null; }
+        var canonical = Tools.PathSanitizer.Canonical(full);
+        // The histories kept in the user's folder are never read, rules or not — a link to them neither.
+        if (!AnyRules()) return FileHistoryService.InUserHistoryRoot(canonical) ? History : null;
+        List<(string Root, string Resolved)>? roots = null;
+        IEnumerable<string> reached = isFolder ? [canonical] : [canonical, .. Tools.PathSanitizer.OtherNames(canonical)];
+        foreach (var name in reached)
+            if ((OfSpelling(name, isFolder) ?? OfThroughLinks(name, ref roots, isFolder)) is { } why) return why;
+        return null;
+    }
+
+    /// <summary>
+    /// What excludes a FOLDER a call names, when the name leads elsewhere — through a link, a device prefix, another
+    /// drive's spelling; <c>null</c> when it reaches what it says. A folder named as it is is judged by the walk that lists
+    /// it (each excluded file left out and counted), never refused whole.
+    /// </summary>
+    internal static Exclusion? OfFolderReachedOtherwise(string full)
+    {
+        if (Roots.IsEmpty || !AnyRules()) return null;
+        var canonical = Tools.PathSanitizer.Canonical(full);
+        foreach (var root in Roots.Keys)
+        {
+            var rootReached = Tools.PathSanitizer.Canonical(root);
+            if (rootReached.Length == 0 || !Under(rootReached, canonical)) continue;
+            // Spelled under the root it lands in: the same as the name given means nothing on the way leads elsewhere.
+            var respelled = Path.Join(root, Path.GetRelativePath(rootReached, canonical));
+            if (PathComparer.SameDirectory(respelled, full)) return null;
+            if (OfSpelling(respelled, isFolder: true) is { } why) return why;
+        }
+        return OfSpelling(canonical, isFolder: true);
+    }
+
+    /// <summary>What excludes a file a LISTING found (a walk, git, a compiler — never a name someone wrote): the spelling,
+    /// and where the file leads when it is itself a link — a walk never descends a linked folder.</summary>
+    internal static Exclusion? OfInWalk(string file, bool isFolder = false) =>
+        OfSpelling(file, isFolder) ?? (AnyRules() && IsLink(file) ? Of(file, isFolder) : null);
+
+    /// <summary>What excludes <paramref name="path"/> as written: the declared roots holding it, and the histories.</summary>
+    private static Exclusion? OfSpelling(string? path, bool isFolder = false)
     {
         if (string.IsNullOrWhiteSpace(path) || Roots.IsEmpty) return null;
         string full;
@@ -227,7 +278,7 @@ internal static class ContentExclusions
     internal static bool SkipInWalk(string file)
     {
         // A file that is itself a link is judged where it leads too (the walk never descends a linked folder).
-        if ((Of(file) ?? (AnyRules() && IsLink(file) ? OfLinked(file) : null)) is not { } why) return false;
+        if (OfInWalk(file) is not { } why) return false;
         _tally.Value?.Add(file, why);
         return true;
     }
@@ -258,19 +309,7 @@ internal static class ContentExclusions
     internal static async Task<string?> DiffWorkTreeAsync(GitRunner git, CancellationToken ct) =>
         AnyRules() && await git("rev-parse --show-toplevel", ct) is { ExitCode: 0 } top ? top.Output.Trim() : null;
 
-    /// <summary>What excludes the file or folder <paramref name="full"/> leads to through a link on its way; <c>null</c> when
-    /// nothing does, or no link is on the way.</summary>
-    /// <remarks>⚠ Judged on its own spelling alone, <c>apps/web/secrets → ../../secrets</c> reads what <c>/secrets/</c>
-    /// excludes.</remarks>
-    internal static Exclusion? OfLinked(string full, bool isFolder = false)
-    {
-        if (Roots.IsEmpty || !AnyRules()) return null;
-        var resolved = Tools.PathSanitizer.Resolved(full);
-        if (resolved.Length == 0 || string.Equals(resolved, Path.TrimEndingDirectorySeparator(full), PathComparer.Comparison)) return null;
-        List<(string Root, string Resolved)>? roots = null;
-        return OfThroughLinks(full, ref roots, isFolder);
-    }
-
+    /// <summary>Whether <paramref name="path"/> is itself a link (a reparse point).</summary>
     private static bool IsLink(string path)
     {
         try { return File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint); }
@@ -287,11 +326,12 @@ internal static class ContentExclusions
     /// <param name="roots">The roots with their links resolved: computed on the first call, then reused.</param>
     private static Exclusion? OfThroughLinks(string full, ref List<(string Root, string Resolved)>? roots, bool isFolder = false)
     {
-        // A root of the file system resolves to an empty string and holds everything: never one to re-spell into.
-        roots ??= Roots.Keys.Select(r => (r, Tools.PathSanitizer.Resolved(r))).Where(r => r.Item2.Length > 0).ToList();
-        var resolved = Tools.PathSanitizer.Resolved(full);
+        // A root of the file system resolves to an empty string and holds everything: never one to re-spell into. Both
+        // sides reached the same way (the system's final path under Windows: a `subst` drive, a mounted folder).
+        roots ??= Roots.Keys.Select(r => (r, Tools.PathSanitizer.Canonical(r))).Where(r => r.Item2.Length > 0).ToList();
+        var resolved = Tools.PathSanitizer.Canonical(full);
         foreach (var (root, resolvedRoot) in roots)
-            if (Under(resolvedRoot, resolved) && Of(Path.Join(root, Path.GetRelativePath(resolvedRoot, resolved)), isFolder) is { } why)
+            if (Under(resolvedRoot, resolved) && OfSpelling(Path.Join(root, Path.GetRelativePath(resolvedRoot, resolved)), isFolder) is { } why)
                 return why;
         return null;
     }
@@ -326,7 +366,7 @@ internal static class ContentExclusions
                 string full;
                 try { full = Path.GetFullPath(Path.Combine(workTree, path)); }
                 catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { continue; }
-                if ((Of(full) ?? OfThroughLinks(full, ref resolvedRoots)) is { } found) { (why, excludedPath) = (found, full); break; }
+                if ((OfInWalk(full) ?? OfThroughLinks(full, ref resolvedRoots)) is { } found) { (why, excludedPath) = (found, full); break; }
             }
             if (why is not null) dropped.Add(excludedPath!, why);
             else kept.Append(section);

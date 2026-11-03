@@ -353,6 +353,9 @@ internal sealed class PermissionPolicy
 
     private static bool IsCommand(string toolName) => toolName.Equals(CommandTool, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Whether <paramref name="toolName"/>'s subject is a command line, read by the command reader — never a path.</summary>
+    internal static bool IsCommandTool(string toolName) => IsCommand(toolName);
+
     /// <summary>The tool whose subject is a command line, judged command by command.</summary>
     private const string CommandTool = "run_command";
 

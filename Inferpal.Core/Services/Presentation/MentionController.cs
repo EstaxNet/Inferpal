@@ -691,7 +691,7 @@ internal static class MentionController
                 // between directories. A cap that a common shape walks straight past is not a cap.
                 if (results.Count >= MaxWalkFiles) { limits.FileCapHit = true; return; }
                 // Excluded by the workspace's ignore files: neither listed nor read, counted for the note.
-                if (Governance.ContentExclusions.Of(file) is { } why) { limits.Excluded.Add(file, why); continue; }
+                if (Governance.ContentExclusions.OfInWalk(file) is { } why) { limits.Excluded.Add(file, why); continue; }
                 results.Add(file);
             }
             foreach (var subDir in Directory.GetDirectories(dir).OrderBy(d => d, StringComparer.Ordinal))

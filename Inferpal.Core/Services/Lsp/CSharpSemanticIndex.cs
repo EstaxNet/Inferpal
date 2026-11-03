@@ -445,7 +445,7 @@ internal sealed class CSharpSemanticIndex
 
         // ⚠ A file the workspace's ignore files exclude leaves the compilation as a deleted one does: its code is never
         // read — and rename_symbol, whose edits come from these trees, never writes it.
-        if (!File.Exists(path) || Governance.ContentExclusions.Of(path) is not null)
+        if (!File.Exists(path) || Governance.ContentExclusions.OfInWalk(path) is not null)
         {
             if (!existed) return false;
             _treesByPath.Remove(path);

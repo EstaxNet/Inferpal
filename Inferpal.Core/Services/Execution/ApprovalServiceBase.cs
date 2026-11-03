@@ -80,7 +80,51 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// <remarks>The card's own evaluation (<see cref="RequestApprovalAsync"/>), on the rules as the files hold them now. A
     /// deny rule that could not be evaluated counts: the card does not let it approve, so nothing leaves on its account.</remarks>
     public bool Refuses(string toolName, string subject) =>
-        GetPolicy().Evaluate(toolName, subject, out var unreadableDeny) == PermissionDecision.Deny || unreadableDeny;
+        Decide(toolName, subject, out var unreadableDeny, out _) == PermissionDecision.Deny || unreadableDeny;
+
+    /// <summary>
+    /// The rules' decision on <paramref name="subject"/>, and a <c>deny</c> on every other form of a path it names — the file
+    /// the path reaches and that file's other names: a refusal written for a file holds through a link or a hard link to it.
+    /// </summary>
+    /// <remarks>⚠ An <c>allow</c> stays the spelling's: the rule the card proposes is anchored on the folder as spelled,
+    /// and a workspace under a link (macOS's <c>/var</c>, a junction) is reached under another name — judged on that name,
+    /// the rule would never answer again. What a link leads to is held by the other controls (confinement, the ignore
+    /// files, the forced card). <paramref name="deniedOn"/> is the form a deny matched, what the refusal names.</remarks>
+    private PermissionDecision Decide(string toolName, string subject, out bool unreadableDeny, out string deniedOn)
+    {
+        var policy = GetPolicy();
+        deniedOn = subject;
+        var decision = policy.Evaluate(toolName, subject, out unreadableDeny);
+        // A command line is read by its own reader: its words are not a path.
+        if (decision == PermissionDecision.Deny || PermissionPolicy.IsCommandTool(toolName)) return decision;
+        foreach (var form in PathForms(subject))
+        {
+            var other = policy.Evaluate(toolName, form, out var unreadable);
+            unreadableDeny |= unreadable;
+            if (other == PermissionDecision.Deny)
+            {
+                deniedOn = form;
+                return other;
+            }
+        }
+        return decision;
+    }
+
+    /// <summary>For each line of <paramref name="subject"/> that is a rooted path: the file it reaches, when spelled
+    /// otherwise, and that file's other names (bounded: a batch's subject names its files, a few dozen at most).</summary>
+    private static IEnumerable<string> PathForms(string subject)
+    {
+        var paths = 0;
+        foreach (var line in subject.Split('\n'))
+        {
+            var path = line.Trim();
+            if (path.Length is 0 or > 4096 || !Path.IsPathFullyQualified(path)) continue;
+            if (paths++ >= 64) yield break;
+            var canonical = Tools.PathSanitizer.Canonical(path);
+            if (!string.Equals(canonical, Path.TrimEndingDirectorySeparator(path), Services.PathComparer.Comparison)) yield return canonical;
+            foreach (var name in Tools.PathSanitizer.OtherNames(canonical)) yield return name;
+        }
+    }
 
     public async Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false)
     {
@@ -90,19 +134,19 @@ internal abstract class ApprovalServiceBase : IApprovalService
 
         // The settings that decide, as the file holds them now: another window may have changed them.
         var alertsOff = _config.SharedSecurityAlertsDisabled;
-        var decision  = GetPolicy().Evaluate(toolName, matchOn, out var unreadableDeny);
+        var decision  = Decide(toolName, matchOn, out var unreadableDeny, out var deniedOn);
         if (decision == PermissionDecision.Deny)
         {
             // Always enforced — even under SecurityAlertsDisabled. Recorded (visible via /diagnostics).
             // Thrown rather than returned false so the tool result reads "blocked by policy" instead of
             // the generic "cancelled by user": ToolRegistry turns this into a distinct string for the
             // model (uniform across every tool, including MCP and custom shell, with no per-tool change).
-            Diagnostics.Record("Permission", $"Blocked {toolName}: {matchOn}");
+            Diagnostics.Record("Permission", $"Blocked {toolName}: {deniedOn}");
             WorkTreeBracket.NoteRefused();
             throw new PermissionDeniedException(
-                PermissionPolicy.IsHardDenied(matchOn)
-                    ? Strings.PermissionBlockedHard(matchOn)
-                    : Strings.PermissionBlockedRule(matchOn));
+                PermissionPolicy.IsHardDenied(deniedOn)
+                    ? Strings.PermissionBlockedHard(deniedOn)
+                    : Strings.PermissionBlockedRule(deniedOn));
         }
         // Indirect execution (iex, -EncodedCommand, FromBase64String…) defeats text matching:
         // the rules engine cannot know what actually runs. No auto-approval path may apply —
@@ -123,7 +167,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // for a user pattern that times out is "the rule does not decide, we fall back to the
         // prompt" — which is only true while there IS a prompt. A session grant on that tool
         // removes it, and the deny its author wrote would never have applied, silently.
-        var instructions = AgentInstructionFiles.Targets(matchOn);
+        var instructions = AgentInstructionFiles.Targets(matchOn, _rootDir());
         var opaque = PermissionPolicy.IsOpaqueExecution(matchOn) || instructions || forcePrompt
                      || unreadableDeny;
         if (opaque && (decision == PermissionDecision.Allow

@@ -337,7 +337,7 @@ internal static class CheckCommandHandler
         foreach (var relative in files)
         {
             var full = Path.Combine(top, relative);
-            if (Governance.ContentExclusions.Of(full) is { } why) { excluded.Add(full, why); continue; }
+            if (Governance.ContentExclusions.OfInWalk(full) is { } why) { excluded.Add(full, why); continue; }
             if (used + sb.Length >= GitCommitPolicy.MaxDiffChars) { notRead.Add(relative); continue; }
             try
             {

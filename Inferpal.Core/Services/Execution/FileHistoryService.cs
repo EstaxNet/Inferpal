@@ -278,6 +278,9 @@ internal class FileHistoryService
     /// delete what it could not save.</remarks>
     internal async Task<(bool Saved, string Snapshot)> BackUpBeforeChangeAsync(string filePath, CancellationToken ct)
     {
+        // ⚠ Every write passes here: a file that is also, under another name (a hard link), outside the workspace is not
+        // written — the write would change that file too. Reads are not refused (a dependency store's links).
+        if (File.Exists(filePath)) Tools.PathSanitizer.AssertEveryNameUnderRoot(filePath, WorkspaceRoot?.Invoke());
         bool firstInRun;
         lock (_runLock) firstInRun = Run is { } run && !run.Has(filePath);
 
