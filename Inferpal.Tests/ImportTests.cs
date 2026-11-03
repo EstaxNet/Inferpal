@@ -834,6 +834,24 @@ public sealed class ImportTests : IDisposable
         Assert.Equal("K-lan", config.ApiKey);
     }
 
+    /// <summary>An import that moves the chat to another server takes the old server's card and models with it — the ones
+    /// the import itself sets for the new server stand.</summary>
+    [Fact]
+    public void AnImportToAnotherServer_StartsTheOldServersCardAndModelsOver()
+    {
+        var config = NewConfig();
+        config.Provider = "ollama";
+        config.BaseUrl  = "http://192.168.1.50:11434";
+        config.VramBudgetGb = 24;
+        config.RagEmbeddingModel = "embeddinggemma:latest";
+        var plan = ContinueImport.Read(Write("config.yaml", ContinueYaml), Context(config));
+        var backend = plan.Items.Single(i => i.Kind == ImportItemKind.Backend);
+        Assert.False(Services.Inference.ServerScan.SameAddress(((SetBackend)backend.Effect).BaseUrl, config.BaseUrl));   // witness
+
+        ImportApplier.Apply(plan, new HashSet<string> { backend.Id }, config, _configFile, _commands, _modes, DateTime.Now);
+        Assert.Equal((0.0, ""), (config.VramBudgetGb, config.RagEmbeddingModel));
+    }
+
     /// <summary>
     /// The first rule that matches decides. Roo's allowed list comes before its denied one, so a deny appended after
     /// the allow it narrows never matched: <c>git push</c> ran unasked under a card that showed the deny ticked.

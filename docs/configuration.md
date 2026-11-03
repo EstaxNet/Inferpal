@@ -26,6 +26,12 @@ counts the unsaved changes, and **Cancel** puts the form back as it was saved.
 | **Tools and MCP servers** | MCP servers as cards that say whether each one runs, and why not; the approval rules as a table, team file first, each rule saying whether it applies; your slash commands; your agent tools. Every list keeps an *Edit as text* (or JSON) view |
 | **Language and appearance** | Interface language (independent of the editor's), the theme in use (Inferpal follows the editor's, high contrast included), density, agent steps shown open |
 
+Moving the chat to another server address (in the settings, the first-run card or `/setup`) starts over
+what was chosen for the old one: the graphics memory (measured again when the server runs on this
+machine) and the autocomplete and code search models of the roles that move with it — unless you
+changed them in the same save (autocomplete then uses the chat model, code search the best embedding
+model of the new server). A role on a server of its own keeps its model.
+
 The *Show advanced settings* box only folds: it never changes a value, and it opens by itself when a
 model per task, the sampling setting or a reasoning level is no longer at its factory value — the settings that change,
 without a word on screen, which model answers or how are never hidden.

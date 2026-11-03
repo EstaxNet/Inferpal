@@ -51,7 +51,11 @@ public sealed class AcpSetupTests
     public async Task TheMemorySetForOneServer_IsNotSavedWithAnother()
     {
         var saved = new List<InferpalConfig>();
-        var config = new InferpalConfig { Provider = "ollama", BaseUrl = "http://192.168.1.5:11434", VramBudgetGb = 24 };
+        var config = new InferpalConfig
+        {
+            Provider = "ollama", BaseUrl = "http://192.168.1.5:11434", VramBudgetGb = 24,
+            InlineCompletionModel = "qwen2.5-coder:1.5b", RagEmbeddingModel = "embeddinggemma:latest",
+        };
 
         // OpenAI-compatible, an address elsewhere, no key, the first model.
         var code = await RunAsync("3\nhttp://192.168.1.9:8000\n\n\n", new StringWriter(), saved, _ => ("openai-compatible", null),
@@ -59,6 +63,8 @@ public sealed class AcpSetupTests
 
         Assert.Equal(0, code);
         Assert.Equal(("http://192.168.1.9:8000", 0.0), (saved.Single().BaseUrl, saved.Single().VramBudgetGb));
+        // The old server's completion and search models are not this one's: they start over with it.
+        Assert.Equal(("", ""), (saved.Single().InlineCompletionModel, saved.Single().RagEmbeddingModel));
     }
 
     /// <summary>The key saved for one server never goes to another: a configured server down, the one the scan found on

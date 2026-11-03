@@ -144,19 +144,15 @@ internal static class AcpSetup
         var picked = await AskChoiceAsync(input, output, Strings.AcpSetupModelQuestion(at + 1), models.Count, at, ct);
         if (picked is null) return Stopped(output);
 
-        // ⚠ The graphics memory set is the card of the server it was set for: another server takes this machine's card
-        // when it runs here, or none — a figure from another machine would size its models and context.
-        if (!ServerScan.SameAddress(url, config.BaseUrl))
-        {
-            // The file read first: a figure another editor saved meanwhile is replaced too (a 0 over 0 is no change).
-            config.FillFromFile(nameof(InferpalConfig.VramBudgetGb));
-            config.VramBudgetGb = await Services.Hardware.HardwareProbe.TryDetectLocalVramBytesAsync(url, ct) is > 0 and var bytes
-                ? Math.Round(bytes / ModelCatalog.BytesPerGb, 1)
-                : 0;
-        }
+        var before = ServerChange.Before(config);
         config.Provider     = found;
         config.BaseUrl      = url;
         config.ApiKey       = key;
+        // ⚠ Another server: the card and the models chosen for the old one start over (ServerChange) — a figure from
+        // another machine would size its models and context. The card is then this machine's when the server runs here.
+        if (ServerChange.Follow(before, config) || !ServerScan.SameAddress(url, before.BaseUrl))
+            if (await Services.Hardware.HardwareProbe.TryDetectLocalVramBytesAsync(url, ct) is > 0 and var bytes)
+                config.VramBudgetGb = Math.Round(bytes / ModelCatalog.BytesPerGb, 1);
         config.DefaultModel = models[picked.Value];
         // Set up: no first run of an editor looks for another server over this choice.
         config.IsFirstRun   = false;

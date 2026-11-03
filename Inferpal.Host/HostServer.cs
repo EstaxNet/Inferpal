@@ -1696,10 +1696,12 @@ internal sealed partial class HostServer : IDisposable
         // Slot-held, not merely idle-checked: a settings save (or onDidChangeConfiguration) used
         // to mutate the shared Config the agent loop reads and replace the History it appends to,
         // mid-run.
+        var serverReset = false;
         await WithTurnSlotAsync("config/update", ct, async _ =>
         {
             var mcpBefore  = (s.Config.McpEnabled, s.Config.McpServersJson);
             var pinsBefore = s.Config.PinnedContextFiles;
+            var before     = Services.Inference.ServerChange.Before(s.Config);
 
             if (baseline is not null)
             {
@@ -1715,6 +1717,9 @@ internal sealed partial class HostServer : IDisposable
                     if (prop.CanRead && prop.CanWrite)
                         prop.SetValue(s.Config, prop.GetValue(incoming));
 
+            // The chat moved to another server: the card and the models chosen for the old one start over.
+            serverReset = Services.Inference.ServerChange.Follow(before, s.Config);
+
             s.Config.Save();
             // The file now holds what this session saved: a later reload follows only what changes after.
             s.FileSettings = (_fileSettings() ?? s.Config).SnapshotNow();
@@ -1726,7 +1731,7 @@ internal sealed partial class HostServer : IDisposable
         // not lost input - the field IS saved - but a protection the user believes they put in
         // place and that does not apply.
         Services.Execution.PermissionPolicy.ParseRules(s.Config.PermissionRules, out var dropped);
-        return new ConfigUpdateResult(dropped.Count);
+        return new ConfigUpdateResult(dropped.Count, serverReset);
     }
 
     /// <summary>

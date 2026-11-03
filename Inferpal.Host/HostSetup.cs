@@ -136,18 +136,19 @@ internal sealed partial class HostServer
     private static (string? Completion, string? Search, InferpalConfig After) KeptRoleModels(
         HostSession s, InferpalConfig server, string? cardCompletion, string? cardSearch)
     {
-        // "The same server" is the chat's as the settings hold it now; "on the chat's server", the chat's as it will be:
-        // a role on a server of its own at the old chat address is not on the new one.
-        var sameServer = ServerScan.SameAddress(s.Config.BaseUrl, server.BaseUrl);
+        // "On the chat's server" is the chat's as it will be: a role on a server of its own at the old chat address is not
+        // on the new one. On another server, the old server's choices start over (ServerChange, the rule every gesture
+        // that moves the chat follows) and the card's are taken.
         var after = System.Text.Json.JsonSerializer.Deserialize<InferpalConfig>(System.Text.Json.JsonSerializer.Serialize(s.Config))!;
         after.Provider = server.Provider;
         after.BaseUrl  = server.BaseUrl;
-        string? Kept(ServerRole role, string? card, string current) =>
+        ServerChange.Follow(s.Config, after);
+        string? Kept(ServerRole role, string? card, string now) =>
             !RoleServers.OnChatServer(after, role) ? null
-            : !sameServer || !string.IsNullOrWhiteSpace(card) ? card?.Trim() ?? ""
-            : current;
-        return (Kept(ServerRole.Completion, cardCompletion, s.Config.InlineCompletionModel),
-                Kept(ServerRole.Search, cardSearch, s.Config.RagEmbeddingModel), after);
+            : !string.IsNullOrWhiteSpace(card) ? card.Trim()
+            : now;
+        return (Kept(ServerRole.Completion, cardCompletion, after.InlineCompletionModel),
+                Kept(ServerRole.Search, cardSearch, after.RagEmbeddingModel), after);
     }
 
     /// <summary>

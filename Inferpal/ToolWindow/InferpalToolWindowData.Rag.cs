@@ -241,8 +241,11 @@ internal partial class InferpalToolWindowData
                 return;
             }
 
+            var before = Services.Inference.ServerChange.Before(_config);
             _config.Provider = found.Provider ?? _config.Provider;
             _config.BaseUrl  = url = found.Url;
+            // Another server: the card and the models chosen for the old one start over (measured or picked below).
+            Services.Inference.ServerChange.Follow(before, _config);
             _config.Save();
             client    = Services.Inference.InferenceProviderFactory.Create(_config);
             reachable = true;

@@ -378,6 +378,11 @@ export class SettingsBridge {
           // The rules field IS saved: it is some of its lines that are inert. Said here, not only
           // in /diagnostics, which nobody opens after writing a rule they believe is in place.
           this.shell.post({ type: 'saveDone', ok: true, rulesIgnored: result?.permissionRulesIgnored ?? 0 });
+          if (result?.serverReset) {
+            // The host started the old server's card and models over: the form shows what is saved, not what it sent —
+            // before the restart notice, which waits for the person.
+            await this.load();
+          }
           await this.shell.saved(before, SettingsBridge.parseKeys(msg.json));
         } catch (err) {
           this.shell.log(`[settings] save failed: ${String(err)}`);

@@ -612,7 +612,9 @@ internal sealed record ConfigUpdateParams(string Json, string? Base = null);
 /// the VS Code panel is TypeScript: making it re-read the DSL would be a second implementation of
 /// the same rule, hence a programmed divergence.
 /// </remarks>
-internal sealed record ConfigUpdateResult(int PermissionRulesIgnored);
+/// <param name="ServerReset">The chat moved to another server and the card and role models chosen for the old one
+/// started over (<c>ServerChange</c>): the panel shows the saved settings again.</param>
+internal sealed record ConfigUpdateResult(int PermissionRulesIgnored, bool ServerReset = false);
 
 /// <summary>`config/reload` — the settings the session took from the file (JSON keys), its default and agent models after
 /// them, and whether a new KIND of model server was saved (the session keeps talking to the one it started with; a new

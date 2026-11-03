@@ -55,6 +55,7 @@ internal static class ImportApplier
         var applied = new List<ImportItem>();
         var failed = new List<ImportFailure>();
         var serverChanged = false;
+        var before = Inference.ServerChange.Before(config, fromFile: false);
         foreach (var item in chosen)
         {
             try
@@ -72,6 +73,8 @@ internal static class ImportApplier
                 failed.Add(new(item, ex.Message));
             }
         }
+        // Another server: the card and the models the import did not set start over (ServerChange).
+        Inference.ServerChange.Follow(before, config);
         if (applied.Any(i => i.Kind == ImportItemKind.Command)) PromptFilesService.InvalidateCache();
         return new ImportOutcome(applied, failed, backup, applied.Any(TouchesTheSettings), serverChanged);
     }

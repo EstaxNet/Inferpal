@@ -1451,7 +1451,22 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.ModelIdleTimeoutMinutes   = ReadInt(modelIdleTimeoutText, "modelIdleTimeoutMinutes", () => Strings.LabelModelIdleTimeout,
                                                     edited.ModelIdleTimeoutMinutes, c => c.ModelIdleTimeoutMinutes);
         RoleServerSettings.Write(roleServers, edited, Note);
+        var before = Services.Inference.ServerChange.Before(_config);
         _config.ApplyChangesFrom(edited, _opened);
+        // The chat moved to another server: the card and the models chosen for the old one start over, and the boxes say
+        // so — left showing the old card, the next save would write it back.
+        if (Services.Inference.ServerChange.Follow(before, _config))
+        {
+            edited.VramBudgetGb          = _config.VramBudgetGb;
+            edited.InlineCompletionModel = _config.InlineCompletionModel;
+            edited.RagEmbeddingModel     = _config.RagEmbeddingModel;
+            await RunOnVMContextAsync(() =>
+            {
+                VramBudgetText        = edited.VramBudgetGb > 0 ? edited.VramBudgetGb.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture) : string.Empty;
+                InlineCompletionModel = edited.InlineCompletionModel;
+                RagEmbeddingModel     = edited.RagEmbeddingModel;
+            });
+        }
         _config.Save();
         _opened = edited.SnapshotNow();
         await RunOnVMContextAsync(ResetKeys);   // a key just saved is masked from now on

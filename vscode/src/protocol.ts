@@ -1226,6 +1226,8 @@ export interface PinsResult {
 export interface ConfigUpdateResult {
   /** Permission rules the product could not read — the field is saved, these lines are inert. */
   permissionRulesIgnored: number;
+  /** The chat moved to another server: the card and role models chosen for the old one started over. */
+  serverReset?: boolean;
 }
 
 // ── First run (`setup/*`): the search for a server, the proposal, the download ───────────────────
