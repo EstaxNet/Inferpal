@@ -312,14 +312,16 @@ internal static class UndoRunCommandHandler
         };
     }
 
-    /// <summary>Shortens a path under <paramref name="root"/>; anything else passes through.</summary>
-    private static string Relativise(string path, string? root)
+    /// <summary>A file named under <paramref name="root"/>; as it is when outside it, or when it cannot be.</summary>
+    internal static string Relativise(string path, string? root)
     {
         if (string.IsNullOrEmpty(root)) return path;
         try
         {
             var rel = Path.GetRelativePath(root, path);
-            return rel.StartsWith("..", StringComparison.Ordinal) ? path : rel;
+            // Outside: "..", "../x", or another drive. A file of the root whose name starts with two dots is inside.
+            return rel == ".." || rel.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                   || rel.StartsWith("../", StringComparison.Ordinal) || Path.IsPathRooted(rel) ? path : rel;
         }
         catch (Exception ex)
         {

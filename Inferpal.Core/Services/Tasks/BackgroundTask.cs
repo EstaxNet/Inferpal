@@ -45,6 +45,8 @@ internal enum BackgroundTaskState
 /// <param name="WaitingForServer">The server it waits for, named as said ("LM Studio at localhost:1234"); <c>null</c>
 /// while the server answers.</param>
 /// <param name="WorkspaceRoot">The workspace it was submitted in — a retry runs there or not at all.</param>
+/// <param name="Said">The notice of a start said it, and the person dismissed it.</param>
+/// <param name="Inherited">Read from the journal, left by a queue that is gone (an earlier process, a closed window).</param>
 internal sealed record BackgroundTaskSnapshot(
     string              Id,
     string              Objective,
@@ -63,7 +65,9 @@ internal sealed record BackgroundTaskSnapshot(
     TaskEndCause        Cause = TaskEndCause.None,
     bool                Read = false,
     string?             WaitingForServer = null,
-    string?             WorkspaceRoot = null)
+    string?             WorkspaceRoot = null,
+    bool                Said = false,
+    bool                Inherited = false)
 {
     /// <summary>Steps taken that the journal no longer holds.</summary>
     internal int StepsNotKept => Math.Max(0, StepsTaken - Steps.Count);

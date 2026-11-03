@@ -175,6 +175,66 @@ public sealed class RunsAcrossRestartsTests : IDisposable
         Assert.Contains(Strings.UndoRunCutShort, answer, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// A run its editor's closing cut is said at that editor's next start — when, what it changed, what Undo run gives back
+    /// — and never by the other editor, whose closing it was not; dismissed, it is not said again.
+    /// </summary>
+    [Fact]
+    public async Task ARunTheClosingCut_IsSaidByItsOwnEditor_Once()
+    {
+        var file = File("A.cs", "a0\n");
+        var dead = Service();
+        dead.Editor = "vs";
+        dead.BeginRun();
+        await Edit(dead, file, "a0\na1\n");
+        var run = Assert.Single(dead.Runs);
+        await System.IO.File.WriteAllTextAsync(run.ManifestPath!,
+            RunManifest.Serialize(run, open: true, RunManifest.KeyIn(_user)!, pid: int.MaxValue));
+
+        // A later rewrite of the manifest (a Keep in the review) does not move the time of the run's last change.
+        System.IO.File.SetLastWriteTime(run.ManifestPath!, DateTime.Now.AddDays(1));
+
+        var runs = Service().Runs;
+        Assert.Equal("vs", Assert.Single(runs).Editor);   // the manifest keeps the editor
+        Assert.Equal(run.LastChange!.Value, runs[0].LastChange!.Value, TimeSpan.FromSeconds(1));
+        var notice = Services.Presentation.AwayNotice.Build(runs, "vs", "Visual Studio", [], new HashSet<string>(), DateTime.Now);
+        Assert.NotNull(notice?.Run);
+        Assert.Equal(run.Id, notice!.Run!.RunId);
+        Assert.Equal(Strings.AwayRunCut(Services.Presentation.AwayNotice.Time(run.StartedAt, DateTime.Now), "Visual Studio", 1,
+                                        Services.Presentation.AwayNotice.Time(run.LastChange!.Value, DateTime.Now)), notice.Run.Text);
+        Assert.Equal(1, Assert.Single(notice.Run.Files).Added);
+
+        Assert.Null(Services.Presentation.AwayNotice.Build(runs, "vscode", "VS Code", [], new HashSet<string>(), DateTime.Now));
+        Assert.Null(Services.Presentation.AwayNotice.Build(runs, "vs", "Visual Studio", [], new HashSet<string> { run.Id }, DateTime.Now));
+    }
+
+    /// <summary>Only the newest run of the editor is said, when the closing cut it: a run after a cut one shows the editor
+    /// ran on, and the older cut run is not said at the next start.</summary>
+    [Fact]
+    public async Task AnOlderCutRun_IsNotSaid_OnceTheEditorRanOn()
+    {
+        var file = File("A.cs", "a0\n");
+        var dead = Service();
+        dead.Editor = "vs";
+        dead.BeginRun();
+        await Edit(dead, file, "a0\na1\n");
+        var cut = Assert.Single(dead.Runs);
+        await System.IO.File.WriteAllTextAsync(cut.ManifestPath!,
+            RunManifest.Serialize(cut, open: true, RunManifest.KeyIn(_user)!, pid: int.MaxValue));
+        Assert.NotNull(Services.Presentation.AwayNotice.Build(Service().Runs, "vs", "Visual Studio", [], new HashSet<string>(),
+                                                              DateTime.Now));   // witness: said while it is the newest
+
+        await Task.Delay(20);   // the next run's id is later: ids begin with the start, to the millisecond
+        var next = Service();
+        next.Editor = "vs";
+        next.BeginRun();
+        await Edit(next, file, "a0\na1\na2\n");
+        next.EndRun();
+
+        Assert.Null(Services.Presentation.AwayNotice.Build(Service().Runs, "vs", "Visual Studio", [], new HashSet<string>(),
+                                                           DateTime.Now));
+    }
+
     /// <summary>A run cut short stays cut short once this process writes it again (a Keep in its review): rewritten as
     /// closed, the warning that its last changes may be missing would go.</summary>
     [Fact]

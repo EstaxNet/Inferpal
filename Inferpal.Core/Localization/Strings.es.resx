@@ -1124,6 +1124,16 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="TaskRetried" xml:space="preserve"><value>Tarea **{0}** relanzada desde `{1}`: {2}</value></data>
   <data name="TaskRetryNotFinished" xml:space="preserve"><value>La tarea `{0}` no ha terminado: `/task stop {0}` la detiene y después podrá volver a ejecutarse.</value></data>
   <data name="TaskJournalSetAside" xml:space="preserve"><value>No se pudieron leer las tareas en segundo plano guardadas para este espacio de trabajo: se conserva una copia en `{0}`.</value></data>
+  <data name="AwayTitle" xml:space="preserve"><value>Mientras no estabas</value></data>
+  <data name="AwayRunCut" xml:space="preserve"><value>La ejecución iniciada a las {0} se detuvo al cerrarse {1}. Había cambiado {2} {2:archivo|archivos}, el último a las {3}.</value></data>
+  <data name="AwayRunCutWarning" xml:space="preserve"><value>Un cambio escrito después de las {0} puede no haberse registrado: Deshacer ejecución solo restaura {1:el archivo de arriba|los archivos de arriba} ({1}).</value></data>
+  <data name="AwayTaskDone" xml:space="preserve"><value>La tarea en segundo plano `{0}` terminó a las {1}, antes de cerrarse {2}, y su informe nunca se abrió.</value></data>
+  <data name="AwayTaskDoneKept" xml:space="preserve"><value>El informe se conserva.</value></data>
+  <data name="AwayTaskDoneProposalsKept" xml:space="preserve"><value>El informe y sus {0} {0:cambio propuesto se conservan|cambios propuestos se conservan}: no se ha aplicado nada.</value></data>
+  <data name="AwayTaskStopped" xml:space="preserve"><value>La tarea en segundo plano `{0}` estaba en curso al cerrarse {1} y se detuvo tras {2} {2:paso|pasos}. Vuelve a ejecutarla con un número nuevo.</value></data>
+  <data name="AwayTaskStoppedBeforeStart" xml:space="preserve"><value>La tarea en segundo plano `{0}` esperaba al cerrarse {1} y nunca empezó. Vuelve a ejecutarla con un número nuevo.</value></data>
+  <data name="AwayOpenReport" xml:space="preserve"><value>Abrir el informe</value></data>
+  <data name="AwayNoAnswer" xml:space="preserve"><value>Detenida: {0} se cerró durante esta ejecución. No se escribió ninguna respuesta.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Acciones de código</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Archivos</value></data>

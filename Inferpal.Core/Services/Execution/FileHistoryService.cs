@@ -705,6 +705,7 @@ internal class FileHistoryService
                                                           System.Globalization.CultureInfo.InvariantCulture)
                                  + "_" + _instanceId + "-" + Interlocked.Increment(ref _runSequence).ToString(
                                      "D4", System.Globalization.CultureInfo.InvariantCulture));
+        run.Editor = Editor;
         lock (_runLock)
         {
             if (alreadyRead is not null) run.NoteRead(alreadyRead);
@@ -1635,6 +1636,10 @@ internal class FileHistoryService
     /// </remarks>
     internal Func<string?>? WorkspaceRoot { get; set; }
 
+    /// <summary>The editor this service records runs for (the auto-save slot owner: <c>vs</c>, <c>vscode</c>), written
+    /// with each run (<see cref="HistoryRun.Editor"/>); <c>null</c>: not said.</summary>
+    internal string? Editor { get; set; }
+
     /// <summary>
     /// Whether new snapshots go to the user's own application data instead of the project (<c>historyStorage: user</c>).
     /// Set by the tool registry, which reads the configuration at each call; <c>null</c> (a bare service) keeps them in
@@ -1934,6 +1939,9 @@ internal sealed class HistoryRun
     /// <summary>Read from disk: the process that recorded it, kept when this one writes the run again; <c>null</c> for
     /// this process's own runs.</summary>
     public int? RecordedBy { get; set; }
+    /// <summary>The editor whose turn recorded it (the auto-save slot owner: <c>vs</c>, <c>vscode</c>); <c>null</c> for a
+    /// run written before editors were recorded. A run the closing cut is said by its own editor only.</summary>
+    public string? Editor { get; set; }
 
     /// <summary>
     /// The run has been undone. ⚠ It stays the most recent run with changes, so without this a second <c>/undo-run</c> — or
@@ -2079,7 +2087,12 @@ internal sealed class HistoryRun
         // ⚠ Given back mid-run, then written again by the same run: it holds the run's version, which /undo-run must
         // give back too — still marked given back, it would be skipped.
         else NoteRedone(originalPath);
+        LastChange = DateTime.Now;
     }
+
+    /// <summary>When the run last recorded a file it changes — kept in its manifest, never the time the manifest was
+    /// rewritten (a Keep in its review rewrites it a day later); <c>null</c> for a run written before it was kept.</summary>
+    public DateTime? LastChange { get; set; }
 
     public void RecordToolCall(string tool, string? subject, long durationMs, bool error)
     {

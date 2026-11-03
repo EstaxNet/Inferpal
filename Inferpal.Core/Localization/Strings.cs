@@ -2112,6 +2112,22 @@ internal static class Strings
     /// <summary>A tasks journal that could not be read: where the copy kept of it is.</summary>
     public static string TaskJournalSetAside(string path)    => Format(Get(nameof(TaskJournalSetAside)), path);
 
+    // ── The notice of a start: what the closing of the editor cut or left unread ──────────────
+    public static string AwayTitle                           => Get(nameof(AwayTitle));
+    public static string AwayRunCut(string started, string editor, int files, string last) =>
+        Format(Get(nameof(AwayRunCut)), started, editor, files, last);
+    public static string AwayRunCutWarning(string last, int files) => Format(Get(nameof(AwayRunCutWarning)), last, files);
+    public static string AwayTaskDone(string id, string at, string editor) => Format(Get(nameof(AwayTaskDone)), id, at, editor);
+    public static string AwayTaskDoneKept                    => Get(nameof(AwayTaskDoneKept));
+    public static string AwayTaskDoneProposalsKept(int count) => Format(Get(nameof(AwayTaskDoneProposalsKept)), count);
+    public static string AwayTaskStopped(string id, string editor, int steps) =>
+        Format(Get(nameof(AwayTaskStopped)), id, editor, steps);
+    public static string AwayTaskStoppedBeforeStart(string id, string editor) =>
+        Format(Get(nameof(AwayTaskStoppedBeforeStart)), id, editor);
+    public static string AwayOpenReport                      => Get(nameof(AwayOpenReport));
+    /// <summary>Under a question whose run the closing cut: no answer will ever follow it.</summary>
+    public static string AwayNoAnswer(string editor)         => Format(Get(nameof(AwayNoAnswer)), editor);
+
     // ── Inline diff preview ─────────────────────────────────────────────────────
     public static string CodeActionPreviewShown              => Get(nameof(CodeActionPreviewShown));
     // The preview's three mute outcomes (in-proc). They are composed HERE, host-side, and travel

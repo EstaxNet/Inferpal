@@ -1124,6 +1124,16 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="TaskRetried" xml:space="preserve"><value>Zadanie **{0}** uruchomione ponownie z `{1}`: {2}</value></data>
   <data name="TaskRetryNotFinished" xml:space="preserve"><value>Zadanie `{0}` jeszcze się nie zakończyło: `/task stop {0}` je zatrzyma, potem można je uruchomić ponownie.</value></data>
   <data name="TaskJournalSetAside" xml:space="preserve"><value>Nie udało się odczytać zadań w tle zapisanych dla tego obszaru roboczego: kopia jest zachowana w `{0}`.</value></data>
+  <data name="AwayTitle" xml:space="preserve"><value>Gdy cię nie było</value></data>
+  <data name="AwayRunCut" xml:space="preserve"><value>Przebieg uruchomiony o {0} zatrzymał się przy zamknięciu {1}. Zmienił {2} {2:plik|pliki|plików}, ostatni o {3}.</value></data>
+  <data name="AwayRunCutWarning" xml:space="preserve"><value>Zmiana zapisana po {0} mogła nie zostać zarejestrowana: Cofnij przebieg przywraca tylko powyższe pliki ({1}).</value></data>
+  <data name="AwayTaskDone" xml:space="preserve"><value>Zadanie w tle `{0}` zakończyło się o {1}, przed zamknięciem {2}, a jego raport nigdy nie został otwarty.</value></data>
+  <data name="AwayTaskDoneKept" xml:space="preserve"><value>Raport jest zachowany.</value></data>
+  <data name="AwayTaskDoneProposalsKept" xml:space="preserve"><value>Raport i proponowane zmiany ({0}) są zachowane — nic nie zostało zastosowane.</value></data>
+  <data name="AwayTaskStopped" xml:space="preserve"><value>Zadanie w tle `{0}` działało przy zamknięciu {1} i zatrzymało się po {2} {2:kroku|krokach|krokach}. Uruchom je ponownie pod nowym numerem.</value></data>
+  <data name="AwayTaskStoppedBeforeStart" xml:space="preserve"><value>Zadanie w tle `{0}` czekało przy zamknięciu {1} i nigdy nie ruszyło. Uruchom je ponownie pod nowym numerem.</value></data>
+  <data name="AwayOpenReport" xml:space="preserve"><value>Otwórz raport</value></data>
+  <data name="AwayNoAnswer" xml:space="preserve"><value>Zatrzymano — {0} zamknięto podczas tego przebiegu. Nie napisano żadnej odpowiedzi.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Ogólne</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Akcje na kodzie</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Pliki</value></data>

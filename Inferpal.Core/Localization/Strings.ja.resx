@@ -1124,6 +1124,16 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="TaskRetried" xml:space="preserve"><value>タスク **{0}** を `{1}` から再実行しました: {2}</value></data>
   <data name="TaskRetryNotFinished" xml:space="preserve"><value>タスク `{0}` はまだ終了していません: `/task stop {0}` で停止すると再実行できます。</value></data>
   <data name="TaskJournalSetAside" xml:space="preserve"><value>このワークスペースに保存されたバックグラウンドタスクを読み込めませんでした: コピーを `{0}` に保存しています。</value></data>
+  <data name="AwayTitle" xml:space="preserve"><value>不在の間に</value></data>
+  <data name="AwayRunCut" xml:space="preserve"><value>{0} に開始した実行は {1} を閉じたため停止しました。{2} 個のファイルを変更しており、最後は {3} でした。</value></data>
+  <data name="AwayRunCutWarning" xml:space="preserve"><value>{0} 以降に書かれた変更は記録されていない可能性があります: 「実行を元に戻す」は上の {1} 個のファイルだけを戻します。</value></data>
+  <data name="AwayTaskDone" xml:space="preserve"><value>バックグラウンドタスク `{0}` は {2} を閉じる前の {1} に終了しましたが、レポートは一度も開かれていません。</value></data>
+  <data name="AwayTaskDoneKept" xml:space="preserve"><value>レポートは保持されています。</value></data>
+  <data name="AwayTaskDoneProposalsKept" xml:space="preserve"><value>レポートと提案された {0} 件の変更は保持されています — 何も適用されていません。</value></data>
+  <data name="AwayTaskStopped" xml:space="preserve"><value>バックグラウンドタスク `{0}` は {1} を閉じたときに実行中で、{2} ステップ後に停止しました。新しい番号で再実行してください。</value></data>
+  <data name="AwayTaskStoppedBeforeStart" xml:space="preserve"><value>バックグラウンドタスク `{0}` は {1} を閉じたときに待機中で、開始されませんでした。新しい番号で再実行してください。</value></data>
+  <data name="AwayOpenReport" xml:space="preserve"><value>レポートを開く</value></data>
+  <data name="AwayNoAnswer" xml:space="preserve"><value>停止 — この実行中に {0} が閉じられました。回答は書かれていません。</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>全般</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>コードアクション</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>ファイル</value></data>

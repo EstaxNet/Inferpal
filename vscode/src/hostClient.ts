@@ -7,6 +7,7 @@ import type { CancellationToken } from 'vscode-jsonrpc';
 import type { DebugDelegate } from './debugBridge';
 import {
   ActiveDocumentDto,
+  AwayNotice,
   ApprovalNote,
   ApprovalRuleTable,
   McpCardsResult,
@@ -938,6 +939,16 @@ export class HostClient {
 
   sessionDelete(name: string): Promise<boolean> {
     return this.connection().sendRequest<boolean>('session/delete', { name });
+  }
+
+  /** The notice of a start: what the closing of VS Code cut or left unread; null when there is nothing to say. */
+  sessionAway(endsOnAQuestion: boolean): Promise<AwayNotice | null> {
+    return this.connection().sendRequest<AwayNotice | null>('session/away', { endsOnAQuestion });
+  }
+
+  /** The notice dismissed: its runs and tasks are not said again. */
+  sessionAwayDismissed(runIds: string[], taskIds: string[]): Promise<void> {
+    return this.connection().sendRequest<void>('session/awayDismissed', { runIds, taskIds });
   }
 
   /** A question's "Go back here": what going back would do to the files, or why it cannot. `question` is the clicked

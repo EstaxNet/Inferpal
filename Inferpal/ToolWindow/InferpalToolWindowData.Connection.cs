@@ -138,6 +138,7 @@ internal partial class InferpalToolWindowData
                 // Pin the workspace root (RAG on or off) and follow solution switches.
                 PinWorkspaceRoot();
                 await RestoreLateSlotAsync(ct);
+                await ShowAwayNoticeAsync();
 
                 var url = _config.BaseUrl;
                 // A backend switched in Settings applies at restart: probing the new address with the previous
@@ -338,6 +339,61 @@ internal partial class InferpalToolWindowData
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { Diagnostics.Swallow("Session.LateRestore", ex); }
+    }
+
+    /// <summary>The notice of the start was looked for (<see cref="ShowAwayNoticeAsync"/>): once per process — a solution
+    /// opened later did not see Visual Studio close.</summary>
+    private bool _awayAsked;
+
+    /// <summary>
+    /// The notice of a start (<see cref="Services.Presentation.AwayNotice"/>): what the closing of Visual Studio cut or
+    /// left unread — the newest run it cut, the background tasks it stopped or nobody read —, above the restored
+    /// conversation. Once per workspace, after the start's restore; dismissed, never said again.
+    /// </summary>
+    private async Task ShowAwayNoticeAsync()
+    {
+        try
+        {
+            var root = _indexService.RootDir;
+            if (_awayAsked || string.IsNullOrEmpty(root)) return;
+            // After the start's restore, late one included (a window built before its solution): the card goes above the
+            // conversation, and the no-answer line under its question.
+            if (!_conversationRoot.EverBound && !PathComparer.SameDirectory(root, _lateRestoreTried)) return;
+            // VSTHRD003 is a false positive here, as in PendingPrompt: out of process, no JTF main thread to deadlock
+            // against; LoadSessionAsync never throws.
+#pragma warning disable VSTHRD003
+            await _startupSessionLoad;
+#pragma warning restore VSTHRD003
+            _awayAsked = true;
+
+            var queue = BackgroundTasks();
+            var notice = Services.Presentation.AwayNotice.Build(_tools.History.Runs, ConversationStore.VisualStudioSlot,
+                                                               "Visual Studio", queue.List(), queue.SaidRuns(), DateTime.Now, root);
+            if (notice is null) return;
+            await RunOnVMContextAsync(() =>
+            {
+                if (Messages.Any(m => m.Role == "away")) return;
+                ChatMessageItem? card = null;
+                card = ChatMessageItem.AwayMsg(notice,
+                    review:  () => { if (notice.Run is { } run) _ = ReviewRunAsync(run.RunId, null, null, under: card); },
+                    undo:    () => { if (notice.Run is { } run) _ = UndoFromResultBarAsync(run.RunId); },
+                    dismiss: () =>
+                    {
+                        _ = Task.Run(() => queue.MarkSaid(notice.RunIds, notice.TaskIds));
+                        _ = RunOnVMContextAsync(() => { if (card is not null) Messages.Remove(card); });
+                    },
+                    act: task => _ = HandleSlashCommandAsync(task.Retry ? $"/task retry {task.Id}" : $"/task {task.Id}",
+                                                             CancellationToken.None));
+                ApplyItemTheme(card);
+                // Under a restored question no answer will follow: said there, and kept with the conversation.
+                if (notice.Run is not null && !IsLoading && !_sendStarting
+                    && Messages.LastOrDefault(m => m.Role is "user" or "assistant" && m.ToolName != SessionManager.NoticeMarker)
+                           is { Role: "user", IsNote: false })
+                    InsertThemed(ChatMessageItem.NoticeMsg(Strings.AwayNoAnswer("Visual Studio")));
+                Messages.Insert(0, card);
+            });
+        }
+        catch (Exception ex) { Diagnostics.Swallow("Session.AwayNotice", ex); }
     }
 
     /// <summary>Whether a question was asked in this window, or one is on its way — or the person set the conversation up

@@ -175,6 +175,9 @@ internal sealed partial class HostServer : IDisposable
         var debug    = p.Debug ? new RpcDebugSession(rpc, declared: true) : null;
         var tools    = new ToolRegistry(editor, approval, config, index, client,
                                         new ProjectMapService(editor, index), mcp, docs, overlay, debug);
+        // The runs this host records are its editor's: VS Code's, or an Agent Client Protocol thread's — never said by VS
+        // Code as closed with it.
+        tools.History.Editor = p.EditorSurface ? ConversationStore.VsCodeSlot : AcpRunsEditor;
 
         // Pin the file-tool confinement root even when RAG never indexes; indexing itself starts
         // once the session exists (below).
@@ -2006,6 +2009,29 @@ internal sealed partial class HostServer : IDisposable
     /// </summary>
     private static int NextTurnTokens(HostSession s) =>
         ContextManager.NextTurnLoad(s.LastPromptTokens, ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)));
+
+    /// <summary>The editor an ACP thread's runs are recorded under: no start of VS Code says them.</summary>
+    internal const string AcpRunsEditor = "acp";
+
+    /// <summary>
+    /// The notice of a start: the newest run of VS Code the closing cut, and the background tasks it stopped or left
+    /// unread — <c>null</c> when there is nothing to say. <paramref name="p"/> names the restored conversation: when its
+    /// last message is a question and a run was cut, the line under it says no answer was written.
+    /// </summary>
+    [JsonRpcMethod("session/away", UseSingleObjectParameterDeserialization = true)]
+    public AwayNoticeDto? SessionAway(SessionAwayParams p)
+    {
+        var s     = Session();
+        var queue = TaskQueue(s);
+        var model = Services.Presentation.AwayNotice.Build(s.Tools.History.Runs, ConversationStore.VsCodeSlot, "VS Code",
+                                                          queue.List(), queue.SaidRuns(), DateTime.Now, s.RootDir);
+        return model is null ? null
+            : AwayNoticeDto.Of(model, model.Run is not null && p.EndsOnAQuestion ? Strings.AwayNoAnswer("VS Code") : null);
+    }
+
+    /// <summary>The notice of a start dismissed: what it said is not said again.</summary>
+    [JsonRpcMethod("session/awayDismissed", UseSingleObjectParameterDeserialization = true)]
+    public void SessionAwayDismissed(AwayDismissedParams p) => TaskQueue(Session()).MarkSaid(p.RunIds, p.TaskIds);
 
     [JsonRpcMethod("session/delete", UseSingleObjectParameterDeserialization = true)]
     public bool SessionDelete(SessionRefParams p) => Session().Store.Delete(p.Name);

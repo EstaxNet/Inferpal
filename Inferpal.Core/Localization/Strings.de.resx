@@ -1124,6 +1124,16 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="TaskRetried" xml:space="preserve"><value>Aufgabe **{0}** erneut gestartet aus `{1}`: {2}</value></data>
   <data name="TaskRetryNotFinished" xml:space="preserve"><value>Aufgabe `{0}` ist nicht beendet: `/task stop {0}` hält sie an, danach kann sie erneut laufen.</value></data>
   <data name="TaskJournalSetAside" xml:space="preserve"><value>Die für diesen Arbeitsbereich gespeicherten Hintergrundaufgaben konnten nicht gelesen werden: Eine Kopie liegt unter `{0}`.</value></data>
+  <data name="AwayTitle" xml:space="preserve"><value>Während Sie weg waren</value></data>
+  <data name="AwayRunCut" xml:space="preserve"><value>Der um {0} gestartete Lauf wurde beim Schließen von {1} angehalten. Er hatte {2} {2:Datei|Dateien} geändert, die letzte um {3}.</value></data>
+  <data name="AwayRunCutWarning" xml:space="preserve"><value>Eine nach {0} geschriebene Änderung wurde womöglich nicht erfasst: Lauf rückgängig stellt nur die {1} {1:obige Datei|obigen Dateien} wieder her.</value></data>
+  <data name="AwayTaskDone" xml:space="preserve"><value>Hintergrundaufgabe `{0}` endete um {1}, vor dem Schließen von {2}, und ihr Bericht wurde nie geöffnet.</value></data>
+  <data name="AwayTaskDoneKept" xml:space="preserve"><value>Der Bericht bleibt erhalten.</value></data>
+  <data name="AwayTaskDoneProposalsKept" xml:space="preserve"><value>Der Bericht und seine {0} {0:vorgeschlagene Änderung bleiben|vorgeschlagenen Änderungen bleiben} erhalten — nichts wurde angewendet.</value></data>
+  <data name="AwayTaskStopped" xml:space="preserve"><value>Hintergrundaufgabe `{0}` lief beim Schließen von {1} und wurde nach {2} {2:Schritt|Schritten} angehalten. Starten Sie sie unter neuer Nummer erneut.</value></data>
+  <data name="AwayTaskStoppedBeforeStart" xml:space="preserve"><value>Hintergrundaufgabe `{0}` wartete beim Schließen von {1} und startete nie. Starten Sie sie unter neuer Nummer erneut.</value></data>
+  <data name="AwayOpenReport" xml:space="preserve"><value>Bericht öffnen</value></data>
+  <data name="AwayNoAnswer" xml:space="preserve"><value>Angehalten — {0} wurde während dieses Laufs geschlossen. Es wurde keine Antwort geschrieben.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Code-Aktionen</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Dateien</value></data>

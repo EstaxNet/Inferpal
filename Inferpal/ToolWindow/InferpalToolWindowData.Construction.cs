@@ -35,6 +35,8 @@ internal partial class InferpalToolWindowData
         _client          = client;
         _orchestrator    = new AgentOrchestrator(client, config);
         _tools           = tools;
+        // The runs this window records are Visual Studio's: a run the closing cuts is said here only.
+        _tools.History.Editor = ConversationStore.VisualStudioSlot;
         // While nothing is pinned, the skills are read where the system prompt's catalog reads them: the project root.
         _tools.ProjectRootFallback = () => FindProjectRoot();
         _config          = config;

@@ -1124,6 +1124,16 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="TaskRetried" xml:space="preserve"><value>Tâche **{0}** relancée depuis `{1}` : {2}</value></data>
   <data name="TaskRetryNotFinished" xml:space="preserve"><value>La tâche `{0}` n'est pas terminée : `/task stop {0}` l'arrête, elle pourra ensuite repartir.</value></data>
   <data name="TaskJournalSetAside" xml:space="preserve"><value>Les tâches de fond gardées pour cet espace de travail n'ont pas pu être lues : une copie est gardée dans `{0}`.</value></data>
+  <data name="AwayTitle" xml:space="preserve"><value>Pendant votre absence</value></data>
+  <data name="AwayRunCut" xml:space="preserve"><value>Le run lancé à {0} s'est arrêté à la fermeture de {1}. Il avait modifié {2} {2:fichier|fichiers}, le dernier à {3}.</value></data>
+  <data name="AwayRunCutWarning" xml:space="preserve"><value>Une modification écrite après {0} peut ne pas avoir été enregistrée : Annuler le run ne remet que {1:le fichier ci-dessus|les fichiers ci-dessus} ({1}).</value></data>
+  <data name="AwayTaskDone" xml:space="preserve"><value>La tâche de fond `{0}` s'est terminée à {1}, avant la fermeture de {2}, et son rapport n'a jamais été ouvert.</value></data>
+  <data name="AwayTaskDoneKept" xml:space="preserve"><value>Le rapport est gardé.</value></data>
+  <data name="AwayTaskDoneProposalsKept" xml:space="preserve"><value>Le rapport et ses {0} {0:modification proposée sont gardés|modifications proposées sont gardés} — rien n'a été appliqué.</value></data>
+  <data name="AwayTaskStopped" xml:space="preserve"><value>La tâche de fond `{0}` tournait à la fermeture de {1} et s'est arrêtée après {2} {2:étape|étapes}. Relancez-la sous un nouveau numéro.</value></data>
+  <data name="AwayTaskStoppedBeforeStart" xml:space="preserve"><value>La tâche de fond `{0}` attendait à la fermeture de {1} et n'a jamais démarré. Relancez-la sous un nouveau numéro.</value></data>
+  <data name="AwayOpenReport" xml:space="preserve"><value>Ouvrir le rapport</value></data>
+  <data name="AwayNoAnswer" xml:space="preserve"><value>Arrêté — {0} s'est fermé pendant ce run. Aucune réponse n'a été écrite.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Méta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Actions de code</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Fichiers</value></data>

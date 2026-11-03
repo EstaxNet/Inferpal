@@ -2,7 +2,7 @@
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
 import type {
-  ApprovalCard, CutCard, ImportCard, InputCard, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunSummary,
+  ApprovalCard, AwayNotice, CutCard, ImportCard, InputCard, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunSummary,
   SavedMessage, ServerInstallCard, ServerInstallReport, SetupPlace,
   SetupPlan,
   XRayPanel,
@@ -288,10 +288,14 @@ export type ExtToWebview =
   /** The slash commands, re-read when a command starts being typed. */
   | { type: 'commands'; commands: WvSlashCommand[] }
   /** The first-run card, or null to take it away. */
-  | { type: 'setup'; view: WvSetupView | null };
+  | { type: 'setup'; view: WvSetupView | null }
+  /** The notice of a start: what the closing of VS Code cut or left unread, above the conversation. */
+  | { type: 'awayNotice'; notice: AwayNotice };
 
 export type WebviewToExt =
   | { type: 'ready' }
+  /** The notice of a start dismissed: what it said is not said again. */
+  | { type: 'awayDismissed'; runIds: string[]; taskIds: string[] }
   /** `typed`: the composer's text, which the webview cleared as it sent — a refusal gives it back. */
   | { type: 'send'; text: string; typed?: boolean }
   /** Enter during a turn: a note for the run's next step (sent after the turn when no step will read it). */

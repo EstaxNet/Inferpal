@@ -1124,6 +1124,16 @@
   <data name="TaskRetried" xml:space="preserve"><value>Задача **{0}** перезапущена из `{1}`: {2}</value></data>
   <data name="TaskRetryNotFinished" xml:space="preserve"><value>Задача `{0}` ещё не завершена: `/task stop {0}` остановит её, после чего её можно запустить снова.</value></data>
   <data name="TaskJournalSetAside" xml:space="preserve"><value>Не удалось прочитать фоновые задачи, сохранённые для этой рабочей области: копия сохранена в `{0}`.</value></data>
+  <data name="AwayTitle" xml:space="preserve"><value>Пока вас не было</value></data>
+  <data name="AwayRunCut" xml:space="preserve"><value>Запуск, начатый в {0}, остановлен при закрытии {1}. Он изменил {2} {2:файл|файла|файлов}, последний — в {3}.</value></data>
+  <data name="AwayRunCutWarning" xml:space="preserve"><value>Изменение, записанное после {0}, могло не сохраниться: «Отменить запуск» вернёт только {1:файл выше|файлы выше|файлы выше} ({1}).</value></data>
+  <data name="AwayTaskDone" xml:space="preserve"><value>Фоновая задача `{0}` завершилась в {1}, до закрытия {2}, и её отчёт так и не открыли.</value></data>
+  <data name="AwayTaskDoneKept" xml:space="preserve"><value>Отчёт сохранён.</value></data>
+  <data name="AwayTaskDoneProposalsKept" xml:space="preserve"><value>Отчёт и предложенные изменения ({0}) сохранены — ничего не применено.</value></data>
+  <data name="AwayTaskStopped" xml:space="preserve"><value>Фоновая задача `{0}` выполнялась при закрытии {1} и остановилась после {2} {2:шага|шагов|шагов}. Запустите её снова под новым номером.</value></data>
+  <data name="AwayTaskStoppedBeforeStart" xml:space="preserve"><value>Фоновая задача `{0}` ожидала при закрытии {1} и так и не началась. Запустите её снова под новым номером.</value></data>
+  <data name="AwayOpenReport" xml:space="preserve"><value>Открыть отчёт</value></data>
+  <data name="AwayNoAnswer" xml:space="preserve"><value>Остановлено — {0} закрылся во время этого запуска. Ответ не был написан.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Общее</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Действия с кодом</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Файлы</value></data>

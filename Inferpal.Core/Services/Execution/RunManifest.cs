@@ -60,7 +60,9 @@ internal static class RunManifest
         [property: JsonPropertyName("uncovered")] List<NoteDto>? Uncovered,
         [property: JsonPropertyName("undone"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool Undone = false,
         [property: JsonPropertyName("givenBack"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] List<string>? GivenBack = null,
-        [property: JsonPropertyName("pieces"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] Dictionary<string, PieceDto>? Pieces = null);
+        [property: JsonPropertyName("pieces"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] Dictionary<string, PieceDto>? Pieces = null,
+        [property: JsonPropertyName("editor"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Editor = null,
+        [property: JsonPropertyName("lastChange"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTime? LastChange = null);
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
@@ -166,7 +168,8 @@ internal static class RunManifest
             run.RedoSources.ToDictionary(p => p.Key, p => p.Value),
             run.Uncovered.Select(u => new NoteDto(u.Call, u.Note.Reason.ToString(), u.Note.File)).ToList(),
             Pieces: run.Pieces.Count == 0 ? null : run.Pieces.ToDictionary(
-                p => p.Key, p => new PieceDto(p.Value.Generation, p.Value.RunCopy, [.. p.Value.Undone], [.. p.Value.Kept], p.Value.After))),
+                p => p.Key, p => new PieceDto(p.Value.Generation, p.Value.RunCopy, [.. p.Value.Undone], [.. p.Value.Kept], p.Value.After)),
+            Editor: run.Editor, LastChange: run.LastChange?.ToUniversalTime()),
             Options);
         return Header + Sign(json, key) + "\n" + json;
     }
@@ -230,8 +233,9 @@ internal static class RunManifest
                 return null;
             }
 
-        var run = new HistoryRun(dto.Id, dto.Started.ToLocalTime());
+        var run = new HistoryRun(dto.Id, dto.Started.ToLocalTime()) { Editor = dto.Editor };
         foreach (var change in dto.Changes) run.RecordFirst(change.Path!, change.Snapshot, change.Failed);
+        run.LastChange = dto.LastChange?.ToLocalTime();   // the manifest's time, not the moment of this reading
         run.RestoreWatchedCalls(dto.Watched);
         foreach (var (path, hash) in dto.After ?? []) run.NoteAfter(path, hash);
         foreach (var path in dto.Kept ?? []) run.NoteKept(path);

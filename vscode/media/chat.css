@@ -2550,3 +2550,89 @@ kbd {
   flex-direction: column;
   gap: 6px;
 }
+
+/* ── The notice of a start: what the closing of VS Code cut or left unread ─────────────────────── */
+.away {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--vscode-editorWarning-foreground, var(--ip-line));
+  background: var(--ip-surface);
+}
+
+.away-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.away-title {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+
+.away-dismiss {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--ip-line);
+  background: transparent;
+  color: var(--ip-muted);
+}
+
+.away-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.away-item + .away-item {
+  border-top: 1px solid var(--ip-line);
+  padding-top: 10px;
+}
+
+.away-files {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 12px;
+}
+
+.away-files li {
+  display: flex;
+  gap: 8px;
+}
+
+.away-files .plus  { color: var(--ip-add); }
+.away-files .minus { color: var(--ip-muted); }
+
+.away-muted {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ip-muted);
+}
+
+.away-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.away-actions code {
+  color: var(--ip-muted);
+}
+
+.away-action {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 6px;
+}

@@ -19,7 +19,7 @@ import { renderChatHtml } from './webview/chatWebviewHtml';
 import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
-  ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
+  ApprovalCard, AwayNotice, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
   ModelsByKind, SavedMessage, SessionLoadResult, SessionSwitches, hasSwitches, noSwitches, SlashEffect, TestsGenerateResult, TurnNote, WindowNoticeResult,
 } from './protocol';
 import {
@@ -787,8 +787,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             this.transcript.push(...startNotices);
             this.hydrate();
           }
+          await this.showAwayNotice(host);
           return; // applySession hydrates
         }
+        await this.showAwayNotice(host);
       } catch (err) {
         // Said where the conversation is: the first turn's auto-save writes over the slot (the host kept a copy of a
         // damaged file, and its message names it).
@@ -1133,6 +1135,39 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.hydrate();
     // The conversation comes back in the mode it was held in (or none): the selector follows the host.
     void this.refreshModes();
+  }
+
+  /** The notice of this start, until dismissed (redrawn when the view is rebuilt). */
+  private awayNotice: AwayNotice | null = null;
+
+  /** Asked once per window, at its start: a host restarted later did not see VS Code close. */
+  private awayAsked = false;
+
+  /**
+   * The notice of a start (`session/away`): what the closing of VS Code cut or left unread, above the restored
+   * conversation — the run, and the background tasks. Under a restored question no answer will follow, a line says so.
+   */
+  private async showAwayNotice(host: HostClient): Promise<void> {
+    if (this.awayAsked) {
+      return;
+    }
+    this.awayAsked = true;
+    try {
+      // The start's own notices (backend down, a model replaced) come after the conversation: not its last message.
+      const last = [...this.transcript].reverse().find((m) => (m.role === 'user' || m.role === 'assistant') && !m.notice);
+      const notice = await host.sessionAway(last?.role === 'user' && !last.note);
+      if (!notice) {
+        return;
+      }
+      if (notice.noAnswer) {
+        // A notice, never an answer: the model does not read it back as one.
+        this.append({ role: 'assistant', text: notice.noAnswer, timestamp: ChatViewProvider.now(), notice: true });
+      }
+      this.awayNotice = notice;
+      this.post({ type: 'awayNotice', notice });
+    } catch (err) {
+      this.log(`[chat] the notice of the start failed: ${String(err)}`);
+    }
   }
 
   /**
@@ -1708,6 +1743,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           // The user wants to read what they are about to allow: a diff that cannot open is said, not silent.
           this.log(`[chat] approval diff failed: ${String(err)}`);
           void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
+        }
+        return;
+      }
+      case 'awayDismissed': {
+        // Dismissed: not said again, here or at the next start.
+        this.awayNotice = null;
+        const host = this.hostForGesture(); // without the host, says why: the notice comes back next start
+        if (!host) {
+          return;
+        }
+        try {
+          await host.sessionAwayDismissed(msg.runIds, msg.taskIds);
+        } catch (err) {
+          this.gestureFailed('the notice marked said', err);
         }
         return;
       }
@@ -4192,6 +4241,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       attachedRecap: t('📎 Attached: {0}'),
       queue: this.queuedPrompts.map((q) => q.text),
     });
+    // The notice of the start, until dismissed: the transcript does not carry it.
+    if (this.awayNotice) {
+      this.post({ type: 'awayNotice', notice: this.awayNotice });
+    }
     // The transcript carries no card and the webview just rebuilt from it: a card still waiting
     // would vanish while the host keeps waiting for its answer, with no timeout.
     for (const [id, pending] of this.pendingApprovals) {

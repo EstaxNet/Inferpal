@@ -498,6 +498,10 @@ sequenceDiagram
   task that was running or queued when the editor closed comes back marked as stopped by the closing, ready for
   `/task retry`. A number is never given twice. While the model server does not answer, queued tasks wait for it and
   start on their own when it is back.
+- **While you were away** — at the next start, a notice above the conversation says what the editor's closing left
+  behind: the agent run it cut (when it started, the files it changed, with *Review changes* and *Undo run*), and the
+  background tasks it stopped (*Retry*) or whose report was never opened (*Open the report*). Each editor says only its
+  own runs; dismissed, the notice is not said again.
 - **`/task propose <objective>`** — a background run that can *describe* writes without making
   them: each write is recorded at the exact point it would have asked for approval, and never
   granted. `/task apply <id> <n>` replays one proposal through the ordinary approval prompt,

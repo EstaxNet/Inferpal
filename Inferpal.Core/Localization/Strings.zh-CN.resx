@@ -1124,6 +1124,16 @@
   <data name="TaskRetried" xml:space="preserve"><value>任务 **{0}** 已从 `{1}` 重新开始：{2}</value></data>
   <data name="TaskRetryNotFinished" xml:space="preserve"><value>任务 `{0}` 尚未结束：用 `/task stop {0}` 停止后即可重新运行。</value></data>
   <data name="TaskJournalSetAside" xml:space="preserve"><value>无法读取为此工作区保存的后台任务：副本保存在 `{0}`。</value></data>
+  <data name="AwayTitle" xml:space="preserve"><value>您离开期间</value></data>
+  <data name="AwayRunCut" xml:space="preserve"><value>于 {0} 开始的运行在 {1} 关闭时停止。它修改了 {2} 个文件，最后一个在 {3}。</value></data>
+  <data name="AwayRunCutWarning" xml:space="preserve"><value>{0} 之后写入的更改可能未被记录：撤销运行只会还原上面的 {1} 个文件。</value></data>
+  <data name="AwayTaskDone" xml:space="preserve"><value>后台任务 `{0}` 在 {2} 关闭之前的 {1} 完成，但其报告从未被打开。</value></data>
+  <data name="AwayTaskDoneKept" xml:space="preserve"><value>报告已保留。</value></data>
+  <data name="AwayTaskDoneProposalsKept" xml:space="preserve"><value>报告及其 {0} 项建议的更改已保留——未应用任何更改。</value></data>
+  <data name="AwayTaskStopped" xml:space="preserve"><value>后台任务 `{0}` 在 {1} 关闭时正在运行，执行 {2} 步后停止。请用新编号重新运行。</value></data>
+  <data name="AwayTaskStoppedBeforeStart" xml:space="preserve"><value>后台任务 `{0}` 在 {1} 关闭时正在等待，从未开始。请用新编号重新运行。</value></data>
+  <data name="AwayOpenReport" xml:space="preserve"><value>打开报告</value></data>
+  <data name="AwayNoAnswer" xml:space="preserve"><value>已停止 — 此次运行期间 {0} 被关闭。未写入任何回答。</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>常规</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>代码操作</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>文件</value></data>

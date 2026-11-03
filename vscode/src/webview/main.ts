@@ -3,7 +3,7 @@
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
 import type {
-  ApprovalCard, CutCard, InputCard, InputCardField, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunReviewLine,
+  ApprovalCard, AwayNotice, CutCard, InputCard, InputCardField, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunReviewLine,
   RunSummary, SetupPlace, SetupPlan,
 } from '../protocol';
 import type {
@@ -1551,6 +1551,105 @@ function showRunUndone(runId: string, line: string | null): void {
     bar.prepend(said);
   }
   said.textContent = line;
+}
+
+/** The notice of a start, above the conversation: the run the closing cut (Review changes, Undo run), the background
+ *  tasks it stopped or left unread (Retry, Open the report). Dismissed, it is not said again. */
+function renderAwayNotice(notice: AwayNotice): void {
+  document.querySelector('.away')?.remove();
+  const card = document.createElement('section');
+  card.className = 'away';
+  card.setAttribute('role', 'region');
+  card.setAttribute('aria-label', notice.title);
+  const head = document.createElement('div');
+  head.className = 'away-head';
+  const title = document.createElement('span');
+  title.className = 'away-title';
+  title.textContent = notice.title;
+  const dismiss = iconButton('close', notice.dismiss, 11);
+  dismiss.classList.add('away-dismiss');
+  dismiss.addEventListener('click', () => {
+    post({ type: 'awayDismissed', runIds: notice.run ? [notice.run.runId] : [], taskIds: notice.tasks.map((t) => t.id) });
+    card.remove();
+  });
+  head.append(title, dismiss);
+  card.appendChild(head);
+
+  const action = (label: string, primary: boolean, onClick: () => void): HTMLButtonElement => {
+    const b = document.createElement('button');
+    b.className = primary ? 'away-action primary' : 'away-action';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  };
+
+  if (notice.run) {
+    const run = notice.run;
+    const block = document.createElement('div');
+    block.className = 'away-item away-run';
+    const text = document.createElement('div');
+    renderMarkdownInto(text, run.text);
+    const files = document.createElement('ul');
+    files.className = 'away-files';
+    for (const f of run.files) {
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.textContent = f.path;
+      li.appendChild(name);
+      const plus = document.createElement('span');
+      plus.className = 'plus';
+      plus.textContent = `+${f.added}`;
+      li.appendChild(plus);
+      if (f.removed > 0) {
+        const minus = document.createElement('span');
+        minus.className = 'minus';
+        minus.textContent = `−${f.removed}`;
+        li.appendChild(minus);
+      }
+      files.appendChild(li);
+    }
+    const warning = document.createElement('p');
+    warning.className = 'away-muted';
+    warning.textContent = run.warning;
+    const actions = document.createElement('div');
+    actions.className = 'away-actions';
+    actions.append(
+      action(notice.review, true, () => {
+        // The run's bar is not on screen: its review goes under this notice.
+        reviewAnchors.set(run.runId, card);
+        post({ type: 'runReview', runId: run.runId });
+      }),
+      action(notice.undo, false, () => post({ type: 'send', text: `/undo-run #${run.runId}` })),
+    );
+    block.append(text, files, warning, actions);
+    card.appendChild(block);
+  }
+
+  for (const task of notice.tasks) {
+    const block = document.createElement('div');
+    block.className = 'away-item away-task';
+    const text = document.createElement('div');
+    renderMarkdownInto(text, task.text);
+    const actions = document.createElement('div');
+    actions.className = 'away-actions';
+    if (task.retry) {
+      const command = document.createElement('code');
+      command.textContent = `/task retry ${task.id}`;
+      const retry = action(notice.retry, true, () => {
+        retry.disabled = true; // runs the task once, however many clicks
+        post({ type: 'send', text: `/task retry ${task.id}` });
+      });
+      retry.setAttribute('aria-label', `${notice.retry} ${task.id}`);
+      actions.append(command, retry);
+    } else {
+      const open = action(notice.openReport, true, () => post({ type: 'send', text: `/task ${task.id}` }));
+      open.setAttribute('aria-label', `${notice.openReport} ${task.id}`);
+      actions.append(open);
+    }
+    block.append(text, actions);
+    card.appendChild(block);
+  }
+  messagesEl.prepend(card);
 }
 
 /**
@@ -3598,6 +3697,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'runReview':
       renderRunReview(msg.runId, msg.review, msg.message);
+      break;
+    case 'awayNotice':
+      renderAwayNotice(msg.notice);
       break;
     case 'runUndone':
       showRunUndone(msg.runId, msg.line);

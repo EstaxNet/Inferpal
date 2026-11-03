@@ -112,9 +112,9 @@ internal static class TaskCommandHandler
         if (queue.Get(id) is not { } old) return new(Strings.TaskUnknown(id));
         if (!old.IsFinished) return new(Strings.TaskRetryNotFinished(old.Id));
         if (queue.WorkspaceLeft(old.WorkspaceRoot)) return new(Strings.TaskWorkspaceChanged);
-        return new(queue.Retry(old) is { } newId
-            ? Strings.TaskRetried(newId, old.Id, old.Objective)
-            : Strings.TaskQueueFull(BackgroundTaskQueue.MaxPending));
+        if (queue.Retry(old) is not { } newId) return new(Strings.TaskQueueFull(BackgroundTaskQueue.MaxPending));
+        queue.MarkRead(old.Id);   // dealt with: the notice of the next start does not offer it again
+        return new(Strings.TaskRetried(newId, old.Id, old.Objective));
     }
 
     /// <summary>Resolves <c>/task apply &lt;id&gt; &lt;n&gt;</c> to the one proposal it names.</summary>

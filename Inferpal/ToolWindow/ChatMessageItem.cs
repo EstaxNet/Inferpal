@@ -429,6 +429,53 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         return item;
     }
 
+    // ── The notice of a start ("away"): what the closing of Visual Studio cut or left unread — the Core's AwayNotice ──
+    // Its title is CardTitle. Screen only: dismissed, it is marked said and never shown again.
+    private Action? _onAwayReview, _onAwayUndo, _onAwayDismiss;
+    [DataMember] public string AwayRunText     { get; private set; } = string.Empty;
+    [DataMember] public string AwayRunFiles    { get; private set; } = string.Empty;
+    [DataMember] public string AwayRunWarning  { get; private set; } = string.Empty;
+    [DataMember] public bool   HasAwayRun      { get; private set; }
+    [DataMember] public string BtnAwayReview   { get; private set; } = string.Empty;
+    [DataMember] public string BtnAwayUndo     { get; private set; } = string.Empty;
+    [DataMember] public string AwayDismissTip  { get; private set; } = string.Empty;
+    [DataMember] public ObservableCollection<AwayTaskItem> AwayTasks { get; } = [];
+    [DataMember] public AsyncCommand AwayReviewCommand  { get; }
+    [DataMember] public AsyncCommand AwayUndoCommand    { get; }
+    [DataMember] public AsyncCommand AwayDismissCommand { get; }
+
+    /// <summary>The notice of a start, from the Core's <paramref name="notice"/>.</summary>
+    /// <param name="act">A task's button: Retry, or Open the report.</param>
+    internal static ChatMessageItem AwayMsg(Services.Presentation.AwayNoticeModel notice, Action review, Action undo,
+                                            Action dismiss, Action<Services.Presentation.AwayTask> act)
+    {
+        var item = new ChatMessageItem
+        {
+            Role           = "away",
+            CardTitle      = notice.Title,
+            HasAwayRun     = notice.Run is not null,
+            AwayRunText    = Plain(notice.Run?.Text ?? string.Empty),
+            AwayRunFiles   = notice.Run is { } run
+                ? string.Join("\n", run.Files.Select(f => f.Removed > 0 ? $"{f.Path}   +{f.Added} −{f.Removed}" : $"{f.Path}   +{f.Added}"))
+                : string.Empty,
+            AwayRunWarning = notice.Run?.Warning ?? string.Empty,
+            BtnAwayReview  = Strings.RunReviewButton,
+            BtnAwayUndo    = Strings.RunUndo,
+            AwayDismissTip = Strings.BuildBannerDismiss,
+            Timestamp      = Now(),
+            _onAwayReview  = review,
+            _onAwayUndo    = undo,
+            _onAwayDismiss = dismiss,
+        };
+        foreach (var task in notice.Tasks)
+            item.AwayTasks.Add(new AwayTaskItem(task with { Text = Plain(task.Text) },
+                                                task.Retry ? Strings.McpCardRetry : Strings.AwayOpenReport, () => act(task)));
+        return item;
+
+        // The sentences are Markdown for VS Code; these blocks are plain text, where a backtick would show as one.
+        static string Plain(string text) => text.Replace("`", string.Empty);
+    }
+
     // ── An input card ("inputcard"): an MCP server's form, then Send, Decline, Cancel — the card the Core builds ──
     // Its title is CardTitle, IsAnswered freezes it. Screen only: what it leaves is a receipt ("input"), saved.
     private TaskCompletionSource<InputReply?>? _inputReply;
@@ -585,6 +632,9 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         UndoCommand         = new AsyncCommand((_, _) => { _onUndo?.Invoke(); return Task.CompletedTask; });
         ReviewCommand       = new AsyncCommand((_, _) => { _onReview?.Invoke(); return Task.CompletedTask; });
         CloseReviewCommand  = new AsyncCommand((_, _) => { _onCloseReview?.Invoke(); return Task.CompletedTask; });
+        AwayReviewCommand   = new AsyncCommand((_, _) => { _onAwayReview?.Invoke(); return Task.CompletedTask; });
+        AwayUndoCommand     = new AsyncCommand((_, _) => { _onAwayUndo?.Invoke(); return Task.CompletedTask; });
+        AwayDismissCommand  = new AsyncCommand((_, _) => { _onAwayDismiss?.Invoke(); return Task.CompletedTask; });
         RewindHereCommand   = new AsyncCommand((_, _) => { if (CanRewind) _onRewindHere?.Invoke(this); return Task.CompletedTask; });
         // One going back at a time: the card is drawn again from the answer (ShowRewind, RewindSays).
         AsyncCommand RewindAction(Func<Action?> act) => new((_, _) =>

@@ -36,6 +36,7 @@ internal sealed class TaskJournal(string path)
     /// <summary>One task as the journal keeps it.</summary>
     /// <param name="Read">Its report was opened (<c>/task &lt;id&gt;</c>).</param>
     /// <param name="Updated">When the entry was last written: for a task the closing stopped, the last moment known of it.</param>
+    /// <param name="Said">The notice of a start said it, and the person dismissed it: it is not said again.</param>
     internal sealed record Entry(
         [property: JsonPropertyName("id")]          string Id,
         [property: JsonPropertyName("objective")]   string Objective,
@@ -54,7 +55,8 @@ internal sealed class TaskJournal(string path)
         [property: JsonPropertyName("context")]     string? Context = null,
         [property: JsonPropertyName("workspace")]   string? WorkspaceRoot = null,
         [property: JsonPropertyName("read")]        bool Read = false,
-        [property: JsonPropertyName("updated")]     DateTimeOffset? Updated = null)
+        [property: JsonPropertyName("updated")]     DateTimeOffset? Updated = null,
+        [property: JsonPropertyName("said")]        bool Said = false)
     {
         /// <summary>Whether the task reached a state nothing changes any more.</summary>
         [JsonIgnore]
@@ -79,9 +81,39 @@ internal sealed class TaskJournal(string path)
     }
 
     /// <param name="Last">The highest number ever given: <c>/task clear</c> forgets tasks, never their numbers.</param>
+    /// <param name="SaidRuns">The runs the closing cut that the notice of a start said and the person dismissed.</param>
     private sealed record Document(
-        [property: JsonPropertyName("tasks")] List<Entry>? Tasks,
-        [property: JsonPropertyName("last")]  int Last = 0);
+        [property: JsonPropertyName("tasks")]    List<Entry>? Tasks,
+        [property: JsonPropertyName("last")]     int Last = 0,
+        [property: JsonPropertyName("saidRuns")] List<string>? SaidRuns = null);
+
+    /// <summary>The runs a dismissed notice already said, so a start never says them again.</summary>
+    public IReadOnlySet<string> SaidRuns()
+    {
+        try
+        {
+            using var held = Lock();
+            return File.Exists(Path) && JsonSerializer.Deserialize<Document>(File.ReadAllText(Path), Options)?.SaidRuns is { } said
+                ? said.ToHashSet(StringComparer.Ordinal) : [];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            Diagnostics.Swallow("TaskJournal.SaidRuns", ex);
+            return new HashSet<string>(StringComparer.Ordinal);
+        }
+    }
+
+    /// <summary>Records runs and tasks a dismissed notice said; the newest hundred runs are kept.</summary>
+    public void MarkSaid(IEnumerable<string> runIds, IEnumerable<string> taskIds)
+    {
+        var tasks = taskIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        Change((entries, _) =>
+        {
+            for (var i = 0; i < entries.Count; i++)
+                if (tasks.Contains(entries[i].Id)) entries[i] = entries[i] with { Said = true };
+            return true;
+        }, [.. runIds]);
+    }
 
     /// <summary>The number of a task id (<c>t12</c> → 12); 0 for anything else.</summary>
     internal static int Number(string? id) =>
@@ -113,7 +145,7 @@ internal sealed class TaskJournal(string path)
         try
         {
             using var held = Lock();
-            var (entries, _, aside) = ReadLocked();
+            var (entries, _, _, aside) = ReadLocked();
             return (entries, aside);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -137,17 +169,20 @@ internal sealed class TaskJournal(string path)
     /// <returns>What <paramref name="change"/> returned, or <c>default</c> when the journal could not be written.</returns>
     public T? Update<T>(Func<List<Entry>, T> change) => Change((entries, _) => change(entries));
 
-    private T? Change<T>(Func<List<Entry>, int, T> change)
+    private T? Change<T>(Func<List<Entry>, int, T> change, IReadOnlyCollection<string>? saidRuns = null)
     {
         try
         {
             using var held = Lock();
-            var (entries, last, aside) = ReadLocked();
+            var (entries, last, said, aside) = ReadLocked();
             if (aside is not null) _setAside = aside;
             var result = change(entries, last);
             last = Math.Max(last, entries.Select(e => Number(e.Id)).DefaultIfEmpty(0).Max());
+            if (saidRuns is { Count: > 0 })
+                said = [.. said.Concat(saidRuns).Distinct(StringComparer.Ordinal).TakeLast(100)];
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
-            Persistence.AtomicFile.WriteAllText(Path, JsonSerializer.Serialize(new Document(entries, last), Options));
+            Persistence.AtomicFile.WriteAllText(Path, JsonSerializer.Serialize(
+                new Document(entries, last, said.Count > 0 ? said : null), Options));
             return result;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -157,15 +192,16 @@ internal sealed class TaskJournal(string path)
         }
     }
 
-    private (List<Entry> Entries, int Last, string? SetAside) ReadLocked()
+    private (List<Entry> Entries, int Last, List<string> SaidRuns, string? SetAside) ReadLocked()
     {
-        if (!File.Exists(Path)) return ([], 0, null);
+        if (!File.Exists(Path)) return ([], 0, [], null);
         var text = File.ReadAllText(Path);
         try
         {
             // An entry without an id or an objective (edited by hand) is no task: left out, never a reason to fail.
             if (JsonSerializer.Deserialize<Document>(text, Options) is { Tasks: { } tasks } document)
-                return ([.. tasks.Where(e => e is { Id.Length: > 0, Objective: not null })], document.Last, null);
+                return ([.. tasks.Where(e => e is { Id.Length: > 0, Objective: not null })], document.Last,
+                        document.SaidRuns ?? [], null);
         }
         catch (JsonException) { }
         // Kept as it was before anything is written over it — and the numbers it gave stay given.
@@ -177,7 +213,7 @@ internal sealed class TaskJournal(string path)
                           .Select(m => int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture))
                           .DefaultIfEmpty(0).Max();
         Persistence.AtomicFile.WriteAllText(Path, JsonSerializer.Serialize(new Document([], given), Options));
-        return ([], given, aside);
+        return ([], given, [], aside);
     }
 
     /// <summary>The lock every reader and writer of this journal takes: one at a time, across processes.</summary>

@@ -1344,3 +1344,17 @@ export interface ServerInstallReport {
 export interface SetupInstallProgress {
   line: string;
 }
+
+/** `session/away`: what the closing of VS Code cut or left unread, said once at a start, with its buttons' words. */
+export interface AwayNotice {
+  title: string;
+  run: { runId: string; text: string; files: RunFileLine[]; warning: string } | null;
+  tasks: { id: string; text: string; retry: boolean }[];
+  review: string;
+  undo: string;
+  openReport: string;
+  retry: string;
+  dismiss: string;
+  /** The line under a restored question no answer will follow; null when the conversation does not end on one. */
+  noAnswer: string | null;
+}

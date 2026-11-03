@@ -111,6 +111,10 @@ internal sealed class BackgroundTaskQueue : IDisposable
         public TaskEndCause Cause;
         /// <summary>Its report was opened.</summary>
         public bool Read;
+        /// <summary>The notice of a start said it, and the person dismissed it.</summary>
+        public bool Said;
+        /// <summary>Read from the journal, left by a queue that is gone: what the notice of a start may say.</summary>
+        public bool Inherited;
     }
 
     private readonly ProposingTaskRunner           _runner;
@@ -298,6 +302,21 @@ internal sealed class BackgroundTaskQueue : IDisposable
         Persist(job);
     }
 
+    /// <summary>The notice of a start was dismissed: the runs and tasks it said are not said again.</summary>
+    internal void MarkSaid(IReadOnlyCollection<string> runIds, IReadOnlyCollection<string> taskIds)
+    {
+        lock (_lock)
+            foreach (var id in taskIds)
+                if (FindLocked(id) is { } job) job.Said = true;
+        if (_journalFor?.Invoke(_currentRoot?.Invoke()) is not { } journal) return;
+        journal.MarkSaid(runIds, taskIds);
+        if (journal.TakeSetAside() is { } aside) lock (_lock) _setAside.Add(aside);
+    }
+
+    /// <summary>The runs a dismissed notice of this editor already said.</summary>
+    internal IReadOnlySet<string> SaidRuns() =>
+        _journalFor?.Invoke(_currentRoot?.Invoke())?.SaidRuns() ?? new HashSet<string>(StringComparer.Ordinal);
+
     // ── The journal ─────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -331,10 +350,17 @@ internal sealed class BackgroundTaskQueue : IDisposable
                     job.State      = BackgroundTaskState.Cancelled;
                     job.Cause      = TaskEndCause.EditorClosed;
                     job.FinishedAt = entry.Updated ?? job.StartedAt;   // the last moment known of it
+                    job.Inherited  = true;
                     _finished.Add(job);
                     stopped.Add(job);
                 }
-                else _finished.Add(JobOf(entry));
+                else
+                {
+                    // Another window's, still open: not "before the editor closed" — that window did not close.
+                    var job = JobOf(entry);
+                    job.Inherited = !OwnerAlive(entry.By);
+                    _finished.Add(job);
+                }
             }
         }
         foreach (var job in stopped) Persist(job);
@@ -359,7 +385,8 @@ internal sealed class BackgroundTaskQueue : IDisposable
             TaskJournal.Entry entry;
             lock (_lock) entry = EntryOf(job);
             var at = entries.FindIndex(e => string.Equals(e.Id, entry.Id, StringComparison.OrdinalIgnoreCase));
-            if (at >= 0) entries[at] = entry; else entries.Add(entry);
+            if (at >= 0) entries[at] = entry with { Said = entry.Said || entries[at].Said, Read = entry.Read || entries[at].Read };
+            else entries.Add(entry);
             // The journal keeps what the list keeps, workspace by workspace: the newest finished tasks, and every one that
             // proposed changes — never the one written now, whose report has not been read yet.
             var finished = entries.Where(e => e.IsFinished && e.Id != entry.Id
@@ -383,7 +410,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         job.Id, job.Objective, job.State, job.CreatedAt, _owner, job.StartedAt, job.FinishedAt, job.Result, job.Error,
         job.Cause, job.Steps.Count > 0 ? [.. job.Steps] : null, job.StepsTaken, job.ProposeWrites,
         job.Proposals.Count > 0 ? [.. job.Proposals.Select(TaskJournal.SavedProposal.Of)] : null,
-        job.Context, job.WorkspaceRoot, job.Read, _now());
+        job.Context, job.WorkspaceRoot, job.Read, _now(), job.Said);
 
     private static Job JobOf(TaskJournal.Entry e)
     {
@@ -391,7 +418,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         {
             Id = e.Id, Objective = e.Objective, CreatedAt = e.CreatedAt, WorkspaceRoot = e.WorkspaceRoot, Context = e.Context,
             ProposeWrites = e.ProposeWrites, State = e.State, StartedAt = e.StartedAt, FinishedAt = e.FinishedAt,
-            Result = e.Result, Error = e.Error, Cause = e.Cause, StepsTaken = e.StepsTaken, Read = e.Read,
+            Result = e.Result, Error = e.Error, Cause = e.Cause, StepsTaken = e.StepsTaken, Read = e.Read, Said = e.Said,
             Proposals = e.Proposals is { Count: > 0 } saved ? [.. saved.Select(p => p.ToProposal())] : [],
         };
         if (e.Steps is { } steps) job.Steps.AddRange(steps);
@@ -725,7 +752,8 @@ internal sealed class BackgroundTaskQueue : IDisposable
         return new BackgroundTaskSnapshot(
             job.Id, job.Objective, job.State, job.CreatedAt, job.StartedAt, job.FinishedAt,
             job.Result, job.Error, job.Steps.ToArray(), position,
-            job.ProposeWrites, job.Proposals, job.StepsTaken, job.Context, job.Cause, job.Read, waiting, job.WorkspaceRoot);
+            job.ProposeWrites, job.Proposals, job.StepsTaken, job.Context, job.Cause, job.Read, waiting, job.WorkspaceRoot,
+            job.Said, job.Inherited);
     }
 
     private void RaiseFinished(BackgroundTaskSnapshot snapshot)

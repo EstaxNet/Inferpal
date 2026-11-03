@@ -1128,6 +1128,16 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="TaskRetried" xml:space="preserve"><value>Task **{0}** started again from `{1}`: {2}</value></data>
   <data name="TaskRetryNotFinished" xml:space="preserve"><value>Task `{0}` has not finished: `/task stop {0}` stops it, then it can run again.</value></data>
   <data name="TaskJournalSetAside" xml:space="preserve"><value>The background tasks kept for this workspace could not be read: a copy is kept at `{0}`.</value></data>
+  <data name="AwayTitle" xml:space="preserve"><value>While you were away</value></data>
+  <data name="AwayRunCut" xml:space="preserve"><value>The run started at {0} stopped when {1} closed. It had changed {2} {2:file|files}, the last one at {3}.</value></data>
+  <data name="AwayRunCutWarning" xml:space="preserve"><value>A change written after {0} may not have been recorded: Undo run puts back only the {1} {1:file|files} above.</value></data>
+  <data name="AwayTaskDone" xml:space="preserve"><value>Background task `{0}` finished at {1}, before {2} closed, and its report was never opened.</value></data>
+  <data name="AwayTaskDoneKept" xml:space="preserve"><value>The report is kept.</value></data>
+  <data name="AwayTaskDoneProposalsKept" xml:space="preserve"><value>The report and its {0} proposed {0:change|changes} are kept — nothing has been applied.</value></data>
+  <data name="AwayTaskStopped" xml:space="preserve"><value>Background task `{0}` was running when {1} closed, and stopped after {2} {2:step|steps}. Run it again under a new number.</value></data>
+  <data name="AwayTaskStoppedBeforeStart" xml:space="preserve"><value>Background task `{0}` was waiting when {1} closed, and never started. Run it again under a new number.</value></data>
+  <data name="AwayOpenReport" xml:space="preserve"><value>Open the report</value></data>
+  <data name="AwayNoAnswer" xml:space="preserve"><value>Stopped — {0} closed during this run. No answer was written.</value></data>
   <data name="SlashCategoryMeta" xml:space="preserve"><value>Meta</value></data>
   <data name="SlashCategoryCodeActions" xml:space="preserve"><value>Code actions</value></data>
   <data name="SlashCategoryFiles" xml:space="preserve"><value>Files</value></data>

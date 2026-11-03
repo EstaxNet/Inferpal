@@ -2293,6 +2293,79 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- ── The notice of a start: the run the closing cut, the background tasks it stopped or left unread ── -->
+                        <Border CornerRadius="10" BorderThickness="1"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}"
+                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="away">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Margin="12,10,12,12">
+                                <DockPanel LastChildFill="True">
+                                    <Button DockPanel.Dock="Right" Template="{StaticResource Flat6}" Width="28" Height="28" BorderThickness="1" Cursor="Hand"
+                                            Background="Transparent" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding AwayDismissCommand}" AutomationProperties.Name="{Binding AwayDismissTip}"
+                                            ToolTip="{Binding AwayDismissTip}">
+                                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="10" HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" Foreground="{Binding ThemeSubtleText}"/>
+                                    </Button>
+                                    <TextBlock Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                               TextWrapping="Wrap" Foreground="{Binding ThemeText}"/>
+                                </DockPanel>
+                                <!-- The run the closing cut: what it changed, what Undo run gives back. -->
+                                <StackPanel Margin="0,8,0,0" Visibility="{Binding HasAwayRun, Converter={StaticResource b2v}}">
+                                    <TextBlock Text="{Binding AwayRunText}" FontSize="13" TextWrapping="Wrap" Foreground="{Binding ThemeText}"/>
+                                    <TextBlock Text="{Binding AwayRunFiles}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                                               FontFamily="Cascadia Mono, Consolas" Foreground="{Binding ThemeText}"/>
+                                    <TextBlock Text="{Binding AwayRunWarning}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeSubtleText}"/>
+                                    <WrapPanel Margin="0,8,0,0" HorizontalAlignment="Right">
+                                        <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" Margin="0,0,8,0" BorderThickness="0" Cursor="Hand"
+                                                Background="{Binding DataContext.ThemeAccent, ElementName=root}"
+                                                Command="{Binding AwayReviewCommand}" AutomationProperties.Name="{Binding BtnAwayReview}">
+                                            <TextBlock Text="{Binding BtnAwayReview}" FontSize="13" VerticalAlignment="Center"
+                                                       Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                        </Button>
+                                        <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" BorderThickness="1" Cursor="Hand"
+                                                Background="Transparent" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                Command="{Binding AwayUndoCommand}" AutomationProperties.Name="{Binding BtnAwayUndo}">
+                                            <TextBlock Text="{Binding BtnAwayUndo}" FontSize="13" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                        </Button>
+                                    </WrapPanel>
+                                </StackPanel>
+                                <!-- The background tasks: Retry for one the closing stopped, Open the report for one never read. -->
+                                <ItemsControl ItemsSource="{Binding AwayTasks}" Margin="0,4,0,0" Focusable="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,8,0,0">
+                                                <TextBlock Text="{Binding Text}" FontSize="13" TextWrapping="Wrap"
+                                                           Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                <WrapPanel Margin="0,6,0,0" HorizontalAlignment="Right">
+                                                    <TextBlock Text="{Binding CommandText}" FontSize="12" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                               FontFamily="Cascadia Mono, Consolas"
+                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                               Visibility="{Binding HasCommand, Converter={StaticResource b2v}}"/>
+                                                    <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" BorderThickness="0" Cursor="Hand"
+                                                            Background="{Binding DataContext.ThemeAccent, ElementName=root}"
+                                                            Command="{Binding ActCommand}" AutomationProperties.Name="{Binding ButtonName}">
+                                                        <TextBlock Text="{Binding ButtonLabel}" FontSize="13" VerticalAlignment="Center"
+                                                                   Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                                    </Button>
+                                                </WrapPanel>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
                         <!-- ── A server install card: the command and what it does, then its progress, then how it ended ── -->
                         <Border CornerRadius="10" BorderThickness="1"
                                 Background="{Binding DataContext.ThemeSurface, ElementName=root}"

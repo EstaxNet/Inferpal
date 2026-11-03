@@ -944,3 +944,30 @@ internal sealed record ApprovalRuleRowDto(
 internal sealed record ApprovalRuleTableDto(bool TeamUnusable, List<ApprovalRuleRowDto> Rows);
 
 internal sealed record NewRuleParams(bool Allow, string? Tool, string? Pattern);
+
+/// <summary>`session/away` answer: what the closing of this editor cut or left unread, said once at a start (the
+/// <c>AwayNotice</c> presenter), with the words of its buttons in the person's language.</summary>
+/// <param name="Run">The newest run the closing cut; <c>null</c> when none.</param>
+internal sealed record AwayNoticeDto(
+    string Title, AwayRunDto? Run, List<AwayTaskDto> Tasks,
+    string Review, string Undo, string OpenReport, string Retry, string Dismiss, string? NoAnswer)
+{
+    public static AwayNoticeDto Of(Services.Presentation.AwayNoticeModel m, string? noAnswer) => new(
+        m.Title,
+        m.Run is { } run ? new AwayRunDto(run.RunId, run.Text, [.. run.Files], run.Warning) : null,
+        [.. m.Tasks.Select(t => new AwayTaskDto(t.Id, t.Text, t.Retry))],
+        Localization.Strings.RunReviewButton, Localization.Strings.RunUndo, Localization.Strings.AwayOpenReport,
+        Localization.Strings.McpCardRetry, Localization.Strings.BuildBannerDismiss, noAnswer);
+}
+
+/// <summary>A run the closing cut, in <see cref="AwayNoticeDto"/>.</summary>
+internal sealed record AwayRunDto(string RunId, string Text, List<Services.Presentation.RunFileLine> Files, string Warning);
+
+/// <summary>A background task in <see cref="AwayNoticeDto"/>; <paramref name="Retry"/> for one the closing stopped.</summary>
+internal sealed record AwayTaskDto(string Id, string Text, bool Retry);
+
+/// <summary>`session/awayDismissed` — the notice dismissed: its runs and tasks are not said again.</summary>
+internal sealed record AwayDismissedParams(List<string> RunIds, List<string> TaskIds);
+
+/// <summary>`session/away` — the restored conversation ends on a question nothing answered.</summary>
+internal sealed record SessionAwayParams(bool EndsOnAQuestion = false);
