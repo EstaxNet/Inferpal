@@ -499,6 +499,16 @@ export interface XRaySection {
   canToggle: boolean;
 }
 
+/** A new conversation's switches. */
+export function noSwitches(): SessionSwitches {
+  return { toolsOff: false, stepMode: false, xrayOff: [] };
+}
+
+/** Whether any switch differs from a new conversation's. */
+export function hasSwitches(s: SessionSwitches): boolean {
+  return s.toolsOff || s.stepMode || s.xrayOff.length > 0;
+}
+
 /** The conversation's own switches a host started again gets back (`session/switches`). */
 export interface SessionSwitches {
   toolsOff: boolean;
@@ -704,6 +714,11 @@ export interface SessionLoadResult {
   nextTurnTokens?: number;
   /** The mode the conversation is held in again (`null`: none) — the selector follows it. */
   mode?: string | null;
+  /** Plan mode as the loaded conversation holds it: the switch follows. */
+  planMode?: boolean;
+  /** The loaded conversation's switches: the window's mirror follows, or a later host restart gives back the previous
+   *  conversation's. */
+  switches?: SessionSwitches | null;
 }
 
 /** A mode found for the workspace (`ModeDto`): what the selector shows of it. */

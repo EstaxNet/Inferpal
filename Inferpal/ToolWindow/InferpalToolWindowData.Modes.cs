@@ -218,6 +218,34 @@ internal partial class InferpalToolWindowData
         RefreshModesSegment();
     }
 
+    /// <summary>
+    /// What the conversation holds besides its messages, as a session file keeps it: the only place that reads it, with
+    /// <see cref="ApplyState"/> the only place that writes it (<see cref="SessionState"/>). VM context only.
+    /// </summary>
+    private SessionState CaptureState() => new(
+        string.IsNullOrEmpty(_currentSessionName) ? null : _currentSessionName,
+        string.IsNullOrEmpty(_activeTemplateSuffix) ? null : _activeTemplateSuffix,
+        _heldMode?.Name, _planMode, !_toolsEnabled, _agentStepMode,
+        _xrayDisabledSections.Count > 0 ? [.. _xrayDisabledSections.Order(StringComparer.Ordinal)] : null, _activePlan);
+
+    /// <summary>
+    /// Holds <paramref name="state"/> in place of every value the conversation held — a load replaces them all, a value
+    /// the file does not hold being a new conversation's. Returns what to say when its mode's file is gone. VM context
+    /// only, before the system prompt is rebuilt.
+    /// </summary>
+    private string? ApplyState(SessionState state)
+    {
+        _currentSessionName   = state.CurrentName ?? string.Empty;
+        _activeTemplateSuffix = state.TemplateSuffix ?? string.Empty;
+        _toolsEnabled         = !state.ToolsOff;
+        IsStepMode            = state.StepMode;
+        _xrayDisabledSections.Clear();
+        _xrayDisabledSections.UnionWith(state.XrayOffSections);
+        _activePlan           = state.ActivePlan;
+        IsPlanMode            = state.PlanMode;   // a held mode leaves it, below
+        return HoldRestoredMode(state.Mode);
+    }
+
     /// <summary>The mode a restored conversation was held in, held again — or none, for one held in Chat, Agent or Plan.
     /// A mode whose file is gone is said (after the restored thread), and the conversation comes back without it. VM
     /// context only, before the system prompt is rebuilt.</summary>

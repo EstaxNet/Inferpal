@@ -2040,6 +2040,90 @@ public partial class HostServerTests
         finally { try { Directory.Delete(root, recursive: true); } catch { } }
     }
 
+    /// <summary>Plan runs the agent loop, read-only, whatever the window's Chat/Agent choice: a conversation loaded in Plan
+    /// in a Chat window showed Plan and answered without the plan step.</summary>
+    [Fact]
+    public async Task Plan_RunsTheAgentLoop_InAChatWindow()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var s = h.Server.CurrentSession!;
+        Assert.False(HostServer.TurnIsAgent(s, codeAction: false, agentMode: false));   // reference arm: Chat
+        s.PlanMode = true;
+        Assert.True(HostServer.TurnIsAgent(s, codeAction: false, agentMode: false));
+        s.ToolsEnabled = false;
+        Assert.False(HostServer.TurnIsAgent(s, codeAction: false, agentMode: false));   // /tools off still wins
+    }
+
+    /// <summary>Every value of the conversation's state, each alone, comes back from the host's capture as it was applied:
+    /// the capture and the apply are the only places that read and write it.</summary>
+    [Fact]
+    public async Task TheHost_CapturesWhatItApplies_EveryValueAlone()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync();
+        var s = h.Server.CurrentSession!;
+        foreach (var (name, state) in SessionStateTests.EachValueAlone())
+        {
+            s.ApplyState(state);
+            Assert.True(state == s.CaptureState(), $"{name} does not come back from the host's capture");
+        }
+    }
+
+    /// <summary>
+    /// ⚠ Loading a conversation replaces its whole state: applied field by field, the load left the previous conversation's
+    /// Plan mode, tools, step mode, X-Ray sections and plan file in place. The answer carries Plan and the switches, which the
+    /// editor's mirrors follow.
+    /// </summary>
+    [Fact]
+    public async Task ALoad_ReplacesTheWholeState_AndGivesItToTheEditor()
+    {
+        var root = Directory.CreateTempSubdirectory("inferpal-state-").FullName;
+        var store = new Inferpal.Services.Persistence.ConversationStore();
+        try
+        {
+            using var h = CreateHarness();
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            var s = h.Server.CurrentSession!;
+            var held = new Services.Persistence.SessionState(PlanMode: true, ToolsOff: true, StepMode: true,
+                                                             XrayOff: ["pinned"], ActivePlan: "plans/invoices.md");
+            async Task Save(string name) =>
+                await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new
+                {
+                    name, messages = new object[] { new { role = "user", content = $"question of {name}" } },
+                }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            async Task<SessionLoadResult> Load(string name) =>
+                (await h.Client.InvokeWithParameterObjectAsync<SessionLoadResult?>("session/load", new { name })
+                    .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)))!;
+            var held1 = $"state-held-{Guid.NewGuid():N}";
+            var plain = $"state-plain-{Guid.NewGuid():N}";
+
+            s.ApplyState(held);
+            await Save(held1);
+            s.ApplyState(Services.Persistence.SessionState.New);
+            await Save(plain);
+
+            s.ApplyState(held);   // the conversation on screen holds all of it
+            var loaded = await Load(plain);
+            Assert.Equal(new Services.Persistence.SessionState(CurrentName: plain), s.CaptureState());
+            Assert.False(loaded.PlanMode);
+            Assert.Equal(new SessionSwitchesDto(false, false, []), loaded.Switches!, SwitchesComparer);
+
+            loaded = await Load(held1);
+            Assert.Equal(held with { CurrentName = held1 }, s.CaptureState());
+            Assert.True(loaded.PlanMode);
+            Assert.Equal(new SessionSwitchesDto(true, true, ["pinned"]), loaded.Switches!, SwitchesComparer);
+            Assert.Contains("question of " + held1, s.History[^1].Content, StringComparison.Ordinal);   // witness: it loaded
+            foreach (var name in new[] { held1, plain }) store.Delete(name);
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
+    }
+
+    private static readonly IEqualityComparer<SessionSwitchesDto> SwitchesComparer = EqualityComparer<SessionSwitchesDto>.Create(
+        (a, b) => a!.ToolsOff == b!.ToolsOff && a.StepMode == b.StepMode
+                  && (a.XrayOff ?? []).SequenceEqual(b.XrayOff ?? [], StringComparer.Ordinal),
+        d => d.ToolsOff.GetHashCode());
+
     /// <summary>
     /// ⚠ A host started again (a crash, a restart) keeps the conversation's session name and its <c>/template</c>: VS Code
     /// saves the screen to the slot, then loads it back, and the first save recorded what a fresh process knows —
@@ -2057,7 +2141,9 @@ public partial class HostServerTests
         {
             // What the host before the restart left in the slot.
             await store.SaveAsync("last_session", [new("user", "review this")], CancellationToken.None,
-                                  workspaceRoot: root, currentName: "feature-x", templateSuffix: template);
+                                  workspaceRoot: root,
+                                  state: new Services.Persistence.SessionState(CurrentName: "feature-x", TemplateSuffix: template,
+                                                                       ActivePlan: "plans/feature-x.md"));
 
             using var h = CreateHarness();
             await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
@@ -2071,6 +2157,7 @@ public partial class HostServerTests
             Assert.Equal("review this, from the screen", slot!.Messages[0].Content);   // witness: the host's save is read
             Assert.Equal("feature-x", slot.CurrentName);
             Assert.Equal(template, slot.TemplateSuffix);
+            Assert.Equal("plans/feature-x.md", slot.ActivePlan);   // the plan it follows: the editor gives it no other way back
         }
         finally
         {
@@ -2097,7 +2184,8 @@ public partial class HostServerTests
                 "session/load", new { name = "last_session" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
 
             await store.SaveAsync("last_session", [new("user", "elsewhere")], CancellationToken.None,
-                                  workspaceRoot: root, currentName: "feature-x", templateSuffix: "## Template");
+                                  workspaceRoot: root,
+                                  state: new Services.Persistence.SessionState(CurrentName: "feature-x", TemplateSuffix: "## Template"));
             await h.Client.InvokeWithParameterObjectAsync<object?>("session/save", new
             {
                 name     = "last_session",

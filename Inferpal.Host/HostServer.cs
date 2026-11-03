@@ -954,8 +954,11 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>Whether a turn runs the agent's plan: never a code action, and never with the tools off.</summary>
-    private static bool TurnIsAgent(HostSession s, bool codeAction, bool? agentMode) =>
-        !codeAction && (agentMode ?? s.Config.AgentModeEnabled) && s.ToolsEnabled;
+    /// <remarks>⚠ Plan runs the agent loop, read-only, whatever the window's Chat/Agent choice: picked from the selector
+    /// it turns agent mode on, but a conversation loaded in Plan (or a bare <c>/plan</c>) in a Chat window showed Plan and
+    /// answered as a plain chat.</remarks>
+    internal static bool TurnIsAgent(HostSession s, bool codeAction, bool? agentMode) =>
+        !codeAction && ((agentMode ?? s.Config.AgentModeEnabled) || s.PlanMode) && s.ToolsEnabled;
 
     /// <summary>
     /// The model a turn answers with — one decision for <c>chat/send</c> and for the excerpt sized for it: the mode's, when
@@ -1334,9 +1337,13 @@ internal sealed partial class HostServer : IDisposable
             foreach (var id in p.XrayOff ?? []) s.XrayDisabledSections.Add(id);
             if (s.History.Count > 0 && s.History[0].Role == "system")
                 s.History[0] = new ChatMessageDto("system", BuildSystemPromptText(s));
-            return new SessionSwitchesDto(!s.ToolsEnabled, s.StepMode, [.. s.XrayDisabledSections]);
+            return SwitchesOf(s);
         });
     }
+
+    /// <summary>The conversation's switches as the host holds them now: what an editor's mirror shows.</summary>
+    private static SessionSwitchesDto SwitchesOf(HostSession s) =>
+        new(!s.ToolsEnabled, s.StepMode, [.. s.XrayDisabledSections]);
 
     /// <summary>`mode/list` — the modes found for this workspace and the person (read now), the files set aside, and the
     /// mode the conversation is held in.</summary>
@@ -1861,7 +1868,8 @@ internal sealed partial class HostServer : IDisposable
         // neither is the archive of the conversation just left: /branch rewrites the current file.
         if (p.Name != "last_session" && !p.Archive) s.CurrentSessionName = ConversationStore.StoredName(p.Name);
 
-        string? currentName = null, slotTemplate = null;
+        // A named file records no session name: only the auto-save slot says which session it lives in.
+        var state = (p.Archive ? s.DiscardedState ?? SessionState.New : s.CaptureState()) with { CurrentName = null };
         if (p.Name == "last_session")
         {
             SessionData? slot = null;
@@ -1870,19 +1878,21 @@ internal sealed partial class HostServer : IDisposable
                 try { slot = await s.Store.LoadAutoSaveAsync(s.RootDir, ct); }
                 catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("HostServer.SessionSave.Slot", ex); }
             }
-            currentName = SessionManager.AutoSaveName(s.SessionNameKnown, s.CurrentSessionName, slot, s.RootDir);
-            // ⚠ The template too: a host started again saves the screen to the slot before loading it back, and its own
-            // null would erase the /template the conversation runs under.
-            if (s.TemplateSuffix is null && slot is not null && SessionManager.AutoSaveBelongsHere(slot, s.RootDir))
-                slotTemplate = slot.TemplateSuffix;
+            state = state with { CurrentName = SessionManager.AutoSaveName(s.SessionNameKnown, s.CurrentSessionName, slot, s.RootDir) };
+            // ⚠ A host started again saves the screen to the slot before loading it back: what it does not know yet (the
+            // editor gives back Plan, the switches and the mode, not these) comes from the slot, or its own null would
+            // erase the /template the conversation runs under and the plan it follows.
+            if (slot is not null && SessionManager.AutoSaveBelongsHere(slot, s.RootDir))
+                state = state with
+                {
+                    TemplateSuffix = state.TemplateSuffix ?? slot.TemplateSuffix,
+                    ActivePlan     = state.ActivePlan ?? slot.ActivePlan,
+                };
         }
         // The workspace for every save, not only the auto-save slot's: an Agent Client Protocol client lists the sessions
         // of the folder it has open (session/list's cwd), and a session with no folder is listed in none.
         await s.Store.SaveAsync(p.Name, p.Messages.Select(ToSaved), ct,
-                                workspaceRoot: s.RootDir, parent: lineage?.Parent, forkTurn: lineage?.ForkTurn,
-                                currentName: currentName,
-                                templateSuffix: p.Archive ? s.DiscardedTemplateSuffix : s.TemplateSuffix ?? slotTemplate,
-                                mode: p.Archive ? s.DiscardedModeName : s.ModeName);
+                                workspaceRoot: s.RootDir, parent: lineage?.Parent, forkTurn: lineage?.ForkTurn, state: state);
     }
 
     /// <summary>Wire message → stored message (empty optional fields stay out of the JSON).</summary>
@@ -1947,20 +1957,25 @@ internal sealed partial class HostServer : IDisposable
                 return null;
             }
 
-            s.TemplateSuffix     = data.TemplateSuffix;   // the mode the conversation was held in, its greeting with it
-            // The mode the person picked for it, held again — or none, for a conversation held in Chat, Agent or Plan. A
-            // mode whose file is gone is said, and the conversation comes back without it.
-            var held = data.Mode is null ? null : ChatModes.For(s.Config, RootOf(s)).Find(data.Mode);
-            s.ModeName           = held?.Name;
-            if (held is not null) s.PlanMode = false;
-            else if (data.Mode is not null) Notify("host/notice", new { text = Strings.ModeGone(data.Mode), severity = "warning" });
+            // ⚠ The whole state the file holds REPLACES the conversation's — a value it does not hold is a new
+            // conversation's: applied field by field, a load left the previous conversation's Plan mode, tools, step mode,
+            // X-Ray sections and plan file in place. The mode the person picked is held again; one whose file is gone is
+            // said, and the conversation comes back without it.
+            var state = data.State;
+            var held  = state.Mode is null ? null : ChatModes.For(s.Config, RootOf(s)).Find(state.Mode);
+            if (held is null && state.Mode is not null)
+                Notify("host/notice", new { text = Strings.ModeGone(state.Mode), severity = "warning" });
+            s.ApplyState(state with
+            {
+                Mode        = held?.Name,
+                CurrentName = p.Name == ConversationStore.AutoSaveSlot ? data.CurrentName : p.Name,
+            });
             ForgetConversationState(s);
-            s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
-            s.CurrentSessionName = p.Name == "last_session" ? data.CurrentName : p.Name;
+            s.History = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), data.Messages);
             return new SessionLoadResult(
                 p.Name,
                 data.Messages.Select(m => new SavedMessageDto(m.Role, m.Content, m.ToolName, m.Timestamp, m.Run)).ToList(),
-                NextTurnTokens(s), s.ModeName);
+                NextTurnTokens(s), s.ModeName, s.PlanMode, SwitchesOf(s));
         });
 
     /// <summary>
@@ -1999,17 +2014,16 @@ internal sealed partial class HostServer : IDisposable
 
         // The parent is rewritten with the conversation as it stands now (it may have moved on
         // since it was loaded), keeping its own parent link when it is itself a branch.
+        var state = s.CaptureState() with { CurrentName = null };
         await s.Store.SaveAsync(plan.ParentName, plan.ParentMessages, token, workspaceRoot: s.RootDir,
-                                parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, templateSuffix: s.TemplateSuffix,
-                                mode: s.ModeName);
+                                parent: plan.ParentParent, forkTurn: plan.ParentForkTurn, state: state);
 
         // The branch is the same conversation, cut: it keeps the mode its turns were held in. Cut before every question
         // (going back to the first one), it is a new conversation: no empty session is written for it.
         var keepsAQuestion = plan.BranchMessages.Any(SessionManager.IsQuestion);
         if (keepsAQuestion)
             await s.Store.SaveAsync(plan.BranchName, plan.BranchMessages, token, workspaceRoot: s.RootDir,
-                                    parent: plan.ParentName, forkTurn: plan.ForkTurn, templateSuffix: s.TemplateSuffix,
-                                    mode: s.ModeName);
+                                    parent: plan.ParentName, forkTurn: plan.ForkTurn, state: state);
 
         ForgetConversationState(s);
         s.History            = SessionManager.BuildRestoredHistory(BuildSystemPromptText(s), plan.BranchMessages);
@@ -2471,8 +2485,7 @@ internal sealed partial class HostServer : IDisposable
     /// start. ⚠ And the slot is emptied only once what it holds is archived (<see cref="ArchiveTheSlotAsync"/>).</remarks>
     private async Task StartNewConversationAsync(HostSession s, string? templateSuffix = null)
     {
-        s.DiscardedTemplateSuffix = s.TemplateSuffix;
-        s.DiscardedModeName = s.ModeName;
+        s.DiscardedState = s.CaptureState();
         s.TemplateSuffix = templateSuffix;
         ResetHistory(s);
         s.CurrentSessionName = null;   // the archived conversation keeps its own file
@@ -2503,7 +2516,7 @@ internal sealed partial class HostServer : IDisposable
             var at   = DateTime.Now;
             var name = ConversationArchive.FirstName(s.Store, at, ConversationArchive.FirstQuestion(slot.Messages));
             await s.Store.SaveAsync(name, slot.Messages, CancellationToken.None, s.RootDir,
-                                    templateSuffix: s.DiscardedTemplateSuffix, mode: slot.Mode);
+                                    state: (s.DiscardedState ?? slot.State) with { CurrentName = null });
             s.PendingArchive = (name, at);
             return true;
         }
@@ -2527,8 +2540,8 @@ internal sealed partial class HostServer : IDisposable
         var first = ConversationArchive.FirstQuestion(saved);
         var (name, at) = s.PendingArchive ?? (ConversationArchive.FirstName(s.Store, DateTime.Now, first), DateTime.Now);
         s.PendingArchive = null;
-        await s.Store.SaveAsync(name, saved, CancellationToken.None, s.RootDir, templateSuffix: s.DiscardedTemplateSuffix,
-                                mode: s.DiscardedModeName);
+        await s.Store.SaveAsync(name, saved, CancellationToken.None, s.RootDir,
+                                state: (s.DiscardedState ?? SessionState.New) with { CurrentName = null });
         _ = RetitleArchiveAsync(s, name, at, first);
         return new SessionArchiveResult(name);
     }

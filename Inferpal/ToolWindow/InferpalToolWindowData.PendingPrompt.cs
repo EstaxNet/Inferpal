@@ -172,16 +172,14 @@ internal partial class InferpalToolWindowData
         try
         {
             List<SavedMessage> snapshot = [];
-            var templateSuffix = string.Empty;
-            string? modeName = null;
+            SessionState? state = null;
             string? root = null;
             var bindsNow = false;
             await RunOnVMContextAsync(() =>
             {
                 snapshot = SessionManager.BuildSnapshot(
                     Messages.Select(m => m.Saved));
-                templateSuffix = _activeTemplateSuffix;
-                modeName       = _heldMode?.Name;
+                state = CaptureState();
                 // The conversation's workspace, not the one open now: another solution's slot holds its own conversation.
                 bindsNow = !_conversationRoot.IsBound;
                 root = _conversationRoot.For(_indexService.RootDir);
@@ -215,9 +213,7 @@ internal partial class InferpalToolWindowData
                     _ = RetitleAfterTheTurnAsync(kept);
                 }
             }
-            await _store.AutoSaveAsync(snapshot, CancellationToken.None, root,
-                                       currentName: string.IsNullOrEmpty(_currentSessionName) ? null : _currentSessionName,
-                                       templateSuffix: templateSuffix, mode: modeName);
+            await _store.AutoSaveAsync(snapshot, CancellationToken.None, root, state);
             _autoSaveFailureTold = false;
         }
         catch (Exception ex)

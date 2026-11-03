@@ -109,21 +109,26 @@ public partial class HostServerTests
         var connection = Code("InferpalToolWindowData.Connection.cs");
         var pending    = Code("InferpalToolWindowData.PendingPrompt.cs");
         var history    = Code("InferpalToolWindowData.PromptHistory.cs");
+        var modes      = Code("InferpalToolWindowData.Modes.cs");
 
         // Restored with its mode — the /template one and the mode found for the workspace —, at every door that restores
-        // one.
-        Assert.Contains("_activeTemplateSuffix     = templateSuffix ?? string.Empty;", connection);
-        Assert.Contains("var modeGone              = HoldRestoredMode(mode);", connection);
-        Assert.Contains("session.TemplateSuffix, session.Mode);", connection);                       // a session loaded
-        Assert.Contains("RestoreConversation(session.Messages, target, session.TemplateSuffix, session.Mode);", history);   // a branch switched to
-        Assert.Contains("RestoreConversation(plan.BranchMessages, keepsAQuestion ? plan.BranchName : string.Empty, templateSuffix, modeName);",
+        // one: each passes the file's state, which the one apply holds (SessionStateTests reads that it holds all of it).
+        Assert.Contains("_activeTemplateSuffix = state.TemplateSuffix ?? string.Empty;", modes);
+        Assert.Contains("return HoldRestoredMode(state.Mode);", modes);
+        Assert.Contains("var modeGone              = ApplyState(state);", connection);
+        Assert.Contains("RestoreConversation(session.Messages, session.State);", connection);   // the slot restored late
+        Assert.Contains("session.State with { CurrentName = name == \"last_session\" ? session.CurrentName : name });",
+                        connection);   // a session loaded
+        Assert.Contains("RestoreConversation(session.Messages, session.State with { CurrentName = target });", history);   // a branch switched to
+        Assert.Contains("RestoreConversation(plan.BranchMessages, state with { CurrentName = keepsAQuestion ? plan.BranchName : null });",
                         history);   // a branch made
         // Saved with its mode: the auto-save slot, the archive of /clear (read with the snapshot), a branch.
-        Assert.Contains("templateSuffix: templateSuffix, mode: modeName);", pending);
-        Assert.Contains("await _store.SaveAsync(name, snapshot, CancellationToken.None, root, templateSuffix: templateSuffix,", connection);
-        Assert.Contains("forkTurn: plan.ForkTurn, templateSuffix: templateSuffix,", history);
-        Assert.Equal(1, CountOf(connection, "mode: modeName);"));
-        Assert.Equal(2, CountOf(history, "mode: modeName);"));
+        Assert.Contains("state = CaptureState();", pending);
+        Assert.Contains("await _store.AutoSaveAsync(snapshot, CancellationToken.None, root, state);", pending);
+        Assert.Contains("archived         = CaptureState() with { CurrentName = null };", connection);
+        Assert.Contains("await _store.SaveAsync(name, snapshot, CancellationToken.None, root, state: archived);", connection);
+        Assert.Equal(2, CountOf(history, "forkTurn: plan.ParentForkTurn, state: state);")
+                        + CountOf(history, "forkTurn: plan.ForkTurn, state: state);"));
     }
 
     private static int CountOf(string text, string what) =>

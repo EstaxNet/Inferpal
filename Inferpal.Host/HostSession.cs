@@ -201,9 +201,9 @@ internal sealed class HostSession : IDisposable
     /// <c>_activeTemplateSuffix</c>); appended by the host's system-prompt builder.</summary>
     public string? TemplateSuffix { get; set; }
 
-    /// <summary>The <c>/template</c> mode of the conversation just discarded: the adapter archives that conversation
-    /// AFTER the reset (<c>session/archive</c>), when <see cref="TemplateSuffix"/> is already the new one's.</summary>
-    public string? DiscardedTemplateSuffix { get; set; }
+    /// <summary>The state of the conversation just discarded: the adapter archives that conversation AFTER the reset
+    /// (<c>session/archive</c>), when the session already holds the new one's (its <c>/template</c>, its mode).</summary>
+    public SessionState? DiscardedState { get; set; }
 
     /// <summary>The archive the last reset made from the auto-save slot, and when: the adapter's <c>session/archive</c>
     /// writes over it — one archive per discarded conversation — and its title renames it.</summary>
@@ -216,21 +216,36 @@ internal sealed class HostSession : IDisposable
     /// from its file at each question; <c>null</c> for Chat, Agent and Plan, which it excludes.</summary>
     public string? ModeName { get; set; }
 
-    /// <summary>The mode of the conversation just discarded: the adapter archives it AFTER the reset, when the person may
-    /// have picked another (see <see cref="DiscardedTemplateSuffix"/>).</summary>
-    public string? DiscardedModeName { get; set; }
-
     /// <summary>The mode whose missing model the thread was told about: said once per conversation and mode.</summary>
     public string? ModeModelNoticeSaid { get; set; }
 
     /// <summary>Plan the session is working on (mirror of the VS VM's <c>_activePlan</c>), so
-    /// `/plan next` and `/plan done n` need no argument. Session state: the file is what
-    /// persists, not which one happened to be open.</summary>
+    /// `/plan next` and `/plan done n` need no argument; kept with the conversation (<see cref="SessionState"/>).</summary>
     public string? ActivePlan { get; set; }
 
     /// <summary>Agent step mode (`/agent-step`): pause after every tool call until
     /// `chat/resumeStep` (or `/resume`) releases <see cref="StepResume"/>.</summary>
     public bool StepMode { get; set; }
+
+    /// <summary>What the conversation holds besides its messages, as a session file keeps it: the only place that reads
+    /// it, with <see cref="ApplyState"/> the only place that writes it (<see cref="SessionState"/>).</summary>
+    public SessionState CaptureState() => new(
+        CurrentSessionName, TemplateSuffix, ModeName, PlanMode, !ToolsEnabled, StepMode,
+        XrayDisabledSections.Count > 0 ? [.. XrayDisabledSections.Order(StringComparer.Ordinal)] : null, ActivePlan);
+
+    /// <summary>Holds <paramref name="state"/> in place of every value the conversation held — a load replaces them all.</summary>
+    public void ApplyState(SessionState state)
+    {
+        CurrentSessionName = state.CurrentName;
+        TemplateSuffix     = state.TemplateSuffix;
+        ModeName           = state.Mode;
+        PlanMode           = state.PlanMode && state.Mode is null;   // a held mode excludes Plan
+        ToolsEnabled       = !state.ToolsOff;
+        StepMode           = state.StepMode;
+        XrayDisabledSections.Clear();
+        XrayDisabledSections.UnionWith(state.XrayOffSections);
+        ActivePlan         = state.ActivePlan;
+    }
 
     /// <summary>Pending step-mode pause; null when the agent is not paused.</summary>
     public TaskCompletionSource<bool>? StepResume;

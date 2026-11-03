@@ -1997,6 +1997,57 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Contains("REVIEW-INSTRUCTIONS", history[0].Content, StringComparison.Ordinal);
     }
 
+    /// <summary>A thread has no step mode — nothing resumes a paused run: a conversation saved in step mode in an editor
+    /// loads in a thread without it, or its first tool call waits for good. The rest of its state comes with it.</summary>
+    [Fact]
+    public async Task AConversationSavedInStepMode_LoadsInAThreadWithoutIt()
+    {
+        var name = $"stepped-{Guid.NewGuid():N}";
+        var store = new Services.Persistence.ConversationStore();
+        await store.SaveAsync(name, [new("user", "q"), new("assistant", "a")], CancellationToken.None, _root,
+                              state: new Services.Persistence.SessionState(ToolsOff: true, StepMode: true));
+        try
+        {
+            await using var h = await StartAsync();
+            await h.Client.RequestAsync("initialize", Init());
+            var loaded = await h.Client.RequestAsync("session/load", new { sessionId = name, cwd = _root, mcpServers = Array.Empty<object>() });
+            Assert.True(loaded.TryGetProperty("result", out _), loaded.GetRawText());
+
+            var session = h.Agent.Live(name)!.HostSessionForTests!;
+            Assert.False(session.StepMode);
+            Assert.False(session.ToolsEnabled);   // reference arm: the conversation's own switch is kept
+        }
+        finally { store.Delete(name); }
+    }
+
+    /// <summary>
+    /// A thread held in Plan reloads in Plan, its tools turned off with it: loaded by another process (the client restarted,
+    /// the thread evicted long ago), it came back in Default with the write tools on and the tools turned back on.
+    /// </summary>
+    [Fact]
+    public async Task AThreadHeldInPlan_ReloadsInPlan_WithItsToolsOff()
+    {
+        string sid;
+        await using (var first = await StartAsync(fake: f => f.ChatResult = new ChatTurnResult("Saved answer.", null, 0, 0)))
+        {
+            await first.Client.RequestAsync("initialize", Init());
+            sid = await NewSessionAsync(first);
+            await first.Client.RequestAsync("session/set_mode", new { sessionId = sid, modeId = "plan" });
+            await PromptAsync(first, sid, "/tools off");
+            await PromptAsync(first, sid, "remember this question");
+        }
+
+        await using var second = await StartAsync();
+        await second.Client.RequestAsync("initialize", Init());
+        var loaded = (await second.Client.RequestAsync("session/load", new { sessionId = sid, cwd = _root, mcpServers = Array.Empty<object>() }))
+            .GetProperty("result");
+
+        Assert.Equal("plan", loaded.GetProperty("modes").GetProperty("currentModeId").GetString());
+        var session = second.Agent.Live(sid)!.HostSessionForTests!;
+        Assert.True(session.PlanMode);
+        Assert.False(session.ToolsEnabled);
+    }
+
     /// <summary>A thread held in a mode reopens in it — and when the mode's file is gone since, it still opens, in Default,
     /// the cause said; never a thread that cannot be loaded.</summary>
     [Fact]

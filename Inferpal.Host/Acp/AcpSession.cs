@@ -43,6 +43,8 @@ internal sealed class AcpSession : IAsyncDisposable
 
     private readonly AcpAgent _agent;
     private readonly HostServer _host;
+    /// <summary>The thread's host session, for a test to read the state it holds.</summary>
+    internal HostSession? HostSessionForTests => _host.CurrentSession;
     private readonly JsonRpc _hostSide;
     private readonly JsonRpc _link;
     private readonly NonConcurrentSynchronizationContext _linkContext = new(sticky: false);
@@ -1047,7 +1049,13 @@ internal sealed class AcpSession : IAsyncDisposable
         await DrainLinkAsync();
         // The mode the thread was held in, held again — and the client's selectors follow it. Gone, the host said so.
         if (loaded.Mode is { } held) await HoldAgainAsync(AcpModes.FoundPrefix + held, ct);
-        else if (AcpModes.IsFound(_mode)) _mode = AcpModes.Default;
+        // Plan as the loaded conversation holds it (the host restored it): the thread's selector says what the host does.
+        else if (loaded.PlanMode) _mode = AcpModes.Plan;
+        else if (AcpModes.IsFound(_mode) || _mode == AcpModes.Plan) _mode = AcpModes.Default;
+        // ⚠ A thread has no step mode — nothing resumes a paused run: a conversation saved in step mode in an editor runs
+        // here without it, or its first tool call would wait for good.
+        if (loaded.Switches is { StepMode: true } switches)
+            await _link.InvokeWithParameterObjectAsync<SessionSwitchesDto>("session/switches", switches with { StepMode = false }, ct);
         lock (_gate) { _transcript.Clear(); _transcript.AddRange(loaded.Messages); }
         if (replay) Replay(loaded.Messages);
         await _agent.FlushAsync();

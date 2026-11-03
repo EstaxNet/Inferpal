@@ -219,8 +219,7 @@ internal partial class InferpalToolWindowData
         bool hasMessages = false;
         string firstUserContent = string.Empty;
         List<SavedMessage> snapshot = [];
-        var templateSuffix = string.Empty;
-        string? modeName = null;
+        SessionState? archived = null;
         string? root = null;
         var inASlot = false;
 
@@ -236,8 +235,7 @@ internal partial class InferpalToolWindowData
                 Messages.Select(m => m.Saved));
             hasMessages = snapshot.Count > 0;
             if (!hasMessages) return;
-            templateSuffix = _activeTemplateSuffix;
-            modeName       = _heldMode?.Name;
+            archived         = CaptureState() with { CurrentName = null };
             firstUserContent = ConversationArchive.FirstQuestion(snapshot);
         });
 
@@ -251,8 +249,7 @@ internal partial class InferpalToolWindowData
             try
             {
                 var name = ConversationArchive.FirstName(_store, at, firstUserContent);
-                await _store.SaveAsync(name, snapshot, CancellationToken.None, root, templateSuffix: templateSuffix,
-                                       mode: modeName);
+                await _store.SaveAsync(name, snapshot, CancellationToken.None, root, state: archived);
                 _ = RetitleArchiveAsync(name, at, firstUserContent);
             }
             catch (Exception ex)
@@ -330,9 +327,7 @@ internal partial class InferpalToolWindowData
                 // What the window said before the solution was known (a first-run notice, a window resized) is said once:
                 // kept, after the conversation restored.
                 var said = Messages.Where(m => !ReferenceEquals(m, _anchor0) && !ReferenceEquals(m, _anchor1)).ToList();
-                RestoreConversation(session.Messages,
-                                    !string.IsNullOrEmpty(session.CurrentName) ? session.CurrentName : ConversationStore.AutoSaveSlot,
-                                    session.TemplateSuffix, session.Mode);
+                RestoreConversation(session.Messages, session.State);
                 foreach (var item in said) InsertThemed(item);
                 _conversationRoot.Restored(root);
                 RefreshSessionsList();
@@ -344,9 +339,10 @@ internal partial class InferpalToolWindowData
     }
 
     /// <summary>Whether a question was asked in this window, or one is on its way — or the person set the conversation up
-    /// (a <c>/template</c>, a mode held): a restore would replace what they chose.</summary>
+    /// (a <c>/template</c>, a mode held, Plan, a switch, a plan to follow): a restore replaces the whole state
+    /// (<see cref="ApplyState"/>), and would take back what they chose.</summary>
     private bool AskedOnScreen() =>
-        IsLoading || _sendStarting || !string.IsNullOrEmpty(_activeTemplateSuffix) || _heldMode is not null
+        IsLoading || _sendStarting || CaptureState() with { CurrentName = null } != SessionState.New
         || Messages.Any(m => m.Saved is var s && SessionManager.IsQuestion(new SavedMessage(s.Role, s.Content, s.ToolName)));
 
     private async Task<bool> AskedInThisWindowAsync()
@@ -409,8 +405,7 @@ internal partial class InferpalToolWindowData
             {
                 // The auto-save slot carries the named session it continues: /branch keeps writing to that one.
                 RestoreConversation(session.Messages,
-                                    name == "last_session" && !string.IsNullOrEmpty(session.CurrentName) ? session.CurrentName : name,
-                                    session.TemplateSuffix, session.Mode);
+                                    session.State with { CurrentName = name == "last_session" ? session.CurrentName : name });
                 // Loaded here, it is this workspace's conversation from now on — whatever solution is opened next.
                 _conversationRoot.Restored(here);
                 IsSessionPanelOpen = false;
@@ -426,16 +421,12 @@ internal partial class InferpalToolWindowData
     /// re-rendered bubbles. Shared by session loading and <c>/branch</c> (which restores the
     /// truncated transcript of the new branch). Must run on the VM context.
     /// </summary>
-    /// <param name="templateSuffix">The <c>/template</c> mode the conversation was held in — its greeting is among the
-    /// messages, so a restore without it shows a mode no answer follows.</param>
-    /// <param name="mode">The mode found for the workspace the conversation was held in, held again; <c>null</c> for one
-    /// held in Chat, Agent or Plan.</param>
-    private void RestoreConversation(IReadOnlyList<SavedMessage> messages, string sessionName, string? templateSuffix,
-                                     string? mode)
+    /// <param name="state">Everything the conversation holds besides its messages, in place of the one left
+    /// (<see cref="ApplyState"/>) — its name too (<c>null</c>: no session file, as the auto-save slot).</param>
+    private void RestoreConversation(IReadOnlyList<SavedMessage> messages, SessionState state)
     {
         Messages.Clear();
-        _activeTemplateSuffix     = templateSuffix ?? string.Empty;
-        var modeGone              = HoldRestoredMode(mode);
+        var modeGone              = ApplyState(state);
         _workspaceContextInjected = false;
         _sessionStartTime         = null;
         _lastRegenerableMsg       = null;
@@ -445,7 +436,6 @@ internal partial class InferpalToolWindowData
         _oodaSummary              = string.Empty;
         _recapInSystem            = string.Empty;
         _conversationTurnCount    = 0;
-        _currentSessionName       = sessionName == "last_session" ? string.Empty : sessionName;
         ResetTurnAccounting();
         // ⚠ Then measured — its OWN measure, never the one of the conversation left: zero is a first turn's state, and
         // the first question after a reload (Visual Studio reloads the last session every time it opens) went out

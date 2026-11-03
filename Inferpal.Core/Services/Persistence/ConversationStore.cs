@@ -73,20 +73,16 @@ internal class ConversationStore
     /// <param name="workspaceRoot">Workspace the conversation belongs to: what decides the auto-save slot's file, and,
     /// for a named session, the folder an Agent Client Protocol client lists it under. Required, <c>null</c> said
     /// aloud: a branch and Visual Studio's archives were written without it, and no ACP client ever listed them.</param>
-    /// <param name="currentName">The named session the conversation lives in; recorded for the auto-save slot.</param>
-    /// <param name="templateSuffix">The <c>/template</c> mode the conversation is held in, restored with it.</param>
-    /// <param name="mode">The mode the person picked for the conversation (<see cref="ChatMode.Name"/>), restored with it.</param>
+    /// <param name="state">What the conversation holds besides its messages (<see cref="SessionState"/>); a new
+    /// conversation's when <c>null</c>.</param>
     public async Task SaveAsync(string sessionName, IEnumerable<SavedMessage> messages, CancellationToken ct,
                                 string? workspaceRoot, string? parent = null, int? forkTurn = null,
-                                string? currentName = null, string? templateSuffix = null, string? mode = null)
+                                SessionState? state = null)
     {
         var file = sessionName == AutoSaveSlot ? AutoSaveFile(workspaceRoot) : SessionPath(sessionName);
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
-        var payload = new SessionData(DateTime.UtcNow, messages.ToList(), parent, forkTurn,
-                                      string.IsNullOrWhiteSpace(workspaceRoot) ? null : workspaceRoot,
-                                      string.IsNullOrWhiteSpace(currentName) ? null : currentName,
-                                      string.IsNullOrWhiteSpace(templateSuffix) ? null : templateSuffix,
-                                      string.IsNullOrWhiteSpace(mode) ? null : mode);
+        var payload = SessionData.Of(messages.ToList(), parent, forkTurn,
+                                     string.IsNullOrWhiteSpace(workspaceRoot) ? null : workspaceRoot, state ?? SessionState.New);
 
         // Write-then-rename: a crash (or a full disk) mid-write must not leave a truncated
         // session behind. It matters more since /branch rewrites the parent file on every fork —
@@ -99,9 +95,8 @@ internal class ConversationStore
 
     /// Auto-saves the current session to "last_session.json".
     public Task AutoSaveAsync(IEnumerable<SavedMessage> messages, CancellationToken ct, string? workspaceRoot = null,
-                              string? currentName = null, string? templateSuffix = null, string? mode = null) =>
-        SaveAsync("last_session", messages, ct, workspaceRoot: workspaceRoot, currentName: currentName,
-                  templateSuffix: templateSuffix, mode: mode);
+                              SessionState? state = null) =>
+        SaveAsync("last_session", messages, ct, workspaceRoot: workspaceRoot, state: state);
 
     /// <summary>
     /// <see cref="ForgetAutoSaveAsync"/>, or — when the slot could not be emptied — the notice that says so.
@@ -521,7 +516,32 @@ internal record SessionData(
     [property: JsonPropertyName("template_suffix")] string? TemplateSuffix = null,
     // The mode the person picked for the conversation: its instructions and tools are the conversation's, and a load
     // that dropped it would answer the next question as another assistant.
-    [property: JsonPropertyName("mode")]            string? Mode = null);
+    [property: JsonPropertyName("mode")]            string? Mode = null,
+    // The rest of the conversation's state (SessionState), absent at a new conversation's value: a session written
+    // before these existed reads as a new conversation's switches.
+    [property: JsonPropertyName("plan_mode")]       bool? PlanMode = null,
+    [property: JsonPropertyName("tools_off")]       bool? ToolsOff = null,
+    [property: JsonPropertyName("step_mode")]       bool? StepMode = null,
+    [property: JsonPropertyName("xray_off")]        List<string>? XrayOff = null,
+    [property: JsonPropertyName("active_plan")]     string? ActivePlan = null)
+{
+    /// <summary>The conversation's state this file holds; a new conversation's for what it does not.</summary>
+    [JsonIgnore]
+    public SessionState State => new(CurrentName, TemplateSuffix, Mode, PlanMode == true, ToolsOff == true,
+                                     StepMode == true, XrayOff is { Count: > 0 } off ? off : null, ActivePlan);
+
+    /// <summary>A file of <paramref name="messages"/> holding <paramref name="state"/>, each value written only when it is
+    /// not a new conversation's.</summary>
+    public static SessionData Of(List<SavedMessage> messages, string? parent, int? forkTurn, string? workspaceRoot,
+                                 SessionState state) =>
+        new(DateTime.UtcNow, messages, parent, forkTurn, workspaceRoot,
+            string.IsNullOrWhiteSpace(state.CurrentName) ? null : state.CurrentName,
+            string.IsNullOrWhiteSpace(state.TemplateSuffix) ? null : state.TemplateSuffix,
+            string.IsNullOrWhiteSpace(state.Mode) ? null : state.Mode,
+            state.PlanMode ? true : null, state.ToolsOff ? true : null, state.StepMode ? true : null,
+            state.XrayOffSections.Count > 0 ? [.. state.XrayOffSections] : null,
+            string.IsNullOrWhiteSpace(state.ActivePlan) ? null : state.ActivePlan);
+}
 
 /// <param name="Run">The run of agent changes the turn this message closes made (<c>HistoryRun.Id</c>); absent when it
 /// changed no file, and from the sessions written before it existed. The only link from a question to the runs that

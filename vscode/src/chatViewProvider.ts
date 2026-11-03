@@ -20,7 +20,7 @@ import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
   ApprovalCard, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
-  ModelsByKind, SavedMessage, SessionSwitches, SlashEffect, TestsGenerateResult, TurnNote, WindowNoticeResult,
+  ModelsByKind, SavedMessage, SessionLoadResult, SessionSwitches, hasSwitches, noSwitches, SlashEffect, TestsGenerateResult, TurnNote, WindowNoticeResult,
 } from './protocol';
 import {
   WebviewToExt,
@@ -116,7 +116,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private lastDraft = '';
   private draftToRestore = '';
   /** The conversation's own switches (`/tools off`, step mode, X-Ray sections off): a restarted host gets them back. */
-  private switches: SessionSwitches = { toolsOff: false, stepMode: false, xrayOff: [] };
+  private switches: SessionSwitches = noSwitches();
   /** Whether the editor listeners feeding the welcome screen are set (once per extension life). */
   private editorWatch = false;
   private editorContextTimer: NodeJS.Timeout | undefined;
@@ -697,8 +697,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     // ⚠ The conversation's own switches go back too: without them, the tools came back on behind a person who had turned
     // them off, a run in step mode stopped pausing, and a section unchecked in X-Ray went back into every prompt.
-    const { toolsOff, stepMode, xrayOff } = this.switches;
-    if (toolsOff || stepMode || xrayOff.length > 0) {
+    if (hasSwitches(this.switches)) {
       try {
         this.switches = await host.sessionSwitches(this.switches);
       } catch (err) {
@@ -747,6 +746,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await host.sessionSave('last_session', this.snapshot(true));
         const back = await host.sessionLoad('last_session');
         if (back && back.messages.length > 0) {
+          // Drawn without the state: the window's mirrors were given to the host just above, and one it refused stays
+          // for its next start — taken from the answer, it would be the host's default.
           this.applySession(back.messages, back.nextTurnTokens ?? 0);
           return; // applySession hydrates
         }
@@ -772,10 +773,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (!conversationShown) {
       // What was said while starting (backend unreachable, default model replaced) stays, under the conversation.
       const startNotices = this.transcript.filter((m) => m.notice);
+      // ⚠ What the person chose while the window started (Plan, a switch) is theirs: the load replaces the host's whole
+      // state with the conversation's, so the choice is given back to the host and the mirrors keep it.
+      const chosen = this.planMode || hasSwitches(this.switches);
       try {
         const last = await host.sessionLoad('last_session');
         if (last && last.messages.length > 0) {
-          this.applySession(last.messages, last.nextTurnTokens ?? 0);
+          this.applySession(last.messages, last.nextTurnTokens ?? 0, chosen ? undefined : last);
+          if (chosen) {
+            await this.giveBackChoices(host, last);
+          }
           if (startNotices.length > 0) {
             this.transcript.push(...startNotices);
             this.hydrate();
@@ -1097,9 +1104,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.droppedEntries = 0;
   }
 
-  /** Replaces the transcript with a restored session (host history already rebuilt). */
-  /** `nextTurnTokens`: the loaded conversation as the host measured it — what the next question will send. */
-  private applySession(messages: SavedMessage[], nextTurnTokens = 0): void {
+  /**
+   * Replaces the transcript with a conversation the host now holds (its history already rebuilt); `nextTurnTokens` is
+   * that conversation as the host measured it — what the next question will send. ⚠ With `loaded` (a load, not a branch
+   * of the same conversation), its whole state comes with it: the host replaced Plan mode and the switches, and the
+   * window's mirrors follow — kept, the switch showed the previous conversation's Plan, and a later restart gave the
+   * host back its switches.
+   */
+  private applySession(messages: SavedMessage[], nextTurnTokens = 0, loaded?: SessionLoadResult): void {
+    if (loaded) {
+      this.planMode = loaded.planMode === true;
+      this.post({ type: 'planMode', enabled: this.planMode });
+      this.switches = loaded.switches ?? noSwitches();
+    }
     this.clearTranscript();
     this.transcript.push(...toTranscript(messages));
     this.trimTranscript();
@@ -1116,6 +1133,24 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.hydrate();
     // The conversation comes back in the mode it was held in (or none): the selector follows the host.
     void this.refreshModes();
+  }
+
+  /**
+   * The window's Plan and switches, given back to a host whose load replaced them with `loaded`'s. ⚠ Refused, the mirrors
+   * show what the host holds — the switch must never say Plan over a host that runs with the write tools; and the held
+   * mode is read again after, the host leaving it for Plan.
+   */
+  private async giveBackChoices(host: HostClient, loaded: SessionLoadResult): Promise<void> {
+    try {
+      this.planMode = await host.planMode(this.planMode);
+      this.switches = await host.sessionSwitches(this.switches);
+    } catch (err) {
+      this.log(`[chat] the window's Plan and switches not given back after the restore: ${String(err)}`);
+      this.planMode = loaded.planMode === true;
+      this.switches = loaded.switches ?? noSwitches();
+    }
+    this.post({ type: 'planMode', enabled: this.planMode });
+    await this.refreshModes();
   }
 
   /** Set when the auto-save last failed and the user was told; cleared by the next one that works. */
@@ -1234,7 +1269,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (!loaded) {
         return [false, t('Branch {0} could not be loaded — it may have been deleted.', name)];
       }
-      this.applySession(loaded.messages, loaded.nextTurnTokens ?? 0);
+      this.applySession(loaded.messages, loaded.nextTurnTokens ?? 0, loaded);
       return [true, ''];
     } catch (err) {
       this.gestureFailed('branch switch', err);
@@ -1359,7 +1394,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         );
         return;
       }
-      this.applySession(loaded.messages, loaded.nextTurnTokens ?? 0);
+      this.applySession(loaded.messages, loaded.nextTurnTokens ?? 0, loaded);
     } catch (err) {
       void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
     }

@@ -108,7 +108,7 @@ public sealed class ChatModesTests : IDisposable
         Assert.DoesNotContain("## Mode", builder.Build("BASE"), StringComparison.Ordinal);   // reference arm: no mode, no layer
 
         var store = new Services.Persistence.ConversationStore(Path.Combine(_root, "sessions"));
-        await store.SaveAsync("held", [new Services.Persistence.SavedMessage("user", "hello")], CancellationToken.None, _root, mode: "Review");
+        await store.SaveAsync("held", [new Services.Persistence.SavedMessage("user", "hello")], CancellationToken.None, _root, state: new Services.Persistence.SessionState(Mode: "Review"));
         Assert.Equal("Review", (await store.LoadAsync("held", CancellationToken.None))!.Mode);
     }
 

@@ -66,7 +66,7 @@ internal static class ConversationArchive
         var at = kept.SavedAt.ToLocalTime();
         var first = FirstQuestion(kept.Messages);
         var name = FirstName(store, at, first);
-        await store.SaveAsync(name, kept.Messages, ct, workspaceRoot, templateSuffix: kept.TemplateSuffix, mode: kept.Mode)
+        await store.SaveAsync(name, kept.Messages, ct, workspaceRoot, state: kept.State with { CurrentName = null })
                    .ConfigureAwait(false);
         return new ArchivedSlot(name, at, first);
     }

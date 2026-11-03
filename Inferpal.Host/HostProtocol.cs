@@ -757,7 +757,11 @@ internal sealed record SessionListResult(List<SessionSummaryDto> Sessions, List<
 /// question will send — the context gauge's fill (see <see cref="ChatSendResult"/>'s <c>NextTurnTokens</c>).</summary>
 /// <param name="Mode">The mode the conversation was held in and is held in again (<c>null</c>: none) — the adapter's
 /// selector follows it.</param>
-internal sealed record SessionLoadResult(string Name, List<SavedMessageDto> Messages, int NextTurnTokens = 0, string? Mode = null);
+/// <param name="PlanMode">Plan mode, as the loaded conversation holds it: the editor's selector follows.</param>
+/// <param name="Switches">The loaded conversation's switches (<c>/tools off</c>, step mode, X-Ray sections): the editor's
+/// mirror follows, or a later restart would give the host back the previous conversation's.</param>
+internal sealed record SessionLoadResult(string Name, List<SavedMessageDto> Messages, int NextTurnTokens = 0, string? Mode = null,
+                                        bool PlanMode = false, SessionSwitchesDto? Switches = null);
 
 /// <summary>`session/branch` — fork the adapter's transcript at 1-based <paramref name="Turn"/>.</summary>
 internal sealed record SessionBranchParams(int Turn, List<SavedMessageDto> Messages);

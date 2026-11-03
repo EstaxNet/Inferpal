@@ -397,7 +397,9 @@ internal partial class InferpalToolWindowData
             // Agent mode (Plan→Act→Observe) is active only when the user switch is on AND tools are
             // engaged AND no one-time model overrides this turn. Computed here so model selection and
             // the execution path below share one source of truth.
-            var useOrchestrator = _config.AgentModeEnabled
+            // Plan runs the agent loop, read-only, as on the host (TurnIsAgent): a conversation restored in Plan in a Chat
+            // window showed Plan and answered as a plain chat.
+            var useOrchestrator = (_config.AgentModeEnabled || _planMode)
                 && turnMode is null
                 && oneTimeModel is null
                 && _toolsEnabled;

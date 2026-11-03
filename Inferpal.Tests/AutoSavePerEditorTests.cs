@@ -34,7 +34,7 @@ public sealed class AutoSavePerEditorTests : IDisposable
     [Fact]
     public async Task BothEditorsOnOneFolder_EachGetTheirOwnLastConversationBack()
     {
-        await VisualStudio().AutoSaveAsync(Turn("asked in Visual Studio"), CancellationToken.None, _root, currentName: "vs-session");
+        await VisualStudio().AutoSaveAsync(Turn("asked in Visual Studio"), CancellationToken.None, _root, new SessionState(CurrentName: "vs-session"));
         await VsCode().AutoSaveAsync(Turn("asked in VS Code"), CancellationToken.None, _root);
 
         var vs = await VisualStudio().LoadAutoSaveAsync(_root, CancellationToken.None);

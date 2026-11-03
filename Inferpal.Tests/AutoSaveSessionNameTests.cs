@@ -29,7 +29,7 @@ public sealed class AutoSaveSessionNameTests : IDisposable
     public async Task TheSlot_KeepsTheNameItWasSavedWith()
     {
         var store = new ConversationStore(_dir);
-        await store.AutoSaveAsync([new SavedMessage("user", "q")], CancellationToken.None, Here, currentName: "feature-x");
+        await store.AutoSaveAsync([new SavedMessage("user", "q")], CancellationToken.None, Here, new SessionState(CurrentName: "feature-x"));
 
         var slot = await store.LoadAutoSaveAsync(Here, CancellationToken.None);
 
@@ -65,7 +65,7 @@ public sealed class AutoSaveSessionNameTests : IDisposable
         var vs   = ConventionCoverageTests.CodeOnly(
             Path.Combine(dir.FullName, "Inferpal", "ToolWindow", "InferpalToolWindowData.Connection.cs"));
 
-        Assert.Contains("p.Name == \"last_session\" ? data.CurrentName : p.Name", host, StringComparison.Ordinal);
+        Assert.Contains("CurrentName = p.Name == ConversationStore.AutoSaveSlot ? data.CurrentName : p.Name", host, StringComparison.Ordinal);
         Assert.Contains("session.CurrentName", vs, StringComparison.Ordinal);
     }
 }

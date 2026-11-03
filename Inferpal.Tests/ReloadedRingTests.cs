@@ -56,7 +56,7 @@ public partial class HostServerTests
         Assert.Contains("this.promptTokens = nextTurnTokens;", apply, StringComparison.Ordinal);
 
         // Every caller hands the host's figure over: one left on the default shows no gauge after that load.
-        var calls = System.Text.RegularExpressions.Regex.Matches(provider, @"this\.applySession\((\w+)\.messages(, \1\.nextTurnTokens \?\? 0)?\)");
+        var calls = System.Text.RegularExpressions.Regex.Matches(provider, @"this\.applySession\((\w+)\.messages(, \1\.nextTurnTokens \?\? 0)?(, [^)]*)?\)");
         Assert.True(calls.Count >= 5, $"only {calls.Count} load site(s) found: the scan reads nothing");   // WITNESS
         Assert.All(calls, c => Assert.True(c.Groups[2].Success, $"{c.Value} drops the loaded conversation's fill"));
     }
