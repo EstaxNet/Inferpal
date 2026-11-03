@@ -147,6 +147,8 @@ internal partial class InferpalToolWindowData
     {
         // Every turn can reach the file tools: never before the workspace root is pinned.
         PinWorkspaceRoot();
+        // What another editor saved since: this question answers with it.
+        await FollowSettingsFileAsync();
 
         // ── Pre-flight: heartbeat says Ollama is offline → fail immediately ────────
         // This avoids the 30-minute HTTP timeout; the prompt stays in the input box

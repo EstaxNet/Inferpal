@@ -10,10 +10,24 @@ import * as crypto from 'crypto';
 import { HostClient } from './hostClient';
 import { hostErrorText, hostUnavailableMessage, promptOpenFolder } from './hostStatus';
 import { SavedKeys, SettingsBridge, SettingsInbound } from './settingsBridge';
+import { ConfigReloadResult } from './protocol';
 import { setLanguage, t } from './i18n';
+
+/** A new server type or address applies when the host starts again: said, with the restart offered. */
+export async function offerHostRestart(): Promise<void> {
+  const restart = await vscode.window.showInformationMessage(
+    t('Provider or server URL changed — restart the Inferpal host to apply it.'),
+    t('Restart'),
+  );
+  if (restart) {
+    void vscode.commands.executeCommand('inferpal.restartHost');
+  }
+}
 
 export class SettingsPanel {
   private static current: SettingsPanel | undefined;
+  /** Set by the activator: the chat adopts what the panel's follow took (the host reports a change once). */
+  static adoptFollowed: (followed: ConfigReloadResult) => Promise<void> = async () => undefined;
   /** Set by the activator from the host's spawn until its start ends: the panel then says "starting", not "restart". */
   private static hostStarting = false;
 
@@ -36,6 +50,7 @@ export class SettingsPanel {
       log: (line) => this.log(line),
       hostStarting: () => SettingsPanel.hostStarting,
       startingMessage: () => t('Inferpal is starting — the settings load as soon as it is ready.'),
+      followed: (followed) => SettingsPanel.adoptFollowed(followed),
       unavailableMessage: () => hostUnavailableMessage(),
       onHostMissing: () => promptOpenFolder(),
       errorText: (err) => hostErrorText(err),
@@ -138,15 +153,10 @@ export class SettingsPanel {
 
     // Provider/BaseUrl changes only take effect after a new `initialize`.
     if (before && after && (before.provider !== after.provider || before.baseUrl !== after.baseUrl)) {
-      const restart = await vscode.window.showInformationMessage(
-        t('Provider or server URL changed — restart the Inferpal host to apply it.'),
-        t('Restart'),
-      );
-      if (restart) {
-        void vscode.commands.executeCommand('inferpal.restartHost');
-      }
+      await offerHostRestart();
     }
   }
+
 
   private post(message: unknown): void {
     void this.panel.webview.postMessage(message);

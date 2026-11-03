@@ -107,6 +107,43 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) { Diagnostics.Swallow("Connection.AdoptModel", ex); }
     }
 
+    /// <summary>
+    /// The settings another editor saved since this window took them (<see cref="Services.Inference.SettingsFollow"/>):
+    /// taken as the file's, applied as a save applies them (<see cref="OnSettingsFollowed"/>); what this window changed
+    /// itself and did not save stays, unless the file changed that same setting. A new kind of model server is said once:
+    /// it applies when Visual Studio restarts.
+    /// </summary>
+    private async Task FollowSettingsFileAsync()
+    {
+        try
+        {
+            var follow = Services.Inference.SettingsFollow.TakeAndApply(_config, _client);
+            // The question answers with the MCP servers the other editor saved: started again before it, not after.
+            if (follow.Taken.Contains("mcpEnabled") || follow.Taken.Contains("mcpServersJson")) await RefreshMcpAsync();
+        }
+        catch (Exception ex) { Diagnostics.Swallow("Settings.Follow", ex); }
+    }
+
+    /// <summary>Settings another editor saved, now this window's: the language, and a new kind of model server said — the
+    /// rest follows <see cref="InferpalConfig.Saved"/>, as after a save in this window. The MCP servers are started again
+    /// by the gesture that followed (a question before its turn, the settings window once no turn runs): started here
+    /// too, they would be torn down twice, the second time under the turn.</summary>
+    private void OnSettingsFollowed(IReadOnlyList<string> taken, string? newKind)
+    {
+        if (taken.Contains("language"))
+        {
+            Strings.ApplyLanguage(_config.Language);
+            _config.NotifyLanguageChanged();
+        }
+        if (newKind is not null)
+            Post(() =>
+            {
+                var notice = ChatMessageItem.NoticeMsg(BackendSwitchPendingText(newKind));
+                ApplyItemTheme(notice);
+                Messages.Insert(Messages.Count - 2, notice);
+            });
+    }
+
     /// <summary>A backend chosen since this window's client was built applies at restart
     /// (<see cref="InferenceProviderFactory.PendingSwitch"/>): said instead of a "cannot reach" that blames it.</summary>
     private string BackendSwitchPendingText(string switchTo) => Strings.MsgBackendSwitchPending(

@@ -295,4 +295,236 @@ public sealed class FollowSavedSettingsTests : IDisposable
         // Reference arm: the cache this copy exists to step around.
         Assert.Same(InferpalConfig.Load(), InferpalConfig.Load());
     }
+
+    // ── An editor's copy follows the file before each question (SettingsFollow) ─────────────
+
+    private static Services.Inference.IInferenceProvider OllamaClient() =>
+        Services.Inference.InferenceProviderFactory.Create(new InferpalConfig { Provider = "ollama" });
+
+    [Fact]
+    public void AnEditorsCopy_TakesWhatTheOtherEditorSaved_AndKeepsWhatItChangedItself()
+    {
+        new InferpalConfig { PermissionRules = "", CustomSystemPrompt = "" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        vs.CustomSystemPrompt = "answer in French";   // this window's own change, not saved yet
+
+        WriteAsTheSettingsWindow(c => c.PermissionRules = "deny run_command ^git push");
+        var follow = Services.Inference.SettingsFollow.Take(vs, OllamaClient());
+
+        Assert.Equal(["permissionRules"], follow.Taken);
+        Assert.Equal("deny run_command ^git push", vs.PermissionRules);
+        Assert.Equal("answer in French", vs.CustomSystemPrompt);
+
+        // Taken once: the next question takes nothing more.
+        Assert.Empty(Services.Inference.SettingsFollow.Take(vs, OllamaClient()).Taken);
+    }
+
+    /// <summary>Reference arm: what this copy saved itself is not taken back as another editor's change.</summary>
+    [Fact]
+    public void WhatThisCopySaved_IsNotTakenAsAnotherEditorsChange()
+    {
+        new InferpalConfig { CommandTimeoutSeconds = 120 }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        vs.CommandTimeoutSeconds = 200;
+        vs.Save();
+
+        Assert.Empty(Services.Inference.SettingsFollow.Take(vs, OllamaClient()).Taken);
+        Assert.Equal(200, vs.CommandTimeoutSeconds);
+    }
+
+    [Fact]
+    public void ANewKindOfServer_IsSaidOnce_AndTheCopyKeepsTheServerItSpeaks()
+    {
+        new InferpalConfig { Provider = "ollama", BaseUrl = "http://localhost:11434" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+
+        vs.DefaultModel = "qwen3:8b";
+        vs.Save();
+        WriteAsTheSettingsWindow(c => { c.Provider = "lmstudio"; c.BaseUrl = "http://localhost:1234"; c.DefaultModel = "lm-model"; });
+        var follow = Services.Inference.SettingsFollow.Take(vs, OllamaClient());
+
+        Assert.True(follow.ServerChanged);
+        Assert.Equal("lmstudio", follow.SwitchTo);
+        Assert.Equal(("ollama", "http://localhost:11434"), (vs.Provider, vs.BaseUrl));   // its client speaks Ollama
+        // The new server's model is not asked of the old one: left aside with it.
+        Assert.Equal("qwen3:8b", vs.DefaultModel);
+        Assert.False(Services.Inference.SettingsFollow.Take(vs, OllamaClient()).ServerChanged);   // said once
+    }
+
+    [Fact]
+    public void AnUnreadableFile_TakesNothing_AndIsNotTheFactoryValues()
+    {
+        new InferpalConfig { PermissionRules = "deny run_command ^rm" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        File.WriteAllText(_path, "{ not json");
+
+        var follow = Services.Inference.SettingsFollow.Take(vs, OllamaClient());
+
+        Assert.True(follow.Unreadable);
+        Assert.Empty(follow.Taken);
+        Assert.Equal("deny run_command ^rm", vs.PermissionRules);
+    }
+
+    [Fact]
+    public void AFollow_IsAppliedAsASave()
+    {
+        var config = new InferpalConfig();
+        var seen = new List<string>();
+        config.Followed += (taken, kind) => seen.AddRange([.. taken, kind ?? "-"]);
+        config.Saved += () => seen.Add("saved");
+
+        config.NotifyFollowed(["language", "mcpServersJson"]);
+        config.NotifyFollowed([], "lmstudio");   // a new kind only: said, nothing saved
+
+        Assert.Equal(["language", "mcpServersJson", "-", "saved", "lmstudio"], seen);
+    }
+
+    /// <summary>A save of this copy merges what the other editor saved meanwhile into the file: the next follow still
+    /// takes it — the followed file moves by what this save wrote, not by the whole merged file.</summary>
+    [Fact]
+    public void ASaveOfThisCopy_DoesNotSwallowTheOtherEditorsChange()
+    {
+        new InferpalConfig { PermissionRules = "", DefaultModel = "a" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        WriteAsTheSettingsWindow(c => c.PermissionRules = "deny run_command ^git push");
+
+        vs.DefaultModel = "b";   // /model in Visual Studio, before its next question
+        vs.Save();
+        var follow = Services.Inference.SettingsFollow.Take(vs, OllamaClient());
+
+        Assert.Equal(["permissionRules"], follow.Taken);
+        Assert.Equal("deny run_command ^git push", vs.PermissionRules);
+    }
+
+    /// <summary>Saved here, then put back by the other editor: the old value is the other editor's change, and taken.</summary>
+    [Fact]
+    public void ASettingSavedHere_ThenPutBackElsewhere_IsFollowed()
+    {
+        new InferpalConfig { CommandTimeoutSeconds = 120 }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        vs.CommandTimeoutSeconds = 200;
+        vs.Save();
+        WriteAsTheSettingsWindow(c => c.CommandTimeoutSeconds = 120);
+
+        Assert.Equal(["commandTimeoutSeconds"], Services.Inference.SettingsFollow.Take(vs, OllamaClient()).Taken);
+        Assert.Equal(120, vs.CommandTimeoutSeconds);
+    }
+
+    /// <summary>A list merged item by item: the other editor's item, written by this copy's save, is still followed.</summary>
+    [Fact]
+    public void AListItemTheOtherEditorAdded_IsFollowed_AfterThisCopysSaveMergedIt()
+    {
+        new InferpalConfig { PermissionRules = "" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        WriteAsTheSettingsWindow(c => c.PermissionRules = "deny run_command ^git push");
+        vs.AddLines(nameof(InferpalConfig.PermissionRules), ["allow run_command ^dotnet test"]);   // an "Always" here
+        Assert.Contains("deny run_command ^git push", OnDisk().PermissionRules);   // witness: the file holds both
+
+        Services.Inference.SettingsFollow.Take(vs, OllamaClient());
+        Assert.Contains("deny run_command ^git push", vs.PermissionRules);
+    }
+
+    /// <summary>The same through a save of this copy, which merges the list item by item.</summary>
+    [Fact]
+    public void AListItemTheOtherEditorAdded_IsFollowed_AfterThisCopysSaveMergedItInTheFile()
+    {
+        new InferpalConfig { PermissionRules = "" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        WriteAsTheSettingsWindow(c => c.PermissionRules = "deny run_command ^git push");
+        vs.PermissionRules = "allow run_command ^dotnet test";
+        vs.Save();
+        Assert.Contains("deny run_command ^git push", OnDisk().PermissionRules);   // witness: merged in the file
+
+        Services.Inference.SettingsFollow.Take(vs, OllamaClient());
+        Assert.Contains("deny run_command ^git push", vs.PermissionRules);
+    }
+
+    /// <summary>A rule this copy added, removed by the other editor before the next question: the removal is followed.</summary>
+    [Fact]
+    public void ALineAddedHere_RemovedElsewhere_IsFollowed()
+    {
+        new InferpalConfig { PermissionRules = "" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        vs.AddLines(nameof(InferpalConfig.PermissionRules), ["allow run_command ^dotnet test"]);
+        WriteAsTheSettingsWindow(c => c.PermissionRules = "");
+
+        Services.Inference.SettingsFollow.Take(vs, OllamaClient());
+        Assert.Equal("", vs.PermissionRules);
+    }
+
+    /// <summary>The settings window and the chat share one copy: a new kind of server seen first by the window is still
+    /// said — the handler hears it from whichever gesture followed.</summary>
+    [Fact]
+    public void ANewKindOfServer_FollowedByAnyGesture_IsHandedToTheHandlers()
+    {
+        new InferpalConfig { Provider = "ollama" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        string? said = null;
+        vs.Followed += (_, kind) => said = kind;
+        WriteAsTheSettingsWindow(c => c.Provider = "lmstudio");
+
+        Services.Inference.SettingsFollow.TakeAndApply(vs, OllamaClient());
+        Assert.Equal("lmstudio", said);
+    }
+
+    /// <summary>Never while a turn runs: the agent loop reads these settings.</summary>
+    [Fact]
+    public void ATurnInFlight_TakesNothing_TheNextQuestionDoes()
+    {
+        new InferpalConfig { PermissionRules = "" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        WriteAsTheSettingsWindow(c => c.PermissionRules = "deny run_command ^rm");
+
+        Assert.Empty(Services.Inference.SettingsFollow.TakeAndApply(vs, OllamaClient(), busy: () => true).Taken);
+        Assert.Equal(["permissionRules"], Services.Inference.SettingsFollow.TakeAndApply(vs, OllamaClient(), busy: () => false).Taken);
+    }
+
+    /// <summary>The server a follow left aside stays the file's: a save that must merge over this copy's reading (the file
+    /// unreadable at that moment) does not write the old kind back.</summary>
+    [Fact]
+    public void AServerLeftAside_IsNotWrittenBack_WhenASaveMergesOverItsReading()
+    {
+        new InferpalConfig { Provider = "ollama", BaseUrl = "http://localhost:11434" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+        WriteAsTheSettingsWindow(c => { c.Provider = "lmstudio"; c.BaseUrl = "http://localhost:1234"; });
+        Services.Inference.SettingsFollow.Take(vs, OllamaClient());
+
+        File.WriteAllText(_path, "{ not json");   // held by another writer at the moment of the save
+        vs.CommandTimeoutSeconds = 77;
+        vs.Save();
+
+        Assert.Equal(("lmstudio", "http://localhost:1234", 77), (OnDisk().Provider, OnDisk().BaseUrl, OnDisk().CommandTimeoutSeconds));
+    }
+
+    /// <summary>Visual Studio follows before each question and as its settings window opens; VS Code before each question
+    /// and as its panel loads — read on the source: neither front-end can be driven from the suite.</summary>
+    [Fact]
+    public void BothEditors_FollowTheFile_BeforeEachQuestion_AndAsTheirSettingsOpen()
+    {
+        var repo = ConventionCoverageTests.RepoRoot();
+        var tool = Path.Combine(repo, "Inferpal", "ToolWindow");
+        Assert.Matches(@"PinWorkspaceRoot\(\);\s*await FollowSettingsFileAsync\(\);",
+                       ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalToolWindowData.ChatTurn.cs")));
+        Assert.Matches(@"try\s*\{\s*await FollowSettingsFileAsync\(\);\s*switch \(SlashCommandRouter\.Route",
+                       ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalToolWindowData.SlashCommands.cs")));
+        Assert.Contains("_config.Followed                += OnSettingsFollowed;",
+                        ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalToolWindowData.Construction.cs")), StringComparison.Ordinal);
+        Assert.Matches(@"SettingsFollow\.TakeAndApply\(config, client, \(\) => GpuScheduler\.IsTurnInFlight\)[\s\S]{0,900}_opened\s*= config\.SnapshotNow\(\);",
+                       ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalSettingsData.cs")));
+
+        Assert.Matches(@"await this\.followSettings\(host\);\s*const agentMode = this\.windowAgentMode\(\);",
+                       WebviewRebuildTests.TsCode("chatViewProvider.ts"));
+        // The host reports a change once: the panel's follow goes to the chat too.
+        Assert.Matches(@"await this\.shell\.followed\(await host\.configReload\(\)\)[\s\S]{0,300}this\.lastConfigJson = await host\.configGet\(\);",
+                       WebviewRebuildTests.TsCode("settingsBridge.ts"));
+        Assert.Contains("SettingsPanel.adoptFollowed = (followed) => chatView.applyFollowed(followed);",
+                        WebviewRebuildTests.TsCode("extension.ts"), StringComparison.Ordinal);
+        Assert.Contains("configReload: () => call('config/reload')", WebviewRebuildTests.TsCode("webview/settingsStandaloneShell.ts"),
+                        StringComparison.Ordinal);
+        Assert.Contains("config/reload", Inferpal.Host.SettingsWindow.SettingsWindowServer.FormMethods);
+        // The host's followed file moves by what a save wrote, never by the whole merged file.
+        foreach (var file in new[] { "HostServer.cs", "HostSetup.cs" })
+            Assert.DoesNotContain("s.FileSettings = (_fileSettings() ?? s.Config).SnapshotNow();",
+                                  ConventionCoverageTests.CodeOnly(Path.Combine(repo, "Inferpal.Host", file)), StringComparison.Ordinal);
+    }
 }

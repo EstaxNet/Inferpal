@@ -36,6 +36,9 @@ internal partial class InferpalToolWindowData
         // went silent here while the host renders the same exception through MsgError.
         try
         {
+            // A command runs on what another editor saved since, as a question does — and its own save then writes over
+            // the settings it took, not over the ones it missed.
+            await FollowSettingsFileAsync();
             switch (SlashCommandRouter.Route(prompt, GetUserTemplates()))
             {
                 case SlashInfoAction info:

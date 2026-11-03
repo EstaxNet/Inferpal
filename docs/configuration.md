@@ -32,6 +32,12 @@ machine) and the autocomplete and code search models of the roles that move with
 changed them in the same save (autocomplete then uses the chat model, code search the best embedding
 model of the new server). A role on a server of its own keeps its model.
 
+Visual Studio and VS Code share one settings file: what one saves, the other takes before its next
+question and when its settings open — a setting it changed itself and has not saved stays its own,
+unless the other editor saved that same setting since. A
+new kind of model server (Ollama, LM Studio, OpenAI-compatible) applies when Visual Studio or the VS
+Code host restarts, and the editor says so; a new address or key of the same kind applies at once.
+
 The *Show advanced settings* box only folds: it never changes a value, and it opens by itself when a
 model per task, the sampling setting or a reasoning level is no longer at its factory value — the settings that change,
 without a word on screen, which model answers or how are never hidden.

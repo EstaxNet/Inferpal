@@ -8,7 +8,7 @@ import { HostClient } from './hostClient';
 import { hostErrorText, hostUnavailableMessage, isConnectionLost, promptOpenFolder } from './hostStatus';
 import { mentionTokens, resolveMention } from './mentionPaths';
 import { followModelRouterSettings } from './modelRouterSettings';
-import { SettingsPanel } from './settingsPanel';
+import { offerHostRestart, SettingsPanel } from './settingsPanel';
 import { SetupFlow } from './setupFlow';
 import { buildBannerOf, isBuildTask, openTabPaths, panelErrors } from './editorBridge';
 import { capAttachment, CappedText } from './attachmentCap';
@@ -21,6 +21,7 @@ import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
   ApprovalCard, AwayNotice, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
   ModelsByKind, SavedMessage, SessionLoadResult, SessionSwitches, hasSwitches, noSwitches, SlashEffect, TestsGenerateResult, TurnNote, WindowNoticeResult,
+  ConfigReloadResult,
 } from './protocol';
 import {
   WebviewToExt,
@@ -806,8 +807,42 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.hydrate();
   }
 
-  /** Called after the settings panel saved: re-reads the UI-relevant config bits. */
-  async configSaved(): Promise<void> {
+  /**
+   * The settings another editor saved since this host took them (`config/reload`): the host follows the file, and
+   * this window adopts what changed as after a save of its own panel. A new kind of model server applies when the
+   * host restarts: said, with the restart offered.
+   */
+  private async followSettings(host: HostClient): Promise<void> {
+    try {
+      await this.applyFollowed(await host.configReload());
+    } catch (err) {
+      // A turn holding the slot, or a host that cannot answer: the question goes with the settings it has.
+      this.log(`[chat] settings not followed: ${String(err)}`);
+    }
+  }
+
+  /**
+   * What a follow took (`config/reload`, before a question or as the settings panel loads): adopted as after a save of
+   * this window's panel — a model or an agent mode picked in this window stays its own, as in an ACP thread — and a new
+   * kind of model server offers the restart. A language saved in the other editor applies at the next start: reloading
+   * both pages at the start of a question would drop what they hold. ⚠ The host reports a change once: whoever asked
+   * passes it here, or the chat never adopts it.
+   */
+  async applyFollowed(followed: ConfigReloadResult): Promise<void> {
+    if (followed.taken.length > 0) {
+      await this.configSaved(true);
+      SettingsPanel.onSavedElsewhere();
+    }
+    if (followed.serverChanged) {
+      void offerHostRestart();
+    }
+  }
+
+  /**
+   * Called after the settings panel saved: re-reads the UI-relevant config bits.
+   * @param keepWindowPick Another editor's save, followed: a model or agent mode picked in this window stays.
+   */
+  async configSaved(keepWindowPick = false): Promise<void> {
     const host = this.getHost();
     if (!host?.isRunning) {
       return;
@@ -828,13 +863,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // The chat sends its own model and agent mode on every turn (this window's): what the settings panel CHANGED
       // is adopted here, or it changed nothing. Only a change is adopted, so a model picked for this workspace
       // survives a save that did not touch it.
-      if (cfg.defaultModel && cfg.defaultModel !== this.sharedEcho.defaultModel) {
+      const ownModel = keepWindowPick && !!this.model && this.model !== this.sharedEcho.defaultModel;
+      if (cfg.defaultModel && cfg.defaultModel !== this.sharedEcho.defaultModel && !ownModel) {
         this.model = cfg.defaultModel;
         // ⚠ This window's copy WINS over the host's value at the next activation: left as it is, it brings back the model
         // the panel just replaced.
         await this.setWindowModel(cfg.defaultModel);
       }
-      if (typeof cfg.agentModeEnabled === 'boolean' && cfg.agentModeEnabled !== this.sharedEcho.agentModeEnabled) {
+      const ownMode = keepWindowPick && this.windowAgentMode() !== this.sharedEcho.agentModeEnabled;
+      if (typeof cfg.agentModeEnabled === 'boolean' && cfg.agentModeEnabled !== this.sharedEcho.agentModeEnabled && !ownMode) {
         await this.setWindowAgentMode(cfg.agentModeEnabled);
       }
       this.sharedEcho = { defaultModel: cfg.defaultModel, agentModeEnabled: cfg.agentModeEnabled };
@@ -3195,6 +3232,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // When the request left: a long turn's end is announced (announceRunEnd); 0 = it never left.
     let startedAt = 0;
     try {
+      // What another editor saved since: this question answers with it (its model and agent mode included).
+      await this.followSettings(host);
       const agentMode = this.windowAgentMode();
       const mentions = await this.expandMentions(prompt, host);
       let expanded = mentions.text;

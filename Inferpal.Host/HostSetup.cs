@@ -199,8 +199,8 @@ internal sealed partial class HostServer
             if (window?.Tokens is { } tokens) windowText = ContextWindowChoice.Apply(s.Config, tokens) ? window.Sentence : null;
             else windowText = window?.Sentence;
             s.Config.IsFirstRun = false;
+            // The followed file moves by what this save wrote (the session's Saved handler), not by the merged file.
             s.Config.Save();
-            s.FileSettings = (_fileSettings() ?? s.Config).SnapshotNow();
             await AfterSettingsChangedAsync(s, mcpBefore, ct);
             return true;
         });

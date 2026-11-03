@@ -1223,6 +1223,17 @@ export interface PinsResult {
   notice?: string | null;
 }
 
+/** `config/reload` — the settings another editor saved since this host took them. */
+export interface ConfigReloadResult {
+  /** The JSON keys of the settings taken from the file. */
+  taken: string[];
+  defaultModel: string;
+  /** The file names a new kind of model server: it applies when the host restarts. */
+  serverChanged: boolean;
+  agentModel: string;
+  unreadable?: boolean;
+}
+
 export interface ConfigUpdateResult {
   /** Permission rules the product could not read — the field is saved, these lines are inert. */
   permissionRulesIgnored: number;

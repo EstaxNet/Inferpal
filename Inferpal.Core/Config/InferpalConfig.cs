@@ -554,6 +554,36 @@ internal class InferpalConfig
     internal void NotifyLanguageChanged() => LanguageChanged?.Invoke();
 
     /// <summary>
+    /// The settings file as this copy last FOLLOWED it (<see cref="Services.Inference.SettingsFollow"/>): what the file
+    /// changed since is another process's change. Not a setting, never serialized.
+    /// </summary>
+    internal System.Text.Json.Nodes.JsonObject? FollowedFile { get; set; }
+
+    /// <summary>
+    /// Raised after a follow took settings another process saved (<see cref="Services.Inference.SettingsFollow"/>), with
+    /// their JSON keys, and the kind of model server the file names when it is a new one (it applies at restart, said
+    /// by the handler): what a save of this copy would have changed is applied, the language and the MCP servers
+    /// included. Not serialized; handlers must marshal to their own UI context.
+    /// </summary>
+    public event Action<IReadOnlyList<string>, string?>? Followed;
+
+    /// <summary>Raises <see cref="Followed"/>, then <see cref="Saved"/> when settings were taken: the settings in use
+    /// changed as a save changes them.</summary>
+    internal void NotifyFollowed(IReadOnlyList<string> taken, string? newKind = null)
+    {
+        Followed?.Invoke(taken, newKind);
+        if (taken.Count > 0) Saved?.Invoke();
+    }
+
+    /// <summary>The file as this copy last read it holds <paramref name="keys"/> as <paramref name="file"/> does: values a
+    /// follow left aside (a new kind of server) stay the file's when a later save has to merge over this reading.</summary>
+    internal void FileAsReadHolds(System.Text.Json.Nodes.JsonObject file, params string[] keys)
+    {
+        if (_fileAsRead is null) return;
+        foreach (var key in keys) _fileAsRead[key] = file[key]?.DeepClone();
+    }
+
+    /// <summary>
     /// Raised after every <see cref="Save"/>. The chat window measures its context window again on it: the window in
     /// use is the one the last turn measured, so after a new window or a new model X-Ray and the gauge kept the old
     /// number until the next question. Not serialized; handlers must marshal to their own UI context.
@@ -707,6 +737,7 @@ internal class InferpalConfig
         // the editor's — whenever anything read the file: the MCP servers at each refresh, a thread following the file.
         cfg._baseline = Snapshot(cfg);
         if (fromFile) cfg._fileAsRead = Snapshot(cfg);
+        cfg.FollowedFile = Snapshot(cfg);
         return cfg;
     }
 
@@ -846,6 +877,11 @@ internal class InferpalConfig
         // copy changed since its baseline — all of them for a copy built in code —, with the value written.
         LastSaved = toWrite.Where(kv => _baseline is null || !System.Text.Json.Nodes.JsonNode.DeepEquals(mine[kv.Key], _baseline[kv.Key]))
                            .ToDictionary(kv => kv.Key, kv => kv.Value?.DeepClone(), StringComparer.Ordinal);
+        // ⚠ The file as this copy follows it moves by what THIS save wrote, never by the whole merged file — and to this
+        // copy's own value: the merge holds what another editor saved since (a whole setting, or the items it added to a
+        // list), which the next follow must still take (Services.Inference.SettingsFollow).
+        if (FollowedFile is not null)
+            foreach (var key in LastSaved.Keys) FollowedFile[key] = mine[key]?.DeepClone();
 
         // The in-memory values are left alone: the file's values are not reloaded here. ⚠ A backend
         // switched in Settings IS laid over the live instance (ApplyChangesFrom) while Visual Studio's
@@ -1131,6 +1167,8 @@ internal class InferpalConfig
         if (_baseline is not null && !changedHere) _baseline[key] = written;
         _fileAsRead = toWrite.DeepClone().AsObject();
         LastSaved = new Dictionary<string, System.Text.Json.Nodes.JsonNode?>(StringComparer.Ordinal) { [key] = written };
+        // Followed from what this copy holds now: a line removed elsewhere afterwards is still taken.
+        if (FollowedFile is not null) FollowedFile[key] = Snapshot(this)[key]?.DeepClone();
         lock (_loadLock) { _cached = null; _cachedPath = null; _cachedStamp = default; }
         Saved?.Invoke();
         return missing;

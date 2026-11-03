@@ -218,7 +218,9 @@ internal sealed partial class HostServer : IDisposable
         tools.WindowInUse = () => followed.ContextWindowInUse;
         config.Saved += () =>
         {
-            foreach (var (key, value) in config.LastSaved) followed.FileSettings[key] = value?.DeepClone();
+            // To the session's own value: a merged one holds the other editor's items, still to follow.
+            var own = config.SnapshotNow();
+            foreach (var key in config.LastSaved.Keys) followed.FileSettings[key] = own[key]?.DeepClone();
         };
         ApplyFoldersOutOfReach(_session, p.OtherFolders);
         ResetHistory(_session);
@@ -1720,9 +1722,9 @@ internal sealed partial class HostServer : IDisposable
             // The chat moved to another server: the card and the models chosen for the old one start over.
             serverReset = Services.Inference.ServerChange.Follow(before, s.Config);
 
+            // The followed file moves by what this save wrote (the Saved handler), never by the whole merged file: what
+            // another editor saved since is still followed at the next question.
             s.Config.Save();
-            // The file now holds what this session saved: a later reload follows only what changes after.
-            s.FileSettings = (_fileSettings() ?? s.Config).SnapshotNow();
             await AfterSettingsChangedAsync(s, mcpBefore, ct);
             return true;
         });
@@ -1748,28 +1750,14 @@ internal sealed partial class HostServer : IDisposable
         return WithTurnSlotAsync("config/reload", ct, async token =>
         {
             var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
-            // ⚠ Unreadable is not "the factory values": the session keeps what it has, and the file as last taken.
-            if (_fileSettings() is not { } fileNow)
-                return new ConfigReloadResult([], s.Config.DefaultModel, false, s.Config.AgentModel, Unreadable: true);
-
-            // ⚠ The session's client speaks ONE kind of server's protocol and reads its address and key live: a new
-            // kind taken here sent the old protocol to the new address — every turn refused while the new server ran,
-            // under "this thread still talks to the one it started with". A new kind waits for a new thread, the
-            // session keeping its server whole (said once); a new address or key of the same kind applies now.
-            var asSaved  = fileNow.SnapshotNow();
-            var switchTo = InferenceProviderFactory.PendingSwitch(s.Client, fileNow.Provider);
-            if (switchTo is not null)
-            {
-                fileNow.Provider = s.Config.Provider;
-                fileNow.BaseUrl  = s.Config.BaseUrl;
-                fileNow.ApiKey   = s.Config.ApiKey;
-            }
-            var taken = s.Config.TakeFileChanges(s.FileSettings, fileNow);
-            var newKind = switchTo is not null
-                          && !System.Text.Json.Nodes.JsonNode.DeepEquals(asSaved["provider"], s.FileSettings["provider"]);
-            s.FileSettings = asSaved;
-            if (taken.Count > 0) await AfterSettingsChangedAsync(s, mcpBefore, token);
-            return new ConfigReloadResult(taken, s.Config.DefaultModel, newKind, s.Config.AgentModel);
+            // One follow for every front-end (SettingsFollow): a new kind of server waits for a new session, said once;
+            // unreadable keeps what the session has, and the file as last taken.
+            var followed = s.FileSettings;
+            var follow = Services.Inference.SettingsFollow.Take(s.Config, _fileSettings(), s.Client, ref followed);
+            s.FileSettings = followed;
+            if (follow.Taken.Count > 0) await AfterSettingsChangedAsync(s, mcpBefore, token);
+            return new ConfigReloadResult(follow.Taken, s.Config.DefaultModel, follow.ServerChanged, s.Config.AgentModel,
+                                          Unreadable: follow.Unreadable);
         });
     }
 

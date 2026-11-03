@@ -75,6 +75,7 @@ import {
   XRayPanel,
   RunReview,
   RunFileResult,
+  ConfigReloadResult,
   ConfigUpdateResult,
   InputRequest,
   InputCard,
@@ -876,6 +877,12 @@ export class HostClient {
     baseUrl?: string; provider?: string; apiKey?: string; vramBudgetGb?: string; current: Record<string, string>;
   }): Promise<ModelSuggestion> {
     return this.connection().sendRequest<ModelSuggestion>('settings/suggestModels', form);
+  }
+
+  /** `config/reload` — the settings another editor saved since this host took them, followed (what this host changed
+   *  itself stays, unless the file changed that same setting). Holds the turn slot: asked between turns. */
+  configReload(): Promise<ConfigReloadResult> {
+    return this.connection().sendRequest<ConfigReloadResult>('config/reload');
   }
 
   /** Returns what the save could not use. The count is computed BY THE HOST: the permission DSL

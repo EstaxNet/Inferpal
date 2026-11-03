@@ -7,6 +7,7 @@ import type {
   ApprovalRuleTable, ConfigUpdateResult, ConnectionCheckResult, ContextUsage, IndexCard, LoadedModels, McpCardsResult,
   ModelsByKind, ModelSuggestion, PinnedFileSize, ProjectFileRow, RepoInstructionRow, SettingsDocs, SettingsExclusions, SettingsSchema,
   SettingsTools,
+  ConfigReloadResult,
 } from './protocol';
 
 /** The host calls the settings form makes (HostClient has them all, with the same names). */
@@ -39,6 +40,7 @@ export interface SettingsHost {
     baseUrl?: string; provider?: string; apiKey?: string; vramBudgetGb?: string; current: Record<string, string>;
   }): Promise<ModelSuggestion>;
   configUpdate(json: string, base?: string): Promise<ConfigUpdateResult>;
+  configReload(): Promise<ConfigReloadResult>;
 }
 
 /** What only the app around the form can do, in its own words. */
@@ -61,6 +63,8 @@ export interface SettingsShell {
   openXray(): void;
   /** After a save the host accepted: what changed may need the app (a new language, a new server). */
   saved(before: SavedKeys | null, after: SavedKeys | null): Promise<void>;
+  /** Settings another editor saved, followed as the form loads: the chat adopts them. */
+  followed(result: ConfigReloadResult): Promise<void>;
 }
 
 /** The settings a save compares before and after. */
@@ -146,6 +150,13 @@ export class SettingsBridge {
       return;
     }
     try {
+      // The form shows the file: what another editor saved since this host took the settings is followed first.
+      try {
+        // Reported once by the host: the chat adopts it now, or never.
+        await this.shell.followed(await host.configReload());
+      } catch (err) {
+        this.shell.log(`[settings] not followed: ${String(err)}`);
+      }
       this.lastConfigJson = await host.configGet();
       let models: ModelsByKind = { chat: [], embedding: [] };
       try {

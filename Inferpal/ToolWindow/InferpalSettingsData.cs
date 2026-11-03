@@ -344,6 +344,22 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                                 SettingsLiveSources? live = null)
     {
         _config               = config;
+        // The window shows the file: what another editor saved since this Visual Studio took the settings is taken
+        // first, as the chat takes it before a question.
+        // Not while a turn runs (its loop reads these settings): the next question takes them. Applied here too, the
+        // chat window may not be open: the language, and the MCP servers once no turn runs.
+        try
+        {
+            var follow = Services.Inference.SettingsFollow.TakeAndApply(config, client, () => GpuScheduler.IsTurnInFlight);
+            if (follow.Taken.Contains("language"))
+            {
+                Strings.ApplyLanguage(config.Language);
+                config.NotifyLanguageChanged();
+            }
+            if (follow.Taken.Contains("mcpEnabled") || follow.Taken.Contains("mcpServersJson"))
+                _ = mcp.RefreshWhenIdleAsync(() => GpuScheduler.IsTurnInFlight, TimeSpan.FromMilliseconds(500));
+        }
+        catch (Exception ex) { Diagnostics.Swallow("Settings.FollowOnOpen", ex); }
         _opened               = config.SnapshotNow();
         _client               = client;
         _mcp                  = mcp;

@@ -36,7 +36,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
     /// <summary>What the page may ask the host: the calls of the settings form (<c>settingsStandaloneShell.ts</c>).</summary>
     internal static readonly IReadOnlySet<string> FormMethods = new HashSet<string>(StringComparer.Ordinal)
     {
-        "config/get", "config/update", "models/listByKind", "connection/check", "settings/strings", "settings/schema",
+        "config/get", "config/update", "config/reload", "models/listByKind", "connection/check", "settings/strings", "settings/schema",
         "mcp/cards", "mcp/retry", "mcp/authorize", "permissions/table", "permissions/newRule",
         "settings/indexCard", "settings/indexRebuild", "settings/exclusions", "settings/docsSites", "settings/docsAction",
         "settings/contextUsage", "settings/projectFiles", "settings/repoInstructions", "settings/pinSizes",

@@ -49,6 +49,7 @@ async function call<T>(method: string, params?: unknown): Promise<T> {
 const host: SettingsHost = {
   isRunning: true,
   configGet: () => call('config/get'),
+  configReload: () => call('config/reload'),
   modelsListByKind: (overrides) => call('models/listByKind', overrides ?? {}),
   settingsStrings: () => call('settings/strings'),
   settingsSchema: () => call('settings/schema'),
@@ -93,6 +94,8 @@ const bridge = new SettingsBridge({
     return undefined;
   },
   openXray: () => post({ type: 'error', message: page.noXray }),
+  // No chat beside this page: what the follow took is the host's, shown by the form it loads.
+  followed: async () => undefined,
   // A new language: the page is drawn again by the server, in it (the host switched with the save).
   saved: async (before, after) => {
     if ((before?.language ?? '') !== (after?.language ?? '')) {

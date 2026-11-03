@@ -102,6 +102,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }),
   );
 
+  // What the settings panel's follow took is adopted by the chat, as before a question.
+  SettingsPanel.adoptFollowed = (followed) => chatView.applyFollowed(followed);
   context.subscriptions.push(
     vscode.commands.registerCommand('inferpal.restartHost', () => startHost(context, chatView, log, true)),
     vscode.commands.registerCommand('inferpal.resetChat', () => chatView.resetConversation()),
