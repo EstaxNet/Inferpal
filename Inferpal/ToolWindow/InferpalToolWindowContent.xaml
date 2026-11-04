@@ -248,7 +248,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <ComboBox Grid.Column="0"
+                <ComboBox AutomationProperties.Name="{Binding TooltipSessionPicker}" Grid.Column="0"
                           ItemsSource="{Binding RecentSessions}"
                           SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
                           ToolTip="{Binding TooltipSessionPicker}"
@@ -325,6 +325,50 @@
                             </ControlTemplate>
                         </Setter.Value>
                     </Setter>
+                    <!-- What a screen reader says for an item: the heading it shows (without a name, the proxy type's). Never the
+                         stored Content of an answer: it keeps hidden reasoning and raw markdown, and changes at every token. -->
+                    <Setter Property="AutomationProperties.Name" Value="{Binding Label}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Role}" Value="user">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding UserText}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="tool">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding ToolName}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="status">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding Content}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="mode">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding Content}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="result">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding CheckText}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="review">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding CardTitle}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="approval">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding CardTitle}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="inputcard">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding CardTitle}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="import">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding CardTitle}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="away">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding CardTitle}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="serverinstall">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding CardTitle}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="rewind">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding RewindTitle}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="input">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding ReceiptTitle}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
                 </Style>
             </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>
@@ -2755,7 +2799,7 @@
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <!-- Enabled toggle (hidden for the base prompt) -->
-                                            <Button Grid.Column="0" Padding="2,0" Margin="0,0,6,0"
+                                            <Button AutomationProperties.Name="{Binding Label}" Grid.Column="0" Padding="2,0" Margin="0,0,6,0"
                                                     Command="{Binding ToggleEnabledCommand}"
                                                     Visibility="{Binding CanToggle, Converter={StaticResource b2v}}">
                                                 <Button.Template>
@@ -2794,7 +2838,7 @@
                                                        Foreground="{Binding ThemeSubtleText}"
                                                        VerticalAlignment="Center" Margin="8,0"/>
                                             <!-- Expand/collapse the exact section content -->
-                                            <Button Grid.Column="3" Padding="4,0"
+                                            <Button AutomationProperties.Name="{Binding Label}" Grid.Column="3" Padding="4,0"
                                                     Command="{Binding ToggleExpandCommand}">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
@@ -2854,7 +2898,7 @@
                     Background="{Binding ThemeSurface}" BorderBrush="{Binding ThemeBorder}"
                     Visibility="{Binding IsModelMenuOpen, Converter={StaticResource b2v}}">
                 <StackPanel>
-                    <Button Style="{StaticResource MenuBtn}" Command="{Binding RetryConnectionCommand}"
+                    <Button AutomationProperties.Name="{Binding TooltipRetryConnection}" Style="{StaticResource MenuBtn}" Command="{Binding RetryConnectionCommand}"
                             Visibility="{Binding ShowRetryButton, Converter={StaticResource b2v}}">
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Left" Width="20" FontFamily="Segoe MDL2 Assets" Text="&#xE72C;" FontSize="12"
@@ -3051,11 +3095,12 @@
                                             </ControlTemplate>
                                         </Setter.Value>
                                     </Setter>
+                                    <Setter Property="AutomationProperties.Name" Value="{Binding Command}"/>
                                 </Style>
                             </ListBox.ItemContainerStyle>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Command="{Binding SelectCommand}"
+                                    <Button AutomationProperties.Name="{Binding Command}" Command="{Binding SelectCommand}"
                                             HorizontalContentAlignment="Stretch"
                                             Padding="0" FocusVisualStyle="{x:Null}"
                                             BorderThickness="0" Background="Transparent">
@@ -3114,11 +3159,12 @@
                                             </ControlTemplate>
                                         </Setter.Value>
                                     </Setter>
+                                    <Setter Property="AutomationProperties.Name" Value="{Binding Label}"/>
                                 </Style>
                             </ListBox.ItemContainerStyle>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Command="{Binding SelectCommand}"
+                                    <Button AutomationProperties.Name="{Binding Label}" Command="{Binding SelectCommand}"
                                             HorizontalContentAlignment="Stretch"
                                             Padding="0" FocusVisualStyle="{x:Null}"
                                             BorderThickness="0" Background="Transparent">
@@ -3183,7 +3229,7 @@
                     <Border BorderThickness="0,0,0,1" BorderBrush="{Binding ThemeBorder}"
                             Visibility="{Binding IsAttachMenuOpen, Converter={StaticResource b2v}}">
                         <StackPanel>
-                            <Button Command="{Binding AttachFileCommand}"
+                            <Button AutomationProperties.Name="{Binding MenuAttachFile}" Command="{Binding AttachFileCommand}"
                                     HorizontalContentAlignment="Stretch" Padding="0"
                                     FocusVisualStyle="{x:Null}" BorderThickness="0" Background="Transparent">
                                 <Button.Template>
@@ -3213,7 +3259,7 @@
                                 </Button.Template>
                             </Button>
 
-                            <Button Command="{Binding AttachSelectionCommand}"
+                            <Button AutomationProperties.Name="{Binding MenuAttachSelection}" Command="{Binding AttachSelectionCommand}"
                                     HorizontalContentAlignment="Stretch" Padding="0"
                                     FocusVisualStyle="{x:Null}" BorderThickness="0" Background="Transparent">
                                 <Button.Template>
@@ -3243,7 +3289,7 @@
                                 </Button.Template>
                             </Button>
 
-                            <Button Command="{Binding BrowseFileCommand}"
+                            <Button AutomationProperties.Name="{Binding MenuBrowseFile}" Command="{Binding BrowseFileCommand}"
                                     HorizontalContentAlignment="Stretch" Padding="0"
                                     FocusVisualStyle="{x:Null}" BorderThickness="0" Background="Transparent">
                                 <Button.Template>
@@ -3273,7 +3319,7 @@
                                 </Button.Template>
                             </Button>
 
-                            <Button Command="{Binding PinFileCommand}"
+                            <Button AutomationProperties.Name="{Binding MenuPinFile}" Command="{Binding PinFileCommand}"
                                     HorizontalContentAlignment="Stretch" Padding="0"
                                     FocusVisualStyle="{x:Null}" BorderThickness="0" Background="Transparent">
                                 <Button.Template>

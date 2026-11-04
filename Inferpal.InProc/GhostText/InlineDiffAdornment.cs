@@ -197,30 +197,35 @@ internal sealed class InlineDiffAdornment
             var anchor       = new SnapshotPoint(snapshot, Math.Min(anchorOffset, snapshot.Length));
             var anchorLine   = TryGetViewLine(anchor);
             if (anchorLine is null) continue;   // scrolled out of view
+            var anchorBox    = LineBoxes.Of(anchorLine);   // rows from its text, not from the space CodeLens adds above it
 
             // 1. Red-tinted highlight over each removed/replaced line still in view.
+            double? removedBottom = null;
             for (var l = 0; l < hunk.OldLines.Count; l++)
             {
                 var lineStart = snapshot.GetLineFromLineNumber(
                     Math.Min(snapshot.GetLineNumberFromPosition(anchor) + l, snapshot.LineCount - 1));
                 var viewLine = TryGetViewLine(lineStart.Start);
                 if (viewLine is null) continue;
+                var removed  = LineBoxes.Of(viewLine);
 
                 var rect = new System.Windows.Shapes.Rectangle
                 {
                     Width            = Math.Max(_view.ViewportWidth, viewLine.Width),
-                    Height           = viewLine.Height,
+                    Height           = removed.TextHeight,
                     Fill             = RemovedBg,
                     IsHitTestVisible = false,
                 };
                 Canvas.SetLeft(rect, _view.ViewportLeft);
-                Canvas.SetTop(rect, viewLine.Top);
+                Canvas.SetTop(rect, removed.TextTop);
                 _layer.AddAdornment(AdornmentPositioningBehavior.TextRelative,
                     new SnapshotSpan(lineStart.Start, 0), null, rect, null);
+                removedBottom = removed.TextBottom;
             }
 
-            // 2. Green ghost lines for the added text, below the removed block.
-            var ghostTop = anchorLine.Top + hunk.OldLines.Count * anchorLine.Height;
+            // 2. Green ghost lines for the added text, below the removed block: under the last removed line's own text,
+            // since a line inside the block may carry CodeLens space too; at the anchor's text when nothing is removed.
+            var addedTop = removedBottom ?? anchorBox.RowTop(hunk.OldLines.Count);
             for (var l = 0; l < hunk.NewLines.Count; l++)
             {
                 var block = new TextBlock
@@ -234,7 +239,7 @@ internal sealed class InlineDiffAdornment
                     IsHitTestVisible = false,
                 };
                 Canvas.SetLeft(block, _view.ViewportLeft);
-                Canvas.SetTop(block, ghostTop + l * anchorLine.Height);
+                Canvas.SetTop(block, addedTop + l * anchorBox.TextHeight);
                 _layer.AddAdornment(AdornmentPositioningBehavior.TextRelative,
                     new SnapshotSpan(anchor, 0), null, block, null);
             }
@@ -242,7 +247,7 @@ internal sealed class InlineDiffAdornment
             // 3. ✓/✗ buttons at the hunk's first line (plus ✓✓/✗✗ on the first undecided hunk).
             var panel = BuildButtonPanel(hunk.Index, includeAllButtons: first, fontSize);
             Canvas.SetLeft(panel, _view.ViewportRight - 140);
-            Canvas.SetTop(panel, anchorLine.Top);
+            Canvas.SetTop(panel, anchorBox.TextTop);
             _layer.AddAdornment(AdornmentPositioningBehavior.TextRelative,
                 new SnapshotSpan(anchor, 0), null, panel, null);
 

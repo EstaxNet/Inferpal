@@ -512,7 +512,7 @@
                             <TextBlock Text="{Binding HintUtilityModel}" Style="{StaticResource Hint}"/>
                         </StackPanel>
                     </UniformGrid>
-                    <CheckBox IsChecked="{Binding ModelRouterAuto, Mode=TwoWay}" Margin="0,0,0,18" VerticalContentAlignment="Top">
+                    <CheckBox AutomationProperties.Name="{Binding LabelModelRouterAuto}" IsChecked="{Binding ModelRouterAuto, Mode=TwoWay}" Margin="0,0,0,18" VerticalContentAlignment="Top">
                         <StackPanel Margin="4,0,0,0">
                             <TextBlock Text="{Binding LabelModelRouterAuto}" Style="{StaticResource FieldLabel}" Margin="0"/>
                             <TextBlock Text="{Binding HintModelRouterAuto}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -520,7 +520,7 @@
                     </CheckBox>
 
                     <TextBlock Text="{Binding LabelSectionSampling}" Style="{StaticResource SectionTitle}"/>
-                    <CheckBox IsChecked="{Binding UseRecommendedSampling, Mode=TwoWay}" Margin="0,0,0,18" VerticalContentAlignment="Top">
+                    <CheckBox AutomationProperties.Name="{Binding LabelUseRecommendedSampling}" IsChecked="{Binding UseRecommendedSampling, Mode=TwoWay}" Margin="0,0,0,18" VerticalContentAlignment="Top">
                         <StackPanel Margin="4,0,0,0">
                             <TextBlock Text="{Binding LabelUseRecommendedSampling}" Style="{StaticResource FieldLabel}" Margin="0"/>
                             <TextBlock Text="{Binding HintUseRecommendedSampling}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -696,7 +696,7 @@
                         <TextBlock Text="{Binding HintVramBudget}" Style="{StaticResource Hint}"/>
                     </StackPanel>
                     <StackPanel Visibility="{Binding ShowKeepAliveSettings, Converter={StaticResource b2v}}" Margin="0,0,0,18">
-                        <CheckBox IsChecked="{Binding ModelAutoUnloadEnabled, Mode=TwoWay}" Margin="0,0,0,8" VerticalContentAlignment="Top">
+                        <CheckBox AutomationProperties.Name="{Binding LabelModelAutoUnload}" IsChecked="{Binding ModelAutoUnloadEnabled, Mode=TwoWay}" Margin="0,0,0,8" VerticalContentAlignment="Top">
                             <StackPanel Margin="4,0,0,0">
                                 <TextBlock Text="{Binding LabelModelAutoUnload}" Style="{StaticResource FieldLabel}" Margin="0"/>
                                 <TextBlock Text="{Binding HintModelAutoUnload}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -836,13 +836,13 @@
             <!-- ── Agent and approvals ────────────────────────────────────── -->
             <StackPanel Visibility="{Binding PageAgentVisible, Converter={StaticResource b2v}}">
                 <TextBlock Text="{Binding LabelSectionHowItWorks}" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
-                <CheckBox IsChecked="{Binding AgentModeEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelAgentModeEnabled}" IsChecked="{Binding AgentModeEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelAgentModeEnabled}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintAgentModeEnabled}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
                     </StackPanel>
                 </CheckBox>
-                <CheckBox IsChecked="{Binding SmartFixEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelSmartFixEnabled}" IsChecked="{Binding SmartFixEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelSmartFixEnabled}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintSmartFixEnabled}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -907,13 +907,13 @@
                 <Border BorderBrush="{Binding NavLineBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,0,0,8">
                     <TextBlock Text="{Binding LabelSectionApprovals}" Style="{StaticResource SectionTitle}" Margin="0"/>
                 </Border>
-                <CheckBox IsChecked="{Binding AskBeforeActions, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelAskBeforeActions}" IsChecked="{Binding AskBeforeActions, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelAskBeforeActions}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintAskBeforeActions}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
                     </StackPanel>
                 </CheckBox>
-                <CheckBox IsChecked="{Binding PackageCheckEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelPackageCheck}" IsChecked="{Binding PackageCheckEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelPackageCheck}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintPackageCheck}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -948,7 +948,7 @@
                              AutomationProperties.Name="{Binding LabelCustomSystemPrompt}"/>
                     <TextBlock Text="{Binding HintCustomSystemPrompt}" Style="{StaticResource Hint}"/>
                 </StackPanel>
-                <CheckBox IsChecked="{Binding PersonaAutoSwitch, Mode=TwoWay}" Margin="0,0,0,20" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelPersonaAutoSwitch}" IsChecked="{Binding PersonaAutoSwitch, Mode=TwoWay}" Margin="0,0,0,20" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelPersonaAutoSwitch}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintPersonaAutoSwitch}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -1058,7 +1058,7 @@
                 <Border BorderBrush="{Binding NavLineBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
                     <TextBlock Text="{Binding LabelSectionLongConversations}" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
                 </Border>
-                <CheckBox IsChecked="{Binding CompactionEnabled, Mode=TwoWay}" Margin="0,0,0,14" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelCompactionEnabled}" IsChecked="{Binding CompactionEnabled, Mode=TwoWay}" Margin="0,0,0,14" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelCompactionEnabled}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintCompactionEnabled}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -1145,7 +1145,7 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <CheckBox AutomationProperties.Name="{Binding Label}" Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Label}" FontWeight="SemiBold"
                                                    Foreground="{Binding DataContext.TextForeground, ElementName=root}" TextTrimming="CharacterEllipsis"/>
@@ -1283,7 +1283,7 @@
                              AutomationProperties.Name="{Binding LabelIgnoreFiles}"/>
                     <TextBlock Text="{Binding HintIgnoreFiles}" Style="{StaticResource Hint}"/>
                 </StackPanel>
-                <CheckBox IsChecked="{Binding SkillsAutoMode, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelSkillsAutoMode}" IsChecked="{Binding SkillsAutoMode, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelSkillsAutoMode}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintSkillsAutoMode}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -1339,19 +1339,19 @@
                 </Border>
 
                 <TextBlock Text="{Binding LabelSectionYourCode}" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
-                <CheckBox IsChecked="{Binding RagEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelRagEnabled}" IsChecked="{Binding RagEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelRagEnabled}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintRagEnabled}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
                     </StackPanel>
                 </CheckBox>
-                <CheckBox IsChecked="{Binding RagAutoContextEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelRagAutoContext}" IsChecked="{Binding RagAutoContextEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelRagAutoContext}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintRagAutoContext}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
                     </StackPanel>
                 </CheckBox>
-                <CheckBox IsChecked="{Binding LspEnabled, Mode=TwoWay}" Margin="0,0,0,16" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelLspEnabled}" IsChecked="{Binding LspEnabled, Mode=TwoWay}" Margin="0,0,0,16" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelLspEnabled}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintLspEnabled}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -1493,7 +1493,7 @@
                 <!-- Ghost text: only for a backend that serves fill-in-the-middle -->
                 <StackPanel Visibility="{Binding ShowInlineCompletions, Converter={StaticResource b2v}}">
                     <TextBlock Text="{Binding LabelSectionAsYouType}" Style="{StaticResource SectionTitle}" Margin="0,0,0,8"/>
-                    <CheckBox IsChecked="{Binding InlineCompletionEnabled, Mode=TwoWay}" Margin="0,0,0,14" VerticalContentAlignment="Top">
+                    <CheckBox AutomationProperties.Name="{Binding LabelInlineCompletionEnabled}" IsChecked="{Binding InlineCompletionEnabled, Mode=TwoWay}" Margin="0,0,0,14" VerticalContentAlignment="Top">
                         <StackPanel Margin="4,0,0,0">
                             <TextBlock Text="{Binding LabelInlineCompletionEnabled}" Style="{StaticResource FieldLabel}" Margin="0"/>
                             <TextBlock Text="{Binding HintInlineCompletionEnabled}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -1545,7 +1545,7 @@
                     <TextBlock Text="{Binding LabelSectionEditWithAi}" Style="{StaticResource SectionTitle}" Margin="0,0,0,2"/>
                 </Border>
                 <TextBlock Text="{Binding DescSectionEditWithAi}" Style="{StaticResource Hint}" Margin="0,0,0,12"/>
-                <CheckBox IsChecked="{Binding InlineDiffPreviewEnabled, Mode=TwoWay}" Margin="0,0,0,10" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelInlineDiffPreview}" IsChecked="{Binding InlineDiffPreviewEnabled, Mode=TwoWay}" Margin="0,0,0,10" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelInlineDiffPreview}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintInlineDiffPreview}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -1615,7 +1615,7 @@
                     <TextBlock Grid.Column="1" Text="{Binding McpSummaryText}" Foreground="{Binding SubtleForeground}" VerticalAlignment="Center" Margin="10,0,0,0"/>
                     <Button Grid.Column="3" Style="{StaticResource LinkButton}" Command="{Binding ToggleSectionMcpJsonCommand}" Content="{Binding McpViewLabel}" VerticalAlignment="Center"/>
                 </Grid>
-                <CheckBox IsChecked="{Binding McpEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelMcpEnabled}" IsChecked="{Binding McpEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelMcpEnabled}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintMcpEnabled}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
@@ -2084,7 +2084,7 @@
                                         <ColumnDefinition Width="30"/>
                                         <ColumnDefinition Width="28"/>
                                     </Grid.ColumnDefinitions>
-                                    <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <CheckBox AutomationProperties.Name="{Binding Label}" Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontFamily="Cascadia Mono, Consolas" Foreground="{Binding DataContext.TextForeground, ElementName=root}" TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -2189,7 +2189,7 @@
                                         <ColumnDefinition Width="30"/>
                                         <ColumnDefinition Width="28"/>
                                     </Grid.ColumnDefinitions>
-                                    <CheckBox Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <CheckBox AutomationProperties.Name="{Binding Label}" Grid.Column="0" IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontFamily="Cascadia Mono, Consolas" Foreground="{Binding DataContext.TextForeground, ElementName=root}" TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
@@ -2396,13 +2396,13 @@
                 <TextBlock Text="{Binding HintDensity}" Style="{StaticResource Hint}" Margin="0,4,0,20"/>
 
                 <TextBlock Text="{Binding LabelSectionAgentRuns}" Style="{StaticResource SectionTitle}"/>
-                <CheckBox IsChecked="{Binding ToolBubblesExpanded, Mode=TwoWay}" Margin="0,0,0,14" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelToolBubblesExpanded}" IsChecked="{Binding ToolBubblesExpanded, Mode=TwoWay}" Margin="0,0,0,14" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelToolBubblesExpanded}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintToolBubblesExpanded}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
                     </StackPanel>
                 </CheckBox>
-                <CheckBox IsChecked="{Binding RunEndSoundEnabled, Mode=TwoWay}" Margin="0,0,0,14" VerticalContentAlignment="Top">
+                <CheckBox AutomationProperties.Name="{Binding LabelRunEndSound}" IsChecked="{Binding RunEndSoundEnabled, Mode=TwoWay}" Margin="0,0,0,14" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelRunEndSound}" Style="{StaticResource FieldLabel}" Margin="0"/>
                         <TextBlock Text="{Binding HintRunEndSound}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>

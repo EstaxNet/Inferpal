@@ -74,13 +74,13 @@ internal sealed class GhostTextAdornment
         if (caretLine is null) return;
 
         var bounds   = caretLine.GetCharacterBounds(_anchor);
+        var line     = LineBoxes.Of(bounds);   // rows from its text, not from the space CodeLens adds above it
         var ff       = _view.FormattedLineSource;
         var family   = ff?.DefaultTextProperties.Typeface.FontFamily ?? new System.Windows.Media.FontFamily("Consolas");
         var fontSize = ff?.DefaultTextProperties.FontRenderingEmSize  ?? 13.0;
         var brush    = GhostBrush;
 
         var lines    = _pending!.Split('\n');
-        double top   = bounds.Top;
 
         for (int i = 0; i < lines.Length; i++)
         {
@@ -99,7 +99,7 @@ internal sealed class GhostTextAdornment
             // First line: render at the caret X. Continuation lines: indented from viewport left.
             double left = i == 0 ? bounds.Left : _view.ViewportLeft + 20;
             Canvas.SetLeft(block, left);
-            Canvas.SetTop (block, top);
+            Canvas.SetTop (block, line.RowTop(i));
 
             _layer.AddAdornment(
                 behavior:        AdornmentPositioningBehavior.TextRelative,
@@ -107,8 +107,6 @@ internal sealed class GhostTextAdornment
                 tag:             null,
                 adornment:       block,
                 removedCallback: null);
-
-            top += bounds.Height;
         }
     }
 

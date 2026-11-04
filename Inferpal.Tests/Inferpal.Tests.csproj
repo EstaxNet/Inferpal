@@ -64,6 +64,7 @@
     <Compile Remove="ChatDropTargetTests.cs" />
     <Compile Remove="BuildEventsBootstrapTests.cs" />
     <Compile Remove="GhostTextKeysTests.cs" />
+    <Compile Remove="GhostTextCodeLensRowTests.cs" />
     <Compile Remove="VsEditResultTests.cs" />
     <Compile Remove="VsContextHolderTests.cs" />
     <Compile Remove="InProcConfigKeyTests.cs" />
