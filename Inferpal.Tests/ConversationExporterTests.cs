@@ -96,6 +96,17 @@ public class ConversationExporterTests
         finally { Strings.ApplyLanguage(null); }
     }
 
+    [Fact]
+    public void RoleLabel_OfARestoredNotice_IsTheAssistants()
+    {
+        try
+        {
+            Strings.ApplyLanguage("en");
+            Assert.Equal("Assistant", ConversationExporter.RoleLabel("assistant", SessionManager.NoticeMarker));
+        }
+        finally { Strings.ApplyLanguage(null); }
+    }
+
     // ── FormatDuration ─────────────────────────────────────────────────────────
 
     [Fact]

@@ -80,6 +80,7 @@ internal sealed class SignalScratchDir : IDisposable
         SignalFile._directoryOverride      = _previous;
         SignalFile._isProcessAliveOverride = null;
         SignalFile._nowOverride            = null;
+        SignalFile._readWaitOverride       = null;
         SignalScope.ResetForTests();
 
         try { Directory.Delete(Path, recursive: true); } catch { /* best effort */ }

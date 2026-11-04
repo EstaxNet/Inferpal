@@ -38,6 +38,9 @@ internal static class SignalFile
     /// <summary>Test seam: decides expiry without a real clock.</summary>
     internal static Func<DateTimeOffset>? _nowOverride;
 
+    /// <summary>Test seam: stands in for the wait between two read attempts.</summary>
+    internal static Action<TimeSpan>? _readWaitOverride;
+
     /// <summary>The directory holding every signal file.</summary>
     internal static string Dir => _directoryOverride ?? DefaultDir;
 
@@ -226,12 +229,44 @@ internal static class SignalFile
     /// state left behind over a running program.</remarks>
     internal const FileShare ReaderShare = FileShare.ReadWrite | FileShare.Delete;
 
+    /// <summary>How many times <see cref="ReadShared"/> opens a file its writer still holds.</summary>
+    private const int ReadAttempts = 6;
+
+    /// <summary>The wait between two of those attempts.</summary>
+    private static readonly TimeSpan ReadRetryWait = TimeSpan.FromMilliseconds(10);
+
+    /// <summary>
+    /// The two shapes a file its writer holds takes on Windows — the same two a lasting refusal takes, hence the cap on the
+    /// attempts. Only what waiting cannot change is left out.
+    /// </summary>
+    private static bool IsHeld(Exception ex) =>
+        ex is UnauthorizedAccessException
+        || ex is IOException and not (FileNotFoundException or DirectoryNotFoundException or DriveNotFoundException or PathTooLongException);
+
     /// <summary>The text of <paramref name="path"/>, read without refusing a writer (<see cref="ReaderShare"/>).</summary>
+    /// <remarks>
+    /// ⚠ <c>File.Replace</c> still holds the file when the rename's event arrives, and a reader that event woke has no
+    /// other chance: without the retry, a press of the completion key is lost without a word. A file that is
+    /// absent has nothing to wait for; one still held after the last attempt fails as any read does.
+    /// ⚠ A thread with a synchronization context never waits: on devenv's UI thread a timer reads once per open view, and
+    /// it has its next tick. Watcher events arrive on pool threads, without one.
+    /// </remarks>
     internal static string ReadShared(string path)
     {
-        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, ReaderShare);
-        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-        return reader.ReadToEnd();
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, ReaderShare);
+                using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+                return reader.ReadToEnd();
+            }
+            catch (Exception ex) when (attempt < ReadAttempts && IsHeld(ex) && SynchronizationContext.Current is null)
+            {
+                if (_readWaitOverride is { } wait) wait(ReadRetryWait);
+                else Thread.Sleep(ReadRetryWait);
+            }
+        }
     }
 
     /// <summary>Removes a signal file. Safe if absent, silent on failure.</summary>

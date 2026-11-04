@@ -36,7 +36,8 @@ internal static class ConversationExporter
     {
         "user"      => Strings.ChatRoleYou,
         "tool"      => $"🔧 {name}",
-        "assistant" => string.IsNullOrEmpty(name) ? Strings.ChatRoleAssistant : name!,
+        // A restored notice brings its marker in the name's place: never a name to show or read aloud.
+        "assistant" => string.IsNullOrEmpty(name) || name == SessionManager.NoticeMarker ? Strings.ChatRoleAssistant : name!,
         _           => string.Empty,
     };
 
