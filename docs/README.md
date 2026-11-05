@@ -18,6 +18,21 @@ and **technical** references (how it works).
 > New here? Start with **[Getting Started](getting-started.md)**, then skim the
 > **[Features](features.md)** overview.
 
+## Where to start
+
+Pick what you want to do now. Read the first page, go on to the second when you need it; the full list of pages comes
+further down.
+
+| You want to | Start with | Then |
+|---|---|---|
+| **Try it now** | [Getting Started](getting-started.md): from nothing to a first answer | [Features](features.md#1-start-here): talk to it, then hand it a task |
+| **Use it every day** | [Features](features.md): what it does, with something to try in each section | [Slash Commands](slash-commands.md) and [Mentions](mentions.md) for what you type, [Tools](tools.md) for what the agent can do |
+| **Choose a server or a model** | [Providers](providers.md): which server, and what each can do | [Models](models.md): which model for which job |
+| **Set it up for a team** | [Remote Inference](remote-inference.md): a model server on another machine | [Rules & AI Checks](rules-and-checks.md) for what travels with the repository, [Configuration](configuration.md) for every setting, [MCP](mcp.md) for tool servers |
+| **Connect another editor** | [Zed, JetBrains, Qt Creator, Neovim (ACP)](acp.md): the same agent over the Agent Client Protocol | [ACP across machines](acp-security.md): who drives the agent |
+| **Move from Continue or Roo Code** | [Coming from Continue or Roo Code](coming-from-continue.md): `/import` brings your configuration | [Features](features.md): what else there is |
+| **Contribute** | [Development](development.md): build, test, project layout | [Architecture](architecture.md): how the parts fit, and [CONTRIBUTING](../CONTRIBUTING.md) |
+
 ## Overview
 
 ```mermaid

@@ -1,5 +1,8 @@
 # Inferpal in Zed, JetBrains IDEs, Qt Creator, Neovim and Emacs
 
+This page connects Inferpal to an editor other than Visual Studio and VS Code. You download one archive, tell your
+editor to run it with `--acp`, and the agent answers there, on your own model server.
+
 Inferpal speaks the [Agent Client Protocol](https://agentclientprotocol.com) (ACP), the protocol editors use to run a
 coding agent the way they run a language server. The same engine as the Visual Studio and VS Code extensions —
 the agent, the tools, the approvals, semantic search, MCP — runs in any ACP client: **Zed**, **JetBrains IDEs**
@@ -7,6 +10,13 @@ the agent, the tools, the approvals, semantic search, MCP — runs in any ACP cl
 and Visual Studio through **Code Wicket**.
 
 It runs against **your** model server — Ollama, LM Studio or any OpenAI-compatible endpoint. No account, no telemetry.
+
+```mermaid
+flowchart LR
+    E["Your editor<br/>the ACP client"] -- "starts it, talks over<br/>standard input and output" --> H["Inferpal.Host --acp<br/>agent, tools, approvals"]
+    H -- "your questions" --> M["Your model server"]
+    H -- "serves the settings page<br/>on 127.0.0.1 only" --> B["Your browser"]
+```
 
 ## Install
 
@@ -21,9 +31,22 @@ It runs against **your** model server — Ollama, LM Studio or any OpenAI-compat
    Check it against `SHA256SUMS.txt` from the same release, then extract it anywhere. Nothing else is needed: the
    archive carries its own .NET 10 runtime, which asks for macOS 12 or later, or a Linux with glibc 2.27 or later.
 2. Tell your editor to run that executable with the `--acp` argument (below).
+3. Start a thread with Inferpal. When Inferpal is not set up yet, the first session asks: see [Set it up](#set-it-up).
 
 On Linux, the host does not start without `libicu` (or `icu-libs`): install it, or set
 `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` for a reduced globalization mode.
+
+| Your editor | Where you add Inferpal |
+|---|---|
+| [Zed](#zed) | `agent_servers` in `settings.json` |
+| [JetBrains IDEs](#jetbrains-ides-rider-and-the-others) | `~/.jetbrains/acp.json` |
+| [Qt Creator](#qt-creator) | **Preferences → AI → ACP Servers** |
+| [Visual Studio, in Code Wicket](#visual-studio-beside-other-agents-code-wicket) | **Settings → Backends → Custom ACP agents** |
+| [Neovim](#neovim-codecompanion) | CodeCompanion's `setup` |
+| [acp-ui](#acp-ui-desktop) | `agents.json` |
+| [Emacs and any other client](#emacs-and-other-clients) | The executable, with `--acp` |
+
+## Editors with an agent chat panel
 
 ### Zed
 
@@ -78,44 +101,6 @@ reopened after Rider was closed and started again (a Rider ended by force came b
 - Inferpal reads files through Rider, as Rider holds them: a file another program has just changed can be read in the
   version Rider loaded last, until Rider reloads it.
 
-### Neovim (CodeCompanion)
-
-```lua
-require("codecompanion").setup({
-  adapters = {
-    acp = {
-      inferpal = function()
-        local helpers = require("codecompanion.adapters.acp.helpers")
-        return {
-          name = "inferpal",
-          formatted_name = "Inferpal",
-          type = "acp",
-          roles = { llm = "assistant", user = "user" },
-          commands = { default = { "/path/to/Inferpal.Host", "--acp" } },
-          defaults = { mcpServers = {}, timeout = 60000 },
-          parameters = {
-            protocolVersion = 1,
-            clientCapabilities = { fs = { readTextFile = true, writeTextFile = true } },
-            clientInfo = { name = "CodeCompanion.nvim", version = "1.0.0" },
-          },
-          handlers = {
-            setup = function(self) return true end,
-            auth = function(self) return true end,
-            form_messages = function(self, messages, capabilities)
-              return helpers.form_messages(self, messages, capabilities)
-            end,
-            on_exit = function(self, code) end,
-          },
-        }
-      end,
-    },
-  },
-  interactions = { chat = { adapter = "inferpal" } },
-})
-```
-
-A local model can take a while to load on the first question: keep `timeout` generous.
-
 ### Qt Creator
 
 Qt Creator 21 has an ACP client built in. **Preferences → AI → ACP Servers → Add**: a name, the **Executable** (full
@@ -159,6 +144,46 @@ and Stop.
 - Code Wicket hands Inferpal its own MCP server: 17 tools (build, diagnostics, tests, debugger), about 9,000 tokens.
 - With a folder opened instead of a solution, Code Wicket started the session in the folder **above** it, and
   Inferpal worked on that whole folder. Not tried with a solution open.
+
+## Neovim, desktop apps and other clients
+
+### Neovim (CodeCompanion)
+
+```lua
+require("codecompanion").setup({
+  adapters = {
+    acp = {
+      inferpal = function()
+        local helpers = require("codecompanion.adapters.acp.helpers")
+        return {
+          name = "inferpal",
+          formatted_name = "Inferpal",
+          type = "acp",
+          roles = { llm = "assistant", user = "user" },
+          commands = { default = { "/path/to/Inferpal.Host", "--acp" } },
+          defaults = { mcpServers = {}, timeout = 60000 },
+          parameters = {
+            protocolVersion = 1,
+            clientCapabilities = { fs = { readTextFile = true, writeTextFile = true } },
+            clientInfo = { name = "CodeCompanion.nvim", version = "1.0.0" },
+          },
+          handlers = {
+            setup = function(self) return true end,
+            auth = function(self) return true end,
+            form_messages = function(self, messages, capabilities)
+              return helpers.form_messages(self, messages, capabilities)
+            end,
+            on_exit = function(self, code) end,
+          },
+        }
+      end,
+    },
+  },
+  interactions = { chat = { adapter = "inferpal" } },
+})
+```
+
+A local model can take a while to load on the first question: keep `timeout` generous.
 
 ### acp-ui (desktop)
 
@@ -207,6 +232,8 @@ have not played, read in their code and documentation:
 Inferpal uses the settings Visual Studio and VS Code already share (`%AppData%\Inferpal\config.json` on Windows,
 `~/.config/Inferpal/config.json` on Linux, `~/Library/Application Support/Inferpal/config.json` on macOS): if you use Inferpal in one of them, there is nothing to do.
 
+With a local Ollama already running, there is nothing to set up: Inferpal finds it.
+
 Otherwise, the first session asks you to set Inferpal up. A client that can run a command in a terminal (Zed does)
 offers two buttons:
 
@@ -224,24 +251,32 @@ Inferpal.Host --settings [folder]
 Inferpal.Host --acp --setup
 ```
 
-Once Inferpal is set up, type **`/settings`** in any thread to open the same page again. What you save there applies
-from your next question, in that thread and the others — a new address or API key of the same kind of model server
-included — except a new kind of server (Ollama, LM Studio, OpenAI-compatible), which a thread only uses once it is
-started anew (the thread says so). A model picked in a thread stays that thread's. A settings file that cannot be
-read — a hand edit that broke it — changes nothing in an open thread, which says so once.
+Once Inferpal is set up, type **`/settings`** in any thread to open the same page again.
 
-The settings page is served by Inferpal itself, on `127.0.0.1` only, under an address nobody else can guess; it
-reaches the settings and nothing else (no chat, no command, no tool; of your files, it opens only those the form
-lists; it shows the code index saved for the folder and builds none — a chat in that folder keeps it up to date, or
-the page's **Rebuild** button), and it stops a few seconds after its last tab is closed. A browser cannot hand a file's location to a page: type or paste a path where the form asks for one.
+<details>
+<summary><b>In detail: when a saved setting applies, what the settings page reaches</b></summary>
 
-With a local Ollama already running, there is nothing to set up: Inferpal finds it.
+- What you save there applies
+  from your next question, in that thread and the others — a new address or API key of the same kind of model server
+  included — except a new kind of server (Ollama, LM Studio, OpenAI-compatible), which a thread only uses once it is
+  started anew (the thread says so).
+- A model picked in a thread stays that thread's.
+- A settings file that cannot be
+  read — a hand edit that broke it — changes nothing in an open thread, which says so once.
+- The settings page is served by Inferpal itself, on `127.0.0.1` only, under an address nobody else can guess; it
+  reaches the settings and nothing else (no chat, no command, no tool; of your files, it opens only those the form
+  lists; it shows the code index saved for the folder and builds none — a chat in that folder keeps it up to date, or
+  the page's **Rebuild** button), and it stops a few seconds after its last tab is closed.
+- A browser cannot hand a file's location to a page: type or paste a path where the form asks for one.
+
+</details>
 
 ## What you get
 
 - **Three modes, plus each mode found for the workspace** — *Default* (answers, and uses the tools as needed), *Agent* (plans the task, then carries it out
   step by step), *Plan* (reads and explores, changes nothing) — and the **model**, chosen among the models your server
-  has installed. Both appear as the session's options in your client. The model shown is the one that answers: in
+  has installed. Both appear as the session's options in your client.
+- The model shown is the one that answers: in
   *Agent* mode, the model set for the agent's role when you set one; a model you pick answers in every mode. While the
   agent works through its plan, what the model writes is shown as its thinking, and the answer once, at the end.
 - **A slow server says so**: while the server reads a long prompt and sends nothing yet, the thinking says what it
@@ -250,13 +285,8 @@ With a local Ollama already running, there is nothing to set up: Inferpal finds 
   rules, deny lists and session grants as in Visual Studio and VS Code. A file you are editing with unsaved changes is
   never written over: Inferpal asks your editor for its buffer, and refuses.
 - **The tool calls on screen**: what runs, on which file, and its result; the agent's plan when it makes one.
-- **Notices and compactions, where your client shows them** (ACP 1.11, Zed 1.25 and later): what Inferpal says beside
-  the answer — the model it picked because the factory default is not installed, what this editor does not offer, a
-  rule written to your settings, a documentation crawl's verdict — arrives as a session notice, out of the transcript;
-  a conversation made to fit before a question arrives as a compaction, with the summary the model now reads. A client
-  that does not declare them gets the text and the `context_compact` step as before. The end of a cut answer and a
-  `/task` report always stay in the transcript.
-- **Slash commands** — the client lists them (`/help` describes them all). Your repository's instructions, commands,
+- **Slash commands** — the client lists them (`/help` describes them all).
+- Your repository's instructions, commands,
   skills and MCP servers work as in the other editors — a repository MCP server asks for your agreement at the first
   prompt of a new thread — except a repository MCP server that asks for a value when it starts: an ACP client gives Inferpal no box to ask it in, so that server is not started — the support bundle
   (`/diagnostics export`) names it, with the reason.
@@ -264,6 +294,29 @@ With a local Ollama already running, there is nothing to set up: Inferpal finds 
 - **Sessions are saved** after every turn and listed again for the folder they belong to; reopened, they come back
   whole. A session VS Code or Visual Studio saves for the same folder is listed too, branches included (from this
   version on: older ones do not record their folder).
+
+**Try it** — in a thread:
+
+| Type | What happens |
+|---|---|
+| `/help` | Describes every slash command |
+| `/settings` | Opens the settings page |
+| `/xray` | The context breakdown, as text |
+| `/diagnostics` | What went wrong on Inferpal's side, with the cause |
+
+<details>
+<summary><b>In detail: notices and compactions</b></summary>
+
+- **Notices and compactions, where your client shows them** (ACP 1.11, Zed 1.25 and later): what Inferpal says beside
+  the answer — the model it picked because the factory default is not installed, what this editor does not offer, a
+  rule written to your settings, a documentation crawl's verdict — arrives as a session notice, out of the transcript;
+  a conversation made to fit before a question arrives as a compaction, with the summary the model now reads.
+- A client
+  that does not declare them gets the text and the `context_compact` step as before.
+- The end of a cut answer and a
+  `/task` report always stay in the transcript.
+
+</details>
 
 ## What stays in Visual Studio and VS Code
 
@@ -301,3 +354,5 @@ connection answers its approvals.
 - **Zed**: Command Palette → `dev: open acp logs` shows every message, and what the agent wrote on stderr.
 - **Inferpal**: `/diagnostics` lists what went wrong on its side, with the cause.
 - The agent writes nothing but protocol messages on stdout; its own messages go to stderr.
+
+**Next:** [MCP](mcp.md) — add the servers that give the agent more tools, beside the ones your client passes.

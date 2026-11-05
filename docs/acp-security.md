@@ -1,5 +1,18 @@
 # Running Inferpal's ACP agent across machines
 
+**The short answer: an ACP client can do what you can do, and nothing in the protocol tells it from you.** It answers
+the approvals, reads any folder it names, starts programs and reads your saved conversations. It cannot reach the agent
+without holding its connection, and it cannot get a call past a `deny` rule or the built-in denylist.
+
+When your editor starts the agent on your own machine, that client is you and there is nothing to set up. In every other
+case, what keeps the machine safe is who can reach the agent's connection.
+
+| Your client | What to do |
+|---|---|
+| On the same machine | [Nothing](#on-one-machine-nothing-to-do) |
+| On another computer | [Carry the connection over SSH](#from-another-computer-carry-it-over-ssh) |
+| On a phone or in a browser | Read [WebSocket bridges](#phones-and-browsers-websocket-bridges) first: no authentication, no encryption, and never on a network you do not control |
+
 The [ACP agent](acp.md) is meant to run on the machine of the editor that starts it: the editor launches
 `Inferpal.Host --acp` and talks to it over its standard input and output. This page is for the other case — a client
 on another computer, a phone, a browser — and it starts with the one fact that decides everything else.
@@ -13,8 +26,10 @@ The program connected to the agent's input and output is, for Inferpal, **the us
   is none against a client that is not you.
 - **Some things never ask.** Reading tools (`read_file`, `list_files`, `search_in_files`, code search) work in the
   folder the client names when it opens a session — any folder of the machine, your home folder or a drive's root
-  included. Building and testing that folder (`run_tests`, `get_diagnostics`) runs the project's own code: it asks
-  once per workspace, and the client answers that card. The slash commands it sends act as yours do: `/commit-exec` runs `git commit` with the repository's hooks,
+  included.
+- Building and testing that folder (`run_tests`, `get_diagnostics`) runs the project's own code: it asks
+  once per workspace, and the client answers that card.
+- The slash commands it sends act as yours do: `/commit-exec` runs `git commit` with the repository's hooks,
   `/import` writes your settings.
 - **It reads your conversations.** It can list, reopen and delete every conversation saved on the machine, those of
   Visual Studio and VS Code included.
@@ -24,6 +39,34 @@ The program connected to the agent's input and output is, for Inferpal, **the us
 - **Your standing permissions apply to it**: the `allow` rules of your machine's settings, the "Always" grants given
   during a session, and — with `securityAlertsDisabled` on — no approval at all, force-prompted calls excepted. What it changes stays: your files,
   your settings, the `.inferpal/` instructions your own sessions read later.
+
+```mermaid
+flowchart TB
+    C(["A write, a command, a web call<br/>or an MCP tool call"]) --> D{"A deny rule or<br/>the built-in denylist?"}
+    D -- "yes" --> X(["Refused, nobody is asked"])
+    D -- "no" --> F{"A forced card?"}
+    F -- "no" --> S{"An allow rule, an Always grant<br/>or approvals switched off?"}
+    S -- "yes" --> R(["Runs, nobody is asked"])
+    S -- "no" --> Q["The question goes to<br/>the connected program"]
+    F -- "yes" --> Q
+    Q -- "it says yes" --> R
+    Q -- "it says no or cancels" --> N(["Refused"])
+```
+
+<sub>Who decides a call. A forced card gets past your standing permissions, not past the client: it still goes to the
+connected program. On a card that offers a narrow rule, the client can pick it too, and the rule is written to your
+machine's settings.</sub>
+
+**Try it** — `/permissions` shows the rules a client inherits, in the order they are evaluated.
+
+What a client cannot do:
+
+- **Reach the agent without the connection.** The agent speaks ACP only over its standard input and output: no network
+  port takes it.
+- **Get a call past a `deny` rule or the built-in denylist.** The call is refused before any question is asked, even
+  with approvals switched off. That stops one call, not a client: the denylist is an
+  [accident guard](tools.md#permission-rules-allow--deny-by-pattern) that matches text, and any other command runs once
+  the client says yes.
 
 Inferpal does not try to tell a trusted client from another one: nothing in the protocol carries a secret it could
 check, and a check that only looked like one would be worse than none. **What protects the machine is who can reach
@@ -103,3 +146,5 @@ Everything above is about the agent. Your model server (Ollama, LM Studio, llama
 server listening on every interface without authentication is open to anyone who reaches it: see
 [Remote Inference](remote-inference.md#security-note) — a trusted private network only, and TLS with authentication beyond
 it.
+
+**Next:** [Remote Inference](remote-inference.md) — run the model server on another machine.

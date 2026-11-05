@@ -1,11 +1,53 @@
 ﻿# Slash Commands
 
+Every command you can type after `/`, grouped by what you want to do. Most days you need about a dozen of them: they
+come first, and the rest waits in the groups below.
+
 Type `/` in the prompt to open the autocomplete popup. Commands fall into two groups: **chat
 commands** (handled in the tool window) and **code actions** (which run against the active
 editor with tools disabled).
 
 > [!TIP]
 > `/help` lists everything available in your build.
+
+## Start with these
+
+| Type | What happens |
+|---|---|
+| `/explain` | Explain the active code, in the chat |
+| `/fix` | Fix bugs in the active code, applied directly in the editor (undoable with Ctrl+Z) |
+| `/test` | Generate unit tests into a separate test file |
+| `/plan` | Plan mode: the agent explores and proposes a plan without editing files |
+| `/check` | Review the current git diff for any bug or regression, plus your checks |
+| `/commit` | Generate a commit message from `git diff`; `/commit-exec` makes the commit |
+| `/undo-run` | Revert every file changed during the last agent run |
+| `/read <path>` | Attach a file as context |
+| `/xray` | See everything that composes the system prompt |
+| `/model <name>` | Switch the active chat model |
+| `/clear` | Save and clear the conversation |
+| `/settings` | Open Inferpal's settings |
+
+## Find a command
+
+- [Code actions: work on the code in your editor](#code-actions-work-on-the-code-in-your-editor) — `/explain`, `/fix`,
+  `/review`, `/refactor`, `/test`, `/doc`
+- [Build, test and commit](#build-test-and-commit) — `/build`, `/fix-build`, `/tdd`, `/map`, `/git`, `/commit`,
+  `/pr-description`
+- [Review a change, set your rules](#review-a-change-set-your-rules) — `/check`, `/checks`, `/rules`, `/permissions`
+- [Undo or replay what the agent did](#undo-or-replay-what-the-agent-did) — `/undo-run`, `/restore`, `/replay`
+- [Plan and steer the agent](#plan-and-steer-the-agent) — `/plan`, `/agent-step`, `/resume`, `/modes`
+- [Debug a running program](#debug-a-running-program) — `/debug`
+- [Run a task in the background](#run-a-task-in-the-background) — `/task`
+- [Give the model context](#give-the-model-context) — `/read`, `/diff`, `/xray`, `/memory`, `/note`, `/onboard`,
+  `/import`
+- [Look at files, run a command, search](#look-at-files-run-a-command-search) — `/ls`, `/grep`, `/run`, `/fetch`,
+  `/search-web`, `/search-code`
+- [Manage the code index and documentation sites](#manage-the-code-index-and-documentation-sites) — `/index`, `/docs`
+- [Conversation, settings and help](#conversation-settings-and-help) — `/clear`, `/model`, `/tools`, `/export`,
+  `/settings`, `/diagnostics`
+- [Come back to earlier work](#come-back-to-earlier-work) — `/history`, `/phistory`, `/branch`, `/snippets`, `/template`
+- [Models & hardware](#models--hardware) — `/models`, `/hardware`, `/bench`, `/arena`, `/setup`
+- [Add your own commands](#add-your-own-commands) — `/prompts`
 
 > [!NOTE]
 > **VS Code:** nearly all commands below also work in the VS Code extension, served headless
@@ -14,136 +56,7 @@ editor with tools disabled).
 > to Visual Studio's build by construction — it answers "not available in this editor yet".
 > `/setup` opens VS Code's first-run card.
 
-## Conversation
-
-| Command | Description |
-|---|---|
-| `/clear` | Save and clear the conversation |
-| `/model <name>` | Switch the active chat model |
-| `/tools [on\|off] [<tool>…]` | Without a name: list every tool with what it weighs and what the next request does with it, or turn tool calling on or off for this conversation. With names (`run_command`, `server/tool` for an MCP tool): turn those tools off — or back on — in every conversation (`disabledTools`; see **[Tools → Turning a tool off](tools.md#turning-a-tool-off)**) |
-| `/export` | Export the conversation to `.md` or `.txt` (an ACP client gets it as Markdown in the thread, to copy) |
-| `/help` | Show all available commands, and the link to this documentation (the pages of your installed version) |
-| `/settings` | Open Inferpal's settings — the settings window in Visual Studio, the settings panel in VS Code, the settings page in your browser from Zed, a JetBrains IDE, Neovim or Emacs |
-| `/diagnostics [list\|clear\|on\|off\|export]` | List the background errors swallowed best-effort (in-memory ring buffer, includes permission-rule denials); `clear` empties it, `on`/`off` toggles the opt-in file log; `export` copies a **sanitized support bundle** to the clipboard for GitHub issues — versions, OS, provider (remote endpoints redacted, API key never included), model roles, feature toggles and the recent diagnostics with profile/workspace paths masked. The chat shows exactly what was copied: you read what you are about to send, and nothing leaves the machine on its own |
-
-## Context & memory
-
-| Command | Description |
-|---|---|
-| `/context` | Show the active `.inferpal/context.md` |
-| `/xray` | Context X-Ray: interactive panel breaking down everything composing the system prompt (base, custom, pinned, project files, scoped rules) — token bars, exact content per section, per-section on/off toggle for the next turn, copy of the raw prompt; the window fill counts the conversation and the tool definitions each turn carries. Also opens by clicking the context gauge. The same panel in VS Code; an ACP client has none, and gets the breakdown as text in the thread |
-| `/skill [name request]` | List the skills — `SKILL.md` folders the repository wrote for Copilot (`.github/skills`), Claude Code (`.claude/skills`), any agent (`.agents/skills`), Cline or Roo, and your own in `~/.copilot/skills`, `~/.claude/skills`, `~/.agents/skills` — or ask with one: `/skill <name> <request>` joins its instructions and the list of its files to your question. Its files are read with `read_skill_file`; a script runs only through `run_command`, with your approval (`allowed-tools` grants nothing) |
-| `/instructions` | List the instruction files the repository gives coding agents (`AGENTS.md`, `CLAUDE.md`, Copilot's, Cursor's, Cline's, Roo's, Continue's): the tool each is for, when it applies, what the next question sends of it, and why not when it does not. The same rows are on the Context settings page |
-| `/memory` | Show `.inferpal/memory.md` (the agent's persistent memory) |
-| `/onboard` | Report the committed project profile (`.inferpal/project.json`): what it applied, what it recommends, what was refused |
-| `/onboard init` | Write a commented example profile |
-| `/onboard apply` | Write the profile's recommendations into **this machine's** settings — the only path from "recommended" to "in effect" |
-| `/onboard context [force]` | Draft `.inferpal/context.md` from the repository (layout, README, recent commits). Refuses to overwrite an existing file without `force` |
-| `/import continue [file]` · `/import roo [file]` | Bring over a Continue configuration (`~/.continue/config.yaml`, or the older `config.json`) or a Roo Code one (the file its settings **Export**). A card lists what Inferpal can take — the model server and the models by role, rules and system messages (added to the custom system prompt), prompts (as commands in this machine's prompts folder), Roo's custom modes (as your own modes, groups and `fileRegex` included), MCP servers, documentation sites, allowed and denied commands (as permission rules) — and every other part of the file with the reason it stays; a hosted provider is never imported. Nothing is written until you apply, and `config.json` is copied aside first: `apply` writes what is ticked, `apply all` everything, `apply 1,3,5` those numbers. See [Coming from Continue or Roo Code](coming-from-continue.md) |
-| `/note <text>` | Append a timestamped note to `.inferpal/notes.md` |
-| `/notes [clear]` | List or clear all project notes |
-| `/read <path>` | Attach a file as context (a path that is not a readable file — missing, a folder, binary, outside the workspace — is reported, not attached) |
-| `/diff [path]` | Attach the current `git diff` as a context chip; with a path, that path's changes only |
-
-## Files & shell
-
-| Command | Description |
-|---|---|
-| `/ls <path> [pattern]` | List files in a directory |
-| `/grep <dir> <pattern> [file_pattern]` | Search text in files (`*.cs`) |
-| `/run <command>` | Run a shell command — PowerShell on Windows, and on Linux/macOS when `pwsh` is on the PATH; bash otherwise (`sh` on a host without bash) (requires approval) |
-| `/fetch <url>` | Fetch a web page as text (requires approval) |
-| `/search-web <query>` | DuckDuckGo web search (aliases `/search`, `/web_search`, requires approval) |
-| `/search-code <query>` | Semantic search across the indexed codebase (alias `/codebase`) |
-
-## File history
-
-| Command | Description |
-|---|---|
-| `/restore <path>` | Restore a file from the most recent backup Inferpal kept of it — in `.inferpal/history/`, or in your user folder with `historyStorage: user` |
-| `/undo-run [list\|review]` | Revert every file changed during the last agent run — restores edited files, deletes files created that run — save the files changed after the run (an undo would lose that change) and those you kept: both are left as they are, and named. `list` shows the workspace's tracked runs; `review` lists the last run's files and where each stands; `/undo-run #<run> <file>` undoes one file of that run (the result bar's **Review changes** does it with a click, and Keep, Undo and Redo per file); `review` numbers the changes of a file changed in several places, `/undo-run #<run>:<n> <file>` gives change *n* back and leaves the others, and `/undo-run redo #<run>[:<n>] <file>` gives a file or a change the run's version again. Runs are kept beside the backups, so an undo still works after the editor restarts |
-| `/replay [n]` | Post-mortem timeline of an agent run: every tool call with its target and duration, then the files it touched (`n` = nth most recent run, default latest) |
-
-## Build, git & analysis
-
-| Command | Description |
-|---|---|
-| `/build [path]` | Run a build and display errors; in VS Code, without a path, the Problems panel's errors when it has any |
-| `/fix-build [path]` | Compile → AI fixes errors → recompile, until clean (max 5 rounds) |
-| `/solution [path]` | Display the solution structure |
-| `/map [path]` | Without a path, the project's C# architecture map of the code as it is now (namespaces, types, hotspots — `generate_project_map`); with one, the call graph of that file (`analyze_code mode=callgraph`) |
-| `/git [path]` | Show git status, log, branches, diff summary |
-| `/commit` | Generate an AI commit message from `git diff` (pre-fills the prompt). Describes the staged changes, or with nothing staged the tracked changes — untracked files are named as left out, since `/commit-exec` does not add them |
-| `/commit-exec` | Execute the commit proposed by `/commit` (with nothing staged, stages tracked files only: `git add -u`) |
-| `/pr-description [base]` | Propose a pull request's title and description for the current branch: what it brings since it left `base` (by default the remote's default branch, else `main` or `master`), written from its commits and its diff, in a block to copy. Nothing is pushed or created; a cut diff, excluded files and a cut reply are said |
-
-## Knowledge & indexing
-
-| Command | Description |
-|---|---|
-| `/index` | Show the semantic index status (chunks, root, embedding model) |
-| `/index rebuild` | Force a full rebuild of the semantic index |
-| `/docs add <url> [title]` | Crawl & index an external documentation site for `search_docs` |
-| `/docs list \| remove <id> \| reindex [id]` | Manage indexed documentation sources |
-| `/snippets` | `list` / `copy <n>` / `delete <n>` / `clear` saved code snippets |
-| `/template [id]` | Load a session template (code-review / bug-hunt / architecture / refactoring / tests); a conversation started in a template is reloaded in it |
-| `/prompts [init]` | List the custom commands — `.inferpal/prompts/*.md`, this machine's own prompts folder (beside Inferpal's settings: `%AppData%\Inferpal\prompts` on Windows, `~/.config/Inferpal/prompts` on Linux, `~/Library/Application Support/Inferpal/prompts` on macOS — where `/import` writes) and the commands the repository wrote for Copilot (`.github/prompts/*.prompt.md`), Claude Code (`.claude/commands/**/*.md`) and Continue (`.continue/prompts/`) — with where each comes from, which one a clash hides, and the variables Inferpal leaves as written; or scaffold an example |
-
-## Models & hardware
-
-| Command | Description |
-|---|---|
-| `/models` | List / pull (Ollama, LM Studio) / delete (Ollama) / show running models |
-| `/hardware [gb]` | Show the GPU/VRAM profile; `/hardware <gb>` sets the VRAM budget |
-| `/bench [model…]` | Local test bench of installed models (default: all, capped at 5) — warm TTFT, tokens/s, VRAM pressure and a 5-task quality micro-eval scored by programmatic assertions (C# fix, instruction following, summary, tool call, FIM), plus per-role recommendations (agent / utility / FIM) feeding the Model Router; `/bench last` redisplays the persisted run |
-| `/arena <prompt>` | Model arena: sends the same prompt to two models (sequentially — one GPU) and shows both answers blind-labelled A/B. Pair = chat model vs utility model, or explicit: `/arena <model1> <model2> <prompt>`. Vote with `/arena a\|b\|tie` (reveals the models), cumulative local standings with `/arena stats` |
-| `/tdd [filter]` | "Fix until green": runs the test suite (`run_tests` — dotnet, pytest, npm, cargo, go), lets the agent patch the failing code, re-runs, up to 5 rounds. The optional filter narrows the run (`--filter` / `-k` / etc.). Twin of `/fix-build` on the test side; writes go through the usual approval pipeline and `/undo-run` applies. On the first red round the failing test is re-run **under the debugger** and the exception, stack and locals at the point of failure go into the fix prompt (**you confirm once per run** — it executes your test; both editors, and it falls back to the text-only loop if the capture is unavailable). Rewriting a *test* file always prompts, whatever your permission rules say. A round that executed **no test at all** — a filter matching nothing, a runner that exited 0 without a summary — stops the loop instead of spending rounds patching against it, whether it happens on the first round or after the agent has made the failing test disappear. A green on part of the suite says so |
-| `/task <objective>` | Run an agent task **in the background**, detached from the conversation: submitting returns immediately and you keep working while it runs. Tasks run one at a time and wait for the chat to be idle before taking the GPU; a task still waiting when another solution is opened does not run there (it says so). **Read-only**: a background run explores and reports (`read_file`, `search_codebase`, `analyze_code`, …) but never edits your files, builds or runs anything, or goes online — so it can never interrupt you with an approval prompt. A notice appears in the chat when it finishes — and, in VS Code, if Inferpal restarts first (a server setting changed), the chat names the tasks, background commands and documentation indexing the restart stopped |
-| `/task` · `/task list` | List the background tasks, newest first, with their state (queued / running / done / failed / cancelled). When the model server does not answer, the tasks wait for it — named above the list — and start on their own when it is back, instead of failing one after another; a task whose server stopped answering during its run says so, with the time |
-| `/task <id>` | Show one task's full report, plus its step journal. Finished tasks are kept per workspace and editor: their reports and proposals are still there after a restart, and a task that was running or queued when the editor closed says so. A number is never given twice, a restart included |
-| `/task stop <id>` · `/task clear` | Cancel a task · forget the finished ones |
-| `/task retry <id>` | Run a finished task's objective again under a new number — same mode (`propose` or not), same workspace |
-| `/task propose <objective>` | Same, but the task may **express** file changes: the editing tools are available to it and every edit is recorded instead of applied. The report comes back with a numbered diff per proposed change and nothing touched. Still no commands and no network |
-| `/task apply <id> <n>` | Apply **one** proposal, through the usual approval prompt — so `/undo-run` covers it like any other write. There is deliberately no form that applies them all: approving a batch sight-unseen is what the read-only default exists to avoid. A file changed since the task ran is refused as stale rather than overwritten |
-| `/setup` | Look for a model server again (the configured address, then where one usually listens) and set it up with models that fit — in VS Code a card, where another address can be typed |
-
-## Governance
-
-| Command | Description |
-|---|---|
-| `/rules [init]` | List rules in `.inferpal/rules`, or scaffold an example |
-| `/checks [init]` | List checks in `.inferpal/checks`, or scaffold an example |
-| `/permissions [suggest\|add <n>]` | Show the permission rules **actually in force**, in evaluation order — the workspace `.inferpal/permissions.json` overlay first (deny-only), then the per-machine rules — and name what was ignored: an overlay that could not be read as a rule list, malformed entries, and `allow` rules an overlay cannot grant. `suggest` lists the narrow rules approval cards offered that you granted at least three times and never refused; `add <n>` writes the n-th to the per-machine rules |
-| `/check [name\|init\|revision\|A..B\|path]` | AI-review the current git diff for any bug or regression, plus your checks (100% local); `<name>` reviews against that one check only. `/check main..HEAD` reviews a branch as a pull request shows it (the commits it has that `main` has not, from the common base), `/check <branch>` what that branch brings to `HEAD`, `/check <commit>` one commit, `/check <path>` the uncommitted changes under a file or a folder of the repository (in quotes when it holds a space); the answer names what was reviewed. Findings come back **anchored to the diff** — `file:line`, severity, grouped by file — and a location the diff does not confirm is labelled as such rather than presented as one |
-
-## Agent
-
-| Command | Description |
-|---|---|
-| `/agent-step` | Toggle agent step mode (pause between tool calls) |
-| `/resume` | Resume the agent after a step-mode pause |
-| `/plan` | Toggle plan mode — read-only: the agent explores and proposes a plan without editing files |
-| `/modes` | List the modes found — `.inferpal/modes/`, GitHub Copilot agents (`.github/agents/`), Roo Code modes (`.roomodes`) and your own — with each one's model, tools and file, what its file sets that Inferpal does not carry, and the files set aside with why ([Modes](configuration.md#modes)) |
-| `/plan save [name]` | Save the plan from the last answer to `.inferpal/plans/<name>.md` — committed with the code, so it survives `/clear`, a restart and a colleague's clone |
-| `/plan list` | List this repository's plans with their progress |
-| `/plan <name>` | Open a plan and make it the active one |
-| `/plan next` | Show the next unfinished step of the active plan |
-| `/plan done <n>` / `/plan undone <n>` | Tick or reopen a step — the file is edited surgically, your prose and notes are untouched |
-| `/debug <hypothesis>` | Settle a question about runtime behaviour by observing it: the agent picks a place where the state decides, sets a breakpoint, starts the session (**you confirm** — it runs your program), then reads the stack, the locals and the expressions that discriminate. Both editors: Visual Studio drives its debugger in-process, VS Code drives the Debug Adapter Protocol |
-| `/debug` | What the debugger is doing right now: paused where, and which breakpoints are set |
-| `/debug stop` | End the debugging session |
-
-## History
-
-| Command | Description |
-|---|---|
-| `/history [term]` | List saved sessions, or full-text search across them |
-| `/phistory [term]` | Search prompt history; `/phistory use <n>` to reuse an entry |
-| `/branch` | List the branch points of the conversation (one per turn) and the family tree of the current session |
-| `/branch <n>` | Fork the conversation at turn *n*: turns 1..*n* are kept, the conversation continues in the branch, the original is written back to disk first (under a generated name if it had never been saved) |
-| `/branch <name>` | Switch to another session or branch |
-
-## Code actions
+## Code actions: work on the code in your editor
 
 These run against the active editor selection with tool calling disabled (see
 [Tools](tools.md) and the editor context menu).
@@ -160,3 +73,187 @@ empty input` — and the model gets it with the action, before the rest.
 | `/test` | Generate unit tests into a **separate test file** (created/opened, or extended if it exists) — for C#, in the test project that references the source's project (the source's folder mirrored there); under Maven/Gradle, in `src/test`; for Python, in the folder pytest collects (its `testpaths`, else `tests/`); for a Rust library, in the crate's `tests/` folder; next to the source otherwise. A C# project no test project references is refused, naming the command that adds one. The selection is the input (the whole file without one), and the test file is written by an edit you can undo, in both editors; an ACP client has no active file, and the command is refused there |
 | `/test coverage [folder]` | Tests for the code **no test reaches**: the coverage is measured with the tool the project has (.NET with `coverlet.collector` or `dotnet-coverage`, pytest with `coverage.py`, vitest, jest, `node --test` with `c8` — a missing one is named with the command that adds it, never installed), the methods with the most uncovered lines are chosen without the model (10 per run), and for each one the model writes **one new test file**, through the usual approval. A file is kept only if it passes three times, asserts something, skips nothing and covers lines nothing covered; the others are removed, their copy kept. The report gives the coverage before → after and why each file was set aside; `/undo-run` gives back the whole command. A folder, a project or a source file narrows it; in both editors and in an ACP client |
 | `/doc` | Add a documentation comment in the language's form (XML, docstring, JSDoc) to the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
+
+## Build, test and commit
+
+| Command | Description |
+|---|---|
+| `/build [path]` | Run a build and display errors; in VS Code, without a path, the Problems panel's errors when it has any |
+| `/fix-build [path]` | Compile → AI fixes errors → recompile, until clean (max 5 rounds) |
+| `/tdd [filter]` | "Fix until green": runs the test suite (`run_tests` — dotnet, pytest, npm, cargo, go), lets the agent patch the failing code, re-runs, up to 5 rounds. The optional filter narrows the run (`--filter` / `-k` / etc.). Twin of `/fix-build` on the test side; writes go through the usual approval pipeline and `/undo-run` applies. On the first red round the failing test is re-run **under the debugger** and the exception, stack and locals at the point of failure go into the fix prompt (**you confirm once per run** — it executes your test; both editors, and it falls back to the text-only loop if the capture is unavailable). Rewriting a *test* file always prompts, whatever your permission rules say. A round that executed **no test at all** — a filter matching nothing, a runner that exited 0 without a summary — stops the loop instead of spending rounds patching against it, whether it happens on the first round or after the agent has made the failing test disappear. A green on part of the suite says so |
+| `/solution [path]` | Display the solution structure |
+| `/map [path]` | Without a path, the project's C# architecture map of the code as it is now (namespaces, types, hotspots — `generate_project_map`); with one, the call graph of that file (`analyze_code mode=callgraph`) |
+| `/git [path]` | Show git status, log, branches, diff summary |
+| `/commit` | Generate an AI commit message from `git diff` (pre-fills the prompt). Describes the staged changes, or with nothing staged the tracked changes — untracked files are named as left out, since `/commit-exec` does not add them |
+| `/commit-exec` | Execute the commit proposed by `/commit` (with nothing staged, stages tracked files only: `git add -u`) |
+| `/pr-description [base]` | Propose a pull request's title and description for the current branch: what it brings since it left `base` (by default the remote's default branch, else `main` or `master`), written from its commits and its diff, in a block to copy. Nothing is pushed or created; a cut diff, excluded files and a cut reply are said |
+
+## Review a change, set your rules
+
+What a rule and a check are, and how they differ: [Rules & AI Checks](rules-and-checks.md). How permission rules work:
+[Tools → Permission rules](tools.md#permission-rules-allow--deny-by-pattern).
+
+| Command | Description |
+|---|---|
+| `/check [name\|init\|revision\|A..B\|path]` | AI-review the current git diff for any bug or regression, plus your checks (100% local); `<name>` reviews against that one check only. `/check main..HEAD` reviews a branch as a pull request shows it (the commits it has that `main` has not, from the common base), `/check <branch>` what that branch brings to `HEAD`, `/check <commit>` one commit, `/check <path>` the uncommitted changes under a file or a folder of the repository (in quotes when it holds a space); the answer names what was reviewed. Findings come back **anchored to the diff** — `file:line`, severity, grouped by file — and a location the diff does not confirm is labelled as such rather than presented as one |
+| `/checks [init]` | List checks in `.inferpal/checks`, or scaffold an example |
+| `/rules [init]` | List rules in `.inferpal/rules`, or scaffold an example |
+| `/permissions [suggest\|add <n>]` | Show the permission rules **actually in force**, in evaluation order — the workspace `.inferpal/permissions.json` overlay first (deny-only), then the per-machine rules — and name what was ignored: an overlay that could not be read as a rule list, malformed entries, and `allow` rules an overlay cannot grant. `suggest` lists the narrow rules approval cards offered that you granted at least three times and never refused; `add <n>` writes the n-th to the per-machine rules |
+
+## Undo or replay what the agent did
+
+| Command | Description |
+|---|---|
+| `/undo-run [list\|review]` | Revert every file changed during the last agent run — restores edited files, deletes files created that run — save the files changed after the run (an undo would lose that change) and those you kept: both are left as they are, and named. `list` shows the workspace's tracked runs; `review` lists the last run's files and where each stands; `/undo-run #<run> <file>` undoes one file of that run (the result bar's **Review changes** does it with a click, and Keep, Undo and Redo per file); `review` numbers the changes of a file changed in several places, `/undo-run #<run>:<n> <file>` gives change *n* back and leaves the others, and `/undo-run redo #<run>[:<n>] <file>` gives a file or a change the run's version again. Runs are kept beside the backups, so an undo still works after the editor restarts |
+| `/restore <path>` | Restore a file from the most recent backup Inferpal kept of it — in `.inferpal/history/`, or in your user folder with `historyStorage: user` |
+| `/replay [n]` | Post-mortem timeline of an agent run: every tool call with its target and duration, then the files it touched (`n` = nth most recent run, default latest) |
+
+## Plan and steer the agent
+
+| Command | Description |
+|---|---|
+| `/plan` | Toggle plan mode — read-only: the agent explores and proposes a plan without editing files |
+| `/plan save [name]` | Save the plan from the last answer to `.inferpal/plans/<name>.md` — committed with the code, so it survives `/clear`, a restart and a colleague's clone |
+| `/plan list` | List this repository's plans with their progress |
+| `/plan <name>` | Open a plan and make it the active one |
+| `/plan next` | Show the next unfinished step of the active plan |
+| `/plan done <n>` / `/plan undone <n>` | Tick or reopen a step — the file is edited surgically, your prose and notes are untouched |
+| `/agent-step` | Toggle agent step mode (pause between tool calls) |
+| `/resume` | Resume the agent after a step-mode pause |
+| `/modes` | List the modes found — `.inferpal/modes/`, GitHub Copilot agents (`.github/agents/`), Roo Code modes (`.roomodes`) and your own — with each one's model, tools and file, what its file sets that Inferpal does not carry, and the files set aside with why ([Modes](configuration.md#modes)) |
+
+## Debug a running program
+
+| Command | Description |
+|---|---|
+| `/debug <hypothesis>` | Settle a question about runtime behaviour by observing it: the agent picks a place where the state decides, sets a breakpoint, starts the session (**you confirm** — it runs your program), then reads the stack, the locals and the expressions that discriminate. Both editors: Visual Studio drives its debugger in-process, VS Code drives the Debug Adapter Protocol |
+| `/debug` | What the debugger is doing right now: paused where, and which breakpoints are set |
+| `/debug stop` | End the debugging session |
+
+## Run a task in the background
+
+| Command | Description |
+|---|---|
+| `/task <objective>` | Run an agent task **in the background**, detached from the conversation: submitting returns immediately and you keep working while it runs. Tasks run one at a time and wait for the chat to be idle before taking the GPU; a task still waiting when another solution is opened does not run there (it says so). **Read-only**: a background run explores and reports (`read_file`, `search_codebase`, `analyze_code`, …) but never edits your files, builds or runs anything, or goes online — so it can never interrupt you with an approval prompt. A notice appears in the chat when it finishes — and, in VS Code, if Inferpal restarts first (a server setting changed), the chat names the tasks, background commands and documentation indexing the restart stopped |
+| `/task` · `/task list` | List the background tasks, newest first, with their state (queued / running / done / failed / cancelled). When the model server does not answer, the tasks wait for it — named above the list — and start on their own when it is back, instead of failing one after another; a task whose server stopped answering during its run says so, with the time |
+| `/task <id>` | Show one task's full report, plus its step journal. Finished tasks are kept per workspace and editor: their reports and proposals are still there after a restart, and a task that was running or queued when the editor closed says so. A number is never given twice, a restart included |
+| `/task stop <id>` · `/task clear` | Cancel a task · forget the finished ones |
+| `/task retry <id>` | Run a finished task's objective again under a new number — same mode (`propose` or not), same workspace |
+| `/task propose <objective>` | Same, but the task may **express** file changes: the editing tools are available to it and every edit is recorded instead of applied. The report comes back with a numbered diff per proposed change and nothing touched. Still no commands and no network |
+| `/task apply <id> <n>` | Apply **one** proposal, through the usual approval prompt — so `/undo-run` covers it like any other write. There is deliberately no form that applies them all: approving a batch sight-unseen is what the read-only default exists to avoid. A file changed since the task ran is refused as stale rather than overwritten |
+
+## Give the model context
+
+### Attach something to your question
+
+`@`-mentions attach more kinds of context: [Mentions](mentions.md).
+
+| Command | Description |
+|---|---|
+| `/read <path>` | Attach a file as context (a path that is not a readable file — missing, a folder, binary, outside the workspace — is reported, not attached) |
+| `/diff [path]` | Attach the current `git diff` as a context chip; with a path, that path's changes only |
+
+### See what the model reads
+
+| Command | Description |
+|---|---|
+| `/xray` | Context X-Ray: interactive panel breaking down everything composing the system prompt (base, custom, pinned, project files, scoped rules) — token bars, exact content per section, per-section on/off toggle for the next turn, copy of the raw prompt; the window fill counts the conversation and the tool definitions each turn carries. Also opens by clicking the context gauge. The same panel in VS Code; an ACP client has none, and gets the breakdown as text in the thread |
+| `/context` | Show the active `.inferpal/context.md` |
+| `/instructions` | List the instruction files the repository gives coding agents (`AGENTS.md`, `CLAUDE.md`, Copilot's, Cursor's, Cline's, Roo's, Continue's): the tool each is for, when it applies, what the next question sends of it, and why not when it does not. The same rows are on the Context settings page |
+| `/memory` | Show `.inferpal/memory.md` (the agent's persistent memory) |
+| `/skill [name request]` | List the skills — `SKILL.md` folders the repository wrote for Copilot (`.github/skills`), Claude Code (`.claude/skills`), any agent (`.agents/skills`), Cline or Roo, and your own in `~/.copilot/skills`, `~/.claude/skills`, `~/.agents/skills` — or ask with one: `/skill <name> <request>` joins its instructions and the list of its files to your question. Its files are read with `read_skill_file`; a script runs only through `run_command`, with your approval (`allowed-tools` grants nothing) |
+
+### Keep notes
+
+| Command | Description |
+|---|---|
+| `/note <text>` | Append a timestamped note to `.inferpal/notes.md` |
+| `/notes [clear]` | List or clear all project notes |
+
+### Set up a repository
+
+| Command | Description |
+|---|---|
+| `/onboard` | Report the committed project profile (`.inferpal/project.json`): what it applied, what it recommends, what was refused |
+| `/onboard init` | Write a commented example profile |
+| `/onboard apply` | Write the profile's recommendations into **this machine's** settings — the only path from "recommended" to "in effect" |
+| `/onboard context [force]` | Draft `.inferpal/context.md` from the repository (layout, README, recent commits). Refuses to overwrite an existing file without `force` |
+| `/import continue [file]` · `/import roo [file]` | Bring over a Continue configuration (`~/.continue/config.yaml`, or the older `config.json`) or a Roo Code one (the file its settings **Export**). A card lists what Inferpal can take — the model server and the models by role, rules and system messages (added to the custom system prompt), prompts (as commands in this machine's prompts folder), Roo's custom modes (as your own modes, groups and `fileRegex` included), MCP servers, documentation sites, allowed and denied commands (as permission rules) — and every other part of the file with the reason it stays; a hosted provider is never imported. Nothing is written until you apply, and `config.json` is copied aside first: `apply` writes what is ticked, `apply all` everything, `apply 1,3,5` those numbers. See [Coming from Continue or Roo Code](coming-from-continue.md) |
+
+## Look at files, run a command, search
+
+| Command | Description |
+|---|---|
+| `/ls <path> [pattern]` | List files in a directory |
+| `/grep <dir> <pattern> [file_pattern]` | Search text in files (`*.cs`) |
+| `/run <command>` | Run a shell command — PowerShell on Windows, and on Linux/macOS when `pwsh` is on the PATH; bash otherwise (`sh` on a host without bash) (requires approval) |
+| `/fetch <url>` | Fetch a web page as text (requires approval) |
+| `/search-web <query>` | DuckDuckGo web search (aliases `/search`, `/web_search`, requires approval) |
+| `/search-code <query>` | Semantic search across the indexed codebase (alias `/codebase`) |
+
+## Manage the code index and documentation sites
+
+| Command | Description |
+|---|---|
+| `/index` | Show the semantic index status (chunks, root, embedding model) |
+| `/index rebuild` | Force a full rebuild of the semantic index |
+| `/docs add <url> [title]` | Crawl & index an external documentation site for `search_docs` |
+| `/docs list \| remove <id> \| reindex [id]` | Manage indexed documentation sources |
+
+## Conversation, settings and help
+
+| Command | Description |
+|---|---|
+| `/clear` | Save and clear the conversation |
+| `/model <name>` | Switch the active chat model |
+| `/tools [on\|off] [<tool>…]` | Without a name: list every tool with what it weighs and what the next request does with it, or turn tool calling on or off for this conversation. With names (`run_command`, `server/tool` for an MCP tool): turn those tools off — or back on — in every conversation (`disabledTools`; see **[Tools → Turning a tool off](tools.md#turning-a-tool-off)**) |
+| `/export` | Export the conversation to `.md` or `.txt` (an ACP client gets it as Markdown in the thread, to copy) |
+| `/help` | Show all available commands, and the link to this documentation (the pages of your installed version) |
+| `/settings` | Open Inferpal's settings — the settings window in Visual Studio, the settings panel in VS Code, the settings page in your browser from Zed, a JetBrains IDE, Neovim or Emacs |
+| `/diagnostics [list\|clear\|on\|off\|export]` | List the background errors swallowed best-effort (in-memory ring buffer, includes permission-rule denials); `clear` empties it, `on`/`off` toggles the opt-in file log; `export` copies a **sanitized support bundle** to the clipboard for GitHub issues — versions, OS, provider (remote endpoints redacted, API key never included), model roles, feature toggles and the recent diagnostics with profile/workspace paths masked. The chat shows exactly what was copied: you read what you are about to send, and nothing leaves the machine on its own |
+
+## Come back to earlier work
+
+| Command | Description |
+|---|---|
+| `/history [term]` | List saved sessions, or full-text search across them |
+| `/phistory [term]` | Search prompt history; `/phistory use <n>` to reuse an entry |
+| `/branch` | List the branch points of the conversation (one per turn) and the family tree of the current session |
+| `/branch <n>` | Fork the conversation at turn *n*: turns 1..*n* are kept, the conversation continues in the branch, the original is written back to disk first (under a generated name if it had never been saved) |
+| `/branch <name>` | Switch to another session or branch |
+| `/snippets` | `list` / `copy <n>` / `delete <n>` / `clear` saved code snippets |
+| `/template [id]` | Load a session template (code-review / bug-hunt / architecture / refactoring / tests); a conversation started in a template is reloaded in it |
+
+## Models & hardware
+
+| Command | Description |
+|---|---|
+| `/models` | List / pull (Ollama, LM Studio) / delete (Ollama) / show running models |
+| `/hardware [gb]` | Show the GPU/VRAM profile; `/hardware <gb>` sets the VRAM budget |
+| `/bench [model…]` | Local test bench of installed models (default: all, capped at 5) — warm TTFT, tokens/s, VRAM pressure and a 5-task quality micro-eval scored by programmatic assertions (C# fix, instruction following, summary, tool call, FIM), plus per-role recommendations (agent / utility / FIM) feeding the Model Router; `/bench last` redisplays the persisted run |
+| `/arena <prompt>` | Model arena: sends the same prompt to two models (sequentially — one GPU) and shows both answers blind-labelled A/B. Pair = chat model vs utility model, or explicit: `/arena <model1> <model2> <prompt>`. Vote with `/arena a\|b\|tie` (reveals the models), cumulative local standings with `/arena stats` |
+| `/setup` | Look for a model server again (the configured address, then where one usually listens) and set it up with models that fit — in VS Code a card, where another address can be typed |
+
+## Add your own commands
+
+Keep a prompt you type often as a command of your own: a line in *Settings → Tools and MCP servers → Your slash
+commands*, or a Markdown file in one of the folders below.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/settings-commands-dark.png">
+    <img src="assets/features/settings-commands-light.png" alt="Your slash commands in the settings: /review-pr sends Review the diff of {args} for bugs and missing tests, /explain-simply sends Explain {args} as to a new team member; a third line, not a valid line, marked Not applied: a line must read name=value; and an Add a command button" width="740">
+  </picture>
+  <br><sub>Your slash commands in the settings. They show up in the / list, and a line that does not read name=value says so.</sub>
+</p>
+
+`{args}` becomes whatever you type after the command; without it, those words are added at the end. A line here wins
+over a command file of the same name.
+
+| Command | Description |
+|---|---|
+| `/prompts [init]` | List the custom commands — `.inferpal/prompts/*.md`, this machine's own prompts folder (beside Inferpal's settings: `%AppData%\Inferpal\prompts` on Windows, `~/.config/Inferpal/prompts` on Linux, `~/Library/Application Support/Inferpal/prompts` on macOS — where `/import` writes) and the commands the repository wrote for Copilot (`.github/prompts/*.prompt.md`), Claude Code (`.claude/commands/**/*.md`) and Continue (`.continue/prompts/`) — with where each comes from, which one a clash hides, and the variables Inferpal leaves as written; or scaffold an example |
+
+**Try it** — `/prompts init` scaffolds an example.
+
+**Next:** [Mentions](mentions.md) — attach a file, your changes or the current errors with `@`.

@@ -1,7 +1,8 @@
 ﻿# Development
 
-How to build, test, extend, and contribute to Inferpal. For how the pieces fit together see
-**[Architecture](architecture.md)**.
+**Build it, run it, change it.** How to build, test, extend, and contribute to Inferpal. This page is for a developer
+who wants to make a change: start with the first run below, then go to the recipe you need. For how the pieces fit
+together see **[Architecture](architecture.md)**.
 
 ## Prerequisites
 
@@ -13,7 +14,20 @@ How to build, test, extend, and contribute to Inferpal. For how the pieces fit t
 - **Node.js 22+** — only for the VS Code extension (`vscode/`); its packager, `@vscode/vsce` 4, requires it
 - A running model server for manual testing — see [Getting Started](getting-started.md)
 
-## Build
+## Build and run it for the first time
+
+To run your own build in Visual Studio:
+
+1. Close Visual Studio: the first install refuses to start while it is open.
+2. From the repository's root, build it, install it and open Visual Studio. Expect a UAC prompt.
+
+   ```powershell
+   ./deploy-dev.ps1 -Launch
+   ```
+
+3. Open the chat: **Tools → Inferpal → Inferpal Chat**.
+
+To build without installing anything:
 
 ```powershell
 # Debug — includes the PDB in the VSIX (Attach to Process)
@@ -31,6 +45,20 @@ The `vscode/` folder hosts the TypeScript front-end. It talks to `Inferpal.Host`
 console app that exposes the same `Inferpal.Core` logic over JSON-RPC on stdio — both
 extensions share one brain.
 
+To run it from source:
+
+1. Build the host:
+
+   ```powershell
+   dotnet build Inferpal.Host/Inferpal.Host.csproj
+   ```
+
+2. Run `npm ci` in `vscode/`.
+3. Open the `vscode/` folder in VS Code and press F5. An Extension Development Host opens with Inferpal loaded from
+   sources. It looks for the host in `vscode/host/` first, which `package.ps1` fills, then in `Inferpal.Host/bin/`.
+
+To package it:
+
 ```powershell
 cd vscode
 npm ci
@@ -39,17 +67,7 @@ npm run build                      # esbuild bundle
 ./package.ps1 -Target win32-x64    # VSIX embedding a self-contained Inferpal.Host
 ```
 
-### ACP agent and browser settings window
-
-`Inferpal.Host` also runs as an Agent Client Protocol agent (`--acp`) and serves the settings form in a browser
-(`--settings [folder]`, `/settings` in an ACP thread). That page is the VS Code settings webview: `npm run build` in
-`vscode/` produces `media/settings-standalone.js`, and `Inferpal.Host.csproj` copies it, with the two stylesheets,
-to `web/` beside the executable **only when it exists** — build the extension bundle before the host, or
-`--settings` says which files are missing. The archives an ACP client downloads come from
-`pwsh ./acp/package.ps1 -Target win32-x64|linux-x64|darwin-arm64` (PowerShell 7), which builds the bundle first and
-refuses an archive without `web/`.
-
-### Deploy (dev) and status
+## Deploy (dev) and status
 
 ```powershell
 ./deploy-dev.ps1        # build + deploy into the installed VS extension
@@ -74,43 +92,80 @@ refuses an archive without `web/`.
 > `Inferpal.dll`, chat included, runs out-of-process in the Extensibility host
 > (`ServiceHub.Host.Extensibility*`): attach there. Only `Inferpal.InProc.dll` runs inside **`devenv.exe`**.
 
-### Releases
-
-**The product version lives in one place** — `Directory.Build.props`. Pushing a `v<version>`
-tag (matching that version) triggers the CI release workflow
-(`.github/workflows/release.yml`): it runs the tests, builds both extensions (the Visual Studio
-VSIX and the VS Code VSIXs) and the ACP archives, and attaches them — plus `SHA256SUMS.txt` — to a GitHub Release.
-
 ## Tests
 
 ```powershell
 dotnet test Inferpal.Tests/Inferpal.Tests.csproj
 ```
 
-The suite is large (the exact figure is the `tests-N passing` badge at the top of the README,
-which `DocCountersTests` locks against the assembly — this sentence deliberately carries no
-number of its own, the last one had rotted by 500 tests). The test project uses `InternalsVisibleTo`, so the
-extension's `internal` types are testable directly. All the logic lives in `Inferpal.Core`,
-a pure net8.0 library with no editor SDK or WPF dependency (guarded by `CoreIsolationTests`),
-specifically so it can be unit-tested without Visual Studio (e.g. `DiffComputer`,
-`ContextBudgetGauge`, `ThemePalette`, `ConnectionStatusPresenter`, `PromptHistoryNavigator`,
-`ModelCatalog`, `RulesService`, `ChecksService`, `FixPromptBuilder`, `HistoryCompaction`).
+**Try it** — one class instead of the whole suite:
+
+```text
+dotnet test Inferpal.Tests/Inferpal.Tests.csproj --filter InlineDiffScenarioFixturesTests
+```
+
+- The suite is large (the exact figure is the `tests-N passing` badge at the top of the README,
+  which `DocCountersTests` locks against the assembly — this sentence deliberately carries no
+  number of its own, the last one had rotted by 500 tests).
+- The test project uses `InternalsVisibleTo`, so the
+  extension's `internal` types are testable directly.
+- All the logic lives in `Inferpal.Core`,
+  a pure net8.0 library with no editor SDK or WPF dependency (guarded by `CoreIsolationTests`),
+  specifically so it can be unit-tested without Visual Studio (e.g. `DiffComputer`,
+  `ContextBudgetGauge`, `ThemePalette`, `ConnectionStatusPresenter`, `PromptHistoryNavigator`,
+  `ModelCatalog`, `RulesService`, `ChecksService`, `FixPromptBuilder`, `HistoryCompaction`).
 
 ### Validating the inline diff preview
 
 The per-hunk preview behind `/fix`, `/refactor` and `/doc` ends in a WPF adornment living
-inside `devenv.exe` — the one piece no unit test can see. What *can* be checked offline is
-the maths behind it: `Inferpal.Tests/Fixtures/inline-diff-scenarios.json` holds the scenarios
-(hunk shapes, per-hunk accept/reject subsets, expected merge results) and
-`InlineDiffScenarioFixturesTests` locks them against `InlineDiffPlanner`, so a wrong
-expectation fails `dotnet test` instead of masquerading as a broken preview during manual
-validation. The rendering itself still has to be eyeballed in a real VS
-(`./deploy-dev.ps1 -Launch` — the renderer is in-proc MEF, a hot apply does not reload it).
+inside `devenv.exe` — the one piece no unit test can see.
+
+- What *can* be checked offline is
+  the maths behind it: `Inferpal.Tests/Fixtures/inline-diff-scenarios.json` holds the scenarios
+  (hunk shapes, per-hunk accept/reject subsets, expected merge results) and
+  `InlineDiffScenarioFixturesTests` locks them against `InlineDiffPlanner`, so a wrong
+  expectation fails `dotnet test` instead of masquerading as a broken preview during manual
+  validation.
+- The rendering itself still has to be eyeballed in a real VS
+  (`./deploy-dev.ps1 -Launch` — the renderer is in-proc MEF, a hot apply does not reload it).
 
 ## Project layout
 
 Two layers: `Inferpal.Core` is the editor-agnostic logic (net8.0 class library), `Inferpal`
 is the Visual Studio adapter (VSIX).
+
+```mermaid
+flowchart TB
+    tests["Inferpal.Tests<br/>xUnit"]
+    vscode["vscode<br/>TypeScript"]
+    subgraph cs["C# projects"]
+        vsix["Inferpal<br/>VSIX, net8.0-windows"]
+        inproc["Inferpal.InProc<br/>net472"]
+        fim["Inferpal.Fim<br/>net8.0"]
+        host["Inferpal.Host<br/>net10.0"]
+        core["Inferpal.Core<br/>net8.0"]
+    end
+    tests -- "references all five" --> cs
+    vsix --> core
+    fim --> core
+    host --> core
+    vsix -. "builds and embeds" .-> inproc
+    vsix -. "builds and embeds" .-> fim
+    inproc -. "shares source files" .-> core
+    vscode -. "package.ps1 embeds" .-> host
+```
+
+<sub>Solid arrows are project references. Dotted arrows build, package or share files without compiling against the
+target.</sub>
+
+- `Inferpal` builds `Inferpal.InProc` and `Inferpal.Fim` without compiling against them, then embeds their output in
+  the VSIX.
+- `Inferpal.InProc` ships as net472 and cannot reference the Core: the two share files through `<Compile Link>`.
+- Two extra legs exist only for the tests: `net8.0-windows` in `Inferpal.InProc`, which does reference the Core, and
+  `net8.0` in `Inferpal.Host`.
+- `Inferpal.Tests` references `Inferpal` and `Inferpal.InProc` on its Windows legs only.
+- `vscode` has no project reference. `package.ps1` publishes `Inferpal.Host` into its VSIX, and `Inferpal.Host` copies
+  the settings bundle from `vscode/media/` when it exists.
 
 ```
 Inferpal.Core/
@@ -200,8 +255,32 @@ These are the non-obvious rules that keep the Remote UI model working:
 
 See **[Architecture](architecture.md)** for the reasoning behind each.
 
+## ACP packages and releases
+
+### ACP agent and browser settings window
+
+`Inferpal.Host` also runs as an Agent Client Protocol agent (`--acp`) and serves the settings form in a browser
+(`--settings [folder]`, `/settings` in an ACP thread).
+
+- That page is the VS Code settings webview: `npm run build` in
+  `vscode/` produces `media/settings-standalone.js`, and `Inferpal.Host.csproj` copies it, with the two stylesheets,
+  to `web/` beside the executable **only when it exists** — build the extension bundle before the host, or
+  `--settings` says which files are missing.
+- The archives an ACP client downloads come from
+  `pwsh ./acp/package.ps1 -Target win32-x64|linux-x64|darwin-arm64` (PowerShell 7), which builds the bundle first and
+  refuses an archive without `web/`.
+
+### Releases
+
+**The product version lives in one place** — `Directory.Build.props`. Pushing a `v<version>`
+tag (matching that version) triggers the CI release workflow
+(`.github/workflows/release.yml`): it runs the tests, builds both extensions (the Visual Studio
+VSIX and the VS Code VSIXs) and the ACP archives, and attaches them — plus `SHA256SUMS.txt` — to a GitHub Release.
+
 ## Contributing
 
 Contributions are welcome. The short version: implement `ITool`, register it in
 `ToolRegistry.cs`, and add any new strings to all 10 `.resx` files **and** to `Strings.cs`.
 Keep new logic in testable, VS-free helpers where possible and add xUnit coverage.
+
+**Next:** [CONTRIBUTING.md](../CONTRIBUTING.md) — what a pull request needs before you open it.

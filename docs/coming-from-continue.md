@@ -4,6 +4,8 @@ Continue and Roo Code have both stopped: Continue's repository is read-only and 
 and Roo Code shut down on May 15, 2026. If you ran either against a local model, Inferpal can take your configuration
 over in one command, in Visual Studio and in VS Code alike.
 
+**Try it**
+
 ```text
 /import continue          reads ~/.continue/config.yaml (or the older config.json)
 /import roo               reads the file Roo Code's settings Export wrote (roo-code-settings.json)
@@ -12,6 +14,15 @@ over in one command, in Visual Studio and in VS Code alike.
 
 Nothing is written at first. A card lists, line by line, what Inferpal can take — each with a box — and, folded
 underneath, every other part of the file with the reason it stays. Untick what you do not want, then **Apply**.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/import-card-dark.png">
+    <img src="assets/features/import-card-light.png" alt="The /import card for C:\Users\you\.continue\config.yaml: 9 items to write, 16 parts left out with the reason, config.json copied aside before anything is written. Each line has a ticked box: chat model qwen2.5-coder:14b, completion model qwen2.5-coder:1.5b, embedding model nomic-embed-text, context window 16 384, a Continue rule for the custom system prompt with its scope written in the text, the commands /review-continue, renamed because /review is taken, and /changelog, the MCP server filesystem, and the @Docs source FastAPI" width="420">
+  </picture>
+  <br><sub>What will be written, each with its box. Nothing changes until you click Apply.</sub>
+</p>
+
 From the agent protocol (Zed, JetBrains IDEs…), where there is no card, type `/import continue apply` (what is
 ticked), `apply all`, or `apply 1,3,5`.
 
@@ -19,6 +30,14 @@ ticked), `apply all`, or `apply 1,3,5`.
 > Before anything changes, Inferpal copies its settings file aside
 > (`config.json.before-import-<date>.json`, beside it) and names the copy. An import never overwrites one of your own
 > commands, MCP servers or documentation sources: a name already taken is said, or the command is renamed.
+
+## After the import
+
+- The commands are in this machine's prompts folder (`%AppData%\Inferpal\prompts` on Windows,
+  `~/.config/Inferpal/prompts` on Linux, `~/Library/Application Support/Inferpal/prompts` on macOS): type `/` to see them, `/prompts` to list where each comes from.
+- A new model server takes effect when Inferpal restarts.
+- `/permissions` shows the rules in force; `/docs reindex` indexes the imported documentation sites.
+- To undo, put the copy of `config.json` back (its path is in the answer), and delete the command files you do not want.
 
 ## What carries over
 
@@ -55,10 +74,4 @@ ticked), `apply all`, or `apply 1,3,5`.
 
 Every part left out is listed under the card with its reason — nothing is dropped without a word.
 
-## After the import
-
-- The commands are in this machine's prompts folder (`%AppData%\Inferpal\prompts` on Windows,
-  `~/.config/Inferpal/prompts` on Linux, `~/Library/Application Support/Inferpal/prompts` on macOS): type `/` to see them, `/prompts` to list where each comes from.
-- A new model server takes effect when Inferpal restarts.
-- `/permissions` shows the rules in force; `/docs reindex` indexes the imported documentation sites.
-- To undo, put the copy of `config.json` back (its path is in the answer), and delete the command files you do not want.
+**Next:** [Features](features.md) — what Inferpal does, with something to try in each section.

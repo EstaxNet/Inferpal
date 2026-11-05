@@ -5,6 +5,17 @@ the machine running Visual Studio. Pointing the extension at a remote box — a 
 with a big GPU, a home server, another machine on your LAN — lets you keep Visual Studio
 light while a beefier machine does the inference.
 
+```mermaid
+flowchart LR
+    subgraph you["Your machine"]
+        ed["Your editor and Inferpal<br/>your files, the agent's tools, the code index"]
+    end
+    ed -->|"chat, agent and, by default,<br/>ghost text and code search"| ms["Model server<br/>on the machine with the GPU"]
+    ed -.->|"ghost text or code search,<br/>on a server of their own"| cs["Completion server<br/>this machine or another one"]
+```
+
+<sub>The dashed line is optional: see [Run ghost text or code search on another server](#run-ghost-text-or-code-search-on-another-server).</sub>
+
 This works with **any** provider: **Ollama**, **LM Studio**, or any **OpenAI-compatible**
 server. The only thing that changes per provider is *how you expose the server on the
 network* and the *default port*. This guide covers both Ollama and LM Studio, points
@@ -17,9 +28,17 @@ backend can't report it: the **VRAM budget**.
 | **LM Studio** | `1234` | `http://<host>:1234` (a `/v1` suffix is also accepted) | **Serve on Local Network** toggle in the Developer/Server tab |
 | **OpenAI-compatible** | varies | your `/v1` base URL | per-server (llama.cpp `--host 0.0.0.0`, vLLM, …) |
 
+Three steps: [expose the server](#1-expose-the-server-on-the-remote-host),
+[point Inferpal at it](#2-point-inferpal-at-the-remote-host),
+[set the VRAM budget](#3-set-the-vram-budget-required-for-remote-hosts). In VS Code connected to WSL, SSH or a container,
+go to [section 5](#5-vs-code-connected-to-wsl-ssh-or-a-container): `localhost` means something else there.
+
 ---
 
 ## 1. Expose the server on the remote host
+
+Read the [security note](#security-note) first: this step opens an API with no authentication to everyone who can reach
+the port.
 
 ### Option A — Ollama
 
@@ -99,7 +118,7 @@ A JSON list of models means you're good.
 ## 2. Point Inferpal at the remote host
 
 1. Open **Inferpal Settings**.
-2. Under **Connection**, set **Server address** to the remote address (**Test** selects the
+2. On **Server and models**, set **Server address** to the remote address (**Test** selects the
    server type):
    - Ollama → `http://192.168.1.2:11434`
    - LM Studio → `http://192.168.1.2:1234` (a trailing `/v1` is accepted and normalized)
@@ -113,6 +132,30 @@ does locally; the requests just travel over the network.
 > **Latency note.** Inline ghost-text completions are latency-sensitive. Over a fast LAN
 > this is usually fine; over Wi-Fi or a VPN you may want to raise the completion preset to
 > *Accurate* (longer debounce) so fewer in-flight requests are cancelled.
+
+### Run ghost text or code search on another server
+
+Ghost text and code search can each have a server of their own: the chat on a team server, ghost text on this machine,
+for example.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/settings-runs-on-dark.png">
+    <img src="assets/features/settings-runs-on-light.png" alt="The Autocomplete and Code search blocks of the Server and models page. Autocomplete: Runs on Another server, Model mellum2:12b, Its address http://localhost:11434 with a Test button. Code search: Runs on The server above, Model embeddinggemma:300m" width="740">
+  </picture>
+  <br><sub>Ghost text on this machine, code search on the chat's server.</sub>
+</p>
+
+1. On **Server and models**, under **Autocomplete** or **Code search**, set **Runs on** to **Another server**.
+2. Type **Its address** and click **Test**: it finds which kind of server answers there.
+3. Pick the **Model**: one that server has, since the chat's is not there to fall back on.
+
+- Its kind and its key are under **Connection**, with the advanced settings. That server gets its own key, never the
+  chat's.
+- Ghost text on another machine than the chat's no longer waits for a chat answer to finish; on the chat's machine,
+  under any of its names or addresses, it still does, the graphics card being one.
+- Code search can also run on **The autocomplete server**. With a server on this machine, indexing your code stays here
+  while the chat answers on a team server.
 
 ---
 
@@ -143,13 +186,20 @@ Then run **`/hardware`** with no argument to see the full profile: budget, curre
 models, headroom, per-model VRAM estimates, and the context-window recommendation (headroom and
 the recommendation need Ollama).
 
+**Try it**
+
+| Type | What happens |
+|---|---|
+| `/hardware 24` | Sets the budget to 24 GB |
+| `/hardware` | Shows the full profile |
+
 > The budget is a hint used for advice only. It never caps or overrides your settings —
 > Inferpal will not stop you from running a large `num_ctx`, it just warns when the
 > KV-cache is likely to spill into system RAM and slow generation.
 
 ---
 
-## 4. GPU scheduling across a single backend
+## 4. Why the chat comes first on a shared server
 
 A remote host is typically a **single backend** (one Ollama or one LM Studio server) shared
 by everything Inferpal does: chat/agent requests, background RAG indexing, `@Docs`
@@ -172,11 +222,14 @@ minutes for a prompt because indexing monopolised the remote GPU. This is provid
 ## 5. VS Code connected to WSL, SSH or a container
 
 With **Remote - WSL**, **Remote - SSH**, **Dev Containers** or a tunnel, VS Code runs Inferpal **on the other side**,
-next to your files, with the extension's package for that machine. Packages exist for **Linux x64**, Windows x64 and
-macOS on Apple silicon: an ARM Linux machine or container (a Dev Container on an Apple-silicon Mac, an ARM server) and
-Alpine-based images (musl) have none, and Inferpal does not start there. Measured from WSL (Ubuntu, x64): the engine
-starts, reaches the model servers and completes code in about the time it takes from Windows (1.3 s against 1.1 s, same
-server and model).
+next to your files, with the extension's package for that machine.
+
+- Packages exist for **Linux x64**, Windows x64 and
+  macOS on Apple silicon: an ARM Linux machine or container (a Dev Container on an Apple-silicon Mac, an ARM server) and
+  Alpine-based images (musl) have none, and Inferpal does not start there.
+- Measured from WSL (Ubuntu, x64): the engine
+  starts, reaches the model servers and completes code in about the time it takes from Windows (1.3 s against 1.1 s, same
+  server and model).
 
 What changes is **`localhost`**: on the other side it means WSL, the SSH server or the container — not the computer you
 sit at. A server you started on your computer is therefore not at `http://localhost:11434` for Inferpal. When a local
@@ -219,3 +272,5 @@ server. Only do this on a trusted private network. To expose it beyond the LAN, 
 behind a reverse proxy that adds TLS and authentication (then use the OpenAI-compatible
 provider with an **API key** if the proxy expects a bearer token), or tunnel it over a
 VPN / SSH rather than opening the port to the internet.
+
+**Next:** [Models](models.md) — which model for which job, what Inferpal does for each, and how to set it up.

@@ -1,13 +1,117 @@
 # Configuration
 
+**Where Inferpal's settings live, which one wins, and what each one does.** Most people change a handful of
+settings in the Settings window and never open a file: they are listed under [The settings most people
+change](#the-settings-most-people-change). The rest of the page is for a team that commits its policy with its
+code, and for looking up one key.
+
 Inferpal is configured through the **Settings** window (gear icon / **Inferpal Settings**
 command, or `/settings` from the chat). A few values are also settable from the chat via slash commands (`/model`,
 `/hardware`, `/tools`). This page documents every setting and the underlying config key.
 
-In Zed, the JetBrains IDEs, Neovim and Emacs (the [Agent Client Protocol](acp.md) agent), `/settings` opens the same
-pages in your browser, served by Inferpal on `127.0.0.1` only; `Inferpal.Host --settings [folder]` opens them from a
-terminal. What you save there applies from the next question, in the threads already open too — except a new model
-server, which a thread only uses once started anew.
+- **[Where settings live, and which one wins](#where-settings-live-and-which-one-wins)** — your machine decides, a repository can only narrow
+- **[The settings most people change](#the-settings-most-people-change)** — where to find each one
+- **[Settings window](#settings-window)** — its seven pages, and how it behaves
+- **[Workspace overlays](#workspace-overlays-committable-team-shared)** — what a team commits: deny rules, validators, [modes](#modes), [the project profile](#the-project-profile-inferpalprojectjson)
+- **[Config key reference](#config-key-reference)** — every key, its type and its default
+
+## Where settings live, and which one wins
+
+Your settings are on your machine, in one `config.json`. A repository can recommend and restrict, never grant.
+
+```mermaid
+flowchart LR
+    E["Settings window<br/>Visual Studio · VS Code"] -- "save" --> F["config.json<br/>on this machine"]
+    subgraph R ["Committed in .inferpal/"]
+        P["project.json<br/>recommend"]
+        N["permissions.json · indexExclude<br/>· modes"]
+    end
+    P -- "only when you type<br/>/onboard apply" --> F
+    F --> A(["What applies to<br/>your next question"])
+    N -- "only narrows" --> A
+```
+
+- **Visual Studio, VS Code and every open window share one `config.json`.** It sits under your user profile, in
+  `%AppData%\Inferpal\` (`~/.config/Inferpal/` on Linux, `~/Library/Application Support/Inferpal/` on macOS), and
+  it holds every key of the [reference](#config-key-reference). VS Code adds a few `inferpal.*` settings of its
+  own, for that editor: [Getting Started](getting-started.md#choose-the-server-and-the-model-by-hand).
+- **A repository recommends, you apply.** `.inferpal/project.json` can name models and a context window: nothing
+  changes until you type `/onboard apply`.
+- **A repository can only narrow.** Its `deny` rules are read before yours and the first match wins, so a `deny` in
+  `.inferpal/permissions.json` beats an `allow` of yours, and an `allow` written there is ignored. Its
+  `indexExclude` keeps files out of the index, never puts more in, and a mode keeps fewer tools, never more.
+- **What it commits to run still asks.** A command in `.inferpal/validators.json` is always shown for approval
+  before it runs.
+
+**Try it**
+
+| Type | What happens |
+|---|---|
+| `/permissions` | Shows the rules actually in force, in evaluation order: the repository's first, then this machine's |
+| `/onboard` | Reports the committed project profile: what it applied, what it recommends, what was refused |
+| `/modes` | Lists the modes found, with each one's model, tools and file |
+
+<details>
+<summary><b>In detail: two editors, two windows, one file</b></summary>
+
+- Visual Studio and VS Code share one settings file: what one saves, the other takes before its next question and
+  when its settings open — a setting it changed itself and has not saved stays its own, unless the other editor
+  saved that same setting since.
+- A new kind of model server (Ollama, LM Studio, OpenAI-compatible) applies when Visual Studio or the VS Code host
+  restarts, and the editor says so; a new address or key of the same kind applies at once.
+- A save writes only the settings that window changed, and the lists — pinned files, approval rules, your slash
+  commands and agent tools, MCP servers, documentation sources — are merged item by item: a file pinned in one
+  window and an MCP server added in another both stay.
+- An item both windows changed keeps the last save.
+- A value Inferpal fills in by itself (the graphics memory it detects, the model it picks on a first start) never
+  replaces one set in another window meanwhile.
+
+</details>
+
+## The settings most people change
+
+All of these are in the Settings window. For anything else, its search box keeps the pages holding a matching
+setting, and the [key reference](#config-key-reference) has the rest.
+
+| You want to | Settings page | Key |
+|---|---|---|
+| Use another model server | Server and models | [`baseUrl`](#connection) |
+| Choose the chat model | Server and models | [`defaultModel`](#connection) |
+| Give autocomplete or code search a model of its own | Server and models | [`inlineCompletionModel`, `ragEmbeddingModel`](#connection) |
+| Give a conversation more room | Server and models | [`contextWindowSize`](#context--memory) |
+| Decide what asks before it runs | Agent and approvals | [`securityAlertsDisabled`, `permissionRules`](#behavior--safety) |
+| Give the model standing instructions | Agent and approvals | [`customSystemPrompt`](#context--memory) |
+| Keep a file in every question | Context and memory | [`pinnedContextFiles`](#context--memory) |
+| Turn ghost text off, or change its speed | Autocomplete | [`inlineCompletionEnabled`, `inlineCompletionMode`](#inline-completions) |
+| Turn a tool off | Tools and MCP servers | [`disabledTools`](#extensibility--state) |
+| Change the interface language | Language and appearance | [`language`](#connection) |
+
+Which model to choose: [Models](models.md#by-graphics-card).
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/settings-approvals-dark.png">
+    <img src="assets/features/settings-approvals-light.png" alt="The Approvals section: Ask me before changing files, running commands or going online, ticked, with what still asks when it is off; Check that a package exists before it is added, ticked; Approval rules: 3, 2 from this machine and 1 from the team, the first match decides, with Edit rules" width="740">
+  </picture>
+  <br><sub>Agent and approvals: what asks first, the package check, and how many approval rules apply.</sub>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/settings-context-dark.png">
+    <img src="assets/features/settings-context-light.png" alt="This conversation: 6,425 of 8,192 tokens, a gauge split into instructions and project files, tool descriptions and conversation, with Open Context X-Ray and a link to change the window's size in Server and models" width="740">
+  </picture>
+  <br><sub>Context and memory: what fills this conversation's window.</sub>
+</p>
+
+**Try it**
+
+| Type | What happens |
+|---|---|
+| `/settings` | Opens Inferpal's settings |
+| `/model qwen3.8:27b` | Switches the active chat model |
+| `/hardware 12` | Sets the VRAM budget to 12 GB |
+| `/tools off web_search` | Turns that tool off in every conversation |
 
 ## Settings window
 
@@ -26,18 +130,6 @@ counts the unsaved changes, and **Cancel** puts the form back as it was saved.
 | **Tools and MCP servers** | MCP servers as cards that say whether each one runs, and why not; the approval rules as a table, team file first, each rule saying whether it applies; your slash commands; your agent tools. Every list keeps an *Edit as text* (or JSON) view |
 | **Language and appearance** | Interface language (independent of the editor's), the theme in use (Inferpal follows the editor's, high contrast included), density, agent steps shown open |
 
-Moving the chat to another server address (in the settings, the first-run card or `/setup`) starts over
-what was chosen for the old one: the graphics memory (measured again when the server runs on this
-machine) and the autocomplete and code search models of the roles that move with it — unless you
-changed them in the same save (autocomplete then uses the chat model, code search the best embedding
-model of the new server). A role on a server of its own keeps its model.
-
-Visual Studio and VS Code share one settings file: what one saves, the other takes before its next
-question and when its settings open — a setting it changed itself and has not saved stays its own,
-unless the other editor saved that same setting since. A
-new kind of model server (Ollama, LM Studio, OpenAI-compatible) applies when Visual Studio or the VS
-Code host restarts, and the editor says so; a new address or key of the same kind applies at once.
-
 The *Show advanced settings* box only folds: it never changes a value, and it opens by itself when a
 model per task, the sampling setting or a reasoning level is no longer at its factory value — the settings that change,
 without a word on screen, which model answers or how are never hidden.
@@ -46,16 +138,172 @@ without a word on screen, which model answers or how are never hidden.
 > The system prompt is rebuilt before every question: an edit to the custom system prompt or to
 > `.inferpal/context.md` applies from the next one — no need to clear the conversation.
 
-> [!NOTE]
-> **Visual Studio, VS Code and every open window share one `config.json`.** A save writes only the settings that
-> window changed, and the lists — pinned files, approval rules, your slash commands and agent tools, MCP servers,
-> documentation sources — are merged item by item: a file pinned in one window and an MCP server added in another
-> both stay. An item both windows changed keeps the last save. A value Inferpal fills in by itself (the graphics memory
-> it detects, the model it picks on a first start) never replaces one set in another window meanwhile.
+Moving the chat to another server address (in the settings, the first-run card or `/setup`) starts over
+what was chosen for the old one: the graphics memory (measured again when the server runs on this
+machine) and the autocomplete and code search models of the roles that move with it — unless you
+changed them in the same save (autocomplete then uses the chat model, code search the best embedding
+model of the new server). A role on a server of its own keeps its model.
+
+In Zed, the JetBrains IDEs, Neovim and Emacs (the [Agent Client Protocol](acp.md) agent), `/settings` opens the same
+pages in your browser, served by Inferpal on `127.0.0.1` only; `Inferpal.Host --settings [folder]` opens them from a
+terminal. What you save there applies from the next question, in the threads already open too — except a new model
+server, which a thread only uses once started anew.
+
+## Workspace overlays (committable, team-shared)
+
+Three optional files under `.inferpal/` let a team version-control policy alongside the code.
+They layer on top of the per-machine settings above.
+
+| File | Purpose |
+|---|---|
+| `.inferpal/permissions.json` | **Deny** rules pushed to everyone on the repo: `{ "rules": ["deny run_command ^curl", "deny * \\.env$"] }`. `allow` rules are ignored here — a cloned repository must not be able to auto-approve itself; auto-approval lives in the per-machine setting. See [Tools → Permission rules](tools.md). |
+| `.inferpal/validators.json` | Per-ecosystem Smart Fix commands, keyed by extension: `{ ".ts,.tsx": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }`. Extends/overrides the built-in .NET / TS / Rust / Go validators. ⚠ This file is committed, so it arrives with any clone: a command defined here is **always shown for approval before it runs** (asked once per session, and no `allow` rule, nor unticking *Ask me before changing files, running commands or going online*, can auto-approve it). The built-in validators are unaffected. |
+| `.inferpal/project.json` | **Project profile** — how a repository likes to be worked on. `/onboard init` writes a commented example; `/onboard` shows what it asked for and what it got. |
+
+(Existing overlays — `.inferpal/context.md`, `memory.md`, `notes.md`, `rules/`, `checks/`,
+`prompts/` — are unchanged; see [Rules & Checks](rules-and-checks.md).)
+
+These overlays (and `rules/`, `checks/`, `prompts/`) are meant to be committed.
+
+<details>
+<summary><b>In detail: the one local folder, and your .gitignore</b></summary>
+
+- Inferpal never writes your `.gitignore`: the only local data it keeps in `.inferpal/` is `history/` — its
+  snapshots of the files the agent overwrote — and that folder carries its own `.gitignore`, so its snapshots stay
+  out of `git status` whatever the layout (a solution below the repository root, indexing turned off).
+- With `historyStorage` set to `user`, the snapshots live in your local application data and the project gets no
+  new `history/`.
+- Snapshot names end in `.bak`, so no test runner or compiler mistakes a backup for the file it copies.
+- A history folder made by an earlier version gets its own `.gitignore` the first time the workspace is opened.
+- Earlier versions also added `.inferpal/history/` (or, the oldest, the whole `.inferpal/`) to the repository's
+  `.gitignore`; once the folder carries its own, that line is no longer needed and can be removed — with the whole
+  folder ignored, the overlays above are not committed.
+
+</details>
+
+### Modes
+
+A mode is a way of working you pick for a conversation, beside Chat, Agent and Plan: its own instructions, a model,
+the tools it keeps and a reasoning effort.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/features/modes-picker-dark.png">
+    <img src="assets/features/modes-picker-light.png" alt="The mode list: Chat, Agent, selected, and Plan, then under Found here the modes Review, Docs Writer and Release notes, each with its model, what it may do and its file; at the bottom, A mode only narrows the tools; it adds no permission, and a Write a mode link" width="420">
+  </picture>
+  <br><sub>Inferpal's three modes, then the ones found for this workspace.</sub>
+</p>
+
+**Picking one.** In Visual Studio and VS Code, **Modes** — the fourth segment beside Chat, Agent and Plan — lists
+Inferpal's three, then the modes found here with the model each answers with, what it may do and its file; with
+none found, it says where a mode goes and links this section. Picking one holds the conversation in it, and the
+thread shows where it starts; Chat, Agent or Plan (or a typed `/plan`) leaves it.
+
+**A mode only narrows.** A tool outside it is neither offered to the model nor run; an edit outside its `fileRegex`
+is refused before the approval card; and a mode adds no rule, no grant and no auto-approval — what asks first
+without it still does. Writing a mode's file (by the agent) always shows the approval card, like the repository's
+other instructions, and a mode file reached through a link that leaves the repository is not read.
+
+**Its model** is the first of its list the server has — never downloaded. When the server has none of them (a
+Copilot agent asks for `GPT-5`), the conversation's model answers and the thread says so once.
+
+- Its instructions are the system message's last layer (they win a conflict) and show in the Context X-Ray.
+- The mode is kept with the conversation and comes back with it; a mode whose file is gone is said, and the
+  conversation continues without it.
+- The repository formats follow `repoInstructionFamilies`: without `copilot`, `.github/agents` is not read, without
+  `roo`, `.roomodes`.
+- In an ACP client (Zed, JetBrains…), each mode found is one more session mode.
+
+Inferpal reads them from four places, in this order — a mode named like one found before it is set aside, so a
+repository never takes the place of a mode you wrote:
+
+| Where | Format |
+|---|---|
+| `%AppData%\Inferpal\modes\*.md` | Your own, in every workspace — the format below. Beside Inferpal's settings: `~/.config/Inferpal/modes` on Linux, `~/Library/Application Support/Inferpal/modes` on macOS. |
+| `.inferpal/modes/*.md` | The repository's — the format below. |
+| `.github/agents/*.md` | GitHub Copilot's custom agents (`*.agent.md`, as Copilot writes them), as they are: `name`, `description`, `tools`, `model` (a name or a list: the first one the server has) and `reasoning-effort`; the body is the instructions. `handoffs`, `agents`, `hooks`, `mcp-servers` and the rest are not carried, and `/modes` names them. |
+| `.roomodes` | Roo Code's custom modes (YAML or JSON): `roleDefinition` then `customInstructions` then the files of `.roo/rules-<slug>/` as instructions; `groups` as tools (`read`, `edit` with its `fileRegex`, `command`, `mcp`). Roo keeps no model in this file. |
+
+A mode file is a Markdown file with a front matter:
+
+```markdown
+---
+name: Review
+description: Reads the change and comments; never writes
+model: [qwen3.8:27b, devstral-small-2]
+tools: [read, search, get_git_status]
+reasoning-effort: high
+---
+Review the change against the repository's conventions. Never edit a file.
+```
+
+<details>
+<summary><b>In detail: what a mode's tools can name</b></summary>
+
+- `tools` names families (`read`, `search`, `edit`, `execute`, `web`), Inferpal's own tool names, Copilot's tool
+  names (`codebase`, `editFiles`, `runInTerminal`…), and MCP tools as `server/*` or `server/tool`.
+- Left out, the mode keeps every tool.
+- A name Inferpal does not know is named by `/modes` and dropped — it never widens anything.
+- In place of `tools`, a mode file can carry Roo's own `groups` (`read`, `edit` with its `fileRegex`, `command`,
+  `mcp`), as `.roomodes` writes them: that is what `/import roo` writes, one file per custom mode of Roo's settings
+  export, in `%AppData%\Inferpal\modes\` — with its model when a server you run serves it.
+
+</details>
+
+### The project profile (`.inferpal/project.json`)
+
+```jsonc
+{
+  // Applied automatically — additive only.
+  "indexExclude": ["vendor", "**/*.generated.cs"],
+
+  // Shown by `/onboard`, applied only by `/onboard apply`.
+  "recommend": {
+    "agentModel": "devstral-small-2:24b",
+    "ragEmbeddingModel": "embeddinggemma",
+    "contextWindowSize": 16384
+  }
+}
+```
+
+Comments and trailing commas are accepted. A file that cannot be parsed or opened applies nothing,
+and `/onboard` says so — naming the file and the parser's error — rather than reporting no profile.
+The file is **non-privileged** — it ships with
+whatever you clone, so it may describe preferences and may never grant anything. Exactly three
+categories, and the classification is an allow-list: **an unknown key is ignored, not
+interpreted.**
+
+| Category | Keys | What happens |
+|---|---|---|
+| Applied | `indexExclude` | Kept out of the semantic index, **additively**: the profile can exclude more, never include more. It shrinks the index only — nothing is hidden from `read_file`, `list_files` or `search_in_files`, and `/onboard` prints every pattern. To keep files out of every AI tool, write them in an ignore file (`ignoreFiles`). |
+| Recommended | `defaultModel`, `agentModel`, `utilityModel`, `codeActionsModel`, `inlineEditModel`, `inlineCompletionModel`, `ragEmbeddingModel`, `contextWindowSize` (under `recommend`) | Displayed next to the value currently in effect. Nothing changes until you type `/onboard apply`: which models are installed and how much VRAM you have are machine facts, not repository facts. A `contextWindowSize` is applied when it is `0` (the model's own window) or from 512 to 1,000,000; any other value is named and left aside. |
+| Never | everything else — `validators`, `permissions`, `baseUrl`, `apiKey`, `customTools`, … | Ignored, and named in the `/onboard` report (⛔) plus `/diagnostics`. Nesting one of them under `recommend` does not launder it. |
+
+Nothing here raises an approval prompt, because nothing here executes: a file that cannot grant
+anything has no approval to ask for. Compare `validators.json` above, which *can* name a command
+and is therefore force-prompted.
+
+**Try it**
+
+| Type | What happens |
+|---|---|
+| `/onboard init` | Writes a commented example profile |
+| `/onboard` | Shows what the profile applied, what it recommends and what was refused |
+| `/onboard apply` | Writes its recommendations into this machine's settings |
 
 ## Config key reference
 
 Every persisted setting, its type, and default value.
+
+- [Connection](#connection) — the interface language, the server, its key, a model per task
+- [Behavior & safety](#behavior--safety) — approvals, the package check, backups, Smart Fix, what the chat shows
+- [Inline completions](#inline-completions) — ghost text and its speed
+- [RAG / semantic index](#rag--semantic-index) — the index, and what it adds to a question
+- [Context & memory](#context--memory) — the window, reasoning, summaries, instructions, ignore files, skills
+- [Hardware & model lifetime](#hardware--model-lifetime) — the memory budget, unloading idle models
+- [Timeouts (dynamic engine)](#timeouts-dynamic-engine) — how long Inferpal waits for a model
+- [Agent orchestrator](#agent-orchestrator) — the Plan→Act→Observe loop
+- [Extensibility & state](#extensibility--state) — your commands and tools, MCP servers, `@Docs`
 
 ### Connection
 
@@ -151,23 +399,32 @@ Every persisted setting, its type, and default value.
 | `normalTimeoutSeconds` | int | `300` | The shortest wait of chat questions, with or without tools, and of the orchestrator: for a first word, then between two |
 | `deepTimeoutSeconds` | int | `600` | Extended-reasoning timeout. Not in the Settings window: no request uses this budget today |
 
-These budgets wait for the model, and measure silence: a model that keeps writing is never cut off. Before its first
-word, a server reads the prompt and sends nothing — minutes for a long prompt on a slow machine. Inferpal learns how
-fast each server reads, per model, from the requests that went through (kept in
-`%AppData%\Inferpal\prefill-rates.json`), and waits for a first word twice as long as a cold read of the request is
-measured to take — never less than these settings, nor than 20 s. In Visual Studio and VS Code — questions, agent
-runs, the long commands (`/check`, `/commit`, `/tdd`…) and the in-place actions (Edit with AI, `/fix`, `/refactor`,
-`/doc`, generated tests: in Visual Studio their own window, in VS Code Edit with AI's progress notification) — after 8 s
-of waiting a card says so under the status line:
-the time waited against the measured read, with a bar, the tokens to read, how long they take when nothing is cached,
-and when the wait stops if the server stays silent. Past the measured read, the card turns into a warning measured
-against that stop. In an ACP client (Zed, JetBrains…), the same wait is said as the agent's thinking: once when it
-shows, with its stop, and once more when it runs longer than usual. It is an estimate from earlier reads: Ollama and
-the OpenAI-compatible routes send nothing while they read a prompt. A turn stopped there says why, says when its
-steps wrote nothing, and offers **Open time limits** (this page of the settings) beside its **Regenerate**. A
-request given up while the server was still reading a long prompt says so (and the next one to that model waits
-longer, twice at most in a row, since a server that never answers looks the same); those two are not counted against
-the server's reachability.
+These budgets wait for the model, and measure silence: a model that keeps writing is never cut off.
+
+<details>
+<summary><b>In detail: how the wait for a first word works</b></summary>
+
+- Before its first word, a server reads the prompt and sends nothing — minutes for a long prompt on a slow machine.
+- Inferpal learns how fast each server reads, per model, from the requests that went through (kept in
+  `%AppData%\Inferpal\prefill-rates.json`), and waits for a first word twice as long as a cold read of the request
+  is measured to take — never less than these settings, nor than 20 s.
+- In Visual Studio and VS Code — questions, agent runs, the long commands (`/check`, `/commit`, `/tdd`…) and the
+  in-place actions (Edit with AI, `/fix`, `/refactor`, `/doc`, generated tests: in Visual Studio their own window,
+  in VS Code Edit with AI's progress notification) — after 8 s of waiting a card says so under the status line: the
+  time waited against the measured read, with a bar, the tokens to read, how long they take when nothing is cached,
+  and when the wait stops if the server stays silent.
+- Past the measured read, the card turns into a warning measured against that stop.
+- In an ACP client (Zed, JetBrains…), the same wait is said as the agent's thinking: once when it shows, with its
+  stop, and once more when it runs longer than usual.
+- It is an estimate from earlier reads: Ollama and the OpenAI-compatible routes send nothing while they read a
+  prompt.
+- A turn stopped there says why, says when its steps wrote nothing, and offers **Open time limits** (this page of
+  the settings) beside its **Regenerate**.
+- A request given up while the server was still reading a long prompt says so (and the next one to that model waits
+  longer, twice at most in a row, since a server that never answers looks the same); those two are not counted
+  against the server's reachability.
+
+</details>
 
 Connecting to the backend has its own fixed budget of 15 s: a backend that never
 answers the connection (machine switched off, firewall, Ollama not started under WSL's mirrored networking) is
@@ -197,99 +454,10 @@ reported as unreachable after 15 s, not after the operating system's own retries
 > There is **no** `stepModeEnabled` setting. Agent Step Mode is a toggle (`/agent-step`)
 > kept with the conversation, except in ACP threads.
 
-## Workspace overlays (committable, team-shared)
-
-Three optional files under `.inferpal/` let a team version-control policy alongside the code.
-They layer on top of the per-machine settings above.
-
-| File | Purpose |
-|---|---|
-| `.inferpal/permissions.json` | **Deny** rules pushed to everyone on the repo: `{ "rules": ["deny run_command ^curl", "deny * \\.env$"] }`. `allow` rules are ignored here — a cloned repository must not be able to auto-approve itself; auto-approval lives in the per-machine setting. See [Tools → Permission rules](tools.md). |
-| `.inferpal/validators.json` | Per-ecosystem Smart Fix commands, keyed by extension: `{ ".ts,.tsx": { "marker": "tsconfig.json", "command": "npx tsc --noEmit" } }`. Extends/overrides the built-in .NET / TS / Rust / Go validators. ⚠ This file is committed, so it arrives with any clone: a command defined here is **always shown for approval before it runs** (asked once per session, and no `allow` rule, nor unticking *Ask me before changing files, running commands or going online*, can auto-approve it). The built-in validators are unaffected. |
-| `.inferpal/project.json` | **Project profile** — how a repository likes to be worked on. `/onboard init` writes a commented example; `/onboard` shows what it asked for and what it got. |
-
-These overlays (and `rules/`, `checks/`, `prompts/`) are meant to be committed. Inferpal never
-writes your `.gitignore`: the only local data it keeps in `.inferpal/` is `history/` — its snapshots
-of the files the agent overwrote — and that folder carries its own `.gitignore`, so its snapshots
-stay out of `git status` whatever the layout (a solution below the repository root, indexing turned
-off). With `historyStorage` set to `user`, the snapshots live in your local application data and the
-project gets no new `history/`. Snapshot names end in `.bak`, so no test runner or compiler
-mistakes a backup for the file it copies. A history folder made by an earlier version gets its own
-`.gitignore` the first time the workspace is opened. Earlier versions also added
-`.inferpal/history/` (or, the oldest, the whole `.inferpal/`) to the repository's `.gitignore`;
-once the folder carries its own, that line is no longer needed and can be removed — with the whole
-folder ignored, the overlays above are not committed.
-
-### Modes
-
-A mode is a way of working you pick for a conversation, beside Chat, Agent and Plan: its own instructions, a model, the tools it keeps and a reasoning effort. Inferpal reads them from four places, in this order — a mode named like one found before it is set aside, so a repository never takes the place of a mode you wrote:
-
-| Where | Format |
-|---|---|
-| `%AppData%\Inferpal\modes\*.md` | Your own, in every workspace — the format below. Beside Inferpal's settings: `~/.config/Inferpal/modes` on Linux, `~/Library/Application Support/Inferpal/modes` on macOS. |
-| `.inferpal/modes/*.md` | The repository's — the format below. |
-| `.github/agents/*.md` | GitHub Copilot's custom agents (`*.agent.md`, as Copilot writes them), as they are: `name`, `description`, `tools`, `model` (a name or a list: the first one the server has) and `reasoning-effort`; the body is the instructions. `handoffs`, `agents`, `hooks`, `mcp-servers` and the rest are not carried, and `/modes` names them. |
-| `.roomodes` | Roo Code's custom modes (YAML or JSON): `roleDefinition` then `customInstructions` then the files of `.roo/rules-<slug>/` as instructions; `groups` as tools (`read`, `edit` with its `fileRegex`, `command`, `mcp`). Roo keeps no model in this file. |
-
-A mode file is a Markdown file with a front matter:
-
-```markdown
----
-name: Review
-description: Reads the change and comments; never writes
-model: [qwen3.8:27b, devstral-small-2]
-tools: [read, search, get_git_status]
-reasoning-effort: high
----
-Review the change against the repository's conventions. Never edit a file.
-```
-
-`tools` names families (`read`, `search`, `edit`, `execute`, `web`), Inferpal's own tool names, Copilot's tool names (`codebase`, `editFiles`, `runInTerminal`…), and MCP tools as `server/*` or `server/tool`. Left out, the mode keeps every tool. A name Inferpal does not know is named by `/modes` and dropped — it never widens anything. In place of `tools`, a mode file can carry Roo's own `groups` (`read`, `edit` with its `fileRegex`, `command`, `mcp`), as `.roomodes` writes them: that is what `/import roo` writes, one file per custom mode of Roo's settings export, in `%AppData%\Inferpal\modes\` — with its model when a server you run serves it.
-
-**A mode only narrows.** A tool outside it is neither offered to the model nor run; an edit outside its `fileRegex` is refused before the approval card; and a mode adds no rule, no grant and no auto-approval — what asks first without it still does. Writing a mode's file (by the agent) always shows the approval card, like the repository's other instructions, and a mode file reached through a link that leaves the repository is not read.
-
-**Its model** is the first of its list the server has — never downloaded. When the server has none of them (a Copilot agent asks for `GPT-5`), the conversation's model answers and the thread says so once. Its instructions are the system message's last layer (they win a conflict) and show in the Context X-Ray. The mode is kept with the conversation and comes back with it; a mode whose file is gone is said, and the conversation continues without it. The repository formats follow `repoInstructionFamilies`: without `copilot`, `.github/agents` is not read, without `roo`, `.roomodes`. In an ACP client (Zed, JetBrains…), each mode found is one more session mode.
-
-**Picking one.** In Visual Studio and VS Code, **Modes** — the fourth segment beside Chat, Agent and Plan — lists Inferpal's three, then the modes found here with the model each answers with, what it may do and its file; with none found, it says where a mode goes and links this section. Picking one holds the conversation in it, and the thread shows where it starts; Chat, Agent or Plan (or a typed `/plan`) leaves it.
-
-### The project profile (`.inferpal/project.json`)
-
-```jsonc
-{
-  // Applied automatically — additive only.
-  "indexExclude": ["vendor", "**/*.generated.cs"],
-
-  // Shown by `/onboard`, applied only by `/onboard apply`.
-  "recommend": {
-    "agentModel": "devstral-small-2:24b",
-    "ragEmbeddingModel": "embeddinggemma",
-    "contextWindowSize": 16384
-  }
-}
-```
-
-Comments and trailing commas are accepted. A file that cannot be parsed or opened applies nothing,
-and `/onboard` says so — naming the file and the parser's error — rather than reporting no profile.
-The file is **non-privileged** — it ships with
-whatever you clone, so it may describe preferences and may never grant anything. Exactly three
-categories, and the classification is an allow-list: **an unknown key is ignored, not
-interpreted.**
-
-| Category | Keys | What happens |
-|---|---|---|
-| Applied | `indexExclude` | Kept out of the semantic index, **additively**: the profile can exclude more, never include more. It shrinks the index only — nothing is hidden from `read_file`, `list_files` or `search_in_files`, and `/onboard` prints every pattern. To keep files out of every AI tool, write them in an ignore file (`ignoreFiles`). |
-| Recommended | `defaultModel`, `agentModel`, `utilityModel`, `codeActionsModel`, `inlineEditModel`, `inlineCompletionModel`, `ragEmbeddingModel`, `contextWindowSize` (under `recommend`) | Displayed next to the value currently in effect. Nothing changes until you type `/onboard apply`: which models are installed and how much VRAM you have are machine facts, not repository facts. A `contextWindowSize` is applied when it is `0` (the model's own window) or from 512 to 1,000,000; any other value is named and left aside. |
-| Never | everything else — `validators`, `permissions`, `baseUrl`, `apiKey`, `customTools`, … | Ignored, and named in the `/onboard` report (⛔) plus `/diagnostics`. Nesting one of them under `recommend` does not launder it. |
-
-Nothing here raises an approval prompt, because nothing here executes: a file that cannot grant
-anything has no approval to ask for. Compare `validators.json` above, which *can* name a command
-and is therefore force-prompted.
-
-(Existing overlays — `.inferpal/context.md`, `memory.md`, `notes.md`, `rules/`, `checks/`,
-`prompts/` — are unchanged; see [Rules & Checks](rules-and-checks.md).)
-
 ## Related
 
 - [Providers](providers.md) — provider-specific connection details.
 - [Search & Indexing](search-and-indexing.md) — RAG settings in context.
 - [Architecture → System prompt layering](architecture.md#system-prompt-layering).
+
+**Next:** [Features](features.md) — what all of this lets you do.
