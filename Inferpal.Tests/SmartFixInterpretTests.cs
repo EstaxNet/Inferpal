@@ -27,6 +27,42 @@ public class SmartFixInterpretTests
     }
 
     [Fact]
+    public void AProjectNeverRestored_IsNoCompilationError_AndNoVerdict()
+    {
+        const string output = @"C:\sdk\targets\Microsoft.PackageDependencyResolution.targets(266,5): error NETSDK1004: Assets file "
+                            + @"'C:\ws\obj\project.assets.json' not found. Run a NuGet package restore to generate this file. [C:\ws\App.csproj]";
+
+        var note = SmartFixValidator.Interpret(1, output, dotnetFilter: true);
+
+        Assert.Equal(Strings.SmartFixCouldNotRun(SmartFixValidator.NotRestoredCause), note);
+        Assert.Null(SmartFixValidator.ReadVerdict(note!));   // neither green nor red: nothing was compiled
+    }
+
+    [Fact]
+    public void ABatchWhereOneProjectWentUnchecked_IsNotGreen_AndRedStillWins()
+    {
+        var unchecked_ = Strings.SmartFixCouldNotRun(SmartFixValidator.NotRestoredCause);
+
+        Assert.False(SmartFixValidator.ReadVerdict(Strings.SmartFixBuildOk));   // WITNESS: alone, the green reads green
+        Assert.Null(SmartFixValidator.ReadVerdict(Strings.SmartFixBuildOk + "\n" + unchecked_));
+        Assert.Null(SmartFixValidator.ReadVerdict(unchecked_ + "\n" + Strings.SmartFixBuildOk));
+        Assert.Null(SmartFixValidator.ReadVerdict(Strings.SmartFixBuildOk + "\n" + Strings.SmartFixTimeout));
+        Assert.True(SmartFixValidator.ReadVerdict(unchecked_ + "\n" + Strings.SmartFixBuildErrors(1, "a")));
+    }
+
+    [Fact]
+    public void AProjectNeverRestored_BesideACompilerError_StaysRed()
+    {
+        const string output = @"C:\sdk\targets\Microsoft.PackageDependencyResolution.targets(266,5): error NETSDK1004: Assets file not found. [C:\ws\A.csproj]"
+                            + "\nProgram.cs(3,5): error CS1002: ; expected [C:\\ws\\B.csproj]";
+
+        var note = SmartFixValidator.Interpret(1, output, dotnetFilter: true);
+
+        Assert.True(SmartFixValidator.ReadVerdict(note!));
+        Assert.Contains("CS1002", note);
+    }
+
+    [Fact]
     public void ADotnetBuildThatSucceeded_WithWarnings_IsOk()
     {
         const string output = "Program.cs(3,5): warning CS0168: The variable 'x' is declared but never used\nBuild succeeded.";

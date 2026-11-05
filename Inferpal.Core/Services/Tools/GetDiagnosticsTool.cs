@@ -63,8 +63,24 @@ internal class GetDiagnosticsTool : ITool
     private static readonly Regex _diagLine = new(
         @":\s*(error|warning)(?:\s+\w+)?\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
-    internal static bool OutputHasErrors(string output) =>
-        !string.IsNullOrEmpty(output) && (_diagLine.IsMatch(output) || _panelLine.IsMatch(output));
+    internal static bool OutputHasErrors(string output)
+    {
+        if (string.IsNullOrEmpty(output)) return false;
+        // These answers quote dotnet's own error line as their reason: read as a finding, the step goes red over code that
+        // was never compiled.
+        if (StoppedBeforeTheCompiler(UnderTheNote(output).Split('\n')[0].TrimEnd('\r'))) return false;
+        return _diagLine.IsMatch(output) || _panelLine.IsMatch(output);
+    }
+
+    private static bool StoppedBeforeTheCompiler(string firstLine) => firstLine == CommandLineRefused || firstLine == NotRestored;
+
+    /// <summary>The answer under the note that names what a build made by choice did not cover.</summary>
+    private static string UnderTheNote(string output)
+    {
+        if (!output.StartsWith(NotBuiltPrefix, StringComparison.Ordinal)) return output;
+        var after = output.IndexOf("\n\n", StringComparison.Ordinal);
+        return after < 0 ? string.Empty : output[(after + 2)..];
+    }
 
     // A diagnostic line of the editor panel (`rel(l,c): error ts 2304: …`): its source stands between the severity and
     // the code, which the build's shape does not allow.
@@ -83,6 +99,24 @@ internal class GetDiagnosticsTool : ITool
     internal const string CommandLineRefused =
         "⚠ dotnet refused its command line (an MSBuild switch error, not the code) — nothing was compiled. Give 'path' as "
         + "one existing .csproj, .sln or .slnx file. Its reason:";
+
+    /// <summary>
+    /// The first line of an answer where dotnet stopped on a project its restore does not match: this tool builds with
+    /// <c>--no-restore</c>, and a fresh clone or a pulled target framework is not an error in the code. The project named
+    /// was not compiled; another project of a solution may have been, hence no word about the others.
+    /// </summary>
+    internal const string NotRestored =
+        "⚠ A project is not restored, or was restored for something else (its project.assets.json) — it was not compiled, "
+        + "so this says nothing about its code. Run `dotnet restore`, then check again. Its reason:";
+
+    /// <summary>
+    /// Whether <paramref name="errorLine"/> is dotnet stopping on its assets file: absent (NETSDK1004), without the target
+    /// framework (NETSDK1005) or the runtime (NETSDK1047), or naming a package gone since the restore (NETSDK1064).
+    /// </summary>
+    /// <remarks>The diagnostic's code, never the word anywhere in the line: a path or a message holding it is a real
+    /// error, and the model would not be shown it.</remarks>
+    internal static bool IsNotRestored(string errorLine) =>
+        Regex.IsMatch(errorLine, @"\berror\s+NETSDK(?:1004|1005|1047|1064)\b", RegexOptions.None, RegexBudget.Default);
 
     internal static bool OutputHasBuildErrors(string output) =>
         !string.IsNullOrEmpty(output) && ErrorLineRegex.IsMatch(output);
@@ -158,13 +192,8 @@ internal class GetDiagnosticsTool : ITool
     internal static BuildVerdict ReadVerdict(string output)
     {
         if (string.IsNullOrEmpty(output)) return BuildVerdict.NotBuilt;
-        // The verdict is under the note that names what a build made by choice did not cover.
-        if (output.StartsWith(NotBuiltPrefix, StringComparison.Ordinal))
-        {
-            var after = output.IndexOf("\n\n", StringComparison.Ordinal);
-            output = after < 0 ? string.Empty : output[(after + 2)..];
-            if (output.Length == 0) return BuildVerdict.NotBuilt;
-        }
+        output = UnderTheNote(output);
+        if (output.Length == 0) return BuildVerdict.NotBuilt;
 
         const string NameSentinel  = "\u0001";
         const int    CountSentinel = 918273645;
@@ -183,8 +212,9 @@ internal class GetDiagnosticsTool : ITool
         // compiler had already printed, so it usually DOES contain error lines — and "Errors" sends
         // the /fix-build loop patching a fragment of a build that never finished.
         if (FirstLineIs(Strings.DiagBuildStopped(CountSentinel))) return BuildVerdict.NotBuilt;
-        // And before the error lines too: a refused command line carries the MSB1xxx line that says why.
-        if (firstLine == CommandLineRefused || firstLine == WorkspaceCodeConsent.Refusal) return BuildVerdict.NotBuilt;
+        // And before the error lines too: a refused command line carries the MSB1xxx line that says why, a project not
+        // restored its NETSDK line.
+        if (StoppedBeforeTheCompiler(firstLine) || firstLine == WorkspaceCodeConsent.Refusal) return BuildVerdict.NotBuilt;
         // ⚠ The editor panel's errors are errors too: its answer is only ever served when it lists one, and with the
         // source between the severity and the code (`error ts 2304:`) it read as "not built" — no end-of-turn notice,
         // and a ✓ on the run of a turn that ended on a broken file.
@@ -362,6 +392,8 @@ internal class GetDiagnosticsTool : ITool
                 // ⚠ Not an error in the code: counted as one, "1 error(s)" turned an end-of-turn notice and the result
                 // bar red over code that was never compiled.
                 body = CommandLineRefused + "\n" + string.Join("\n", errorLines);
+            else if (errorLines.Count > 0 && errorLines.All(IsNotRestored))
+                body = NotRestored + "\n" + ErrorsFirst(diagnostics);
             else if (errorLines.Count == 0 && !run.Succeeded && !run.TimedOut)
                 // ⚠ dotnet failed and no error line is readable: "0 error(s)" read Clean. Its output is the report.
                 body = Strings.DiagBuildFailed(run.ExitCode, run.Stdout.Trim());

@@ -21,6 +21,74 @@ public class DiagnosticsVerdictExitCodeTests
     private static string Run(int exitCode, string stdout) =>
         Interpret(new ChildProcessResult(exitCode, stdout, string.Empty, TimedOut: false), "X.csproj", 90);
 
+    // As dotnet prints it on a fresh clone, under --no-restore; the code stays in every language.
+    private const string NotRestoredLine = @"C:\sdk\targets\Microsoft.PackageDependencyResolution.targets(266,5): error NETSDK1004: "
+        + @"Assets file 'C:\ws\obj\project.assets.json' not found. Run a NuGet package restore to generate this file. [C:\ws\X.csproj]";
+
+    [Fact]
+    public void AProjectNeverRestored_WasNotBuilt_AndSaysTheGesture()
+    {
+        var said = Run(1, NotRestoredLine + "\n");
+
+        Assert.Equal(BuildVerdict.NotBuilt, ReadVerdict(said));
+        Assert.StartsWith(NotRestored, said);
+        Assert.Contains("dotnet restore", said);
+        Assert.Contains("NETSDK1004", said);
+    }
+
+    [Fact]
+    public void AnAnswerThatStoppedBeforeTheCompiler_IsNoFailedStep()
+    {
+        // hasErrors of every front-end: a red step and a Fix button over code that was never compiled.
+        Assert.False(OutputHasErrors(Run(1, NotRestoredLine + "\n")));
+        Assert.False(OutputHasErrors(Run(1, @"MSBUILD : error MSB1003: Specify a project or solution file." + "\n")));
+        Assert.True(OutputHasErrors(Run(1, @"C:\ws\A.cs(3,13): error CS0103: The name 'c' does not exist [C:\ws\X.csproj]" + "\n")));
+    }
+
+    [Fact]
+    public void UnderTheNoteOfABuildMadeByChoice_ItIsNoFailedStepEither()
+    {
+        var said = NotBuiltPrefix + "App.csproj only.)\n\n" + Run(1, NotRestoredLine + "\n");
+
+        Assert.False(OutputHasErrors(said));
+        Assert.Equal(BuildVerdict.NotBuilt, ReadVerdict(said));
+    }
+
+    [Theory]
+    [InlineData("error NETSDK1005: Assets file 'C:\\ws\\obj\\project.assets.json' doesn't have a target for 'net9.0'.")]
+    [InlineData("error NETSDK1047: Assets file 'C:\\ws\\obj\\project.assets.json' doesn't have a target for 'net8.0/win-x64'.")]
+    [InlineData("error NETSDK1064: Package Foo, version 1.0.0 was not found. It might have been deleted since NuGet restore.")]
+    [InlineData("error NETSDK1004 : Le fichier de composants 'C:\\ws\\obj\\project.assets.json' est introuvable.")]
+    public void ARestoreThatDoesNotMatchTheProject_WasNotBuiltEither(string error)
+    {
+        var said = Run(1, @"C:\sdk\Microsoft.PackageDependencyResolution.targets(266,5): " + error + @" [C:\ws\X.csproj]" + "\n");
+
+        Assert.Equal(BuildVerdict.NotBuilt, ReadVerdict(said));
+    }
+
+    [Fact]
+    public void ACompilerError_InAFolderNamedAfterTheCode_IsAnError()
+    {
+        var said = Run(1, @"C:\ws\NETSDK1004Repro\A.cs(3,13): error CS0103: The name 'c' does not exist [C:\ws\NETSDK1004Repro\X.csproj]" + "\n");
+
+        Assert.Equal(BuildVerdict.Errors, ReadVerdict(said));
+        Assert.Contains("CS0103", said);
+    }
+
+    [Fact]
+    public void AWarningOfAProjectThatBuilt_StaysInTheAnswer()
+    {
+        Assert.Contains("CS0168", Run(1, NotRestoredLine + "\n" + AWarning + "\n"));
+    }
+
+    [Fact]
+    public void AProjectNeverRestored_BesideARealError_IsStillAnError()
+    {
+        var said = Run(1, NotRestoredLine + "\n" + @"C:\ws\A.cs(3,13): error CS0103: The name 'c' does not exist [C:\ws\Y.csproj]" + "\n");
+
+        Assert.Equal(BuildVerdict.Errors, ReadVerdict(said));
+    }
+
     [Fact]
     public void AnErrorWithoutACode_IsAnError()
     {

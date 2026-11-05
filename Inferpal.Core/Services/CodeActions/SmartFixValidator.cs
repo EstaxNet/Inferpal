@@ -234,7 +234,8 @@ internal sealed class SmartFixValidator
 
     /// <summary>
     /// The build verdict an edit tool's answer carries: <c>true</c> when a Smart Fix note there names compilation
-    /// errors, <c>false</c> when the build passed, <c>null</c> when no build ran (no note, a timeout, a missing tool).
+    /// errors, <c>false</c> when the build passed, <c>null</c> when no build ran (no note, a timeout, a missing tool) or
+    /// one project of a batch went unchecked.
     /// </summary>
     /// <remarks>
     /// ⚠ This note is a build check like <c>run_tests</c> and <c>get_diagnostics</c>, and the turn's last check is read
@@ -251,7 +252,10 @@ internal sealed class SmartFixValidator
         var okLine     = Strings.SmartFixBuildOk.Trim();
         var failedLine = Strings.SmartFixBuildFailed(string.Empty).Split('\n')[0].TrimEnd('\r').Trim();
         var silentLine = Strings.SmartFixBuildFailedNoErrors.Trim();
+        var timeoutLine = Strings.SmartFixTimeout.Trim();
+        var unprovenLine = Strings.SmartFixCouldNotRun("\u0001").Split('\u0001')[0].Trim();
         bool? verdict = null;
+        var unproven = false;
         foreach (var raw in toolOutput.Split('\n'))
         {
             var line = raw.TrimEnd('\r').Trim();
@@ -262,9 +266,14 @@ internal sealed class SmartFixValidator
             }
             catch (RegexMatchTimeoutException) { }
             if (line == okLine) verdict = false;
+            if (line == timeoutLine || line.StartsWith(unprovenLine, StringComparison.Ordinal)) unproven = true;
         }
-        return verdict;
+        // One project of a batch left unchecked: another one's "build OK" does not vouch for it.
+        return unproven ? null : verdict;
     }
+
+    /// <summary>The cause <see cref="Interpret"/> gives for a build stopped on a project its restore does not match.</summary>
+    internal const string NotRestoredCause = "a project is not restored: `dotnet restore` first";
 
     /// <summary>The note for a validator run that ended with <paramref name="exitCode"/>; null stays silent.</summary>
     /// <remarks>
@@ -286,6 +295,9 @@ internal sealed class SmartFixValidator
                 .Select(l => l.Trim())
                 .Distinct()
                 .ToList();
+            // Stopped before the compiler: counted, "1 compilation error(s)" ends a turn red over code nothing compiled.
+            if (errors.Count > 0 && errors.All(GetDiagnosticsTool.IsNotRestored))
+                return Strings.SmartFixCouldNotRun(NotRestoredCause);
             return Strings.SmartFixBuildErrors(errors.Count, Listed(errors));
         }
 
