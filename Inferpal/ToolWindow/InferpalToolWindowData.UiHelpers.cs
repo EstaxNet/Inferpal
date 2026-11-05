@@ -157,6 +157,8 @@ internal partial class InferpalToolWindowData
     private CancellationTokenSource BeginOwnedTurn(CancellationToken ct)
     {
         var cts     = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        // The command's own token, which a Stop never cancels (that one is _currentCts): the window went away under the turn.
+        ct.Register(_tools.History.CutCurrentRun);
         _currentCts = cts;
         IsLoading   = true;
         // An Esc pressed as the last turn ended never counts as this turn's first.

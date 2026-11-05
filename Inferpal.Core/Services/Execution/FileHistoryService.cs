@@ -802,6 +802,18 @@ internal class FileHistoryService
     }
 
     /// <summary>
+    /// The editor is going away under the run in progress: however its turn ends, the run stays open on disk, and the next
+    /// start reads it cut short and says so (<see cref="HistoryRun.CutShort"/>). Nothing between two runs.
+    /// </summary>
+    /// <remarks>⚠ An editor that closes normally stops its turn, and the turn's <c>finally</c> ends the run: without this
+    /// mark the run is written closed and reads as finished. Marked on the run, never on this service: a window can go with
+    /// the process alive, and the runs after it end like any other.</remarks>
+    internal void CutCurrentRun()
+    {
+        lock (_runLock) if (_currentRun is { } run) run.CutShort = true;
+    }
+
+    /// <summary>
     /// Closes the current run: what is written afterwards belongs to no run.
     /// </summary>
     /// <remarks>
@@ -868,8 +880,11 @@ internal class FileHistoryService
                     files = run.FileCount;
                     // A run read from disk keeps who recorded it, and stays open if it was: a Keep in its review must
                     // not make a run cut short by a killed editor read as closed, nor one still recording elsewhere.
+                    // Cut in this process, no process records it any more: a live or reused id would read as a turn still
+                    // running, refusing the undo and silencing the notice.
                     text  = files == 0 ? string.Empty
-                          : RunManifest.Serialize(run, open || run.OpenElsewhere || run.CutShort, key, run.RecordedBy);
+                          : RunManifest.Serialize(run, open || run.OpenElsewhere || run.CutShort, key,
+                                                  run.RecordedBy ?? (run.CutShort ? RunManifest.NoProcess : null));
                 }
                 if (files == 0)
                 {

@@ -82,6 +82,10 @@ public class InferpalExtension : Extension
     {
         if (disposing)
         {
+            // First: the turn this closing stops ends a run, and the next start says it was cut.
+            try { this.ServiceProvider?.GetService<ToolRegistry>()?.History.CutCurrentRun(); }
+            catch (Exception ex) { Diagnostics.Swallow("InferpalExtension.DisposeHistory", ex); }
+
             try { this.ServiceProvider?.GetService<McpToolService>()?.KillAllServers(); }
             catch (Exception ex) { Diagnostics.Swallow("InferpalExtension.DisposeMcp", ex); }
 

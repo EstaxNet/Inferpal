@@ -197,6 +197,9 @@ internal static class RunManifest
     /// <summary>What a signed run file says: the run, whether its process was still recording, and which process.</summary>
     internal sealed record Reading(HistoryRun Run, bool Open, int Pid);
 
+    /// <summary>The process of a run nothing records any more: an id no process has.</summary>
+    internal const int NoProcess = -1;
+
     /// <summary>
     /// The run <paramref name="text"/> describes, or <c>null</c> with the reason it is not read: unsigned or edited, or
     /// naming a file and copy <paramref name="accepts"/> refuses.

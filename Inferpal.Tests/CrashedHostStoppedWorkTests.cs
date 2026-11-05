@@ -21,7 +21,7 @@ public partial class HostServerTests
     {
         // ⚠ Ended by a signal, the process has no exit code and its 'exit' has already fired: waiting for it costs the
         // whole grace period before a kill of a process that is gone.
-        var stop = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("hostClient.ts"), "async stop(): Promise<void>");
+        var stop = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("hostClient.ts"), "async stop(closing = false): Promise<void>");
         Assert.Contains("proc.exitCode === null && proc.signalCode === null", stop, StringComparison.Ordinal);
     }
 

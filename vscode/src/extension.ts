@@ -200,7 +200,7 @@ async function pushModelRouterSettings(log: (line: string) => void): Promise<voi
 }
 
 export async function deactivate(): Promise<void> {
-  await host?.stop();
+  await host?.stop(true);
   host = undefined;
 }
 

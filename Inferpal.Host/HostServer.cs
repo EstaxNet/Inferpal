@@ -269,6 +269,11 @@ internal sealed partial class HostServer : IDisposable
             return true;
         });
 
+    /// <summary>`editor/closing` — sent before `shutdown` when the editor itself closes, never when it restarts this host:
+    /// the run the shutdown stops was cut, and the next start says so.</summary>
+    [JsonRpcMethod("editor/closing")]
+    public void EditorClosing() => _session?.Tools.History.CutCurrentRun();
+
     [JsonRpcMethod("shutdown")]
     public void Shutdown()
     {
@@ -2693,6 +2698,9 @@ internal sealed partial class HostServer : IDisposable
 
     public void Dispose()
     {
+        // No `shutdown` came: the pipe died (the editor's process, a remote connection, an ACP client's stdin), and the turn
+        // this cancels was cut.
+        if (!_shutdown.Task.IsCompleted) _session?.Tools.History.CutCurrentRun();
         lock (_gate)
         {
             _chatCts?.Cancel();

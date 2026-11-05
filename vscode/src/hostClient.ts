@@ -431,12 +431,16 @@ export class HostClient {
     return this.info;
   }
 
-  /** Graceful shutdown; falls back to kill if the process lingers. */
-  async stop(): Promise<void> {
+  /**
+   * Graceful shutdown; falls back to kill if the process lingers.
+   * @param closing This window goes (closed, reloaded), not only the host: a run this stops is said at the next start.
+   */
+  async stop(closing = false): Promise<void> {
     this.stopping = true;
     const conn = this.conn;
     const proc = this.proc;
     try {
+      if (closing) conn?.sendNotification('editor/closing');
       conn?.sendNotification('shutdown');
     } catch {
       // connection already dead — kill below
