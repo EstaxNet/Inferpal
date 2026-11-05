@@ -1280,7 +1280,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>Usare le impostazioni del produttore di ogni modello</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>Temperatura e top-p come pubblicati per la famiglia del modello. Disattivato: valgono le impostazioni del server.</value></data>
   <data name="LabelReasoningEffortChat" xml:space="preserve"><value>Ragionamento per una domanda</value></data>
-  <data name="HintReasoningEffortChat" xml:space="preserve"><value>Quanto pensa un modello che ragiona prima di rispondere a una domanda (modalità Agente disattivata) o a una revisione /check. Inviato solo a un modello per cui LM Studio dice che accetta quel livello; altrove vale l'impostazione del server.</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>Quanto pensa un modello che ragiona prima di rispondere a una domanda (modalità Agente disattivata) o a una revisione /check. Inviato solo a un modello per cui LM Studio o llama-server dice che accetta quel livello; altrove vale l'impostazione del server.</value></data>
   <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>Ragionamento in un'esecuzione dell'agente</value></data>
   <data name="HintReasoningEffortAgent" xml:space="preserve"><value>Lo stesso per un'esecuzione dell'agente — una domanda in modalità Agente, /task, /tdd — un solo livello per tutta l'esecuzione.</value></data>
   <data name="ReasoningEffortServer" xml:space="preserve"><value>Del server</value></data>

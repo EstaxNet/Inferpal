@@ -51,7 +51,9 @@ served by LM Studio — how often the right file is among the 5 results: **Embed
 (25); **Nomic Embed Text v1.5**, 96 (21); **Qwen3 Embedding 0.6B**, 92 (20). Inferpal sends EmbeddingGemma and Qwen3
 the query format their authors document (Qwen3 scores 77 without it). EmbeddingGemma is the only one clearly ahead of
 Nomic; on descriptions like these (identifiers, type names) no embedding model adds much to keyword search, and a
-question in plain language was not measured. Granite Embedding R2, pplx-embed and Nemotron-3-Embed are to be
+question in plain language was not measured. **EmbeddingGemma 2** (`embeddinggemma-2` on Ollama, which Inferpal treats as
+EmbeddingGemma) does no better, in a later run on the same descriptions: 112 (27 in French), against 111 (31) for
+EmbeddingGemma 300M and 106 (27) for keyword search alone. Granite Embedding R2, pplx-embed and Nemotron-3-Embed are to be
 measured: LM Studio does not serve them as embedding models.
 
 <a id="by-graphics-card"></a>
@@ -82,13 +84,14 @@ on a 12 or 16 GB card.
 with `reasoning_effort: "none"` when LM Studio says the model can turn its reasoning off — when `off` is among the
 reasoning settings its model list publishes for that model (Qwen3.8 27B, Gemma 4 31B and Bonsai 27B do: they then write
 63 to 87 % fewer tokens). Nothing is sent to any other model: to one that publishes no such setting, the field is not a
-lower effort — GLM 4.7 Flash, sent `none`, reasons six times longer. Ollama, llama-server and other
-OpenAI-compatible servers are sent nothing yet: not measured.
+lower effort — GLM 4.7 Flash, sent `none`, reasons six times longer. llama-server gets the same treatment from what its
+`/props` publishes for the model; an older one lists nothing and is sent nothing. Ollama and other OpenAI-compatible
+servers are sent nothing yet: not measured.
 
 **A question reasons low, an agent run as your server says.** Settings → Server and models → Sampling and reasoning
 (advanced) sets how long a model that reasons thinks: `Server's`, `Low`, `Medium` or `High`, one setting for a question
 (with tools or without, a `/check` review included) and one for an agent run, which keeps its level for the whole run.
-A level is sent only to a model whose LM Studio entry publishes it. Measured on Qwen3.8 27B, on a 24 GB server: `/check`
+A level is sent only to a model its server publishes it for, on LM Studio or llama-server. Measured on Qwen3.8 27B, on a 24 GB server: `/check`
 at `Low` found the same ten defects as at the server's setting in 38 seconds instead of 136, and three tool tasks
 passed at `Low`, in the chat as in an agent run — but an agent run gained only a tenth of its time, which goes to its
 tools, so it keeps the server's setting by default. Code actions, `/onboard context`, `/test`, `/arena` and `/bench` keep the server's.
@@ -345,8 +348,8 @@ completion ends, on the test server — a smaller card is slower):
 Which one fits beside your agent depends on your card: see [By graphics card](#by-graphics-card).
 
 With no autocomplete model set — the default — the chat model completes. Measured the same way on Ollama: Qwen3.8 27B
-27 in 36, as on LM Studio; Gemma 4 12B 9 and Granite 4.2 8B 8 (16 on LM Studio). On an 8 or 12 GB card, the default
-autocomplete gets about one suggestion in four right, and no model measured fits beside the agent there.
+27 in 36, as on LM Studio; Granite 4.2 8B 15 and Gemma 4 12B 12. On an 8 or 12 GB card, the default autocomplete gets
+one suggestion in three to two in five right, and no model measured fits beside the agent there.
 
 | Family | Tokens |
 |---|---|

@@ -1280,7 +1280,7 @@
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>Использовать настройки создателя каждой модели</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>Температура и top-p, опубликованные для семейства модели. Выключено: действуют настройки вашего сервера.</value></data>
   <data name="LabelReasoningEffortChat" xml:space="preserve"><value>Рассуждение для вопроса</value></data>
-  <data name="HintReasoningEffortChat" xml:space="preserve"><value>Сколько рассуждающая модель думает, прежде чем ответить на вопрос (режим агента выключен) или выполнить проверку /check. Отправляется только модели, о которой LM Studio сообщает, что она принимает этот уровень; в остальных случаях действует настройка сервера.</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>Сколько рассуждающая модель думает, прежде чем ответить на вопрос (режим агента выключен) или выполнить проверку /check. Отправляется только модели, о которой LM Studio или llama-server сообщает, что она принимает этот уровень; в остальных случаях действует настройка сервера.</value></data>
   <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>Рассуждение в запуске агента</value></data>
   <data name="HintReasoningEffortAgent" xml:space="preserve"><value>То же для запуска агента — вопроса в режиме агента, /task, /tdd — один уровень на весь запуск.</value></data>
   <data name="ReasoningEffortServer" xml:space="preserve"><value>Сервера</value></data>

@@ -1280,7 +1280,7 @@
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>使用各模型发布方推荐的设置</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>使用为该模型系列发布的 temperature 和 top-p。关闭时采用服务器自身的设置。</value></data>
   <data name="LabelReasoningEffortChat" xml:space="preserve"><value>提问时的推理</value></data>
-  <data name="HintReasoningEffortChat" xml:space="preserve"><value>会推理的模型在回答问题(代理模式关闭时)或 /check 评审前思考多久。仅发送给 LM Studio 表明支持该级别的模型；其他情况下使用服务器的设置。</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>会推理的模型在回答问题(代理模式关闭时)或 /check 评审前思考多久。仅发送给 LM Studio 或 llama-server 表明支持该级别的模型；其他情况下使用服务器的设置。</value></data>
   <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>代理运行中的推理</value></data>
   <data name="HintReasoningEffortAgent" xml:space="preserve"><value>代理运行(代理模式下的提问、/task、/tdd)同样适用，整个运行使用同一级别。</value></data>
   <data name="ReasoningEffortServer" xml:space="preserve"><value>服务器设置</value></data>

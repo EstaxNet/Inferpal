@@ -264,11 +264,72 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
     /// <summary>
     /// The <c>reasoning_effort</c> this server takes for <paramref name="model"/> to give <paramref name="effort"/>, or
-    /// <c>null</c> to send nothing — the generic server's answer: a value a model's template does not know is not a lower
-    /// effort, so nothing is sent where the server does not say what the model takes.
+    /// <c>null</c> to send nothing: a value a model's template does not know is not a lower effort, so nothing is sent where
+    /// the server does not say what the model takes. llama-server says: a level its <c>/props</c> lists goes, spelled as listed.
     /// </summary>
-    private protected virtual Task<string?> ReasoningEffortFieldAsync(string model, ReasoningEffort effort, CancellationToken ct)
-        => Task.FromResult<string?>(null);
+    /// <remarks>⚠ <c>none</c> too, only if listed: as on LM Studio, a model that does not publish it may not turn its reasoning
+    /// off (GLM 4.7 Flash reasons six times longer sent it).</remarks>
+    private protected virtual async Task<string?> ReasoningEffortFieldAsync(string model, ReasoningEffort effort, CancellationToken ct)
+    {
+        var wanted = effort switch
+        {
+            ReasoningEffort.Off    => "none",
+            ReasoningEffort.Low    => "low",
+            ReasoningEffort.Medium => "medium",
+            ReasoningEffort.High   => "high",
+            _                      => null,
+        };
+        if (wanted is null) return null;
+        return (await PublishedEffortLevelsAsync(model, ct)).FirstOrDefault(l => string.Equals(l, wanted, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, (IReadOnlyList<string> Levels, DateTime At)> _effortLevels = new();
+
+    /// <summary>
+    /// The <c>reasoning_effort</c> values llama-server says <paramref name="model"/>'s template renders (<c>/props</c> →
+    /// <c>chat_template_caps.reasoning_effort_levels</c>); empty when it says none, is another server, or cannot be read now.
+    /// </summary>
+    /// <remarks>
+    /// Kept briefly: a question and its title ask in turn, and every one goes through here. ⚠ Only an answer is kept: a read
+    /// that fails is nothing to send this time, read again next time, and never a failed question. <c>autoload=false</c>: on a
+    /// router the read would otherwise wait for the model to load, and a utility model's read could evict the chat's.
+    /// </remarks>
+    private async Task<IReadOnlyList<string>> PublishedEffortLevelsAsync(string model, CancellationToken ct)
+    {
+        var key = Root + "|" + model;
+        if (_effortLevels.TryGetValue(key, out var known) && DateTime.UtcNow - known.At < LoadedWindowCacheLife) return known.Levels;
+        try
+        {
+            using var probe = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            probe.CancelAfter(LoadedWindowProbeBudget);
+            var isLlama = await IsLlamaServerAsync(probe.Token);
+            if (isLlama == false) return Keep([]);
+            // `?model=` is what a router needs, and a single-model server ignores it.
+            using var doc = await GetJsonAsync($"{Root}/props?model={Uri.EscapeDataString(model)}&autoload=false", probe.Token);
+            if (doc?.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                Diagnostics.RecordOnce("OpenAiCompatible.EffortLevels", $"The reasoning levels of {Root} could not be read: no answer", Root);
+                return [];
+            }
+            Diagnostics.Forget("OpenAiCompatible.EffortLevels", Root);
+            return Keep(doc.RootElement.TryGetProperty("chat_template_caps", out var caps) && caps.ValueKind == JsonValueKind.Object
+                        && caps.TryGetProperty("reasoning_effort_levels", out var list) && list.ValueKind == JsonValueKind.Array
+                ? [.. list.EnumerateArray().Where(l => l.ValueKind == JsonValueKind.String).Select(l => l.GetString()!)]
+                : []);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.RecordOnce("OpenAiCompatible.EffortLevels", $"The reasoning levels of {Root} could not be read: {ex.Message}", Root);
+            return [];
+        }
+
+        IReadOnlyList<string> Keep(IReadOnlyList<string> levels)
+        {
+            _effortLevels[key] = (levels, DateTime.UtcNow);
+            return levels;
+        }
+    }
 
     /// <summary>
     /// Whether <c>tool_choice: "required"</c> reaches this server for <paramref name="model"/> when the caller forces a

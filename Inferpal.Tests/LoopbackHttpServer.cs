@@ -41,6 +41,9 @@ internal sealed class LoopbackHttpServer : IDisposable
 
     public string BaseUrl => $"http://127.0.0.1:{((IPEndPoint)_listener.LocalEndpoint).Port}";
 
+    /// <summary>The paths whose answer announces more than it sends: the connection is cut in the middle of the body.</summary>
+    public Func<string, bool>? CutsBody { get; set; }
+
     /// <param name="body">The body answered for a path; <c>null</c> answers 404.</param>
     /// <param name="status">The status of a non-null body (default 200): how a test stands in for a server that refuses.</param>
     public LoopbackHttpServer(Func<string, string?> body, Func<string, int>? status = null)
@@ -119,7 +122,7 @@ internal sealed class LoopbackHttpServer : IDisposable
                         var head = Encoding.ASCII.GetBytes(
                             $"HTTP/1.1 {statusLine}{crlf}"
                             + $"Content-Type: application/json{crlf}"
-                            + $"Content-Length: {bytes.Length}{crlf}"
+                            + $"Content-Length: {bytes.Length + (CutsBody?.Invoke(path) == true ? 10_000 : 0)}{crlf}"
                             + $"Connection: close{crlf}{crlf}");
                         await stream.WriteAsync(head);
                         await stream.WriteAsync(bytes);

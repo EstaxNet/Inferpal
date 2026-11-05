@@ -1280,7 +1280,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>각 모델 제작사의 설정 사용</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>모델 계열에 공개된 temperature와 top-p를 씁니다. 끄면 서버 설정이 적용됩니다.</value></data>
   <data name="LabelReasoningEffortChat" xml:space="preserve"><value>질문에 대한 추론</value></data>
-  <data name="HintReasoningEffortChat" xml:space="preserve"><value>추론하는 모델이 질문(에이전트 모드 꺼짐)이나 /check 리뷰에 답하기 전에 얼마나 생각할지입니다. LM Studio가 그 단계를 받는다고 알려 주는 모델에만 보내며, 그 밖에는 서버 설정이 적용됩니다.</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>추론하는 모델이 질문(에이전트 모드 꺼짐)이나 /check 리뷰에 답하기 전에 얼마나 생각할지입니다. LM Studio 또는 llama-server가 그 단계를 받는다고 알려 주는 모델에만 보내며, 그 밖에는 서버 설정이 적용됩니다.</value></data>
   <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>에이전트 실행의 추론</value></data>
   <data name="HintReasoningEffortAgent" xml:space="preserve"><value>에이전트 실행(에이전트 모드의 질문, /task, /tdd)에도 같으며, 실행 전체에 한 단계입니다.</value></data>
   <data name="ReasoningEffortServer" xml:space="preserve"><value>서버 설정</value></data>

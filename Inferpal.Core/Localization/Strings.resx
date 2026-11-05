@@ -1284,7 +1284,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>Use each model maker's settings</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>Temperature and top-p as published for the model's family. Off: your server's settings apply.</value></data>
   <data name="LabelReasoningEffortChat" xml:space="preserve"><value>Reasoning for a question</value></data>
-  <data name="HintReasoningEffortChat" xml:space="preserve"><value>How long a model that reasons thinks before it answers a question (Agent mode off) or a /check review. Sent only to a model LM Studio says takes that level; elsewhere, the server's setting applies.</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>How long a model that reasons thinks before it answers a question (Agent mode off) or a /check review. Sent only to a model LM Studio or llama-server says takes that level; elsewhere, the server's setting applies.</value></data>
   <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>Reasoning in an agent run</value></data>
   <data name="HintReasoningEffortAgent" xml:space="preserve"><value>The same for an agent run — a question in Agent mode, /task, /tdd — one level for the whole run.</value></data>
   <data name="ReasoningEffortServer" xml:space="preserve"><value>Server's</value></data>

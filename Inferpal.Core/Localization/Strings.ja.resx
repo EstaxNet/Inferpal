@@ -1280,7 +1280,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="LabelUseRecommendedSampling" xml:space="preserve"><value>各モデル開発元の推奨設定を使う</value></data>
   <data name="HintUseRecommendedSampling" xml:space="preserve"><value>モデル ファミリー向けに公開された温度や top-p を使います。オフならサーバーの設定が適用されます。</value></data>
   <data name="LabelReasoningEffortChat" xml:space="preserve"><value>質問への推論</value></data>
-  <data name="HintReasoningEffortChat" xml:space="preserve"><value>推論するモデルが、質問(エージェント モードがオフのとき)や /check のレビューに答える前にどれだけ考えるか。LM Studio がその段階を受け付けると示すモデルにだけ送られ、それ以外ではサーバーの設定が使われます。</value></data>
+  <data name="HintReasoningEffortChat" xml:space="preserve"><value>推論するモデルが、質問(エージェント モードがオフのとき)や /check のレビューに答える前にどれだけ考えるか。LM Studio または llama-server がその段階を受け付けると示すモデルにだけ送られ、それ以外ではサーバーの設定が使われます。</value></data>
   <data name="LabelReasoningEffortAgent" xml:space="preserve"><value>エージェント実行での推論</value></data>
   <data name="HintReasoningEffortAgent" xml:space="preserve"><value>エージェント実行(エージェント モードでの質問、/task、/tdd)でも同じ。実行全体で一つの段階です。</value></data>
   <data name="ReasoningEffortServer" xml:space="preserve"><value>サーバーの設定</value></data>
