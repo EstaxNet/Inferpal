@@ -33,9 +33,9 @@ for each model Inferpal is measured with, what the model does, what Inferpal doe
 | [Bonsai 27B](#bonsai) (1-bit Qwen) | ✅ **Agent** on small GPUs (13/14, slow) | Same as Qwen3.8 | 4.7 GB for 27B |
 | [Granite 4.2 8B](#granite) (IBM) | ✅ **Agent** on 8 GB cards (14/14, fast) | Reads its XML tool calls when the server leaves them as text | Ollama: `granite4.2:8b` |
 | [GLM 4.7 Flash](#glm47) | Agent — usable with the **Unsloth GGUF** (12/14) | Reads its `<arg_key>` tool calls when left as text | Older GGUFs (lmstudio-community) loop |
+| [Gemma 4](#gemma4) (12B, 26B A4B, 31B) | Agent — usable on small GPUs (12B: 12/14, 7 GB) | Describes the tools in the system prompt when the template cannot render them | LM Studio's template fails on tools |
 | [Qwen3 Coder 30B](#qwen3-coder) | Agent usable (9/14) | Uses its fill-in-the-middle tokens; reads its XML tool calls | Fast: 3B active parameters |
 | [Qwen3 4B Thinking 2507](#qwen3) | Small machines | Reads its JSON tool calls when left as text | Long reasoning |
-| [Gemma 4](#gemma4) (12B, 26B A4B, 31B) | Agent — usable on small GPUs (12B: 12/14, 7 GB) | Describes the tools in the system prompt when the template cannot render them | LM Studio's template fails on tools |
 | [Mellum2 12B-A2.5B Base](#mellum) (JetBrains) | ✅ **Autocomplete (FIM)** — recommended (29/36, 0.1 s) | Uses its fill-in-the-middle tokens | A completion model: never the chat or the agent |
 | [Qwen2.5 Coder 7B](#qwen-coder) | Superseded for autocomplete by Mellum2; not the agent (3/14) | Uses its fill-in-the-middle tokens | A 2024 model, no longer benched |
 
@@ -347,7 +347,8 @@ completion ends, on the test server — a smaller card is slower):
 
 Which one fits beside your agent depends on your card: see [By graphics card](#by-graphics-card).
 
-With no autocomplete model set — the default — the chat model completes. Measured the same way on Ollama: Qwen3.8 27B
+With no autocomplete model set — the default — the chat model completes on Ollama and LM Studio; an OpenAI-compatible
+server needs one chosen for it. Measured the same way on Ollama: Qwen3.8 27B
 27 in 36, as on LM Studio; Granite 4.2 8B 15 and Gemma 4 12B 12. On an 8 or 12 GB card, the default autocomplete gets
 one suggestion in three to two in five right, and no model measured fits beside the agent there.
 

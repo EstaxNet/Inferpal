@@ -1,8 +1,8 @@
 # @-mentions
 
 Type `@` in the prompt to open a typed context picker. The mention is resolved into real
-context **the moment you send** — the trailing `@…` token is removed from the prompt and
-replaced with the corresponding attachment.
+context **the moment you pick it** — the token leaves the prompt and a chip holds what was read
+then. A path typed after `@` in VS Code is read when you send.
 
 | Mention | Attaches |
 |---|---|
@@ -11,7 +11,7 @@ replaced with the corresponding attachment.
 | `@code` | A semantic search of the indexed codebase — type the query after the token |
 | `@diff` | The current `git diff` |
 | `@commit` | One commit's message and diff — pick one of the latest, or type a hash, a branch or a tag (alone, the last commit) |
-| `@problems` | The current build errors |
+| `@problems` | The current errors: a build's diagnostics in Visual Studio, the Problems panel in VS Code |
 | `@debugger` | The live debugger break state (via `get_debugger_state`) |
 | `@clipboard` | The clipboard contents |
 | `@tree` | The solution's C# tree |

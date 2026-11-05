@@ -67,7 +67,7 @@ Every persisted setting, its type, and default value.
 | `apiKey` | string | `""` | API key for OpenAI-compatible servers (Bearer). ⚠ Stored **in clear text** in this file, unlike MCP OAuth tokens, which are encrypted (`mcp-oauth.dat`, DPAPI or the editor's keychain). The file sits under your user profile with the usual ACLs, but anything that can read your `%AppData%` can read this key |
 | `defaultModel` | string | `"llama3.1"` | Main chat model. Left at this default when the server does not have it, the best installed chat model is used instead, saved here, and a notice says so; a model you chose is never replaced |
 | `codeActionsModel` | string | `""` | Model for Explain, Review, Fix, Refactor and Doc, in both editors (empty = the chat model) |
-| `inlineCompletionModel` | string | `""` | Dedicated FIM model (empty = `defaultModel` — on the chat's server only: on a server of its own, choose one) |
+| `inlineCompletionModel` | string | `""` | Dedicated FIM model (empty = `defaultModel` on Ollama or LM Studio; on an OpenAI-compatible server, or a server of its own, choose one) |
 | `inlineCompletionRunsOn` | string | `"chat"` | Where completions run: `chat` (the server of `baseUrl`) or `other` (the server of `inlineCompletionBaseUrl`) — ghost text on this machine while the chat runs on a team server |
 | `inlineCompletionBaseUrl` | string | `""` | The completion server's address, when `inlineCompletionRunsOn` is `other` |
 | `inlineCompletionProvider` | string | `""` | That server's backend (`ollama`, `lmstudio`, `openai-compatible`), found by its **Test** button; empty = `provider` |
@@ -110,7 +110,7 @@ Every persisted setting, its type, and default value.
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `ragEnabled` | bool | `true` | Semantic indexing: the workspace is indexed at startup and searched hybrid — cosine + BM25 lexical fused with RRF. `false` = no index at startup (`search_codebase` is then not offered); `/index rebuild` still builds a keyword-only one |
-| `ragAutoContextEnabled` | bool | `true` | Silently inject the most relevant indexed chunks into each code-related turn (skips already-attached files). Needs `ragEnabled`; `/xray` says when it is switched on but cannot run |
+| `ragAutoContextEnabled` | bool | `true` | Silently inject the most relevant indexed chunks into each code-related turn (skips already-attached files). Needs `ragEnabled` and an embedding model; `/xray` says when `ragEnabled` is off |
 | `ragTopK` | int | `5` | Chunks returned by `search_codebase` and `search_docs` when the call asks for no number (1–20, the most a call may ask too) |
 | `ragSimilarityThreshold` | float | `0.20` | Minimum cosine score to keep a chunk (vector side) |
 | `lspEnabled` | bool | `false` | LSP semantic chunking (TS/JS/Python/Go/Rust) |
@@ -194,8 +194,8 @@ reported as unreachable after 15 s, not after the operating system's own retries
 | `isFirstRun` | bool | `true` | `true` until the first model discovery, then `false` |
 
 > [!NOTE]
-> There is **no** `stepModeEnabled` setting. Agent Step Mode is a non-persistent local
-> toggle (`/agent-step`), reset every session.
+> There is **no** `stepModeEnabled` setting. Agent Step Mode is a toggle (`/agent-step`)
+> kept with the conversation, except in ACP threads.
 
 ## Workspace overlays (committable, team-shared)
 

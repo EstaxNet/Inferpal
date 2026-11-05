@@ -22,7 +22,7 @@ Windows, Linux and Apple Silicon, with the backend bundled (no .NET to install) 
 | **Explorer** | Explain · Review Changes · Attach to Chat | A file or folder explained, or its uncommitted changes reviewed |
 | **Source Control** | Propose a Commit Message | The message is written into the commit box, and nothing is committed |
 | **Editor** | Edit with AI | Your instruction applied to the selection, shown in Refactor Preview first |
-| **While you type** | Tab, or Alt+' | Ghost-text completions, either after a pause or only when you ask |
+| **While you type** | Tab, or Alt+' (Ctrl+Option+' on macOS) | Ghost-text completions, either after a pause or only when you ask |
 
 Open the chat from the **Inferpal** icon in the activity bar. Every change waits for your approval.
 
@@ -97,7 +97,7 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 
 **Will my model work?** Any model that calls tools will. That includes tool calls a server leaves as plain text (Qwen, Mistral, GLM, Gemma, gpt-oss). It also includes a model whose chat template refuses tools. Each known model family gets the sampling settings its vendor recommends.
 
-**Which server should I use?** Ollama gets every feature, including per-model memory figures, downloads from the chat and unloading idle models. LM Studio runs everything without the per-model memory figures. Other OpenAI-compatible servers (llama-server, vLLM) run the chat, the agent and the search. They also run inline completions if the server can complete around the cursor.
+**Which server should I use?** Ollama gets every feature, including per-model memory figures, downloads from the chat and unloading idle models. LM Studio runs everything except per-model memory figures, unloading idle models and `/models delete`. Other OpenAI-compatible servers (llama-server, vLLM) run the chat, the agent and the search. They also run inline completions if the server can complete around the cursor.
 
 **Can the model run on another machine?** Yes. Point the server address at it, as described in [Remote inference](https://github.com/EstaxNet/Inferpal/blob/v1.8.10/docs/remote-inference.md).
 

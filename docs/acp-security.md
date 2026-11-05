@@ -13,8 +13,8 @@ The program connected to the agent's input and output is, for Inferpal, **the us
   is none against a client that is not you.
 - **Some things never ask.** Reading tools (`read_file`, `list_files`, `search_in_files`, code search) work in the
   folder the client names when it opens a session — any folder of the machine, your home folder or a drive's root
-  included. Building and testing that folder (`run_tests`, `get_diagnostics`) runs the project's own code without
-  asking. The slash commands it sends act as yours do: `/commit-exec` runs `git commit` with the repository's hooks,
+  included. Building and testing that folder (`run_tests`, `get_diagnostics`) runs the project's own code: it asks
+  once per workspace, and the client answers that card. The slash commands it sends act as yours do: `/commit-exec` runs `git commit` with the repository's hooks,
   `/import` writes your settings.
 - **It reads your conversations.** It can list, reopen and delete every conversation saved on the machine, those of
   Visual Studio and VS Code included.
@@ -22,7 +22,7 @@ The program connected to the agent's input and output is, for Inferpal, **the us
   are started — programs, or connections to any address it names — as the ones you configure in your own editor are,
   even with Inferpal's own MCP servers turned off.
 - **Your standing permissions apply to it**: the `allow` rules of your machine's settings, the "Always" grants given
-  during a session, and — with `securityAlertsDisabled` on — no approval at all. What it changes stays: your files,
+  during a session, and — with `securityAlertsDisabled` on — no approval at all, force-prompted calls excepted. What it changes stays: your files,
   your settings, the `.inferpal/` instructions your own sessions read later.
 
 Inferpal does not try to tell a trusted client from another one: nothing in the protocol carries a secret it could

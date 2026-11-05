@@ -197,7 +197,8 @@ While it works, type *"use the existing CounterService, not a new one"* and pres
 its next step. **Ctrl+Enter** queues a message for after the turn instead.
 
 - **Three modes** — **Chat** (tools, no plan), **Agent** (plan, act, observe) and **Plan** (`/plan`: read-only, it
-  proposes and changes nothing). `/plan save` turns a plan into a committable `.inferpal/plans/` file.
+  proposes and changes nothing). `/plan save` turns a plan into a committable `.inferpal/plans/` file. Beside them,
+  the modes found for the workspace: [Modes](configuration.md#modes).
 - **30 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
   Independent read-only calls run in parallel; `/tools off <tool>` takes one away from the model.
 - **Step by step** — `/agent-step` pauses before each tool call; **▶ Resume** goes on.
@@ -337,6 +338,10 @@ for the model — each exclusion said, never silent. Writing one of these files 
   one narrow rule describes also offers that rule (*commands that start with `dotnet test`*,
   *writes under `tests/`*), written to the per-machine rules when picked; `/permissions suggest`
   names the ones you keep granting.
+- **The first build or test run in a workspace asks** — the agent's first build, test run or
+  Smart Fix check in a workspace asks once, even after "Always", because each runs the repository's
+  code. A refusal holds until the editor restarts. A `/build` or `/tdd` you run yourself counts as
+  agreement.
 - **Instruction files always ask first** — a write to a file agents read back as instructions is
   force-prompted the same way: Inferpal's own `.inferpal/` memory, notes, context and rules, and the
   files a repository writes for coding agents (`AGENTS.md`, `CLAUDE.md`,
@@ -626,7 +631,8 @@ The change appears in the editor in red and green; keep or drop each part.
   files **all-or-nothing**: nothing is written unless every edit resolves.
 - **Smart Fix Protocol (polyglot)** — after every `write_file` / `apply_diff` / `apply_edits`
   on a build-relevant file, a quick build/typecheck runs automatically and any compilation
-  errors are fed back inline so the agent fixes them in the same loop. The ecosystem is picked
+  errors are fed back inline so the agent fixes them in the same loop. The first check in a
+  workspace asks once ([Safety](#safety)). The ecosystem is picked
   from the file extension — **.NET / TypeScript / Rust / Go** built in, extendable via
   `.inferpal/validators.json`. When the toolchain is not installed, Smart Fix stays silent — told
   apart from a failed build by the shell's own signal, whatever the system's language.
@@ -682,7 +688,8 @@ suggestion right now: with *When I ask*, nothing is ever sent until you do.
   `inlineCompletionRunsOn` in `config.json`. That server gets its own key, never the chat's, and its own model — the
   chat's is not there to fall back on. Ghost text on another machine than the chat's no longer waits for a chat answer
   to finish; on the chat's machine — under any of its names or addresses — it still does, the card being one.
-- Suppressed while IntelliSense triggers are active. Supported on Ollama, LM Studio, and OpenAI-compatible servers that
+- Visual Studio holds suggestions back only while the completion list is open; VS Code shows one only if it extends
+  the list's selection. Supported on Ollama, LM Studio, and OpenAI-compatible servers that
   complete around the cursor (llama-server, Ollama's `/v1`) — see [Providers](providers.md).
 - **When the server keeps failing**, completions pause for five minutes after five failures in a row, and the status
   bar says so once — not at each pause in typing. They say it again only if they pause again after one succeeded.
@@ -1039,8 +1046,8 @@ depends on the file you are in goes with the question.
 <details>
 <summary><b>In detail: seeing the prompt, and keeping it within the window</b></summary>
 
-- **System prompt layering** — base prompt + custom prompt + pinned files + project context
-  + agent memory + project notes + matching rules. See
+- **System prompt layering** — base prompt + custom prompt + pinned files + repository instructions
+  + project context + agent memory + project notes + the rules that always apply. See
   **[Architecture](architecture.md#system-prompt-layering)**.
 - **Context X-Ray** — `/xray` (or a click on the context gauge) opens an interactive panel
   breaking down everything composing the system prompt: token bars per layer (base, custom,

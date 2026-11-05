@@ -16,7 +16,7 @@ The agent completes tasks by calling tools. There are **30 built-in tools**, plu
 | `apply_edits` | `edits[]` (`path`, `old_content`, `new_content`, `occurrence?`) | **Atomic** multi-file edit — all edits resolved first; nothing is written unless every edit matches. One approval (combined diff) + snapshot per file + Smart Fix |
 | `restore_file` | `path`, `snapshot?` | Restore a file from the backups Inferpal kept of it (`.inferpal/history/`, or your user folder with `historyStorage: user`) |
 | `delete_file` | `path` | Delete a file. **Approval** + snapshot before deletion |
-| `get_diagnostics` | `path?` | `dotnet build` → MSBuild errors/warnings (90 s timeout). A build runs the project's own targets: the first one the assistant starts in a workspace asks you once |
+| `get_diagnostics` | `path?` | `dotnet build` → MSBuild errors/warnings (90 s timeout). In VS Code, without `path`, the Problems panel's errors when it has any. A build runs the project's own targets: the first one the assistant starts in a workspace asks you once |
 | `get_active_document` | — | Path + content of the file open in the editor; a long one comes back as its first page, naming the `start_line` from which `read_file` reads on |
 | `get_open_editors` | — | All open files, active one marked `[active]` |
 | `get_git_status` | `path?`, `include_diff?`, `diff_path?` | `git status`, last 20 commits, branches (most recent first, the current one always shown), diff summary with its total; long sections keep what fits and count the rest. The full diff is capped, and a cut names the files it left out — `diff_path` reads one of them |
@@ -128,7 +128,9 @@ card:
   written over either: the approved change was computed from the file as it was, so it is
   refused and the agent is told to read the file again.
 - Gated tools: `write_file`, `apply_diff`, `apply_edits`, `delete_file`, `run_command`,
-  `rename_symbol`, `fetch_url`, `web_search`, custom shell tools, and every MCP tool call.
+  `rename_symbol`, `restore_file`, `update_memory`, `insert_at_cursor`, `replace_selection`,
+  `fetch_url`, `web_search`, `debug_control` `start`, `debug_inspect` `evaluate`, custom shell
+  tools, and every MCP tool call.
 
 `fetch_url` and `web_search` are gated because they are the outbound channel of the *lethal
 trifecta*; `fetch_url` additionally passes a hardened SSRF guard (IPv4-mapped IPv6, `0.0.0.0/8`,
@@ -152,9 +154,11 @@ deny  * \.env$                                       # never write secrets (read
   (to match a literal space then `#`, write `\s#`).
 - A `run_command` line is judged **command by command** (`;`, `&&`, `||`, `|`, `&`): it is
   auto-approved only when every command on it is allowed, and denied when any one of them is —
-  `git status; Remove-Item -Recurse src` is not approved by a rule written for `git`.
+  `git status; Remove-Item -Recurse src` is not approved by a rule written for `git`. A line with
+  `$(…)`, a grouping or a redirection is never auto-approved.
 - `allow` auto-approves (no prompt); `deny` blocks the call outright (recorded in
-  `/diagnostics`); no match falls back to the prompt.
+  `/diagnostics`); no match falls back to the prompt. A `deny` also matches the file a path
+  reaches. A command run outside the workspace and a write under `.git/` always ask.
 - Rules judge the calls that ask for approval — writes, commands, fetches, MCP tools. **Reading never asks**, so a
   `deny` rule does not hide a file from `read_file` or a search: to keep a file away from every tool, reads included,
   list it in `.inferpalignore` (or another ignore file).
@@ -227,7 +231,7 @@ tools**, one per line:
 name=command
 ```
 
-Each becomes a native tool (lower-cased, spaces → `_`) and requires approval on every call. It runs in the
+Each becomes a native tool (lower-cased, spaces → `_`) and goes through approval; a call whose arguments add a command (`;`, `|`, `$(…)`) always asks, even after "Always". It runs in the
 workspace root. Write `{args}` where the agent's arguments go (`run_e2e=npm run test:e2e -- {args}`); without it,
 they are appended to the command.
 Built-in tools take priority over a custom tool with the same name; prefix a line with `#`

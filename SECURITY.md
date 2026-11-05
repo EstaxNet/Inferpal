@@ -23,11 +23,11 @@ Inferpal is local-first and runs untrusted model output, so several mitigations 
 
 - **Agent tools can read/write files and run shell commands within the workspace.** File
   writes, diffs (single and atomic multi-file), deletions, renames, and shell commands are
-  gated by an approval prompt and confined to the workspace root (`AssertUnderRoot`). Edit
-  prompts show the actual diff before you confirm.
+  gated by an approval prompt and confined to the workspace root (`AssertUnderRoot`); a shell
+  command run outside the workspace always asks. Edit prompts show the actual diff before you confirm.
 - **Permission rules** classify each call *before* the prompt: `allow` auto-approves, `deny`
-  blocks, no match prompts (per-machine setting + committable `.inferpal/permissions.json`,
-  first match wins). A built-in **hard denylist** of catastrophic shell commands
+  blocks, no match prompts (per-machine setting, first match wins; a committable
+  `.inferpal/permissions.json` can only deny). A built-in **hard denylist** of catastrophic shell commands
   (recursive root deletes, disk formatting, fork bombs, …) is always enforced — even with
   security alerts disabled, and including commands sourced from `.inferpal/validators.json`.
   Blocked calls are recorded in `/diagnostics`.
@@ -73,13 +73,12 @@ Inferpal is local-first and runs untrusted model output, so several mitigations 
   (restores edited files, deletes files created that run).
 
 If you enable **Disable security alerts**, the calls that would otherwise prompt are
-auto-approved — use only in trusted contexts. The built-in catastrophic-command denylist and
+auto-approved, force-prompted calls excepted — use only in trusted contexts. The built-in catastrophic-command denylist and
 any `deny` rules still apply.
 
 See [docs/tools.md](docs/tools.md) and [docs/architecture.md](docs/architecture.md) for details.
 
 ## Known accepted advisories
 
-| Advisory | Component | Status |
-|---|---|---|
-| [GHSA-2m69-gcr7-jv3q](https://github.com/advisories/GHSA-2m69-gcr7-jv3q) (CVE-2025-6965) | `SQLitePCLRaw.lib.e_sqlite3` (SQLite < 3.50.2) | **Suppressed** — no fixed bundle is published yet (all versions ≤ 2.1.11 are affected). The vulnerable path requires malicious SQL or an untrusted database file; Inferpal opens only its own local index databases, builds every query itself, and never enables SQLite extension loading. Tracked in `Inferpal.csproj`; will be removed when a patched bundle ships. |
+None: no advisory is suppressed. [GHSA-2m69-gcr7-jv3q](https://github.com/advisories/GHSA-2m69-gcr7-jv3q)
+(CVE-2025-6965, SQLite < 3.50.2) is fixed by the pin to `SQLitePCLRaw.bundle_e_sqlite3` 2.1.12.

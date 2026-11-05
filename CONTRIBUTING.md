@@ -31,11 +31,12 @@ dotnet test Inferpal.Tests/Inferpal.Tests.csproj
 ## Common contribution recipes
 
 ### Add a built-in tool
-1. Create `Services/Tools/MyTool.cs` implementing `ITool`.
+1. Create `Inferpal.Core/Services/Tools/MyTool.cs` implementing `ITool`.
 2. Use **English** for `Name`, `Description`, and `Parameters`.
 3. Use `Strings.X(...)` for user-facing return text.
 4. Register it in `ToolRegistry.cs`. Gate filesystem/shell/network actions behind
    `IApprovalService`.
+5. Declare what a call does in `EffectOf`.
 
 ### Add or change a UI string
 `Strings.cs` is maintained **by hand**. Every new `.resx` key must be added to `Strings.cs`
@@ -43,7 +44,7 @@ dotnet test Inferpal.Tests/Inferpal.Tests.csproj
 parity across the 10 locales).
 
 ### Add a language
-Create `Localization/Strings.XX-YY.resx` with the same keys, then add the culture to
+Create `Inferpal.Core/Localization/Strings.XX-YY.resx` with the same keys, then add the culture to
 `LanguageOptions` in `InferpalSettingsData.cs`.
 
 ## Architecture constraints

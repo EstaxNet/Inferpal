@@ -74,7 +74,7 @@ flowchart LR
 | Where you are | Visual Studio | VS Code |
 |---|---|---|
 | **Errors** | Error List → *Fix with Inferpal*, or *Fix them* on the failed-build banner | Problems or light bulb → *Fix with Inferpal* |
-| **A failing test** | `/tdd` | Test view → *Make This Test Pass* · *Explain the Failure* |
+| **A failing test** | Test Explorer → *Fix Failing Tests with Inferpal*, or `/tdd` | Test view → *Make This Test Pass* · *Explain the Failure* |
 | **Debugger, stopped** | *Analyze with Inferpal* (Call Stack, Locals, Watch…) | *Analyze with Inferpal* |
 | **A file or a project** | Solution Explorer → *Explain* · *Review Changes* · *Attach to Chat* | Explorer → the same three |
 | **A selection** | *Edit with AI…* (Shift+Alt+I), accepted part by part in the editor | *Edit with AI*, shown in Refactor Preview first |

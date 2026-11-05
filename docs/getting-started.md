@@ -39,7 +39,7 @@ differences.
      optionally, an autocomplete model ([Mellum2](models.md#mellum) measured best) and an embedding model for semantic
      search.
   3. Inferpal uses LM Studio's native `/api/v1/*` API for the model list and load/unload, so
-     `/models` works here too. Point the **Server URL** at `http://localhost:1234`.
+     `/models` works here too. Point the **Server address** at `http://localhost:1234`.
 - **OpenAI-compatible** — expose the server's `/v1` endpoint (and an API key if it needs one).
 
 The backend does not have to run on the machine hosting Visual Studio — see
@@ -72,8 +72,8 @@ double-click it to install into Visual Studio.
 
 > [!TIP]
 > Contributors can build and deploy straight into the installed extension with
-> `./deploy-dev.ps1` (silent first-install bootstrap, skip-if-fresh, hot apply without
-> restarting VS) — see **[Development → Deploy (dev)](development.md#deploy-dev-and-status)**.
+> `./deploy-dev.ps1` (silent first-install bootstrap, skip-if-fresh, hot apply of the chat
+> without restarting VS) — see **[Development → Deploy (dev)](development.md#deploy-dev-and-status)**.
 
 ## 4. Open the tool window
 

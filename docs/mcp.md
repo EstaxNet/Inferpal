@@ -128,7 +128,7 @@ The MCP servers a repository declares for other tools start beside yours — onc
   rule**. Your agreement is kept for that repository and that exact definition: change one argument and you are asked
   again. A declined server is asked about again at the next start.
 - **The servers follow the branch.** Before each question, Inferpal looks at these files again: when a checkout, a
-  pull or an edit changed one of them (or added one), the repository's servers are read again before the question â
+  pull or an edit changed one of them (or added one), the repository's servers are read again before the question —
   a changed definition is asked about again, a server the files no longer declare stops. No restart, no command.
 - **Your agreement also covers the repository's files the server runs.** Inferpal looks for every file and folder of
   the repository the definition names — in its command, its arguments or its environment, variables replaced, and in
@@ -163,7 +163,7 @@ The MCP servers a repository declares for other tools start beside yours — onc
   server that declares the older SSE transport (`"type": "sse"`) is tried with Streamable HTTP, which many such servers
   also serve; when it does not, its error says that SSE is not supported. A server that declares WebSocket is not
   started — nothing in Inferpal speaks it — and its status says so; `/import` leaves it out by name.
-- A server you configured yourself keeps its name: the repository's server of the same name does not start, and the
+- A server you configured yourself keeps its name: the repository's server of the same name, or one whose tool names could match yours, does not start, and the
   status says why. So does a file that cannot be read, with its reason.
 - A repository's server you agreed to — and a server your ACP client passes — has a card of its own in the settings,
   under your list, with its state and its cause. It cannot be edited from there (its definition is not yours), but an
@@ -233,7 +233,7 @@ draw (a nested field). A server is asked only where a card can be drawn: during 
 
 When a Streamable HTTP server returns **401** and no credential of yours went with the request (no `Authorization`
 or API-key header configured), it requires OAuth. A 401 to a request that carried your own header is the server
-refusing that credential: the card shows **Failed** with the server's reason, and names a `${VAR}` the editor's
+refusing that credential: the card shows **Did not start** with the server's reason, and names a `${VAR}` the editor's
 environment does not set. Inferpal implements the MCP
 authorization spec (2026-07-28): discovery of the authorization server (RFC 9728 → RFC 8414 or OpenID Connect
 discovery, an issuer with a path included — Entra, Keycloak, Okta), **PKCE**, the **`resource`** indicator

@@ -9,8 +9,8 @@ editor with tools disabled).
 
 > [!NOTE]
 > **VS Code:** nearly all commands below also work in the VS Code extension, served headless
-> by the host process (same approval and permission pipeline; long commands such as `/tdd`,
-> `/bench`, `/models pull` and `/docs` are cancellable). Still VS-only: `/fix-build`, coupled
+> by the host process (same approval and permission pipeline; `/tdd`, `/bench` and
+> `/models pull` are cancellable, a `/docs` crawl runs in the background). Still VS-only: `/fix-build`, coupled
 > to Visual Studio's build by construction — it answers "not available in this editor yet".
 > `/setup` opens VS Code's first-run card.
 
@@ -43,14 +43,14 @@ editor with tools disabled).
 | `/note <text>` | Append a timestamped note to `.inferpal/notes.md` |
 | `/notes [clear]` | List or clear all project notes |
 | `/read <path>` | Attach a file as context (a path that is not a readable file — missing, a folder, binary, outside the workspace — is reported, not attached) |
-| `/diff` | Attach the current `git diff` as a context chip |
+| `/diff [path]` | Attach the current `git diff` as a context chip; with a path, that path's changes only |
 
 ## Files & shell
 
 | Command | Description |
 |---|---|
 | `/ls <path> [pattern]` | List files in a directory |
-| `/grep <dir> <pattern> [ext]` | Search text in files |
+| `/grep <dir> <pattern> [file_pattern]` | Search text in files (`*.cs`) |
 | `/run <command>` | Run a shell command — PowerShell on Windows, and on Linux/macOS when `pwsh` is on the PATH; bash otherwise (`sh` on a host without bash) (requires approval) |
 | `/fetch <url>` | Fetch a web page as text (requires approval) |
 | `/search-web <query>` | DuckDuckGo web search (aliases `/search`, `/web_search`, requires approval) |
@@ -68,7 +68,7 @@ editor with tools disabled).
 
 | Command | Description |
 |---|---|
-| `/build [path]` | Run a build and display errors |
+| `/build [path]` | Run a build and display errors; in VS Code, without a path, the Problems panel's errors when it has any |
 | `/fix-build [path]` | Compile → AI fixes errors → recompile, until clean (max 5 rounds) |
 | `/solution [path]` | Display the solution structure |
 | `/map [path]` | Without a path, the project's C# architecture map of the code as it is now (namespaces, types, hotspots — `generate_project_map`); with one, the call graph of that file (`analyze_code mode=callgraph`) |
@@ -93,11 +93,11 @@ editor with tools disabled).
 
 | Command | Description |
 |---|---|
-| `/models` | List / pull (streaming, Ollama) / delete / show running models |
+| `/models` | List / pull (Ollama, LM Studio) / delete (Ollama) / show running models |
 | `/hardware [gb]` | Show the GPU/VRAM profile; `/hardware <gb>` sets the VRAM budget |
 | `/bench [model…]` | Local test bench of installed models (default: all, capped at 5) — warm TTFT, tokens/s, VRAM pressure and a 5-task quality micro-eval scored by programmatic assertions (C# fix, instruction following, summary, tool call, FIM), plus per-role recommendations (agent / utility / FIM) feeding the Model Router; `/bench last` redisplays the persisted run |
 | `/arena <prompt>` | Model arena: sends the same prompt to two models (sequentially — one GPU) and shows both answers blind-labelled A/B. Pair = chat model vs utility model, or explicit: `/arena <model1> <model2> <prompt>`. Vote with `/arena a\|b\|tie` (reveals the models), cumulative local standings with `/arena stats` |
-| `/tdd [filter]` | "Fix until green": runs the test suite (`run_tests` — dotnet, pytest, npm, cargo, go), lets the agent patch the failing code, re-runs, up to 5 rounds. The optional filter narrows the run (`--filter` / `-k` / etc.). Twin of `/fix-build` on the test side; writes go through the usual approval pipeline and `/undo-run` applies. On the first red round the failing test is re-run **under the debugger** and the exception, stack and locals at the point of failure go into the fix prompt (**you confirm once per run** — it executes your test; both editors, and it falls back to the text-only loop if the capture is unavailable). Rewriting a *test* file always prompts, whatever your permission rules say. A round that executed **no test at all** — a filter matching nothing, a runner that exited 0 without a summary — stops the loop instead of spending rounds patching against it, whether it happens on the first round or after the agent has made the failing test disappear |
+| `/tdd [filter]` | "Fix until green": runs the test suite (`run_tests` — dotnet, pytest, npm, cargo, go), lets the agent patch the failing code, re-runs, up to 5 rounds. The optional filter narrows the run (`--filter` / `-k` / etc.). Twin of `/fix-build` on the test side; writes go through the usual approval pipeline and `/undo-run` applies. On the first red round the failing test is re-run **under the debugger** and the exception, stack and locals at the point of failure go into the fix prompt (**you confirm once per run** — it executes your test; both editors, and it falls back to the text-only loop if the capture is unavailable). Rewriting a *test* file always prompts, whatever your permission rules say. A round that executed **no test at all** — a filter matching nothing, a runner that exited 0 without a summary — stops the loop instead of spending rounds patching against it, whether it happens on the first round or after the agent has made the failing test disappear. A green on part of the suite says so |
 | `/task <objective>` | Run an agent task **in the background**, detached from the conversation: submitting returns immediately and you keep working while it runs. Tasks run one at a time and wait for the chat to be idle before taking the GPU; a task still waiting when another solution is opened does not run there (it says so). **Read-only**: a background run explores and reports (`read_file`, `search_codebase`, `analyze_code`, …) but never edits your files, builds or runs anything, or goes online — so it can never interrupt you with an approval prompt. A notice appears in the chat when it finishes — and, in VS Code, if Inferpal restarts first (a server setting changed), the chat names the tasks, background commands and documentation indexing the restart stopped |
 | `/task` · `/task list` | List the background tasks, newest first, with their state (queued / running / done / failed / cancelled). When the model server does not answer, the tasks wait for it — named above the list — and start on their own when it is back, instead of failing one after another; a task whose server stopped answering during its run says so, with the time |
 | `/task <id>` | Show one task's full report, plus its step journal. Finished tasks are kept per workspace and editor: their reports and proposals are still there after a restart, and a task that was running or queued when the editor closed says so. A number is never given twice, a restart included |
@@ -157,6 +157,6 @@ empty input` — and the model gets it with the action, before the rest.
 | `/fix` | Fix bugs in the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
 | `/review` | Review the active code — read-only, answers in the chat |
 | `/refactor` | Refactor the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
-| `/test` | Generate unit tests into a **separate test file** (created/opened, or extended if it exists) — for C#, in the test project that references the source's project (the source's folder mirrored there); under Maven/Gradle, in `src/test`; for Python, in the folder pytest collects (its `testpaths`, else `tests/`); for a Rust library, in the crate's `tests/` folder; next to the source otherwise. The selection is the input (the whole file without one), and the test file is written by an edit you can undo, in both editors; an ACP client has no active file, and the command is refused there |
+| `/test` | Generate unit tests into a **separate test file** (created/opened, or extended if it exists) — for C#, in the test project that references the source's project (the source's folder mirrored there); under Maven/Gradle, in `src/test`; for Python, in the folder pytest collects (its `testpaths`, else `tests/`); for a Rust library, in the crate's `tests/` folder; next to the source otherwise. A C# project no test project references is refused, naming the command that adds one. The selection is the input (the whole file without one), and the test file is written by an edit you can undo, in both editors; an ACP client has no active file, and the command is refused there |
 | `/test coverage [folder]` | Tests for the code **no test reaches**: the coverage is measured with the tool the project has (.NET with `coverlet.collector` or `dotnet-coverage`, pytest with `coverage.py`, vitest, jest, `node --test` with `c8` — a missing one is named with the command that adds it, never installed), the methods with the most uncovered lines are chosen without the model (10 per run), and for each one the model writes **one new test file**, through the usual approval. A file is kept only if it passes three times, asserts something, skips nothing and covers lines nothing covered; the others are removed, their copy kept. The report gives the coverage before → after and why each file was set aside; `/undo-run` gives back the whole command. A folder, a project or a source file narrows it; in both editors and in an ACP client |
-| `/doc` | Add an XML documentation comment to the active code — **applied directly in the editor** (undoable with Ctrl+Z) |
+| `/doc` | Add a documentation comment in the language's form (XML, docstring, JSDoc) to the active code — **applied directly in the editor** (undoable with Ctrl+Z) |

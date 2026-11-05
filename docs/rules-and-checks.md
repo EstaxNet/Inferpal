@@ -43,7 +43,7 @@ any bug, regression or behaviour change it introduces, **and** against your chec
 With all your checks, they add to the review and never narrow it: a defect none of them names is still
 reported. With no check in the repository, `/check` makes the general review and says so.
 
-- The diff is gathered staged → unstaged (plus status), capped to keep the prompt bounded. With nothing staged,
+- The diff is the staged changes, or with nothing staged the unstaged ones (plus status), capped to keep the prompt bounded. With nothing staged,
   files git does not track yet are reviewed too, as the diffs they will be once added; a new file that is not
   read (past the size limit, binary or unreadable) is named above the findings.
 - The model reviews the whole change, applies every check on top, and reports `file:line`, a severity

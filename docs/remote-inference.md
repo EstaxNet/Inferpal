@@ -99,8 +99,8 @@ A JSON list of models means you're good.
 ## 2. Point Inferpal at the remote host
 
 1. Open **Inferpal Settings**.
-2. Under **Connection**, set the **Provider** to match the remote server (**Ollama** or
-   **LM Studio**) and set **Server URL** to the remote address:
+2. Under **Connection**, set **Server address** to the remote address (**Test** selects the
+   server type):
    - Ollama → `http://192.168.1.2:11434`
    - LM Studio → `http://192.168.1.2:1234` (a trailing `/v1` is accepted and normalized)
 3. Click **Test** — it should name the server and how many models it lists, and the model dropdown should populate
@@ -112,7 +112,7 @@ does locally; the requests just travel over the network.
 
 > **Latency note.** Inline ghost-text completions are latency-sensitive. Over a fast LAN
 > this is usually fine; over Wi-Fi or a VPN you may want to raise the completion preset to
-> *Balanced* or *Accurate* (longer debounce) so fewer in-flight requests are cancelled.
+> *Accurate* (longer debounce) so fewer in-flight requests are cancelled.
 
 ---
 
@@ -140,7 +140,8 @@ Set it either way:
 - **`/hardware <gb>`** in the chat — e.g. `/hardware 24`. Persists to config immediately.
 
 Then run **`/hardware`** with no argument to see the full profile: budget, currently loaded
-models, headroom, per-model VRAM estimates, and the context-window recommendation.
+models, headroom, per-model VRAM estimates, and the context-window recommendation (headroom and
+the recommendation need Ollama).
 
 > The budget is a hint used for advice only. It never caps or overrides your settings —
 > Inferpal will not stop you from running a large `num_ctx`, it just warns when the
@@ -159,7 +160,7 @@ model, Inferpal routes all of it through a central GPU scheduler:
 - RAG and `@Docs` embedding loops and `/task` wait while a chat/agent run holds the lease — in
   any Inferpal process on the machine — and resume right after; a run waiting on an approval
   card lets the lease go until it is answered;
-- inline completions (which run in the VS process) yield via an IPC busy-signal so they
+- inline completions yield via an IPC busy-signal so they
   don't compete with an active chat.
 
 The practical effect: the interactive model always loads first and you never wait 30

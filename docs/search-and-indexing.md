@@ -55,7 +55,8 @@ flowchart TD
 - **Auto-context** (`ragAutoContextEnabled`, default on): each code-related turn silently
   injects the most relevant chunks for your message into the prompt — budget-capped and
   deduplicated against anything already attached. Reuses the warm shadow result when available,
-  so it is usually free; guarantees per-turn context even when you send before the chips fire.
+  so it is usually free; it still works when you send before the chips fire. It needs an
+  embedding model.
 
 ### Supported file types
 
@@ -110,5 +111,5 @@ the docs themselves, citing the source page and URL.
   BM25 over the text, the page title and the URL, fused by RRF — BM25 alone when embeddings are
   unavailable) and cites the page title and URL.
 
-Embeddings reuse the configured `ragEmbeddingModel`. `@Docs` has no Settings section — it is
-managed entirely through `/docs` (sources persist in `docSitesJson`).
+Embeddings reuse the configured `ragEmbeddingModel`. Manage `@Docs` with `/docs` or *Settings → Code search →
+Documentation* (sources persist in `docSitesJson`).

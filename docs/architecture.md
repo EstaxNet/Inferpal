@@ -45,18 +45,20 @@ The same `Inferpal.Host` executable serves two more doors:
 ## Process model
 
 Inferpal uses the Visual Studio Extensibility model
-(`Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x), hosted **in-process** since 2026-08-23
-(`RequiresInProcessHosting` + `VssdkCompatibleExtension`) — the only documented way to ship the
-in-process parts below alongside it. A hard constraint of VS Remote UI:
+(`Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x). `Inferpal.dll`, chat included, runs
+out-of-process in the Extensibility host; only `Inferpal.InProc.dll` (net472) loads in `devenv.exe`.
+The package declares `RequiresInProcessHosting` + `VssdkCompatibleExtension`, the only documented
+way to ship those in-process parts alongside it, and `allowHostingInProcess` is forced back to
+`false`. A hard constraint of VS Remote UI:
 only types loaded in `devenv.exe` can be referenced in XAML, so all data crossing the
 view-model boundary must be `[DataContract]` objects containing **only primitives** (and
-collections of such). That rule comes from the SDK and holds under in-process hosting too.
+collections of such). That rule comes from the SDK.
 
 ```mermaid
 flowchart LR
     subgraph host["Extension code — view-model side"]
         prov[IInferenceProvider clients<br/>Ollama / LM Studio / OpenAI]
-        reg[ToolRegistry — 28 tools + MCP]
+        reg[ToolRegistry — 30 tools + MCP]
         md[MarkdownParser → MarkdownBlock + InlineRun]
         rag[ProjectIndexService — hybrid RAG: cosine + BM25/RRF]
         vm[InferpalToolWindowData — ViewModel]
@@ -128,10 +130,12 @@ errors — it converts them into a result; only cancellation propagates.
 [Template]                   ← the active /template (optional)
 [Pinned files]               ← up to 3 pinned context files (optional)
 [## Repository instructions] ← AGENTS.md, CLAUDE.md, … of the repository's root (optional)
+[## Skills]                  ← the skills a question can load, with skillsAutoMode on (optional)
 [## Project context]         ← .inferpal/context.md (optional)
 [## Agent memory]            ← .inferpal/memory.md (optional)
 [## Project notes]           ← .inferpal/notes.md (optional)
 [## Rules]                   ← .inferpal/rules/*.md that always apply (optional)
+[## Mode: …]                 ← the mode picked, last so it wins a conflict (optional)
 ```
 
 It is rebuilt before every question, so an edited file never reaches the model in its old version — and nothing in
@@ -197,8 +201,8 @@ IPC channels:
 | `InlineDiffPreviewSignal` | host → devenv | per VS instance (`<name>.<devenv pid>.json`) | carries inline-diff preview requests to the in-editor renderer |
 
 Per-instance channels key their file names on the devenv PID (the in-process package declares
-its own PID; the extensibility host declares its parent PID after checking the parent is
-`devenv`), so two VS instances never read each other's state. A process that declared no key
+its own PID; the extensibility host declares the PID of its owning `devenv`, found among its
+ancestors), so two VS instances never read each other's state. A process that declared no key
 keeps the legacy unscoped names; a host with no in-process peer (VS Code) does not read the
 per-instance channels at all.
 
@@ -207,7 +211,7 @@ per-instance channels at all.
 | Component | Technology |
 |---|---|
 | Language / runtime | C# .NET 8 (`net8.0-windows`), declared for .NET 8 and 10: Visual Studio runs it on its .NET 10 extension host when it ships one; the VS Code and ACP host `net10.0` |
-| Extension SDK | `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.40608 (in-process hosting) |
+| Extension SDK | `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.40608 (out-of-process; `Inferpal.InProc` for what runs in `devenv.exe`) |
 | In-process MEF | `Microsoft.VisualStudio.Shell.15.0`, `Microsoft.VisualStudio.Text.UI.Wpf` |
 | Markdown | Markdig 1.2.0 |
 | Vector store | SQLite WAL (`Microsoft.Data.Sqlite` 8.0.16) |

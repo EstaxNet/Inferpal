@@ -63,28 +63,23 @@ refuses an archive without `web/`.
   itself elevated (one UAC prompt) instead of failing halfway; a transcript is kept in
   `%TEMP%\inferpal-deploy-vs.log`;
 - **hot apply**: locked assemblies are swapped via rename (live processes keep the old
-  mapping). It only *applies* the new DLL while the extension is hosted **out-of-process**:
-  the ServiceHub Extensibility host is restarted on it and reopening the tool window picks
-  it up. Under **in-process hosting** (the default since 2026-08-23) there is no such host —
-  the running `devenv.exe` keeps the old DLL until it restarts, and the script says so
-  instead of announcing a success. Use `-Launch`.
+  mapping), the ServiceHub Extensibility host is restarted on the new `Inferpal.dll`, and
+  reopening the tool window picks it up. `Inferpal.InProc.dll` (ghost text and the other parts
+  inside `devenv.exe`) needs a VS restart: use `-Launch`. With no Extensibility host running, the
+  script says the open VS keeps the old build instead of announcing a success.
 - F5 on the `Inferpal` project launches the VS Experimental instance
   (`Properties\launchSettings.json` — its machine-specific devenv path is auto-healed).
 
 > [!IMPORTANT]
-> Since the 2026-08-23 switch to in-process hosting, the extension — chat included — runs inside
-> **`devenv.exe`**; attach there. (Before that switch the chat lived in `ServiceHub.Host.dotnet.exe`.)
+> `Inferpal.dll`, chat included, runs out-of-process in the Extensibility host
+> (`ServiceHub.Host.Extensibility*`): attach there. Only `Inferpal.InProc.dll` runs inside **`devenv.exe`**.
 
 ### Releases
 
 **The product version lives in one place** — `Directory.Build.props`. Pushing a `v<version>`
 tag (matching that version) triggers the CI release workflow
-(`.github/workflows/release.yml`): it runs the tests, builds both extensions (VS 2026 VSIX
-and VS Code VSIX), and attaches them — plus `SHA256SUMS.txt` — to a GitHub Release.
-
-Locally, `./release.ps1` chains the `deploy-release.ps1` wizard (version bump, Release
-build, git tag, optional Marketplace upload) and collects the same deliverables under
-`dist/<version>/`.
+(`.github/workflows/release.yml`): it runs the tests, builds both extensions (the Visual Studio
+VSIX and the VS Code VSIXs) and the ACP archives, and attaches them — plus `SHA256SUMS.txt` — to a GitHub Release.
 
 ## Tests
 
@@ -144,7 +139,7 @@ Inferpal/
 Inferpal.InProc/     Everything devenv.exe hosts, in net472 (see architecture.md):
 ├── GhostText/       MEF inline completions, inline-diff preview, /tdd debugger driver,
 │                    solution/debugger/build trackers, chat auto-scroll
-├── Fim/             Client of the inference sidecar + the three settings it reads itself
+├── Fim/             Client of the inference sidecar + the four settings it reads itself
 └── Compat.cs        Language support types the net472 BCL does not provide
 Inferpal.Fim/        net8 inference sidecar the in-process half starts on demand (JSON-RPC/stdio)
 Inferpal.Host/       Console host exposing Inferpal.Core over JSON-RPC/stdio (VS Code backend, ACP agent, browser settings window)
@@ -158,6 +153,7 @@ Inferpal.Tests/      xUnit test project
 2. Use **English** for `Name`, `Description`, and `Parameters` (best model compatibility).
 3. Use `Strings.X(...)` for any user-facing return text (localization).
 4. Register it in `Services/Execution/ToolRegistry.cs`: `Register(new MyTool())`.
+5. Declare what a call does in `EffectOf`: the suite holds every built-in tool to it.
 
 ```csharp
 internal sealed class MyTool : ITool
@@ -165,6 +161,7 @@ internal sealed class MyTool : ITool
     public string Name        => "my_tool";
     public string Description  => "Does something useful.";
     public object Parameters   => new { type = "object", properties = new { }, required = Array.Empty<string>() };
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {

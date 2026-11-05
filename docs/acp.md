@@ -22,8 +22,8 @@ It runs against **your** model server — Ollama, LM Studio or any OpenAI-compat
    archive carries its own .NET 10 runtime, which asks for macOS 12 or later, or a Linux with glibc 2.27 or later.
 2. Tell your editor to run that executable with the `--acp` argument (below).
 
-On Linux, a system without `libicu` runs Inferpal in a reduced globalization mode; install `libicu` (or `icu-libs`)
-for full locale support.
+On Linux, the host does not start without `libicu` (or `icu-libs`): install it, or set
+`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1` for a reduced globalization mode.
 
 ### Zed
 
@@ -67,7 +67,7 @@ Seen with Rider 2026.2: answers with their thinking, the mode and model buttons,
 the file name on the card** to open its diff before you answer —, Stop, and the threads listed in **Chat History** and
 reopened after Rider was closed and started again (a Rider ended by force came back with an empty list).
 
-- ⚠ **Rider hands every session its own MCP server**: 93 tools, about 40,000 tokens of tool definitions sent with
+- ⚠ **Rider hands every session its own MCP server**: 93 tools, about 49,000 tokens of tool definitions sent with
   every question — more than a model loaded with a 32K context can take. Inferpal's message then names that share.
   Turn off the tool groups you do not need in **Settings → Tools → MCP Server → Exposed Tools** (each group off comes
   off every question: dotTrace's six tools are about 4,400 tokens), or load the model with a larger context.
@@ -239,7 +239,7 @@ With a local Ollama already running, there is nothing to set up: Inferpal finds 
 
 ## What you get
 
-- **Three modes** — *Default* (answers, and uses the tools as needed), *Agent* (plans the task, then carries it out
+- **Three modes, plus each mode found for the workspace** — *Default* (answers, and uses the tools as needed), *Agent* (plans the task, then carries it out
   step by step), *Plan* (reads and explores, changes nothing) — and the **model**, chosen among the models your server
   has installed. Both appear as the session's options in your client. The model shown is the one that answers: in
   *Agent* mode, the model set for the agent's role when you set one; a model you pick answers in every mode. While the
@@ -251,7 +251,7 @@ With a local Ollama already running, there is nothing to set up: Inferpal finds 
   never written over: Inferpal asks your editor for its buffer, and refuses.
 - **The tool calls on screen**: what runs, on which file, and its result; the agent's plan when it makes one.
 - **Notices and compactions, where your client shows them** (ACP 1.11, Zed 1.25 and later): what Inferpal says beside
-  the answer — the model it picked because the configured one is not installed, what this editor does not offer, a
+  the answer — the model it picked because the factory default is not installed, what this editor does not offer, a
   rule written to your settings, a documentation crawl's verdict — arrives as a session notice, out of the transcript;
   a conversation made to fit before a question arrives as a compaction, with the summary the model now reads. A client
   that does not declare them gets the text and the `context_compact` step as before. The end of a cut answer and a

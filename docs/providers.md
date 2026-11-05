@@ -29,7 +29,7 @@ capability is missing.
 | `keep_alive` (auto-unload) | ✅ | ❌ | ❌ |
 
 **Inline completions on an OpenAI-compatible server** run with the completion model you choose (Settings ›
-Autocomplete), never the chat model: on such a server it is often a large one a team shares, and every pause in typing
+Server and models › Autocomplete), never the chat model: on such a server it is often a large one a team shares, and every pause in typing
 would ask it. The server wraps the code before and after the cursor in the
 model's own fill-in-the-middle tokens; on this server type Inferpal never writes them itself. llama-server (recognized by its `/props`) is asked
 through `/infill` — not yet measured on a real llama-server. Any other server is asked through `/v1/completions` with
@@ -44,8 +44,8 @@ others.
 
 > [!NOTE]
 > Streaming-pull progress in `/models` is an Ollama feature. Live per-model VRAM and the
-> hardware-aware fit-checks rely on Ollama's `/api/ps` + `/api/show`; on other backends the
-> manual **VRAM budget** still drives the `num_ctx` advice (see below).
+> hardware-aware fit-checks rely on Ollama's `/api/ps` + `/api/show`, and so do the `num_ctx`
+> advice and the headroom of `/hardware`; other backends have the manual **VRAM budget** (see below).
 
 ## Configuring a provider
 
@@ -60,8 +60,8 @@ others.
 ## VRAM budget
 
 The hardware-aware features (first-run fit-check, `/hardware`, recommended `num_ctx`) need
-to know the GPU's **total** VRAM. On a local Ollama host this is auto-detected via
-`nvidia-smi`; otherwise set it manually:
+to know the GPU's **total** VRAM. For a server on this machine with an NVIDIA card, this is
+auto-detected via `nvidia-smi`; otherwise set it manually:
 
 - **Settings → Server and models → *Show advanced settings* → Graphics memory** (in GB), or
 - `/hardware <gb>` in the chat (e.g. `/hardware 24`).
