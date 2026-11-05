@@ -10,7 +10,7 @@ using Microsoft.VisualStudio.Extensibility.Shell;
 namespace Inferpal.Commands;
 
 /// <summary>
-/// Right-click "Edit with AI…" context-menu command (and Ctrl+Shift+I shortcut).
+/// Right-click "Edit with AI…" context-menu command (and Shift+Alt+I shortcut).
 ///
 /// Runs entirely in the OOP extension host process — no MEF, no IPC:
 /// <list type="number">
@@ -42,7 +42,9 @@ internal class InlineEditSelectionCommand : Command
     public override CommandConfiguration CommandConfiguration => new("%ContextMenuInlineEdit%")
     {
         Icon      = new(ImageMoniker.KnownValues.Refactoring, IconSettings.IconAndText),
-        Shortcuts = [new CommandShortcutConfiguration(ModifierKey.ControlShift, Key.I)],
+        // Not Ctrl+Shift+I: the text editor's scope keeps that key for reverse incremental search, and a scope goes before
+        // the Global one this binding lands in, so the command would never be reached from the editor.
+        Shortcuts = [new CommandShortcutConfiguration(ModifierKey.ShiftLeftAlt, Key.I)],
     };
 
     public override async Task ExecuteCommandAsync(IClientContext context, CancellationToken ct)

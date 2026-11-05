@@ -265,14 +265,14 @@ the problem with it.
 | Where you are | Visual Studio | VS Code |
 |---|---|---|
 | **Build errors** | Error List → *Fix with Inferpal*; *Fix them* on the failed-build banner; `/fix-build` | Problems or light bulb → *Fix with Inferpal*; the banner of a failed build task |
-| **A selection** | *Edit with AI…* (**Ctrl+Shift+I**): red and green in the editor, accepted part by part | *Edit with AI*, shown in Refactor Preview first |
+| **A selection** | *Edit with AI…* (**Shift+Alt+I**): red and green in the editor, accepted part by part | *Edit with AI*, shown in Refactor Preview first |
 | **The editor's menu** | Explain · Fix · Refactor · Add Tests · Add Docstring | Explain · Fix · Refactor · Add Tests · Document |
 | **A file or a project** | Solution Explorer → *Explain* · *Review Changes* · *Attach to Chat* | Explorer → the same three |
 | **The debugger, stopped** | *Analyze with Inferpal* (Debug menu, Call Stack, Locals, Autos, Watch) | *Analyze with Inferpal* (call stack, variables) |
 | **Committing** | `/commit` drafts the message | Source Control → *Propose a Commit Message* |
 | **A pull request** | `/pr-description` | `/pr-description` |
 
-**Try it** — select a method, press **Ctrl+Shift+I** in Visual Studio and type:
+**Try it** — select a method, press **Shift+Alt+I** in Visual Studio and type:
 
 ```text
 use a switch expression and keep the same behavior
@@ -300,7 +300,7 @@ The change appears in the editor in red and green; keep or drop each part.
   menu, `/test` on the **selection** with its tests written by an edit you can undo, and `/map` from the chat window's
   **⋯ › Architecture map** (Visual Studio) or the command palette's **Inferpal: Project Map** (VS Code).
 - **Inline Edit (Edit with AI)** — select code (or place the caret on a line), press
-  **Ctrl+Shift+I** (or pick **Edit with AI…** from the context menu), type an instruction, and
+  **Shift+Alt+I** (or pick **Edit with AI…** from the context menu), type an instruction, and
   the model rewrites the selection **directly in the editor** (re-indented to match the
   original), shown first when *Show the change before applying it* is on — in VS Code, in its Refactor Preview. Uses
   the Inline Edit model (falls back to Code Actions → chat model); the same prompt in both editors.
@@ -1071,14 +1071,13 @@ Opening Inferpal takes no key of its own: the keys it had open Visual Studio's B
 in French, and VS Code's own chat. **Tools → Inferpal → Inferpal Chat** and the activity-bar icon open it; in VS Code,
 Keyboard Shortcuts binds a key to `inferpal.chat.focus`. `/map` takes no key either (an Alt+letter is a menu's access
 key in some language of Visual Studio): the chat window's **⋯ › Architecture map** in Visual Studio, and in VS Code
-Keyboard Shortcuts binds a key to `inferpal.map`. **Ctrl+Shift+I** is
-Visual Studio's: in VS Code that key already belongs to the
-developer tools and to other assistants' chats, so Edit with AI has no key of its own there — it is in the editor's
+Keyboard Shortcuts binds a key to `inferpal.map`. **Shift+Alt+I** is
+Visual Studio's: Edit with AI has no key of its own in VS Code — it is in the editor's
 context menu and the command palette, and VS Code's Keyboard Shortcuts binds it to the key you want.
 
 | Shortcut | Action |
 |---|---|
-| **Ctrl+Shift+I** | Inline Edit (Edit with AI) on the selection |
+| **Shift+Alt+I** | Inline Edit (Edit with AI) on the selection |
 | **Enter** | Send the message |
 | **Shift+Enter** | Insert a newline in the prompt |
 | **Tab** / **Esc** | Accept / dismiss a ghost-text completion |

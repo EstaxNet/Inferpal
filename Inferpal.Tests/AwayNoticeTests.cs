@@ -267,4 +267,33 @@ public partial class HostServerTests
         Assert.Contains("renderAwayNotice(msg.notice)", webview, StringComparison.Ordinal);
         Assert.Contains("post({ type: 'awayDismissed'", webview, StringComparison.Ordinal);
     }
+
+    /// <summary>The card's Undo follows its run, both ways, in both editors, where a result bar's state is drawn. The card
+    /// and its Review stay: an undone run may still hold what it left, a change can be redone, and in VS Code a review card
+    /// may hang from this one.</summary>
+    [Fact]
+    public void ARunUndone_TakesUndoOffTheCard_InBothEditors_ItsReviewStays()
+    {
+        var root = ConventionCoverageTests.RepoRoot();
+        var chrome = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.Chrome.cs"));
+        var refresh = chrome[chrome.IndexOf("private void RefreshUndoneBars()", StringComparison.Ordinal)..];
+        refresh = refresh[..refresh.IndexOf("private ", 20, StringComparison.Ordinal)];
+        Assert.Contains("m.Role == \"away\"", refresh, StringComparison.Ordinal);
+        Assert.Contains("away.ShowAwayRunUndone(", refresh, StringComparison.Ordinal);
+
+        var item = ConventionCoverageTests.CodeOnly(Path.Combine(root, "Inferpal", "ToolWindow", "ChatMessageItem.cs"));
+        Assert.Contains("SetProperty(ref _canAwayUndo", item, StringComparison.Ordinal);   // the button goes only if told
+        Assert.Contains("RunId          = notice.Run?.RunId", item, StringComparison.Ordinal);
+        var xaml = File.ReadAllText(Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowContent.xaml"));
+        Assert.Matches(@"Visibility=""\{Binding CanAwayUndo, Converter=\{StaticResource b2v\}\}""\s+Command=""\{Binding AwayUndoCommand\}""", xaml);
+
+        var webview = WebviewRebuildTests.TsCode("webview/main.ts");
+        Assert.Contains("block.dataset.runId = run.runId", webview, StringComparison.Ordinal);
+        var shown = webview[webview.IndexOf("function showRunUndone(", StringComparison.Ordinal)..];
+        shown = shown[..shown.IndexOf("const bar", StringComparison.Ordinal)];
+        Assert.Contains(".away-undo", shown, StringComparison.Ordinal);
+        Assert.Contains("line !== null", shown, StringComparison.Ordinal);
+        // A review card outlives the notice it hung from: its own place, once the notice is dismissed.
+        Assert.Contains("const anchor = bar ?? (asked?.isConnected ? asked : null) ?? old;", webview, StringComparison.Ordinal);
+    }
 }

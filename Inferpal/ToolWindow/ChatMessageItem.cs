@@ -146,7 +146,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public bool   CanReview   { get; private set; }
     [DataMember] public string BtnReview   { get; private set; } = string.Empty;
     [DataMember] public AsyncCommand ReviewCommand { get; }
-    /// <summary>The run a result bar or a review card belongs to; empty for any other item.</summary>
+    /// <summary>The run a result bar, a review card or a start's notice belongs to, or a saved message was part of; empty otherwise.</summary>
     internal string RunId { get; private set; } = string.Empty;
     private string _runUndone = string.Empty;
     private bool   _isRunUndone, _showsRunDetail = true;
@@ -436,6 +436,8 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public string AwayRunFiles    { get; private set; } = string.Empty;
     [DataMember] public string AwayRunWarning  { get; private set; } = string.Empty;
     [DataMember] public bool   HasAwayRun      { get; private set; }
+    private bool _canAwayUndo = true;
+    [DataMember] public bool   CanAwayUndo     { get => _canAwayUndo; private set => SetProperty(ref _canAwayUndo, value); }
     [DataMember] public string BtnAwayReview   { get; private set; } = string.Empty;
     [DataMember] public string BtnAwayUndo     { get; private set; } = string.Empty;
     [DataMember] public string AwayDismissTip  { get; private set; } = string.Empty;
@@ -454,6 +456,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             Role           = "away",
             CardTitle      = notice.Title,
             HasAwayRun     = notice.Run is not null,
+            RunId          = notice.Run?.RunId ?? string.Empty,
             AwayRunText    = Plain(notice.Run?.Text ?? string.Empty),
             AwayRunFiles   = notice.Run is { } run
                 ? string.Join("\n", run.Files.Select(f => f.Removed > 0 ? $"{f.Path}   +{f.Added} −{f.Removed}" : $"{f.Path}   +{f.Added}"))
@@ -475,6 +478,10 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         // The sentences are Markdown for VS Code; these blocks are plain text, where a backtick would show as one.
         static string Plain(string text) => text.Replace("`", string.Empty);
     }
+
+    /// <summary>The notice's run as it stands: undone, its Undo has nothing more to do. Its Review stays, for what the run
+    /// left and for Redo.</summary>
+    internal void ShowAwayRunUndone(bool undone) => CanAwayUndo = !undone;
 
     // ── An input card ("inputcard"): an MCP server's form, then Send, Decline, Cancel — the card the Core builds ──
     // Its title is CardTitle, IsAnswered freezes it. Screen only: what it leaves is a receipt ("input"), saved.

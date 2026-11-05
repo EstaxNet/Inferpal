@@ -1457,7 +1457,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SettingsWindowUnreachable" xml:space="preserve"><value>バックエンドに到達できません</value></data>
   <data name="SettingsWindowRefreshModels" xml:space="preserve"><value>モデルを更新</value></data>
   <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>すべてのモデルを表示</value></data>
-  <data name="SettingsWindowTitle" xml:space="preserve"><value>Inferpal の設定</value></data>
+  <data name="SettingsWindowTitle" xml:space="preserve"><value>Inferpal 設定</value></data>
   <data name="SettingsWindowGone" xml:space="preserve"><value>設定ウィンドウのサーバーが停止しました。このページからはもう保存できません。もう一度開くには `Inferpal.Host --settings` を実行してください。</value></data>
   <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>設定ウィンドウのサーバーが停止しました。このページからはもう保存できません。もう一度開くには、スレッドで `/settings` と入力してください。</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>ブラウザーはファイルの場所を Inferpal に渡せません。ファイルのフル パスを入力するか貼り付けてください。</value></data>

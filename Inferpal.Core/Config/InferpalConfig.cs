@@ -351,7 +351,7 @@ internal class InferpalConfig
     public string CodeActionsModel { get; set; } = string.Empty;
 
     /// <summary>
-    /// Model for the Inline Edit (Ctrl+Shift+I) feature.
+    /// Model for the Inline Edit (Shift+Alt+I) feature.
     /// Falls back to <see cref="CodeActionsModel"/>, then <see cref="DefaultModel"/>.
     /// </summary>
     [JsonPropertyName("inlineEditModel")]

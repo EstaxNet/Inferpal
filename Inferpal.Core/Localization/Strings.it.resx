@@ -1457,7 +1457,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="SettingsWindowUnreachable" xml:space="preserve"><value>Backend irraggiungibile</value></data>
   <data name="SettingsWindowRefreshModels" xml:space="preserve"><value>Aggiorna modelli</value></data>
   <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>Mostra tutti i modelli</value></data>
-  <data name="SettingsWindowTitle" xml:space="preserve"><value>Impostazioni di Inferpal</value></data>
+  <data name="SettingsWindowTitle" xml:space="preserve"><value>Impostazioni Inferpal</value></data>
   <data name="SettingsWindowGone" xml:space="preserve"><value>Il server della finestra delle impostazioni si è fermato: da questa pagina non si può più salvare nulla. Esegui di nuovo `Inferpal.Host --settings` per riaprirla.</value></data>
   <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>Il server della finestra delle impostazioni si è fermato: da questa pagina non si può più salvare nulla. Digita `/settings` in un thread per riaprirla.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>Un browser non può indicare a Inferpal la posizione di un file: digita o incolla il percorso completo del file.</value></data>

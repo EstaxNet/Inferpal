@@ -969,6 +969,8 @@ internal partial class InferpalToolWindowData
             var run = runs.LastOrDefault(r => r.Id == bar.RunId);
             bar.ShowRunUndone(run is null ? null : Services.Presentation.RunReview.UndoneBar(_tools.History, run));
         }
+        foreach (var away in Messages.Where(m => m.Role == "away" && m.RunId.Length > 0))
+            away.ShowAwayRunUndone(runs.LastOrDefault(r => r.Id == away.RunId) is { Undone: true });
     }
 
     /// <summary>One undo at a time — the bar's, a typed one, a review card's — and in no run: two at once on one file

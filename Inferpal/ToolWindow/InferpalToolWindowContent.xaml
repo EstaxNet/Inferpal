@@ -2379,6 +2379,7 @@
                                         </Button>
                                         <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" BorderThickness="1" Cursor="Hand"
                                                 Background="Transparent" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                Visibility="{Binding CanAwayUndo, Converter={StaticResource b2v}}"
                                                 Command="{Binding AwayUndoCommand}" AutomationProperties.Name="{Binding BtnAwayUndo}">
                                             <TextBlock Text="{Binding BtnAwayUndo}" FontSize="13" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
                                         </Button>

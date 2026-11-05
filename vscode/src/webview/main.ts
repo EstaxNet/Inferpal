@@ -1535,6 +1535,12 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
 /** A run's result bar as it stands: undone, "Run undone · N changes kept" in place of its files, its check and Undo
  *  (the Core's RunReview.UndoneBar), or its files again when `line` is null. */
 function showRunUndone(runId: string, line: string | null): void {
+  // The start's notice: undone, its Undo has nothing more to do. Its Review stays, for what the run left and for Redo.
+  const away = [...document.querySelectorAll<HTMLElement>('.away-run')].find((b) => b.dataset.runId === runId);
+  const awayUndo = away?.querySelector<HTMLElement>('.away-undo');
+  if (awayUndo) {
+    awayUndo.hidden = line !== null;
+  }
   const bar = [...messagesEl.querySelectorAll<HTMLElement>('.result')].find((b) => b.dataset.runId === runId);
   if (!bar) {
     return;
@@ -1587,6 +1593,7 @@ function renderAwayNotice(notice: AwayNotice): void {
     const run = notice.run;
     const block = document.createElement('div');
     block.className = 'away-item away-run';
+    block.dataset.runId = run.runId;
     const text = document.createElement('div');
     renderMarkdownInto(text, run.text);
     const files = document.createElement('ul');
@@ -1613,13 +1620,15 @@ function renderAwayNotice(notice: AwayNotice): void {
     warning.textContent = run.warning;
     const actions = document.createElement('div');
     actions.className = 'away-actions';
+    const undo = action(notice.undo, false, () => post({ type: 'send', text: `/undo-run #${run.runId}` }));
+    undo.classList.add('away-undo');
     actions.append(
       action(notice.review, true, () => {
         // The run's bar is not on screen: its review goes under this notice.
         reviewAnchors.set(run.runId, card);
         post({ type: 'runReview', runId: run.runId });
       }),
-      action(notice.undo, false, () => post({ type: 'send', text: `/undo-run #${run.runId}` })),
+      undo,
     );
     block.append(text, files, warning, actions);
     card.appendChild(block);
@@ -1662,7 +1671,7 @@ function renderRunReview(runId: string, review: RunReview | null | undefined, me
   // A run whose bar is not on screen (a reloaded conversation): its card goes under the refused "Go back here" that
   // asked for it.
   const asked = reviewAnchors.get(runId);
-  const anchor = bar ?? (asked?.isConnected ? asked : null);
+  const anchor = bar ?? (asked?.isConnected ? asked : null) ?? old;
   if (!anchor) {
     return;
   }

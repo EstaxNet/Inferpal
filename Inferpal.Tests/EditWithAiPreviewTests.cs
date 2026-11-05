@@ -6,7 +6,7 @@ namespace Inferpal.Tests;
 
 /// <summary>
 /// Visual Studio: every edit the model writes into the active document goes through the inline diff preview when
-/// "Show the change before applying it" is on — "Edit with AI" (Ctrl+Shift+I) included.
+/// "Show the change before applying it" is on — "Edit with AI" (Shift+Alt+I) included.
 /// </summary>
 /// <remarks>
 /// The box lives in the settings section named after "Edit with AI", and that command was the one that applied past it:

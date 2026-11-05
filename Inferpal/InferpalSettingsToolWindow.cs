@@ -1,4 +1,5 @@
 using Inferpal.Config;
+using Inferpal.Localization;
 using Inferpal.Services;
 using Inferpal.Services.Mcp;
 using Inferpal.Services.Rag;
@@ -36,7 +37,7 @@ internal class InferpalSettingsToolWindow : VsToolWindow
         _index   = index;
         _docs    = docs;
         _context = context;
-        Title    = "Inferpal Settings";
+        Title    = Strings.SettingsWindowTitle;
     }
 
     public override ToolWindowConfiguration ToolWindowConfiguration => new()

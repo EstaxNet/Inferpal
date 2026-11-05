@@ -293,7 +293,7 @@ public class VsAdapterRegressionTests
         Assert.Contains("CancelledByUser", ConventionCoverageTests.CodeOnly(path));
     }
 
-    /// <summary>Ctrl+Shift+I swallowed a model failure and an edit failure without a word: the user saw
+    /// <summary>Edit with AI swallowed a model failure and an edit failure without a word: the user saw
     /// the spinner vanish and nothing change.</summary>
     [Fact]
     public void InlineEdit_NeverFailsInSilence()

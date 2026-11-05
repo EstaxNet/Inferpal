@@ -1461,7 +1461,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SettingsWindowUnreachable" xml:space="preserve"><value>Backend unreachable</value></data>
   <data name="SettingsWindowRefreshModels" xml:space="preserve"><value>Refresh models</value></data>
   <data name="SettingsWindowShowAllModels" xml:space="preserve"><value>Show all models</value></data>
-  <data name="SettingsWindowTitle" xml:space="preserve"><value>Inferpal settings</value></data>
+  <data name="SettingsWindowTitle" xml:space="preserve"><value>Inferpal Settings</value></data>
   <data name="SettingsWindowGone" xml:space="preserve"><value>The settings window's server has stopped: nothing more can be saved from this page. Run `Inferpal.Host --settings` again to reopen it.</value></data>
   <data name="SettingsWindowGoneInThread" xml:space="preserve"><value>The settings window's server has stopped: nothing more can be saved from this page. Type `/settings` in a thread to reopen it.</value></data>
   <data name="SettingsWindowNoPicker" xml:space="preserve"><value>A browser cannot give a file's location to Inferpal: type or paste the file's full path.</value></data>

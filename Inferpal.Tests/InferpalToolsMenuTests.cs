@@ -37,4 +37,17 @@ public class InferpalToolsMenuTests
         Assert.Contains("new CommandShortcutConfiguration(ModifierKey.LeftAlt, Key.VK_OEM_7)",
                         Code("Inferpal", "Commands", "AskCompletionCommand.cs"), StringComparison.Ordinal);
     }
+
+    /// <summary>Ctrl+Shift+I is the text editor's reverse incremental search, and that scope goes before the Global one an
+    /// extension's key lands in: from the editor the command is never reached, while every document promises it.</summary>
+    [Fact]
+    public void EditWithAi_HasAKeyTheTextEditorDoesNotKeep_AndTheDocsNameIt()
+    {
+        Assert.Contains("new CommandShortcutConfiguration(ModifierKey.ShiftLeftAlt, Key.I)",
+                        Code("Inferpal", "Commands", "InlineEditSelectionCommand.cs"), StringComparison.Ordinal);
+        foreach (var doc in DocCountersTests.LivingDocs())
+            Assert.DoesNotContain("Ctrl+Shift+I", File.ReadAllText(doc), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("**Shift+Alt+I**", File.ReadAllText(Path.Combine(ConventionCoverageTests.RepoRoot(), "docs", "features.md")),
+                        StringComparison.Ordinal);
+    }
 }
