@@ -120,7 +120,7 @@ internal partial class InferpalToolWindowData
         _contextHolder.OpenXray          = OpenXrayFromSettingsAsync;
         _contextHolder.ToolList          = CurrentToolListAsync;
         _contextHolder.SetTool           = SetToolFromSettingsAsync;
-        _ = StartFirstRunDiscoveryAsync();
+        _firstRunAtStart = StartFirstRunDiscoveryAsync();
         _ = _buildMonitor.InitializeAsync();
     }
 

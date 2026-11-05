@@ -33,7 +33,7 @@ public class FirstRunSilenceTests
         var code = ConventionCoverageTests.CodeOnly(
             Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs"));
 
-        const string anchor = "private async Task StartFirstRunDiscoveryAsync()";
+        const string anchor = "private async Task<bool> StartFirstRunDiscoveryAsync()";
         var start = code.IndexOf(anchor, StringComparison.Ordinal);
         Assert.True(start >= 0, "the first-run entry point has been renamed — the rule reads nothing.");
 
@@ -75,6 +75,79 @@ public class FirstRunSilenceTests
     public void ACancelledFirstRun_StaysSilent()
     {
         Assert.Contains("catch (OperationCanceledException) { }", FirstRunBody(), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// One fact decides what the heartbeat says of a first failed check: whether the first run spoke. Each deciding on its
+    /// own reading of the settings, a window that lost the race said nothing at all. Read once: Retry is a gesture, and a
+    /// gesture is answered.
+    /// </summary>
+    [Fact]
+    public void TheHeartbeat_WaitsForTheFirstRun_AndSpeaksUnlessItDid()
+    {
+        var dir = Path.Combine(RepoRoot(), "Inferpal", "ToolWindow");
+        var connection = ConventionCoverageTests.CodeOnly(Path.Combine(dir, "InferpalToolWindowData.Connection.cs"));
+
+        Assert.Contains("var firstRunSpoke = !ok && await FirstRunSpokeAsync(ct);", connection, StringComparison.Ordinal);
+        Assert.Contains("presenter.Evaluate(ok, _client.ConnectionRefusal, firstRunSpoke)", connection, StringComparison.Ordinal);
+        // What the first run adopted, or took from the file, is read after it: the sentence names the address in force.
+        Assert.Contains("if (!ok) (url, switchTo) = (_config.BaseUrl, InferenceProviderFactory.PendingSwitch(_client, _config.Provider));",
+                        connection, StringComparison.Ordinal);
+        // A check started before /setup said a switch does not erase that it was said.
+        Assert.Contains("if (switchTo is not null || InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is null)",
+                        connection, StringComparison.Ordinal);
+        // After the pre-flight flag: a question sent during the wait is refused, not sent to a server that did not answer.
+        Assert.True(connection.IndexOf("_isBackendReachable = ok;", StringComparison.Ordinal)
+                    < connection.IndexOf("await FirstRunSpokeAsync(ct)", StringComparison.Ordinal));
+        Assert.Contains("_firstRunAtStart = StartFirstRunDiscoveryAsync();",
+                        ConventionCoverageTests.CodeOnly(Path.Combine(dir, "InferpalToolWindowData.Construction.cs")), StringComparison.Ordinal);
+
+        var spoke = Discovery(from: "private async Task<bool> FirstRunSpokeAsync(");
+        Assert.Contains("Interlocked.Exchange(ref _firstRunAtStart, null)", spoke, StringComparison.Ordinal);
+        Assert.Contains("discovery.WaitAsync(FirstRunWait, ct)", spoke, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Without a card the first run says nothing and answers false, so the heartbeat says the server is down, with its
+    /// remedies: where no card comes (no winget, a server that wants a key), that sentence is all there is.
+    /// </summary>
+    [Fact]
+    public void AFirstRunWithoutACard_LeavesTheServerToTheHeartbeat()
+    {
+        var discovery = Discovery();
+        var automatic = discovery[discovery.IndexOf("if (automatic)", StringComparison.Ordinal)..];
+        automatic = automatic[..automatic.IndexOf("await present((client.ConnectionRefusal", StringComparison.Ordinal)];
+
+        Assert.Contains("&& await OfferServerInstallAsync(", automatic, StringComparison.Ordinal);
+        Assert.Contains("return client.ConnectionRefusal is null", automatic, StringComparison.Ordinal);
+        Assert.DoesNotContain("present(", automatic, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// An adopted server's switch is said once, last in the bubble that names the server: it came out alone before it, and
+    /// the heartbeat said it again. Marked only once on screen. The Send refusal answers a gesture and stays.
+    /// </summary>
+    [Fact]
+    public void AnAdoptedServer_IsSaidOnce_InTheBubbleThatNamesIt()
+    {
+        var discovery = Discovery();
+        var say = discovery[discovery.IndexOf("async Task<bool> SayFoundAsync(", StringComparison.Ordinal)..];
+        say = say[..say.IndexOf("return true;", StringComparison.Ordinal)];
+
+        Assert.True(say.IndexOf("await present(", StringComparison.Ordinal) < say.IndexOf("_announcedSwitch = adoptedSwitch;", StringComparison.Ordinal));
+        Assert.Contains("adoptedSwitch == _announcedSwitch", say, StringComparison.Ordinal);   // a tick said it first
+        Assert.DoesNotContain("present(BackendSwitchPendingText(adoptedSwitch))", discovery, StringComparison.Ordinal);
+        Assert.Contains("return await SayFoundAsync(text)", discovery, StringComparison.Ordinal);
+        Assert.Contains("return await SayFoundAsync(foundNote + Strings.MsgFirstRunNoModels(", discovery, StringComparison.Ordinal);
+    }
+
+    private static string Discovery(string from = "private async Task<bool> RunSetupDiscoveryAsync(")
+    {
+        var code = ConventionCoverageTests.CodeOnly(
+            Path.Combine(RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs"));
+        var start = code.IndexOf(from, StringComparison.Ordinal);
+        Assert.True(start >= 0, "the discovery has been renamed: the rule reads nothing.");
+        return code[start..];
     }
 
     /// <summary>The sentence names a gesture that exists: <c>/setup</c> re-runs the discovery.</summary>

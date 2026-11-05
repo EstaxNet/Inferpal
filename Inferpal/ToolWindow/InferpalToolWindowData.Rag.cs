@@ -158,21 +158,22 @@ internal partial class InferpalToolWindowData
     /// On first launch: pings the backend, discovers models, picks the best one, and posts a welcome bubble. Clears
     /// <see cref="InferpalConfig.IsFirstRun"/> once a model is chosen — also run again when the connection comes back.
     /// </summary>
-    private async Task StartFirstRunDiscoveryAsync()
+    /// <returns>Whether the conversation heard about the server (<see cref="FirstRunSpokeAsync"/>).</returns>
+    private async Task<bool> StartFirstRunDiscoveryAsync()
     {
         // One run at a time: the window's start and a heartbeat that sees the backend come back can both ask.
-        if (Interlocked.Exchange(ref _firstRunInFlight, 1) == 1) return;
+        if (Interlocked.Exchange(ref _firstRunInFlight, 1) == 1) return false;
         try
         {
-            if (!_config.IsFirstRun) return;
+            if (!_config.IsFirstRun) return false;
 
             // Let the heartbeat complete its first check (2 s delay + RTT) before we act.
             await Task.Delay(3_500).ConfigureAwait(false);
 
-            if (!_config.IsFirstRun) return; // guard against re-entry
+            if (!_config.IsFirstRun) return false; // guard against re-entry
 
             // First-run posts its bubbles directly (no user turn exists yet to attach a reply to).
-            await RunSetupDiscoveryAsync(FirstRunPresentAsync, CancellationToken.None, automatic: true).ConfigureAwait(false);
+            return await RunSetupDiscoveryAsync(FirstRunPresentAsync, CancellationToken.None, automatic: true).ConfigureAwait(false);
         }
         // ⚠ The first run is the one moment where silence costs the most: the window opens on an
         // EMPTY conversation, so a swallowed failure leaves someone who has just installed the
@@ -183,10 +184,26 @@ internal partial class InferpalToolWindowData
         {
             Diagnostics.Swallow("Rag.FirstRun", ex);
             var detail = ex.Message;
-            try { await FirstRunPresentAsync(Strings.FirstRunFailed(detail)).ConfigureAwait(false); }
+            try { await FirstRunPresentAsync(Strings.FirstRunFailed(detail)).ConfigureAwait(false); return true; }
             catch (Exception notice) { Diagnostics.Swallow("Rag.FirstRunNotice", notice); }
         }
         finally { Interlocked.Exchange(ref _firstRunInFlight, 0); }
+        return false;
+    }
+
+    private static readonly TimeSpan FirstRunWait = TimeSpan.FromSeconds(60);
+
+    /// <summary>
+    /// Whether the window's first run said what answers where: the heartbeat's first failed check waits for it, and says the
+    /// server down only if it did not. Asked once: Retry is a gesture, and gets its sentence.
+    /// </summary>
+    /// <remarks>⚠ Bounded: the window's whole connection state hangs on the heartbeat, and a discovery that does not end must
+    /// not stop it. Past the wait, the heartbeat says what it knows.</remarks>
+    private async Task<bool> FirstRunSpokeAsync(CancellationToken ct)
+    {
+        if (Interlocked.Exchange(ref _firstRunAtStart, null) is not { } discovery) return false;
+        try { return await discovery.WaitAsync(FirstRunWait, ct).ConfigureAwait(false); }
+        catch (TimeoutException) { return false; }
     }
 
     /// <summary>Presenter used by the automatic first-run path: inserts a themed assistant bubble.</summary>
@@ -207,10 +224,11 @@ internal partial class InferpalToolWindowData
     /// models, seeds the VRAM budget, and reports the result via <paramref name="present"/>. Clears
     /// <see cref="InferpalConfig.IsFirstRun"/> once a model is chosen. Re-runnable on demand (no IsFirstRun guard here).
     /// </summary>
-    /// <param name="automatic">The first run, not <c>/setup</c>: an unreachable backend is then left to the
-    /// heartbeat, whose first failed check already says it with the same remedies — and the first run, which now
-    /// resumes at every start until a model is chosen, would repeat it at every start.</param>
-    private async Task RunSetupDiscoveryAsync(Func<string, Task> present, CancellationToken ct, bool automatic = false)
+    /// <param name="automatic">The first run, not <c>/setup</c>: an unreachable backend then gets the install card, or is left
+    /// to the heartbeat, which waits for this answer and says it with its remedies — the first run, which resumes at every
+    /// start until a model is chosen, would otherwise repeat them.</param>
+    /// <returns>Whether the conversation heard about the server: false leaves it to the heartbeat.</returns>
+    private async Task<bool> RunSetupDiscoveryAsync(Func<string, Task> present, CancellationToken ct, bool automatic = false)
     {
         var url = _config.BaseUrl;
 
@@ -229,7 +247,10 @@ internal partial class InferpalToolWindowData
         // The discovery below uses a matching client, the chat does not: without this, "auto-selected" is followed by
         // turns that fail against a running server.
         if (Services.Inference.InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is { } switchTo)
+        {
             await present(BackendSwitchPendingText(switchTo)).ConfigureAwait(false);
+            _announcedSwitch = switchTo;   // said here: the heartbeat does not say it again
+        }
 
         // ── 1. Connectivity check ─────────────────────────────────────────────
         // A successful probe already proves reachability; otherwise fall back to the client's own check.
@@ -239,6 +260,17 @@ internal partial class InferpalToolWindowData
         // Where else a server answers: a first run that chose nothing yet takes it (ServerScan.ToAdopt, said in the
         // bubble); otherwise each place's answer goes with the remedy.
         string? foundNote = null;
+        string? adoptedSwitch = null;
+        // A switch is said last in the bubble that names the server: alone and before it, it names one nobody has heard of
+        // yet. Marked once on screen: stopped before that, it stays the heartbeat's to say, and if a tick got there first
+        // (Look again on the card runs beside the heartbeat), it is not said twice.
+        async Task<bool> SayFoundAsync(string found)
+        {
+            await present(adoptedSwitch is null || adoptedSwitch == _announcedSwitch
+                ? found : found + "\n\n" + BackendSwitchPendingText(adoptedSwitch)).ConfigureAwait(false);
+            if (adoptedSwitch is not null) _announcedSwitch = adoptedSwitch;
+            return true;
+        }
         if (!reachable)
         {
             var places = await Services.Inference.ServerScan.ScanAsync(
@@ -255,14 +287,13 @@ internal partial class InferpalToolWindowData
                 // when the connection comes back (heartbeat) or at the next start.
                 if (automatic)
                 {
-                    // The heartbeat says the server is down; how to get one it cannot say: the install card, once per
-                    // Visual Studio, and only for someone who never chose a server (one who did is not sent to install
-                    // another) and whose server did not refuse a key (a refusal means one runs).
-                    if (client.ConnectionRefusal is null && Services.Inference.ServerScan.NothingChosen(_config)
-                        && Services.Inference.ServerInstall.Offers(places))
-                        await OfferServerInstallAsync($"**{Strings.SetupNothingTitle}**\n\n" + placesText, once: true)
+                    // How to get a server the heartbeat cannot say: the install card, once per Visual Studio, and only for
+                    // someone who never chose a server (one who did is not sent to install another) and whose server did
+                    // not refuse a key (a refusal means one runs). Without a card, the heartbeat says the server is down.
+                    return client.ConnectionRefusal is null && Services.Inference.ServerScan.NothingChosen(_config)
+                        && Services.Inference.ServerInstall.Offers(places)
+                        && await OfferServerInstallAsync($"**{Strings.SetupNothingTitle}**\n\n" + placesText, once: true)
                             .ConfigureAwait(false);
-                    return;
                 }
                 // A server that refused the check (a wrong API key) is running: "start it" is the wrong remedy.
                 await present((client.ConnectionRefusal is { } refusal
@@ -276,7 +307,7 @@ internal partial class InferpalToolWindowData
                     && (Services.Inference.ServerScan.NothingChosen(_config)
                         || Services.Inference.ServerScan.SameAddress(url, Services.Inference.ServerInstall.OllamaAddress)))
                     await OfferServerInstallAsync(null, once: false).ConfigureAwait(false);
-                return;
+                return true;
             }
 
             var before = Services.Inference.ServerChange.Before(_config);
@@ -290,8 +321,7 @@ internal partial class InferpalToolWindowData
             foundNote = $"**{Strings.SetupFoundTitle}** — " + (found.ListFailure is null
                 ? Strings.SetupFoundLead(found.Name, found.Url, found.ChatModels + found.SearchModels)
                 : found.Line) + "\n\n";
-            if (Services.Inference.InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is { } adoptedSwitch)
-                await present(BackendSwitchPendingText(adoptedSwitch)).ConfigureAwait(false);
+            adoptedSwitch = Services.Inference.InferenceProviderFactory.PendingSwitch(_client, _config.Provider);
         }
 
         // ── 2. Model discovery ────────────────────────────────────────────────
@@ -307,10 +337,9 @@ internal partial class InferpalToolWindowData
             await Services.Hardware.HardwareProfile.EnsureBudgetAsync(_config, ct).ConfigureAwait(false);
             var pull = Services.Inference.ModelAdvisor.DownloadToName(_config.Provider, _config.VramBudgetGb);
             // The backend DETECTED above, not "Ollama": an LM Studio with nothing downloaded lands here too.
-            await present(foundNote + Strings.MsgFirstRunNoModels(
+            return await SayFoundAsync(foundNote + Strings.MsgFirstRunNoModels(
                 Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider),
                 client.Capabilities.ModelManagement, pull?.Tag, pull?.Name)).ConfigureAwait(false);
-            return;
         }
 
         // ── 3. Auto-configure ─────────────────────────────────────────────────
@@ -371,7 +400,7 @@ internal partial class InferpalToolWindowData
             && Services.Inference.EmbeddingModels.PassedOver(embModels) is { Count: > 0 } passedOver)
             text += "\n\n" + Strings.SuggestEmbeddingBelowKeywords(passedOver);
         if (vramWarning is not null) text += "\n\n" + vramWarning;
-        await present(text).ConfigureAwait(false);
+        return await SayFoundAsync(text).ConfigureAwait(false);
     }
 
     /// <summary>Handles <c>/setup</c>: re-runs the first-run discovery on demand (re-detect backend, re-pick models).</summary>

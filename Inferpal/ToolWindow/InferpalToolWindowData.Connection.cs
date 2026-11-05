@@ -198,7 +198,12 @@ internal partial class InferpalToolWindowData
 
                 _isBackendReachable = ok; // volatile write — read by SendCoreAsync pre-flight
 
-                var status = presenter.Evaluate(ok, _client.ConnectionRefusal);
+                // A first run says what answers where: before it, the sentence below told someone with LM Studio to start
+                // Ollama. Waited for, so that one fact decides; what it adopted or read from the file is read after it.
+                var firstRunSpoke = !ok && await FirstRunSpokeAsync(ct);
+                if (!ok) (url, switchTo) = (_config.BaseUrl, InferenceProviderFactory.PendingSwitch(_client, _config.Provider));
+
+                var status = presenter.Evaluate(ok, _client.ConnectionRefusal, firstRunSpoke);
 
                 await RunOnVMContextAsync(() =>
                 {
@@ -219,7 +224,10 @@ internal partial class InferpalToolWindowData
                                                              _client.ConnectionRefusal),
                         _                             => null,
                     };
-                    _announcedSwitch = switchTo;   // said once per switch; a switch back is said by "Restored"
+                    // Said once per switch; a switch back after a "lost" is said by "Restored". Read again: /setup may have
+                    // said one during this check, and null here would have the next tick say it twice.
+                    if (switchTo is not null || InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is null)
+                        _announcedSwitch = switchTo;
                     if (edgeMessage is not null)
                     {
                         var msg = ChatMessageItem.NoticeMsg(edgeMessage);

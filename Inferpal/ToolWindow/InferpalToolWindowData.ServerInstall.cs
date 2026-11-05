@@ -25,11 +25,13 @@ internal partial class InferpalToolWindowData
     /// Windows), or when a card still waits.
     /// </summary>
     /// <param name="once">The automatic first run: once per Visual Studio.</param>
-    private async Task OfferServerInstallAsync(string? lead, bool once)
+    /// <returns>Whether the offer is in the conversation: false when the machine offers nothing, or the automatic run
+    /// offered it already.</returns>
+    private async Task<bool> OfferServerInstallAsync(string? lead, bool once)
     {
         var offer = ServerInstall.OfferFor(null);
-        if (!offer.Runs) return;
-        if (once && Interlocked.Exchange(ref _serverInstallOffered, 1) == 1) return;
+        if (!offer.Runs) return false;
+        if (once && Interlocked.Exchange(ref _serverInstallOffered, 1) == 1) return false;
         var card = ServerInstallCard.For(offer, null);
         await RunOnVMContextAsync(() =>
         {
@@ -53,6 +55,7 @@ internal partial class InferpalToolWindowData
             Messages.Insert(Messages.Count - 2, item);
             ScrollToBottom();
         });
+        return true;
     }
 
     /// <summary>

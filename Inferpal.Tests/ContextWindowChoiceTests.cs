@@ -271,7 +271,7 @@ public sealed class ContextWindowChoiceTests : IDisposable
     {
         var code = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(),
                                                                  "Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs"));
-        var start = code.IndexOf("private async Task RunSetupDiscoveryAsync", StringComparison.Ordinal);
+        var start = code.IndexOf("private async Task<bool> RunSetupDiscoveryAsync", StringComparison.Ordinal);
         Assert.True(start >= 0, "RunSetupDiscoveryAsync not found");   // WITNESS
         var body = code[start..code.IndexOf("private async Task HandleSetupCommandAsync", start, StringComparison.Ordinal)];
 
