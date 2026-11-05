@@ -962,6 +962,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Test {0}/{1}…</value></data>
   <data name="TddFixing" xml:space="preserve"><value>🔧 Correzione {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Suite di test verde dopo {0} round.</value></data>
+  <data name="TddPartialSuccess" xml:space="preserve"><value>✅ Verde dopo {0} {0:round|round}, solo su una parte della suite di test: il resto non è stato eseguito.</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ I test falliscono ancora dopo {0} round — è necessario un intervento manuale.</value></data>
   <data name="TddDebugCaptureApproval" xml:space="preserve"><value>Rieseguire il test fallito '{0}' sotto il debugger per catturarne lo stato al punto di errore? (chiesto una volta per esecuzione di /tdd)</value></data>
   <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 Cattura dello stato del debugger al punto di errore…</value></data>

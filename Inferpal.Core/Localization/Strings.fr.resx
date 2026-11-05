@@ -966,6 +966,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>
   <data name="TddFixing" xml:space="preserve"><value>🔧 Correction {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Suite de tests verte après {0} tour(s).</value></data>
+  <data name="TddPartialSuccess" xml:space="preserve"><value>✅ Vert après {0} {0:tour|tours}, sur une partie de la suite de tests seulement : le reste n'a pas tourné.</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ Tests toujours en échec après {0} tour(s) — intervention manuelle requise.</value></data>
   <data name="TddDebugCaptureApproval" xml:space="preserve"><value>Relancer le test en échec '{0}' sous le débogueur pour capturer son état au point d'échec ? (demandé une fois par run /tdd)</value></data>
   <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 Capture de l'état du débogueur au point d'échec…</value></data>

@@ -962,6 +962,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 테스트 {0}/{1}…</value></data>
   <data name="TddFixing" xml:space="preserve"><value>🔧 수정 {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ {0}번의 라운드 후 테스트 스위트가 통과했습니다.</value></data>
+  <data name="TddPartialSuccess" xml:space="preserve"><value>✅ {0}번의 라운드 후 통과했지만 테스트 스위트의 일부만 실행했습니다. 나머지는 실행되지 않았습니다.</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ {0}번의 라운드 후에도 테스트 실패 — 수동 개입이 필요합니다.</value></data>
   <data name="TddDebugCaptureApproval" xml:space="preserve"><value>실패한 테스트 '{0}'을(를) 디버거로 다시 실행하여 실패 지점의 상태를 캡처할까요? (/tdd 실행당 한 번 확인)</value></data>
   <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 실패 지점의 디버거 상태를 캡처하는 중…</value></data>

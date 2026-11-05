@@ -120,7 +120,7 @@ public class TddTests
         var result = await RunAsync(client, tools, ["/tdd", "MyTest"],
             onTestReport: (o, g) => reports.Add((o, g)), systemPrompt: "SYS");
 
-        Assert.Equal(Strings.TddSuccess(2), result.Message);
+        Assert.Equal(Strings.TddPartialSuccess(2), result.Message);
 
         var run = Assert.Single(client.AgentRuns);
         Assert.Equal("coder", run.Model);                             // agent role, not chat model
@@ -445,8 +445,35 @@ public class TddTests
         var result = await RunAsync(client, tools, ["/tdd", "MyFilter"]);
 
         Assert.Contains(Strings.TddNothingRan, result.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain(Strings.TddSuccess(2), result.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Strings.TddPartialSuccess(2), result.Message, StringComparison.Ordinal);
         Assert.Single(client.AgentRuns);                              // the one real red round
+    }
+
+    /// <summary>Part of the suite ran: another test can be red, and "the suite is green" would be a verdict on tests that
+    /// never ran. Reference arm: <see cref="GreenFirstRound_StopsWithoutAgent"/>, the whole suite.</summary>
+    [Theory]
+    [InlineData("MyTest", "")]                                                     // a filter
+    [InlineData(null, "⚙ Note: root holds no single solution or project, so this run used A.sln. Not run: B.sln — pass 'path' to run one.\n\n")]
+    public async Task PartOfTheSuite_IsSaidAsPart_NeverAsTheSuite(string? filter, string note)
+    {
+        var tools = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue(note.Replace("⚙ Note: ", Services.Tools.ClampedArgument.NotePrefix) + Green);
+
+        var result = await RunAsync(new FakeInferenceProvider(), tools, filter is null ? ["/tdd"] : ["/tdd", filter]);
+
+        Assert.Equal(Strings.TddPartialSuccess(1), result.Message);
+    }
+
+    /// <summary>A filter this Node could not apply: the whole suite ran, and it is the suite that is green.</summary>
+    [Fact]
+    public async Task AFilterNotApplied_LeavesTheWholeSuiteGreen()
+    {
+        var tools = new FakeToolRegistry();
+        tools.TestOutputs.Enqueue($"{Services.Tools.RunTestsTool.FilterNotAppliedPrefix}MyTest' was NOT applied. The whole suite ran.\n\n{Green}");
+
+        var result = await RunAsync(new FakeInferenceProvider(), tools, ["/tdd", "MyTest"]);
+
+        Assert.Equal(Strings.TddSuccess(1), result.Message);
     }
 
     [Fact]

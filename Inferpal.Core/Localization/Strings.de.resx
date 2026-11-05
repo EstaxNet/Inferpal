@@ -962,6 +962,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>
   <data name="TddFixing" xml:space="preserve"><value>🔧 Korrektur {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Testsuite nach {0} Runde(n) grün.</value></data>
+  <data name="TddPartialSuccess" xml:space="preserve"><value>✅ Nach {0} {0:Runde|Runden} grün, aber nur für einen Teil der Testsuite: Der Rest lief nicht.</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ Tests schlagen nach {0} Runde(n) immer noch fehl — manueller Eingriff erforderlich.</value></data>
   <data name="TddDebugCaptureApproval" xml:space="preserve"><value>Den fehlgeschlagenen Test '{0}' unter dem Debugger erneut ausführen, um seinen Zustand am Fehlerpunkt zu erfassen? (einmal pro /tdd-Lauf gefragt)</value></data>
   <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 Debugger-Zustand am Fehlerpunkt wird erfasst…</value></data>

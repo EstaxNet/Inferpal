@@ -962,6 +962,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Tests {0}/{1}…</value></data>
   <data name="TddFixing" xml:space="preserve"><value>🔧 Corrección {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Suite de tests en verde tras {0} ronda(s).</value></data>
+  <data name="TddPartialSuccess" xml:space="preserve"><value>✅ En verde tras {0} {0:ronda|rondas}, solo en una parte de la suite de pruebas: el resto no se ejecutó.</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ Los tests siguen fallando tras {0} ronda(s) — se requiere intervención manual.</value></data>
   <data name="TddDebugCaptureApproval" xml:space="preserve"><value>¿Volver a ejecutar la prueba fallida '{0}' bajo el depurador para capturar su estado en el punto de fallo? (se pregunta una vez por ejecución de /tdd)</value></data>
   <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 Capturando el estado del depurador en el punto de fallo…</value></data>

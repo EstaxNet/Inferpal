@@ -962,6 +962,7 @@
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 测试 {0}/{1}…</value></data>
   <data name="TddFixing" xml:space="preserve"><value>🔧 修复 {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ 经过 {0} 轮后测试套件全部通过。</value></data>
+  <data name="TddPartialSuccess" xml:space="preserve"><value>✅ 经过 {0} 轮后通过，但只运行了部分测试：其余测试未运行。</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ 经过 {0} 轮后测试仍然失败 — 需要手动干预。</value></data>
   <data name="TddDebugCaptureApproval" xml:space="preserve"><value>是否在调试器下重新运行失败的测试 '{0}'，以捕获失败点的状态？（每次 /tdd 运行只询问一次）</value></data>
   <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 正在捕获失败点的调试器状态…</value></data>

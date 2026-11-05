@@ -169,7 +169,7 @@ internal class RunTestsTool : ITool
             .Select(f => Path.GetRelativePath(folder, f).Replace('\\', '/'))
             .ToList();
         var notRun = others.Count == 0 ? "" :
-            $" Not run: {string.Join(", ", others.Take(5))}{(others.Count > 5 ? $" and {others.Count - 5} more" : "")}"
+            $"{NotRunNote}{string.Join(", ", others.Take(5))}{(others.Count > 5 ? $" and {others.Count - 5} more" : "")}"
             + " — pass 'path' to run one.";
         return (chosen, $"{ClampedArgument.NotePrefix}{folder} holds no single solution or project, so this run used "
                       + $"{Path.GetRelativePath(folder, chosen).Replace('\\', '/')}.{notRun}\n\n");
@@ -301,6 +301,9 @@ internal class RunTestsTool : ITool
     /// tool writes above its report starts with <see cref="ClampedArgument.NotePrefix"/>.</summary>
     internal const string FilterNotAppliedPrefix = "⚠ The filter '";
 
+    /// <summary>What the note of a run that chose one solution or project among several names next.</summary>
+    private const string NotRunNote = " Not run: ";
+
     /// <summary>
     /// The report under the notes this tool put above it: what a reader of the VERDICT line reads. A note qualifies
     /// the report, so it comes first — and the readers of the first line read a green run under a note as red, and
@@ -316,6 +319,17 @@ internal class RunTestsTool : ITool
             t = t[(end + 2)..].TrimStart();
         }
         return t;
+    }
+
+    /// <summary>
+    /// Whether a report speaks for part of the suite only: a filter that narrowed the run, or one solution chosen among
+    /// several. Judged on the notes above it: a filter Node did not apply ran the whole suite.
+    /// </summary>
+    internal static bool RanPartOfTheSuite(string report, string? filter)
+    {
+        var notes = report[..^WithoutNotes(report).Length];
+        return notes.Contains(NotRunNote, StringComparison.Ordinal)
+            || (!string.IsNullOrWhiteSpace(filter) && !notes.Contains(FilterNotAppliedPrefix, StringComparison.Ordinal));
     }
 
     /// <summary>

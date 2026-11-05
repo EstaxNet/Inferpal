@@ -1954,6 +1954,8 @@ internal static class Strings
     public static string TddRunningTests(int round, int max) => Format(Get(nameof(TddRunningTests)), round, max);
     public static string TddFixing(int round)                => Format(Get(nameof(TddFixing)), round);
     public static string TddSuccess(int rounds)              => Format(Get(nameof(TddSuccess)), rounds);
+    /// <summary>Part of the suite ran: green says nothing of the rest. {0}=rounds.</summary>
+    public static string TddPartialSuccess(int rounds)       => Format(Get(nameof(TddPartialSuccess)), rounds);
     public static string TddGiveUp(int maxRounds)            => Format(Get(nameof(TddGiveUp)), maxRounds);
     /// <summary>
     /// The loop stopped because the run executed no test — a third state, between "green" and

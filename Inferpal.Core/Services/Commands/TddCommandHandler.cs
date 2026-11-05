@@ -93,7 +93,8 @@ internal static class TddCommandHandler
             bool green = TestsPassed(output);
             onTestReport?.Invoke(output, green);
 
-            if (green)              return new(Strings.TddSuccess(round));
+            if (green)              return new(Tools.RunTestsTool.RanPartOfTheSuite(output, filter) ? Strings.TddPartialSuccess(round)
+                                                                                                    : Strings.TddSuccess(round));
             if (round == MaxRounds) return new(Strings.TddGiveUp(MaxRounds));
 
             // ── State at the failure point, captured under the editor's debugger ──

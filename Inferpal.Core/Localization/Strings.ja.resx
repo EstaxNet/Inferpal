@@ -962,6 +962,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 テスト {0}/{1}…</value></data>
   <data name="TddFixing" xml:space="preserve"><value>🔧 修正 {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ {0} ラウンド後にテストスイートがグリーンになりました。</value></data>
+  <data name="TddPartialSuccess" xml:space="preserve"><value>✅ {0} ラウンド後にグリーンですが、テストスイートの一部のみです。残りは実行していません。</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ {0} ラウンド後もテストが失敗しています — 手動での対応が必要です。</value></data>
   <data name="TddDebugCaptureApproval" xml:space="preserve"><value>失敗したテスト '{0}' をデバッガーで再実行し、失敗時点の状態を取得しますか？（/tdd 実行ごとに 1 回確認）</value></data>
   <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 失敗時点のデバッガー状態を取得しています…</value></data>

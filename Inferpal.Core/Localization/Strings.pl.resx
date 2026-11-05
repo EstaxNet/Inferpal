@@ -962,6 +962,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="TddRunningTests" xml:space="preserve"><value>🧪 Testy {0}/{1}…</value></data>
   <data name="TddFixing" xml:space="preserve"><value>🔧 Poprawka {0}…</value></data>
   <data name="TddSuccess" xml:space="preserve"><value>✅ Zestaw testów zielony po {0} rundzie/rundach.</value></data>
+  <data name="TddPartialSuccess" xml:space="preserve"><value>✅ Zielono po {0} {0:rundzie|rundach|rundach}, ale tylko dla części zestawu testów: reszta nie została uruchomiona.</value></data>
   <data name="TddGiveUp" xml:space="preserve"><value>❌ Testy nadal nie przechodzą po {0} rundach — wymagana ręczna interwencja.</value></data>
   <data name="TddDebugCaptureApproval" xml:space="preserve"><value>Uruchomić ponownie nieudany test '{0}' pod debugerem, aby przechwycić jego stan w punkcie awarii? (pytanie raz na przebieg /tdd)</value></data>
   <data name="TddDebugCapturing" xml:space="preserve"><value>🔬 Przechwytywanie stanu debugera w punkcie awarii…</value></data>
