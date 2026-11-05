@@ -52,6 +52,27 @@ public sealed class OneCommandReaderTests : IDisposable
         Assert.False(CommandLine.Hides("dotnet test ${env:CONFIG}", posix: false));
     }
 
+    /// <summary>A separator inside brackets belongs to what they hold: cut there, the bracket never closes and the first
+    /// command inside is read by nobody.</summary>
+    [Theory]
+    [InlineData("echo $(rm -rf src; true)", true)]
+    [InlineData("echo $(rm -rf src; true)", false)]
+    [InlineData("x=$(rm -rf src && echo ok)", true)]
+    [InlineData("(cd a; rm -rf src)", true)]
+    [InlineData("echo `rm -rf src; true`", true)]
+    [InlineData("@{a=1;b=rm -rf src}", false)]
+    [InlineData("if ($x) { rm -rf src; ls }", false)]
+    public void ACommandInBracketsBesideAnother_IsAStepOfItsOwn(string line, bool posix) =>
+        Assert.Contains(CommandLine.Steps(line, posix), s => s.Trim() == "rm -rf src");
+
+    /// <summary>A bracket that never closes holds nothing: the line reads as it did, and goes to the card.</summary>
+    [Fact]
+    public void AStrayBracket_LosesNoStep()
+    {
+        Assert.Contains(CommandLine.Steps("echo ( ; rm -rf src", posix: true), s => s.Trim() == "rm -rf src");
+        Assert.True(CommandLine.Hides("echo ( ; rm -rf src", posix: true));
+    }
+
     /// <summary>⚠ The package check reads every command the line runs — one inside a subexpression, a grouping, a hashtable,
     /// backticks or a process substitution too —, an invented package installed there is checked like one at the top.</summary>
     [Theory]

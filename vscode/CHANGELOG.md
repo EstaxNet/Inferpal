@@ -3,6 +3,29 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.10
+
+Close the editor in the middle of a run and come back tomorrow: Inferpal tells you what happened and hands your
+conversation back as you left it.
+
+- **"While you were away"**: at the next start, a card above the conversation says what closing the editor left: the run
+  it cut, with **Review changes** and **Undo run**, background tasks it stopped, with **Retry**, and reports you never
+  opened. Dismissed, it stays gone.
+- **A question is kept as soon as it is sent**, and a conversation comes back with its own Plan mode, tools, step mode,
+  X-Ray sections and `/plan` file. A compacted one comes back compacted.
+- **`/task` results survive a restart**: `/task retry <id>` runs a task again under a new number, a number is never given
+  twice, and queued tasks wait for your model server.
+- **Approvals judge the file a call reaches**, not only how its path is written. Writing in `.git` always asks, even after
+  "Always", and so does a command that runs outside the workspace. A command hidden inside another is read like any other.
+- **Settings saved in the other editor** are taken before your next question and when the settings panel opens. When the
+  chat moves to another server, the models chosen for the old one no longer come along.
+- **An approval card left waiting gives the graphics card back** after ten seconds, so completions and indexing carry on.
+- **Plan mode always plans first.** `/tdd` says when only part of the suite ran, and a fresh clone of a .NET project says
+  `dotnet restore` comes first instead of "build failed".
+- **Fixed**: `/history <term>` finds the conversation on screen; "Loading the model" while the server loads it; a chat model
+  the server lacks is said when the editor connects; paused completions say so in the status bar; a repository's MCP
+  servers follow the branch; Windows paths show as written; session files no longer grow by every tool output.
+
 ## 1.8.9
 
 No model server yet? On Windows, Inferpal now installs Ollama for you, after showing you the command.

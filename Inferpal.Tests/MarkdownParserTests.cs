@@ -31,6 +31,7 @@ public class MarkdownParserTests
     [InlineData(@"D:\Projets\Été\.vs\x", @"D:\Projets\Été\.vs\x")]
     [InlineData(@"(voir C:\a\.b).", @"(voir C:\a\.b).")]
     [InlineData(@"**C:\a\.b**", @"C:\a\.b")]
+    [InlineData(@"[C:\src\App.cs](https://example.com/App.cs)", @"C:\src\App.cs")]
     public void AWindowsPath_ShowsAsItIsWritten(string source, string shown) =>
         Assert.Equal(shown, InlineText(Assert.Single(MarkdownParser.Parse(source))));
 

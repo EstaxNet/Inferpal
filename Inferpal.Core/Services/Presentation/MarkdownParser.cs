@@ -44,7 +44,7 @@ internal static class MarkdownParser
             if (!OpensAPath(text.AsSpan(start, slice.Start - start), slice.PeekChar(1))) return false;
 
             var end = slice.Start;
-            while (end <= slice.End && !char.IsWhiteSpace(text[end])) end++;
+            while (end <= slice.End && !char.IsWhiteSpace(text[end]) && text[end] is not (']' or '|')) end++;
             while (end > slice.Start + 1 && AfterAWord.Contains(text[end - 1])) end--;
             processor.Inline = new LiteralInline(text[slice.Start..end]);
             slice.Start = end;

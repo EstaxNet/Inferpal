@@ -41,7 +41,7 @@ internal static class CommandLine
 
     /// <summary>
     /// The steps of <paramref name="line"/> in the order the shell runs them: split at <c>&amp;&amp;</c>, <c>||</c>, <c>;</c>,
-    /// <c>|</c>, a lone <c>&amp;</c> and line breaks — outside quotes, an escaped character taken as written —, as written
+    /// <c>|</c>, a lone <c>&amp;</c> and line breaks — outside quotes and brackets, an escaped character taken as written —, as written
     /// (not trimmed); each preceded by the steps of the commands it runs INSIDE itself — a subexpression <c>$( )</c> or
     /// <c>@( )</c>, a grouping <c>( )</c>, a process substitution <c>&lt;( )</c>, a PowerShell block or hashtable <c>{ }</c>,
     /// backticks under a POSIX shell.
@@ -78,11 +78,15 @@ internal static class CommandLine
     private static bool PosixShell() => Shell.ShellLauncher.Resolve().Dialect != Shell.ShellDialect.PowerShell;
 
     /// <summary>The top-level steps of <paramref name="line"/>, quote- and escape-aware, as written.</summary>
-    private static List<string> TopLevel(string line, bool posix)
+    /// <remarks>⚠ A separator inside brackets belongs to what they hold: cut there, <c>echo $(rm -rf src; true)</c> leaves a
+    /// bracket that never closes, <see cref="Inner"/> reads nothing, and a <c>deny</c> misses the <c>rm</c> it sees in
+    /// <c>echo $(rm -rf src)</c>. A line whose brackets do not close is read without them: nothing is lost to a stray one.</remarks>
+    private static List<string> TopLevel(string line, bool posix, bool brackets = true)
     {
         var steps = new List<string>();
         var step = new StringBuilder();
         char? quote = null;
+        var depth = 0;
         for (var i = 0; i < line.Length; i++)
         {
             var c = line[i];
@@ -93,11 +97,19 @@ internal static class CommandLine
             }
             if (quote is { } open) { if (c == open) quote = null; }
             else if (c is '"' or '\'') quote = c;
-            else if (c is '&' or '|' or ';' or '\r' or '\n') { steps.Add(step.ToString()); step.Clear(); continue; }
+            else if (brackets && posix && c == '`' && line.IndexOf('`', i + 1) is > 0 and var close)
+            {
+                step.Append(line, i, close - i);   // what backticks hold, the closing one appended below
+                i = close;
+                c = line[i];
+            }
+            else if (brackets && (c == '(' || (!posix && c == '{' && (i == 0 || line[i - 1] != '$')))) depth++;
+            else if (brackets && depth > 0 && (c == ')' || (!posix && c == '}'))) depth--;
+            else if (depth == 0 && c is '&' or '|' or ';' or '\r' or '\n') { steps.Add(step.ToString()); step.Clear(); continue; }
             step.Append(c);
         }
         steps.Add(step.ToString());
-        return steps;
+        return brackets && depth > 0 ? TopLevel(line, posix, brackets: false) : steps;
     }
 
     /// <summary>Whether <paramref name="c"/> escapes the next character: PowerShell's backtick (outside single quotes), a

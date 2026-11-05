@@ -552,6 +552,9 @@ internal class FileHistoryService
 
     private static bool IsAlive(int pid)
     {
+        // ⚠ Answered here: off Windows, GetProcessById takes this id without a word, and a run the closing cut reads as
+        // still recording, for good: no card, and no undo.
+        if (pid == RunManifest.NoProcess) return false;
         try
         {
             using var process = System.Diagnostics.Process.GetProcessById(pid);

@@ -47,10 +47,12 @@ public class AccessibleNamesTests
         var row = Xaml().Single(x => (string?)x.Element.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")) == "ModeMenuRow");
         Assert.Equal("{Binding Help}", (string?)row.Element.Elements().Single().Attribute("AutomationProperties.HelpText"));
 
+#if WINDOWS   // the window's items: off Windows the adapter does not exist, and this file still compiles
         Task Nothing(CancellationToken _) => Task.CompletedTask;
         Assert.Equal("reads the code · qwen · no writes · review.md",
             new ToolWindow.ModeMenuItem("Review", "reads the code", "qwen · no writes · review.md", false, "", "", "", Nothing).Help);
         Assert.Equal("", new ToolWindow.ModeMenuItem("Agent", "", "", false, "", "", "", Nothing).Help);
+#endif
     }
 
     // A Segoe MDL2 glyph (private use area) is drawn, not read: it names nothing.

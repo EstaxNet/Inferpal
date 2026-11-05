@@ -911,11 +911,12 @@ for the model — each exclusion said, never silent. Writing one of these files 
 "Always": emptied, it would lift every restriction it holds.
 
 **What is judged is what runs.** Each check looks at the file a call reaches, not only at how its path is written: a
-link or a junction, a hard link, a `\\?\` or `\\localhost\C$` spelling, a short name or an NTFS `::$INDEX_ALLOCATION`
-suffix gets the answer the file's own name gets. A deny rule holds on every name of the file; an allow rule answers on
-the name as written. Writing in the repository's `.git` folder always asks — its settings run programs —, and
-Inferpal's own git readings never run the repository's `core.fsmonitor` or diff `textconv` programs. A file that is
-also, by a hard link, outside the workspace (a dependency store's) is read as the project has it, never written.
+link or a junction, and on Windows a hard link, a `\\?\` or `\\localhost\C$` spelling, a short name or an NTFS
+`::$INDEX_ALLOCATION` suffix gets the answer the file's own name gets. A deny rule holds on every name of the file; an
+allow rule answers on the name as written. Writing in the repository's `.git` folder always asks — its settings run
+programs —, and Inferpal's own git readings never run the repository's `core.fsmonitor` or diff `textconv` programs. On
+Windows, a file that is also, by a hard link, outside the workspace (a dependency store's) is read as the project has
+it, never written.
 A command line is read the same way by every check — the rules, the package check, the rule a card proposes: a command
 inside `$( )`, a grouping or a PowerShell block counts like one at the top of the line, and a deny rule judges every way
 a shell might read the line.

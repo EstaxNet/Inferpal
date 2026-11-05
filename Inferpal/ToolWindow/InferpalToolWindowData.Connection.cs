@@ -120,7 +120,7 @@ internal partial class InferpalToolWindowData
     {
         try
         {
-            var follow = Services.Inference.SettingsFollow.TakeAndApply(_config, _client);
+            var follow = Services.Inference.SettingsFollow.TakeAndApply(_config, _client, () => GpuScheduler.IsTurnInFlight);
             // The question answers with the MCP servers the other editor saved, and the ones the repository declares now
             // (a checkout changed its .mcp.json): started again before it, not after.
             // ⚠ Never under a running turn: a refresh tears every server down, and a slash command (/resume during a

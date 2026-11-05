@@ -31,7 +31,7 @@ md.inline.ruler.before('escape', 'windowsPath', (state, silent) => {
     return false;
   }
   let end = pos;
-  while (end < posMax && !/\s/.test(src[end])) {
+  while (end < posMax && !/[\s\]|]/.test(src[end])) {
     end++;
   }
   while (end > pos + 1 && /[.,;:!?)\]}"'*_`~>|]/.test(src[end - 1])) {
