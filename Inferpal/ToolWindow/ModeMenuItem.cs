@@ -20,6 +20,9 @@ internal sealed class ModeMenuItem : NotifyPropertyChangedObject
     [DataMember] public string Summary         { get; }
     [DataMember] public bool   HasSummary      { get; }
 
+    /// <summary>What a screen reader says after the name: what the mode is for, and its summary.</summary>
+    [DataMember] public string Help            { get; }
+
     /// <summary>The mode the conversation is held in now.</summary>
     [DataMember] public bool   IsChecked       { get; }
 
@@ -36,6 +39,7 @@ internal sealed class ModeMenuItem : NotifyPropertyChangedObject
         DescriptionTail = string.IsNullOrWhiteSpace(description) ? string.Empty : " — " + description;
         Summary         = summary;
         HasSummary      = summary.Length > 0;
+        Help            = string.Join(" · ", new[] { description, summary }.Where(s => !string.IsNullOrWhiteSpace(s)));
         IsChecked       = isChecked;
         ThemeText       = themeText;
         ThemeSubText    = themeSubText;

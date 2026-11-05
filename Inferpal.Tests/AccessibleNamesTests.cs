@@ -39,6 +39,20 @@ public class AccessibleNamesTests
                .Elements().Where(s => s.Name.LocalName == "Style").Elements()
                .Any(s => s.Name.LocalName == "Setter" && (string?)s.Attribute("Property") == "AutomationProperties.Name");
 
+    /// <summary>A mode is chosen by what it is for and what it may do: without its help text, the two lines under its name
+    /// never reach a screen reader.</summary>
+    [Fact]
+    public void AModeRow_IsReadWithAllItShows()
+    {
+        var row = Xaml().Single(x => (string?)x.Element.Attribute(XName.Get("Key", "http://schemas.microsoft.com/winfx/2006/xaml")) == "ModeMenuRow");
+        Assert.Equal("{Binding Help}", (string?)row.Element.Elements().Single().Attribute("AutomationProperties.HelpText"));
+
+        Task Nothing(CancellationToken _) => Task.CompletedTask;
+        Assert.Equal("reads the code · qwen · no writes · review.md",
+            new ToolWindow.ModeMenuItem("Review", "reads the code", "qwen · no writes · review.md", false, "", "", "", Nothing).Help);
+        Assert.Equal("", new ToolWindow.ModeMenuItem("Agent", "", "", false, "", "", "", Nothing).Help);
+    }
+
     // A Segoe MDL2 glyph (private use area) is drawn, not read: it names nothing.
     private static bool IsGlyph(string? text) => text is { Length: > 0 } && text[0] >= '\uE000' && text[0] <= '\uF8FF';
 

@@ -1098,7 +1098,7 @@
   <data name="TaskForgot" xml:space="preserve"><value>已清除 {0} 个已完成的任务。</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>暂无后台任务。使用 `/task [目标]` 启动一个。</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>后台任务</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` 查看报告 · `/task stop [id]` 取消 · `/task retry [id]` 以新编号重新运行失败的任务 · `/task clear` 清除已完成。编号永不重复使用，重启后也是如此。</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` 查看报告 · `/task stop &lt;id&gt;` 取消 · `/task retry &lt;id&gt;` 以新编号重新运行失败的任务 · `/task clear` 清除已完成。编号永不重复使用，重启后也是如此。</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>状态</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>目标</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>排队中</value></data>

@@ -1098,7 +1098,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="TaskForgot" xml:space="preserve"><value>{0} tarea(s) terminada(s) olvidada(s).</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Ninguna tarea en segundo plano. `/task [objetivo]` inicia una.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Tareas en segundo plano</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` muestra un informe · `/task stop [id]` cancela · `/task retry [id]` vuelve a ejecutar una fallida con un número nuevo · `/task clear` olvida las terminadas. Un número nunca se repite, ni tras un reinicio.</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` muestra un informe · `/task stop &lt;id&gt;` cancela · `/task retry &lt;id&gt;` vuelve a ejecutar una fallida con un número nuevo · `/task clear` olvida las terminadas. Un número nunca se repite, ni tras un reinicio.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>Estado</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Objetivo</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>en cola</value></data>

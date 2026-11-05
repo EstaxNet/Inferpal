@@ -1098,7 +1098,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="TaskForgot" xml:space="preserve"><value>{0} tâche(s) terminée(s) oubliée(s).</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Aucune tâche en arrière-plan. `/task [objectif]` en lance une.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Tâches en arrière-plan</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` affiche un rapport · `/task stop [id]` annule · `/task retry [id]` relance une tâche échouée sous un nouveau numéro · `/task clear` oublie les tâches terminées. Un numéro n'est jamais redonné, même après un redémarrage.</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` affiche un rapport · `/task stop &lt;id&gt;` annule · `/task retry &lt;id&gt;` relance une tâche échouée sous un nouveau numéro · `/task clear` oublie les tâches terminées. Un numéro n'est jamais redonné, même après un redémarrage.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>État</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Objectif</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>en file</value></data>

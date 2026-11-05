@@ -1098,7 +1098,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="TaskForgot" xml:space="preserve"><value>完了した {0} 件のタスクを破棄しました。</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>バックグラウンドタスクはありません。`/task [目的]` で開始できます。</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>バックグラウンドタスク</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` でレポート表示 · `/task stop [id]` でキャンセル · `/task retry [id]` で失敗したタスクを新しい番号で再実行 · `/task clear` で完了分を破棄。番号は再起動後も二度と使われません。</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` でレポート表示 · `/task stop &lt;id&gt;` でキャンセル · `/task retry &lt;id&gt;` で失敗したタスクを新しい番号で再実行 · `/task clear` で完了分を破棄。番号は再起動後も二度と使われません。</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>状態</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>目的</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>待機中</value></data>

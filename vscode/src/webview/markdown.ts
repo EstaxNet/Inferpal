@@ -12,6 +12,39 @@ const md = new MarkdownIt({
 });
 
 /**
+ * A Windows path shows as it is written. Read as Markdown escapes, its backslashes lose `C:\run\.inferpal` a separator and
+ * turn `C:\app\__pycache__` bold. From a backslash right after a drive, `.`, `..`, `~` or `%VAR%` at the start of a word, or
+ * from the two of a share, the word is plain text; anywhere else an escape stays one. Visual Studio reads it the same way
+ * (`MarkdownParser.WindowsPath`).
+ */
+md.inline.ruler.before('escape', 'windowsPath', (state, silent) => {
+  const { src, pos, posMax } = state;
+  if (src[pos] !== '\\') {
+    return false;
+  }
+  let start = pos;
+  while (start > 0 && !/[\s"'`([{<*_]/.test(src[start - 1])) {
+    start--;
+  }
+  const before = src.slice(start, pos);
+  if (!(before === '' ? src[pos + 1] === '\\' : /^(?:\.{1,2}|~|[A-Za-z]:|%.*%)$/.test(before))) {
+    return false;
+  }
+  let end = pos;
+  while (end < posMax && !/\s/.test(src[end])) {
+    end++;
+  }
+  while (end > pos + 1 && /[.,;:!?)\]}"'*_`~>|]/.test(src[end - 1])) {
+    end--;
+  }
+  if (!silent) {
+    state.pending += src.slice(pos, end);
+  }
+  state.pos = end;
+  return true;
+});
+
+/**
  * A link the model wrote stays clickable only for a web address — as in Visual Studio (`MarkdownParser.WebUrl`).
  * ⚠ markdown-it's own check refuses javascript:, vbscript:, file: and data: only: a `vscode://…` link, `ms-settings:`
  * or any scheme a program registered stayed clickable, and its click launched that program.

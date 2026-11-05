@@ -2,6 +2,9 @@
 using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Extensions.Tables;
+using Markdig.Helpers;
+using Markdig.Parsers;
+using Markdig.Parsers.Inlines;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
@@ -9,12 +12,53 @@ namespace Inferpal.Services.Presentation;
 
 internal static class MarkdownParser
 {
-    private static readonly MarkdownPipeline _pipeline =
-        new MarkdownPipelineBuilder()
-            .UseEmphasisExtras()
-            .UseAutoLinks()
-            .UsePipeTables()
-            .Build();
+    private static readonly MarkdownPipeline _pipeline = BuildPipeline();
+
+    private static MarkdownPipeline BuildPipeline()
+    {
+        var builder = new MarkdownPipelineBuilder().UseEmphasisExtras().UseAutoLinks().UsePipeTables();
+        builder.InlineParsers.InsertBefore<EscapeInlineParser>(new WindowsPath());
+        return builder.Build();
+    }
+
+    /// <summary>
+    /// A Windows path shows as it is written. Read as Markdown escapes, its backslashes lose <c>C:\run\.inferpal</c> a separator
+    /// and turn <c>C:\app\__pycache__</c> bold. From a backslash right after a drive, <c>.</c>, <c>..</c>, <c>~</c> or
+    /// <c>%VAR%</c> at the start of a word, or from the two of a share, the word is plain text; anywhere else an escape stays
+    /// one (<c>README\.md</c>, <c>\*</c>). VS Code reads it the same way (<c>markdown.ts</c>).
+    /// </summary>
+    /// <remarks>shortcut: a path ends at its first space, so <c>C:\Program Files\.x</c> keeps the escape after it: there is no
+    /// telling a space in a path from the end of one in prose.</remarks>
+    private sealed class WindowsPath : InlineParser
+    {
+        private const string BeforeAWord = "\"'`([{<*_";
+        private const string AfterAWord  = ".,;:!?)]}\"'*_`~>|";
+
+        public WindowsPath() => OpeningCharacters = ['\\'];
+
+        public override bool Match(InlineProcessor processor, ref StringSlice slice)
+        {
+            var text = slice.Text;
+            var start = slice.Start;
+            while (start > 0 && !char.IsWhiteSpace(text[start - 1]) && !BeforeAWord.Contains(text[start - 1])) start--;
+            if (!OpensAPath(text.AsSpan(start, slice.Start - start), slice.PeekChar(1))) return false;
+
+            var end = slice.Start;
+            while (end <= slice.End && !char.IsWhiteSpace(text[end])) end++;
+            while (end > slice.Start + 1 && AfterAWord.Contains(text[end - 1])) end--;
+            processor.Inline = new LiteralInline(text[slice.Start..end]);
+            slice.Start = end;
+            return true;
+        }
+
+        private static bool OpensAPath(ReadOnlySpan<char> before, char next) => before.Length switch
+        {
+            0 => next == '\\',
+            1 => before[0] is '.' or '~',
+            2 => before is ".." || (before[1] == ':' && char.IsAsciiLetter(before[0])),
+            _ => before[0] == '%' && before[^1] == '%',
+        };
+    }
 
     private const string ThinkOpen  = "<think>";
     private const string ThinkClose = "</think>";

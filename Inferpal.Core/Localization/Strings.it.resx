@@ -1098,7 +1098,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="TaskForgot" xml:space="preserve"><value>{0} attività terminate dimenticate.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Nessuna attività in background. `/task [obiettivo]` ne avvia una.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Attività in background</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` mostra un rapporto · `/task stop [id]` annulla · `/task retry [id]` riesegue una fallita con un nuovo numero · `/task clear` dimentica quelle terminate. Un numero non viene mai riassegnato, nemmeno dopo un riavvio.</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` mostra un rapporto · `/task stop &lt;id&gt;` annulla · `/task retry &lt;id&gt;` riesegue una fallita con un nuovo numero · `/task clear` dimentica quelle terminate. Un numero non viene mai riassegnato, nemmeno dopo un riavvio.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>Stato</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Obiettivo</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>in coda</value></data>

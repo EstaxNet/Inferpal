@@ -1098,7 +1098,7 @@
   <data name="TaskForgot" xml:space="preserve"><value>Забыто завершённых задач: {0}.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Фоновых задач нет. `/task [цель]` запускает задачу.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Фоновые задачи</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` — отчёт · `/task stop [id]` — отмена · `/task retry [id]` — снова запустить неудачную под новым номером · `/task clear` — забыть завершённые. Номер никогда не выдаётся дважды, даже после перезапуска.</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` — отчёт · `/task stop &lt;id&gt;` — отмена · `/task retry &lt;id&gt;` — снова запустить неудачную под новым номером · `/task clear` — забыть завершённые. Номер никогда не выдаётся дважды, даже после перезапуска.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>Состояние</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Цель</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>в очереди</value></data>

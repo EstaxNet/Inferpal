@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 using Inferpal.Services;
 using Xunit;
@@ -12,6 +13,47 @@ public class MarkdownParserTests
     // Concatenated plain text of a block's inline runs (what the user actually sees rendered).
     private static string InlineText(MarkdownBlockModel b) =>
         string.Concat(b.Inlines.Select(r => r.Text));
+
+    /// <summary>A Windows path shows as it is written, whatever follows its backslashes.</summary>
+    [Theory]
+    [InlineData(@"Dans C:\run21\.inferpal\history ici", @"Dans C:\run21\.inferpal\history ici")]
+    [InlineData(@"C:\.git\config", @"C:\.git\config")]
+    [InlineData(@"..\.vscode\tasks.json", @"..\.vscode\tasks.json")]
+    [InlineData(@"..\..\src\Program.cs", @"..\..\src\Program.cs")]
+    [InlineData(@"C:\repo\src\..\.vscode\tasks.json", @"C:\repo\src\..\.vscode\tasks.json")]
+    [InlineData(@"~\.ssh\config", @"~\.ssh\config")]
+    [InlineData(@"%USERPROFILE%\.ollama\models", @"%USERPROFILE%\.ollama\models")]
+    [InlineData(@"C:\a+b\.git", @"C:\a+b\.git")]
+    [InlineData(@"C:\repo\node_modules\@types\node", @"C:\repo\node_modules\@types\node")]
+    [InlineData(@"C:\repo\_build\out", @"C:\repo\_build\out")]
+    [InlineData(@"C:\app\__pycache__\x.pyc", @"C:\app\__pycache__\x.pyc")]
+    [InlineData(@"\\srv\share\.git\x", @"\\srv\share\.git\x")]
+    [InlineData(@"D:\Projets\Été\.vs\x", @"D:\Projets\Été\.vs\x")]
+    [InlineData(@"(voir C:\a\.b).", @"(voir C:\a\.b).")]
+    [InlineData(@"**C:\a\.b**", @"C:\a\.b")]
+    public void AWindowsPath_ShowsAsItIsWritten(string source, string shown) =>
+        Assert.Equal(shown, InlineText(Assert.Single(MarkdownParser.Parse(source))));
+
+    /// <summary>Reference arm: anywhere else an escape stays an escape, the dot of a word included.</summary>
+    [Theory]
+    [InlineData(@"\*pas en italique\*", "*pas en italique*")]
+    [InlineData(@"snake\_case", "snake_case")]
+    [InlineData(@"1\. pas une liste", "1. pas une liste")]
+    [InlineData(@"fin\. Suite", "fin. Suite")]
+    [InlineData(@"example\.com", "example.com")]
+    [InlineData(@"README\.md", "README.md")]
+    [InlineData(@"3\.14", "3.14")]
+    public void AnyOtherEscape_StaysAnEscape(string source, string shown) =>
+        Assert.Equal(shown, InlineText(Assert.Single(MarkdownParser.Parse(source))));
+
+    /// <summary>VS Code renders with markdown-it: the same rule, in front of its own escape rule.</summary>
+    [Fact]
+    public void VsCode_ReadsAWindowsPathTheSameWay()
+    {
+        var markdown = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(
+            Path.Combine(ConventionCoverageTests.RepoRoot(), "vscode", "src", "webview", "markdown.ts")));
+        Assert.Contains("md.inline.ruler.before('escape', 'windowsPath'", markdown, StringComparison.Ordinal);
+    }
 
     [Fact]
     public void FlatOrderedList_ProducesOneNumberedItemPerEntry()

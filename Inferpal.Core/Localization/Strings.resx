@@ -1102,7 +1102,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="TaskForgot" xml:space="preserve"><value>{0} finished task(s) forgotten.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>No background task yet. `/task [objective]` starts one.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Background tasks</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` shows a report · `/task stop [id]` cancels · `/task retry [id]` runs a failed one again under a new number · `/task clear` forgets the finished ones. A number is never given twice, a restart included.</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` shows a report · `/task stop &lt;id&gt;` cancels · `/task retry &lt;id&gt;` runs a failed one again under a new number · `/task clear` forgets the finished ones. A number is never given twice, a restart included.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>State</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Objective</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>queued</value></data>

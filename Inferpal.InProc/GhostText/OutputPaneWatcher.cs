@@ -118,6 +118,15 @@ internal static class OutputPaneWatcher
         await Task.Run(() => OutputPaneSignal.Answer(answer));
     }
 
+    /// <summary>
+    /// A pane Visual Studio would not give as a document: Debug and Source Control for good. The build's, in a session that has
+    /// built nothing, has none yet: it is "nothing written", and "show another pane" would send the person nowhere.
+    /// </summary>
+    internal static OutputPaneAnswer NotGiven(string id, string name, string guid, string why) =>
+        string.Equals(guid, BuildPane, StringComparison.OrdinalIgnoreCase)
+            ? new OutputPaneAnswer(id, null, null, false, OutputPaneSignal.ReasonNone)
+            : new OutputPaneAnswer(id, name, null, false, OutputPaneSignal.ReasonUnreadable, why);
+
     private static OutputPaneAnswer Read(string id)
     {
 #if NETFRAMEWORK
@@ -149,8 +158,7 @@ internal static class OutputPaneWatcher
         }
         catch (Exception ex)
         {
-            // Debug, Source Control: panes Visual Studio does not give as a document.
-            return new OutputPaneAnswer(id, name, null, false, OutputPaneSignal.ReasonUnreadable, ex.Message);
+            return NotGiven(id, name, pane.Guid, ex.Message);
         }
         if (string.IsNullOrWhiteSpace(text)) return new OutputPaneAnswer(id, name, null, false, OutputPaneSignal.ReasonEmpty);
         return new OutputPaneAnswer(id, name, text, cut, null);

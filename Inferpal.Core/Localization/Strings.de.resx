@@ -1098,7 +1098,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="TaskForgot" xml:space="preserve"><value>{0} abgeschlossene Aufgabe(n) verworfen.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Noch keine Hintergrundaufgabe. `/task [Ziel]` startet eine.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Hintergrundaufgaben</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` zeigt einen Bericht · `/task stop [id]` bricht ab · `/task retry [id]` startet eine fehlgeschlagene erneut unter neuer Nummer · `/task clear` verwirft abgeschlossene. Eine Nummer wird nie zweimal vergeben, auch nicht nach einem Neustart.</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` zeigt einen Bericht · `/task stop &lt;id&gt;` bricht ab · `/task retry &lt;id&gt;` startet eine fehlgeschlagene erneut unter neuer Nummer · `/task clear` verwirft abgeschlossene. Eine Nummer wird nie zweimal vergeben, auch nicht nach einem Neustart.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>Status</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Ziel</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>in Warteschlange</value></data>

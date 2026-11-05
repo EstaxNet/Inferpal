@@ -1098,7 +1098,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="TaskForgot" xml:space="preserve"><value>Usunięto zakończone zadania: {0}.</value></data>
   <data name="TaskListEmpty" xml:space="preserve"><value>Brak zadań w tle. `/task [cel]` uruchamia zadanie.</value></data>
   <data name="TaskListTitle" xml:space="preserve"><value>Zadania w tle</value></data>
-  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` pokazuje raport · `/task stop [id]` anuluje · `/task retry [id]` uruchamia nieudane ponownie pod nowym numerem · `/task clear` usuwa zakończone. Numer nigdy nie jest nadawany dwa razy, także po ponownym uruchomieniu.</value></data>
+  <data name="TaskListHint" xml:space="preserve"><value>`/task [id]` pokazuje raport · `/task stop &lt;id&gt;` anuluje · `/task retry &lt;id&gt;` uruchamia nieudane ponownie pod nowym numerem · `/task clear` usuwa zakończone. Numer nigdy nie jest nadawany dwa razy, także po ponownym uruchomieniu.</value></data>
   <data name="TaskColumnState" xml:space="preserve"><value>Stan</value></data>
   <data name="TaskColumnObjective" xml:space="preserve"><value>Cel</value></data>
   <data name="TaskStateQueued" xml:space="preserve"><value>w kolejce</value></data>

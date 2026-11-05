@@ -121,7 +121,7 @@
         <DataTemplate x:Key="ModeMenuRow">
             <Button Command="{Binding SelectCommand}" HorizontalContentAlignment="Stretch" Padding="0"
                     FocusVisualStyle="{x:Null}" BorderThickness="0" Background="Transparent" Cursor="Hand"
-                    AutomationProperties.Name="{Binding Name}">
+                    AutomationProperties.Name="{Binding Name}" AutomationProperties.HelpText="{Binding Help}">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bd" Padding="12,5" Background="Transparent">

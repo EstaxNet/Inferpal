@@ -135,6 +135,22 @@ public sealed class OutputMentionTests : IDisposable
         }, outcome.Notice);
     }
 
+#if WINDOWS
+    /// <summary>The build's pane has no document in a session that has built nothing: that is nothing written yet, and "show
+    /// another pane" would send the person nowhere. Reference arm: a pane that never gives its text.</summary>
+    [Fact]
+    public void TheBuildPane_WithNoDocumentYet_IsNothingWritten()
+    {
+        var build = GhostText.OutputPaneWatcher.NotGiven("1", "Build", "{1bd8a850-02d1-11d1-bee7-00a0c913d1f8}", "no document");
+        Assert.Equal(OutputPaneSignal.ReasonNone, build.Reason);
+        Assert.Null(build.Pane);
+
+        var debug = GhostText.OutputPaneWatcher.NotGiven("1", "Debug", "{FC076020-078A-11D1-A7DF-00A0C9110051}", "no document");
+        Assert.Equal(OutputPaneSignal.ReasonUnreadable, debug.Reason);
+        Assert.Equal("Debug", debug.Pane);
+    }
+#endif
+
     /// <summary>The half inside devenv: started and stopped with the package, the pane read on the UI thread through the
     /// typed interop, a short pane read from its start, the answer written off the UI thread.</summary>
     [Fact]

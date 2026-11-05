@@ -388,4 +388,21 @@ public class TaskCommandTests
         Assert.True(notice.Length < 400, "a bubble is not a log");
         Assert.DoesNotContain("second line", notice);
     }
+
+    /// <summary><c>/task stop</c> and <c>/task retry</c> answer with their usage without an id, so the list does not offer it as
+    /// optional, in any language.</summary>
+    [Fact]
+    public void TheTaskList_AsksForTheIdItNeeds()
+    {
+        var folder = System.IO.Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal.Core", "Localization");
+        var hints = System.IO.Directory.EnumerateFiles(folder, "Strings*.resx")
+            .Select(f => System.Xml.Linq.XDocument.Load(f).Root!.Elements("data").Single(d => d.Attribute("name")!.Value == "TaskListHint").Element("value")!.Value)
+            .ToList();
+        Assert.True(hints.Count >= 10, $"only {hints.Count} translations read");
+        Assert.All(hints, hint =>
+        {
+            Assert.Contains("`/task stop <id>`", hint, StringComparison.Ordinal);
+            Assert.Contains("`/task retry <id>`", hint, StringComparison.Ordinal);
+        });
+    }
 }
