@@ -1233,9 +1233,8 @@ public partial class HostServerTests
 
         await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new { prompt = "hi", agentMode = false })
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
-        // Notifications are one-way: a round-trip request guarantees they were dispatched.
-        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
-            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        // Notifications are one-way and handled off the reader's thread: a round trip does not order the last one.
+        for (var i = 0; i < 300 && h.Target.Waits.Count < 2; i++) await Task.Delay(100);
 
         Assert.Equal([TestWait.Title, null], h.Target.Waits);
         Assert.DoesNotContain(h.Target.Steps, s => s.Contains(TestWait.Title, StringComparison.Ordinal));
@@ -3325,9 +3324,8 @@ public partial class HostServerTests
 
         await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
             "command/slash", new { text = "/onboard context" }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
-        // Notifications are one-way: a round-trip request guarantees they were dispatched.
-        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
-            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        // Notifications are one-way and handled off the reader's thread: a round trip does not order the last one.
+        for (var i = 0; i < 300 && h.Target.Waits.Count < 2; i++) await Task.Delay(100);
 
         // The card, then gone at the first word; the status line keeps the command's own step under it.
         Assert.Equal([TestWait.Title, null], h.Target.Waits);
@@ -3365,9 +3363,8 @@ public partial class HostServerTests
 
         await h.Client.InvokeWithParameterObjectAsync<Host.SlashCommandResult>(
             "command/slash", new { text = command }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
-        // Notifications are one-way: a round-trip request guarantees they were dispatched.
-        await h.Client.InvokeWithParameterObjectAsync<string[]>("models/list", new { })
-            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        // Notifications are one-way and handled off the reader's thread: a round trip does not order the last one.
+        for (var i = 0; i < 300 && h.Target.Waits.Count < 2; i++) await Task.Delay(100);
 
         // The card, then gone at the first word: the command's own step was never replaced.
         Assert.Equal([TestWait.Title, null], h.Target.Waits);
