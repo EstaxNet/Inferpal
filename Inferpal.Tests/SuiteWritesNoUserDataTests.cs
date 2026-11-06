@@ -18,6 +18,10 @@ public class SuiteWritesNoUserDataTests
         Assert.StartsWith(TestRoot, TestConfigIsolation.RagDirAtStart, StringComparison.OrdinalIgnoreCase);
 
     [Fact]
+    public void TheDocumentationIndex_IsUnderTheSuitesFolder() =>
+        Assert.StartsWith(TestRoot, TestConfigIsolation.DocsDirAtStart, StringComparison.OrdinalIgnoreCase);
+
+    [Fact]
     public void TheTestScaffold_IsUnderTheSuitesFolder() =>
         Assert.StartsWith(TestRoot, TestConfigIsolation.ScaffoldDirAtStart, StringComparison.OrdinalIgnoreCase);
 }

@@ -59,13 +59,18 @@ internal static class TestConfigIsolation
         // And for the code index and the debugger's test scaffold: a test that builds a registry or an index without
         // redirecting them itself writes an empty database in the developer's own profile at every run.
         TestRagStore.Redirect();
+        Inferpal.Services.Docs.DocsDatabase.BaseDir = () => TestRagStore.DocsDir;
         Inferpal.Services.Debugging.TestReproScaffold.BaseDir = () => Path.Combine(root, $"testrepro-{Environment.ProcessId}");
         RagDirAtStart      = Inferpal.Services.Rag.RagDatabase.BaseDir();
+        DocsDirAtStart     = Inferpal.Services.Docs.DocsDatabase.BaseDir();
         ScaffoldDirAtStart = Inferpal.Services.Debugging.TestReproScaffold.BaseDir();
     }
 
     /// <summary>Where the code index points once the suite is set up, before any test moves it.</summary>
     internal static string RagDirAtStart { get; private set; } = string.Empty;
+
+    /// <summary>Where the documentation index points once the suite is set up.</summary>
+    internal static string DocsDirAtStart { get; private set; } = string.Empty;
 
     /// <summary>Where the debugger's test scaffold points once the suite is set up, before any test moves it.</summary>
     internal static string ScaffoldDirAtStart { get; private set; } = string.Empty;

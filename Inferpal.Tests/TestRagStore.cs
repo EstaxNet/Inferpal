@@ -4,7 +4,7 @@ using Inferpal.Services.Rag;
 namespace Inferpal.Tests;
 
 /// <summary>
-/// The one redirect of the code index store for the whole test run — never the user's %AppData% index.
+/// The one redirect of the code index store for the whole test run — never the user's own index.
 /// </summary>
 /// <remarks>
 /// <see cref="RagDatabase.BaseDir"/> is static. Tests that each pointed it at their own folder, running
@@ -17,4 +17,8 @@ internal static class TestRagStore
         Path.Combine(Path.GetTempPath(), "inferpal-tests", $"ragdb-{Guid.NewGuid():N}");
 
     internal static void Redirect() => RagDatabase.BaseDir = () => Dir;
+
+    /// <summary>The documentation index's folder for the run: a host a test builds opens that database.</summary>
+    internal static readonly string DocsDir =
+        Path.Combine(Path.GetTempPath(), "inferpal-tests", $"docsdb-{Guid.NewGuid():N}");
 }

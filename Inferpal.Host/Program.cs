@@ -23,6 +23,9 @@ if (args.Contains("--setup", StringComparer.Ordinal))
 ProcessLifetime.LeadOwnProcessGroup();
 
 // ── The settings window ──────────────────────────────────────────────────────
+// One sweep per process, not per host: an ACP agent opens a host for each session.
+Inferpal.Services.Rag.IndexHome.MoveInBackground();
+
 // `--settings [folder]` (and `--acp --settings`, the ACP client's settings method): the settings form VS Code
 // shows, in the browser, for the folder given (the current one by default). It owns the console, like the setup.
 if (args.Contains("--settings", StringComparer.Ordinal))

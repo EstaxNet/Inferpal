@@ -297,8 +297,7 @@ internal sealed class ProjectIndexService : IDisposable
     /// thread's database. Not a pass either way: shown as saved, brought up to date by the chat that uses it.</remarks>
     public async Task ShowSavedAsync(string rootDir, CancellationToken ct)
     {
-        var file = RagDatabase.PathFor(rootDir);
-        if (!File.Exists(file)) return;
+        if (!File.Exists(RagDatabase.PathFor(rootDir))) return;
         // ⚠ Said while it reads: a large index takes seconds, and until then the card read "not indexed yet" over an
         // index that exists — its Build button the very second indexer this method is here to avoid.
         _loadingSaved = true;
@@ -312,10 +311,7 @@ internal sealed class ProjectIndexService : IDisposable
             if (IsIndexing || !string.IsNullOrEmpty(IndexedRoot)) return;
             await ApplyChunksAsync(loaded, replaceAll: true, ct).ConfigureAwait(false);
             _indexedEmbeddingModel = model ?? string.Empty;
-            // In WAL mode the latest writes may still sit in the -wal file.
-            var wal = file + "-wal";
-            var at  = File.GetLastWriteTime(file);
-            _savedAt = File.Exists(wal) && File.GetLastWriteTime(wal) > at ? File.GetLastWriteTime(wal) : at;
+            _savedAt = IndexHome.WrittenAt(db.DbPath).ToLocalTime();
             _showsSaved = true;
         }
         finally { _loadingSaved = false; }
@@ -504,6 +500,7 @@ internal sealed class ProjectIndexService : IDisposable
 
         try
         {
+            await IndexHome.MovedAsync(ct).ConfigureAwait(false);
             var db = new RagDatabase(rootDir);
 
             // ── Watch for file changes — armed BEFORE the pass reads anything ─
@@ -1356,6 +1353,7 @@ internal sealed class ProjectIndexService : IDisposable
 
     private async Task ReIndexFilesCoreAsync(string[] changedFiles, string rootDir, CancellationToken ct)
     {
+        await IndexHome.MovedAsync(ct).ConfigureAwait(false);
         var db       = new RagDatabase(rootDir);
         // ⚠ The model the last pass chose, while the index has one: the vectors in memory and every query are that
         // model's. A file re-embedded with a model configured since was noise for every query — another model, the same

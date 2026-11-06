@@ -100,7 +100,10 @@ flowchart TD
   LSP tier for TS/JS/Python/Go/Rust (`lspEnabled`), and a regex fallback. Target ~500 tokens
   per chunk with ~100 tokens overlap.
 - **Vector store** (`RagDatabase`): SQLite WAL, one database per solution under
-  `%AppData%/Inferpal/rag/{hash}.db`. In-memory map for O(1) per-file access.
+  `%LocalAppData%/Inferpal/rag/{hash}.db` on Windows, so it does not travel with a roaming profile
+  (`~/.config/Inferpal/rag/` on Linux, `~/Library/Application Support/Inferpal/rag/` on macOS). In-memory map for
+  O(1) per-file access. An index from an earlier version is copied there at the next start and nothing is built
+  again; the old copy goes after 14 days without a write.
 - **Hybrid ranking**: the vector side keeps chunks above `ragSimilarityThreshold` (default
   `0.20`); the lexical side scores chunks with in-memory BM25 (code-aware tokenizer that splits
   camelCase / snake_case / acronyms and keeps whole identifiers). The two rankings are fused
@@ -135,8 +138,8 @@ the docs themselves, citing the source page and URL.
   without their vectors, which puts them out of reach of the semantic half of the search. Nothing
   recomputes them on its own, so `/docs list` and `search_docs` say how many there are and name the
   remedy (`/docs reindex <id>`).
-- **Storage**: a single **global** SQLite database at `%AppData%/Inferpal/docs/docs.db`, so a
-  site you index once is available across every solution.
+- **Storage**: a single **global** SQLite database at `%LocalAppData%/Inferpal/docs/docs.db` on Windows
+  (beside the code index on Linux and macOS), so a site you index once is available across every solution.
 - **Retrieve**: the `search_docs` tool runs the same hybrid search as the code index (cosine ⊕
   BM25 over the text, the page title and the URL, fused by RRF — BM25 alone when embeddings are
   unavailable) and cites the page title and URL.

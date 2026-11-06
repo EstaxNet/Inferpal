@@ -98,6 +98,7 @@ public class InferpalExtension : Extension
     protected override void InitializeServices(IServiceCollection services)
     {
         base.InitializeServices(services);
+        Inferpal.Services.Rag.IndexHome.MoveInBackground();
 
         // Family-A signal channels are scoped by devenv PID. Out-of-process, that key is the devenv
         // among our ANCESTORS (direct parent in Visual Studio 2026, grandparent through the ServiceHub

@@ -411,6 +411,8 @@ internal sealed class DocsIndexService : IDisposable
                 }
             }
 
+            await IndexHome.MovedAsync(ct).ConfigureAwait(false);
+
             // ── Persist + refresh memory ─────────────────────────────────────────
             var db = new DocsDatabase();
             await db.SaveSiteAsync(site, pages.Count + keptPages, chunks, ct);
@@ -497,6 +499,7 @@ internal sealed class DocsIndexService : IDisposable
         }
         try
         {
+            await IndexHome.MovedAsync(ct).ConfigureAwait(false);
             var db = new DocsDatabase();
             await db.DeleteSiteAsync(docId, ct);
             await ReloadFromDbAsync(db, ct);

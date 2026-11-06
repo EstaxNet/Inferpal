@@ -6,7 +6,7 @@ namespace Inferpal.Services.Docs;
 
 /// <summary>
 /// Persists indexed external documentation in a single, solution-independent SQLite database
-/// at <c>%AppData%/Inferpal/docs/docs.db</c>. Unlike the RAG codebase index (one DB per
+/// at <c>Inferpal/docs/docs.db</c> (<see cref="IndexHome"/>). Unlike the RAG codebase index (one DB per
 /// solution), documentation sources are global so they remain available across all projects.
 /// </summary>
 /// <remarks>
@@ -19,9 +19,16 @@ namespace Inferpal.Services.Docs;
 /// </remarks>
 internal sealed class DocsDatabase
 {
-    private static readonly string BaseDir = Path.Combine(
-        UserFolders.Of(Environment.SpecialFolder.ApplicationData),
-        "Inferpal", "docs");
+    private static readonly string DefaultBaseDir = IndexHome.FolderOf("docs");
+    private static readonly Func<string> DefaultBase = () => DefaultBaseDir;
+
+    /// <summary>Redirected once for the whole test run, like <see cref="RagDatabase.BaseDir"/>: a host a test builds
+    /// opens this database.</summary>
+    internal static Func<string> BaseDir = DefaultBase;
+
+    /// <summary>Where earlier versions kept this database; <c>null</c> for a redirected folder.</summary>
+    internal static string? OldDir =>
+        OverrideDirForTests is null && ReferenceEquals(BaseDir, DefaultBase) ? IndexHome.OldFolderOf("docs") : null;
 
     private readonly string _dbPath;
     private const int SchemaVersion = 1;
@@ -30,13 +37,13 @@ internal sealed class DocsDatabase
     // (the ALC plugin VS does not read deps.json). See SqliteBootstrapper / RagDatabase.
     static DocsDatabase() => SqliteBootstrapper.EnsureInitialized();
 
-    /// <summary>Tests point this at a temp directory so they never touch the real %AppData% database.</summary>
+    /// <summary>Tests point this at a temp directory of their own.</summary>
     internal static string? OverrideDirForTests { get; set; }
 
     public DocsDatabase()
     {
-        var dir = OverrideDirForTests ?? BaseDir;
-        _dbPath = Path.Combine(dir, "docs.db");
+        var dir = OverrideDirForTests ?? BaseDir();
+        _dbPath = IndexHome.Resolve(Path.Combine(dir, "docs.db"), OldDir is { } old ? Path.Combine(old, "docs.db") : null);
         Directory.CreateDirectory(dir);
         EnsureSchema();
     }

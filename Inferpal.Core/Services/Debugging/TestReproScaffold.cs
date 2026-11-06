@@ -2,6 +2,7 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using Inferpal.Services.Rag;
 
 namespace Inferpal.Services.Debugging;
 
@@ -25,8 +26,7 @@ namespace Inferpal.Services.Debugging;
 internal static class TestReproScaffold
 {
     /// <summary>Overridable for tests: where the scaffold tree lives.</summary>
-    internal static Func<string> BaseDir = () =>
-        Path.Combine(UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", "testrepro");
+    internal static Func<string> BaseDir = () => IndexHome.FolderOf("testrepro");
 
     internal const string ProjectFile = """
         <Project Sdk="Microsoft.NET.Sdk">
@@ -186,7 +186,7 @@ internal static class TestReproScaffold
             // Present but not an assembly: a build killed at the wrong moment (the machine went to
             // sleep, the user closed VS) leaves a zero-byte or half-written dll in a folder keyed
             // by SOURCE hash, so nothing ever invalidates it — every /tdd debugger capture on that
-            // machine fails from then on, until someone deletes %AppData% by hand. Dropping the folder
+            // machine fails from then on, until someone deletes the folder by hand. Dropping the folder
             // costs one rebuild; keeping it costs the feature.
             if (File.Exists(dll)) DiscardBuild(Path.GetDirectoryName(dll));
 

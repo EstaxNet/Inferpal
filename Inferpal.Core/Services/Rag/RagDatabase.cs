@@ -7,7 +7,7 @@ namespace Inferpal.Services.Rag;
 
 /// <summary>
 /// Persists the RAG index for a single solution in a SQLite database at
-/// <c>%AppData%/Inferpal/rag/{hash}.db</c>.
+/// <c>Inferpal/rag/{hash}.db</c> (<see cref="IndexHome"/>).
 /// </summary>
 /// <remarks>
 /// Schema (version 1):
@@ -25,13 +25,16 @@ internal sealed class RagDatabase
 {
     // ── Storage paths ─────────────────────────────────────────────────────────
 
-    private static readonly string DefaultBaseDir = Path.Combine(
-        UserFolders.Of(Environment.SpecialFolder.ApplicationData),
-        "Inferpal", "rag");
+    private static readonly string DefaultBaseDir = IndexHome.FolderOf("rag");
+    private static readonly Func<string> DefaultBase = () => DefaultBaseDir;
 
     // Redirectable for tests (mirrors TestReproScaffold.BaseDir): the index lifecycle tests
-    // write a real SQLite DB and must not touch the user's %AppData% index.
-    internal static Func<string> BaseDir = () => DefaultBaseDir;
+    // write a real SQLite DB and must not touch the user's index.
+    internal static Func<string> BaseDir = DefaultBase;
+
+    /// <summary>Where earlier versions kept the indexes; <c>null</c> for a redirected folder, or the real base of the same
+    /// root would answer for it.</summary>
+    internal static string? OldDir => ReferenceEquals(BaseDir, DefaultBase) ? IndexHome.OldFolderOf("rag") : null;
 
     private readonly string _dbPath;
     private readonly string _rootHash;
@@ -58,7 +61,11 @@ internal sealed class RagDatabase
 
     /// <summary>The database file of <paramref name="solutionRoot"/>'s index, whether it exists or not. Opening a
     /// <see cref="RagDatabase"/> creates it: a reader that must write nothing asks here first.</summary>
-    internal static string PathFor(string solutionRoot) => Path.Combine(BaseDir(), $"{ComputePathHash(solutionRoot)}.db");
+    internal static string PathFor(string solutionRoot)
+    {
+        var name = $"{ComputePathHash(solutionRoot)}.db";
+        return IndexHome.Resolve(Path.Combine(BaseDir(), name), OldDir is { } old ? Path.Combine(old, name) : null);
+    }
 
     // ── Public API ────────────────────────────────────────────────────────────
 
