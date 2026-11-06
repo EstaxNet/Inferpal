@@ -93,14 +93,32 @@ internal static class IndexHome
         lock (Gate) _moved ??= Task.Run(MoveEverything);
     }
 
-    /// <summary>Completes once this process's sweep has ended, at once when it has none.</summary>
+    /// <summary>How long what writes a base waits for the sweep: minutes on the slowest profile measured a few seconds.</summary>
+    internal static readonly TimeSpan MoveBudget = TimeSpan.FromMinutes(5);
+
+    /// <summary>Completes once this process's sweep has ended or <see cref="MoveBudget"/> has passed, at once when it has none.</summary>
     /// <remarks>⚠ Awaited by what WRITES a base: a pass opened on the old file keeps writing there, and what it computes
     /// after the copy would be missing from the base the next opening reads. A reader needs no wait: the old base is
-    /// there. Unbounded on purpose: the index reads the same disk, so a sweep that hangs leaves nothing to read anyway.
-    /// </remarks>
+    /// there.</remarks>
     internal static Task MovedAsync(CancellationToken ct)
     {
-        lock (Gate) return _moved?.WaitAsync(ct) ?? Task.CompletedTask;
+        Task? moved;
+        lock (Gate) moved = _moved;
+        return MovedAsync(moved, MoveBudget, ct);
+    }
+
+    /// <summary>Waits for <paramref name="moved"/>, <paramref name="budget"/> at most.</summary>
+    /// <remarks>⚠ Bounded: a sweep that hangs on a slow share would stop every indexing pass of the session without a word.
+    /// Past the budget a pass writes where it opened, and what it writes after a copy is copied again by the next sweep
+    /// (<see cref="WrittenSinceCopy"/>).</remarks>
+    internal static async Task MovedAsync(Task? moved, TimeSpan budget, CancellationToken ct)
+    {
+        if (moved is null) return;
+        try { await moved.WaitAsync(budget, ct).ConfigureAwait(false); }
+        catch (TimeoutException)
+        {
+            Diagnostics.RecordOnce("IndexHome", $"The move of the indexes is still running after {budget.TotalMinutes:0} minutes: indexing goes on without it.", "budget");
+        }
     }
 
     private static void MoveEverything()

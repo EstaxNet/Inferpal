@@ -91,6 +91,51 @@ jobs:
           echo "dotnet test exit=$code"
           exit $code
 
+      # ⚠ The package as published, built on Windows: a Mac runs nothing else, and no other job starts this binary. An
+      # executable Apple silicon refuses dies before its first line, and the whole extension with it.
+      - name: The published host starts on a Mac
+        if: always()
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern 'inferpal-vscode-darwin-arm64-*.vsix' --dir published
+          unzip -q published/*.vsix -d published/x
+          host=$(find published/x -type f -name Inferpal.Host | head -n 1)
+          chmod 755 "$host"
+          python3 - "$host" "$PWD" <<'PY'
+          import json, subprocess, sys, threading
+          host, root = sys.argv[1], sys.argv[2]
+          p = subprocess.Popen([host], cwd=root, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+          params = {"rootDir": root, "locale": "en", "clientName": "ci-macos", "editorSurface": False, "secrets": False,
+                    "indexesTheFolder": False}
+          body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": params}).encode()
+          p.stdin.write(b"Content-Length: %d\r\n\r\n" % len(body) + body)
+          p.stdin.flush()
+          answer = {}
+          def read():
+              while True:
+                  header = b""
+                  while not header.endswith(b"\r\n\r\n"):
+                      c = p.stdout.read(1)
+                      if not c:
+                          return
+                      header += c
+                  message = json.loads(p.stdout.read(int(header.split(b"Content-Length:")[1].split(b"\r\n")[0])))
+                  if message.get("id") == 1 and "method" not in message:
+                      answer.update(message)
+                      return
+          reader = threading.Thread(target=read, daemon=True)
+          reader.start()
+          reader.join(90)
+          code = p.poll()
+          p.kill()
+          print("host exit code:", code, "| answer:", json.dumps(answer)[:300])
+          if "result" not in answer:
+              print(p.stderr.read().decode("utf-8", "replace")[-2000:])
+              sys.exit(1)
+          PY
+
       # Runs even when the step above was killed by its own budget: that is the whole point.
       # ⚠ FAILURES FIRST — same reason as the other leg: at `verbosity=detailed` one line per PASSED
       # test means a 3269-test suite pushes the failure out of any fixed tail, and this step is the

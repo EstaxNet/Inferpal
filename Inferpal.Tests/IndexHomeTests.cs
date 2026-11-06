@@ -547,4 +547,41 @@ public sealed class IndexHomeTests : IDisposable
         var open = code.IndexOf(opening, start, StringComparison.Ordinal);
         Assert.True(wait >= 0 && wait < open, $"{method} of {file} opens its base before the sweep has ended");
     }
+
+    /// <summary>A sweep that hangs does not stop every indexing pass of the session.</summary>
+    [Fact]
+    public async Task ASweepThatHangs_HoldsWhatWrites_ForItsBudgetOnly()
+    {
+        var hung = new TaskCompletionSource();
+
+        await IndexHome.MovedAsync(hung.Task, TimeSpan.FromMilliseconds(50), CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.False(hung.Task.IsCompleted);
+    }
+
+    /// <summary>Reference arm: while the budget lasts, what writes does wait.</summary>
+    [Fact]
+    public async Task ASweepUnderway_IsWaitedFor()
+    {
+        var sweep = new TaskCompletionSource();
+        var wait = IndexHome.MovedAsync(sweep.Task, TimeSpan.FromMinutes(1), CancellationToken.None);
+
+        await Task.Delay(100);
+        Assert.False(wait.IsCompleted);
+
+        sweep.SetResult();
+        await wait.WaitAsync(TimeSpan.FromSeconds(30));
+    }
+
+    [Fact]
+    public async Task AStop_EndsTheWait()
+    {
+        var hung = new TaskCompletionSource();
+        using var stop = new CancellationTokenSource();
+        var wait = IndexHome.MovedAsync(hung.Task, TimeSpan.FromMinutes(1), stop.Token);
+
+        stop.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => wait);
+    }
 }
