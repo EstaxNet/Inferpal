@@ -166,6 +166,9 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>Solution root directory being indexed.</summary>
     public string RootDir    { get; private set; } = string.Empty;
 
+    /// <summary>What keeps this index's base from being forgotten or pruned while the service uses it.</summary>
+    private IDisposable? _held;
+
     /// <summary>The root the last indexing pass was started on (empty = never). <see cref="RootDir"/> can be
     /// pinned without indexing, so it does not say whether a pass ever ran.</summary>
     public string IndexedRoot { get; private set; } = string.Empty;
@@ -502,6 +505,7 @@ internal sealed class ProjectIndexService : IDisposable
         {
             await IndexHome.MovedAsync(ct).ConfigureAwait(false);
             var db = new RagDatabase(rootDir);
+            Interlocked.Exchange(ref _held, IndexHome.Hold(db.DbPath))?.Dispose();
 
             // ── Watch for file changes — armed BEFORE the pass reads anything ─
             // The pass can run for minutes (embeddings), and a watcher armed only after the final
@@ -1614,6 +1618,7 @@ internal sealed class ProjectIndexService : IDisposable
     {
         // Flag first: a watcher callback already in flight must not resurrect the timer behind us.
         _disposed = true;
+        Interlocked.Exchange(ref _held, null)?.Dispose();
 
         lock (_timerLock)
         {

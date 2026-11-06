@@ -39,6 +39,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
         "config/get", "config/update", "config/reload", "models/listByKind", "connection/check", "settings/strings", "settings/schema",
         "mcp/cards", "mcp/retry", "mcp/authorize", "permissions/table", "permissions/newRule",
         "settings/indexCard", "settings/indexRebuild", "settings/exclusions", "settings/docsSites", "settings/docsAction",
+        "settings/keptIndexes", "settings/keptForget",
         "settings/contextUsage", "settings/projectFiles", "settings/repoInstructions", "settings/pinSizes",
         "settings/loadedModels", "settings/unloadModels", "settings/suggestModels",
         // The Tools page: the list, and turning one off — a setting written (disabledTools), never a tool run.

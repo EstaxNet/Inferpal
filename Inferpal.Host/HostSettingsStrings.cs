@@ -158,6 +158,7 @@ internal sealed partial class HostServer
         "SettingsModelUsed", "SettingsChangeInServer", "SettingsEditFile", "SettingsOpenFile",
         "IndexCardShowThem", "IndexCardHideThem", "IndexExclusionsTitle", "IndexExclusionsFrom", "IndexExclusionsHowTo",
         "DocsReindex", "DocsAddSite", "DocsAddUrlLabel", "DocsAddButton", "DocsNoSitesYet",
+        "KeptForget", "KeptForgetConfirm", "KeptForgetKeep", "KeptOpenHere", "KeptEmpty",
         "ContextUsageOpenXray", "ContextUsageChangeWindow", "ProjectFilesTitle", "ProjectFileNotYet",
         "RepoInstructionsNone",
         // The theme cards of the Appearance page

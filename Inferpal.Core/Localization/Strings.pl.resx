@@ -802,7 +802,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="SlashHintFixBuild" xml:space="preserve"><value>kompilacja → AI poprawia → ponowna kompilacja aż do braku błędów</value></data>
   <data name="SlashHintContext" xml:space="preserve"><value>pokaż kontekst projektu</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>wyświetl pamięć agenta</value></data>
-  <data name="SlashHintIndex" xml:space="preserve"><value>pokaż lub przebuduj indeks RAG kodu</value></data>
+  <data name="SlashHintIndex" xml:space="preserve"><value>pokaż, przebuduj lub zapomnij indeks kodu</value></data>
   <data name="IndexNoRoot" xml:space="preserve"><value>⚠ Nie znaleziono katalogu głównego rozwiązania — najpierw otwórz plik.</value></data>
   <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 Rozpoczęto ponowne indeksowanie RAG: `{0}`</value></data>
   <data name="IndexTitle" xml:space="preserve"><value>**Indeks RAG**</value></data>
@@ -2120,4 +2120,33 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="AcpSetupNoWinget" xml:space="preserve"><value>Na tym komputerze nie odpowiada żaden serwer modeli. Zainstaluj Ollamę (ollama.com) lub LM Studio (lmstudio.ai), a potem uruchom tę konfigurację ponownie.</value></data>
   <data name="AcpSetupRunAgain" xml:space="preserve"><value>Potem uruchom tę konfigurację ponownie.</value></data>
   <data name="SetupStartingLead" xml:space="preserve"><value>Ollama uruchamia swój serwer; Inferpal czeka na niego pod adresem {0}.</value></data>
+  <data name="SettingsSectionKept" xml:space="preserve"><value>Co Inferpal przechowuje na tym komputerze</value></data>
+  <data name="SettingsSectionKeptDesc" xml:space="preserve"><value>Indeks wyszukiwania każdego otwartego repozytorium. Zostaje na tym komputerze, poza twoimi repozytoriami.</value></data>
+  <data name="KeptSummary" xml:space="preserve"><value>{0} {0:indeks|indeksy|indeksów} · {1}</value></data>
+  <data name="KeptOpenNow" xml:space="preserve"><value>otwarty teraz</value></data>
+  <data name="KeptOpenHere" xml:space="preserve"><value>Otwarty tutaj</value></data>
+  <data name="KeptOpenedToday" xml:space="preserve"><value>otwarty dzisiaj</value></data>
+  <data name="KeptOpenedDaysAgo" xml:space="preserve"><value>otwarty {0} {0:dzień|dni|dni} temu</value></data>
+  <data name="KeptFolderNotFound" xml:space="preserve"><value>nie znaleziono folderu</value></data>
+  <data name="KeptUnknownFolder" xml:space="preserve"><value>nieznany folder</value></data>
+  <data name="KeptForget" xml:space="preserve"><value>Zapomnij</value></data>
+  <data name="KeptForgetLabel" xml:space="preserve"><value>Zapomnij indeks {0}</value></data>
+  <data name="KeptForgetAsk" xml:space="preserve"><value>Zapomnieć ten indeks? Zwolni się {0}. W repozytorium nic się nie zmieni. Indeks zostanie zbudowany ponownie, gdy następnym razem otworzysz folder, co znów użyje modelu osadzeń, jeśli go masz.</value></data>
+  <data name="KeptForgetConfirm" xml:space="preserve"><value>Zapomnij indeks</value></data>
+  <data name="KeptForgetKeep" xml:space="preserve"><value>Zachowaj</value></data>
+  <data name="KeptForgotten" xml:space="preserve"><value>Zapomniano indeks {0}: zwolniono {1}. Zostanie zbudowany ponownie, gdy następnym razem otworzysz folder.</value></data>
+  <data name="KeptHeld" xml:space="preserve"><value>Nie zapomniano: inne okno ma otwarty ten indeks. Zamknij je, a potem zapomnij indeks tutaj.</value></data>
+  <data name="KeptNotHere" xml:space="preserve"><value>Nie zapomniano: {0} to folder otwarty tutaj. Aby zacząć jego indeks od nowa, użyj `/index rebuild`.</value></data>
+  <data name="KeptUnknown" xml:space="preserve"><value>Żaden przechowywany indeks nie nazywa się {0}. `/index list` podaje ich nazwy.</value></data>
+  <data name="KeptAmbiguous" xml:space="preserve"><value>Kilka przechowywanych indeksów nazywa się {0}: podaj cały folder, tak jak na liście.</value></data>
+  <data name="KeptOlderWriter" xml:space="preserve"><value>Starsza wersja Inferpal nadal zapisuje w twoim profilu mobilnym ({0} {0:indeks|indeksy|indeksów}, {1}). Ten edytor czyta indeks przechowywany tutaj, więc mogą się różnić. Zaktualizuj Inferpal w drugim edytorze.</value></data>
+  <data name="KeptNote" xml:space="preserve"><value>Indeks nieotwierany przez 90 dni jest usuwany, a czat o tym informuje. Otwarcie folderu buduje go ponownie.</value></data>
+  <data name="KeptNoteDocs" xml:space="preserve"><value>Indeks dokumentacji, {0}, jest wspólny dla wszystkich repozytoriów: zobacz Dokumentacja.</value></data>
+  <data name="KeptEmpty" xml:space="preserve"><value>Na tym komputerze nic jeszcze nie jest przechowywane.</value></data>
+  <data name="KeptListTitle" xml:space="preserve"><value>Co Inferpal przechowuje na tym komputerze — {0}:</value></data>
+  <data name="KeptListHint" xml:space="preserve"><value>Aby zapomnieć jeden: `/index forget &lt;nazwa&gt;`. Repozytorium pozostaje nietknięte. Indeks nieotwierany przez 90 dni jest usuwany i jest to mówione tutaj.</value></data>
+  <data name="KeptPrunedTitle" xml:space="preserve"><value>Usunięto stare indeksy</value></data>
+  <data name="KeptPruned" xml:space="preserve"><value>{0} {0:indeks wyszukiwania nie był otwierany|indeksy wyszukiwania nie były otwierane|indeksów wyszukiwania nie było otwieranych} przez 90 dni, zwolniono {1}: {2}.</value></data>
+  <data name="KeptPrunedDetail" xml:space="preserve"><value>W tych repozytoriach nic się nie zmieniło. Otwarcie folderu buduje indeks ponownie.</value></data>
+  <data name="KeptSeeKept" xml:space="preserve"><value>Zobacz, co jest przechowywane</value></data>
 </root>

@@ -1332,3 +1332,32 @@ body.vscode-high-contrast-light .segment:has(input:checked) {
 .loadedmodels .lname {
   font-family: var(--vscode-editor-font-family, monospace);
 }
+
+/* What Inferpal keeps on this machine */
+.keptsummary {
+  margin: 0 0 8px;
+}
+
+.keptchip {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  font-size: 12px;
+}
+
+.keptask {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--vscode-focusBorder);
+}
+
+.keptask p {
+  margin: 0;
+}
+

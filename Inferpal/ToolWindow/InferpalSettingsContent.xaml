@@ -1486,6 +1486,75 @@
                     </TextBlock.Style>
                 </TextBlock>
                 <TextBlock Text="{Binding NoteDocs}" Style="{StaticResource Hint}" Margin="0,8,0,0"/>
+
+                <!-- What Inferpal keeps on this machine: each repository's index, its size, and Forget, which asks in the row. -->
+                <Border BorderBrush="{Binding NavLineBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,20,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{Binding LabelSectionKept}" Style="{StaticResource SectionTitle}" Margin="0"/>
+                            <TextBlock Text="{Binding DescSectionKept}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding KeptSummaryText}" Style="{StaticResource Hint}" Margin="10,2,0,0"/>
+                    </Grid>
+                </Border>
+                <TextBlock Text="{Binding KeptOlderWriter}" TextWrapping="Wrap" FontSize="11.5" Margin="0,10,0,0"
+                           Foreground="{Binding WarningForeground}" Visibility="{Binding HasKeptOlderWriter, Converter={StaticResource b2v}}"/>
+                <Border Visibility="{Binding KeptIsEmpty, Converter={StaticResource b2v}}" Style="{StaticResource Card}" Margin="0,10,0,0">
+                    <TextBlock Text="{Binding LabelKeptEmpty}" Foreground="{Binding SubtleForeground}" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                </Border>
+                <ItemsControl ItemsSource="{Binding KeptIndexRows}" Margin="0,10,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="0,0,0,6">
+                                <Border Background="{Binding DataContext.McpRowBackground, ElementName=root}"
+                                        BorderBrush="{Binding DataContext.McpRowBorder, ElementName=root}" BorderThickness="1"
+                                        CornerRadius="8" Padding="10,6">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                           Foreground="{Binding DataContext.TextForeground, ElementName=root}"/>
+                                                <TextBlock Text="{Binding Folder}" FontFamily="Cascadia Mono, Consolas" FontSize="11" TextTrimming="CharacterEllipsis"
+                                                           Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding Detail}" VerticalAlignment="Center" Margin="10,0"
+                                                       Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"/>
+                                            <Button Grid.Column="2" Content="{Binding DataContext.LabelKeptForget, ElementName=root}" Command="{Binding AskCommand}"
+                                                    AutomationProperties.Name="{Binding ForgetLabel}" ToolTip="{Binding ForgetLabel}" Padding="10,3" VerticalAlignment="Center"
+                                                    Visibility="{Binding CanForget, Converter={StaticResource b2v}}"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding DataContext.LabelKeptOpenHere, ElementName=root}" VerticalAlignment="Center"
+                                                       Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"
+                                                       Visibility="{Binding OpenHere, Converter={StaticResource b2v}}"/>
+                                        </Grid>
+                                        <StackPanel Margin="0,8,0,2" Visibility="{Binding Asking, Converter={StaticResource b2v}}">
+                                            <TextBlock Text="{Binding AskText}" TextWrapping="Wrap"
+                                                       Foreground="{Binding DataContext.TextForeground, ElementName=root}"/>
+                                            <WrapPanel HorizontalAlignment="Right" Margin="0,8,0,0">
+                                                <Button Content="{Binding DataContext.LabelKeptConfirm, ElementName=root}" Command="{Binding ForgetCommand}" Padding="12,4" Margin="0,0,6,0"/>
+                                                <Button Content="{Binding DataContext.LabelKeptKeep, ElementName=root}" Command="{Binding KeepCommand}" Padding="12,4"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Text="{Binding Note}" FontSize="11.5" TextWrapping="Wrap" Margin="10,3,0,0"
+                                           Foreground="{Binding DataContext.WarningForeground, ElementName=root}"
+                                           Visibility="{Binding HasNote, Converter={StaticResource b2v}}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding KeptMessage}" Foreground="{Binding TextForeground}" TextWrapping="Wrap" Margin="0,4,0,0"
+                           Visibility="{Binding HasKeptMessage, Converter={StaticResource b2v}}"/>
+                <TextBlock Text="{Binding KeptNoteText}" Style="{StaticResource Hint}" Margin="0,8,0,0"/>
             </StackPanel>
 
             <!-- ── Autocomplete ───────────────────────────────────────────── -->

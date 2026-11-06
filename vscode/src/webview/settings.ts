@@ -327,11 +327,13 @@ function revealSectionToOpen(): void {
   if (!sectionToOpen) {
     return;
   }
-  const fold = [...app.querySelectorAll<HTMLDetailsElement>('details.block')].find((d) => d.dataset.section === sectionToOpen);
+  const block = [...app.querySelectorAll<HTMLElement>('.block')].find((d) => d.dataset.section === sectionToOpen);
   sectionToOpen = '';
-  if (fold) {
-    fold.open = true;
-    fold.scrollIntoView({ block: 'start' });
+  if (block) {
+    if (block instanceof HTMLDetailsElement) {
+      block.open = true;
+    }
+    block.scrollIntoView({ block: 'start' });
   }
 }
 

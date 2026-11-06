@@ -810,7 +810,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="SlashHintFixBuild" xml:space="preserve"><value>compile → AI fixes → recompile until clean</value></data>
   <data name="SlashHintContext" xml:space="preserve"><value>show project context</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>view agent memory</value></data>
-  <data name="SlashHintIndex" xml:space="preserve"><value>show or rebuild the RAG codebase index</value></data>
+  <data name="SlashHintIndex" xml:space="preserve"><value>show, rebuild or forget the codebase index</value></data>
   <data name="IndexNoRoot" xml:space="preserve"><value>⚠ Cannot locate the solution root — open a file first.</value></data>
   <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 RAG re-indexing started: `{0}`</value></data>
   <data name="IndexTitle" xml:space="preserve"><value>**RAG Index**</value></data>
@@ -2124,4 +2124,33 @@ What you save there applies from your next question, in this thread and the othe
   <data name="AcpSetupNoWinget" xml:space="preserve"><value>No model server answers on this computer. Install Ollama (ollama.com) or LM Studio (lmstudio.ai), then run this setup again.</value></data>
   <data name="AcpSetupRunAgain" xml:space="preserve"><value>Then run this setup again.</value></data>
   <data name="SetupStartingLead" xml:space="preserve"><value>Ollama starts its server; Inferpal waits for it at {0}.</value></data>
+  <data name="SettingsSectionKept" xml:space="preserve"><value>What Inferpal keeps on this machine</value></data>
+  <data name="SettingsSectionKeptDesc" xml:space="preserve"><value>The search index of each repository you opened. It stays on this machine, outside your repositories.</value></data>
+  <data name="KeptSummary" xml:space="preserve"><value>{0} {0:index|indexes} · {1}</value></data>
+  <data name="KeptOpenNow" xml:space="preserve"><value>open now</value></data>
+  <data name="KeptOpenHere" xml:space="preserve"><value>Open here</value></data>
+  <data name="KeptOpenedToday" xml:space="preserve"><value>opened today</value></data>
+  <data name="KeptOpenedDaysAgo" xml:space="preserve"><value>opened {0} {0:day|days} ago</value></data>
+  <data name="KeptFolderNotFound" xml:space="preserve"><value>folder not found</value></data>
+  <data name="KeptUnknownFolder" xml:space="preserve"><value>folder unknown</value></data>
+  <data name="KeptForget" xml:space="preserve"><value>Forget</value></data>
+  <data name="KeptForgetLabel" xml:space="preserve"><value>Forget the index of {0}</value></data>
+  <data name="KeptForgetAsk" xml:space="preserve"><value>Forget this index? {0} comes back. Nothing in the repository changes. The index is built again the next time you open the folder, which asks your embedding model again if you use one.</value></data>
+  <data name="KeptForgetConfirm" xml:space="preserve"><value>Forget index</value></data>
+  <data name="KeptForgetKeep" xml:space="preserve"><value>Keep it</value></data>
+  <data name="KeptForgotten" xml:space="preserve"><value>Forgot the index of {0}: {1} came back. It is built again the next time you open the folder.</value></data>
+  <data name="KeptHeld" xml:space="preserve"><value>Not forgotten: another window has this index open. Close that window, then forget it here.</value></data>
+  <data name="KeptNotHere" xml:space="preserve"><value>Not forgotten: {0} is the folder open here. To start its index again, use `/index rebuild`.</value></data>
+  <data name="KeptUnknown" xml:space="preserve"><value>No kept index is called {0}. `/index list` names them.</value></data>
+  <data name="KeptAmbiguous" xml:space="preserve"><value>Several kept indexes are called {0}: give the whole folder, as the list shows it.</value></data>
+  <data name="KeptOlderWriter" xml:space="preserve"><value>An older Inferpal still writes to your roaming profile ({0} {0:index|indexes}, {1}). This editor reads the index kept here, so the two can differ. Update Inferpal in your other editor.</value></data>
+  <data name="KeptNote" xml:space="preserve"><value>An index not opened for 90 days is removed, and the chat says so. Opening the folder builds it again.</value></data>
+  <data name="KeptNoteDocs" xml:space="preserve"><value>The documentation index, {0}, is shared by every repository: see Documentation.</value></data>
+  <data name="KeptEmpty" xml:space="preserve"><value>Nothing kept on this machine yet.</value></data>
+  <data name="KeptListTitle" xml:space="preserve"><value>What Inferpal keeps on this machine — {0}:</value></data>
+  <data name="KeptListHint" xml:space="preserve"><value>Forget one: `/index forget &lt;name&gt;`. The repository is not touched. An index not opened for 90 days is removed, and said here.</value></data>
+  <data name="KeptPrunedTitle" xml:space="preserve"><value>Old indexes removed</value></data>
+  <data name="KeptPruned" xml:space="preserve"><value>{0} search {0:index was|indexes were} not opened for 90 days, and {1} came back: {2}.</value></data>
+  <data name="KeptPrunedDetail" xml:space="preserve"><value>Nothing in those repositories changed. Opening the folder builds the index again.</value></data>
+  <data name="KeptSeeKept" xml:space="preserve"><value>See what is kept</value></data>
 </root>

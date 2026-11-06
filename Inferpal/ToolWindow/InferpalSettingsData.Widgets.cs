@@ -68,6 +68,25 @@ internal partial class InferpalSettingsData
     [DataMember] public bool ExclusionsEditable { get => _exclusionsEditable; set => SetProperty(ref _exclusionsEditable, value); }
     [DataMember] public AsyncCommand EditExclusionsCommand { get; private set; } = null!;
 
+    // ── What Inferpal keeps on this machine ──
+    private string _keptSummary = "", _keptOlderWriter = "", _keptNote = "", _keptMessage = "";
+    private bool _hasKeptOlderWriter, _hasKeptMessage, _keptIsEmpty;
+    [DataMember] public ObservableCollection<KeptIndexItem> KeptIndexRows { get; } = [];
+    [DataMember] public string KeptSummaryText    { get => _keptSummary;        set => SetProperty(ref _keptSummary,        value); }
+    [DataMember] public string KeptOlderWriter    { get => _keptOlderWriter;    set => SetProperty(ref _keptOlderWriter,    value); }
+    [DataMember] public bool   HasKeptOlderWriter { get => _hasKeptOlderWriter; set => SetProperty(ref _hasKeptOlderWriter, value); }
+    [DataMember] public string KeptNoteText       { get => _keptNote;           set => SetProperty(ref _keptNote,           value); }
+    [DataMember] public string KeptMessage        { get => _keptMessage;        set => SetProperty(ref _keptMessage,        value); }
+    [DataMember] public bool   HasKeptMessage     { get => _hasKeptMessage;     set => SetProperty(ref _hasKeptMessage,     value); }
+    [DataMember] public bool   KeptIsEmpty        { get => _keptIsEmpty;        set => SetProperty(ref _keptIsEmpty,        value); }
+    [DataMember] public string LabelSectionKept   { get; private set; } = "";
+    [DataMember] public string DescSectionKept    { get; private set; } = "";
+    [DataMember] public string LabelKeptEmpty     { get; private set; } = "";
+    [DataMember] public string LabelKeptOpenHere  { get; private set; } = "";
+    [DataMember] public string LabelKeptForget    { get; private set; } = "";
+    [DataMember] public string LabelKeptConfirm   { get; private set; } = "";
+    [DataMember] public string LabelKeptKeep      { get; private set; } = "";
+
     // ── @Docs sites ──────────────────────────────────────────────────────────
     private bool _docsEmpty = true, _isAddingSite;
     private string _newSiteUrl = "", _docsMessage = "";
@@ -236,6 +255,13 @@ internal partial class InferpalSettingsData
     {
         ApplyModelBlockLabels();
         LabelSectionAsYouType  = Strings.SettingsSectionAsYouType;
+        LabelSectionKept       = Strings.SettingsSectionKept;
+        DescSectionKept        = Strings.SettingsSectionKeptDesc;
+        LabelKeptEmpty         = Strings.KeptEmpty;
+        LabelKeptOpenHere      = Strings.KeptOpenHere;
+        LabelKeptForget        = Strings.KeptForget;
+        LabelKeptConfirm       = Strings.KeptForgetConfirm;
+        LabelKeptKeep          = Strings.KeptForgetKeep;
         LabelSectionDocs       = Strings.SettingsSectionDocs;
         DescSectionDocs        = Strings.SettingsSectionDocsDesc;
         NoteDocs               = Strings.SettingsDocsNote;
@@ -321,7 +347,10 @@ internal partial class InferpalSettingsData
         switch (page)
         {
             case "server":  _ = RefreshLoadedModelsAsync(CancellationToken.None); break;
-            case "search":  _ = RefreshSearchPageAsync(); break;
+            case "search":
+                _ = RefreshSearchPageAsync();
+                _ = RefreshKeptAsync();
+                break;
             case "context": _ = RefreshContextPageAsync(); break;
             case "tools":   _ = RefreshToolListAsync(); break;
         }
@@ -439,6 +468,47 @@ internal partial class InferpalSettingsData
         DocsEmpty = DocsSiteRows.Count == 0;
     }
 
+    /// <summary>What is kept, read when the page is shown, never by the page's poll: a scan opens every base, and rebuilding
+    /// the rows would close a Forget being confirmed.</summary>
+    private async Task RefreshKeptAsync()
+    {
+        if (_live is not { } live) return;
+        try
+        {
+            var kept = await Task.Run(() => Services.Rag.KeptIndexes.ReadHere(live.Index.RootDir));
+            await RunOnVMContextAsync(() => ApplyKept(kept));
+        }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Settings.RefreshKept", ex); }
+    }
+
+    private void ApplyKept(Services.Rag.KeptIndexesModel kept)
+    {
+        KeptSummaryText    = kept.Rows.Count == 0 ? string.Empty : kept.Summary;
+        KeptOlderWriter    = kept.OlderWriter;
+        HasKeptOlderWriter = kept.OlderWriter.Length > 0;
+        KeptNoteText       = kept.Note;
+        KeptMessage        = kept.Message;
+        HasKeptMessage     = kept.Message.Length > 0;
+        KeptIndexRows.Clear();
+        foreach (var row in kept.Rows)
+        {
+            var id = row.Id;
+            KeptIndexRows.Add(new KeptIndexItem(row, () => ForgetKeptAsync(id)));
+        }
+        KeptIsEmpty = KeptIndexRows.Count == 0;
+    }
+
+    private async Task ForgetKeptAsync(string id)
+    {
+        if (_live is not { } live) return;
+        try
+        {
+            var kept = await Task.Run(() => Services.Rag.KeptIndexes.ForgetHere(id, live.Index.RootDir));
+            await RunOnVMContextAsync(() => ApplyKept(kept));
+        }
+        catch (Exception ex) { Services.Diagnostics.Swallow("Settings.ForgetKept", ex); }
+    }
+
     /// <summary>The colour of a state's dot, readable on both themes: green done, blue running, amber partial, red failed.</summary>
     private string DotFor(string state) => state switch
     {
@@ -535,6 +605,49 @@ internal sealed class DocsSiteItem : NotifyPropertyChangedObject
     [DataMember] public string RemoveLabel { get; }
     [DataMember] public AsyncCommand ReindexCommand { get; }
     [DataMember] public AsyncCommand RemoveCommand  { get; }
+}
+
+/// <summary>One repository's index on the Code search page, as Remote UI carries it. Forget asks in the row.</summary>
+[DataContract]
+internal sealed class KeptIndexItem : NotifyPropertyChangedObject
+{
+    private bool _asking;
+
+    public KeptIndexItem(Services.Rag.KeptIndexRow row, Func<Task> forget)
+    {
+        Name          = row.Name;
+        Folder        = row.Folder;
+        Detail        = row.Detail;
+        OpenHere      = row.OpenHere;
+        CanForget     = !row.OpenHere;
+        AskText       = row.AskText;
+        ForgetLabel   = row.ForgetLabel;
+        Note          = row.Note;
+        HasNote       = row.Note.Length > 0;
+        // Once: a second click would ask for a base already gone.
+        ForgetCommand = new AsyncCommand((_, _) =>
+        {
+            if (!Asking) return Task.CompletedTask;
+            Asking = false;
+            return forget();
+        });
+        AskCommand    = new AsyncCommand((_, _) => { Asking = true; return Task.CompletedTask; });
+        KeepCommand   = new AsyncCommand((_, _) => { Asking = false; return Task.CompletedTask; });
+    }
+
+    [DataMember] public string Name        { get; }
+    [DataMember] public string Folder      { get; }
+    [DataMember] public string Detail      { get; }
+    [DataMember] public bool   OpenHere    { get; }
+    [DataMember] public bool   CanForget   { get; }
+    [DataMember] public string AskText     { get; }
+    [DataMember] public string ForgetLabel { get; }
+    [DataMember] public string Note        { get; }
+    [DataMember] public bool   HasNote     { get; }
+    [DataMember] public bool   Asking      { get => _asking; private set => SetProperty(ref _asking, value); }
+    [DataMember] public AsyncCommand ForgetCommand { get; }
+    [DataMember] public AsyncCommand AskCommand    { get; }
+    [DataMember] public AsyncCommand KeepCommand   { get; }
 }
 
 /// <summary>One repository instruction file on the Context page, as Remote UI carries it.</summary>

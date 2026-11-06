@@ -5,7 +5,7 @@
 import { fill } from './l10n';
 import { icon, iconButton, setIcon } from './icons';
 import type {
-  ApprovalRuleTable, ContextUsage, IndexCard, LoadedModels, ModelSuggestion, ProjectFileRow, RepoInstructionRow, SettingsDocs,
+  ApprovalRuleTable, ContextUsage, IndexCard, LoadedModels, ModelSuggestion, ProjectFileRow, RepoInstructionRow, SettingsDocs, SettingsKept,
   SettingsExclusions, SettingsTools,
 } from '../protocol';
 
@@ -39,6 +39,7 @@ export function createWidget(name: string, page: string, host: WidgetHost): Live
     case 'indexCard':       return indexCard(page, host);
     case 'indexExclusions': return indexExclusions(host);
     case 'docsSites':       return docsSites(page, host);
+    case 'keptIndexes':     return keptIndexes(host);
     case 'contextUsage':    return contextUsage(host);
     case 'projectFiles':    return projectFiles(host);
     case 'repoInstructions': return repoInstructions(host);
@@ -451,6 +452,79 @@ function docsSites(page: string, host: WidgetHost): LiveWidget {
       if (sites.some((s) => s.busy) && host.isShown(page)) {
         polling = setTimeout(() => host.post({ type: 'docsSites' }), 2000);
       }
+      return true;
+    },
+  };
+}
+
+/** What Inferpal keeps on this machine: each repository's index, its size, and Forget, which asks in the row. The folder
+ * open here offers nothing: its index is in use. Every sentence comes from the Core's `KeptIndexes`. */
+function keptIndexes(host: WidgetHost): LiveWidget {
+  const block = el('div', 'docsites kept');
+  let kept: SettingsKept | null = null;
+  let asking = '';
+
+  const draw = (): void => {
+    block.textContent = '';
+    if (!kept) {
+      return;
+    }
+    if (kept.rows.length === 0) {
+      block.append(el('p', 'lempty', host.res('KeptEmpty')));
+    } else {
+      block.append(el('p', 'hint keptsummary', kept.summary));
+    }
+    if (kept.olderWriter) {
+      block.append(el('p', 'cardnote keptolder', kept.olderWriter));
+    }
+    for (const r of kept.rows) {
+      const row = el('div', 'siterow');
+      const main = el('div', 'lmain');
+      main.append(el('span', 'lname', r.name), el('code', 'lsub mono', r.folder));
+      row.append(main, el('span', 'hint sitestatus', r.detail));
+      if (r.openHere) {
+        row.append(el('span', 'keptchip', host.res('KeptOpenHere')));
+      } else {
+        const forget = el('button', 'secondary', host.res('KeptForget'));
+        forget.type = 'button';
+        forget.setAttribute('aria-label', r.forgetLabel);
+        forget.addEventListener('click', () => { asking = r.id; draw(); });
+        row.append(forget);
+      }
+      block.append(row);
+      if (asking === r.id) {
+        const ask = el('div', 'keptask');
+        const buttons = el('div', 'formbuttons');
+        const yes = el('button', '', host.res('KeptForgetConfirm'));
+        yes.type = 'button';
+        yes.addEventListener('click', () => { yes.disabled = true; asking = ''; host.post({ type: 'keptForget', arg: r.id }); });
+        const no = el('button', 'secondary', host.res('KeptForgetKeep'));
+        no.type = 'button';
+        no.addEventListener('click', () => { asking = ''; draw(); });
+        buttons.append(yes, no);
+        ask.append(el('p', '', r.askText), buttons);
+        block.append(ask);
+      }
+      if (r.note) {
+        block.append(el('p', 'cardnote sitenote', r.note));
+      }
+    }
+    if (kept.message) {
+      block.append(el('p', 'cardnote', kept.message));
+    }
+    block.append(el('p', 'hint', kept.note));
+  };
+
+  host.post({ type: 'keptIndexes' });
+  return {
+    el: block,
+    onShown: () => host.post({ type: 'keptIndexes' }),
+    onMessage(msg) {
+      if (msg.type !== 'keptIndexes') {
+        return false;
+      }
+      kept = msg.kept as SettingsKept;
+      draw();
       return true;
     },
   };

@@ -31,6 +31,8 @@ search_codebase "database retry with exponential backoff"
 | `/search-code retry with exponential backoff` | The matching code, with file paths and line numbers |
 | `/index` | The index status: chunks, root, embedding model |
 | `/index rebuild` | A full rebuild of the index |
+| `/index list` | What is kept on this machine: each repository's index and its size |
+| `/index forget <name>` | Forgets one index; the repository is not touched |
 
 Results are ranked by **hybrid search** — semantic cosine similarity *and* lexical BM25, fused
 with Reciprocal Rank Fusion — and include file paths and line numbers. The lexical side catches
@@ -58,6 +60,10 @@ a cosine similarity.
 - Indexing runs in the background and **persists** across restarts.
 - A `FileSystemWatcher` re-indexes changed files with a 5 s debounce.
 - `/index` shows the index status; `/index rebuild` forces a full rebuild.
+- *Settings → Code search → What Inferpal keeps on this machine* lists each repository's index and its size, and
+  forgets one (`/index list` and `/index forget <name>` do the same in any editor or ACP client). An index not opened
+  for 90 days is removed, and the chat says so at the next start (in an ACP client, at `/index list`); opening the
+  folder builds it again.
 - Indexing automatically **pauses while a chat/agent request runs** — in this editor or in another
   one on the same machine — and resumes right after: the interactive model always gets the GPU first (see
   [Architecture → GPU scheduling](architecture.md#gpu-scheduling)).

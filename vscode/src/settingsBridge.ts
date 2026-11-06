@@ -5,7 +5,7 @@
 // open a file, pick one, name an absent host in its own words — is the shell's.
 import type {
   ApprovalRuleTable, ConfigUpdateResult, ConnectionCheckResult, ContextUsage, IndexCard, LoadedModels, McpCardsResult,
-  ModelsByKind, ModelSuggestion, PinnedFileSize, ProjectFileRow, RepoInstructionRow, SettingsDocs, SettingsExclusions, SettingsSchema,
+  ModelsByKind, ModelSuggestion, PinnedFileSize, ProjectFileRow, RepoInstructionRow, SettingsDocs, SettingsKept, SettingsExclusions, SettingsSchema,
   SettingsTools,
   ConfigReloadResult,
 } from './protocol';
@@ -26,6 +26,8 @@ export interface SettingsHost {
   settingsIndexCard(): Promise<IndexCard>;
   settingsIndexRebuild(): Promise<IndexCard>;
   settingsExclusions(): Promise<SettingsExclusions>;
+  settingsKeptIndexes(): Promise<SettingsKept>;
+  settingsKeptForget(id: string): Promise<SettingsKept>;
   settingsDocsSites(): Promise<SettingsDocs>;
   settingsDocsAction(verb: 'add' | 'reindex' | 'remove', arg: string): Promise<SettingsDocs>;
   settingsTools(): Promise<SettingsTools>;
@@ -73,7 +75,8 @@ export interface SavedKeys { provider?: string; baseUrl?: string; language?: str
 export interface SettingsInbound {
   type: 'ready' | 'save' | 'testConnection' | 'refreshModels'
     | 'mcpCards' | 'mcpRetry' | 'mcpAuthorize' | 'rulesTable' | 'newRule' | 'browsePinned'
-    | 'indexCard' | 'indexRebuild' | 'exclusions' | 'docsSites' | 'docsAction' | 'contextUsage' | 'projectFiles'
+    | 'indexCard' | 'indexRebuild' | 'exclusions' | 'docsSites' | 'docsAction' | 'keptIndexes' | 'keptForget'
+    | 'contextUsage' | 'projectFiles'
     | 'repoInstructions' | 'toolList' | 'toolSet'
     | 'pinSizes' | 'openFile' | 'openXray' | 'loadedModels' | 'unloadModels' | 'suggestModels';
   /** unloadModels: the models to unload; absent = every loaded one. */
@@ -292,6 +295,8 @@ export class SettingsBridge {
       case 'exclusions':
       case 'docsSites':
       case 'docsAction':
+      case 'keptIndexes':
+      case 'keptForget':
       case 'contextUsage':
       case 'projectFiles':
       case 'repoInstructions':
@@ -314,6 +319,10 @@ export class SettingsBridge {
             case 'docsSites':    this.shell.post({ type: 'docsSites', docs: await host.settingsDocsSites() }); break;
             case 'docsAction':
               this.shell.post({ type: 'docsSites', docs: await host.settingsDocsAction(msg.verb ?? 'reindex', msg.arg ?? '') });
+              break;
+            case 'keptIndexes':  this.shell.post({ type: 'keptIndexes', kept: await host.settingsKeptIndexes() }); break;
+            case 'keptForget':
+              this.shell.post({ type: 'keptIndexes', kept: await host.settingsKeptForget(msg.arg ?? '') });
               break;
             case 'contextUsage': this.shell.post({ type: 'contextUsage', usage: await host.settingsContextUsage() }); break;
             case 'projectFiles': this.shell.post({ type: 'projectFiles', files: await host.settingsProjectFiles() }); break;

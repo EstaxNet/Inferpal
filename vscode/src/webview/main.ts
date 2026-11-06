@@ -1634,6 +1634,22 @@ function renderAwayNotice(notice: AwayNotice): void {
     card.appendChild(block);
   }
 
+  if (notice.pruned) {
+    const pruned = notice.pruned;
+    const block = document.createElement('div');
+    block.className = 'away-item away-pruned';
+    const text = document.createElement('div');
+    renderMarkdownInto(text, pruned.text);
+    const detail = document.createElement('p');
+    detail.className = 'away-muted';
+    detail.textContent = pruned.detail;
+    const actions = document.createElement('div');
+    actions.className = 'away-actions';
+    actions.append(action(pruned.seeKept, false, () => post({ type: 'openSettingsPage', page: pruned.page, section: pruned.section })));
+    block.append(text, detail, actions);
+    card.appendChild(block);
+  }
+
   for (const task of notice.tasks) {
     const block = document.createElement('div');
     block.className = 'away-item away-task';

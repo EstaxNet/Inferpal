@@ -800,7 +800,7 @@
   <data name="SlashHintFixBuild" xml:space="preserve"><value>компиляция → ИИ исправляет → перекомпиляция до отсутствия ошибок</value></data>
   <data name="SlashHintContext" xml:space="preserve"><value>показать контекст проекта</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>посмотреть память агента</value></data>
-  <data name="SlashHintIndex" xml:space="preserve"><value>показать или пересобрать RAG-индекс кода</value></data>
+  <data name="SlashHintIndex" xml:space="preserve"><value>показать, пересобрать или забыть индекс кода</value></data>
   <data name="IndexNoRoot" xml:space="preserve"><value>⚠ Не удалось найти корень решения — сначала откройте файл.</value></data>
   <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 Переиндексация RAG запущена: `{0}`</value></data>
   <data name="IndexTitle" xml:space="preserve"><value>**Индекс RAG**</value></data>
@@ -2120,4 +2120,33 @@
   <data name="AcpSetupNoWinget" xml:space="preserve"><value>На этом компьютере не отвечает ни один сервер моделей. Установите Ollama (ollama.com) или LM Studio (lmstudio.ai) и запустите эту настройку снова.</value></data>
   <data name="AcpSetupRunAgain" xml:space="preserve"><value>Затем снова запустите эту настройку.</value></data>
   <data name="SetupStartingLead" xml:space="preserve"><value>Ollama запускает свой сервер; Inferpal ждёт его по адресу {0}.</value></data>
+  <data name="SettingsSectionKept" xml:space="preserve"><value>Что Inferpal хранит на этом компьютере</value></data>
+  <data name="SettingsSectionKeptDesc" xml:space="preserve"><value>Поисковый индекс каждого открытого вами репозитория. Он остаётся на этом компьютере, вне ваших репозиториев.</value></data>
+  <data name="KeptSummary" xml:space="preserve"><value>{0} {0:индекс|индекса|индексов} · {1}</value></data>
+  <data name="KeptOpenNow" xml:space="preserve"><value>открыт сейчас</value></data>
+  <data name="KeptOpenHere" xml:space="preserve"><value>Открыт здесь</value></data>
+  <data name="KeptOpenedToday" xml:space="preserve"><value>открыт сегодня</value></data>
+  <data name="KeptOpenedDaysAgo" xml:space="preserve"><value>открыт {0} {0:день|дня|дней} назад</value></data>
+  <data name="KeptFolderNotFound" xml:space="preserve"><value>папка не найдена</value></data>
+  <data name="KeptUnknownFolder" xml:space="preserve"><value>папка неизвестна</value></data>
+  <data name="KeptForget" xml:space="preserve"><value>Забыть</value></data>
+  <data name="KeptForgetLabel" xml:space="preserve"><value>Забыть индекс {0}</value></data>
+  <data name="KeptForgetAsk" xml:space="preserve"><value>Забыть этот индекс? Освободится {0}. В репозитории ничего не изменится. Индекс будет построен заново, когда вы в следующий раз откроете папку, и снова задействует модель эмбеддингов, если вы её используете.</value></data>
+  <data name="KeptForgetConfirm" xml:space="preserve"><value>Забыть индекс</value></data>
+  <data name="KeptForgetKeep" xml:space="preserve"><value>Оставить</value></data>
+  <data name="KeptForgotten" xml:space="preserve"><value>Индекс {0} забыт: освобождено {1}. Он будет построен заново, когда вы в следующий раз откроете папку.</value></data>
+  <data name="KeptHeld" xml:space="preserve"><value>Не забыто: этот индекс открыт в другом окне. Закройте его, затем забудьте индекс здесь.</value></data>
+  <data name="KeptNotHere" xml:space="preserve"><value>Не забыто: {0} — это папка, открытая здесь. Чтобы начать её индекс заново, используйте `/index rebuild`.</value></data>
+  <data name="KeptUnknown" xml:space="preserve"><value>Сохранённого индекса с именем {0} нет. `/index list` показывает их имена.</value></data>
+  <data name="KeptAmbiguous" xml:space="preserve"><value>Несколько сохранённых индексов называются {0}: укажите папку целиком, как в списке.</value></data>
+  <data name="KeptOlderWriter" xml:space="preserve"><value>Старая версия Inferpal всё ещё пишет в ваш перемещаемый профиль ({0} {0:индекс|индекса|индексов}, {1}). Этот редактор читает индекс, хранящийся здесь, поэтому они могут различаться. Обновите Inferpal в другом редакторе.</value></data>
+  <data name="KeptNote" xml:space="preserve"><value>Индекс, который не открывали 90 дней, удаляется, и чат об этом сообщает. Открытие папки строит его заново.</value></data>
+  <data name="KeptNoteDocs" xml:space="preserve"><value>Индекс документации, {0}, общий для всех репозиториев: см. раздел «Документация».</value></data>
+  <data name="KeptEmpty" xml:space="preserve"><value>На этом компьютере пока ничего не хранится.</value></data>
+  <data name="KeptListTitle" xml:space="preserve"><value>Что Inferpal хранит на этом компьютере — {0}:</value></data>
+  <data name="KeptListHint" xml:space="preserve"><value>Чтобы забыть один: `/index forget &lt;имя&gt;`. Репозиторий не затрагивается. Индекс, который не открывали 90 дней, удаляется, и об этом сообщается здесь.</value></data>
+  <data name="KeptPrunedTitle" xml:space="preserve"><value>Старые индексы удалены</value></data>
+  <data name="KeptPruned" xml:space="preserve"><value>{0} {0:поисковый индекс не открывался|поисковых индекса не открывались|поисковых индексов не открывались} 90 дней, освобождено {1}: {2}.</value></data>
+  <data name="KeptPrunedDetail" xml:space="preserve"><value>В этих репозиториях ничего не изменилось. Открытие папки строит индекс заново.</value></data>
+  <data name="KeptSeeKept" xml:space="preserve"><value>Посмотреть, что хранится</value></data>
 </root>

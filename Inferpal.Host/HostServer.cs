@@ -2044,7 +2044,8 @@ internal sealed partial class HostServer : IDisposable
         var s     = Session();
         var queue = TaskQueue(s);
         var model = Services.Presentation.AwayNotice.Build(s.Tools.History.Runs, ConversationStore.VsCodeSlot, "VS Code",
-                                                          queue.List(), queue.SaidRuns(), DateTime.Now, s.RootDir);
+                                                          queue.List(), queue.SaidRuns(), DateTime.Now, s.RootDir,
+                                                          Services.Rag.KeptIndexes.PruneHere(s.RootDir));
         return model is null ? null
             : AwayNoticeDto.Of(model, model.Run is not null && p.EndsOnAQuestion ? Strings.AwayNoAnswer("VS Code") : null);
     }

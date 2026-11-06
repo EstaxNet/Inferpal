@@ -57,6 +57,7 @@ internal sealed class RagDatabase
         _dbPath   = PathFor(solutionRoot);
         Directory.CreateDirectory(baseDir);
         EnsureSchema();
+        IndexHome.NoteOpened(_dbPath, DateTime.UtcNow);
     }
 
     /// <summary>The database file of <paramref name="solutionRoot"/>'s index, whether it exists or not. Opening a

@@ -989,6 +989,17 @@ export interface SettingsDocs {
   message?: string | null;
 }
 
+/** `settings/keptIndexes` and `settings/keptForget`: what Inferpal keeps on this machine (the Core's `KeptIndexesModel`). */
+export interface SettingsKept {
+  summary: string;
+  rows: { id: string; name: string; folder: string; detail: string; openHere: boolean; askText: string; forgetLabel: string; note: string }[];
+  /** An older version still writing the old place; empty otherwise. */
+  olderWriter: string;
+  note: string;
+  /** What the last gesture said; empty otherwise. */
+  message: string;
+}
+
 /** One tool of the Tools page (the Core's `ToolListRow`): the rows `/tools` prints. */
 export interface ToolListRow {
   /** The name it is turned off and on by: its own, or `server/tool` for an MCP tool. */
@@ -1368,6 +1379,8 @@ export interface AwayNotice {
   openReport: string;
   retry: string;
   dismiss: string;
+  /** Old indexes this start removed: gone, so this is the one time they are said. */
+  pruned: { text: string; detail: string; seeKept: string; page: string; section: string } | null;
   /** The line under a restored question no answer will follow; null when the conversation does not end on one. */
   noAnswer: string | null;
 }

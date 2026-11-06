@@ -427,6 +427,7 @@ internal static class SettingsSchema
             ],
             Grid: true, Widget: "indexExclusions"),
             new("SettingsSectionDocs", [], Description: "SettingsSectionDocsDesc", Note: "SettingsDocsNote", Widget: "docsSites"),
+            new("SettingsSectionKept", [], Description: "SettingsSectionKeptDesc", Widget: "keptIndexes"),
         ]),
 
         new("autocomplete", "SettingsPageAutocomplete", "SettingsPageAutocompleteDesc",

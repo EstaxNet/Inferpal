@@ -806,7 +806,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="SlashHintFixBuild" xml:space="preserve"><value>compiler → l'IA corrige → recompiler jusqu'à zéro erreur</value></data>
   <data name="SlashHintContext" xml:space="preserve"><value>afficher le contexte du projet</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>consulter la mémoire de l'agent</value></data>
-  <data name="SlashHintIndex" xml:space="preserve"><value>afficher ou reconstruire l'index RAG du code</value></data>
+  <data name="SlashHintIndex" xml:space="preserve"><value>afficher, reconstruire ou oublier l'index du code</value></data>
   <data name="IndexNoRoot" xml:space="preserve"><value>⚠ Racine de la solution introuvable — ouvrez d'abord un fichier.</value></data>
   <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 Réindexation RAG lancée : `{0}`</value></data>
   <data name="IndexTitle" xml:space="preserve"><value>**Index RAG**</value></data>
@@ -2120,4 +2120,33 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="AcpSetupNoWinget" xml:space="preserve"><value>Aucun serveur de modèles ne répond sur cet ordinateur. Installez Ollama (ollama.com) ou LM Studio (lmstudio.ai), puis relancez cette configuration.</value></data>
   <data name="AcpSetupRunAgain" xml:space="preserve"><value>Puis relancez cette configuration.</value></data>
   <data name="SetupStartingLead" xml:space="preserve"><value>Ollama démarre son serveur ; Inferpal l'attend à {0}.</value></data>
+  <data name="SettingsSectionKept" xml:space="preserve"><value>Ce qu'Inferpal garde sur cette machine</value></data>
+  <data name="SettingsSectionKeptDesc" xml:space="preserve"><value>L'index de recherche de chaque dépôt que vous avez ouvert. Il reste sur cette machine, hors de vos dépôts.</value></data>
+  <data name="KeptSummary" xml:space="preserve"><value>{0} {0:index|index} · {1}</value></data>
+  <data name="KeptOpenNow" xml:space="preserve"><value>ouvert maintenant</value></data>
+  <data name="KeptOpenHere" xml:space="preserve"><value>Ouvert ici</value></data>
+  <data name="KeptOpenedToday" xml:space="preserve"><value>ouvert aujourd'hui</value></data>
+  <data name="KeptOpenedDaysAgo" xml:space="preserve"><value>ouvert il y a {0} {0:jour|jours}</value></data>
+  <data name="KeptFolderNotFound" xml:space="preserve"><value>dossier introuvable</value></data>
+  <data name="KeptUnknownFolder" xml:space="preserve"><value>dossier inconnu</value></data>
+  <data name="KeptForget" xml:space="preserve"><value>Oublier</value></data>
+  <data name="KeptForgetLabel" xml:space="preserve"><value>Oublier l'index de {0}</value></data>
+  <data name="KeptForgetAsk" xml:space="preserve"><value>Oublier cet index ? {0} seront libérés. Rien ne change dans le dépôt. L'index se reconstruit la prochaine fois que vous ouvrez le dossier, ce qui sollicite de nouveau votre modèle d'embedding si vous en utilisez un.</value></data>
+  <data name="KeptForgetConfirm" xml:space="preserve"><value>Oublier l'index</value></data>
+  <data name="KeptForgetKeep" xml:space="preserve"><value>Le garder</value></data>
+  <data name="KeptForgotten" xml:space="preserve"><value>Index de {0} oublié : {1} libérés. Il se reconstruit la prochaine fois que vous ouvrez le dossier.</value></data>
+  <data name="KeptHeld" xml:space="preserve"><value>Non oublié : une autre fenêtre a cet index ouvert. Fermez-la, puis oubliez-le ici.</value></data>
+  <data name="KeptNotHere" xml:space="preserve"><value>Non oublié : {0} est le dossier ouvert ici. Pour repartir de zéro, utilisez `/index rebuild`.</value></data>
+  <data name="KeptUnknown" xml:space="preserve"><value>Aucun index gardé ne s'appelle {0}. `/index list` les nomme.</value></data>
+  <data name="KeptAmbiguous" xml:space="preserve"><value>Plusieurs index gardés s'appellent {0} : donnez le dossier entier, tel que la liste le montre.</value></data>
+  <data name="KeptOlderWriter" xml:space="preserve"><value>Une ancienne version d'Inferpal écrit encore dans votre profil itinérant ({0} {0:index|index}, {1}). Cet éditeur lit l'index gardé ici, les deux peuvent donc différer. Mettez à jour Inferpal dans votre autre éditeur.</value></data>
+  <data name="KeptNote" xml:space="preserve"><value>Un index qui n'a pas été ouvert depuis 90 jours est retiré, et le chat le dit. Ouvrir le dossier le reconstruit.</value></data>
+  <data name="KeptNoteDocs" xml:space="preserve"><value>L'index de la documentation, {0}, sert à tous les dépôts : voir Documentation.</value></data>
+  <data name="KeptEmpty" xml:space="preserve"><value>Rien n'est gardé sur cette machine pour l'instant.</value></data>
+  <data name="KeptListTitle" xml:space="preserve"><value>Ce qu'Inferpal garde sur cette machine — {0} :</value></data>
+  <data name="KeptListHint" xml:space="preserve"><value>Pour en oublier un : `/index forget &lt;nom&gt;`. Le dépôt n'est pas touché. Un index qui n'a pas été ouvert depuis 90 jours est retiré, et c'est dit ici.</value></data>
+  <data name="KeptPrunedTitle" xml:space="preserve"><value>Anciens index retirés</value></data>
+  <data name="KeptPruned" xml:space="preserve"><value>{0} {0:index de recherche n'a pas été ouvert|index de recherche n'ont pas été ouverts} depuis 90 jours, et {1} sont libérés : {2}.</value></data>
+  <data name="KeptPrunedDetail" xml:space="preserve"><value>Rien n'a changé dans ces dépôts. Ouvrir le dossier reconstruit l'index.</value></data>
+  <data name="KeptSeeKept" xml:space="preserve"><value>Voir ce qui est gardé</value></data>
 </root>

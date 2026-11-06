@@ -40,11 +40,14 @@ internal sealed class DocsDatabase
     /// <summary>Tests point this at a temp directory of their own.</summary>
     internal static string? OverrideDirForTests { get; set; }
 
+    /// <summary>The database file, whether it exists or not.</summary>
+    internal static string PathNow() =>
+        IndexHome.Resolve(Path.Combine(OverrideDirForTests ?? BaseDir(), "docs.db"), OldDir is { } old ? Path.Combine(old, "docs.db") : null);
+
     public DocsDatabase()
     {
-        var dir = OverrideDirForTests ?? BaseDir();
-        _dbPath = IndexHome.Resolve(Path.Combine(dir, "docs.db"), OldDir is { } old ? Path.Combine(old, "docs.db") : null);
-        Directory.CreateDirectory(dir);
+        _dbPath = PathNow();
+        Directory.CreateDirectory(OverrideDirForTests ?? BaseDir());
         EnsureSchema();
     }
 

@@ -426,7 +426,8 @@ internal partial class InferpalToolWindowData
 
             var queue = BackgroundTasks();
             var notice = Services.Presentation.AwayNotice.Build(_tools.History.Runs, ConversationStore.VisualStudioSlot,
-                                                               "Visual Studio", queue.List(), queue.SaidRuns(), DateTime.Now, root);
+                                                               "Visual Studio", queue.List(), queue.SaidRuns(), DateTime.Now, root,
+                                                               Services.Rag.KeptIndexes.PruneHere(root));
             if (notice is null) return;
             await RunOnVMContextAsync(() =>
             {
@@ -441,7 +442,8 @@ internal partial class InferpalToolWindowData
                         _ = RunOnVMContextAsync(() => { if (card is not null) Messages.Remove(card); });
                     },
                     act: task => _ = HandleSlashCommandAsync(task.Retry ? $"/task retry {task.Id}" : $"/task {task.Id}",
-                                                             CancellationToken.None));
+                                                             CancellationToken.None),
+                    kept: () => { if (notice.Pruned is { } pruned) _ = OpenSettingsPageAsync(pruned.Page, pruned.Section); });
                 ApplyItemTheme(card);
                 // Under a restored question no answer will follow: said there, and kept with the conversation.
                 if (notice.Run is not null && !IsLoading && !_sendStarting

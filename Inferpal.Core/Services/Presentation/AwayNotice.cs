@@ -11,8 +11,11 @@ internal sealed record AwayRun(string RunId, string Text, IReadOnlyList<RunFileL
 /// closing stopped (<paramref name="Retry"/>).</summary>
 internal sealed record AwayTask(string Id, string Text, bool Retry);
 
+/// <summary>Old indexes removed at this start: what the notice says, and the words of its button.</summary>
+internal sealed record AwayPruned(string Text, string Detail, string SeeKept, string Page, string Section);
+
 /// <summary>What happened while the editor was closed, said once at the next start (<see cref="AwayNotice"/>).</summary>
-internal sealed record AwayNoticeModel(string Title, AwayRun? Run, IReadOnlyList<AwayTask> Tasks)
+internal sealed record AwayNoticeModel(string Title, AwayRun? Run, IReadOnlyList<AwayTask> Tasks, AwayPruned? Pruned = null)
 {
     /// <summary>The runs the notice says — marked said when it is dismissed.</summary>
     public IReadOnlyList<string> RunIds => Run is null ? [] : [Run.RunId];
@@ -38,9 +41,10 @@ internal static class AwayNotice
     /// <param name="saidRuns">The runs a dismissed notice already said.</param>
     /// <param name="now">Today, for the times: a time of another day carries its date.</param>
     /// <param name="root">The workspace: the files are named under it.</param>
+    /// <param name="pruned">The old indexes this start removed; they are gone, so this is the one time they are said.</param>
     public static AwayNoticeModel? Build(IEnumerable<HistoryRun> runs, string editorSlot, string editorName,
                                         IReadOnlyList<BackgroundTaskSnapshot> tasks, IReadOnlySet<string> saidRuns,
-                                        DateTime now, string? root = null)
+                                        DateTime now, string? root = null, Rag.PrunedIndexes? pruned = null)
     {
         AwayRun? cut = null;
         // The newest run of this editor, by id (local times repeat an hour every autumn): the closing cut it, or nothing.
@@ -68,7 +72,12 @@ internal static class AwayNotice
                     + " " + (task.PendingProposals.Count > 0 ? Strings.AwayTaskDoneProposalsKept(task.PendingProposals.Count)
                                                              : Strings.AwayTaskDoneKept), Retry: false));
         }
-        return cut is null && said.Count == 0 ? null : new(Strings.AwayTitle, cut, said);
+        var removed = pruned is { Names.Count: > 0 } p
+            ? new AwayPruned(Strings.KeptPruned(p.Names.Count, Rag.KeptIndexes.Size(p.Bytes), string.Join(", ", p.Names.Select(n => $"`{n}`"))),
+                             Strings.KeptPrunedDetail, Strings.KeptSeeKept, Rag.KeptIndexes.Page, Rag.KeptIndexes.Section)
+            : null;
+        if (cut is null && said.Count == 0) return removed is null ? null : new(Strings.KeptPrunedTitle, null, said, removed);
+        return new(Strings.AwayTitle, cut, said, removed);
     }
 
     /// <summary>A file as the notice names it: under the workspace, with forward slashes; as it is outside it.</summary>

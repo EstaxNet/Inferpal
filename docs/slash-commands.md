@@ -197,6 +197,8 @@ What a rule and a check are, and how they differ: [Rules & AI Checks](rules-and-
 |---|---|
 | `/index` | Show the semantic index status (chunks, root, embedding model) |
 | `/index rebuild` | Force a full rebuild of the semantic index |
+| `/index list` | What Inferpal keeps on this machine: each repository's index and its size |
+| `/index forget <name>` | Forget one repository's index: by the name `/index list` shows, or the whole folder. Not the folder open here |
 | `/docs add <url> [title]` | Crawl & index an external documentation site for `search_docs` |
 | `/docs list \| remove <id> \| reindex [id]` | Manage indexed documentation sources |
 

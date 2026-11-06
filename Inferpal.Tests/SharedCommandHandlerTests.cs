@@ -213,7 +213,7 @@ public class SharedCommandHandlerTests
     {
         var message = IndexCommandHandler.Handle(Index(), RagConfig(enabled: true), ["/index", argument], @"C:\proj");
 
-        Assert.Equal(Strings.SlashUsage("/index [rebuild]"), message);
+        Assert.Equal(Strings.SlashUsage("/index [rebuild|list|forget <name>]"), message);
     }
 
     [Fact]
@@ -221,7 +221,7 @@ public class SharedCommandHandlerTests
     {
         var message = IndexCommandHandler.Handle(Index(), RagConfig(enabled: true), ["/index", "rebuild", "now"], root: "");
 
-        Assert.Equal(Strings.SlashUsage("/index [rebuild]"), message);
+        Assert.Equal(Strings.SlashUsage("/index [rebuild|list|forget <name>]"), message);
     }
 
     [Fact]

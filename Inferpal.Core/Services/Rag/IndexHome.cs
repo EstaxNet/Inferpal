@@ -39,7 +39,16 @@ internal static class IndexHome
     /// <summary>Beside an old base, dated when it was copied: no file date says so on every system.</summary>
     private const string CopiedMark = ".copied";
 
+    /// <summary>Beside a base, dated when it was last opened: its own date says when it was written, and decides what is
+    /// copied again.</summary>
+    private const string OpenedMark = ".opened";
+
+    /// <summary>Beside a base never opened by this version, dated when the 90 days started: it says nothing about an opening.
+    /// </summary>
+    private const string SeenMark = ".seen";
+
     private static readonly string[] Logs = ["-wal", "-shm", "-journal"];
+    private static readonly string[] Sides = [.. Logs, CopiedMark, OpenedMark, SeenMark];
 
     private static readonly object Gate = new();
     private static Task? _moved;
@@ -141,16 +150,13 @@ internal static class IndexHome
             return;
         }
 
-        var mark = old + CopiedMark;
         var exists = File.Exists(file);
         // Later than the copy: an older version wrote since, and that work would go with the old base.
-        var copy = !exists || written > WrittenAt(file);
-        if (copy) Copy(old, file, written, replace: exists);
-        if (copy || !File.Exists(mark))
-        {
-            File.WriteAllBytes(mark, []);
-            File.SetLastWriteTimeUtc(mark, now);
-        }
+        if (!exists || written > WrittenAt(file)) Copy(old, file, written, replace: exists);
+        // After the reads: the first connection may have folded a log, which dates the old base now.
+        var mark = old + CopiedMark;
+        var seen = WrittenAt(old);
+        if (!File.Exists(mark) || seen > File.GetLastWriteTimeUtc(mark)) Stamp(mark, seen > now ? seen : now);
 
         var copied = File.GetLastWriteTimeUtc(mark);
         if (now - (written > copied ? written : copied) >= Grace && HasRows(file, chunkTable)) Remove(old);
@@ -212,8 +218,59 @@ internal static class IndexHome
         catch (SqliteException ex) when (ex.SqliteErrorCode == 1) { return false; }   // no such table: a base never filled
     }
 
+    private static void Stamp(string mark, DateTime at)
+    {
+        File.WriteAllBytes(mark, []);
+        File.SetLastWriteTimeUtc(mark, at);
+    }
+
+    /// <summary>Whether an older version has written <paramref name="old"/> since the last sweep.</summary>
+    internal static bool WrittenSinceCopy(string old)
+    {
+        var mark = old + CopiedMark;
+        return File.Exists(mark) && WrittenAt(old) > File.GetLastWriteTimeUtc(mark);
+    }
+
+    /// <summary>When <paramref name="file"/> was last opened; <c>null</c> when nothing has noted it yet.</summary>
+    internal static DateTime? OpenedAt(string file) =>
+        File.Exists(file + OpenedMark) ? File.GetLastWriteTimeUtc(file + OpenedMark) : null;
+
+    /// <summary>Notes that <paramref name="file"/> was opened, at most once an hour: every operation opens its base.</summary>
+    internal static void NoteOpened(string file, DateTime now)
+    {
+        try
+        {
+            if (OpenedAt(file) is not { } opened || now - opened >= TimeSpan.FromHours(1)) Stamp(file + OpenedMark, now);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Diagnostics.Swallow("IndexHome.NoteOpened", ex); }
+    }
+
+    /// <summary>When the 90 days of a base never opened by this version started; <c>null</c> when they have not.</summary>
+    internal static DateTime? SeenAt(string file) =>
+        File.Exists(file + SeenMark) ? File.GetLastWriteTimeUtc(file + SeenMark) : null;
+
+    /// <summary>Starts the 90 days of <paramref name="file"/>.</summary>
+    internal static void NoteSeen(string file, DateTime now) => Stamp(file + SeenMark, now);
+
+    /// <summary>Holds <paramref name="file"/> for as long as an index service uses it: under Windows the mark cannot be
+    /// removed while it is open, from any process, and a crash lets it go.</summary>
+    /// <remarks>⚠ The handle of a SQLite connection is no such hold: the pool closes an idle one after a few minutes, and a
+    /// window left open would lose its base under it. A pass still writing would then fail on a base with no table.</remarks>
+    internal static IDisposable? Hold(string file)
+    {
+        try { return new FileStream(file + OpenedMark, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("IndexHome.Hold", ex);
+            return null;
+        }
+    }
+
+    /// <summary>Removes the mark of <paramref name="file"/>; held by an index service, it throws and nothing has moved.</summary>
+    internal static void DropOpened(string file) => File.Delete(file + OpenedMark);
+
     /// <summary>A connection of its own: a pooled one would stay open on a file this class is about to remove.</summary>
-    private static SqliteConnection Open(string file)
+    internal static SqliteConnection Open(string file)
     {
         var conn = new SqliteConnection(new SqliteConnectionStringBuilder
         {
@@ -223,13 +280,12 @@ internal static class IndexHome
         return conn;
     }
 
-    /// <summary>A base and what lies beside it. The base first: held by an editor, it throws and nothing else is touched.
-    /// </summary>
-    private static void Remove(string old)
+    /// <summary>A base and what lies beside it. Its mark, then the base: held, it throws and the base stays whole.</summary>
+    internal static void Remove(string old)
     {
+        DropOpened(old);
         File.Delete(old);
-        File.Delete(old + CopiedMark);
-        foreach (var log in Logs) File.Delete(old + log);
+        foreach (var side in Sides) File.Delete(old + side);
     }
 
     /// <summary>Copies a killed process left. Held means another process is still writing one; there is no date to read,
@@ -247,7 +303,7 @@ internal static class IndexHome
     private static void DropLeftovers(string oldDir, DateTime now)
     {
         foreach (var file in Directory.EnumerateFiles(oldDir))
-            if (Logs.Append(CopiedMark).FirstOrDefault(s => file.EndsWith(s, StringComparison.OrdinalIgnoreCase)) is { } side
+            if (Sides.FirstOrDefault(s => file.EndsWith(s, StringComparison.OrdinalIgnoreCase)) is { } side
                 && !File.Exists(file[..^side.Length]) && now - File.GetLastWriteTimeUtc(file) >= Settled)
                 File.Delete(file);
 

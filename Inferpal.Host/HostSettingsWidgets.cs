@@ -1,6 +1,7 @@
 using Inferpal.Config;
 using Inferpal.Services.Agent;
 using Inferpal.Services.Presentation;
+using Inferpal.Services.Rag;
 using Inferpal.Services.Prompting;
 using StreamJsonRpc;
 
@@ -55,6 +56,14 @@ internal sealed partial class HostServer
         var message = await actions.RunAsync(p.Verb, p.Arg, ct);
         return new([.. await actions.RowsAsync(ct)], message);
     }
+
+    /// <summary>`settings/keptIndexes` — what Inferpal keeps on this machine, repository by repository.</summary>
+    [JsonRpcMethod("settings/keptIndexes")]
+    public KeptIndexesModel SettingsKeptIndexes() => KeptIndexes.ReadHere(Session().RootDir);
+
+    /// <summary>`settings/keptForget` — forgets one index; the list as it stands after.</summary>
+    [JsonRpcMethod("settings/keptForget", UseSingleObjectParameterDeserialization = true)]
+    public KeptIndexesModel SettingsKeptForget(SettingsKeptForgetParams p) => KeptIndexes.ForgetHere(p.Id, Session().RootDir);
 
     /// <summary>`settings/contextUsage` — how full the conversation's window is, from the X-Ray panel's counts.</summary>
     [JsonRpcMethod("settings/contextUsage")]
@@ -192,6 +201,9 @@ internal sealed record SettingsDocsDto(List<DocsSiteRow> Sites, string? Message)
 
 /// <summary><c>Verb</c>: add | reindex | remove; <c>Arg</c>: the URL to add, or the site's id.</summary>
 internal sealed record SettingsDocsActionParams(string Verb, string Arg);
+
+/// <summary><c>Id</c>: the base, as `settings/keptIndexes` names it.</summary>
+internal sealed record SettingsKeptForgetParams(string Id);
 
 internal sealed record SettingsPinSizesParams(string? Pins);
 

@@ -2385,6 +2385,19 @@
                                         </Button>
                                     </WrapPanel>
                                 </StackPanel>
+                                <!-- The old indexes this start removed: said once, they are gone. -->
+                                <StackPanel Margin="0,8,0,0" Visibility="{Binding HasAwayPruned, Converter={StaticResource b2v}}">
+                                    <TextBlock Text="{Binding AwayPrunedText}" FontSize="13" TextWrapping="Wrap" Foreground="{Binding ThemeText}"/>
+                                    <TextBlock Text="{Binding AwayPrunedDetail}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeSubtleText}"/>
+                                    <WrapPanel Margin="0,8,0,0" HorizontalAlignment="Right">
+                                        <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" BorderThickness="1" Cursor="Hand"
+                                                Background="Transparent" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                Command="{Binding AwayKeptCommand}" AutomationProperties.Name="{Binding BtnAwayKept}">
+                                            <TextBlock Text="{Binding BtnAwayKept}" FontSize="13" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                        </Button>
+                                    </WrapPanel>
+                                </StackPanel>
                                 <!-- The background tasks: Retry for one the closing stopped, Open the report for one never read. -->
                                 <ItemsControl ItemsSource="{Binding AwayTasks}" Margin="0,4,0,0" Focusable="False">
                                     <ItemsControl.ItemTemplate>

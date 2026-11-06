@@ -953,14 +953,15 @@ internal sealed record NewRuleParams(bool Allow, string? Tool, string? Pattern);
 /// <param name="Run">The newest run the closing cut; <c>null</c> when none.</param>
 internal sealed record AwayNoticeDto(
     string Title, AwayRunDto? Run, List<AwayTaskDto> Tasks,
-    string Review, string Undo, string OpenReport, string Retry, string Dismiss, string? NoAnswer)
+    string Review, string Undo, string OpenReport, string Retry, string Dismiss, string? NoAnswer,
+    Services.Presentation.AwayPruned? Pruned)
 {
     public static AwayNoticeDto Of(Services.Presentation.AwayNoticeModel m, string? noAnswer) => new(
         m.Title,
         m.Run is { } run ? new AwayRunDto(run.RunId, run.Text, [.. run.Files], run.Warning) : null,
         [.. m.Tasks.Select(t => new AwayTaskDto(t.Id, t.Text, t.Retry))],
         Localization.Strings.RunReviewButton, Localization.Strings.RunUndo, Localization.Strings.AwayOpenReport,
-        Localization.Strings.McpCardRetry, Localization.Strings.BuildBannerDismiss, noAnswer);
+        Localization.Strings.McpCardRetry, Localization.Strings.BuildBannerDismiss, noAnswer, m.Pruned);
 }
 
 /// <summary>A run the closing cut, in <see cref="AwayNoticeDto"/>.</summary>

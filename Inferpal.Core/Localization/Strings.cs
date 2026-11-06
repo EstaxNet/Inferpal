@@ -254,6 +254,8 @@ internal static class Strings
     public static string SettingsSectionAsYouType => Get(nameof(SettingsSectionAsYouType));
     public static string SettingsSectionDocs => Get(nameof(SettingsSectionDocs));
     public static string SettingsSectionDocsDesc => Get(nameof(SettingsSectionDocsDesc));
+    public static string SettingsSectionKept => Get(nameof(SettingsSectionKept));
+    public static string SettingsSectionKeptDesc => Get(nameof(SettingsSectionKeptDesc));
     public static string SettingsDocsNote => Get(nameof(SettingsDocsNote));
     public static string SettingsSectionThisConversation => Get(nameof(SettingsSectionThisConversation));
     public static string SettingsEditFile => Get(nameof(SettingsEditFile));
@@ -2192,6 +2194,35 @@ internal static class Strings
     public static string IndexNoRoot                     => Get(nameof(IndexNoRoot));
     /// <inheritdoc cref="IndexTitle"/>
     public static string IndexRebuildStarted(string root) => Format(Get(nameof(IndexRebuildStarted)), root);
+
+    // ── What Inferpal keeps on this machine ──
+    public static string KeptSummary(int count, string size) => Format(Get(nameof(KeptSummary)), count, size);
+    public static string KeptOpenNow        => Get(nameof(KeptOpenNow));
+    public static string KeptOpenHere       => Get(nameof(KeptOpenHere));
+    public static string KeptOpenedToday    => Get(nameof(KeptOpenedToday));
+    public static string KeptOpenedDaysAgo(int days) => Format(Get(nameof(KeptOpenedDaysAgo)), days);
+    public static string KeptFolderNotFound => Get(nameof(KeptFolderNotFound));
+    public static string KeptUnknownFolder  => Get(nameof(KeptUnknownFolder));
+    public static string KeptForget         => Get(nameof(KeptForget));
+    public static string KeptForgetLabel(string name) => Format(Get(nameof(KeptForgetLabel)), name);
+    public static string KeptForgetAsk(string size) => Format(Get(nameof(KeptForgetAsk)), size);
+    public static string KeptForgetConfirm  => Get(nameof(KeptForgetConfirm));
+    public static string KeptForgetKeep     => Get(nameof(KeptForgetKeep));
+    public static string KeptForgotten(string name, string size) => Format(Get(nameof(KeptForgotten)), name, size);
+    public static string KeptHeld           => Get(nameof(KeptHeld));
+    public static string KeptNotHere(string name) => Format(Get(nameof(KeptNotHere)), name);
+    public static string KeptUnknown(string name) => Format(Get(nameof(KeptUnknown)), name);
+    public static string KeptAmbiguous(string name) => Format(Get(nameof(KeptAmbiguous)), name);
+    public static string KeptOlderWriter(int count, string size) => Format(Get(nameof(KeptOlderWriter)), count, size);
+    public static string KeptNote           => Get(nameof(KeptNote));
+    public static string KeptNoteDocs(string size) => Format(Get(nameof(KeptNoteDocs)), size);
+    public static string KeptEmpty          => Get(nameof(KeptEmpty));
+    public static string KeptListTitle(string summary) => Format(Get(nameof(KeptListTitle)), summary);
+    public static string KeptListHint       => Get(nameof(KeptListHint));
+    public static string KeptPrunedTitle    => Get(nameof(KeptPrunedTitle));
+    public static string KeptPruned(int count, string size, string names) => Format(Get(nameof(KeptPruned)), count, size, names);
+    public static string KeptPrunedDetail   => Get(nameof(KeptPrunedDetail));
+    public static string KeptSeeKept        => Get(nameof(KeptSeeKept));
     /// <inheritdoc cref="IndexTitle"/>
     public static string IndexDisabled                   => Get(nameof(IndexDisabled));
     /// <inheritdoc cref="IndexTitle"/>

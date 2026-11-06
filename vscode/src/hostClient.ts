@@ -19,6 +19,7 @@ import {
   ProjectFileRow,
   RepoInstructionRow,
   SettingsDocs,
+  SettingsKept,
   SettingsTools,
   SettingsExclusions,
   DebugBreakpointParams,
@@ -827,6 +828,15 @@ export class HostClient {
   /** The exclusion patterns of .inferpal/project.json the index applies. */
   settingsExclusions(): Promise<SettingsExclusions> {
     return this.connection().sendRequest<SettingsExclusions>('settings/exclusions');
+  }
+
+  /** What Inferpal keeps on this machine. */
+  settingsKeptIndexes(): Promise<SettingsKept> {
+    return this.connection().sendRequest<SettingsKept>('settings/keptIndexes');
+  }
+
+  settingsKeptForget(id: string): Promise<SettingsKept> {
+    return this.connection().sendRequest<SettingsKept>('settings/keptForget', { id });
   }
 
   /** The @Docs sites, with what each crawl did. */

@@ -6,9 +6,9 @@ using Inferpal.Services.Rag;
 namespace Inferpal.Services.Commands;
 
 /// <summary>
-/// Execution logic for <c>/index [rebuild]</c> — the semantic-index status report, and the manual
-/// re-index trigger. Shared by both front-ends: the index service and the config live in the Core,
-/// so nothing here needs an editor.
+/// Execution logic for <c>/index [rebuild|list|forget &lt;name&gt;]</c> — the semantic-index status report, the manual
+/// re-index trigger, and what is kept on this machine. Shared by both front-ends: the index service and the config live
+/// in the Core, so nothing here needs an editor.
 /// </summary>
 internal static class IndexCommandHandler
 {
@@ -21,8 +21,14 @@ internal static class IndexCommandHandler
         // Two shapes only: a mistyped argument that returned the report would suggest a re-index that
         // never happened.
         var rebuild = parts.Length == 2 && parts[1].Equals("rebuild", StringComparison.OrdinalIgnoreCase);
+        // The folder this index serves, whatever the caller's root says: it is the base this process uses.
+        var open = index.RootDir is { Length: > 0 } indexed ? indexed : root;
+        if (parts.Length == 2 && parts[1].Equals("list", StringComparison.OrdinalIgnoreCase))
+            return KeptIndexes.ListHere(open);
+        if (parts.Length >= 3 && parts[1].Equals("forget", StringComparison.OrdinalIgnoreCase))
+            return KeptIndexes.ForgetByNameHere(string.Join(' ', parts[2..]), open);
         if (parts.Length >= 2 && !rebuild)
-            return Strings.SlashUsage("/index [rebuild]");
+            return Strings.SlashUsage("/index [rebuild|list|forget <name>]");
 
         if (rebuild)
         {

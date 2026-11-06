@@ -802,7 +802,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SlashHintFixBuild" xml:space="preserve"><value>コンパイル → AI が修正 → エラーがなくなるまで再コンパイル</value></data>
   <data name="SlashHintContext" xml:space="preserve"><value>プロジェクトのコンテキストを表示</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>エージェントのメモリを表示</value></data>
-  <data name="SlashHintIndex" xml:space="preserve"><value>RAG コードベースインデックスを表示または再構築</value></data>
+  <data name="SlashHintIndex" xml:space="preserve"><value>コードインデックスを表示、再構築、または削除</value></data>
   <data name="IndexNoRoot" xml:space="preserve"><value>⚠ ソリューションのルートが見つかりません。先にファイルを開いてください。</value></data>
   <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 RAG の再インデックスを開始しました: `{0}`</value></data>
   <data name="IndexTitle" xml:space="preserve"><value>**RAG インデックス**</value></data>
@@ -2120,4 +2120,33 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="AcpSetupNoWinget" xml:space="preserve"><value>このコンピューターで応答するモデル サーバーがありません。Ollama (ollama.com) または LM Studio (lmstudio.ai) をインストールしてから、このセットアップをもう一度実行してください。</value></data>
   <data name="AcpSetupRunAgain" xml:space="preserve"><value>その後、このセットアップをもう一度実行してください。</value></data>
   <data name="SetupStartingLead" xml:space="preserve"><value>Ollama がサーバーを起動します。Inferpal は {0} で待機します。</value></data>
+  <data name="SettingsSectionKept" xml:space="preserve"><value>Inferpal がこのマシンに保持しているもの</value></data>
+  <data name="SettingsSectionKeptDesc" xml:space="preserve"><value>開いた各リポジトリの検索インデックスです。リポジトリの外、このマシン上に残ります。</value></data>
+  <data name="KeptSummary" xml:space="preserve"><value>{0} 個のインデックス · {1}</value></data>
+  <data name="KeptOpenNow" xml:space="preserve"><value>現在開いています</value></data>
+  <data name="KeptOpenHere" xml:space="preserve"><value>ここで開いています</value></data>
+  <data name="KeptOpenedToday" xml:space="preserve"><value>今日開きました</value></data>
+  <data name="KeptOpenedDaysAgo" xml:space="preserve"><value>{0} 日前に開きました</value></data>
+  <data name="KeptFolderNotFound" xml:space="preserve"><value>フォルダーが見つかりません</value></data>
+  <data name="KeptUnknownFolder" xml:space="preserve"><value>フォルダー不明</value></data>
+  <data name="KeptForget" xml:space="preserve"><value>削除</value></data>
+  <data name="KeptForgetLabel" xml:space="preserve"><value>{0} のインデックスを削除</value></data>
+  <data name="KeptForgetAsk" xml:space="preserve"><value>このインデックスを削除しますか? {0} が空きます。リポジトリは何も変わりません。次にフォルダーを開いたときにインデックスが再構築され、埋め込みモデルを使っている場合は再度使用されます。</value></data>
+  <data name="KeptForgetConfirm" xml:space="preserve"><value>インデックスを削除</value></data>
+  <data name="KeptForgetKeep" xml:space="preserve"><value>残す</value></data>
+  <data name="KeptForgotten" xml:space="preserve"><value>{0} のインデックスを削除しました。{1} が空きました。次にフォルダーを開いたときに再構築されます。</value></data>
+  <data name="KeptHeld" xml:space="preserve"><value>削除していません。別のウィンドウがこのインデックスを開いています。そのウィンドウを閉じてから、ここで削除してください。</value></data>
+  <data name="KeptNotHere" xml:space="preserve"><value>削除していません。{0} はここで開いているフォルダーです。インデックスをやり直すには `/index rebuild` を使ってください。</value></data>
+  <data name="KeptUnknown" xml:space="preserve"><value>{0} という名前の保持インデックスはありません。`/index list` で名前を確認できます。</value></data>
+  <data name="KeptAmbiguous" xml:space="preserve"><value>{0} という名前の保持インデックスが複数あります。一覧に表示されるフォルダー全体を指定してください。</value></data>
+  <data name="KeptOlderWriter" xml:space="preserve"><value>古いバージョンの Inferpal が移動プロファイルにまだ書き込んでいます ({0} 個のインデックス、{1})。このエディターはここに保持されたインデックスを読むため、両者が異なる場合があります。もう一方のエディターの Inferpal を更新してください。</value></data>
+  <data name="KeptNote" xml:space="preserve"><value>90 日間開かれていないインデックスは削除され、チャットでお知らせします。フォルダーを開くと再構築されます。</value></data>
+  <data name="KeptNoteDocs" xml:space="preserve"><value>ドキュメントのインデックス ({0}) はすべてのリポジトリで共有されます。「ドキュメント」を参照してください。</value></data>
+  <data name="KeptEmpty" xml:space="preserve"><value>このマシンにはまだ何も保持されていません。</value></data>
+  <data name="KeptListTitle" xml:space="preserve"><value>Inferpal がこのマシンに保持しているもの — {0}:</value></data>
+  <data name="KeptListHint" xml:space="preserve"><value>1 つ削除するには `/index forget &lt;名前&gt;`。リポジトリには触れません。90 日間開かれていないインデックスは削除され、ここでお知らせします。</value></data>
+  <data name="KeptPrunedTitle" xml:space="preserve"><value>古いインデックスを削除しました</value></data>
+  <data name="KeptPruned" xml:space="preserve"><value>{0} 個の検索インデックスが 90 日間開かれていなかったため、{1} が空きました: {2}。</value></data>
+  <data name="KeptPrunedDetail" xml:space="preserve"><value>それらのリポジトリは何も変わっていません。フォルダーを開くとインデックスが再構築されます。</value></data>
+  <data name="KeptSeeKept" xml:space="preserve"><value>保持しているものを見る</value></data>
 </root>

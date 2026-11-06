@@ -802,7 +802,7 @@
   <data name="SlashHintFixBuild" xml:space="preserve"><value>编译 → AI 修复 → 重新编译直到无错误</value></data>
   <data name="SlashHintContext" xml:space="preserve"><value>显示项目上下文</value></data>
   <data name="SlashHintMemory" xml:space="preserve"><value>查看代理记忆</value></data>
-  <data name="SlashHintIndex" xml:space="preserve"><value>显示或重建 RAG 代码库索引</value></data>
+  <data name="SlashHintIndex" xml:space="preserve"><value>显示、重建或忘记代码索引</value></data>
   <data name="IndexNoRoot" xml:space="preserve"><value>⚠ 找不到解决方案根目录——请先打开一个文件。</value></data>
   <data name="IndexRebuildStarted" xml:space="preserve"><value>🔄 已开始 RAG 重新索引：`{0}`</value></data>
   <data name="IndexTitle" xml:space="preserve"><value>**RAG 索引**</value></data>
@@ -2120,4 +2120,33 @@
   <data name="AcpSetupNoWinget" xml:space="preserve"><value>这台电脑上没有响应的模型服务器。请安装 Ollama（ollama.com）或 LM Studio（lmstudio.ai），然后重新运行此设置。</value></data>
   <data name="AcpSetupRunAgain" xml:space="preserve"><value>然后重新运行此设置。</value></data>
   <data name="SetupStartingLead" xml:space="preserve"><value>Ollama 正在启动服务器；Inferpal 在 {0} 等待。</value></data>
+  <data name="SettingsSectionKept" xml:space="preserve"><value>Inferpal 在这台机器上保留的内容</value></data>
+  <data name="SettingsSectionKeptDesc" xml:space="preserve"><value>你打开过的每个仓库的搜索索引。它留在这台机器上，不在你的仓库里。</value></data>
+  <data name="KeptSummary" xml:space="preserve"><value>{0} 个索引 · {1}</value></data>
+  <data name="KeptOpenNow" xml:space="preserve"><value>当前打开</value></data>
+  <data name="KeptOpenHere" xml:space="preserve"><value>在此打开</value></data>
+  <data name="KeptOpenedToday" xml:space="preserve"><value>今天打开过</value></data>
+  <data name="KeptOpenedDaysAgo" xml:space="preserve"><value>{0} 天前打开过</value></data>
+  <data name="KeptFolderNotFound" xml:space="preserve"><value>找不到文件夹</value></data>
+  <data name="KeptUnknownFolder" xml:space="preserve"><value>文件夹未知</value></data>
+  <data name="KeptForget" xml:space="preserve"><value>忘记</value></data>
+  <data name="KeptForgetLabel" xml:space="preserve"><value>忘记 {0} 的索引</value></data>
+  <data name="KeptForgetAsk" xml:space="preserve"><value>忘记此索引？将释放 {0}。仓库不会有任何变化。下次打开文件夹时会重建索引，如果你使用嵌入模型，会再次调用它。</value></data>
+  <data name="KeptForgetConfirm" xml:space="preserve"><value>忘记索引</value></data>
+  <data name="KeptForgetKeep" xml:space="preserve"><value>保留</value></data>
+  <data name="KeptForgotten" xml:space="preserve"><value>已忘记 {0} 的索引：释放了 {1}。下次打开文件夹时会重建。</value></data>
+  <data name="KeptHeld" xml:space="preserve"><value>未忘记：另一个窗口打开了此索引。请关闭该窗口，然后在这里忘记它。</value></data>
+  <data name="KeptNotHere" xml:space="preserve"><value>未忘记：{0} 是此处打开的文件夹。要重新开始它的索引，请使用 `/index rebuild`。</value></data>
+  <data name="KeptUnknown" xml:space="preserve"><value>没有名为 {0} 的已保留索引。`/index list` 会列出名称。</value></data>
+  <data name="KeptAmbiguous" xml:space="preserve"><value>有多个名为 {0} 的已保留索引：请按列表所示给出完整文件夹。</value></data>
+  <data name="KeptOlderWriter" xml:space="preserve"><value>旧版 Inferpal 仍在写入你的漫游配置文件（{0} 个索引，{1}）。此编辑器读取保留在此处的索引，因此两者可能不同。请更新另一个编辑器中的 Inferpal。</value></data>
+  <data name="KeptNote" xml:space="preserve"><value>90 天未打开的索引会被移除，聊天中会告知。打开文件夹会重建它。</value></data>
+  <data name="KeptNoteDocs" xml:space="preserve"><value>文档索引（{0}）由所有仓库共享：参见“文档”。</value></data>
+  <data name="KeptEmpty" xml:space="preserve"><value>这台机器上还没有保留任何内容。</value></data>
+  <data name="KeptListTitle" xml:space="preserve"><value>Inferpal 在这台机器上保留的内容 — {0}：</value></data>
+  <data name="KeptListHint" xml:space="preserve"><value>忘记一个：`/index forget &lt;名称&gt;`。仓库不受影响。90 天未打开的索引会被移除，并在此告知。</value></data>
+  <data name="KeptPrunedTitle" xml:space="preserve"><value>已移除旧索引</value></data>
+  <data name="KeptPruned" xml:space="preserve"><value>{0} 个搜索索引已有 90 天未打开，释放了 {1}：{2}。</value></data>
+  <data name="KeptPrunedDetail" xml:space="preserve"><value>这些仓库没有任何变化。打开文件夹会重建索引。</value></data>
+  <data name="KeptSeeKept" xml:space="preserve"><value>查看保留的内容</value></data>
 </root>
