@@ -104,7 +104,9 @@ flowchart TD
 
 - **3-tier chunking** (`CodeChunker`): Roslyn for C# (syntax tree + XML docs), an optional
   LSP tier for TS/JS/Python/Go/Rust (`lspEnabled`), and a regex fallback. Target ~500 tokens
-  per chunk with ~100 tokens overlap.
+  per chunk with ~100 tokens overlap; a chunk can reach about 1,000. LM Studio cuts a text longer than the context
+  the embedding model is loaded with and gives no error: the vector then stands for the start of the chunk, and only
+  keyword search sees the rest. So load it with at least 1,024 tokens.
 - **Vector store** (`RagDatabase`): SQLite WAL, one database per solution under
   `%LocalAppData%/Inferpal/rag/{hash}.db` on Windows, so it does not travel with a roaming profile
   (`~/.config/Inferpal/rag/` on Linux, `~/Library/Application Support/Inferpal/rag/` on macOS). In-memory map for
