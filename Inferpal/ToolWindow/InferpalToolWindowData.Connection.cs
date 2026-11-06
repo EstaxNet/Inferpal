@@ -177,6 +177,9 @@ internal partial class InferpalToolWindowData
             : Strings.MsgConnectionLost(
                 _config.BaseUrl, InferenceProviderFactory.DisplayName(_config.Provider), _client.ConnectionRefusal);
 
+    /// <summary>Ends the heartbeat of a window run by a test: left going, it follows the folder the next test opens.</summary>
+    internal void StopHeartbeatForTests() => _heartbeatCts.Cancel();
+
     private async Task StartHeartbeatAsync(CancellationToken? token = null)
     {
         var ct = token ?? _heartbeatCts.Token;

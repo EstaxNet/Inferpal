@@ -1,0 +1,94 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using Inferpal.Config;
+using Inferpal.Services;
+using Inferpal.Services.Docs;
+using Inferpal.Services.Lsp;
+using Inferpal.Services.Mcp;
+using Inferpal.Services.Rag;
+using Inferpal.Services.Tools;
+using Inferpal.ToolWindow;
+using Xunit;
+
+namespace Inferpal.Tests;
+
+/// <summary>
+/// Visual Studio's chat window, run without Visual Studio: its view model on a fake model server, with the real approval
+/// service, tools and turn. What the window does is tested here by running it; a test of its behaviour does not read its text.
+/// </summary>
+/// <remarks>
+/// A user of this class joins <see cref="SignalCollection"/>: the folder Visual Studio has open is a signal file. The
+/// <c>VisualStudioExtensibility</c> is <c>null</c>: a gesture that opens a document, a dialog or a tool window reaches the editor
+/// itself, and stays out of what this can run. ⚠ Without a folder open, the window looks near the process's own folder, which
+/// under a test is this repository: nothing that writes, git above all, runs without one. A regression would commit here.
+/// </remarks>
+internal sealed class VsWindowHarness : IDisposable
+{
+    private readonly SignalScratchDir _scratch = new();
+    private readonly List<IDisposable> _owned = [];
+
+    public string Root { get; } = Directory.CreateTempSubdirectory("inferpal-vm").FullName;
+    public FakeInferenceProvider Fake { get; }
+    public ToolRegistry Tools { get; }
+    public InferpalToolWindowData Window { get; }
+
+    /// <param name="fake">The model server.</param>
+    /// <param name="folderOpen">Whether Visual Studio has <see cref="Root"/> open.</param>
+    public VsWindowHarness(FakeInferenceProvider? fake = null, bool folderOpen = true)
+    {
+        SignalFile._isProcessAliveOverride = _ => true;
+        if (folderOpen) ActiveSolutionSignal.WriteFolder(Root);
+        Fake = fake ?? new FakeInferenceProvider();
+        // RAG off: on, the window's start would index whatever repository holds the test, once the test's folder is gone.
+        var config = new InferpalConfig { DefaultModel = "m", RagEnabled = false };
+        var holder = new VsContextHolder();
+        var editor = new NullEditorSurface();
+        var index  = Owned(new ProjectIndexService(Fake, config, new LspSemanticProvider()));
+        if (folderOpen) index.SetRoot(Root);
+        var docs   = Owned(new DocsIndexService(Fake, config));
+        var approval = new VsApprovalService(null!, config, index, holder);
+        Tools  = new ToolRegistry(editor, approval, config, index, Fake, new ProjectMapService(editor), new McpToolService(config, approval),
+                                  docs, new OpenDocumentOverlay(), new NullDebugSession());
+        Window = new InferpalToolWindowData(Fake, Tools, config, null!, holder, index, Owned(new ModelLifetimeService(Fake, config)),
+                                            Owned(new VsBuildMonitor()), docs);
+    }
+
+    private T Owned<T>(T service) where T : IDisposable
+    {
+        _owned.Add(service);
+        return service;
+    }
+
+    /// <summary>Types <paramref name="text"/> and presses Enter; completes when the turn has ended.</summary>
+    public Task AskAsync(string text)
+    {
+        Window.Prompt = text;
+        return Window.SendCommand.ExecuteAsync(null, null, CancellationToken.None);
+    }
+
+    /// <summary>Waits for what a turn does on another thread, within the budget a test that waits gets.</summary>
+    /// <remarks>The window's context writes <c>Messages</c> while this reads it: a read it interrupted is a read to do again.</remarks>
+    public static async Task UntilAsync(Func<bool> done)
+    {
+        bool Now()
+        {
+            try { return done(); }
+            catch (InvalidOperationException) { return false; }
+        }
+        for (var i = 0; i < 300 && !Now(); i++) await Task.Delay(100);
+        Assert.True(Now(), "what the test waits for never came");
+    }
+
+    public void Dispose()
+    {
+        Window.StopHeartbeatForTests();
+        foreach (var service in _owned) service.Dispose();
+        SignalFile._isProcessAliveOverride = null;
+        SignalScope.ResetForTests();
+        _scratch.Dispose();
+        try { Directory.Delete(Root, recursive: true); } catch { }
+    }
+}

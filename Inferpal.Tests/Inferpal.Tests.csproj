@@ -72,6 +72,8 @@
     <Compile Remove="ExtensionEntryPointTests.cs" />
     <Compile Remove="OwningDevenvTests.cs" />
     <Compile Remove="MaskedApiKeyTests.cs" />
+    <Compile Remove="VsWindowHarness.cs" />
+    <Compile Remove="VsWindowRunsUnderTestTests.cs" />
     <Compile Remove="GlobalUsings.Windows.cs" />
   </ItemGroup>
 

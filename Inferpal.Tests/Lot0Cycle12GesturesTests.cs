@@ -18,7 +18,8 @@ public sealed class Lot0Cycle12GesturesTests
 
     private static string VsCode(string file) => WebviewRebuildTests.TsCode(file);
 
-    /// <summary>Regenerate replays a question, it does not type one: counted as typed, Up in the prompt brings it back twice.</summary>
+    /// <summary>Regenerate replays a question, it does not type one. Read, not run: the history keeps a question typed twice in a
+    /// row once, so it only shows when the other editor typed in between.</summary>
     [Fact]
     public void Regenerate_IsNotAQuestionTyped()
     {
@@ -27,7 +28,9 @@ public sealed class Lot0Cycle12GesturesTests
         Assert.Equal(2, code.Split("typed: false").Length - 1);   // Continue, Regenerate
     }
 
-    /// <summary>With no solution or folder, the last resort is the process's folder: git would read whatever repository holds it.</summary>
+    /// <summary>With no solution or folder, the last resort is the process's folder: git would read, or commit to, whatever repository
+    /// holds it. Read here, not run: with its guard gone, <c>/commit-exec</c> under a test commits to this repository
+    /// (<c>VsWindowRunsUnderTestTests</c> runs the others).</summary>
     [Fact]
     public void EveryGitCommandOfTheWindow_AsksForAWorkspaceFirst()
     {
