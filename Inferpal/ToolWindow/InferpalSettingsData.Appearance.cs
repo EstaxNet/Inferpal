@@ -60,7 +60,7 @@ internal partial class InferpalSettingsData
     private void RefreshThemeCards()
     {
         ThemeInUse = ToolWindow.VsThemeDetector.HighContrastOn() ? "highContrast" : IsDarkTheme ? "dark" : "light";
-        SegmentSelectedBg = IsDarkTheme ? "#2E2B3D" : "#E4DFF7";
+        SegmentSelectedBg = HighContrastPalette()?.HoverBg ?? (IsDarkTheme ? "#2E2B3D" : "#E4DFF7");
         ThemeLightCaption        = Caption(Strings.ThemeLight,        "light");
         ThemeDarkCaption         = Caption(Strings.ThemeDark,         "dark");
         ThemeHighContrastCaption = Caption(Strings.ThemeHighContrast, "highContrast");

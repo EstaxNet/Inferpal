@@ -75,6 +75,8 @@ public class CommandChangesUndoTests : IDisposable
         Git(_root, "config", "user.email", "test@example.invalid");
         Git(_root, "config", "user.name", "test");
         Git(_root, "config", "core.autocrlf", "false");
+        // A commit starts git's maintenance behind it, whose lock comes and goes in .git/objects while a test reads the folder.
+        Git(_root, "config", "maintenance.auto", "false");
         File.WriteAllText(Path.Combine(_root, "a.txt"), "alpha\n");
         File.WriteAllText(Path.Combine(_root, "b.txt"), "bravo\n");
         Directory.CreateDirectory(Path.Combine(_root, "sub"));
@@ -276,7 +278,7 @@ public class CommandChangesUndoTests : IDisposable
         File.WriteAllText(Path.Combine(root, "b.txt"), "bravo, dirty\n");
         File.WriteAllText(Path.Combine(root, "untracked.txt"), "loose\n");
         var index   = File.ReadAllBytes(Path.Combine(root, ".git", "index"));
-        var objects = Directory.EnumerateFiles(Path.Combine(root, ".git", "objects"), "*", SearchOption.AllDirectories).Count();
+        var objects = Directory.EnumerateFiles(Path.Combine(root, ".git", "objects"), "*", SearchOption.AllDirectories).ToHashSet();
         var tools   = Registry(root);
 
         using (tools.History.BeginRunScope())
@@ -284,8 +286,8 @@ public class CommandChangesUndoTests : IDisposable
 
         Assert.True(index.AsSpan().SequenceEqual(File.ReadAllBytes(Path.Combine(root, ".git", "index"))),
                     "the watch rewrote the user's index.");
-        Assert.Equal(objects,
-                     Directory.EnumerateFiles(Path.Combine(root, ".git", "objects"), "*", SearchOption.AllDirectories).Count());
+        Assert.True(objects.SetEquals(Directory.EnumerateFiles(Path.Combine(root, ".git", "objects"), "*", SearchOption.AllDirectories)),
+                    "the watch wrote to the object store.");
         Assert.False(File.Exists(Path.Combine(root, ".git", "refs", "stash")), "the watch stashed something.");
     }
 

@@ -1421,6 +1421,9 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="RunBuildPassed" xml:space="preserve"><value>build riuscita</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>build non riuscita</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>test superati</value></data>
+  <data name="RunTestsPassedPart" xml:space="preserve"><value>test superati, solo parte della suite</value></data>
+  <data name="RunNotVerified" xml:space="preserve"><value>non verificato</value></data>
+  <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Nessuna soluzione o cartella è aperta, quindi non c'è alcun repository da leggere. Aprine una, poi riprova.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>test non superati</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} s</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} min {1} s</value></data>

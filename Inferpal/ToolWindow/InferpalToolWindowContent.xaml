@@ -1291,6 +1291,10 @@
                                                     <Setter Property="Text" Value="&#xE73E;"/>
                                                     <Setter Property="Foreground" Value="{Binding DataContext.ThemeOk, ElementName=root}"/>
                                                     <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding CheckUnproven}" Value="True">
+                                                            <Setter Property="Text" Value="&#xE946;"/>
+                                                            <Setter Property="Foreground" Value="{Binding ThemeSubtleText}"/>
+                                                        </DataTrigger>
                                                         <DataTrigger Binding="{Binding CheckFailed}" Value="True">
                                                             <Setter Property="Text" Value="&#xE711;"/>
                                                             <Setter Property="Foreground" Value="{Binding DataContext.ThemeErrorText, ElementName=root}"/>

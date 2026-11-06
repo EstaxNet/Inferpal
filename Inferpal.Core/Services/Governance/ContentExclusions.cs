@@ -453,7 +453,7 @@ internal static class ContentExclusions
         internal Func<string?> Files { get; set; } = files;
 
         private readonly object _gate = new();
-        private string _stamp = string.Empty;
+        private string? _stamp = string.Empty;
         private DateTime _checkedUtc = DateTime.MinValue;
 
         /// <summary>The rules read, and the verdicts on folders computed from THEM: swapped together, a verdict computed
@@ -513,10 +513,21 @@ internal static class ContentExclusions
                 var names = Names(Files());
                 var stamp = string.Join("|", names.Select(n => n + ":" + Stamp(Path.Combine(Root, n))));
                 if (stamp == _stamp) return _snapshot;
-                _stamp = stamp;
-                IReadOnlyList<(string, GitIgnoreRules)> read =
-                    [.. names.Select(n => (n, Read(Path.Combine(Root, n), n))).Where(r => r.Item2 is not null)
-                             .Select(r => (r.n, r.Item2!))];
+                var read  = new List<(string, GitIgnoreRules)>();
+                var whole = true;
+                foreach (var name in names)
+                {
+                    var rules = Read(Path.Combine(Root, name), name, out var unreadable);
+                    // ⚠ Held by another program this instant, it keeps protecting what it protected, and is read again at
+                    // the next look: read as "no rules", what it excludes reaches the model until its next edit, its date unmoved.
+                    if (unreadable)
+                    {
+                        whole = false;
+                        rules = _snapshot.Read.FirstOrDefault(r => r.Name == name).Rules;
+                    }
+                    if (rules is not null) read.Add((name, rules));
+                }
+                _stamp = whole ? stamp : null;
                 return _snapshot = new Snapshot(read, new(PathComparer.Default));
             }
         }
@@ -536,8 +547,9 @@ internal static class ContentExclusions
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return "?"; }
         }
 
-        private static GitIgnoreRules? Read(string file, string name)
+        private static GitIgnoreRules? Read(string file, string name, out bool unreadable)
         {
+            unreadable = false;
             try
             {
                 var info = new FileInfo(file);
@@ -556,8 +568,10 @@ internal static class ContentExclusions
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 Diagnostics.RecordOnce("ContentExclusions",
-                    $"{name} could not be read ({ex.GetType().Name}): its exclusions do not apply until it can be.",
+                    $"{name} could not be read ({ex.GetType().Name}): the rules last read from it stay until it can be, and none "
+                    + "apply if it was never read.",
                     file + "|unreadable");
+                unreadable = true;
                 return null;
             }
         }

@@ -304,10 +304,10 @@ export type WebviewToExt =
   | { type: 'queue'; text: string }
   /** A queued message taken out of the queue. */
   | { type: 'unqueue'; index: number }
-  /** The welcome banner's "Fix them": the Problems panel attached, then `text` sent. */
-  | { type: 'fixProblems'; text: string }
-  /** The build banner's "Fix them": as `fixProblems`, and the banner goes once the errors are sent. */
-  | { type: 'fixBuild'; text: string }
+  /** The welcome banner's "Fix them": the panel's errors, with the code around each, as a quick fix sends them. */
+  | { type: 'fixProblems' }
+  /** The build banner's "Fix them": as `fixProblems`, and the banner goes once the question is answered. */
+  | { type: 'fixBuild' }
   /** The build banner's "Show the errors": the Problems panel. */
   | { type: 'showProblems' }
   /** The build banner closed: it is not drawn again until the next build fails. */

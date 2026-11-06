@@ -55,10 +55,10 @@ internal static class ConversationExporter
     public static string Build(
         IReadOnlyList<ExportMessage> messages,
         bool asPlainText,
-        string modelName,
-        int sessionTokens,
+        string? modelName,
+        int? sessionTokens,
         string date,
-        string durationStr)
+        string? durationStr)
     {
         var turns     = messages.Count(m => m.Role == "user" && !m.IsNotice);
         var toolCalls = messages.Count(m => m.Role == "tool");
@@ -68,7 +68,9 @@ internal static class ConversationExporter
         {
             sb.AppendLine(Strings.ExportTitle);
             sb.AppendLine(date);
-            sb.AppendLine($"{Strings.ExportModel}: {modelName}  |  {Strings.ExportTurns}: {turns}  |  {Strings.ExportToolCalls}: {toolCalls}  |  {Strings.ExportTokens}: {sessionTokens:N0}  |  {Strings.ExportDuration}: {durationStr}");
+            sb.AppendLine((modelName is null ? "" : $"{Strings.ExportModel}: {modelName}  |  ") + $"{Strings.ExportTurns}: {turns}  |  {Strings.ExportToolCalls}: {toolCalls}"
+                          + (sessionTokens is null ? "" : $"  |  {Strings.ExportTokens}: {sessionTokens:N0}")
+                          + (durationStr is null ? "" : $"  |  {Strings.ExportDuration}: {durationStr}"));
             sb.AppendLine();
 
             foreach (var msg in messages)
@@ -87,11 +89,11 @@ internal static class ConversationExporter
             sb.AppendLine();
             sb.AppendLine($"| {Strings.ExportStatColumn} | {Strings.ExportValueColumn} |");
             sb.AppendLine("|---|---|");
-            sb.AppendLine($"| {Strings.ExportModel} | `{modelName}` |");
+            if (modelName is not null) sb.AppendLine($"| {Strings.ExportModel} | `{modelName}` |");
             sb.AppendLine($"| {Strings.ExportTurns} | {turns} |");
             sb.AppendLine($"| {Strings.ExportToolCalls} | {toolCalls} |");
-            sb.AppendLine($"| {Strings.ExportTokens} | {sessionTokens:N0} |");
-            sb.AppendLine($"| {Strings.ExportDuration} | {durationStr} |");
+            if (sessionTokens is not null) sb.AppendLine($"| {Strings.ExportTokens} | {sessionTokens:N0} |");
+            if (durationStr is not null)   sb.AppendLine($"| {Strings.ExportDuration} | {durationStr} |");
             sb.AppendLine();
             sb.AppendLine("---");
             sb.AppendLine();

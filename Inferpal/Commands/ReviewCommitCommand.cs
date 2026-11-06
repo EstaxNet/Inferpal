@@ -33,7 +33,7 @@ internal class ReviewCommitCommand : Command
     public override async Task ExecuteCommandAsync(IClientContext context, CancellationToken ct)
     {
         _contextHolder.Context = context;
-        if (await ChooseAsync(Extensibility, _contextHolder.ProjectRoot(), ct) is not { } chosen) return;
+        if (await ChooseAsync(Extensibility, _contextHolder.GitRoot(), ct) is not { } chosen) return;
         _contextHolder.SetPendingPrompt($"/check {chosen}");
         await Extensibility.Shell().ShowToolWindowAsync<InferpalToolWindow>(activate: true, ct);
     }
@@ -43,10 +43,11 @@ internal class ReviewCommitCommand : Command
     /// Shared with the chat window's ⋯ menu.
     /// </summary>
     /// <param name="projectRoot">The repository the chat's <c>/check</c> reads: the solution or folder open, else the open
-    /// documents'.</param>
+    /// documents'; <c>null</c> when nothing is open.</param>
     internal static async Task<string?> ChooseAsync(VisualStudioExtensibility vs, string? projectRoot, CancellationToken ct)
     {
-        var (commits, failure) = await Services.Commands.ReviewCommits.ReadAsync(GitProcess.For(projectRoot), ct);
+        var (commits, failure) = projectRoot is null
+            ? ([], Strings.GitNeedsAWorkspace) : await Services.Commands.ReviewCommits.ReadAsync(GitProcess.For(projectRoot), ct);
 
         var data = new ReviewCommitDialogData(commits, failure ?? string.Empty);
         using var control = new ReviewCommitDialogControl(data);

@@ -55,6 +55,25 @@ public class PermissionRuleCommentAndChainTests
         Assert.True(rule!.Matches("write_file", @"C:\ws\Notes#1.md", out _));
     }
 
+    /// <summary>What a shell runs is the command after its assignments: the person's deny fires on it.</summary>
+    [Theory]
+    [InlineData("CI=1 rm -rf build")]
+    [InlineData("CI=1 DEBUG=\"a b\" rm -rf build")]
+    [InlineData("A=\"x\\\"y\" rm -rf build")]
+    [InlineData("A=a\\ b rm -rf build")]
+    [InlineData("git status && CI=1 rm -rf build")]
+    public void ADeny_SeesTheCommandBehindItsAssignments(string line)
+    {
+        Assert.Equal(PermissionDecision.Deny, FromDsl(@"deny run_command ^rm\b").Evaluate("run_command", line));
+    }
+
+    /// <summary>An allow keeps judging the line as written: an assignment can change what a command does.</summary>
+    [Fact]
+    public void AnAllow_StillJudgesTheLineAsWritten()
+    {
+        Assert.Equal(PermissionDecision.Prompt, FromDsl(@"allow run_command ^git\b").Evaluate("run_command", "GIT_DIR=/x git status"));
+    }
+
     [Theory]
     [InlineData("git status; Remove-Item -Recurse -Force src")]
     [InlineData("git status && rm -rf build")]

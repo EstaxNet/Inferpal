@@ -131,7 +131,7 @@
         </Style>
     </DataTemplate.Resources>
 
-    <Grid x:Name="root">
+    <Grid x:Name="root" Background="{Binding PageBg}">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>

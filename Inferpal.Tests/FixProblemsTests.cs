@@ -105,7 +105,7 @@ public sealed class FixProblemsTests : IDisposable
         var content = FixPromptBuilder.ForProblems(problems, _ => null);
 
         Assert.Contains("error CS0103: the one error", content);
-        Assert.Contains("(51 more problem(s) selected, not listed", content);
+        Assert.Contains("(51 more problem(s), not listed", content);
         Assert.Contains($"warning {FixPromptBuilder.MaxProblems - 1}\n", content + "\n");
         Assert.DoesNotContain($"warning {FixPromptBuilder.MaxProblems}\n", content + "\n");
     }
@@ -119,7 +119,7 @@ public sealed class FixProblemsTests : IDisposable
 
         var content = FixPromptBuilder.ForProblems(problems, _ => new string('x', 4_000));
 
-        Assert.Matches(@"^\(\d+ more problem\(s\) selected, not listed", content);
+        Assert.Matches(@"^\(\d+ more problem\(s\), not listed", content);
         Assert.InRange(content.Length, FixPromptBuilder.MaxProblemChars, Services.Agent.AttachmentCap.MaxChars);
     }
 

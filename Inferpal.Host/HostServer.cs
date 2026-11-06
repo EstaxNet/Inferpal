@@ -1141,9 +1141,11 @@ internal sealed partial class HostServer : IDisposable
             ? TimeSpan.FromSeconds(seconds) : (TimeSpan?)null;
 
         return Task.FromResult(ConversationExporter.Build(
-            messages, p.AsPlainText, string.IsNullOrWhiteSpace(p.Model) ? s.Config.DefaultModel : p.Model, p.SessionTokens,
+            messages, p.AsPlainText, p.SessionTokens is null ? null : string.IsNullOrWhiteSpace(p.Model) ? s.Config.DefaultModel : p.Model,
+            p.SessionTokens,
             DateTime.Now.ToString("f", CultureInfo.CurrentCulture),
-            ConversationExporter.FormatDuration(duration)));
+            // No count: a thread reloaded since it began, whose tokens and duration nobody kept.
+            p.SessionTokens is null ? null : ConversationExporter.FormatDuration(duration)));
     }
 
     // ── Backend ────────────────────────────────────────────────────────────────
@@ -1784,7 +1786,8 @@ internal sealed partial class HostServer : IDisposable
             // The repository's MCP files changed (a checkout): its servers are read again — before the question.
             if (s.Mcp.RepositoryFilesChanged()) await s.Mcp.RefreshAsync();
             return new ConfigReloadResult(follow.Taken, s.Config.DefaultModel, follow.ServerChanged, s.Config.AgentModel,
-                                          Unreadable: follow.Unreadable);
+                                          Unreadable: follow.Unreadable,
+                                          Notice: follow.Unreadable ? Strings.AcpSettingsUnreadable : null);
         });
     }
 

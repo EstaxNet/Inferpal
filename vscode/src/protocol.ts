@@ -318,7 +318,8 @@ export interface ChatExportMessage {
 export interface ChatExportParams {
   asPlainText: boolean;
   messages: ChatExportMessage[];
-  sessionTokens?: number;
+  /** `null`: not known, a thread reloaded since it began. */
+  sessionTokens?: number | null;
   durationSeconds?: number;
   /** The model that answers, when it is not the configured default; VS Code's window model is the host's default. */
   model?: string;
@@ -577,7 +578,7 @@ export interface RunSummary {
   title: string;
   detail: string;
   files: RunFileLine[];
-  check: 'none' | 'buildPassed' | 'buildFailed' | 'testsPassed' | 'testsFailed';
+  check: 'none' | 'buildPassed' | 'buildFailed' | 'testsPassed' | 'testsFailed' | 'testsPassedPart' | 'unproven';
   checkText: string;
   runId: string;
 }
@@ -1243,6 +1244,8 @@ export interface ConfigReloadResult {
   serverChanged: boolean;
   agentModel: string;
   unreadable?: boolean;
+  /** Says an unreadable file to the person. */
+  notice?: string | null;
 }
 
 export interface ConfigUpdateResult {

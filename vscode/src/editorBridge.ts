@@ -43,9 +43,9 @@ export function problemLine(rel: string, d: vscode.Diagnostic): string {
  * is one place and one code — never one message: MSBuild's console appends the project to each (`… [app.csproj]`), and
  * the language server's chained messages span lines the matcher cuts; the message decides only without a code.
  */
-export function panelErrors(): { rel: string; d: vscode.Diagnostic }[] {
+export function panelErrors(): { uri: vscode.Uri; rel: string; d: vscode.Diagnostic }[] {
   const seen = new Set<string>();
-  const errors: { rel: string; d: vscode.Diagnostic }[] = [];
+  const errors: { uri: vscode.Uri; rel: string; d: vscode.Diagnostic }[] = [];
   for (const [uri, diagnostics] of panelDiagnostics()) {
     const rel = vscode.workspace.asRelativePath(uri);
     for (const d of diagnostics) {
@@ -53,7 +53,7 @@ export function panelErrors(): { rel: string; d: vscode.Diagnostic }[] {
       const key = `${rel}|${d.range.start.line}|${d.range.start.character}|${code !== undefined ? String(code) : d.message}`;
       if (d.severity === vscode.DiagnosticSeverity.Error && !seen.has(key)) {
         seen.add(key);
-        errors.push({ rel, d });
+        errors.push({ uri, rel, d });
       }
     }
   }

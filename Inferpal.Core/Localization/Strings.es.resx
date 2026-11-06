@@ -1421,6 +1421,9 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="RunBuildPassed" xml:space="preserve"><value>compilación correcta</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>compilación fallida</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>pruebas superadas</value></data>
+  <data name="RunTestsPassedPart" xml:space="preserve"><value>pruebas superadas, solo parte del conjunto</value></data>
+  <data name="RunNotVerified" xml:space="preserve"><value>sin verificar</value></data>
+  <data name="GitNeedsAWorkspace" xml:space="preserve"><value>No hay ninguna solución ni carpeta abierta, así que no hay repositorio que leer. Abra una y vuelva a intentarlo.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>pruebas fallidas</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} s</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} min {1} s</value></data>

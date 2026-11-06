@@ -110,6 +110,8 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) { Diagnostics.Swallow("Connection.AdoptModel", ex); }
     }
 
+    private bool _settingsUnreadableSaid;
+
     /// <summary>
     /// The settings another editor saved since this window took them (<see cref="Services.Inference.SettingsFollow"/>):
     /// taken as the file's, applied as a save applies them (<see cref="OnSettingsFollowed"/>); what this window changed
@@ -121,6 +123,9 @@ internal partial class InferpalToolWindowData
         try
         {
             var follow = Services.Inference.SettingsFollow.TakeAndApply(_config, _client, () => GpuScheduler.IsTurnInFlight);
+            // Said once while it lasts: the person who just edited the file would see their change do nothing, without a word.
+            if (follow.Unreadable && !_settingsUnreadableSaid) await ShowInfoAsync(Strings.AcpSettingsUnreadable);
+            if (!follow.Busy) _settingsUnreadableSaid = follow.Unreadable;
             // The question answers with the MCP servers the other editor saved, and the ones the repository declares now
             // (a checkout changed its .mcp.json): started again before it, not after.
             // ⚠ Never under a running turn: a refresh tears every server down, and a slash command (/resume during a
@@ -330,6 +335,7 @@ internal partial class InferpalToolWindowData
             Messages.Add(_anchor0);
             Messages.Add(_anchor1);
             _activeTemplateSuffix     = string.Empty;
+            _threadReloaded           = false;
             _workspaceContextInjected = false;
             _sessionStartTime         = null;
             _lastRegenerableMsg       = null;
@@ -547,6 +553,7 @@ internal partial class InferpalToolWindowData
         var modeGone              = ApplyState(state);
         _workspaceContextInjected = false;
         _sessionStartTime         = null;
+        _threadReloaded           = messages.Count > 0;
         _lastRegenerableMsg       = null;
         _lastContinuableMsg       = null;
         _baseSystemPrompt         = BuildSystemPrompt();

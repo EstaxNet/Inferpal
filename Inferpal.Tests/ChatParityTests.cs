@@ -73,7 +73,7 @@ public class ChatParityTests
     {
         var webview = VsCodeSource("webview", "main.ts");
         Assert.Matches(@"if \(banner\.errors > 0\) \{\s*const fix = document\.createElement\('button'\);", webview);
-        Assert.Contains("fix.addEventListener('click', () => post({ type: 'fixBuild', text: t('welcomeFixPrompt') }));", webview);
+        Assert.Contains("fix.addEventListener('click', () => post({ type: 'fixBuild' }));", webview);
         Assert.Contains("if (problems > 0 && buildBannerEl.hidden) {", webview);
         Assert.Contains("post({ type: 'dismissBuildBanner' });", webview);
         // Closed, it stays closed for that build — a redraw already on its way does not reopen it.
@@ -84,9 +84,12 @@ public class ChatParityTests
 
         var provider = VsCodeSource("chatViewProvider.ts");
         var fix = provider[provider.IndexOf("case 'fixBuild': {", StringComparison.Ordinal)..];
-        Assert.True(fix.IndexOf("if (this.busy) {", StringComparison.Ordinal) < fix.IndexOf("await this.resolveMention('problems');", StringComparison.Ordinal),
+        Assert.True(fix.IndexOf("if (this.busy) {", StringComparison.Ordinal) < fix.IndexOf("await this.fixProblems(problems);", StringComparison.Ordinal),
                     "the chip is attached before a running turn refuses the request");
-        Assert.Matches(@"if \(msg\.type === 'fixBuild'\) \{\s*this\.failedBuild = null;\s*this\.post\(\{ type: 'buildBanner', banner: null \}\);\s*\}\s*await this\.send\(msg\.text\);", fix);
+        // The banner goes once the question went, never before: refused, the errors are there to try again.
+        Assert.True(fix.IndexOf("await this.fixProblems(problems);", StringComparison.Ordinal)
+                    < fix.IndexOf("this.failedBuild = null;", StringComparison.Ordinal), "the banner goes before the question");
+        Assert.Matches(@"if \(msg\.type === 'fixBuild' && this\.turnsEnded !== before && this\.turnOutcome !== 'failed' && this\.buildSeq === build\) \{\s*this\.failedBuild = null;\s*this\.post\(\{ type: 'buildBanner', banner: null \}\);", fix);
     }
 }
 

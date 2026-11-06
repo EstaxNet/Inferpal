@@ -140,6 +140,9 @@ internal static class Strings
     public static string RunBuildPassed => Get(nameof(RunBuildPassed));
     public static string RunBuildFailed => Get(nameof(RunBuildFailed));
     public static string RunTestsPassed => Get(nameof(RunTestsPassed));
+    public static string RunTestsPassedPart => Get(nameof(RunTestsPassedPart));
+    public static string RunNotVerified => Get(nameof(RunNotVerified));
+    public static string GitNeedsAWorkspace => Get(nameof(GitNeedsAWorkspace));
     public static string RunTestsFailed => Get(nameof(RunTestsFailed));
     public static string TurnSeconds(int seconds) => Format(Get(nameof(TurnSeconds)), seconds);
     public static string TurnMinutes(int minutes, string seconds) => Format(Get(nameof(TurnMinutes)), minutes, seconds);

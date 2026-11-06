@@ -176,7 +176,8 @@ internal sealed record CutCardDto(string? Note, string OpenLimits, string Page, 
 }
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
-/// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c> or <c>testsFailed</c>.</param>
+/// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c>, <c>testsFailed</c>,
+/// <c>testsPassedPart</c> or <c>unproven</c>.</param>
 /// <param name="RunId">What <c>/undo-run</c> takes; empty when the run changed no file.</param>
 internal sealed record RunSummaryDto(
     int Steps, string Title, string Detail, List<Services.Presentation.RunFileLine> Files, string Check, string CheckText,
@@ -536,7 +537,7 @@ internal sealed record TypingChipDto(string Path, string Name, string Lines, str
 internal sealed record ChatExportParams(
     bool                             AsPlainText,
     IReadOnlyList<ChatExportMessage> Messages,
-    int                              SessionTokens   = 0,
+    int?                             SessionTokens   = 0,
     int?                             DurationSeconds = null,
     string?                          Model           = null);
 
@@ -620,9 +621,10 @@ internal sealed record ConfigUpdateResult(int PermissionRulesIgnored, bool Serve
 /// <summary>`config/reload` — the settings the session took from the file (JSON keys), its default and agent models after
 /// them, and whether a new KIND of model server was saved (the session keeps talking to the one it started with; a new
 /// address or key of the same kind is taken, and applies at once).
-/// <paramref name="Unreadable"/>: the file exists but cannot be read — nothing was taken.</summary>
+/// <paramref name="Unreadable"/>: the file exists but cannot be read — nothing was taken, and <paramref name="Notice"/>
+/// says it to the person.</summary>
 internal sealed record ConfigReloadResult(IReadOnlyList<string> Taken, string DefaultModel, bool ServerChanged,
-                                          string AgentModel = "", bool Unreadable = false);
+                                          string AgentModel = "", bool Unreadable = false, string? Notice = null);
 
 /// <summary>`pins/add` / `pins/remove` — a file to pin into, or take out of, every request.</summary>
 internal sealed record PinParams(string Path);

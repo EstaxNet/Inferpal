@@ -189,8 +189,11 @@ internal class ConversationStore
     /// without a workspace — tasks then live in memory only.</summary>
     /// <remarks>⚠ One per editor, every workspace in it: a Visual Studio window that opens another solution lists the tasks
     /// of both, and numbers given per workspace would name two tasks alike.</remarks>
-    internal Tasks.TaskJournal? TaskJournal(string? workspaceRoot) =>
-        string.IsNullOrWhiteSpace(workspaceRoot) ? null : new(Path.Combine(Dir, "tasks", (_slotOwner ?? "tasks") + ".json"));
+    internal Tasks.TaskJournal? TaskJournal(string? workspaceRoot) => TaskJournal(workspaceRoot, _slotOwner);
+
+    /// <summary>The journal of <paramref name="editor"/>, when this instance's slot is not its own: a thread of ACP.</summary>
+    internal Tasks.TaskJournal? TaskJournal(string? workspaceRoot, string? editor) =>
+        string.IsNullOrWhiteSpace(workspaceRoot) ? null : new(Path.Combine(Dir, "tasks", (editor ?? "tasks") + ".json"));
 
     /// <remarks>
     /// ⚠ Per EDITOR as well: Visual Studio and VS Code on one folder have the same workspace root. Sharing its slot, the

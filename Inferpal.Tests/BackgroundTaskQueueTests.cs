@@ -490,7 +490,8 @@ public class BackgroundTaskQueueTests
         Assert.Contains("submissionContext: () => _taskSubmissionBlock,", vm, StringComparison.Ordinal);
         // Kept in the workspace's journal, waiting for a server that does not answer: in both editors.
         Assert.Contains("journalFor: _store.TaskJournal,", vm, StringComparison.Ordinal);
-        Assert.Contains("journalFor: Store.TaskJournal, serverDown: BackgroundTaskQueue.ServerDown(Client, Config));", host, StringComparison.Ordinal);
+        Assert.Contains("journalFor: root => Store.TaskJournal(root, Tools.History.Editor),", host, StringComparison.Ordinal);
+        Assert.Contains("serverDown: BackgroundTaskQueue.ServerDown(Client, Config));", host, StringComparison.Ordinal);
         Assert.Contains("serverDown: BackgroundTaskQueue.ServerDown(_client, _config));", vm, StringComparison.Ordinal);
         Assert.Contains("RunOnVMContextAsync(() => _taskSubmissionBlock = BuildActiveFileBlock());", vm, StringComparison.Ordinal);
         Assert.Contains("submissionContext: () => BuildActiveFileBlock(s));",

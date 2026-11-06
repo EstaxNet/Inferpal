@@ -1421,6 +1421,9 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RunBuildPassed" xml:space="preserve"><value>빌드 성공</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>빌드 실패</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>테스트 통과</value></data>
+  <data name="RunTestsPassedPart" xml:space="preserve"><value>테스트 통과(일부 테스트만)</value></data>
+  <data name="RunNotVerified" xml:space="preserve"><value>확인되지 않음</value></data>
+  <data name="GitNeedsAWorkspace" xml:space="preserve"><value>솔루션이나 폴더가 열려 있지 않아 읽을 저장소가 없습니다. 하나를 연 다음 다시 시도하세요.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>테스트 실패</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0}초</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0}분 {1}초</value></data>

@@ -75,6 +75,38 @@ internal static class CommandLine
     /// quoted argument matches no <c>allow</c>: such a line goes to the card, the direction a misreading may err in.</remarks>
     internal static string[] Pieces(string line) => line.Split([';', '|', '&', '\r', '\n']);
 
+    /// <summary>
+    /// The command <paramref name="piece"/> runs behind its leading <c>NAME=value</c> assignments, or <c>null</c> when it
+    /// has none: <c>CI=1 rm -rf x</c> runs <c>rm</c>. A word that only looks like one, a line of assignments alone: <c>null</c>.
+    /// </summary>
+    internal static string? WithoutAssignments(string piece)
+    {
+        var at = 0;
+        while (at < piece.Length && char.IsWhiteSpace(piece[at])) at++;
+        var command = -1;
+        while (true)
+        {
+            var name = at;
+            while (at < piece.Length && (char.IsAsciiLetterOrDigit(piece[at]) || piece[at] == '_')) at++;
+            if (at == name || char.IsAsciiDigit(piece[name]) || at == piece.Length || piece[at] != '=') break;
+            at++;
+            while (at < piece.Length && !char.IsWhiteSpace(piece[at]))
+            {
+                if (piece[at] == '\\') at++;
+                else if (piece[at] is '"' or '\'')
+                {
+                    var quote = piece[at++];
+                    while (at < piece.Length && piece[at] != quote) at += quote == '"' && piece[at] == '\\' ? 2 : 1;
+                }
+                at++;
+            }
+            while (at < piece.Length && char.IsWhiteSpace(piece[at])) at++;
+            if (at >= piece.Length) return null;
+            command = at;
+        }
+        return command < 0 ? null : piece[command..];
+    }
+
     private static bool PosixShell() => Shell.ShellLauncher.Resolve().Dialect != Shell.ShellDialect.PowerShell;
 
     /// <summary>The top-level steps of <paramref name="line"/>, quote- and escape-aware, as written.</summary>

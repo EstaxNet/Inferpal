@@ -130,12 +130,14 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     private string _checkText = string.Empty;
     private bool   _hasCheck;
     private bool   _checkFailed;
+    private bool   _checkUnproven;
     private bool   _canUndo;
     private string _btnUndo = string.Empty;
     private Action? _onUndo;
     [DataMember] public string CheckText   { get => _checkText;   set => SetProperty(ref _checkText,   value); }
     [DataMember] public bool   HasCheck    { get => _hasCheck;    set => SetProperty(ref _hasCheck,    value); }
     [DataMember] public bool   CheckFailed { get => _checkFailed; set => SetProperty(ref _checkFailed, value); }
+    [DataMember] public bool   CheckUnproven { get => _checkUnproven; set => SetProperty(ref _checkUnproven, value); }
     /// <summary>Undo reverts the most recent run that changed files (<c>/undo-run</c>): only that run's bar offers it.</summary>
     [DataMember] public bool   CanUndo     { get => _canUndo;     set => SetProperty(ref _canUndo,     value); }
     [DataMember] public string BtnUndo     { get => _btnUndo;     set => SetProperty(ref _btnUndo,     value); }
@@ -730,8 +732,10 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             RunDetail = summary.Detail;
         }
         RunFailed = summary?.Check is Services.Presentation.RunCheck.BuildFailed or Services.Presentation.RunCheck.TestsFailed
-                    || Steps.Exists(s => s.HasErrors) && summary?.Check is null or Services.Presentation.RunCheck.None;
-        RunGlyph  = RunFailed ? Glyphs.Failed : Glyphs.Check;
+                    || Steps.Exists(s => s.HasErrors)
+                       && summary?.Check is null or Services.Presentation.RunCheck.None or Services.Presentation.RunCheck.Unproven;
+        RunGlyph  = RunFailed ? Glyphs.Failed
+                  : summary?.Check == Services.Presentation.RunCheck.Unproven ? Glyphs.Info : Glyphs.Check;
     }
 
     internal void InitFixCallback(string fullErrorOutput, Action<string> onFixWithAi)
@@ -919,6 +923,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             Role        = "result",
             CheckText   = summary.CheckText,
             HasCheck    = summary.Check != Services.Presentation.RunCheck.None,
+            CheckUnproven = summary.Check == Services.Presentation.RunCheck.Unproven,
             CheckFailed = summary.Check is Services.Presentation.RunCheck.BuildFailed or Services.Presentation.RunCheck.TestsFailed,
             BtnUndo     = Strings.RunUndo,
             CanUndo     = onUndo is not null,

@@ -84,6 +84,13 @@ internal static class EditorWriteGate
         // ⚠ The editor writes wherever the document lives — a settings file, another repository: outside the workspace,
         // never under a rule or an "Always" (the confinement every other write gets).
         var outside = !PathSanitizer.IsUnderRoot(document.Path, history.WorkspaceRoot?.Invoke());
+        // Saved, the buffer is that file: a file also outside the workspace by a hard link is refused like a write to disk,
+        // before the card. A document outside has its forced card, whose accord is about the whole file.
+        if (!outside && File.Exists(document.Path))
+        {
+            try { PathSanitizer.AssertEveryNameUnderRoot(document.Path, history.WorkspaceRoot?.Invoke()); }
+            catch (ArgumentException refused) { return new(null, ToolFailure.Said(refused.Message)); }
+        }
         var written = document.Text.Contains('\n') ? LineEndings.ToEol(text, LineEndings.Dominant(document.Text)) : text;
         // ⚠ The selection it replaces, on the card: without it the card shows the new text alone, and a Ctrl+A made while
         // it waits replaces the whole document under "selection replaced". Read with its path: the focus may have moved

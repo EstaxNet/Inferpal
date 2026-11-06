@@ -5,8 +5,11 @@ using Inferpal.Services.Execution;
 
 namespace Inferpal.Services.Presentation;
 
-/// <summary>What the last check of a run said: the build or the tests, passed or failed; none when nothing checked.</summary>
-internal enum RunCheck { None, BuildPassed, BuildFailed, TestsPassed, TestsFailed }
+/// <summary>
+/// What the last check of a run said: the build or the tests, passed or failed; part of the suite when a pass spoke for
+/// no more; unproven when a check ran and proved nothing; none when nothing checked.
+/// </summary>
+internal enum RunCheck { None, BuildPassed, BuildFailed, TestsPassed, TestsFailed, TestsPassedPart, Unproven }
 
 /// <summary>One file a run changed, as its result bar shows it.</summary>
 /// <param name="Added">Lines added since the run's backup — an estimate, never a promise of git's count.</param>
@@ -71,18 +74,23 @@ internal static class RunSummary
         RunCheck.BuildFailed => Strings.RunBuildFailed,
         RunCheck.TestsPassed => Strings.RunTestsPassed,
         RunCheck.TestsFailed => Strings.RunTestsFailed,
+        RunCheck.TestsPassedPart => Strings.RunTestsPassedPart,
+        RunCheck.Unproven        => Strings.RunNotVerified,
         _                    => string.Empty,
     };
 
     /// <summary>
     /// The last check of the run — <see cref="ChatTurnPolicy.LastCheck"/>, the reader of the end-of-turn notice too —,
-    /// passed only on a verdict that says so: a run where nothing was proven passes nothing.
+    /// passed only on a verdict that says so: a run where nothing was proven passes nothing, and says it, or a run on a
+    /// clone never restored reads ✓ with nothing compiled.
     /// </summary>
     internal static RunCheck LastCheck(IReadOnlyList<ToolExecution> executions) =>
         ChatTurnPolicy.LastCheck(executions) switch
         {
-            null or { Failed: null }                               => RunCheck.None,
+            null                                                   => RunCheck.None,
+            { Failed: null }                                       => RunCheck.Unproven,
             { Kind: ChatTurnPolicy.CheckKind.Tests, Failed: true } => RunCheck.TestsFailed,
+            { Kind: ChatTurnPolicy.CheckKind.Tests, Part: true }   => RunCheck.TestsPassedPart,
             { Kind: ChatTurnPolicy.CheckKind.Tests }               => RunCheck.TestsPassed,
             { Failed: true }                                       => RunCheck.BuildFailed,
             _                                                      => RunCheck.BuildPassed,

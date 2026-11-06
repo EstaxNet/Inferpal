@@ -8,7 +8,7 @@
     <TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
     <!-- Off-Windows only the agnostic leg exists at all: keeping a windows TFM in the list
          would drag the VSIX project into restore/evaluation on ubuntu/macos runners. -->
-    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('Windows'))">net10.0</TargetFrameworks>
+    <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('Windows')) Or '$(BuildPosixLeg)' == 'true'">net10.0</TargetFrameworks>
     <!-- By the platform the TFM names, never by its spelling: a versioned net10.0-windows10.0.19041.0 is a Windows leg too. -->
     <IsWindowsLeg Condition="'$([MSBuild]::GetTargetPlatformIdentifier(`$(TargetFramework)`))' == 'windows'">true</IsWindowsLeg>
     <UseWPF Condition="'$(IsWindowsLeg)' == 'true'">true</UseWPF>

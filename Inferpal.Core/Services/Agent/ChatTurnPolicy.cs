@@ -160,7 +160,10 @@ internal static class ChatTurnPolicy
     internal enum CheckKind { Build, Tests }
 
     /// <summary>A check's kind and verdict: <c>true</c> failed, <c>false</c> passed, <c>null</c> nothing proven.</summary>
-    internal readonly record struct CheckVerdict(CheckKind Kind, bool? Failed);
+    /// <param name="Kind">What it checked.</param>
+    /// <param name="Failed">Its verdict.</param>
+    /// <param name="Part">A pass that speaks for part of the suite only (<see cref="Tools.RunTestsTool.RanPartOfTheSuite"/>).</param>
+    internal readonly record struct CheckVerdict(CheckKind Kind, bool? Failed, bool Part = false);
 
     /// <summary>
     /// The last check of a turn — a build (<c>get_diagnostics</c>), the tests (<c>run_tests</c>), the build an edit's
@@ -189,11 +192,32 @@ internal static class ChatTurnPolicy
         return lastUnproven;
     }
 
+    private static CheckVerdict RunTestsVerdict(ToolExecution run)
+    {
+        bool? failed = Commands.TddCommandHandler.TestsFailed(run.Output) ? true
+                     : Commands.TddCommandHandler.TestsPassed(run.Output) ? false
+                     : null;
+        return new(CheckKind.Tests, failed,
+                   failed == false && Tools.RunTestsTool.RanPartOfTheSuite(run.Output, FilterOf(run.Input)));
+    }
+
+    private static string? FilterOf(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return null;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(input);
+            return doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object ? Tools.ToolArgs.Trimmed(doc.RootElement, "filter") : null;
+        }
+        catch (System.Text.Json.JsonException) { return null; }
+    }
+
     /// <summary>What one execution says as a check — <c>null</c> when it is not one.</summary>
     private static CheckVerdict? CheckOf(ToolExecution last)
     {
         if (!(last.Name is "run_tests" or "get_diagnostics"
-              || (IsFileEdit(last.Name) && CodeActions.SmartFixValidator.ReadVerdict(last.Output) is not null)
+              || (IsFileEdit(last.Name) && (CodeActions.SmartFixValidator.ReadVerdict(last.Output) is not null
+                                            || CodeActions.SmartFixValidator.CouldNotVerify(last.Output)))
               || (last.Name == "run_command" && CheckCommand.Failed(last.Input, last.Output) is not null)))
             return null;
         return last switch
@@ -204,10 +228,7 @@ internal static class ChatTurnPolicy
                 Tools.GetDiagnosticsTool.BuildVerdict.Clean  => false,
                 _                                            => null,
             }),
-            { Name: "run_tests" } => new CheckVerdict(CheckKind.Tests,
-                Commands.TddCommandHandler.TestsFailed(last.Output) ? true
-                : Commands.TddCommandHandler.TestsPassed(last.Output) ? false
-                : null),
+            { Name: "run_tests" } => RunTestsVerdict(last),
             { Name: "run_command" } => new CheckVerdict(
                 CheckCommand.RunsTests(CheckCommand.CommandOf(last.Input)) ? CheckKind.Tests : CheckKind.Build,
                 CheckCommand.Failed(last.Input, last.Output)),

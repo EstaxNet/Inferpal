@@ -69,9 +69,9 @@ public class WelcomeScreenTests
         // The build banner's Fix them shares the handler (case 'fixBuild'): the body ends at the case after both.
         var body     = provider.IndexOf("case 'fixBuild': {", at, StringComparison.Ordinal);
         var handler  = provider[at..provider.IndexOf("case '", (body >= 0 ? body : at) + 10, StringComparison.Ordinal)];
-        var attach   = handler.IndexOf("this.resolveMention('problems')", StringComparison.Ordinal);
-        Assert.True(attach >= 0 && attach < handler.IndexOf("this.send(", StringComparison.Ordinal),
-            "the errors are not attached before the request is sent");
+        // The question a quick fix sends, with the code around each error: the panel's lines alone give nothing to edit against.
+        Assert.Contains("await this.fixProblems(problems);", handler, StringComparison.Ordinal);
+        Assert.DoesNotContain("this.resolveMention('problems')", handler, StringComparison.Ordinal);
     }
 
     // The banner announces "N error(s)" and its button attaches the report: both read the panel through one reader, or
@@ -86,7 +86,7 @@ public class WelcomeScreenTests
         Assert.Contains("panelDiagnostics()", WebviewRebuildTests.Body(bridge, "async editorDiagnostics("), StringComparison.Ordinal);
 
         // The count goes through the errors' reader, which reads the panel's — the build banner counts with it too.
-        Assert.Contains("panelDiagnostics()", WebviewRebuildTests.Body(bridge, "export function panelErrors(): { rel: string; d: vscode.Diagnostic }[]"), StringComparison.Ordinal);
+        Assert.Contains("panelDiagnostics()", WebviewRebuildTests.Body(bridge, "export function panelErrors(): { uri: vscode.Uri; rel: string; d: vscode.Diagnostic }[]"), StringComparison.Ordinal);
         var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
         Assert.Contains("panelErrors()", WebviewRebuildTests.Body(provider, "private editorContext(): { editorFile: string | null; problems: number }"), StringComparison.Ordinal);
 

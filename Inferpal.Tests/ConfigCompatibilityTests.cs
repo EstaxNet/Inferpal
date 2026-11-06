@@ -23,7 +23,7 @@ namespace Inferpal.Tests;
 public sealed class ConfigCompatibilityTests : IDisposable
 {
     /// <summary>The last published version, whose files the fixtures are.</summary>
-    private const string Release = "1.8.8";
+    private const string Release = "1.8.10";
 
     /// <summary>
     /// The keys added since <see cref="Release"/>, each with the value a configuration written before it gets — the

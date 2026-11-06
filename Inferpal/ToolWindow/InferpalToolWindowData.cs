@@ -157,6 +157,7 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     // The workspace root the block above described: another root is another solution, whose block has not been sent.
     private string?          _workspaceContextRoot;
     private DateTime?        _sessionStartTime;
+    private bool             _threadReloaded;
     private bool             _agentStepMode;
     /// <summary>Bindable mirror of <see cref="_agentStepMode"/> for the toolbar toggle button's active state.</summary>
     [DataMember] public bool IsStepMode { get => _agentStepMode; set => SetProperty(ref _agentStepMode, value); }

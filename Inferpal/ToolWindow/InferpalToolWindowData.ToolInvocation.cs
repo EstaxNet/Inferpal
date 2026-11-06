@@ -233,7 +233,8 @@ internal partial class InferpalToolWindowData
         // The workspace block rode with the question taken back: the question asked again carries it again.
         if (!Services.Prompting.WorkspaceContext.IsIn(_history)) _workspaceContextInjected = false;
 
-        await SendCoreAsync(userText, oneTimeModel, attachments, ct: CancellationToken.None, clearPrompt: false, notes: notes);
+        await SendCoreAsync(userText, oneTimeModel, attachments, ct: CancellationToken.None, clearPrompt: false, notes: notes,
+                            typed: false);
     }
 
     private Task ShowInfoAsync(string markdown) =>
@@ -285,9 +286,10 @@ internal partial class InferpalToolWindowData
             var duration = _sessionStartTime.HasValue
                 ? (DateTime.Now - _sessionStartTime.Value) : (TimeSpan?)null;
 
+            // A thread reloaded since it began: its model, tokens and duration were never kept, and from here they would read as its own.
             var document = Services.Persistence.ConversationExporter.Build(
-                snapshot, isTxt, modelName, sessionTokens, date,
-                Services.Persistence.ConversationExporter.FormatDuration(duration));
+                snapshot, isTxt, _threadReloaded ? null : modelName, _threadReloaded ? null : sessionTokens, date,
+                _threadReloaded ? null : Services.Persistence.ConversationExporter.FormatDuration(duration));
 
             await File.WriteAllTextAsync(filePath, document, System.Text.Encoding.UTF8, ct);
             await ShowInfoAsync(Strings.ExportSuccess(Path.GetFileName(filePath)));

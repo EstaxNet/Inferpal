@@ -39,6 +39,26 @@ public class SmartFixInterpretTests
     }
 
     [Fact]
+    public void ACommandLineDotnetRefused_IsNoCompilationError_AndNoVerdict()
+    {
+        const string output = "MSBUILD : error MSB1003: Specify a project or solution file. The current working directory does "
+                            + "not contain a project or solution file.";
+
+        var note = SmartFixValidator.Interpret(1, output, dotnetFilter: true);
+
+        Assert.Equal(Strings.SmartFixCouldNotRun(SmartFixValidator.CommandLineRefusedCause), note);
+        Assert.Null(SmartFixValidator.ReadVerdict(note!));
+    }
+
+    /// <summary>A bare <c>dotnet restore</c> at the root of two projects answers MSB1003: the remedy names what to restore.</summary>
+    [Fact]
+    public void TheRestoreRemedy_NamesATarget()
+    {
+        Assert.Contains("dotnet restore <project or solution>", Inferpal.Services.Tools.GetDiagnosticsTool.NotRestored);
+        Assert.Contains("dotnet restore <project or solution>", SmartFixValidator.NotRestoredCause);
+    }
+
+    [Fact]
     public void ABatchWhereOneProjectWentUnchecked_IsNotGreen_AndRedStillWins()
     {
         var unchecked_ = Strings.SmartFixCouldNotRun(SmartFixValidator.NotRestoredCause);

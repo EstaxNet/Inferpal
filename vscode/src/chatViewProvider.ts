@@ -12,6 +12,7 @@ import { followModelRouterSettings } from './modelRouterSettings';
 import { offerHostRestart, SettingsPanel } from './settingsPanel';
 import { SetupFlow } from './setupFlow';
 import { buildBannerOf, isBuildTask, openTabPaths, panelErrors } from './editorBridge';
+import { problemEntry } from './problemsFix';
 import { capAttachment, CappedText } from './attachmentCap';
 import { TerminalHistory } from './terminalHistory';
 import { failureText, testFilter } from './testGestures';
@@ -151,6 +152,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    *  so nobody noticed. Reset to zero with the rest of the thread. */
   private sessionTokens = 0;
   private sessionStart: number | null = null;
+  private settingsUnreadableSaid = false;
+  /** Reloaded since it began: its tokens and duration were never kept, and the export does not state them. */
+  private threadReloaded = false;
   private statusTimer: NodeJS.Timeout | undefined;
   /** Context chips (slash attachChip effects, @-mentions, "+" menu), consumed by the next turn. */
   private pendingAttachments: PendingAttachment[] = [];
@@ -433,6 +437,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.lastTokens = 0;
     this.sessionTokens = 0;
     this.sessionStart = null;
+    this.threadReloaded = false;
     this.hydrate();
   }
 
@@ -832,6 +837,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * passes it here, or the chat never adopts it.
    */
   async applyFollowed(followed: ConfigReloadResult): Promise<void> {
+    // Said once while it lasts: the person who just edited the file would see their change do nothing, without a word.
+    if (followed.notice && !this.settingsUnreadableSaid) {
+      this.sayOutOfTurn(followed.notice);
+    }
+    this.settingsUnreadableSaid = followed.unreadable === true;
     if (followed.taken.length > 0) {
       await this.configSaved(true);
       SettingsPanel.onSavedElsewhere();
@@ -1172,6 +1182,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.lastTokens = 0;
     this.sessionTokens = 0;
     this.sessionStart = null;
+    this.threadReloaded = messages.length > 0;
     this.hydrate();
     // The conversation comes back in the mode it was held in (or none): the selector follows the host.
     void this.refreshModes();
@@ -1554,7 +1565,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           // counted as a turn of their own.
           notice: item.notice === true || item.note !== undefined,
         })),
-        sessionTokens: this.sessionTokens,
+        sessionTokens: this.threadReloaded ? null : this.sessionTokens,
         durationSeconds: this.sessionStart === null
           ? undefined : Math.round((Date.now() - this.sessionStart) / 1000),
       });
@@ -1695,22 +1706,27 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       case 'fixProblems':
       case 'fixBuild': {
-        // ⚠ The errors travel as the chip the @problems picker makes: typed in the prompt, "@problems" names no file,
-        // nothing expands it, and the request reached the model as text without a single error. No problems left (fixed
-        // since the banner was drawn): the panel says so and nothing is sent. During a turn, refused before the chip is
-        // made — it would ride the next question —, and the build banner stays to try again.
+        // ⚠ The Core's question and the code around each error, as a quick fix sends them: the panel's lines alone give
+        // the model nothing to edit against. No problems left (fixed since the banner was drawn): said, and nothing is
+        // sent. During a turn, refused before the chip is made — it would ride the next question —, and the build banner
+        // stays to try again.
         if (this.busy) {
           void vscode.window.showWarningMessage(t('A turn is still running — wait for it to finish or stop it, then try again.'));
           return;
         }
-        const before = this.pendingAttachments.length;
-        await this.resolveMention('problems');
-        if (this.pendingAttachments.length > before) {
-          if (msg.type === 'fixBuild') {
-            this.failedBuild = null;
-            this.post({ type: 'buildBanner', banner: null });
-          }
-          await this.send(msg.text);
+        const problems = panelErrors().map((e) => problemEntry(e.uri, e.d));
+        if (problems.length === 0) {
+          void vscode.window.showInformationMessage(t('No errors in the Problems panel.'));
+          return;
+        }
+        const before = this.turnsEnded;
+        const build = this.buildSeq;
+        await this.fixProblems(problems);
+        // Gone once the question was answered: refused (the backend down) or failed, the errors are there to try again,
+        // and a build that fell during the turn has a banner of its own.
+        if (msg.type === 'fixBuild' && this.turnsEnded !== before && this.turnOutcome !== 'failed' && this.buildSeq === build) {
+          this.failedBuild = null;
+          this.post({ type: 'buildBanner', banner: null });
         }
         return;
       }
@@ -3092,6 +3108,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           this.lastTokens = 0;
           this.sessionTokens = 0;
           this.sessionStart = null;
+          this.threadReloaded = false;
           rehydrate = true;
           break;
         case 'stateChange':
@@ -3834,7 +3851,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     if (!proposal.message) {
       // The refusal, and what the host noted on the way (a diff cut, files left out): both said.
-      void vscode.window.showWarningMessage([proposal.refusal, proposal.notice].filter(Boolean).join('\n\n'));
+      // A notification draws no Markdown: the Core's refusal names the model in bold for the chat.
+      void vscode.window.showWarningMessage([proposal.refusal, proposal.notice].filter(Boolean).join('\n\n').replace(/\*\*/g, ''));
       return;
     }
     const typed = repo.inputBox.value.trim();

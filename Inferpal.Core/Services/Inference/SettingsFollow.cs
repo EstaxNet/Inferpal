@@ -28,7 +28,8 @@ internal static class SettingsFollow
     /// <param name="ServerChanged">The file names a new kind of model server: it applies at the next start.</param>
     /// <param name="Unreadable">The file could not be read: nothing was taken.</param>
     /// <param name="SwitchTo">The kind of server the file names, when it is not the one the client speaks.</param>
-    internal sealed record Result(IReadOnlyList<string> Taken, bool ServerChanged, bool Unreadable, string? SwitchTo = null);
+    /// <param name="Busy">A turn was running: nothing was read, so this says nothing about the file.</param>
+    internal sealed record Result(IReadOnlyList<string> Taken, bool ServerChanged, bool Unreadable, string? SwitchTo = null, bool Busy = false);
 
     /// <summary>The JSON keys that belong to the model server: left aside together with a new kind of server.</summary>
     private static readonly string[] ServerBound =
@@ -46,7 +47,7 @@ internal static class SettingsFollow
     /// takes them. A question's own follow, before its turn, passes none.</param>
     public static Result TakeAndApply(InferpalConfig config, IInferenceProvider client, Func<bool>? busy = null)
     {
-        if (busy?.Invoke() == true) return new([], false, false);
+        if (busy?.Invoke() == true) return new([], false, false, Busy: true);
         var result = Take(config, client);
         if (result.Taken.Count > 0 || result.ServerChanged)
             config.NotifyFollowed(result.Taken, result.ServerChanged ? result.SwitchTo : null);

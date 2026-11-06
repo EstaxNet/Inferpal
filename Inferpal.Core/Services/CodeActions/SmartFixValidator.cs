@@ -243,8 +243,18 @@ internal sealed class SmartFixValidator
     /// a turn that ended on "🔨 Smart Fix: 4 compilation error(s)" after an edit said nothing. Read from the producer's
     /// own sentences, in the language they were written in — never from a copy.
     /// </remarks>
-    internal static bool? ReadVerdict(string toolOutput)
+    internal static bool? ReadVerdict(string toolOutput) => ReadVerdict(toolOutput, out _);
+
+    /// <summary>Whether an edit's note says the build check ran and proved nothing: killed, or stopped before the compiler.</summary>
+    internal static bool CouldNotVerify(string toolOutput)
     {
+        ReadVerdict(toolOutput, out var unproven);
+        return unproven;
+    }
+
+    private static bool? ReadVerdict(string toolOutput, out bool unproven)
+    {
+        unproven = false;
         if (string.IsNullOrEmpty(toolOutput)) return null;
         const int CountSentinel = 918273645;
         var errorsLine = "^" + Regex.Escape(Strings.SmartFixBuildErrors(CountSentinel, string.Empty).Split('\n')[0].TrimEnd('\r'))
@@ -255,7 +265,6 @@ internal sealed class SmartFixValidator
         var timeoutLine = Strings.SmartFixTimeout.Trim();
         var unprovenLine = Strings.SmartFixCouldNotRun("\u0001").Split('\u0001')[0].Trim();
         bool? verdict = null;
-        var unproven = false;
         foreach (var raw in toolOutput.Split('\n'))
         {
             var line = raw.TrimEnd('\r').Trim();
@@ -273,7 +282,10 @@ internal sealed class SmartFixValidator
     }
 
     /// <summary>The cause <see cref="Interpret"/> gives for a build stopped on a project its restore does not match.</summary>
-    internal const string NotRestoredCause = "a project is not restored: `dotnet restore` first";
+    internal const string NotRestoredCause = "a project is not restored: `dotnet restore <project or solution>` first";
+
+    /// <summary>The cause <see cref="Interpret"/> gives for a build dotnet refused before reading any code (MSB1xxx).</summary>
+    internal const string CommandLineRefusedCause = "dotnet refused its command line";
 
     /// <summary>The note for a validator run that ended with <paramref name="exitCode"/>; null stays silent.</summary>
     /// <remarks>
@@ -298,6 +310,8 @@ internal sealed class SmartFixValidator
             // Stopped before the compiler: counted, "1 compilation error(s)" ends a turn red over code nothing compiled.
             if (errors.Count > 0 && errors.All(GetDiagnosticsTool.IsNotRestored))
                 return Strings.SmartFixCouldNotRun(NotRestoredCause);
+            if (errors.Count > 0 && errors.All(RunTestsTool.IsCommandLineError))
+                return Strings.SmartFixCouldNotRun(CommandLineRefusedCause);
             return Strings.SmartFixBuildErrors(errors.Count, Listed(errors));
         }
 

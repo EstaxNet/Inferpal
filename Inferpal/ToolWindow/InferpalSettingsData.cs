@@ -527,10 +527,15 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         catch (Exception ex) { Diagnostics.Swallow("Settings.ThemeSubscription", ex); }
     }
 
+    /// <summary>The palette of Windows' high contrast while it is on, else <c>null</c>: the window's own colours then
+    /// give way, as the chat's do.</summary>
+    private static Services.Presentation.ThemePalette? HighContrastPalette() =>
+        VsThemeDetector.HighContrastOn() ? Services.Presentation.ThemePalette.For(isDark: true, highContrast: true) : null;
+
     private void ApplyTheme(bool isDark)
     {
         IsDarkTheme    = isDark;
-        TextForeground = isDark ? "#F1F1F1" : "#1E1E1E";
+        TextForeground = HighContrastPalette()?.Text ?? (isDark ? "#F1F1F1" : "#1E1E1E");
         ApplyRowTheme();
         RefreshThemeCards();
     }
@@ -1564,14 +1569,15 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private void ApplyRowTheme()
     {
         var dark = IsDarkTheme;
-        McpSubtleForeground = dark ? "#9D9D9D" : "#6E6E6E";
-        McpRowBackground    = dark ? "#252526" : "#F5F5F5";
-        McpRowBorder        = dark ? "#3F3F46" : "#CCCCCC";
-        McpEditGlyph        = dark ? "#CCCCCC" : "#444444";
-        ThemeHoverBg        = dark ? "#3F3F46" : "#D6D6E0";   // ghost-button hover, theme-aware (cf. main window)
-        EditPanelBg         = dark ? "#2D2D30" : "#ECECEC";   // inline add/edit form surface
-        LinkForeground      = dark ? "#B39DFF" : "#5B3FD1";   // the "Edit rules" link, readable on both surfaces
-        WarningForeground   = dark ? "#D9A21B" : "#8A6100";   // notes on what does not apply: amber, dark enough on white
+        var hc   = HighContrastPalette();
+        McpSubtleForeground = hc?.SubtleText ?? (dark ? "#9D9D9D" : "#6E6E6E");
+        McpRowBackground    = hc?.Surface    ?? (dark ? "#252526" : "#F5F5F5");
+        McpRowBorder        = hc?.Border     ?? (dark ? "#3F3F46" : "#CCCCCC");
+        McpEditGlyph        = hc?.Text       ?? (dark ? "#CCCCCC" : "#444444");
+        ThemeHoverBg        = hc?.HoverBg    ?? (dark ? "#3F3F46" : "#D6D6E0");   // ghost-button hover, theme-aware (cf. main window)
+        EditPanelBg         = hc?.PanelBg    ?? (dark ? "#2D2D30" : "#ECECEC");   // inline add/edit form surface
+        LinkForeground      = hc?.AccentText ?? (dark ? "#B39DFF" : "#5B3FD1");   // the "Edit rules" link, readable on both surfaces
+        WarningForeground   = hc?.Warn       ?? (dark ? "#D9A21B" : "#8A6100");   // notes on what does not apply: amber, dark enough on white
         UpdatePageState();   // the navigation follows the theme
     }
 

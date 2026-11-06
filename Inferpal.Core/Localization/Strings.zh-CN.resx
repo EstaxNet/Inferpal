@@ -1421,6 +1421,9 @@
   <data name="RunBuildPassed" xml:space="preserve"><value>构建成功</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>构建失败</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>测试通过</value></data>
+  <data name="RunTestsPassedPart" xml:space="preserve"><value>测试通过（仅部分测试）</value></data>
+  <data name="RunNotVerified" xml:space="preserve"><value>未验证</value></data>
+  <data name="GitNeedsAWorkspace" xml:space="preserve"><value>未打开任何解决方案或文件夹，因此没有可读取的存储库。请打开一个，然后重试。</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>测试失败</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} 秒</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} 分 {1} 秒</value></data>

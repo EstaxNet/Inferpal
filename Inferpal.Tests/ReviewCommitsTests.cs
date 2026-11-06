@@ -90,14 +90,14 @@ public class ReviewCommitsTests
     {
         var command = Code("Inferpal", "Commands", "ReviewCommitCommand.cs");
         Assert.Contains("await Services.Commands.ReviewCommits.ReadAsync(GitProcess.For(projectRoot), ct)", command, StringComparison.Ordinal);
-        Assert.Contains("ChooseAsync(Extensibility, _contextHolder.ProjectRoot(), ct)", command, StringComparison.Ordinal);
+        Assert.Contains("ChooseAsync(Extensibility, _contextHolder.GitRoot(), ct)", command, StringComparison.Ordinal);
         Assert.Contains("private string FindProjectRoot(IReadOnlyList<string>? openPaths = null) => _contextHolder.ProjectRoot(openPaths);",
                         Code("Inferpal", "ToolWindow", "InferpalToolWindowData.Rag.cs"), StringComparison.Ordinal);
         Assert.Contains("_contextHolder.SetPendingPrompt($\"/check {chosen}\");", command, StringComparison.Ordinal);
 
         // Its menu is the chat window's ⋯, which runs the same dialog and /check on the same root.
         var chrome = Code("Inferpal", "ToolWindow", "InferpalToolWindowData.Chrome.cs");
-        Assert.Contains("Commands.ReviewCommitCommand.ChooseAsync(_vs, _contextHolder.ProjectRoot(), ct) is { } chosen", chrome, StringComparison.Ordinal);
+        Assert.Contains("Commands.ReviewCommitCommand.ChooseAsync(_vs, _contextHolder.GitRoot(), ct) is { } chosen", chrome, StringComparison.Ordinal);
         Assert.Contains("_contextHolder.SetPendingPrompt($\"/check {chosen}\");", chrome, StringComparison.Ordinal);
         Assert.Contains("Command=\"{Binding MenuReviewCommitCommand}\"",
                         File.ReadAllText(Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowContent.xaml")),

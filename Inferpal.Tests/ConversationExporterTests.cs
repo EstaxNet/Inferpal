@@ -18,7 +18,7 @@ public class ConversationExporterTests
     [
         new("user",      "You",       "hello",       "10:00"),
         new("tool",      "read_file", "file content", ""),
-        new("assistant", "Ollama",    "hi there",    "10:01"),
+        new("assistant", "qwen3:8b",  "hi there",    "10:01"),
         new("user",      "You",       "thanks",      "10:02"),
     ];
 

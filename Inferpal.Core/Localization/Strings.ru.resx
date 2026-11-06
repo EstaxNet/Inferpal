@@ -1421,6 +1421,9 @@
   <data name="RunBuildPassed" xml:space="preserve"><value>сборка прошла</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>сборка не прошла</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>тесты пройдены</value></data>
+  <data name="RunTestsPassedPart" xml:space="preserve"><value>тесты пройдены, только часть набора</value></data>
+  <data name="RunNotVerified" xml:space="preserve"><value>не проверено</value></data>
+  <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Не открыты ни решение, ни папка, поэтому читать нечего: репозитория нет. Откройте что-нибудь и повторите.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>тесты не пройдены</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} с</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} мин {1} с</value></data>

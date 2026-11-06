@@ -597,6 +597,9 @@ internal sealed class AcpSession : IAsyncDisposable
 
     private bool _settingsUnreadableSaid;
 
+    /// <summary>Loaded from a saved session: its tokens were never kept, and the export does not state them.</summary>
+    private bool _reloaded;
+
     /// <summary>
     /// The agreements asked before the client knew this thread (<see cref="ApprovalRequest"/>), asked again now, inside
     /// the turn: the MCP servers start again (<c>mcp/retry</c>), and a repository's server asks for its agreement.
@@ -1020,7 +1023,7 @@ internal sealed class AcpSession : IAsyncDisposable
         try
         {
             document = await _link.InvokeWithParameterObjectAsync<string>(
-                "chat/export", new ChatExportParams(AsPlainText: false, messages, Volatile.Read(ref _sessionTokens), Model: CurrentModel),
+                "chat/export", new ChatExportParams(AsPlainText: false, messages, _reloaded ? null : Volatile.Read(ref _sessionTokens), Model: CurrentModel),
                 CancellationToken.None);
         }
         catch (Exception ex) when (ex is RemoteInvocationException or ConnectionLostException or ObjectDisposedException)
@@ -1075,6 +1078,7 @@ internal sealed class AcpSession : IAsyncDisposable
     {
         var loaded = await _link.InvokeWithParameterObjectAsync<SessionLoadResult?>("session/load", new { name = Id }, ct);
         if (loaded is null) return false;
+        _reloaded = loaded.Messages.Count > 0;
         // What the host said while loading (a held mode whose file is gone) reaches the client before the load answers.
         await DrainLinkAsync();
         // The mode the thread was held in, held again — and the client's selectors follow it. Gone, the host said so.
@@ -1128,7 +1132,8 @@ internal sealed class AcpSession : IAsyncDisposable
                     Update(new
                     {
                         sessionUpdate = "tool_call", toolCallId = id, title, kind = AcpToolCalls.Kind(AcpToolCalls.ToolOf(title)),
-                        status = "completed", content = new[] { TextContent(AcpToolCalls.Block(m.Content, 4_000)) },
+                        status = Services.Execution.ToolFailure.IsFailure(m.Content) ? "failed" : "completed",
+                        content = new[] { TextContent(AcpToolCalls.Block(m.Content, 4_000)) },
                     });
                     break;
                 default:
@@ -1352,6 +1357,7 @@ internal sealed class AcpSession : IAsyncDisposable
         var state = _calls.TryGetValue(note.CallId, out var known) ? known : null;
         if (state is not null) lock (_gate) _ended.Add((state.Name, state.Key));
         var output = note.Output ?? string.Empty;
+        var failed = note.Failed || state is { Rejected: true };
         var content = new List<object>();
         if (state is not null) content.AddRange(state.Diffs);
         if (output.Length > 0) content.Add(TextContent(AcpToolCalls.Block(output)));
@@ -1359,11 +1365,15 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             sessionUpdate = "tool_call_update",
             toolCallId    = note.CallId,
-            status        = note.Failed || state is { Rejected: true } ? "failed" : "completed",
+            status        = failed ? "failed" : "completed",
             content,
         });
+        // Marked, or the replay draws green a call refused in words (an edit that wrote nothing, a card answered no).
         if (state is not null)
-            lock (_gate) _transcript.Add(new SavedMessageDto("tool", AcpToolCalls.Shown(output, 2_000), state.Title, Now()));
+        {
+            var kept = AcpToolCalls.Shown(output, 2_000);
+            lock (_gate) _transcript.Add(new SavedMessageDto("tool", failed ? Services.Execution.ToolFailure.Said(kept) : kept, state.Title, Now()));
+        }
     }
 
     /// <summary>

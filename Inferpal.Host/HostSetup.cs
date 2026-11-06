@@ -164,7 +164,6 @@ internal sealed partial class HostServer
         var chat = p.ChatModel.Trim();
         // Decided before the server changes: "the same server" is the one the settings hold now.
         var kept = KeptRoleModels(s, server, p.CompletionModel, p.SearchModel);
-        var (completion, search, _) = kept;
         // The window the card showed (only Ollama is asked: another server would be listed for nothing).
         WindowAdvice? window = null;
         if (ContextWindowChoice.Applies(server.Provider))
@@ -178,6 +177,10 @@ internal sealed partial class HostServer
         await WithTurnSlotAsync("setup/apply", ct, async _ =>
         {
             var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
+            // ⚠ Judged on the file, here where the copy may change: a model another editor saved since this copy was read
+            // is the old server's too. Left to the copy, its empty value over an empty value is no change to save.
+            ServerChange.Before(s.Config);
+            var (completion, search, _) = KeptRoleModels(s, server, p.CompletionModel, p.SearchModel);
             // ⚠ The budget is the card of the server it was measured or given for: another server takes its own, or none
             // — a figure from another machine would size the models and the context of this one.
             if (source != SetupBudgetSource.Configured)

@@ -482,6 +482,29 @@ public sealed class AcpAgentTests : IDisposable
         Assert.True(unknown.TryGetProperty("error", out _), unknown.ToString());
     }
 
+    /// <summary>A task of a thread is not VS Code's: in VS Code's journal, its next start says it as its own.</summary>
+    [Fact]
+    public async Task ATaskOfAThread_IsKeptInTheThreadsJournal_NotInVsCodes()
+    {
+        var goal = "journal-" + Guid.NewGuid().ToString("N");
+        await using var h = await StartAsync(fake: f => f.OnAgentRun = (history, _, _, _) =>
+            Task.FromResult(new AgentResult("Done.", [], history)));
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "/task " + goal)));
+
+        var tasks = Path.Combine(Services.Persistence.ConversationStore.OverrideDirForTests!, "tasks");
+        bool Holds(string file)
+        {
+            try { return File.Exists(file) && File.ReadAllText(file).Contains(goal, StringComparison.Ordinal); }
+            catch (IOException) { return false; }   // being written: read again
+        }
+        for (var i = 0; i < 300 && !Holds(Path.Combine(tasks, "acp.json")); i++) await Task.Delay(100);
+        Assert.True(Holds(Path.Combine(tasks, "acp.json")), "the task is not in the thread's journal");
+        Assert.False(Holds(Path.Combine(tasks, "vscode.json")));
+    }
+
     /// <summary>
     /// ⚠ A <c>/task</c>'s report — the host's notice, after the turn — is kept with the thread, as both editors keep it.
     /// Shown only, it was gone from the thread once reloaded, or reopened after an eviction: its result with it.
@@ -1763,6 +1786,70 @@ public sealed class AcpAgentTests : IDisposable
         var chunks = h.Client.Updates(sid, "agent_message_chunk")
             .Select(u => u.GetProperty("content").GetProperty("text").GetString()).ToList();
         Assert.Equal(["Done.", "\n\nNo file was changed."], chunks);
+    }
+
+    /// <summary>A thread loaded from its file keeps no count of tokens: the export does not state the ones of this opening.</summary>
+    [Fact]
+    public async Task Export_OfALoadedThread_StatesNoTokens()
+    {
+        var sid = "acp-export-" + Guid.NewGuid().ToString("N");
+        await new Services.Persistence.ConversationStore().SaveAsync(sid,
+            [new("user", "the question"), new("assistant", "The answer.")], CancellationToken.None, workspaceRoot: _root);
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", Init());
+        await h.Client.RequestAsync("session/load", new { sessionId = sid, cwd = _root, mcpServers = Array.Empty<object>() });
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "/export")));
+
+        var said = h.Client.Said(sid);
+        Assert.Contains("The answer.", said, StringComparison.Ordinal);   // witness: the export came
+        Assert.DoesNotContain(Strings.ExportTokens, said, StringComparison.Ordinal);
+    }
+
+    /// <summary>A refusal in words is a failure too: it carries no mark of its own, and what is saved has to.</summary>
+    [Fact]
+    public async Task AnEditThatWroteNothing_ComesBackFailed_FromTheSavedSession()
+    {
+        var file = Path.Combine(_root, "unread.txt");
+        File.WriteAllText(file, "kept as it is\n");
+        string sid;
+        await using (var first = await StartAsync(fake: f => f.OnChatRequest = async (_, _, tools, _) =>
+        {
+            await tools.ExecuteAsync("write_file", JsonSerializer.SerializeToElement(new { path = file, content = "replaced\n" }), CancellationToken.None);
+            return new ChatTurnResult("Tried.", null, 0, 0);
+        }))
+        {
+            await first.Client.RequestAsync("initialize", Init());
+            sid = await NewSessionAsync(first);
+            await PromptAsync(first, sid, "replace it");
+        }
+
+        await using var second = await StartAsync();
+        await second.Client.RequestAsync("initialize", Init());
+        await second.Client.RequestAsync("session/load", new { sessionId = sid, cwd = _root, mcpServers = Array.Empty<object>() });
+
+        Assert.Equal("failed", second.Client.Updates(sid, "tool_call").Single().GetProperty("status").GetString());
+    }
+
+    /// <summary>A call that failed comes back failed: replayed green, a write that never happens reads as done.</summary>
+    [Fact]
+    public async Task AReplayedSession_DrawsAFailedCallFailed()
+    {
+        var sid = "acp-replay-failed-" + Guid.NewGuid().ToString("N");
+        await new Services.Persistence.ConversationStore().SaveAsync(sid,
+        [
+            new("user", "edit alpha.txt"),
+            new("tool", "Error: the file is not there", "write_file · alpha.txt"),
+            new("tool", "content", "read_file · alpha.txt"),
+            new("assistant", "Done."),
+        ], CancellationToken.None, workspaceRoot: _root);
+
+        await using var h = await StartAsync();
+        await h.Client.RequestAsync("initialize", Init());
+        await h.Client.RequestAsync("session/load", new { sessionId = sid, cwd = _root, mcpServers = Array.Empty<object>() });
+
+        var calls = h.Client.Updates(sid, "tool_call").ToList();
+        Assert.Equal(["failed", "completed"], calls.Select(c => c.GetProperty("status").GetString()));
     }
 
     /// <summary>

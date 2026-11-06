@@ -201,6 +201,35 @@ public sealed class OneTargetOneJudgeTests : IDisposable
         Assert.Contains("outside the workspace", result, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>An open document written through its buffer is saved to the same file: the same refusal as a write to disk.</summary>
+    [Fact]
+    public async Task AnOpenDocument_ThatIsAlsoOutsideTheWorkspace_IsRefused_LikeAWriteToDisk()
+    {
+        var outside = Path.Combine(_base, "outside.txt");
+        if (HardLink("inside.txt", outside) is not { } link) return;
+        var path = Path.Combine(W, link);
+        var (tools, approval) = Registry(editor: new OpenDocument(path, File.ReadAllText(path)));
+
+        var result = await tools.ExecuteAsync("insert_at_cursor", Args(new { text = "escaped" }), default);
+
+        Assert.Equal("outside v0\n", File.ReadAllText(outside));
+        Assert.Contains("outside the workspace", result, StringComparison.OrdinalIgnoreCase);
+        Assert.True(ToolFailure.IsFailure(result), result);
+        Assert.Equal(0, approval.Cards);   // before the card: answered, the write would be refused all the same
+    }
+
+    private sealed class OpenDocument(string path, string text) : IEditorSurface
+    {
+        public bool IsAvailable => true;
+        public string? ActiveDocumentPath => path;
+        public IReadOnlyList<string> GetOpenDocumentPaths() => [path];
+        public Task<ActiveDocument?> GetActiveDocumentAsync(CancellationToken ct) => Task.FromResult<ActiveDocument?>(new ActiveDocument(path, text));
+        public Task<string?> InsertAtCursorAsync(string written, string at, CancellationToken ct) => Task.FromResult<string?>(path);
+        public Task<EditorEditResult?> ReplaceSelectionAsync(string written, string at, string? selection, CancellationToken ct) =>
+            Task.FromResult<EditorEditResult?>(new EditorEditResult(path, ReplacedSelection: true));
+        public Task<string?> GetEditorDiagnosticsAsync(CancellationToken ct) => Task.FromResult<string?>(null);
+    }
+
     /// <summary>A file that is also, by a hard link, outside the workspace is READ as the project has it — a dependency
     /// manager links its packages to a shared store (pnpm's node_modules, uv's environments) —; only a write is refused.</summary>
     [Fact]

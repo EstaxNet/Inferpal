@@ -118,6 +118,7 @@ public sealed class FollowSavedSettingsTests : IDisposable
             File.WriteAllText(_path, good.TrimEnd()[..^1] + ",}");   // one comma too many
             var broken = await host.Link.InvokeWithCancellationAsync<Host.ConfigReloadResult>("config/reload");
             Assert.True(broken.Unreadable);
+            Assert.Equal(Localization.Strings.AcpSettingsUnreadable, broken.Notice);
             Assert.Empty(broken.Taken);
             Assert.False(broken.ServerChanged);
             Assert.Equal("http://my-server:1234", config.BaseUrl);
@@ -128,6 +129,7 @@ public sealed class FollowSavedSettingsTests : IDisposable
             File.WriteAllText(_path, good.Replace("\"model-a\"", "\"model-b\"", StringComparison.Ordinal));
             var fixedFile = await host.Link.InvokeWithCancellationAsync<Host.ConfigReloadResult>("config/reload");
             Assert.False(fixedFile.Unreadable);
+            Assert.Null(fixedFile.Notice);
             Assert.Equal(["defaultModel"], fixedFile.Taken);
             Assert.Equal("model-b", config.DefaultModel);
         }

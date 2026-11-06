@@ -399,6 +399,7 @@ internal partial class InferpalToolWindowData
     /// </remarks>
     private async Task HandleCommitCommandAsync(CancellationToken ct)
     {
+        if (await GitRootOrSayAsync() is not { } root) return;
         ChatMessageItem?         streamItem = null;
         CancellationTokenSource? localCts   = null;
         await RunOnVMContextAsync(() =>
@@ -428,7 +429,7 @@ internal partial class InferpalToolWindowData
                    })))
             {
                 proposal = await Services.Commands.CommitCommandHandler.ProposeAsync(
-                    _client, _config, Services.GitProcess.For(FindProjectRoot()),
+                    _client, _config, Services.GitProcess.For(root),
                     onToken: token => sink.Append(token), tok);
             }
             gotProposal = true;
@@ -488,7 +489,7 @@ internal partial class InferpalToolWindowData
     /// </remarks>
     private async Task HandleCheckCommandAsync(string[] parts, CancellationToken ct)
     {
-        var root = FindProjectRoot();
+        if (await GitRootOrSayAsync() is not { } root) return;
 
         var result = await Services.Commands.CheckCommandHandler.HandleAsync(
             _client, _config, root, parts,
@@ -504,11 +505,21 @@ internal partial class InferpalToolWindowData
             await ShowInfoAsync(msg);
     }
 
+    /// <summary>
+    /// The folder a command reads git in, or <c>null</c> once it has said none is open (<see cref="VsContextHolder.GitRoot"/>).
+    /// </summary>
+    private async Task<string?> GitRootOrSayAsync()
+    {
+        if (_contextHolder.GitRoot() is { } root) return root;
+        await ShowInfoAsync(Strings.GitNeedsAWorkspace);
+        return null;
+    }
+
     /// <summary><c>/pr-description [base]</c> — a pull request's description for this branch, shown in a block to copy. Same handler
     /// as the host.</summary>
     private async Task HandlePrCommandAsync(string[] parts, CancellationToken ct)
     {
-        var root    = FindProjectRoot();
+        if (await GitRootOrSayAsync() is not { } root) return;
         var message = await Services.Commands.PrCommandHandler.HandleAsync(
             _client, _config, parts, Services.GitProcess.For(root), p => Post(() => CurrentStep = p), ct);
         Post(() => CurrentStep = string.Empty);
@@ -558,7 +569,7 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private async Task HandleOnboardCommandAsync(string[] parts, CancellationToken ct)
     {
-        var root = FindProjectRoot();
+        if (await GitRootOrSayAsync() is not { } root) return;
 
         var result = await Services.Commands.OnboardCommandHandler.HandleAsync(
             _client, _config, root, parts,
@@ -690,8 +701,9 @@ internal partial class InferpalToolWindowData
             return;
         }
 
+        if (await GitRootOrSayAsync() is not { } root) return;
         var result = await Services.Commands.CommitCommandHandler.ExecuteAsync(
-            message, Services.GitProcess.ForCommit(FindProjectRoot()), ct);
+            message, Services.GitProcess.ForCommit(root), ct);
 
         await RunOnVMContextAsync(() =>
         {

@@ -30,7 +30,7 @@ internal partial class InferpalSettingsData
     private string _navServerBg = "#00000000", _navAgentBg = "#00000000", _navContextBg = "#00000000",
                    _navSearchBg = "#00000000", _navAutocompleteBg = "#00000000", _navToolsBg = "#00000000",
                    _navAppearanceBg = "#00000000";
-    private string _navPaneBg = "#14808080", _navLineBrush = "#33808080", _subtleForeground = "#A3A3AD";
+    private string _navPaneBg = "#14808080", _navLineBrush = "#33808080", _subtleForeground = "#A3A3AD", _pageBg = "#00000000";
     private string _searchText = string.Empty;
     private bool   _searchNoMatch;
     private string _unsavedText = string.Empty;
@@ -60,6 +60,8 @@ internal partial class InferpalSettingsData
     [DataMember] public string NavAutocompleteBg     { get => _navAutocompleteBg;       set => SetProperty(ref _navAutocompleteBg,       value); }
     [DataMember] public string NavToolsBg            { get => _navToolsBg;              set => SetProperty(ref _navToolsBg,              value); }
     [DataMember] public string NavAppearanceBg       { get => _navAppearanceBg;         set => SetProperty(ref _navAppearanceBg,         value); }
+    /// <summary>The ground under the page: its own under high contrast, whose text is white whatever Visual Studio's ground is.</summary>
+    [DataMember] public string PageBg                { get => _pageBg;                  set => SetProperty(ref _pageBg,        value); }
     [DataMember] public string NavPaneBg             { get => _navPaneBg;               set => SetProperty(ref _navPaneBg,               value); }
     [DataMember] public string NavLineBrush          { get => _navLineBrush;            set => SetProperty(ref _navLineBrush,            value); }
     [DataMember] public string SubtleForeground      { get => _subtleForeground;        set => SetProperty(ref _subtleForeground,        value); }
@@ -256,7 +258,8 @@ internal partial class InferpalSettingsData
         PageAppearanceVisible   = _page == "appearance";
 
         var dark = IsDarkTheme;
-        var active = dark ? "#2E2B3D" : "#E4DFF7";
+        var hc   = HighContrastPalette();
+        var active = hc?.HoverBg ?? (dark ? "#2E2B3D" : "#E4DFF7");   // the palette's chip is its ground: nothing would show
         const string none = "#00000000";
         NavServerBg       = PageServerVisible       ? active : none;
         NavAgentBg        = PageAgentVisible        ? active : none;
@@ -265,9 +268,10 @@ internal partial class InferpalSettingsData
         NavAutocompleteBg = PageAutocompleteVisible ? active : none;
         NavToolsBg        = PageToolsVisible        ? active : none;
         NavAppearanceBg   = PageAppearanceVisible   ? active : none;
-        NavPaneBg         = dark ? "#14FFFFFF" : "#0A000000";
-        NavLineBrush      = dark ? "#33FFFFFF" : "#22000000";
-        SubtleForeground  = dark ? "#A3A3AD" : "#5C5C66";
+        PageBg            = hc?.WindowBg   ?? "#00000000";
+        NavPaneBg         = hc?.PanelBg    ?? (dark ? "#14FFFFFF" : "#0A000000");
+        NavLineBrush      = hc?.Border     ?? (dark ? "#33FFFFFF" : "#22000000");
+        SubtleForeground  = hc?.SubtleText ?? (dark ? "#A3A3AD" : "#5C5C66");
 
         var tab = SettingsSchema.Tabs.FirstOrDefault(t => t.Key == _page) ?? SettingsSchema.Tabs[0];
         CurrentPageTitle = Strings.ByName(tab.Title);

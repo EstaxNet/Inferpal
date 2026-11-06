@@ -109,7 +109,6 @@ export function webviewStrings(): Record<string, string> {
     buildFailedFrom: t('From the task {0} — the errors are in the Problems panel.'),
     buildFailedFromNoErrors: t('From the task {0} — the Problems panel holds none of its errors: its output says why.'),
     buildShowErrors: t('Show the errors'),
-    welcomeFixPrompt: t('Fix these errors.'),
     welcomeHintAttach: t('attach a file'),
     welcomeHintCommands: t('commands'),
     welcomeHintNewLine: t('new line'),

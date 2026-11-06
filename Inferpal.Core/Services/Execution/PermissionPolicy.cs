@@ -315,6 +315,10 @@ internal sealed class PermissionPolicy
                 case PermissionDecision.Deny:   return PermissionDecision.Deny;
                 case PermissionDecision.Prompt: sawPrompt = true; break;
             }
+            // A deny only: an assignment can change what a command does, so an allow keeps judging the line as written.
+            if (IsCommand(toolName) && CommandLine.WithoutAssignments(part) is { } bare
+                && EvaluateSingle(toolName, bare, ref unreadableDeny) == PermissionDecision.Deny)
+                return PermissionDecision.Deny;
         }
         // ⚠ A command inside a command (`$(…)`, `(…)`, a backtick) runs before the one a rule allowed, and a redirection
         // writes a file no rule saw: `git log $(Remove-Item -Recurse src)` and `git log > src/App.cs` are allowed by

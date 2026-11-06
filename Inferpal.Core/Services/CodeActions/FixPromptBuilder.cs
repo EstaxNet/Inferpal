@@ -110,7 +110,7 @@ internal static class FixPromptBuilder
 
         var sb = new StringBuilder();
         if (lines.Count < ranked.Count)
-            sb.AppendLine($"({ranked.Count - lines.Count} more problem(s) selected, not listed: the first {lines.Count}, "
+            sb.AppendLine($"({ranked.Count - lines.Count} more problem(s), not listed: the first {lines.Count}, "
                         + "errors first, are)");
         var sites = new List<(string Path, List<int> Lines)>();
         foreach (var (p, line) in ranked.Zip(lines))

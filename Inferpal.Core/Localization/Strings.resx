@@ -1425,6 +1425,9 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="RunBuildPassed" xml:space="preserve"><value>build passed</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>build failed</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>tests passed</value></data>
+  <data name="RunTestsPassedPart" xml:space="preserve"><value>tests passed, on part of the suite</value></data>
+  <data name="RunNotVerified" xml:space="preserve"><value>not verified</value></data>
+  <data name="GitNeedsAWorkspace" xml:space="preserve"><value>No solution or folder is open, so there is no repository to read. Open one, then try again.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>tests failed</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} s</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} min {1} s</value></data>

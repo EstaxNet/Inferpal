@@ -966,6 +966,27 @@ public partial class HostServerTests
         Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(provider, @"this\.status\?\.refused\s*\?").Count);
     }
 
+    /// <summary>A thread reloaded since it began states no model, tokens or duration: no figure is kept for it.</summary>
+    [Fact]
+    public async Task ChatExport_OfAReloadedThread_StatesWhatItKnows()
+    {
+        using var h = CreateHarness(cfg => cfg.DefaultModel = "qwen3:8b");
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        var markdown = await h.Client.InvokeWithParameterObjectAsync<string>("chat/export", new
+        {
+            asPlainText = false,
+            messages = new object[] { new { role = "user", name = (string?)null, content = "bonjour", timestamp = "10:00" } },
+            sessionTokens = (int?)null,
+            durationSeconds = 184,
+        }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.DoesNotContain("qwen3:8b", markdown, StringComparison.Ordinal);
+        Assert.DoesNotContain(Strings.ExportTokens, markdown, StringComparison.Ordinal);
+        Assert.DoesNotContain(Strings.ExportDuration, markdown, StringComparison.Ordinal);
+        Assert.Contains(Strings.ExportTurns, markdown, StringComparison.Ordinal);
+    }
+
     // ── chat/export: ONE exporter only, the Core's ────────────────────────────
 
     [Fact]
@@ -4120,6 +4141,31 @@ public partial class HostServerTests
             var saved = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file))!;
             Assert.Equal("http://192.168.1.9:11434", saved["baseUrl"]?.GetValue<string>());     // witness: the file was written
             Assert.Equal(0, saved["vramBudgetGb"]?.GetValue<double>() ?? 0);
+        }
+        finally { try { File.Delete(file); } catch { } }
+    }
+
+    /// <summary>Nor do the role models another editor saved: they are the old server's, whatever this copy still says.</summary>
+    [Fact]
+    public async Task TheModelsAnotherEditorSaved_DoNotSurviveAServerChange()
+    {
+        var file = Path.Combine(Path.GetTempPath(), $"inferpal-setup-{Guid.NewGuid():N}.json");
+        try
+        {
+            using var h = CreateHarness(cfg => cfg.BaseUrl = "http://192.168.1.5:11434", settingsFile: file);
+            await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            h.Server.CurrentSession!.Config.Save();
+            File.WriteAllText(file, """{ "baseUrl": "http://192.168.1.5:11434", "inlineCompletionModel": "old-completion", "ragEmbeddingModel": "old-embed" }""");
+
+            await h.Client.InvokeWithParameterObjectAsync<Host.SetupApplyResult>("setup/apply", new
+            {
+                url = "http://192.168.1.9:11434", provider = "ollama", chatModel = "gemma4:12b",
+            });
+
+            var saved = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(file))!;
+            Assert.Equal("http://192.168.1.9:11434", saved["baseUrl"]?.GetValue<string>());     // witness: the file was written
+            Assert.NotEqual("old-completion", saved["inlineCompletionModel"]?.GetValue<string>());
+            Assert.NotEqual("old-embed", saved["ragEmbeddingModel"]?.GetValue<string>());
         }
         finally { try { File.Delete(file); } catch { } }
     }

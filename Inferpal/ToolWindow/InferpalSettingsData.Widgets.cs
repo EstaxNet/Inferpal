@@ -512,10 +512,10 @@ internal partial class InferpalSettingsData
     /// <summary>The colour of a state's dot, readable on both themes: green done, blue running, amber partial, red failed.</summary>
     private string DotFor(string state) => state switch
     {
-        "ready"    => IsDarkTheme ? "#4CC27A" : "#2E8B4F",
-        "indexing" => IsDarkTheme ? "#4DAAFC" : "#005FB8",
-        "stopped"  => IsDarkTheme ? "#CCA700" : "#8A6D00",
-        "failed"   => IsDarkTheme ? "#F85149" : "#C42B1C",
+        "ready"    => HighContrastPalette()?.Ok        ?? (IsDarkTheme ? "#4CC27A" : "#2E8B4F"),
+        "indexing" => HighContrastPalette()?.Accent    ?? (IsDarkTheme ? "#4DAAFC" : "#005FB8"),
+        "stopped"  => HighContrastPalette()?.Warn      ?? (IsDarkTheme ? "#CCA700" : "#8A6D00"),
+        "failed"   => HighContrastPalette()?.ErrorText ?? (IsDarkTheme ? "#F85149" : "#C42B1C"),
         _          => "#808080",
     };
 

@@ -204,7 +204,7 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(CloseMenus);
             try
             {
-                if (await Commands.ReviewCommitCommand.ChooseAsync(_vs, _contextHolder.ProjectRoot(), ct) is { } chosen)
+                if (await Commands.ReviewCommitCommand.ChooseAsync(_vs, _contextHolder.GitRoot(), ct) is { } chosen)
                     _contextHolder.SetPendingPrompt($"/check {chosen}");
             }
             catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("Chat.ReviewCommit", ex); }

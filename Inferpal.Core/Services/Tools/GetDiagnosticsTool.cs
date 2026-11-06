@@ -107,7 +107,7 @@ internal class GetDiagnosticsTool : ITool
     /// </summary>
     internal const string NotRestored =
         "⚠ A project is not restored, or was restored for something else (its project.assets.json) — it was not compiled, "
-        + "so this says nothing about its code. Run `dotnet restore`, then check again. Its reason:";
+        + "so this says nothing about its code. Run `dotnet restore <project or solution>`, then check again. Its reason:";
 
     /// <summary>
     /// Whether <paramref name="errorLine"/> is dotnet stopping on its assets file: absent (NETSDK1004), without the target

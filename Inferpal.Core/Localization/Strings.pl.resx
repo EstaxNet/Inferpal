@@ -1421,6 +1421,9 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="RunBuildPassed" xml:space="preserve"><value>kompilacja udana</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>kompilacja nieudana</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>testy zaliczone</value></data>
+  <data name="RunTestsPassedPart" xml:space="preserve"><value>testy zaliczone, tylko część zestawu</value></data>
+  <data name="RunNotVerified" xml:space="preserve"><value>nie sprawdzono</value></data>
+  <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Nie otwarto rozwiązania ani folderu, więc nie ma repozytorium do odczytania. Otwórz je i spróbuj ponownie.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>testy niezaliczone</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} s</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} min {1} s</value></data>

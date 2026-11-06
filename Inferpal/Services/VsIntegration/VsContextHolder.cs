@@ -282,6 +282,19 @@ internal class VsContextHolder
     // paths, the authoritative signal, and the CWD.
     private static readonly Signals.ProjectRootLocator RootLocator = new();
 
+    /// <summary>
+    /// The folder git reads for a command, or <c>null</c> when no solution, folder or document is open: the solution or
+    /// folder open, else the one the open documents sit in. ⚠ Never near the process's own folder, where
+    /// <see cref="ProjectRoot"/> looks too: git would read, or commit to, whatever repository holds it.
+    /// </summary>
+    public string? GitRoot()
+    {
+        if (SolutionExtent.ActiveRoot() is { } open) return open;
+        var paths = GetOpenPaths();
+        return paths.Count == 0 ? null
+            : SolutionExtent.RootForDir(RootLocator.Locate(paths, activeSolutionDir: null, System.IO.Path.GetDirectoryName(paths[0]) ?? paths[0]));
+    }
+
     /// <summary>The root the chat's commands read — <c>/check</c>, <c>/context</c>, <c>/memory</c> — and the menu's: the
     /// solution or folder open, else the one the open documents sit in. One reader: the menu's "Review a Commit…" refused
     /// a file opened alone that <c>/check</c> in the chat reviewed.</summary>

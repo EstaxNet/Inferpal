@@ -1421,6 +1421,9 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="RunBuildPassed" xml:space="preserve"><value>build réussi</value></data>
   <data name="RunBuildFailed" xml:space="preserve"><value>build en échec</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>tests réussis</value></data>
+  <data name="RunTestsPassedPart" xml:space="preserve"><value>tests réussis, sur une partie de la suite</value></data>
+  <data name="RunNotVerified" xml:space="preserve"><value>non vérifié</value></data>
+  <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Aucune solution ni aucun dossier n'est ouvert : il n'y a pas de dépôt à lire. Ouvrez-en un, puis réessayez.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>tests en échec</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} s</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} min {1} s</value></data>

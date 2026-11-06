@@ -1436,7 +1436,7 @@ function renderBuildBanner(banner: WvBuildBanner | null): void {
   if (banner.errors > 0) {
     const fix = document.createElement('button');
     fix.textContent = t('welcomeFixThem');
-    fix.addEventListener('click', () => post({ type: 'fixBuild', text: t('welcomeFixPrompt') }));
+    fix.addEventListener('click', () => post({ type: 'fixBuild' }));
     actions.appendChild(fix);
   }
   if (banner.errors > 0) {
@@ -1473,9 +1473,10 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
   }
   if (target.runGlyph) {
     // Failed: its last check failed, or, with no check, one of its steps did.
-    const failed = run.check === 'buildFailed' || run.check === 'testsFailed' || (run.check === 'none' && stepFailed);
-    setIcon(target.runGlyph, failed ? 'failed' : 'check', undefined, 13);
-    target.runGlyph.classList.toggle('ok', !failed);
+    const unproven = run.check === 'unproven';
+    const failed = run.check === 'buildFailed' || run.check === 'testsFailed' || ((run.check === 'none' || unproven) && stepFailed);
+    setIcon(target.runGlyph, failed ? 'failed' : unproven ? 'info' : 'check', undefined, 13);
+    target.runGlyph.classList.toggle('ok', !failed && !unproven);
     target.runGlyph.classList.toggle('failed', failed);
   }
   if (run.files.length === 0 && run.check === 'none') {
@@ -1506,7 +1507,7 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     const check = document.createElement('span');
     const failed = run.check === 'buildFailed' || run.check === 'testsFailed';
     check.className = 'result-check' + (failed ? ' failed' : '');
-    setIcon(check, failed ? 'failed' : 'check', run.checkText, 13);
+    setIcon(check, failed ? 'failed' : run.check === 'unproven' ? 'info' : 'check', run.checkText, 13);
     bar.appendChild(check);
   }
   if (run.runId) {
@@ -2544,9 +2545,8 @@ function buildWelcome(): void {
     text.textContent = t('welcomeProblems', problems);
     const fix = document.createElement('button');
     fix.textContent = t('welcomeFixThem');
-    // The Problems panel attached as the @problems picker attaches it, then the request: typed, "@problems" names no
-    // file and reached the model as text, without a single error.
-    fix.addEventListener('click', () => post({ type: 'fixProblems', text: t('welcomeFixPrompt') }));
+    // The provider sends the panel's errors with the code around each, as a quick fix does.
+    fix.addEventListener('click', () => post({ type: 'fixProblems' }));
     banner.append(icon('warning', 14), text, fix);
     welcomeEl.appendChild(banner);
   }
