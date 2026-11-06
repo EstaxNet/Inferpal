@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Models;
 using Inferpal.Services;
@@ -71,6 +72,97 @@ public sealed class VsWindowRunsUnderTestTests
         await VsWindowHarness.UntilAsync(() => vs.Window.Messages.Any(m => m.Content.Contains(Strings.GitNeedsAWorkspace, StringComparison.Ordinal)));
 
         Assert.Empty(vs.Fake.AgentRuns);
+    }
+
+    /// <summary>The servers a pull changed under a turn: a refresh tears every one down, so it waits for the turn to end. A
+    /// background task holds the lease here, as it does while the chat stays free for a command.</summary>
+    [Fact]
+    public async Task TheRepositorysMcpFiles_ChangedUnderARunningTurn_AreFollowedOnceItEnds()
+    {
+        using var vs = new VsWindowHarness(config: new InferpalConfig { DefaultModel = "m", McpEnabled = true });
+        var file = Path.Combine(vs.Root, ".mcp.json");
+        File.WriteAllText(file, "{\"mcpServers\":{\"a\":{\"command\":\"a\"}}}");
+        await vs.Tools.Mcp.RefreshAsync();
+        File.WriteAllText(file, "{\"mcpServers\":{\"b\":{\"command\":\"b\"}}}");
+        Assert.True(vs.Tools.Mcp.RepositoryFilesChanged());
+
+        using (GpuScheduler.AcquireChatLease())
+        {
+            await vs.AskAsync("/help");
+            Assert.True(vs.Tools.Mcp.RepositoryFilesChanged());   // not read again: the refresh is waiting
+        }
+
+        await VsWindowHarness.UntilAsync(() => !vs.Tools.Mcp.RepositoryFilesChanged());
+    }
+
+    /// <summary>The agent loop reads these settings: what the other editor saved waits for the turn, and the next gesture takes it.</summary>
+    [Fact]
+    public async Task ASettingSavedElsewhere_WaitsForTheTurnToEnd()
+    {
+        var previous = InferpalConfig.OverridePathForTests;
+        var path = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"vm-{Guid.NewGuid():N}.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        InferpalConfig.OverridePathForTests = path;
+        try
+        {
+            new InferpalConfig { DefaultModel = "m", PermissionRules = "" }.Save();
+            var config = InferpalConfig.LoadOwnCopy();
+            using var vs = new VsWindowHarness(config: config);
+            var other = JsonSerializer.Deserialize<InferpalConfig>(File.ReadAllText(path))!;
+            other.PermissionRules = "deny run_command ^rm";
+            File.WriteAllText(path, JsonSerializer.Serialize(other));
+
+            using (GpuScheduler.AcquireChatLease())
+            {
+                await vs.AskAsync("/help");
+                Assert.Equal(string.Empty, config.PermissionRules);
+            }
+
+            await vs.AskAsync("/help");
+            Assert.Equal("deny run_command ^rm", config.PermissionRules);
+        }
+        finally
+        {
+            InferpalConfig.OverridePathForTests = previous;
+            try { File.Delete(path); } catch { }
+        }
+    }
+
+    /// <summary>A window built before its solution restores the slot from its heartbeat: a slot it cannot read does not end the
+    /// heartbeat, or the window would stop saying the server is gone.</summary>
+    [Fact]
+    public async Task ADamagedSlot_ReachedLate_LeavesTheHeartbeatRunning()
+    {
+        using var vs = new VsWindowHarness(folderOpen: false);
+        var slot = new ConversationStore(slotOwner: ConversationStore.VisualStudioSlot).AutoSaveFile(vs.Root);
+        Directory.CreateDirectory(Path.GetDirectoryName(slot)!);
+        File.WriteAllText(slot, "{ damaged");
+        ActiveSolutionSignal.WriteFolder(vs.Root);   // the solution, opened after the window
+
+        await VsWindowHarness.UntilAsync(() => vs.Fake.ConnectionChecks > 0);
+    }
+
+    /// <summary>The last question of the conversation restored is left unanswered by the closing that cut its run. A notice
+    /// after it is not an answer: the line that says so looks past it.</summary>
+    [Fact]
+    public async Task AQuestionTheClosingCut_SaysNoAnswerWillFollow_PastANotice()
+    {
+        var root = Directory.CreateTempSubdirectory("inferpal-vm").FullName;
+        var file = Path.Combine(root, "A.cs");
+        File.WriteAllText(file, "a0\n");
+        var closed = new FileHistoryService { WorkspaceRoot = () => root, Editor = ConversationStore.VisualStudioSlot };
+        closed.BeginRun();
+        await closed.BackUpBeforeChangeAsync(file, CancellationToken.None);
+        File.WriteAllText(file, "a1\n");
+        closed.CutCurrentRun();
+        closed.EndRun();   // the turn's own end, as the editor closes
+        await new ConversationStore(slotOwner: ConversationStore.VisualStudioSlot).AutoSaveAsync(
+            [new SavedMessage("user", "the question", null), new SavedMessage("assistant", "said at the start", SessionManager.NoticeMarker)],
+            CancellationToken.None, root);
+
+        using var vs = new VsWindowHarness(root: root);
+
+        await VsWindowHarness.UntilAsync(() => vs.Window.Messages.Any(m => m.Content.Contains(Strings.AwayNoAnswer("Visual Studio"), StringComparison.Ordinal)));
     }
 
     /// <summary>Reference arm: with a folder open, the same command reaches git, and says what git answered there.</summary>

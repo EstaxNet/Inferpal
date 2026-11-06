@@ -168,7 +168,17 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         return Task.FromResult(OnEmbedding is not null ? OnEmbedding(text) : Embedding);
     }
 
-    public Task<bool> CheckConnectionAsync(string url, CancellationToken ct) => Task.FromResult(ConnectionOk);
+    public Task<bool> CheckConnectionAsync(string url, CancellationToken ct)
+    {
+        Interlocked.Increment(ref _connectionChecks);
+        return Task.FromResult(ConnectionOk);
+    }
+
+    private int _connectionChecks;
+
+    /// <summary>How many times the connection was checked: a window's heartbeat goes on as long as this grows.</summary>
+    public int ConnectionChecks => Volatile.Read(ref _connectionChecks);
+
     public string? ConnectionRefusal { get; set; }
 
     /// <summary>The URL the last <see cref="ListModelsAsync"/> received — the settings panel

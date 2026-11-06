@@ -30,27 +30,33 @@ internal sealed class VsWindowHarness : IDisposable
     private readonly SignalScratchDir _scratch = new();
     private readonly List<IDisposable> _owned = [];
 
-    public string Root { get; } = Directory.CreateTempSubdirectory("inferpal-vm").FullName;
+    public string Root { get; }
     public FakeInferenceProvider Fake { get; }
     public ToolRegistry Tools { get; }
     public InferpalToolWindowData Window { get; }
 
     /// <param name="fake">The model server.</param>
     /// <param name="folderOpen">Whether Visual Studio has <see cref="Root"/> open.</param>
-    public VsWindowHarness(FakeInferenceProvider? fake = null, bool folderOpen = true)
+    /// <param name="root">A folder the test prepared before the window opens it; deleted with this.</param>
+    /// <param name="config">The window's settings, for a test that reads or follows them.</param>
+    public VsWindowHarness(FakeInferenceProvider? fake = null, bool folderOpen = true, string? root = null, InferpalConfig? config = null)
     {
+        Root = root ?? Directory.CreateTempSubdirectory("inferpal-vm").FullName;
         SignalFile._isProcessAliveOverride = _ => true;
         if (folderOpen) ActiveSolutionSignal.WriteFolder(Root);
         Fake = fake ?? new FakeInferenceProvider();
         // RAG off: on, the window's start would index whatever repository holds the test, once the test's folder is gone.
-        var config = new InferpalConfig { DefaultModel = "m", RagEnabled = false };
+        config ??= new InferpalConfig { DefaultModel = "m" };
+        config.RagEnabled = false;
+        config.IsFirstRun = false;   // a first run probes the servers of the machine the suite runs on
         var holder = new VsContextHolder();
         var editor = new NullEditorSurface();
         var index  = Owned(new ProjectIndexService(Fake, config, new LspSemanticProvider()));
         if (folderOpen) index.SetRoot(Root);
         var docs   = Owned(new DocsIndexService(Fake, config));
         var approval = new VsApprovalService(null!, config, index, holder);
-        Tools  = new ToolRegistry(editor, approval, config, index, Fake, new ProjectMapService(editor), new McpToolService(config, approval),
+        Tools  = new ToolRegistry(editor, approval, config, index, Fake, new ProjectMapService(editor),
+                                  new McpToolService(config, approval, clientFactory: null, workspaceRoot: () => index.RootDir),
                                   docs, new OpenDocumentOverlay(), new NullDebugSession());
         Window = new InferpalToolWindowData(Fake, Tools, config, null!, holder, index, Owned(new ModelLifetimeService(Fake, config)),
                                             Owned(new VsBuildMonitor()), docs);

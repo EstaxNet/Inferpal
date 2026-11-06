@@ -469,13 +469,6 @@ public sealed class FollowSavedSettingsTests : IDisposable
         Assert.Equal("lmstudio", said);
     }
 
-    /// <summary>A gesture during a run (the away card's Retry, a slash command) takes nothing: the agent loop reads its rules
-    /// and its models. The chat window says so as the settings window does.</summary>
-    [Fact]
-    public void TheChatWindow_TakesNothingUnderARunningTurn() =>
-        Assert.Contains("SettingsFollow.TakeAndApply(_config, _client, () => GpuScheduler.IsTurnInFlight)", ConventionCoverageTests.CodeOnly(
-            Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.Connection.cs")), StringComparison.Ordinal);
-
     /// <summary>Never while a turn runs: the agent loop reads these settings.</summary>
     [Fact]
     public void ATurnInFlight_TakesNothing_TheNextQuestionDoes()
