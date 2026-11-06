@@ -30,6 +30,10 @@
 </p>
 
 <p align="center">
+  Website: <a href="https://inferpal.estaxnet.fr/"><b>inferpal.estaxnet.fr</b></a>
+</p>
+
+<p align="center">
   <img src="docs/assets/demo-vscode.gif" alt="Inferpal in VS Code: asked to add argument validation to a C# method and cover it with xUnit tests, the agent plans, edits the method, creates the test file and runs the tests behind approval cards, and ends on its answer and a result bar with Undo run, on a local model" width="820">
   <br>
   <sub>A real run on a local model (Devstral Small 2 in LM Studio), sped up. Every write and command was approved in the chat.</sub>
