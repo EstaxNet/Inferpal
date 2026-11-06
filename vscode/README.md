@@ -51,8 +51,8 @@ Inferpal runs whatever model your server holds, and a bigger model makes it bett
 
 | Your card | Agent | Autocomplete beside it |
 |---|---|---|
-| 24 GB | Qwen3.8 27B (14/14), which also autocompletes, or Gemma 4 12B with Mellum2 | see the agent column |
-| 16 GB | Gemma 4 12B (12/14, fast), or Bonsai 27B, a 1-bit Qwen (13/14, about 3× slower) | Mellum2 fits only beside a weaker agent |
+| 24 GB | Qwen3.8 27B (14/14), which also autocompletes, or Ornith 1.5 35B-A3B (14/14 at 16K, about 1.6× faster), or Gemma 4 12B with Mellum2 | see the agent column |
+| 16 GB | Gemma 4 12B (12/14, fast), or Ternary Bonsai 2 27B (14/14, about 4× slower) | Mellum2 fits only beside a weaker agent |
 | 12 GB | same as 16 GB | none measured fits |
 | 8 GB | Granite 4.2 8B (14/14, fast) | none measured fits |
 | More than 24 GB | not tested | — |

@@ -28,6 +28,8 @@ public class ModelProfilesTests
     [InlineData("qwen/qwen3.6-27b",                    "qwen35")]
     [InlineData("mistralai/devstral-small-2-2512",     "devstral")]
     [InlineData("prism-ml/bonsai-27b",                 "bonsai")]
+    [InlineData("ternary-bonsai-2-27b",                "bonsai")]
+    [InlineData("ornith-1.5-35b-a3b",                  "ornith")]
     [InlineData("meta/muse-glimmer",                   "muse-glimmer")]
     [InlineData("google/gemma-4-31b-qat",              "gemma4")]
     [InlineData("qwen/qwen3-4b-thinking-2507",         "qwen3")]
@@ -45,6 +47,7 @@ public class ModelProfilesTests
     [InlineData("CodeLlama:13b-instruct",              "codellama")]
     [InlineData("codegemma:7b",                        "codegemma")]
     [InlineData("mellum2-12b-a2.5b-base",              "mellum")]
+    [InlineData("hf.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF:Q4_K_M", "ornith")]
     public void AServedModelId_IsRecognisedAsItsFamily(string modelId, string anchor) =>
         Assert.Equal(anchor, ModelProfiles.For(modelId)?.Anchor);
 

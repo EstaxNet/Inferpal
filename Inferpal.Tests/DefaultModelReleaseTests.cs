@@ -30,9 +30,17 @@ public class DefaultModelReleaseTests
         Assert.Equal("qwen/qwen3.8-27b", ModelCatalog.FirstModelToAdopt(new InferpalConfig(), Enumerable.Reverse(ServerModels).ToArray()));
     }
 
+    [Fact]
+    public void AnUnmeasuredSizeOfTernaryBonsai_DoesNotPassTheMeasuredBonsai()
+    {
+        Assert.Equal("prism-ml/bonsai-27b", ModelCatalog.PickBestChatModel(["ternary-bonsai-8b", "prism-ml/bonsai-27b"]));
+        Assert.Equal("prism-ml/bonsai-27b", ModelCatalog.PickBestChatModel(["prism-ml/bonsai-27b", "ternary-bonsai-8b"]));
+    }
+
     [Theory]
     [InlineData("qwen3.5-4b", "qwen/qwen3.8-27b")]
     [InlineData("qwen3.6:35b-a3b", "qwen3.8:27b")]
+    [InlineData("prism-ml/bonsai-27b", "ternary-bonsai-2-27b")]
     public void WithinAFamily_TheReleaseItsProfileListsFirst_Wins_WhateverTheListOrder(string older, string measured)
     {
         Assert.Equal(measured, ModelCatalog.PickBestChatModel([older, measured]));

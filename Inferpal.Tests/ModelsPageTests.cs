@@ -211,6 +211,24 @@ public class ModelAdvisorTests
     }
 
     [Fact]
+    public void Ornith_IsRecommendedOnA24GbCard_AndItsSmallerSiblingIsNot()
+    {
+        // The 9B can end a task announcing an edit it did not write: a profile for the whole family would recommend it.
+        Assert.Equal(AgentFit.Recommended, ModelProfiles.For("ornith-1.5-35b-a3b")?.Agent);
+        Assert.Equal(AgentFit.NotRecommended, ModelProfiles.For("ornith-1.5-9b")?.Agent);
+        Assert.Contains("Ornith 1.5 35B-A3B", ModelAdvisor.RecommendedFor(24));
+        Assert.DoesNotContain("Ornith", ModelAdvisor.RecommendedFor(16));
+    }
+
+    [Fact]
+    public void TernaryBonsai2_TakesTheSecondPlaceOfBonsai27B()
+    {
+        Assert.Equal(AgentFit.Recommended, ModelProfiles.For("ternary-bonsai-2-27b")?.Agent);
+        Assert.Contains("Ternary Bonsai 2 27B", ModelAdvisor.RecommendedFor(12));
+        Assert.DoesNotContain("Bonsai 27B", ModelAdvisor.RecommendedFor(12));
+    }
+
+    [Fact]
     public void TheRecommendedAgents_AreTheOnesTheCardTableOfTheDocsNames()
     {
         // The note quotes docs/models.md: a name it gives that the page no longer recommends would send the user to

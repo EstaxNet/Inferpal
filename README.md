@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-8119%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-8126%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
 </p>
@@ -105,8 +105,8 @@ Every figure, model by model: **[Models](docs/models.md)**. `/bench` measures th
 
 | Your card | Agent | Autocomplete beside it |
 |---|---|---|
-| 24 GB | Qwen3.8 27B (14/14), which also autocompletes, or Gemma 4 12B with Mellum2 | see the agent column |
-| 16 GB | Gemma 4 12B (12/14, fast), or Bonsai 27B, a 1-bit Qwen (13/14, about 3× slower) | Mellum2 fits only beside a weaker agent |
+| 24 GB | Qwen3.8 27B (14/14), which also autocompletes, or Ornith 1.5 35B-A3B (14/14 at 16K, about 1.6× faster), or Gemma 4 12B with Mellum2 | see the agent column |
+| 16 GB | Gemma 4 12B (12/14, fast), or Ternary Bonsai 2 27B (14/14, about 4× slower) | Mellum2 fits only beside a weaker agent |
 | 12 GB | same as 16 GB | none measured fits |
 | 8 GB | Granite 4.2 8B (14/14, fast) | none measured fits |
 | More than 24 GB | not tested | — |

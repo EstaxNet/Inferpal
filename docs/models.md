@@ -17,7 +17,7 @@ section gives the reasons, the rest waits until you want a model's figures or it
 - **[How long a model reasons](#how-long-a-model-reasons)** — the levels, and what they change
 - **[How Inferpal reads a model](#how-inferpal-reads-a-model)** — tool calls, reasoning, templates, sampling
 - **[Model by model](#model-by-model)** — each family's figures and fine print
-  - [Qwen3.8 27B](#qwen35) · [Devstral Small 2](#devstral) · [Bonsai 27B](#bonsai) · [Muse Glimmer](#muse-glimmer) · [Granite 4.2 8B](#granite)
+  - [Qwen3.8 27B](#qwen35) · [Ornith 1.5 35B-A3B](#ornith) · [Devstral Small 2](#devstral) · [Ternary Bonsai 2 27B](#bonsai) · [Muse Glimmer](#muse-glimmer) · [Granite 4.2 8B](#granite)
   - [Gemma 4](#gemma4) · [GLM 4.7 Flash](#glm47) · [Qwen3 4B Thinking 2507](#qwen3) · [Qwen2.5 Coder 7B](#qwen-coder) · [Qwen3 Coder](#qwen3-coder)
 - **[Autocomplete (FIM) models](#fim-models)** — which model completes best, and the tokens each family gets
 - **[Measured results](#measured-results)** — every score, and what the context window changes
@@ -30,8 +30,8 @@ flowchart LR
     I{"Models already<br/>installed?"} -- yes --> S["Suggest the best models<br/>Settings → Server and models"]
     I -- no --> C{"Your card's<br/>memory?"}
     C -- "8 GB" --> G["Granite 4.2 8B"]
-    C -- "12 or 16 GB" --> M["Gemma 4 12B<br/>or Bonsai 27B, about 3× slower"]
-    C -- "24 GB" --> Q["Qwen3.8 27B<br/>or Gemma 4 12B with Mellum2"]
+    C -- "12 or 16 GB" --> M["Gemma 4 12B<br/>or Ternary Bonsai 2 27B, about 4× slower"]
+    C -- "24 GB" --> Q["Qwen3.8 27B<br/>or Ornith 1.5 35B-A3B, about 1.6× faster<br/>or Gemma 4 12B with Mellum2"]
     C -- "above 24 GB" --> N["Nothing recommended:<br/>it could not be verified"]
 ```
 
@@ -45,9 +45,9 @@ speed on your card will differ. Nothing is recommended above 24 GB: it could not
 | Card | Agent | Autocomplete | Measured beside it |
 |---|---|---|---|
 | **8 GB** | [Granite 4.2 8B](#granite) (14/14, fast), at an 8K or 32K context — Bonsai 27B and Qwen3.5 4B, despite their small files, do not fit | none measured fits beside the agent | EmbeddingGemma 300M |
-| **12 GB** | [Gemma 4 12B](#gemma4) (12/14, fast) or [Bonsai 27B](#bonsai) (13/14, about 3× slower) | none measured fits beside the agent | Qwen3 Embedding 0.6B |
+| **12 GB** | [Gemma 4 12B](#gemma4) (12/14, fast) or [Ternary Bonsai 2 27B](#bonsai) (14/14, about 4× slower) | none measured fits beside the agent | Qwen3 Embedding 0.6B |
 | **16 GB** | the same | [Mellum2](#mellum) fits only beside a weak agent (Ling 3.0, 7/14): choose between the two | Qwen3 Embedding 0.6B |
-| **24 GB** | [Qwen3.8 27B](#qwen35) (14/14), which also autocompletes (27/36, 0.5 s) — or [Gemma 4 12B](#gemma4) (12/14) with [Mellum2](#mellum) (29/36, 0.1 s) | see the agent column | Qwen3 Embedding 0.6B |
+| **24 GB** | [Qwen3.8 27B](#qwen35) (14/14), which also autocompletes (27/36, 0.5 s) — or [Ornith 1.5 35B-A3B](#ornith) (14/14 at a 16K context, about 1.6× faster, autocomplete not measured) — or [Gemma 4 12B](#gemma4) (12/14) with [Mellum2](#mellum) (29/36, 0.1 s) | see the agent column | Qwen3 Embedding 0.6B |
 
 A setup that did not keep its speed with the memory reduced does not fit. The last column is the embedding model
 whose **memory** was measured beside the others (the lightest ones, EmbeddingGemma 300M and Nomic, take less); for
@@ -82,9 +82,11 @@ section.
 | Model | Use it for | What Inferpal does for it | Server notes |
 |---|---|---|---|
 | [Qwen3.8 27B](#qwen35) | ✅ **Agent** — recommended (14/14); also autocompletes (27/36, 0.5 s) | Reads its XML tool calls when the server leaves them as text | Reasoning separated by LM Studio |
+| [Ornith 1.5 35B-A3B](#ornith) | ✅ **Agent** on a 24 GB card (14/14, about 1.6× faster than Qwen3.8) | Reads its XML tool calls when the server leaves them as text | 22.6 GB with its vision part, at the limit of the card; 3B active parameters |
 | [Devstral Small 2](#devstral) | ✅ **Agent** — recommended, fastest (13/14) | Reads its `[TOOL_CALLS]` calls when left as text | Temperature **0.15** |
 | [Muse Glimmer](#muse-glimmer) | ✅ **Agent** — recommended (14/14) | Splits its addressed messages (reasoning / answer) and reads its ATEM tool calls | Needs a recent llama.cpp runtime |
-| [Bonsai 27B](#bonsai) (1-bit Qwen) | ✅ **Agent** on small GPUs (13/14, slow) | Same as Qwen3.8 | 4.7 GB for 27B |
+| [Ternary Bonsai 2 27B](#bonsai) (ternary Qwen3.8) | ✅ **Agent** on 12 and 16 GB cards (14/14, slow) | Same as Qwen3.8 | 8.6 GB with its vision part; needs a recent engine |
+| [Bonsai 27B](#bonsai) (1-bit Qwen) | ✅ **Agent** on small GPUs (13/14, slower than Ternary Bonsai 2) | Same as Qwen3.8 | 4.7 GB for 27B |
 | [Granite 4.2 8B](#granite) (IBM) | ✅ **Agent** on 8 GB cards (14/14, fast) | Reads its XML tool calls when the server leaves them as text | Ollama: `granite4.2:8b` |
 | [GLM 4.7 Flash](#glm47) | Agent — usable with the **Unsloth GGUF** (12/14) | Reads its `<arg_key>` tool calls when left as text | Older GGUFs (lmstudio-community) loop |
 | [Gemma 4](#gemma4) (12B, 26B A4B, 31B) | Agent — usable on small GPUs (12B: 12/14, 7 GB) | Describes the tools in the system prompt when the template cannot render them | LM Studio's template fails on tools |
@@ -258,7 +260,8 @@ Inferpal does about each, one fold per subject:
 <summary><b>In detail: the sampling settings Inferpal sends</b></summary>
 
 - **Sampling.** For the families on this page, Inferpal sends the sampling settings their vendor recommends — only
-  the values the vendor publishes; the **Settings** line of each section says exactly which.
+  the values the vendor publishes; the **Settings** line of each section says exactly which. Two exceptions, sent as
+  they were measured: Ternary Bonsai 2 gets Bonsai 27B's values, and Ornith 1.5 gets none.
 - A server applies its generic defaults to a model it has no preset for, and those can hurt a model badly (GLM's
   vendor says to disable the repeat penalty that llama.cpp applies by default).
 - On LM Studio and Ollama every value is sent; on another OpenAI-compatible server only temperature and top_p, the
@@ -314,6 +317,26 @@ to set it up. A section opens on the model and how it did; its fold holds the fi
 
 </details>
 
+<a id="ornith"></a>
+### Ornith 1.5 35B-A3B
+
+- **Model.** A 35B mixture of experts with about 3B active parameters, reasoning model (architecture `qwen35moe`),
+  262,144-token context, MIT license.
+- **Inferpal.** Structured calls on LM Studio; the XML form is read when a call arrives as text. Its template opens
+  `<think>` itself, like Qwen3.8's. Its card gives temperature 0.6, top_p 0.95, top_k 20; Inferpal sets none of these,
+  and the run below used the server's own values.
+- **Measured.** 14 tasks in 14 and the 4 harder scenarios at a 16K context with the embedding model beside it, in 46 s
+  a task against 75 s for Qwen3.8 27B on the same run. About 40 tokens per second at 16K and at 32K, with the free
+  memory reduced to about 23 GB. One run on LM Studio: neither Ollama nor autocomplete was measured.
+- **Memory.** It sits at the limit of a 24 GB card. Inferpal's estimate, 1.2 times the file, is above 24 GB: expect
+  its memory warning, and on Ollama a window left at 8K (set 16K yourself). A model with 3B active parameters usually
+  runs much faster than 40 tokens per second, so part of it probably stayed outside the card on the test server.
+- **Getting it.** The `Q4_K_M` file of [its GGUF repository](https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B-GGUF)
+  is the file measured (21.7 GB, and 0.9 GB for its vision part). It is on Hugging Face only, so Inferpal does not
+  offer it as a download.
+- **Its smaller sibling.** Ornith 1.5 9B is not recommended: see [Measured results](#measured-results).
+- **Sources.** [Model card](https://huggingface.co/ornith-ai/Ornith-1.5-35B-A3B)
+
 <a id="devstral"></a>
 ### Devstral Small 2 (2512)
 
@@ -340,24 +363,33 @@ to set it up. A section opens on the model and how it did; its fold holds the fi
 </details>
 
 <a id="bonsai"></a>
-### Bonsai 27B
+### Ternary Bonsai 2 27B and Bonsai 27B
 
-- **Model.** PrismML's 1-bit conversion of a 27B Qwen model (one sign bit per weight plus a scale per 128 weights,
-  about 1.125 bits per weight): 4.7 GB for 27B parameters, same architecture and chat format as Qwen3.8.
-- **Measured.** 13 tasks in 14 — the best result for its size — but the slowest of the recommended models: 28 minutes
-  over the battery, against 19 for Qwen3.8 and 5 for Devstral. It reasons at length before each call.
+- **Model.** PrismML's low-bit conversions of 27B Qwen models, same architecture and chat format as Qwen3.8. **Ternary
+  Bonsai 2 27B** keeps three values per weight, from Qwen3.8 27B: 7.6 GB, and 0.9 GB for its vision part. **Bonsai 27B** keeps one
+  sign bit per weight plus a scale per 128 weights, about 1.125 bits per weight: 4.7 GB.
+- **Measured.** Ternary Bonsai 2 27B: 14 tasks in 14 and the 4 harder scenarios at a 32K context, in 119 s a task,
+  against 169 s and 15 in 18 for Bonsai 27B, and 30 s and 17 in 18 for Gemma 4 12B, on the same run (one task was replayed: the
+  connection to the test server was cut during it). 20.7 tokens per second at a 16K and a 32K context, with the free
+  memory reduced to about 11 GB. Bonsai 27B alone, earlier: 13 tasks in 14, in 28 minutes over the battery, against 19
+  for Qwen3.8 and 5 for Devstral. It reasons at length before each call.
+- **Getting it.** The `Q2_0` file of [Ternary Bonsai 2's GGUF repository](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf)
+  is the file measured, on LM Studio. PrismML warns that llama.cpp builds older than b11556 load it without a word and
+  answer garbage. It is on Hugging Face only, so Inferpal does not offer it as a download; Ollama was not measured.
 
 <details>
 <summary><b>In detail: tool calls and reasoning, settings, known issues, sources</b></summary>
 
 - **Tool calls and reasoning.** Same as [Qwen3.8](#qwen35): XML calls, `<think>` reasoning. Autocomplete, unlike
   Qwen3.8's, completes from the code before the cursor: with the fill-in-the-middle tokens its 1-bit weights got no
-  completion right in 36, against 8 without.
-- **Settings.** Inferpal sends temperature 0.7, top_p 0.95, top_k 20. PrismML advises capping the reasoning (for
-  example 8,192 thinking tokens) rather than switching it off.
-- **Known issues.** PrismML states that long-horizon agentic coding "is not yet a strong target of this release"; the
-  one task it failed was an edit it repaired by removing a line the page needed.
-- **Sources.** [Model card](https://huggingface.co/prism-ml/Bonsai-27B-gguf) ·
+  completion right in 36, against 8 without. Ternary Bonsai 2's autocomplete was not measured.
+- **Settings.** Inferpal sends temperature 0.7, top_p 0.95, top_k 20, to both. PrismML advises capping Bonsai 27B's
+  reasoning (for example 8,192 thinking tokens) rather than switching it off, and gives Ternary Bonsai 2 temperature 1.0
+  in thinking mode: the runs above used 0.7.
+- **Known issues.** Of Bonsai 27B, PrismML states that long-horizon agentic coding "is not yet a strong target of this
+  release"; the one task it failed was an edit it repaired by removing a line the page needed.
+- **Sources.** [Ternary Bonsai 2 27B](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) ·
+  [Bonsai 27B](https://huggingface.co/prism-ml/Bonsai-27B-gguf) ·
   [PrismML docs](https://docs.prismml.com/models/bonsai-27b)
 
 </details>
@@ -400,7 +432,7 @@ to set it up. A section opens on the model and how it did; its fold holds the fi
   the embedding model, at an 8K and a 32K context (86 % of its speed with the free memory reduced to 7 GB — it may
   spill a little). One run on LM Studio. On the default path — Ollama, the 8K window an 8 GB card keeps, two runs in
   the Chat mode and two in the Agent mode — the 14 again every time, but 2 or 3 of the 4 harder scenarios: the longer
-  ones stop at the length limit or end without writing.
+  ones stop at the length limit or end without writing. On LM Studio at 8K, on 2026-11-05: 13 of the 14 and 1 of the 4.
 - **Getting it.** Ollama: `granite4.2:8b` is the file measured (Q4_K_M, 5.3 GB); Inferpal's first-run card offers it
   from an 8 GB card up.
 - **Sources.** [GGUF files](https://huggingface.co/ibm-granite/granite-4.2-8b-GGUF)
@@ -575,6 +607,8 @@ Python (pytest), and judges the outcome only. LM Studio, 32K context, the Linux 
 | Qwen3.8 27B | 14/14 | 2026-09-28 |
 | Muse Glimmer | 14/14 | 2026-09-28 |
 | Devstral Small 2 | 13/14 | 2026-09-28 |
+| Ornith 1.5 35B-A3B | 14/14 and the 4 harder scenarios, at a 16K context | 2026-11-06 |
+| Ternary Bonsai 2 27B | 14/14 and the 4 harder scenarios | 2026-11-06 |
 | Bonsai 27B | 13/14 | 2026-09-28 |
 | GLM 4.7 Flash (Unsloth GGUF) | 12/14 | 2026-09-28 |
 | Granite 4.2 8B | 14/14 — and 4 of the 4 harder scenarios added since | 2026-10-22 |
@@ -586,6 +620,7 @@ Python (pytest), and judges the outcome only. LM Studio, 32K context, the Linux 
 | Qwen3 Coder 30B | 9/14 | 2026-09-28 |
 | gpt-oss 20B | 8/14 | 2026-09-28 |
 | Gemma 4 E4B (QAT) | 8/14 | 2026-10-22 |
+| Ornith 1.5 9B | 12/14 and 1 of the 4 harder scenarios, at 8K — not recommended: one task ended announcing an edit it had not written | 2026-11-05 |
 | Ling 3.0 tiny | 7/14 | 2026-09-29 |
 | LFM2.5 8B-A1B | 6/14 | 2026-09-29 |
 | Qwen3 4B Thinking 2507 | 5/8 (C# only) | 2026-09-27 |
@@ -596,6 +631,9 @@ Python (pytest), and judges the outcome only. LM Studio, 32K context, the Linux 
 A model is scored only when the test server runs it properly: a task that ends because the model was too slow to
 answer in time — it did not fit in the server's graphics memory — is a limit of the test server, not of the model, so
 such a model is listed as *to be measured* rather than given a low score.
+
+Run again on the night of 2026-11-05, on the 14 tasks and the 4 harder scenarios: Qwen3.8 27B 18 in 18 at 16K, Gemma 4 12B 17 and
+Bonsai 27B 15 at 32K, Granite 4.2 8B 14 at 8K.
 
 Each figure is **one run**, and the same model varies from one run to the next — Gemma 4 12B scored 13/14, then 6/14,
 on two identical runs — so a gap of one or two tasks between two models means nothing. Only recent models are measured:
