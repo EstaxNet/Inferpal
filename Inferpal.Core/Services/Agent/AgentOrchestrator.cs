@@ -370,8 +370,8 @@ internal sealed class AgentOrchestrator
     /// between the anchored head (<paramref name="anchorCount"/>) and the last
     /// <see cref="KeepRecentMessages"/> messages — with a short placeholder. This frees tokens while
     /// preserving the message structure, the system prompt + task + plan, and the most recent
-    /// results. The full elided output is still recoverable via the dedup cache if the model
-    /// re-requests the same call. No-op when no context window is configured (num_ctx = model default).
+    /// results. A re-request of an elided call runs the tool again: the dedup cache keeps only network and search
+    /// results, never a file read. No-op when no context window is configured (num_ctx = model default).
     /// </summary>
     /// <param name="toolTokens">The tool definitions every request of the run carries (<see cref="RequestSize.ToolTokens"/>).
     /// ⚠ Counted like the conversation, as the check between turns counts them: they weigh about half of an 8 192-token
