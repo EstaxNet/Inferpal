@@ -244,6 +244,7 @@ internal static class TddCommandHandler
      || output.Contains(Tools.RunTestsTool.NoTestScript,        StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.PytestNotInstalled,  StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.DotnetCommandRejected, StringComparison.Ordinal)
+     || output.Contains(Tools.RunTestsTool.EnvironmentRefused,  StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.RunnerNotStarted,    StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.NpmNotRunnable,      StringComparison.Ordinal)
      || output.Contains(Tools.RunTestsTool.PathNotFound,        StringComparison.Ordinal)

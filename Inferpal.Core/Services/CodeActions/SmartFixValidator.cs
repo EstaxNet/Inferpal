@@ -287,6 +287,10 @@ internal sealed class SmartFixValidator
     /// <summary>The cause <see cref="Interpret"/> gives for a build dotnet refused before reading any code (MSB1xxx).</summary>
     internal const string CommandLineRefusedCause = "dotnet refused its command line";
 
+    /// <summary>The cause <see cref="Interpret"/> gives for a build stopped on this machine's .NET SDK or workloads
+    /// (<see cref="GetDiagnosticsTool.IsEnvironmentRefusal"/>, <see cref="GetDiagnosticsTool.IsSdkNotFound"/>).</summary>
+    internal const string EnvironmentRefusedCause = GetDiagnosticsTool.EnvironmentMismatch;
+
     /// <summary>The note for a validator run that ended with <paramref name="exitCode"/>; null stays silent.</summary>
     /// <remarks>
     /// The .NET error lines only NAME the errors; whether the build passed is the exit code's to say, as for
@@ -308,15 +312,19 @@ internal sealed class SmartFixValidator
                 .Distinct()
                 .ToList();
             // Stopped before the compiler: counted, "1 compilation error(s)" ends a turn red over code nothing compiled.
-            if (errors.Count > 0 && errors.All(GetDiagnosticsTool.IsNotRestored))
-                return Strings.SmartFixCouldNotRun(NotRestoredCause);
-            if (errors.Count > 0 && errors.All(RunTestsTool.IsCommandLineError))
-                return Strings.SmartFixCouldNotRun(CommandLineRefusedCause);
-            return Strings.SmartFixBuildErrors(errors.Count, Listed(errors));
+            return GetDiagnosticsTool.StopOf(errors) switch
+            {
+                GetDiagnosticsTool.BuildStop.NotRestored => Strings.SmartFixCouldNotRun(NotRestoredCause),
+                GetDiagnosticsTool.BuildStop.Environment => Strings.SmartFixCouldNotRun(EnvironmentRefusedCause),
+                GetDiagnosticsTool.BuildStop.CommandLine => Strings.SmartFixCouldNotRun(CommandLineRefusedCause),
+                _                                        => Strings.SmartFixBuildErrors(errors.Count, Listed(errors)),
+            };
         }
 
         // The exit code is the reliable failure signal across toolchains.
         if (exitCode == 0) return Strings.SmartFixBuildOk;
+        // The host refused the global.json before MSBuild started: no error line, and nothing compiled.
+        if (dotnetFilter && GetDiagnosticsTool.IsSdkNotFound(output)) return Strings.SmartFixCouldNotRun(EnvironmentRefusedCause);
         if (IsToolMissing(exitCode, output)) return null;   // toolchain absent → stay silent
 
         var lines = ExtractErrorLines(output);

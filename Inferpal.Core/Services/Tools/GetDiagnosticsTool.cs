@@ -72,7 +72,8 @@ internal class GetDiagnosticsTool : ITool
         return _diagLine.IsMatch(output) || _panelLine.IsMatch(output);
     }
 
-    private static bool StoppedBeforeTheCompiler(string firstLine) => firstLine == CommandLineRefused || firstLine == NotRestored;
+    private static bool StoppedBeforeTheCompiler(string firstLine) =>
+        firstLine == CommandLineRefused || firstLine == NotRestored || firstLine == EnvironmentRefused;
 
     /// <summary>The answer under the note that names what a build made by choice did not cover.</summary>
     private static string UnderTheNote(string output)
@@ -117,6 +118,55 @@ internal class GetDiagnosticsTool : ITool
     /// error, and the model would not be shown it.</remarks>
     internal static bool IsNotRestored(string errorLine) =>
         Regex.IsMatch(errorLine, @"\berror\s+NETSDK(?:1004|1005|1047|1064)\b", RegexOptions.None, RegexBudget.Default);
+
+    /// <summary>What is wrong when dotnet refuses this machine's SDK (<see cref="IsEnvironmentRefusal"/>,
+    /// <see cref="IsSdkNotFound"/>): written once, for every reader that says it.</summary>
+    internal const string EnvironmentMismatch = "the installed .NET SDK or a workload does not match what this project asks for";
+
+    /// <summary>
+    /// The first line of an answer where dotnet stopped before compiling because this machine's .NET SDK or workloads do
+    /// not match what the project asks for (<see cref="BuildStop.Environment"/>), the projects not restored listed with
+    /// them. No remedy: the line dotnet writes follows as the reason.
+    /// </summary>
+    internal const string EnvironmentRefused =
+        "⚠ dotnet stopped before compiling a project: " + EnvironmentMismatch + " — it was not compiled, so this says "
+        + "nothing about its code. Its reason:";
+
+    /// <summary>
+    /// Whether <paramref name="errorLine"/> is dotnet refusing this machine's SDK: a target framework it does not support
+    /// (NETSDK1045), a workload that is not installed (NETSDK1147).
+    /// </summary>
+    /// <remarks>By the diagnostic's code, as <see cref="IsNotRestored"/>. ⚠ Not MSB4019 (an imported project not found):
+    /// the line cannot tell a missing SDK file from an import the project — or the agent — broke, and counted here the
+    /// agent that broke one would hear "nothing about the code".</remarks>
+    internal static bool IsEnvironmentRefusal(string errorLine) =>
+        Regex.IsMatch(errorLine, @"\berror\s+NETSDK(?:1045|1147)\b", RegexOptions.None, RegexBudget.Default);
+
+    /// <summary>
+    /// Whether <paramref name="output"/> is the dotnet host refusing a <c>global.json</c> whose SDK is not installed: it
+    /// prints no error code, on stderr, before MSBuild starts. Both the current host's sentence and the one before .NET 8.
+    /// </summary>
+    internal static bool IsSdkNotFound(string output) =>
+        output.Contains("A compatible .NET SDK was not found", StringComparison.Ordinal)
+        || output.Contains("A compatible installed .NET SDK for global.json version", StringComparison.Ordinal);
+
+    /// <summary>Why dotnet stopped before the compiler, by its error lines — <see cref="BuildStop.None"/> when one of them is
+    /// the code's.</summary>
+    internal enum BuildStop { None, CommandLine, NotRestored, Environment }
+
+    /// <summary>
+    /// Why dotnet stopped before the compiler (<see cref="BuildStop"/>): the one reading the build check, the check after an
+    /// edit (<c>SmartFixValidator</c>) and the test run (<see cref="RunTestsTool"/>) share, so none of them reads as a
+    /// compilation error what another reads as nothing compiled.
+    /// </summary>
+    /// <remarks>Every line or none, by each line's code. ⚠ The environment admits the projects not restored beside it: a fresh
+    /// clone mixes both under <c>--no-restore</c>, and a rule per class reads that build red.</remarks>
+    internal static BuildStop StopOf(IReadOnlyCollection<string> errorLines) =>
+        errorLines.Count == 0                                                ? BuildStop.None
+        : errorLines.All(RunTestsTool.IsCommandLineError)                    ? BuildStop.CommandLine
+        : errorLines.All(IsNotRestored)                                      ? BuildStop.NotRestored
+        : errorLines.All(l => IsNotRestored(l) || IsEnvironmentRefusal(l))   ? BuildStop.Environment
+        :                                                                      BuildStop.None;
 
     internal static bool OutputHasBuildErrors(string output) =>
         !string.IsNullOrEmpty(output) && ErrorLineRegex.IsMatch(output);
@@ -381,19 +431,24 @@ internal class GetDiagnosticsTool : ITool
         {
             body = run.TimedOut ? run.Stdout.Trim()
                  : run.Succeeded ? Strings.DiagBuildOk(projectFile)
-                                 : Strings.DiagBuildFailed(run.ExitCode, run.Stdout.Trim());
+                 // The host refuses a global.json before MSBuild starts — on stderr, which the failure below does not show.
+                 : IsSdkNotFound(run.Stderr) ? EnvironmentRefused + "\n" + run.Stderr.Trim()
+                 : Strings.DiagBuildFailed(run.ExitCode, run.Stdout.Trim());
         }
         else
         {
             var errorLines = diagnostics.Where(d => _diagLine.Match(d).Groups[1].Value.Equals("error", StringComparison.OrdinalIgnoreCase)).ToList();
             var warnings   = diagnostics.Count(d => _diagLine.Match(d).Groups[1].Value.Equals("warning", StringComparison.OrdinalIgnoreCase));
 
-            if (errorLines.Count > 0 && errorLines.All(RunTestsTool.IsCommandLineError))
-                // ⚠ Not an error in the code: counted as one, "1 error(s)" turned an end-of-turn notice and the result
-                // bar red over code that was never compiled.
+            // ⚠ Not an error in the code: counted as one, "1 error(s)" turns an end-of-turn notice and the result bar red,
+            // and the model repairs code that was never compiled.
+            var stop = StopOf(errorLines);
+            if (stop == BuildStop.CommandLine)
                 body = CommandLineRefused + "\n" + string.Join("\n", errorLines);
-            else if (errorLines.Count > 0 && errorLines.All(IsNotRestored))
+            else if (stop == BuildStop.NotRestored)
                 body = NotRestored + "\n" + ErrorsFirst(diagnostics);
+            else if (stop == BuildStop.Environment)
+                body = EnvironmentRefused + "\n" + ErrorsFirst(diagnostics);
             else if (errorLines.Count == 0 && !run.Succeeded && !run.TimedOut)
                 // ⚠ dotnet failed and no error line is readable: "0 error(s)" read Clean. Its output is the report.
                 body = Strings.DiagBuildFailed(run.ExitCode, run.Stdout.Trim());

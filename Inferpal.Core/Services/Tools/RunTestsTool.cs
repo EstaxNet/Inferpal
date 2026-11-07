@@ -770,6 +770,13 @@ internal class RunTestsTool : ITool
         return raw[(at + marker.Length)..(end < 0 ? raw.Length : end)].Trim();
     }
 
+    /// <summary>dotnet stopped before compiling on this machine's .NET SDK or workloads
+    /// (<see cref="GetDiagnosticsTool.IsEnvironmentRefusal"/>, <see cref="GetDiagnosticsTool.IsSdkNotFound"/>): nothing was
+    /// built, nothing ran. Followed by its reason.</summary>
+    internal const string EnvironmentRefused =
+        "⚠ dotnet stopped before compiling: " + GetDiagnosticsTool.EnvironmentMismatch + " — nothing ran, so nothing was "
+        + "proven. Its reason:";
+
     /// <summary>dotnet refused its own command line (MSB1xxx): nothing was built, nothing ran. Followed by its errors.</summary>
     internal const string DotnetCommandRejected =
         "⚠ dotnet refused its command line (an MSBuild switch error, not the code) — nothing ran, so nothing was "
@@ -886,11 +893,27 @@ internal class RunTestsTool : ITool
         // fix"), and never inferred from "Build FAILED.", which `dotnet test` also prints when a test merely fails.
         // MSBuild's MSB1xxx are COMMAND-LINE errors — which project, a file that does not exist, a bad switch: the code
         // was never built. Read as compiler errors, "MSB1011: specify which project" made /tdd edit sound code.
-        else if (CompileErrors(raw) is { Count: > 0 } invocation && invocation.All(IsCommandLineError))
+        else if (CompileErrors(raw) is { Count: > 0 } invocation && GetDiagnosticsTool.StopOf(invocation) == GetDiagnosticsTool.BuildStop.CommandLine)
         {
             sb.AppendLine(DotnetCommandRejected);
             foreach (var e in invocation.Take(3))
                 sb.AppendLine($"  {e}");
+        }
+        // ⚠ The SDK or a workload, not the code: read as compiler errors, /tdd edits code that was never compiled. Its
+        // lines first — a fresh clone lists the projects not restored beside it, and they would hide the one that names why.
+        else if (CompileErrors(raw) is { Count: > 0 } environment && GetDiagnosticsTool.StopOf(environment) == GetDiagnosticsTool.BuildStop.Environment)
+        {
+            sb.AppendLine(EnvironmentRefused);
+            foreach (var e in environment.OrderBy(e => GetDiagnosticsTool.IsEnvironmentRefusal(e) ? 0 : 1).Take(MaxCompileErrorsListed))
+                sb.AppendLine($"  {e}");
+            if (environment.Count > MaxCompileErrorsListed)
+                sb.AppendLine($"  … +{environment.Count - MaxCompileErrorsListed} more error(s) not listed");
+        }
+        // The host's refusal of a global.json, with no error line beside it: one beside it is the code's, and stays red.
+        else if (CompileErrors(raw).Count == 0 && GetDiagnosticsTool.IsSdkNotFound(raw))
+        {
+            sb.AppendLine(EnvironmentRefused);
+            sb.AppendLine(Truncate(raw.Trim(), MaxRawChars));
         }
         else if (CompileErrors(raw) is { Count: > 0 } errors)
         {
