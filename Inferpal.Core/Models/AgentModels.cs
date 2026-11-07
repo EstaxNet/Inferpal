@@ -65,36 +65,104 @@ public class AgentPlan
     [JsonPropertyName("steps")]
     public List<AgentPlanStep> Steps { get; set; } = [];
 
+    /// <summary>Whether this is the orchestrator's stand-in for a plan it could not read, not the model's own.</summary>
+    [JsonIgnore]
+    public bool IsFallback { get; init; }
+
+    /// <summary>How many objects <see cref="TryParse"/> tries before it reads no plan.</summary>
+    private const int MaxObjectsTried = 256;
+
+    private static readonly JsonSerializerOptions JsonIn = new() { PropertyNameCaseInsensitive = true };
+
     /// <summary>
-    /// Parses the first JSON object found in <paramref name="text"/>.
-    /// Returns <c>null</c> when no valid plan with at least one step can be extracted.
+    /// The first complete JSON object in <paramref name="text"/> that is a plan with at least one step — the last one
+    /// with <paramref name="last"/>; <c>null</c> when there is none.
     /// </summary>
-    public static AgentPlan? TryParse(string text)
+    /// <remarks>
+    /// ⚠ Never the text from the first <c>{</c> to the last <c>}</c>: a model writes its plan, a sentence, then the first
+    /// step's call as an object of its own, and that span is no JSON at all — the run then holds a plan that is not the
+    /// model's. One JSON value is read where an object opens (<c>{</c>, blanks, then <c>"</c>), braces inside strings
+    /// included. Which plan counts, the first or the last, is the caller's to say (<c>AgentOrchestrator.PlanOf</c>). The
+    /// last is the plan that ENDS last: one that holds others (a step that carries steps of its own) ends after them, a
+    /// draft before it.
+    /// shortcut: past <see cref="MaxObjectsTried"/> objects tried, no plan is read; plan replies are short.
+    /// </remarks>
+    public static AgentPlan? TryParse(string text, bool last = false)
     {
         if (string.IsNullOrWhiteSpace(text)) return null;
-
-        int start = text.IndexOf('{');
-        int end   = text.LastIndexOf('}');
-        if (start < 0 || end <= start) return null;
-
-        var json = text[start..(end + 1)];
+        var bytes = System.Text.Encoding.UTF8.GetBytes(text);   // a '{' byte is never part of a multi-byte character
+        (AgentPlan Plan, int End)? latest = null;
         try
         {
-            var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var plan = JsonSerializer.Deserialize<AgentPlan>(json, opts);
-            if (plan is null) return null;
-            // Valid JSON can still carry the nulls a model wrote: a null step passed the "at least one step"
-            // check and the first iteration dereferenced it — an exception the run does not catch, where an
-            // unreadable plan falls back.
-            plan.Steps ??= [];
-            plan.Steps.RemoveAll(step => step is null);
-            if (plan.Steps.Count == 0) return null;
-            plan.Goal ??= string.Empty;
-            foreach (var step in plan.Steps) step.Description ??= string.Empty;
-            return plan;
+            var tried = 0;
+            for (var k = 0; k < bytes.Length && tried < MaxObjectsTried; k++)
+            {
+                var i = last ? bytes.Length - 1 - k : k;
+                if (!OpensAnObject(bytes, i)) continue;
+                tried++;
+                if (ReadAt(bytes, i) is not { } read) continue;
+                // Forward, the first plan is the outermost one there: nothing inside it is tried before it.
+                if (!last) return read.Plan;
+                if (latest is not { } kept || i + read.Length >= kept.End) latest = (read.Plan, i + read.Length);
+            }
         }
-        catch { /* malformed JSON — fall through */ }
-        return null;
+        catch (Exception ex)
+        {
+            // The run reads its plan before its loop, outside any guard: an unexpected failure is no plan, never a throw.
+            Diagnostics.Swallow("AgentPlan.TryParse", ex);
+        }
+        return latest?.Plan;
+    }
+
+    /// <summary>The plan <paramref name="text"/> is, in its whole, or <c>null</c>: what an echo of the plan is.</summary>
+    internal static AgentPlan? TryParseWhole(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        try { return Valid(JsonSerializer.Deserialize<AgentPlan>(text, JsonIn)); }
+        catch (JsonException) { return null; }   // malformed: no plan
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("AgentPlan.TryParseWhole", ex);
+            return null;
+        }
+    }
+
+    /// <summary>Whether an object opens at <paramref name="i"/>: a brace, blanks, then a property name.</summary>
+    private static bool OpensAnObject(byte[] bytes, int i)
+    {
+        if (bytes[i] != (byte)'{') return false;
+        var j = i + 1;
+        while (j < bytes.Length && bytes[j] is (byte)' ' or (byte)'\t' or (byte)'\r' or (byte)'\n') j++;
+        return j < bytes.Length && bytes[j] == (byte)'"';
+    }
+
+    /// <summary>The plan read from the one JSON value at <paramref name="start"/> and its length in bytes, or
+    /// <c>null</c> when no plan reads from there.</summary>
+    private static (AgentPlan Plan, int Length)? ReadAt(byte[] bytes, int start)
+    {
+        try
+        {
+            var reader = new Utf8JsonReader(bytes.AsSpan(start));
+            if (!reader.Read()) return null;
+            var plan = Valid(JsonSerializer.Deserialize<AgentPlan>(ref reader, JsonIn));
+            return plan is null ? null : (plan, (int)reader.BytesConsumed);
+        }
+        catch (JsonException) { return null; }   // no complete object from here, or one no plan reads from
+    }
+
+    /// <summary><paramref name="plan"/> when it has at least one step, its nulls replaced; <c>null</c> otherwise.</summary>
+    private static AgentPlan? Valid(AgentPlan? plan)
+    {
+        if (plan is null) return null;
+        // Valid JSON can still carry the nulls a model wrote: a null step passed the "at least one step"
+        // check and the first iteration dereferenced it — an exception the run does not catch, where an
+        // unreadable plan falls back.
+        plan.Steps ??= [];
+        plan.Steps.RemoveAll(step => step is null);
+        if (plan.Steps.Count == 0) return null;
+        plan.Goal ??= string.Empty;
+        foreach (var step in plan.Steps) step.Description ??= string.Empty;
+        return plan;
     }
 
     // Non-ASCII text stays readable: the JSON is read by a model, never embedded in HTML.

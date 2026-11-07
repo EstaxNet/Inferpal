@@ -277,6 +277,19 @@ internal sealed class AgentOrchestrator
              + tail;
     }
 
+    /// <summary>The plan the model wrote in its plan reply, or <c>null</c> when it wrote none the loop can read.</summary>
+    /// <remarks>
+    /// Outside the reasoning, the FIRST plan: what follows it is the first step's call, an example, a word about it. In a
+    /// reply that is reasoning (surfaced as the answer, or a plan written only inside it), the LAST one: the plan the
+    /// reasoning ends on, its drafts before it.
+    /// </remarks>
+    internal static AgentPlan? PlanOf(ChatTurnResult planTurn)
+    {
+        var text = planTurn.TextContent ?? string.Empty;
+        if (planTurn.AnswerIsReasoning) return AgentPlan.TryParse(text, last: true);
+        return AgentPlan.TryParse(MarkdownParser.StripThinkTags(text)) ?? AgentPlan.TryParse(text, last: true);
+    }
+
     /// <summary>
     /// The plan reply as the anchored head keeps it: the model's own words when they are a complete reply, bounded
     /// like a tool result; the plan the run follows, as JSON, when the reply was cut.
@@ -771,7 +784,7 @@ internal sealed class AgentOrchestrator
             s = s.Trim();
         }
         return s.StartsWith('{') && s.EndsWith('}') && s.Contains("\"goal\"", StringComparison.Ordinal)
-            && AgentPlan.TryParse(s) is not null;
+            && AgentPlan.TryParseWhole(s) is not null;
     }
 
     // ── Public entry point ────────────────────────────────────────────────────
@@ -914,11 +927,12 @@ internal sealed class AgentOrchestrator
         serverScale       = ServerScale(planTurn.PromptTokens, EstimateTokens(planMessages));
 
         // Parse JSON plan; fall back to a single-step "execute" plan if parsing fails.
-        var plan = AgentPlan.TryParse(planTurn.TextContent)
+        var plan = PlanOf(planTurn)
                 ?? new AgentPlan
                    {
-                       Goal  = Strings.AgentPlanFallbackGoal,
-                       Steps = [new AgentPlanStep { Index = 1, Description = Strings.AgentPlanFallbackStep }],
+                       Goal       = Strings.AgentPlanFallbackGoal,
+                       Steps      = [new AgentPlanStep { Index = 1, Description = Strings.AgentPlanFallbackStep }],
+                       IsFallback = true,
                    };
 
         onPlanReady?.Invoke(plan);
@@ -1145,7 +1159,10 @@ internal sealed class AgentOrchestrator
                 // calling any more tools") made the model describe the fix instead of applying it.
                 var stepAwaitsWrite = stepIdx < plan.Steps.Count && WritesFiles(plan.Steps[stepIdx])
                                       && writesBefore is { } wrote && tools.WritesInRun == wrote;
-                if (stepIdx < plan.Steps.Count && !editChangedNothing && !stepAwaitsWrite)
+                // ⚠ The stand-in for a plan the model did not write in a readable form is never done by a call: closed at
+                // the first one, every later round would say "all plan steps are complete, answer WITHOUT calling any
+                // more tools" before anything is done. It stays open, and the run ends on the model's answer.
+                if (stepIdx < plan.Steps.Count && !plan.IsFallback && !editChangedNothing && !stepAwaitsWrite)
                 {
                     if (WritesFiles(plan.Steps[stepIdx]) && unclaimedWrites > 0) unclaimedWrites--;
                     plan.Steps[stepIdx].Status = AgentStepStatus.Done;
@@ -1173,27 +1190,35 @@ internal sealed class AgentOrchestrator
                 // the run open until the iteration limit.
                 // The bound counts repair ATTEMPTS — rounds that edited and still left the build broken —, never a round
                 // spent reading what to fix.
-                var buildFixAsked = remaining == 0 && buildBroken;
+                // A plan the loop does not know has no end to wait for: its repair prompt follows a write of the run, never
+                // a build broken before any edit (asked to fix errors, a model's first call reads them).
+                var buildFixAsked = (remaining == 0 || plan.IsFallback && tools.WritesInRun is > 0) && buildBroken;
                 if (buildFixAsked && iterExecs.Any(e => ChatTurnPolicy.IsFileEdit(e.Name))) buildFixRounds++;
                 // ⚠ A prose answer after the repair prompt IS an answer ("these errors were there before my change"):
                 // counted as a narration, it was told to "call the first tool from your plan".
-                answerRequested = remaining == 0 && !editChangedNothing;
+                answerRequested = (remaining == 0 || buildFixAsked) && !editChangedNothing;
                 // ⚠ A note waiting for the next action gets the generic prompt, which leaves the tools open: after "write the
                 // answer WITHOUT calling any more tools", a note that asks for one more change was answered in prose. The
                 // answer is still requested — a prose reply to "stop, just tell me what you changed" IS the answer, never a
                 // narration to send back.
                 var noteWaiting = steering?.HasPending == true;
+                // A plan the loop does not know has no step count to give: its own prompt, which leaves the answer to the model.
                 var observeMsg = editChangedNothing
                     ? ModelPrompts.AgentObservePromptEditUnchanged(iteration + 1, maxIter, toolNames)
                     : buildFixAsked
                     ? ModelPrompts.AgentObservePromptBuildBroken(iteration + 1, maxIter, toolNames)
                     : answerRequested && !noteWaiting
                         ? ModelPrompts.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, userTask)
+                    : plan.IsFallback
+                        ? ModelPrompts.AgentObservePromptPlanUnknown(iteration + 1, maxIter, toolNames, userTask)
                         : ModelPrompts.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining);
                 answerNowObserve = answerRequested && !noteWaiting && !editChangedNothing && !buildFixAsked
                     ? (observeMsg, ModelPrompts.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining))
                     : null;
                 messages.Add(new ChatMessageDto("user", observeMsg) { IsScaffolding = true });
+                // A plan the loop does not know never says the work is over: after each round of calls, the next text
+                // without a call may again be an intention as well as the answer, and is asked once more.
+                if (plan.IsFallback) nudgedOnce = false;
 
                 // Signal the UI to clear the streaming bubble so that think-only tokens
                 // from this tool-calling act do not pollute the final response bubble.
@@ -1243,7 +1268,9 @@ internal sealed class AgentOrchestrator
                 {
                     nudgedOnce = true;
                     // assistantMsg is already appended to messages above.
-                    messages.Add(new ChatMessageDto("user", ModelPrompts.AgentNudgeToolCall) { IsScaffolding = true });
+                    // A plan the loop does not know: the text may be the answer as well as an intention, so both ways out.
+                    messages.Add(new ChatMessageDto("user", plan.IsFallback ? ModelPrompts.AgentNudgePlanUnknown : ModelPrompts.AgentNudgeToolCall)
+                                 { IsScaffolding = true });
                     // Clear the streaming bubble — the nudge response will start fresh.
                     onStreamReset?.Invoke();
                     continue;
@@ -1279,6 +1306,12 @@ internal sealed class AgentOrchestrator
 
         // Hit the iteration cap. If tools ran, synthesise a final answer from what was gathered so
         // the user gets a real reply instead of only the "iteration limit" notice.
+        // The step of a plan the loop does not know closes on no call: at the cap it ended unfinished, not running.
+        if (plan.IsFallback && plan.Steps[0].Status is AgentStepStatus.Pending or AgentStepStatus.Active)
+        {
+            plan.Steps[0].Status = AgentStepStatus.Skipped;
+            onStepUpdate?.Invoke(0, AgentStepStatus.Skipped);
+        }
         var (capFinal, capCut, capRepeating) = executions.Count > 0
             ? await SynthesizeFinalAnswerAsync(
                 model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit(maxIter), onToken, onStreamReset, onStep,

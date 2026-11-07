@@ -137,6 +137,12 @@ internal static class ModelPrompts
         + "Now write the complete final answer to my most recent request, which was: \"{3}\" — directly, in full, and in my language, WITHOUT calling any more tools. Only call another tool if essential information is still missing. Do not repeat an answer given to an earlier, different question.",
                       iteration, max, toolNames, task);
 
+    /// <summary>OBSERVE injection for a run whose plan could not be read: no step count and no "plan complete", since the orchestrator does not know the plan — the model says whether work is left.</summary>
+    public static string AgentObservePromptPlanUnknown(int iteration, int max, string toolNames, string task) =>
+        string.Format("[OBSERVE — {0}/{1}] Tools executed: {2}.\n"
+        + "If my most recent request still needs work, call the next tool it needs. Once it is done, write the complete final answer to it, which was: \"{3}\" — directly, in full, and in my language. Do not repeat an answer given to an earlier, different question.",
+                      iteration, max, toolNames, task);
+
     /// <summary>OBSERVE injection when an edit among the round's calls wrote nothing: the step stays open, never "the plan is complete".</summary>
     public static string AgentObservePromptEditUnchanged(int iteration, int max, string toolNames) =>
         string.Format("[OBSERVE — {0}/{1}] Tools executed: {2}. The edit changed no file: nothing was written.\n"
@@ -153,6 +159,10 @@ internal static class ModelPrompts
     public const string AgentPlanEchoNudge =
         "That is a plan, not a step carried out. Do not write another plan. Call the tool for the next step now "
         + "- or, if the task is already complete, write your final answer to my request in plain prose.";
+
+    /// <summary>One-shot nudge for prose without a call in a run whose plan could not be read: it may be the answer as well as an intention, so both ways out.</summary>
+    public const string AgentNudgePlanUnknown =
+        "You wrote text without calling a tool. If my request still needs work, call the next tool it needs now. If it is done, write the complete final answer again: the text above is not shown.";
 
     /// <summary>One-shot nudge when the first ACT response narrated instead of calling a tool.</summary>
     public const string AgentNudgeToolCall =
