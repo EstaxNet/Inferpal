@@ -14,6 +14,28 @@ namespace Inferpal.Tests;
 [Collection(CultureSerialCollection.Name)]
 public class ProjectProfileTests
 {
+    [Fact]
+    public void AProfileReadEmpty_IsBeingSaved_NeverAProfileWithoutExclusions()
+    {
+        var root = Directory.CreateTempSubdirectory("inferpal-profile-").FullName;
+        try
+        {
+            Assert.Same(ProjectProfile.Empty, ProjectProfile.ReadUnlessMidSave(root));   // no profile: none excluded
+            var path = ProjectProfile.PathIn(root);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, """{ "indexExclude": ["generated/**"] }""");
+            Assert.Equal(["generated/**"], ProjectProfile.ReadUnlessMidSave(root)!.IndexExcludes);
+
+            // Truncated before it is written again: the same read that sees it empty says so.
+            File.WriteAllText(path, "");
+            Assert.Null(ProjectProfile.ReadUnlessMidSave(root));
+            // Emptied on purpose, saved with its byte order mark: a profile with no exclusions, as at startup.
+            File.WriteAllBytes(path, [0xEF, 0xBB, 0xBF]);
+            Assert.Same(ProjectProfile.Empty, ProjectProfile.ReadUnlessMidSave(root));
+        }
+        finally { try { Directory.Delete(root, recursive: true); } catch { } }
+    }
+
     // `Load` serves indexing, which runs every time a root is set. Loading the machine configuration
     // for a repository WITHOUT a profile re-applied its language and erased the one the editor had
     // just set during the host handshake.

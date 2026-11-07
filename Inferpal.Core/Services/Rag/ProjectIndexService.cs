@@ -961,7 +961,8 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>
     /// When <paramref name="path"/> is the workspace's <c>.inferpal/project.json</c>, its <c>indexExclude</c> is read again
     /// and, when it changed, the indexed files are judged again as for an ignore file (RAG on). The C# compilation does
-    /// not apply it. A file gone means no exclusion; a file that cannot be read (mid-save) keeps the ones in force.
+    /// not apply it. A file gone means no exclusion; a file that cannot be read or is read with no byte (mid-save) keeps
+    /// the ones in force.
     /// </summary>
     /// <returns>Whether the exclusions changed.</returns>
     internal bool OnProfileChanged(string path)
@@ -972,11 +973,8 @@ internal sealed class ProjectIndexService : IDisposable
             root = RootDir;
             if (root.Length == 0 || !PathComparer.Default.Equals(Path.GetFullPath(path), Path.GetFullPath(ProjectProfile.PathIn(root))))
                 return false;
-            // Truncated before it is written again (a save in two steps): mid-save, as an unreadable one.
-            var file = new FileInfo(ProjectProfile.PathIn(root));
-            if (file.Exists && file.Length == 0) return false;
-            var profile = ProjectProfile.Load(root);
-            if (profile.Problem is not null) return false;
+            // Unreadable, or truncated before it is written again (a save in two steps): mid-save, the exclusions stay.
+            if (ProjectProfile.ReadUnlessMidSave(root) is not { Problem: null } profile) return false;
             if (profile.IndexExcludes.SequenceEqual(_profileExcludes, StringComparer.Ordinal)) return false;
             _profileExcludes = profile.IndexExcludes;
         }

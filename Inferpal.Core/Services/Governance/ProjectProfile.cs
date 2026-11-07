@@ -132,6 +132,31 @@ internal sealed record ProjectProfile(
     }
 
     /// <summary>
+    /// Reads the profile of <paramref name="root"/> as a watcher must: <c>null</c> while it is being saved — a file that
+    /// cannot be opened, or one read with no byte (truncated before it is written again). ⚠ One read decides: a size
+    /// checked apart from the read lets a save land between them, and the empty text then parses as a profile with no
+    /// exclusions. A file emptied on purpose and saved with its byte order mark is not mid-save: it has bytes.
+    /// </summary>
+    internal static ProjectProfile? ReadUnlessMidSave(string root)
+    {
+        try
+        {
+            var path = PathIn(root);
+            if (!File.Exists(path)) return Empty;
+            var bytes = File.ReadAllBytes(path);
+            if (bytes.Length == 0) return null;
+            // Decoded as File.ReadAllText decodes: UTF-8 unless a byte order mark says otherwise.
+            using var reader = new StreamReader(new MemoryStream(bytes), System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            return Parse(reader.ReadToEnd());
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("ProjectProfile.ReadUnlessMidSave", ex);
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Parses the profile JSON. <paramref name="config"/> is read only to fill in
     /// <see cref="ProfileRecommendation.Current"/>, so a recommendation can be shown next to what
     /// it would replace. Malformed JSON, or a root that is not an object, yields an empty profile whose
