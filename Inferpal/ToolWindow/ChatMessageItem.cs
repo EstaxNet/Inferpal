@@ -735,7 +735,8 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
                     || Steps.Exists(s => s.HasErrors)
                        && summary?.Check is null or Services.Presentation.RunCheck.None or Services.Presentation.RunCheck.Unproven;
         RunGlyph  = RunFailed ? Glyphs.Failed
-                  : summary?.Check == Services.Presentation.RunCheck.Unproven ? Glyphs.Info : Glyphs.Check;
+                  : summary?.Check is Services.Presentation.RunCheck.Unproven or Services.Presentation.RunCheck.PassedThenEdited
+                      ? Glyphs.Info : Glyphs.Check;
     }
 
     internal void InitFixCallback(string fullErrorOutput, Action<string> onFixWithAi)
@@ -923,7 +924,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             Role        = "result",
             CheckText   = summary.CheckText,
             HasCheck    = summary.Check != Services.Presentation.RunCheck.None,
-            CheckUnproven = summary.Check == Services.Presentation.RunCheck.Unproven,
+            CheckUnproven = summary.Check is Services.Presentation.RunCheck.Unproven or Services.Presentation.RunCheck.PassedThenEdited,
             CheckFailed = summary.Check is Services.Presentation.RunCheck.BuildFailed or Services.Presentation.RunCheck.TestsFailed,
             BtnUndo     = Strings.RunUndo,
             CanUndo     = onUndo is not null,

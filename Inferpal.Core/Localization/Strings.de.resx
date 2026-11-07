@@ -1423,6 +1423,7 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="RunBuildFailed" xml:space="preserve"><value>Build fehlgeschlagen</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>Tests bestanden</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>Tests bestanden, nur ein Teil der Suite</value></data>
+  <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, danach {1:N0} {1:Datei|Dateien} ohne Prüfung geändert</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>nicht geprüft</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Es ist keine Projektmappe und kein Ordner geöffnet, daher gibt es kein Repository zu lesen. Öffnen Sie eines, und versuchen Sie es erneut.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>Tests fehlgeschlagen</value></data>

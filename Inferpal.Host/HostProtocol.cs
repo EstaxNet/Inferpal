@@ -177,7 +177,8 @@ internal sealed record CutCardDto(string? Note, string OpenLimits, string Page, 
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
 /// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c>, <c>testsFailed</c>,
-/// <c>testsPassedPart</c> or <c>unproven</c>.</param>
+/// <c>testsPassedPart</c>, <c>unproven</c>, or <c>passedThenEdited</c> (a green last check, then files changed that
+/// nothing checked: never drawn with the check mark).</param>
 /// <param name="RunId">What <c>/undo-run</c> takes; empty when the run changed no file.</param>
 internal sealed record RunSummaryDto(
     int Steps, string Title, string Detail, List<Services.Presentation.RunFileLine> Files, string Check, string CheckText,

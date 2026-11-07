@@ -752,10 +752,12 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                     var toolName = call.Function.Name;
                     onStep(Strings.StatusCallingTool(toolName));
 
+                    var wroteBefore = tools.WritesInRun;
                     var result    = await AgentOrchestrator.ExecuteToolSafeAsync(tools, call.Function, turn.CutAtLimit, ct);
                     var diff      = tools.ConsumeDiff();
                     var hasErrors = toolName == GetDiagnosticsTool.ToolName && GetDiagnosticsTool.OutputHasErrors(result);
-                    var exec      = new ToolExecution(toolName, call.Function.WrittenArguments, result, hasErrors, diff);
+                    var exec      = new ToolExecution(toolName, call.Function.WrittenArguments, result, hasErrors, diff,
+                                                      ChatTurnPolicy.WroteAFile(toolName, wroteBefore, tools.WritesInRun));
                     executions.Add(exec);
                     onToolExecuted?.Invoke(exec);   // render the tool bubble live (full output)
                     // Size-capped copy for the model context; the UI bubble keeps the full output.

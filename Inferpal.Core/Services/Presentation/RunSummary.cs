@@ -9,7 +9,10 @@ namespace Inferpal.Services.Presentation;
 /// What the last check of a run said: the build or the tests, passed or failed; part of the suite when a pass spoke for
 /// no more; unproven when a check ran and proved nothing; none when nothing checked.
 /// </summary>
-internal enum RunCheck { None, BuildPassed, BuildFailed, TestsPassed, TestsFailed, TestsPassedPart, Unproven }
+/// <remarks><see cref="PassedThenEdited"/>: the last check passed, and files were edited after it that nothing checked —
+/// drawn with the info mark, never the check mark, and not "nothing proven" either (a step that failed before the green
+/// does not turn the run red).</remarks>
+internal enum RunCheck { None, BuildPassed, BuildFailed, TestsPassed, TestsFailed, TestsPassedPart, Unproven, PassedThenEdited }
 
 /// <summary>One file a run changed, as its result bar shows it.</summary>
 /// <param name="Added">Lines added since the run's backup — an estimate, never a promise of git's count.</param>
@@ -49,14 +52,23 @@ internal static class RunSummary
         var searches = executions.Count(e => Searches.Contains(e.Name));
         var commands = executions.Count(e => e.Name == "run_command");
         var files    = run is null ? [] : Files(run);
-        var check    = LastCheck(executions);
+        var (verdict, at) = ChatTurnPolicy.LastCheckAt(executions);
+        var check     = CheckOf(verdict);
+        var checkText = CheckText(check);
+        // ⚠ A green last check is not the last word over files changed after it that nothing checked. Counted by file, as
+        // the line counts what the run edited: three edits of one file are one file not checked.
+        if (check is RunCheck.BuildPassed or RunCheck.TestsPassed or RunCheck.TestsPassedPart
+            && FilesOf(ChatTurnPolicy.EditsAfter(executions, at)) is var changed and > 0)
+        {
+            checkText = Strings.RunCheckedThenEdited(checkText, changed);
+            check     = RunCheck.PassedThenEdited;
+        }
 
         var parts = new List<string>();
         if (reads > 0)       parts.Add(Strings.RunRead(reads));
         if (searches > 0)    parts.Add(Strings.RunSearched(searches));
         if (files.Count > 0) parts.Add(Strings.RunEdited(files.Count));
         if (commands > 0)    parts.Add(Strings.RunCommands(commands));
-        var checkText = CheckText(check);
         if (checkText.Length > 0) parts.Add(checkText);
 
         return new RunSummaryModel(
@@ -84,8 +96,11 @@ internal static class RunSummary
     /// passed only on a verdict that says so: a run where nothing was proven passes nothing, and says it, or a run on a
     /// clone never restored reads ✓ with nothing compiled.
     /// </summary>
-    internal static RunCheck LastCheck(IReadOnlyList<ToolExecution> executions) =>
-        ChatTurnPolicy.LastCheck(executions) switch
+    internal static RunCheck LastCheck(IReadOnlyList<ToolExecution> executions) => CheckOf(ChatTurnPolicy.LastCheck(executions));
+
+    /// <summary>What the bar says of a check's verdict.</summary>
+    private static RunCheck CheckOf(ChatTurnPolicy.CheckVerdict? verdict) =>
+        verdict switch
         {
             null                                                   => RunCheck.None,
             { Failed: null }                                       => RunCheck.Unproven,
@@ -109,19 +124,36 @@ internal static class RunSummary
                   .Distinct(PathComparer.Default)
                   .Count();
 
-    private static string PathOf(string input)
+    /// <summary>The files <paramref name="edits"/> wrote, each once: a call's <c>path</c>, or each <c>path</c> of an
+    /// <c>apply_edits</c> batch; an edit that names none (a rename) counts as one.</summary>
+    private static int FilesOf(IReadOnlyList<ToolExecution> edits) =>
+        edits.SelectMany((e, i) => PathsOf(e.Input) is { Count: > 0 } paths ? paths : ["\0" + i])
+             .Distinct(PathComparer.Default).Count();
+
+    private static string PathOf(string input) => PathsOf(input, batch: false) is [var path] ? path : string.Empty;
+
+    private static List<string> PathsOf(string input, bool batch = true)
     {
+        var paths = new List<string>();
         try
         {
             using var doc = System.Text.Json.JsonDocument.Parse(input);
-            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object
-                || !doc.RootElement.TryGetProperty("path", out var p) || p.ValueKind != System.Text.Json.JsonValueKind.String)
-                return string.Empty;
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return paths;
+            Add(doc.RootElement);
+            if (batch && doc.RootElement.TryGetProperty("edits", out var list) && list.ValueKind == System.Text.Json.JsonValueKind.Array)
+                foreach (var edit in list.EnumerateArray())
+                    if (edit.ValueKind == System.Text.Json.JsonValueKind.Object) Add(edit);
+        }
+        catch (System.Text.Json.JsonException) { }
+        return paths;
+
+        void Add(System.Text.Json.JsonElement holder)
+        {
+            if (!holder.TryGetProperty("path", out var p) || p.ValueKind != System.Text.Json.JsonValueKind.String) return;
             var path = (p.GetString() ?? string.Empty).Trim().Replace('\\', '/');
             while (path.StartsWith("./", StringComparison.Ordinal)) path = path[2..];
-            return path;
+            if (path.Length > 0) paths.Add(path);
         }
-        catch (System.Text.Json.JsonException) { return string.Empty; }
     }
 
     /// <summary>The files the run changed, each with its lines added and removed since the run's backup.</summary>

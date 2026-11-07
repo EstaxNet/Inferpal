@@ -134,12 +134,21 @@ internal static class ChatTurnPolicy
     /// <summary>Whether a registry that offers <paramref name="toolName"/> can run a check: a check tool, or the shell.</summary>
     internal static bool CanRunACheck(string toolName) => IsCheckTool(toolName) || toolName == "run_command";
 
-    /// <summary>Whether <paramref name="execution"/> changed the project, read from its result alone: an edit that did not
-    /// fail, the memory aside.</summary>
-    /// <remarks>⚠ A refusal at the card or a dry run does not read as a failure: where the registry counts its writes, the
-    /// loop judges an edit on that count (<see cref="ProofOf"/>'s <c>landed</c>), and this reading is the fallback.</remarks>
+    /// <summary>Whether <paramref name="execution"/> changed the project: an edit that wrote a file, the memory aside.</summary>
+    /// <remarks>⚠ By the registry's count when the loop took it (<see cref="ToolExecution.Wrote"/>): a refusal at the card, an
+    /// unsaved buffer, a dry run do not read as failures. The result's text is the fallback of a registry that does not
+    /// count.</remarks>
     internal static bool EditLanded(ToolExecution execution) =>
-        IsFileEdit(execution.Name) && execution.Name != "update_memory" && !Execution.ToolFailure.IsFailure(execution.Output);
+        ChangesProject(execution.Name) && (execution.Wrote ?? !Execution.ToolFailure.IsFailure(execution.Output));
+
+    /// <summary>Whether <paramref name="toolName"/> writes a file of the project: a file edit, the memory aside.</summary>
+    internal static bool ChangesProject(string toolName) => IsFileEdit(toolName) && toolName != "update_memory";
+
+    /// <summary>Whether a call to <paramref name="toolName"/> wrote a file, by the registry's count of writes before and
+    /// after it; <c>null</c> for a tool that changes no file of the project, or a registry that does not count — what
+    /// <see cref="ToolExecution.Wrote"/> carries.</summary>
+    internal static bool? WroteAFile(string toolName, int? before, int? after) =>
+        ChangesProject(toolName) && before is { } b && after is { } a ? a > b : null;
 
     /// <summary>What a run's checks proved, since its last edit that landed and over the whole run.</summary>
     /// <param name="LastEdit">The index of the run's last edit that landed; -1 when none did.</param>
@@ -151,15 +160,13 @@ internal static class ChatTurnPolicy
 
     /// <summary>What <paramref name="executions"/>' checks proved, read as the result bar reads them (<see cref="CheckOf"/>).</summary>
     /// <param name="executions">The run's calls, in the order they ran.</param>
-    /// <param name="landed">Whether the call at an index wrote a file, when the caller counted it; otherwise read from the
-    /// call's result (<see cref="EditLanded"/>).</param>
     /// <remarks>The build an edit's Smart Fix runs is part of that edit, never a check of its own. A command refused at its
     /// card, a test run that found nothing to run, a build that found no project, prove nothing.</remarks>
-    internal static CheckProof ProofOf(IReadOnlyList<ToolExecution> executions, Func<int, bool>? landed = null)
+    internal static CheckProof ProofOf(IReadOnlyList<ToolExecution> executions)
     {
         var lastEdit = -1;
         for (var i = 0; i < executions.Count; i++)
-            if (landed is null ? EditLanded(executions[i]) : landed(i)) lastEdit = i;
+            if (EditLanded(executions[i])) lastEdit = i;
         bool testsSince = false, buildSince = false, testsInRun = false, buildInRun = false;
         for (var i = 0; i < executions.Count; i++)
         {
@@ -228,16 +235,36 @@ internal static class ChatTurnPolicy
     /// erased the red run before them: no notice, no "failed" on the bar. A check that proved nothing is said only when
     /// no check proved anything.
     /// </remarks>
-    internal static CheckVerdict? LastCheck(IEnumerable<ToolExecution> executions)
+    internal static CheckVerdict? LastCheck(IEnumerable<ToolExecution> executions) =>
+        LastCheckAt(executions as IReadOnlyList<ToolExecution> ?? [.. executions]).Verdict;
+
+    /// <summary><see cref="LastCheck"/>, and where it is: the index of the last check that proved something, -1 when none
+    /// did.</summary>
+    internal static (CheckVerdict? Verdict, int At) LastCheckAt(IReadOnlyList<ToolExecution> executions)
     {
         CheckVerdict? lastUnproven = null;
-        foreach (var e in executions.Reverse())
+        for (var i = executions.Count - 1; i >= 0; i--)
         {
-            if (CheckOf(e) is not { } verdict) continue;
-            if (verdict.Failed is not null) return verdict;
+            if (CheckOf(executions[i]) is not { } verdict) continue;
+            if (verdict.Failed is not null) return (verdict, i);
             lastUnproven ??= verdict;
         }
-        return lastUnproven;
+        return (lastUnproven, -1);
+    }
+
+    /// <summary>
+    /// The edits that wrote a file after the check at <paramref name="at"/> (<see cref="LastCheckAt"/>): what that check,
+    /// green or red, has not seen. None when no check proved anything (<paramref name="at"/> below 0).
+    /// </summary>
+    /// <remarks>⚠ An edit that carries its own verdict (an edit's Smart Fix) is itself that last check, so it is never
+    /// counted after it. A file a shell command changed is not counted: the run does not tell its writes per call.</remarks>
+    internal static IReadOnlyList<ToolExecution> EditsAfter(IReadOnlyList<ToolExecution> executions, int at)
+    {
+        var edits = new List<ToolExecution>();
+        if (at < 0) return edits;
+        for (var i = at + 1; i < executions.Count; i++)
+            if (EditLanded(executions[i])) edits.Add(executions[i]);
+        return edits;
     }
 
     private static CheckVerdict RunTestsVerdict(ToolExecution run)

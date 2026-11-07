@@ -1423,6 +1423,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="RunBuildFailed" xml:space="preserve"><value>kompilacja nieudana</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>testy zaliczone</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>testy zaliczone, tylko część zestawu</value></data>
+  <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, potem {1:N0} {1:plik zmieniony|pliki zmienione|plików zmienionych} bez sprawdzenia</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>nie sprawdzono</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Nie otwarto rozwiązania ani folderu, więc nie ma repozytorium do odczytania. Otwórz je i spróbuj ponownie.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>testy niezaliczone</value></data>

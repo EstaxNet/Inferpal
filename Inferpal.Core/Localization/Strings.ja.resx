@@ -1423,6 +1423,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RunBuildFailed" xml:space="preserve"><value>ビルド失敗</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>テスト成功</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>テスト成功（スイートの一部のみ）</value></data>
+  <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}、その後 {1:N0} 個のファイルが未確認のまま変更</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>未検証</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>ソリューションもフォルダーも開かれていないため、読み取るリポジトリがありません。開いてから、もう一度お試しください。</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>テスト失敗</value></data>

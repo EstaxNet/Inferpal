@@ -1475,8 +1475,10 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     // Failed: its last check failed, or, with no check, one of its steps did.
     const unproven = run.check === 'unproven';
     const failed = run.check === 'buildFailed' || run.check === 'testsFailed' || ((run.check === 'none' || unproven) && stepFailed);
-    setIcon(target.runGlyph, failed ? 'failed' : unproven ? 'info' : 'check', undefined, 13);
-    target.runGlyph.classList.toggle('ok', !failed && !unproven);
+    // A green last check followed by edits nothing checked is no check mark either, and no failed step turns it red.
+    const info = unproven || run.check === 'passedThenEdited';
+    setIcon(target.runGlyph, failed ? 'failed' : info ? 'info' : 'check', undefined, 13);
+    target.runGlyph.classList.toggle('ok', !failed && !info);
     target.runGlyph.classList.toggle('failed', failed);
   }
   if (run.files.length === 0 && run.check === 'none') {
@@ -1507,7 +1509,8 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     const check = document.createElement('span');
     const failed = run.check === 'buildFailed' || run.check === 'testsFailed';
     check.className = 'result-check' + (failed ? ' failed' : '');
-    setIcon(check, failed ? 'failed' : run.check === 'unproven' ? 'info' : 'check', run.checkText, 13);
+    // A green last check followed by edits nothing checked: the info mark, never the check mark.
+    setIcon(check, failed ? 'failed' : run.check === 'unproven' || run.check === 'passedThenEdited' ? 'info' : 'check', run.checkText, 13);
     bar.appendChild(check);
   }
   if (run.runId) {

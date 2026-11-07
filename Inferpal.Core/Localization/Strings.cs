@@ -141,6 +141,7 @@ internal static class Strings
     public static string RunBuildFailed => Get(nameof(RunBuildFailed));
     public static string RunTestsPassed => Get(nameof(RunTestsPassed));
     public static string RunTestsPassedPart => Get(nameof(RunTestsPassedPart));
+    public static string RunCheckedThenEdited(string check, int files) => Format(Get(nameof(RunCheckedThenEdited)), check, files);
     public static string RunNotVerified => Get(nameof(RunNotVerified));
     public static string GitNeedsAWorkspace => Get(nameof(GitNeedsAWorkspace));
     public static string RunTestsFailed => Get(nameof(RunTestsFailed));

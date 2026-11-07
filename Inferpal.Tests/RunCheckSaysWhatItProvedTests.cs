@@ -82,8 +82,12 @@ public sealed class RunCheckSaysWhatItProvedTests
         var protocol = WebviewRebuildTests.TsCode("protocol.ts");
         var main     = WebviewRebuildTests.TsCode("webview/main.ts");
 
-        Assert.Contains("'testsPassedPart' | 'unproven'", protocol);
-        Assert.Contains("failed ? 'failed' : unproven ? 'info' : 'check'", main);
-        Assert.Contains("failed ? 'failed' : run.check === 'unproven' ? 'info' : 'check'", main);
+        Assert.Contains("'testsPassedPart' | 'unproven' | 'passedThenEdited'", protocol);
+        Assert.Contains("const info = unproven || run.check === 'passedThenEdited';", main);
+        Assert.Contains("failed ? 'failed' : info ? 'info' : 'check'", main);
+        Assert.Contains("failed ? 'failed' : run.check === 'unproven' || run.check === 'passedThenEdited' ? 'info' : 'check'", main);
+        // A failed step turns only a run with no check, or nothing proven, red — never a green followed by edits.
+        Assert.Contains("const unproven = run.check === 'unproven';", main);
+        Assert.Contains("((run.check === 'none' || unproven) && stepFailed)", main);
     }
 }

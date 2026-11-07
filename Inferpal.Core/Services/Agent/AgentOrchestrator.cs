@@ -790,10 +790,10 @@ internal sealed class AgentOrchestrator
     /// </summary>
     /// <remarks>⚠ A check step closes on any call while the run goes on: closed done, it would read "done" beside a
     /// result bar that shows no check, and closed on its round's state, a check run later would leave it skipped.</remarks>
-    internal static void SettleCheckSteps(AgentPlan plan, IReadOnlyList<ToolExecution> executions, Func<int, bool>? landed,
+    internal static void SettleCheckSteps(AgentPlan plan, IReadOnlyList<ToolExecution> executions,
                                           Action<int, AgentStepStatus>? onStepUpdate)
     {
-        var proof = ChatTurnPolicy.ProofOf(executions, landed);
+        var proof = ChatTurnPolicy.ProofOf(executions);
         for (var i = 0; i < plan.Steps.Count; i++)
         {
             if (!ChecksIt(plan.Steps[i])) continue;
@@ -999,10 +999,6 @@ internal sealed class AgentOrchestrator
         // The run's last landed edit the checks prompt was sent for: once per edit, so a check that cannot prove anything
         // here (no test found, a runner the reader does not know) is never asked for again and again.
         int checksAskedFor = -1;
-        // The run's calls that wrote a file, by their index in executions: a refusal at the card or a dry run reads as no
-        // failure, so where the registry counts its writes an edit is judged on that count.
-        var landedEdits = new HashSet<int>();
-        Func<int, bool>? landed = tools.WritesInRun is null ? null : landedEdits.Contains;
         // The last answer-now OBSERVE, and the generic one that stands in for it when a note arrives after it — found by its
         // text: a summary of the run's middle shifts the messages under it.
         (string Complete, string Generic)? answerNowObserve = null;
@@ -1098,7 +1094,7 @@ internal sealed class AgentOrchestrator
                     // Only surface the loop message when nothing was accomplished — the genuinely
                     // stuck case.
                     CloseRemainingSteps(plan, tools.WritesInRun is null ? null : unclaimedWrites, onStepUpdate);
-                    SettleCheckSteps(plan, executions, landed, onStepUpdate);
+                    SettleCheckSteps(plan, executions, onStepUpdate);
 
                     var (loopMsg, loopCut, loopRepeating) = executions.Count > 0
                         ? await SynthesizeFinalAnswerAsync(
@@ -1158,6 +1154,7 @@ internal sealed class AgentOrchestrator
 
                     string    result;
                     DiffInfo? diff;
+                    bool?     wroteAFile = null;
                     if (fromCache)
                     {
                         result = cached!;
@@ -1168,9 +1165,7 @@ internal sealed class AgentOrchestrator
                         var wroteBefore = tools.WritesInRun;
                         result = await ExecuteToolSafeAsync(tools, call.Function, turn.CutAtLimit, ct);
                         diff   = tools.ConsumeDiff();
-                        if (ChatTurnPolicy.IsFileEdit(toolName) && toolName != "update_memory"
-                            && wroteBefore is { } countBefore && tools.WritesInRun > countBefore)
-                            landedEdits.Add(executions.Count);
+                        wroteAFile = ChatTurnPolicy.WroteAFile(toolName, wroteBefore, tools.WritesInRun);
                         if (cacheable && IsAnAnswer(result))
                             toolCache[cacheKey] = result;
                     }
@@ -1178,7 +1173,7 @@ internal sealed class AgentOrchestrator
                     var hasErrors = toolName == GetDiagnosticsTool.ToolName
                                     && GetDiagnosticsTool.OutputHasErrors(result);
 
-                    var exec = new ToolExecution(toolName, call.Function.WrittenArguments, result, hasErrors, diff);
+                    var exec = new ToolExecution(toolName, call.Function.WrittenArguments, result, hasErrors, diff, wroteAFile);
                     iterExecs.Add(exec);
                     executions.Add(exec);
                     onToolExecuted?.Invoke(exec);   // render the tool bubble live (full, un-capped output)
@@ -1216,7 +1211,7 @@ internal sealed class AgentOrchestrator
                 // ⚠ The stand-in for a plan the model did not write in a readable form is never done by a call: closed at
                 // the first one, every later round would say "all plan steps are complete, answer WITHOUT calling any
                 // more tools" before anything is done. It stays open, and the run ends on the model's answer.
-                var proof = ChatTurnPolicy.ProofOf(executions, landed);
+                var proof = ChatTurnPolicy.ProofOf(executions);
                 if (stepIdx < plan.Steps.Count && !plan.IsFallback && !editChangedNothing && !stepAwaitsWrite)
                 {
                     if (WritesFiles(plan.Steps[stepIdx]) && unclaimedWrites > 0) unclaimedWrites--;
@@ -1355,7 +1350,7 @@ internal sealed class AgentOrchestrator
 
                 // ── Genuine final response ────────────────────────────────────
                 CloseRemainingSteps(plan, tools.WritesInRun is null ? null : unclaimedWrites, onStepUpdate);
-                SettleCheckSteps(plan, executions, landed, onStepUpdate);
+                SettleCheckSteps(plan, executions, onStepUpdate);
 
                 // The model stopped calling tools but gave no usable answer even though tools ran this
                 // turn — either no printable text (think-only / empty) OR a degenerate "I don't have
@@ -1390,7 +1385,7 @@ internal sealed class AgentOrchestrator
             plan.Steps[0].Status = AgentStepStatus.Skipped;
             onStepUpdate?.Invoke(0, AgentStepStatus.Skipped);
         }
-        SettleCheckSteps(plan, executions, landed, onStepUpdate);
+        SettleCheckSteps(plan, executions, onStepUpdate);
         var (capFinal, capCut, capRepeating) = executions.Count > 0
             ? await SynthesizeFinalAnswerAsync(
                 model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit(maxIter), onToken, onStreamReset, onStep,

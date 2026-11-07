@@ -578,7 +578,7 @@ export interface RunSummary {
   title: string;
   detail: string;
   files: RunFileLine[];
-  check: 'none' | 'buildPassed' | 'buildFailed' | 'testsPassed' | 'testsFailed' | 'testsPassedPart' | 'unproven';
+  check: 'none' | 'buildPassed' | 'buildFailed' | 'testsPassed' | 'testsFailed' | 'testsPassedPart' | 'unproven' | 'passedThenEdited';
   checkText: string;
   runId: string;
 }
