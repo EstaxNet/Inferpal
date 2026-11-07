@@ -24,8 +24,8 @@ public class SignalCollection
 /// </summary>
 /// <remarks>
 /// <para>
-/// <c>%TEMP%\Inferpal</c> is <b>machine-wide</b>: one folder, one fixed file name per
-/// channel, shared by every Inferpal process on the box — including a Visual Studio the developer
+/// The signal folder is <b>account-wide</b>: one folder, one fixed file name per
+/// channel, shared by every Inferpal process of the account — including a Visual Studio the developer
 /// is using while the suite runs. Before this seam the suite did not merely read that folder, it
 /// wrote to it, and the consequences were not theoretical:
 /// </para>

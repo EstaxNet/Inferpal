@@ -151,12 +151,12 @@ internal static class ModelUnloader
     /// waiting for a person at an approval card included: its model is needed again at the answer.</summary>
     /// <remarks>⚠ The model server is shared — Visual Studio, VS Code, each Zed thread's agent: a lease held in THIS
     /// process alone lets the settings of one editor unload the model another is answering with
-    /// (<see cref="ChatBusySignal"/> is the machine-wide channel the ghost text already reads).</remarks>
+    /// (<see cref="ChatBusySignal"/> is the account-wide channel the ghost text already reads).</remarks>
     internal static bool AnsweringAnywhere() => GpuScheduler.IsTurnInFlight || ChatBusySignal.IsTurnInFlightElsewhere();
 
     /// <param name="only">The models to unload; <c>null</c> = every loaded one.</param>
     /// <param name="isAnswering">Whether a question is being answered; <c>null</c> = <see cref="AnsweringAnywhere"/>
-    /// (machine-wide state, which a test replaces).</param>
+    /// (the account's state, which a test replaces).</param>
     /// <returns>The sentence that says what happened.</returns>
     public static async Task<string> UnloadAsync(
         IInferenceProvider client, InferpalConfig config, IReadOnlyList<string>? only, CancellationToken ct,

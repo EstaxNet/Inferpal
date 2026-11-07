@@ -322,11 +322,12 @@ internal static class SyntaxGuard
     private static async Task<ChildProcessResult?> RunOnCopyAsync(string text, string extension,
                                                                   Func<string, ProcessStartInfo> checker, CancellationToken ct)
     {
-        var dir  = Path.Combine(Path.GetTempPath(), "inferpal-syntax", Guid.NewGuid().ToString("N"));
-        var file = Path.Combine(dir, CheckedName + extension);
+        string? dir = null;
         try
         {
-            Directory.CreateDirectory(dir);
+            // The run's own folder: a fixed one in a shared temp folder belongs to the first account that creates it.
+            dir = Directory.CreateTempSubdirectory("inferpal-syntax-").FullName;
+            var file = Path.Combine(dir, CheckedName + extension);
             await File.WriteAllTextAsync(file, text, ct);
             return await ChildProcess.RunAsync(checker(file), Deadline, ct);
         }
@@ -338,7 +339,7 @@ internal static class SyntaxGuard
         }
         finally
         {
-            try { Directory.Delete(dir, recursive: true); } catch { }
+            try { if (dir is not null) Directory.Delete(dir, recursive: true); } catch { }
         }
     }
 }

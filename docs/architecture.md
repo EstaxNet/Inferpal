@@ -170,7 +170,7 @@ IPC channels:
 
 | Signal | Direction | Scope | Purpose |
 |---|---|---|---|
-| `ChatBusySignal` | host → devenv, host → host | machine-wide, one marker file per writer | FIM and the other processes' background indexing yield to an active chat anywhere on the box (one GPU) |
+| `ChatBusySignal` | host → devenv, host → host | account-wide, one marker file per writer | FIM and the other processes' background indexing yield to an active chat in any process of the account (one GPU) |
 | `DebugCommandSignal` | host → devenv | per VS instance (`<name>.<devenv pid>.json`) | carries `/debug` operations (breakpoints, step, continue…) to the in-process EnvDTE driver, and the break state `get_debugger_state` / `@debugger` ask for, captured when asked |
 | `BuildSignalFile` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | `VsBuildMonitor` surfaces VS build failures as the "Build Failed" banner |
 | `ActiveSolutionSignal` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | authoritative open solution for `/solution`, `/map`, RAG — its root is the folder holding the solution and its projects (`SolutionExtent`) |
@@ -255,10 +255,11 @@ the request times out. A central scheduler enforces priority **chat > FIM > embe
   WaitForChatIdleAsync` — they pause without losing progress and resume immediately; a `/task` run
   waits for every turn to end before it starts (`WaitForTurnsToEndAsync`).
 - They yield to a
-  chat of **any** Inferpal process on the machine (VS and VS Code share one GPU): besides this
+  chat of **any** Inferpal process of the same account (VS and VS Code share one GPU): besides this
   process's leases, they wait while another process's `ChatBusySignal` marker is live.
 - Inline completions run in `devenv.exe`, so they coordinate cross-process via `ChatBusySignal`
-  markers (`%TEMP%/Inferpal/chat_busy.<pid>.json`, **one file per writer** — pid + timestamp,
+  markers (`chat_busy.<pid>.json` in the account's signal folder: `%TEMP%/Inferpal` on Windows,
+  `~/.local/share/Inferpal/signals` elsewhere; **one file per writer** — pid + timestamp,
   anti-stale, periodically re-stamped during long runs): FIM is skipped while *any* live marker
   is fresh.
 

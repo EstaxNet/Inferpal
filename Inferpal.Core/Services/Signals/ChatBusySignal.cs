@@ -14,13 +14,13 @@ internal sealed record ChatBusyState(
 
 /// <summary>
 /// File-based IPC channel publishing "a chat/agent request is in flight" from each Inferpal process that answers
-/// (where <see cref="GpuScheduler"/> lives) to every other one on the machine: the ghost text (FIM) yields the shared
+/// (where <see cref="GpuScheduler"/> lives) to every other one of the account: the ghost text (FIM) yields the shared
 /// GPU to the chat, the other processes' background indexing waits for it, and nothing unloads the model of a turn or
 /// starts a <c>/task</c> beside it. Each process writes its own marker and reads the others'.
 /// </summary>
 /// <remarks>
 /// <para>
-/// ⚠ Deliberately <b>machine-wide as a channel</b>: there is one GPU, so a
+/// ⚠ Deliberately <b>account-wide as a channel</b>: the account's editors share one GPU, so a
 /// chat in one editor must silence the ghost-text of every other. But the <em>writing</em> is
 /// per-process: each writer owns <c>chat_busy.&lt;pid&gt;.json</c> and
 /// <see cref="Clear"/> only ever deletes its own marker. The previous design — one shared file plus
@@ -40,7 +40,7 @@ internal sealed record ChatBusyState(
 /// </para>
 /// <para>
 /// Migration: unlike the family-A identity
-/// channels, this is a machine-wide <em>hint</em>, so the legacy unscoped <c>chat_busy.json</c> of
+/// channels, this is an account-wide <em>hint</em>, so the legacy unscoped <c>chat_busy.json</c> of
 /// an old-version writer is still <b>read</b> — honouring it keeps FIM quiet during that chat,
 /// which is correct. It is never written to and never deleted: an old-version pair on the same
 /// machine still owns it.
@@ -83,7 +83,7 @@ internal static class ChatBusySignal
     // ── Readers (ghost text, the other processes) ───────────────────────────────
 
     /// <summary>
-    /// True when a chat/agent request works on the GPU <b>anywhere on the machine</b> (so FIM should
+    /// True when a chat/agent request works on the GPU <b>in any process of the account</b> (so FIM should
     /// skip): at least one marker — scoped or legacy — whose writer is alive and within
     /// <see cref="MaxAge"/>, and which does not say its turn waits for a person.
     /// </summary>

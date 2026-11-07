@@ -270,7 +270,7 @@ public class ConventionCoverageTests
         // The exemption is the rule's, not the property's: the guard writes nothing but its copy for the checkers, in a
         // folder of its own under the temporary folder, before any approval.
         var guard = CodeOnly(ToolsSources().Single(f => Path.GetFileName(f) == "SyntaxGuard.cs"));
-        Assert.Matches(@"var dir\s*=\s*Path\.Combine\(Path\.GetTempPath\(\), ""inferpal-syntax""", guard);
+        Assert.Matches(@"dir\s*=\s*Directory\.CreateTempSubdirectory\(""inferpal-syntax-""\)", guard);
         Assert.Single(System.Text.RegularExpressions.Regex.Matches(guard, @"File\.Write\w*\("));
         Assert.Contains("File.WriteAllTextAsync(file, text, ct)", guard, StringComparison.Ordinal);
 
@@ -2796,6 +2796,40 @@ public class ConventionCoverageTests
             "These HTTP handlers take the bare system proxy, which .NET applies to localhost too: behind a corporate proxy "
             + "the person's local servers are said unreachable. Set Proxy = NetworkProxy.Shared, and build every HttpClient "
             + "on such a handler. Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
+    // ── 39. A temporary folder is the run's own ───────────────────────────────
+
+    [Fact]
+    public void EveryTemporaryFolder_IsTheRunsOwn()
+    {
+        // Outside Windows the temp folder is the machine's /tmp: a folder with a fixed name in it belongs to the first
+        // account that creates it, every other account's writes fail in silence, and that account can plant links in it.
+        // A run's folder comes from Directory.CreateTempSubdirectory: a name nobody can guess, only this account inside.
+        // Scope: the code that runs outside Windows (the Core and the host). Exempt by name, with the reason:
+        // SignalFile (the Windows signal folder, and a folder named by a fresh Guid when the system names no home) and
+        // ServerInstall (winget's lock, Windows only, and a working directory, which creates nothing).
+        // The temp folder by any name: the API, its variables, and the folders it usually is.
+        var temp      = new Regex(@"\bGetTemp(Path|FileName)\b|""(TMPDIR|TMP|TEMP)""|""/(tmp|var/tmp|dev/shm)\b");
+        string[] exempt = ["SignalFile.cs", "ServerInstall.cs"];
+        var offenders = new List<string>();
+        var seen      = 0;
+
+        foreach (var file in new[] { "Inferpal.Core", "Inferpal.Host" }.SelectMany(ProjectSources))
+        {
+            var hits = temp.Matches(CodeOnly(file)).Count;
+            seen += hits;
+            if (hits > 0 && !exempt.Contains(Path.GetFileName(file))) offenders.Add(Rel(file));
+        }
+
+        // Witness, under the real count (three, in the exempt files): the pattern is really met, otherwise "no offender"
+        // means that nothing was read.
+        Assert.True(seen >= 2, $"Only {seen} use(s) of the temp folder read: the scan measures nothing any more.");
+        Assert.True(offenders.Count == 0,
+            "These files build a path under the temp folder: outside Windows a fixed folder there belongs to the first "
+            + "account that creates it. Take the run's own (Directory.CreateTempSubdirectory), or the account's folder "
+            + "(UserFolders.Of). Files:"
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 

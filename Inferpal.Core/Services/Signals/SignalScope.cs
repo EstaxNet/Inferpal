@@ -2,12 +2,12 @@ namespace Inferpal.Services.Signals;
 
 /// <summary>
 /// Declares whether this process has an <b>in-process Visual Studio peer</b> — that is, whether the
-/// signal files under <c>%TEMP%\Inferpal</c> were written <em>for it</em>.
+/// signal files of this account's folder (<c>SignalFile.DefaultDirFor</c>) were written <em>for it</em>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The signal directory is <b>machine-wide</b>: one folder, one fixed file name per channel, shared
-/// by every Inferpal process on the box. The reader of <see cref="ActiveSolutionSignal"/> lives in
+/// The signal directory is <b>account-wide</b>: one folder, one fixed file name per channel, shared
+/// by every Inferpal process of the account. The reader of <see cref="ActiveSolutionSignal"/> lives in
 /// <c>Inferpal.Core</c>, so it serves <em>both</em> front-ends — and a <c>Inferpal.Host</c> driving VS
 /// Code would answer with the solution open in <b>Visual Studio</b>. It does not take two Visual Studio
 /// instances: one VS plus one VS Code is enough. (The debugger is reached through the session each

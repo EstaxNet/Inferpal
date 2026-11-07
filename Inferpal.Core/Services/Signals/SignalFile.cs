@@ -8,16 +8,16 @@ namespace Inferpal.Services.Signals;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Seven channels need the same five members — <c>DefaultTempDir</c>, a directory override for
+/// Seven channels need the same five members — the folder, a directory override for
 /// tests, an <c>IsProcessAlive</c> with its override, a clock with its override, and try/catch JSON
 /// I/O. Copies that agree are still dangerous: nothing keeps them agreeing, and channels drift apart
 /// on smaller things first.
 /// </para>
 /// <para>
 /// <b>One directory, one clock, one liveness check — because that is the truth.</b> These are
-/// properties of the machine, not of a channel: there is a single <c>%TEMP%\Inferpal</c>, a single
-/// process table, a single wall clock. Modelling them per channel invited seven answers to
-/// questions that have one.
+/// properties of the account and the machine, not of a channel: there is a single signal folder per account
+/// (<see cref="DefaultDirFor"/>), a single process table, a single wall clock. Modelling them per channel invited
+/// seven answers to questions that have one.
 /// </para>
 /// <para>
 /// ⚠ The overrides are process-wide statics and exist for tests only; production never sets them.
@@ -27,7 +27,49 @@ namespace Inferpal.Services.Signals;
 /// </remarks>
 internal static class SignalFile
 {
-    private static readonly string DefaultDir = Path.Combine(Path.GetTempPath(), "Inferpal");
+    /// <summary>The folder this process's account keeps its signals in (<see cref="DefaultDirFor"/>).</summary>
+    internal static readonly string DefaultDir = DefaultDirFor(
+        Environment.OSVersion.Platform == PlatformID.Win32NT, Path.GetTempPath(), LocalData());
+
+    /// <summary>
+    /// Where an account's signals live: <c>&lt;temp&gt;/Inferpal</c> on Windows, <c>~/.local/share/Inferpal/signals</c>
+    /// elsewhere.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ One folder per account, that no other account can write to. The temp folder of Windows is the account's; the
+    /// <c>/tmp</c> of Linux is the machine's: a folder with a fixed name there is owned by the first account that creates
+    /// it, every write of every other account fails in silence, and links that account plants in it turn a signal's
+    /// write into the overwrite of any file of yours. The account's home has neither problem, and every process of the
+    /// account finds the same folder in it, built on the home itself: <c>$XDG_RUNTIME_DIR</c> and <c>$XDG_DATA_HOME</c>
+    /// are missing from some of them, moved by others (a Flatpak VS Code), and carried over from the caller by
+    /// <c>su</c>. A home the system cannot name gets a folder of its own under the temp folder, named so nobody can
+    /// guess it: never a path relative to the current directory, the VS Code host's workspace.
+    /// Not <c>OperatingSystem.IsWindows()</c>: this file is also compiled as net472 by <c>Inferpal.InProc</c>.
+    /// </remarks>
+    internal static string DefaultDirFor(bool windows, string tempPath, string localData)
+    {
+        if (windows) return Path.Combine(tempPath, "Inferpal");
+        if (Path.IsPathRooted(localData)) return Path.Combine(localData, "Inferpal", "signals");
+        // shortcut: this process then coordinates with no other one; only when the system names no home for the account.
+        return Path.Combine(tempPath, "Inferpal-" + Guid.NewGuid().ToString("N"));
+    }
+
+    /// <summary>The account's <c>~/.local/share</c>, or <c>""</c> when the system names no home: never throws.</summary>
+    /// <remarks>⚠ Read by a static initializer: an exception here would make every signal throw, every chat lease
+    /// with it, where a lost signal is only a hint lost.</remarks>
+    private static string LocalData()
+    {
+        try
+        {
+            var home = UserFolders.Of(Environment.SpecialFolder.UserProfile);
+            return home.Length == 0 ? string.Empty : Path.Combine(home, ".local", "share");
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("SignalFile.LocalData", ex);
+            return string.Empty;
+        }
+    }
 
     /// <summary>Test seam: redirects every channel at once.</summary>
     internal static string? _directoryOverride;

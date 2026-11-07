@@ -10,20 +10,20 @@
 /// <para>
 /// A chat/agent request takes a <see cref="AcquireChatLease"/> for its whole duration (held across the agent loop and
 /// tool calls); background embedding loops (RAG index, @Docs index) await <see cref="WaitForChatIdleAsync"/> before each
-/// call, and a <c>/task</c> run <see cref="WaitForTurnsToEndAsync"/> before it starts, and pause — without losing progress — until no chat holds the GPU, in this process or in another one on the
-/// machine (VS and VS Code share it).
+/// call, and a <c>/task</c> run <see cref="WaitForTurnsToEndAsync"/> before it starts, and pause — without losing progress — until no chat holds the GPU, in this process or in another one of the
+/// account (VS and VS Code share it).
 /// </para>
 /// <para>
 /// Static singleton: there is one GPU per process, so no DI is needed. Holding a chat lease also raises the
 /// cross-process <see cref="ChatBusySignal"/>, which the ghost text (FIM) and the other processes read, realising the
-/// chat &gt; FIM &gt; embedding priority order machine-wide.
+/// chat &gt; FIM &gt; embedding priority order across the account's processes.
 /// </para>
 /// <para>
 /// ⚠ Two questions, two answers. <b>Is the GPU busy?</b> (<see cref="IsChatActive"/>, what FIM and the embedding loops
 /// yield to) and <b>is a turn in flight?</b> (<see cref="IsTurnInFlight"/>, what must not be cut under a turn: its MCP
 /// servers restarted, its model unloaded, a <c>/task</c> run started beside it). They differ while a turn waits for a
 /// person (an approval card, a step pause, a form): <see cref="PauseThisFlow"/> lets its leases go — the GPU is free, a
-/// card left overnight neither silences the completion of the machine nor holds every process's indexing — but the
+/// card left overnight neither silences the completion of every window nor holds every process's indexing — but the
 /// turn is still in flight. The flow knows its leases by the tokens it took (an <see cref="AsyncLocal{T}"/> chain),
 /// never by a number: a number would let go of another turn's lease.
 /// </para>
@@ -122,7 +122,7 @@ internal static class GpuScheduler
 
     /// <summary>
     /// <c>true</c> when ghost text (FIM) must stay quiet: a chat turn holds the GPU, here or
-    /// elsewhere on the machine.
+    /// in another process of the account.
     /// </summary>
     /// <remarks>
     /// Order matters. <see cref="IsChatActive"/> is the <b>local</b> truth - an in-memory counter,
@@ -131,8 +131,8 @@ internal static class GpuScheduler
     /// <c>Diagnostics.Swallow</c>). While the chat lived in the host and FIM in devenv, only the
     /// file could answer. With in-process hosting the two share a process: asking the disk what the
     /// counter already knows would make the chat &gt; FIM priority depend on a write that is
-    /// allowed to fail. The file is still consulted afterwards, for the other editors on the
-    /// machine - there is only one GPU.
+    /// allowed to fail. The file is still consulted afterwards, for the account's other editors,
+    /// which share the GPU.
     /// </remarks>
     public static bool ShouldFimYield() => IsChatActive || ChatBusySignal.IsBusy();
 
@@ -234,7 +234,7 @@ internal static class GpuScheduler
     }
 
     /// <summary>
-    /// Returns immediately when no chat works on the GPU, in this process or another one on the machine; otherwise
+    /// Returns immediately when no chat works on the GPU, in this process or another one of the account; otherwise
     /// waits until none does (or <paramref name="ct"/> fires). Awaited by background embedding loops before each call so
     /// they yield the GPU to interactive work without losing progress. A turn that waits for a person does not hold it.
     /// ⚠ Background only: a request someone waits for (<c>search_codebase</c>, <c>search_docs</c>) is called from inside
@@ -252,7 +252,7 @@ internal static class GpuScheduler
     }
 
     /// <summary>
-    /// Returns once no turn is in flight, in this process or another one on the machine — a turn waiting for a person
+    /// Returns once no turn is in flight, in this process or another one of the account — a turn waiting for a person
     /// included. For whole runs that must not start beside a turn (<c>/task</c>): started while a card waits, the run
     /// would compete with the turn for the GPU as soon as the person answers.
     /// </summary>

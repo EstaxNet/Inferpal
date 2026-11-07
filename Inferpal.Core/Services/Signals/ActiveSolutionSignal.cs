@@ -103,7 +103,7 @@ internal static class ActiveSolutionSignal
     private static string? TryReadField(string field)
     {
         // This file is written by a Visual Studio in-process package and the folder is
-        // machine-wide. A host with no such peer (Inferpal.Host, i.e. VS Code) would otherwise
+        // the account's, shared by all its processes. A host with no such peer (Inferpal.Host, i.e. VS Code) would otherwise
         // answer with the solution open in Visual Studio — and win, since callers consult this
         // first. Someone else's state is not a better answer than no answer.
         if (!SignalScope.HasVsInProcessPeer) return null;

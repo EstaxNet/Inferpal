@@ -74,8 +74,9 @@ internal static class TestCoverageCommandHandler
         var (ecosystem, notice) = await (detect ?? CoverageEcosystems.DetectAsync)(root, folder, ct);
         if (ecosystem is null) return notice ?? Strings.CoverageRunnerUnsupported("?");
 
-        // The measures' reports, outside the workspace: nothing but the new tests is written there.
-        var work = Path.Combine(Path.GetTempPath(), "inferpal-coverage", Guid.NewGuid().ToString("N"));
+        // The measures' reports, outside the workspace: nothing but the new tests is written there. The run's own folder:
+        // a fixed one in a shared temp folder belongs to the first account that creates it.
+        var work = Directory.CreateTempSubdirectory("inferpal-coverage-").FullName;
         try
         {
             return await RunAsync(client, config, tools, history, ecosystem, root, scope, work, onProgress, ct);
