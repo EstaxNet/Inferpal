@@ -42,7 +42,13 @@ public sealed class PlannedEditNotSkippedTests
         public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
         {
             if (name == "apply_diff") _writes++;
-            return Task.FromResult(name == "apply_diff" ? "OK — written" : "content");
+            // A test run reports as the tool does: the plan's check step is done only by a check that proved something.
+            return Task.FromResult(name switch
+            {
+                "apply_diff" => "OK — written",
+                "run_tests"  => "✓ PASSED — Failed: 0, Passed: 1, Skipped: 0, Total: 1",
+                _            => "content",
+            });
         }
     }
 

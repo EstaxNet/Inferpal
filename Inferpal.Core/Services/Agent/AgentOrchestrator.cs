@@ -734,7 +734,8 @@ internal sealed class AgentOrchestrator
 
     /// <summary>
     /// Closes the steps a run leaves open when it ends — on a repeat or on the final answer. A step whose tool WRITES is
-    /// done only with a write of its own: one the run made that no earlier write step claimed; otherwise it is skipped.
+    /// done only with a write of its own: one the run made that no earlier write step claimed; otherwise it is skipped. A
+    /// step whose tool checks is left to <see cref="SettleCheckSteps"/>, which follows every call of this one.
     /// </summary>
     /// <remarks>
     /// ⚠ Closed done whatever happened, a plan whose edits were all refused read "all done" right above the notice that
@@ -748,7 +749,8 @@ internal sealed class AgentOrchestrator
         for (var i = 0; i < plan.Steps.Count; i++)
         {
             var step = plan.Steps[i];
-            if (step.Status is not (AgentStepStatus.Pending or AgentStepStatus.Active)) continue;
+            // A check step says what its check proved (SettleCheckSteps, which follows every call of this one).
+            if (step.Status is not (AgentStepStatus.Pending or AgentStepStatus.Active) || ChecksIt(step)) continue;
             var status = AgentStepStatus.Done;
             if (unclaimedWrites is not null && WritesFiles(step))
             {
@@ -762,6 +764,44 @@ internal sealed class AgentOrchestrator
 
     /// <summary>Whether the tool a step announces writes files (the same reading as the step's advance).</summary>
     private static bool WritesFiles(AgentPlanStep step) => step.ToolHint is { } hint && ChatTurnPolicy.IsFileEdit(hint.Trim());
+
+    /// <summary>Whether the tool a step announces is a check tool: the tests or the build.</summary>
+    private static bool ChecksIt(AgentPlanStep step) => step.ToolHint is { } hint && ChatTurnPolicy.IsCheckTool(hint.Trim());
+
+    /// <summary>
+    /// Whether the check step at <paramref name="index"/> is done, by what the run's checks proved: a step that comes
+    /// after a write step checks the change, so it needs a check after the run's last edit; one before checks the code
+    /// as it was ("run the tests to see the failure"), so any check of the run does. A tests step needs a test run; a
+    /// build step, a build or a test run.
+    /// </summary>
+    private static bool CheckDone(AgentPlan plan, int index, ChatTurnPolicy.CheckProof proof)
+    {
+        var tests = string.Equals(plan.Steps[index].ToolHint?.Trim(), "run_tests", StringComparison.Ordinal);
+        var ofTheChange = proof.LastEdit >= 0 && plan.Steps.Take(index).Any(WritesFiles);
+        return ofTheChange ? (tests ? proof.TestsSinceEdit : proof.BuildSinceEdit)
+                           : (tests ? proof.TestsInRun : proof.BuildInRun);
+    }
+
+    /// <summary>
+    /// Says, at the end of a run, whether each step that announces a check was done (<see cref="CheckDone"/>), by the
+    /// reading of the result bar (<see cref="ChatTurnPolicy.ProofOf"/>).
+    /// </summary>
+    /// <remarks>⚠ A check step closes on any call while the run goes on: closed done, it would read "done" beside a
+    /// result bar that shows no check, and closed on its round's state, a check run later would leave it skipped.</remarks>
+    internal static void SettleCheckSteps(AgentPlan plan, IReadOnlyList<ToolExecution> executions, Func<int, bool>? landed,
+                                          Action<int, AgentStepStatus>? onStepUpdate)
+    {
+        var proof = ChatTurnPolicy.ProofOf(executions, landed);
+        for (var i = 0; i < plan.Steps.Count; i++)
+        {
+            if (!ChecksIt(plan.Steps[i])) continue;
+            var status = CheckDone(plan, i, proof) ? AgentStepStatus.Done : AgentStepStatus.Skipped;
+            // A step done stays done: its check ran for the change before it, and a later edit asks again in the loop.
+            if (plan.Steps[i].Status is AgentStepStatus.Done || plan.Steps[i].Status == status) continue;
+            plan.Steps[i].Status = status;
+            onStepUpdate?.Invoke(i, status);
+        }
+    }
 
     /// <summary>
     /// Whether <paramref name="answer"/> is, in its WHOLE, a new JSON plan (<c>{"goal":…,"steps":[…]}</c>, optionally
@@ -954,6 +994,13 @@ internal sealed class AgentOrchestrator
 
         // ── Phase 2: Act-Observe loop ────────────────────────────────────────
         int stepIdx = 0;
+        // The run's last landed edit the checks prompt was sent for: once per edit, so a check that cannot prove anything
+        // here (no test found, a runner the reader does not know) is never asked for again and again.
+        int checksAskedFor = -1;
+        // The run's calls that wrote a file, by their index in executions: a refusal at the card or a dry run reads as no
+        // failure, so where the registry counts its writes an edit is judged on that count.
+        var landedEdits = new HashSet<int>();
+        Func<int, bool>? landed = tools.WritesInRun is null ? null : landedEdits.Contains;
         // The last answer-now OBSERVE, and the generic one that stands in for it when a note arrives after it — found by its
         // text: a summary of the run's middle shifts the messages under it.
         (string Complete, string Generic)? answerNowObserve = null;
@@ -1049,6 +1096,7 @@ internal sealed class AgentOrchestrator
                     // Only surface the loop message when nothing was accomplished — the genuinely
                     // stuck case.
                     CloseRemainingSteps(plan, tools.WritesInRun is null ? null : unclaimedWrites, onStepUpdate);
+                    SettleCheckSteps(plan, executions, landed, onStepUpdate);
 
                     var (loopMsg, loopCut, loopRepeating) = executions.Count > 0
                         ? await SynthesizeFinalAnswerAsync(
@@ -1115,8 +1163,12 @@ internal sealed class AgentOrchestrator
                     }
                     else
                     {
+                        var wroteBefore = tools.WritesInRun;
                         result = await ExecuteToolSafeAsync(tools, call.Function, turn.CutAtLimit, ct);
                         diff   = tools.ConsumeDiff();
+                        if (ChatTurnPolicy.IsFileEdit(toolName) && toolName != "update_memory"
+                            && wroteBefore is { } countBefore && tools.WritesInRun > countBefore)
+                            landedEdits.Add(executions.Count);
                         if (cacheable && IsAnAnswer(result))
                             toolCache[cacheKey] = result;
                     }
@@ -1162,12 +1214,24 @@ internal sealed class AgentOrchestrator
                 // ⚠ The stand-in for a plan the model did not write in a readable form is never done by a call: closed at
                 // the first one, every later round would say "all plan steps are complete, answer WITHOUT calling any
                 // more tools" before anything is done. It stays open, and the run ends on the model's answer.
+                var proof = ChatTurnPolicy.ProofOf(executions, landed);
                 if (stepIdx < plan.Steps.Count && !plan.IsFallback && !editChangedNothing && !stepAwaitsWrite)
                 {
                     if (WritesFiles(plan.Steps[stepIdx]) && unclaimedWrites > 0) unclaimedWrites--;
-                    plan.Steps[stepIdx].Status = AgentStepStatus.Done;
-                    onStepUpdate?.Invoke(stepIdx, AgentStepStatus.Done);
+                    // A check step closes on any call, as every step does, and says whether its check ran.
+                    var status = ChecksIt(plan.Steps[stepIdx]) && !CheckDone(plan, stepIdx, proof)
+                        ? AgentStepStatus.Skipped : AgentStepStatus.Done;
+                    plan.Steps[stepIdx].Status = status;
+                    onStepUpdate?.Invoke(stepIdx, status);
                     stepIdx++;
+                    // A check this round ran after its edit is the next step's when that step announces it: closed only by
+                    // the next call, the step would wait for a check already run.
+                    if (stepIdx < plan.Steps.Count && ChecksIt(plan.Steps[stepIdx]) && CheckDone(plan, stepIdx, proof))
+                    {
+                        plan.Steps[stepIdx].Status = AgentStepStatus.Done;
+                        onStepUpdate?.Invoke(stepIdx, AgentStepStatus.Done);
+                        stepIdx++;
+                    }
                 }
 
                 // ── OBSERVE: inject structured observation ─────────────────────
@@ -1202,13 +1266,24 @@ internal sealed class AgentOrchestrator
                 // answer is still requested — a prose reply to "stop, just tell me what you changed" IS the answer, never a
                 // narration to send back.
                 var noteWaiting = steering?.HasPending == true;
+                // ⚠ A plan that checks its change is not over before the check: its check step closes on any call, so without
+                // this the answer-now prompt reaches a model that edited and ran nothing, and it answers without one test. It
+                // is asked once per edit to run the check, where a check can run; a reply in prose is still the answer.
+                var checksPending = answerRequested && !buildFixAsked && !noteWaiting
+                                    && proof.LastEdit >= 0 && proof.LastEdit != checksAskedFor
+                                    && tools.Definitions.Any(d => ChatTurnPolicy.CanRunACheck(d.Function.Name))
+                                    && Enumerable.Range(0, plan.Steps.Count).Any(i => ChecksIt(plan.Steps[i])
+                                           && plan.Steps.Take(i).Any(WritesFiles) && !CheckDone(plan, i, proof));
+                if (checksPending) checksAskedFor = proof.LastEdit;
                 // A plan the loop does not know has no step count to give: its own prompt, which leaves the answer to the model.
                 var observeMsg = editChangedNothing
                     ? ModelPrompts.AgentObservePromptEditUnchanged(iteration + 1, maxIter, toolNames)
                     : buildFixAsked
                     ? ModelPrompts.AgentObservePromptBuildBroken(iteration + 1, maxIter, toolNames)
                     : answerRequested && !noteWaiting
-                        ? ModelPrompts.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, userTask)
+                        ? checksPending
+                            ? ModelPrompts.AgentObservePromptChecksPending(iteration + 1, maxIter, toolNames, userTask)
+                            : ModelPrompts.AgentObservePromptComplete(iteration + 1, maxIter, toolNames, userTask)
                     : plan.IsFallback
                         ? ModelPrompts.AgentObservePromptPlanUnknown(iteration + 1, maxIter, toolNames, userTask)
                         : ModelPrompts.AgentObservePrompt(iteration + 1, maxIter, toolNames, remaining);
@@ -1278,6 +1353,7 @@ internal sealed class AgentOrchestrator
 
                 // ── Genuine final response ────────────────────────────────────
                 CloseRemainingSteps(plan, tools.WritesInRun is null ? null : unclaimedWrites, onStepUpdate);
+                SettleCheckSteps(plan, executions, landed, onStepUpdate);
 
                 // The model stopped calling tools but gave no usable answer even though tools ran this
                 // turn — either no printable text (think-only / empty) OR a degenerate "I don't have
@@ -1312,6 +1388,7 @@ internal sealed class AgentOrchestrator
             plan.Steps[0].Status = AgentStepStatus.Skipped;
             onStepUpdate?.Invoke(0, AgentStepStatus.Skipped);
         }
+        SettleCheckSteps(plan, executions, landed, onStepUpdate);
         var (capFinal, capCut, capRepeating) = executions.Count > 0
             ? await SynthesizeFinalAnswerAsync(
                 model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit(maxIter), onToken, onStreamReset, onStep,

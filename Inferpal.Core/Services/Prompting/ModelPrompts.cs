@@ -143,6 +143,12 @@ internal static class ModelPrompts
         + "If my most recent request still needs work, call the next tool it needs. Once it is done, write the complete final answer to it, which was: \"{3}\" — directly, in full, and in my language. Do not repeat an answer given to an earlier, different question.",
                       iteration, max, toolNames, task);
 
+    /// <summary>OBSERVE injection where <see cref="AgentObservePromptComplete"/> would go while the plan's check has not run since the run's last edit: run it, then answer — and answer anyway when it cannot run here.</summary>
+    public static string AgentObservePromptChecksPending(int iteration, int max, string toolNames, string task) =>
+        string.Format("[OBSERVE — {0}/{1}] Tools executed: {2}. Your plan checks the change, and the check it names has not run since the last edit.\n"
+        + "Run it now — the tests or the build your plan names. Then write the complete final answer to my most recent request, which was: \"{3}\" — in full, and in my language; if the check cannot run here, write it anyway and say so. Do not repeat an answer given to an earlier, different question.",
+                      iteration, max, toolNames, task);
+
     /// <summary>OBSERVE injection when an edit among the round's calls wrote nothing: the step stays open, never "the plan is complete".</summary>
     public static string AgentObservePromptEditUnchanged(int iteration, int max, string toolNames) =>
         string.Format("[OBSERVE — {0}/{1}] Tools executed: {2}. The edit changed no file: nothing was written.\n"

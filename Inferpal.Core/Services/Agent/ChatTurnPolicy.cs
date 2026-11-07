@@ -126,6 +126,54 @@ internal static class ChatTurnPolicy
     /// <summary>Whether <paramref name="toolName"/> is one that writes a file.</summary>
     internal static bool IsFileEdit(string toolName) => FileEditTools.Contains(toolName);
 
+    /// <summary>Whether <paramref name="toolName"/> is a check tool of its own: the tests or the build.</summary>
+    /// <remarks>Not <c>run_command</c>: a plan step that names it installs a package or moves a file as often as it runs
+    /// the tests — what a command checked is read from the command (<see cref="CheckOf"/>), never from its tool.</remarks>
+    internal static bool IsCheckTool(string toolName) => toolName is "run_tests" or "get_diagnostics";
+
+    /// <summary>Whether a registry that offers <paramref name="toolName"/> can run a check: a check tool, or the shell.</summary>
+    internal static bool CanRunACheck(string toolName) => IsCheckTool(toolName) || toolName == "run_command";
+
+    /// <summary>Whether <paramref name="execution"/> changed the project, read from its result alone: an edit that did not
+    /// fail, the memory aside.</summary>
+    /// <remarks>⚠ A refusal at the card or a dry run does not read as a failure: where the registry counts its writes, the
+    /// loop judges an edit on that count (<see cref="ProofOf"/>'s <c>landed</c>), and this reading is the fallback.</remarks>
+    internal static bool EditLanded(ToolExecution execution) =>
+        IsFileEdit(execution.Name) && execution.Name != "update_memory" && !Execution.ToolFailure.IsFailure(execution.Output);
+
+    /// <summary>What a run's checks proved, since its last edit that landed and over the whole run.</summary>
+    /// <param name="LastEdit">The index of the run's last edit that landed; -1 when none did.</param>
+    /// <param name="TestsSinceEdit">A test run with a verdict, green or red, after that edit.</param>
+    /// <param name="BuildSinceEdit">A build or a test run with a verdict after that edit: a test run builds too.</param>
+    /// <param name="TestsInRun">A test run with a verdict anywhere in the run.</param>
+    /// <param name="BuildInRun">A build or a test run with a verdict anywhere in the run.</param>
+    internal readonly record struct CheckProof(int LastEdit, bool TestsSinceEdit, bool BuildSinceEdit, bool TestsInRun, bool BuildInRun);
+
+    /// <summary>What <paramref name="executions"/>' checks proved, read as the result bar reads them (<see cref="CheckOf"/>).</summary>
+    /// <param name="executions">The run's calls, in the order they ran.</param>
+    /// <param name="landed">Whether the call at an index wrote a file, when the caller counted it; otherwise read from the
+    /// call's result (<see cref="EditLanded"/>).</param>
+    /// <remarks>The build an edit's Smart Fix runs is part of that edit, never a check of its own. A command refused at its
+    /// card, a test run that found nothing to run, a build that found no project, prove nothing.</remarks>
+    internal static CheckProof ProofOf(IReadOnlyList<ToolExecution> executions, Func<int, bool>? landed = null)
+    {
+        var lastEdit = -1;
+        for (var i = 0; i < executions.Count; i++)
+            if (landed is null ? EditLanded(executions[i]) : landed(i)) lastEdit = i;
+        bool testsSince = false, buildSince = false, testsInRun = false, buildInRun = false;
+        for (var i = 0; i < executions.Count; i++)
+        {
+            if (IsFileEdit(executions[i].Name) || CheckOf(executions[i]) is not { Failed: not null } verdict) continue;
+            var tests = verdict.Kind == CheckKind.Tests;
+            testsInRun |= tests;
+            buildInRun = true;
+            if (i <= lastEdit) continue;
+            testsSince |= tests;
+            buildSince = true;
+        }
+        return new(lastEdit, testsSince, buildSince, testsInRun, buildInRun);
+    }
+
     /// <summary>
     /// Whether the run tried to edit a file and changed none — read from what happened, never from the answer.
     /// </summary>
@@ -215,7 +263,7 @@ internal static class ChatTurnPolicy
     /// <summary>What one execution says as a check — <c>null</c> when it is not one.</summary>
     private static CheckVerdict? CheckOf(ToolExecution last)
     {
-        if (!(last.Name is "run_tests" or "get_diagnostics"
+        if (!(IsCheckTool(last.Name)
               || (IsFileEdit(last.Name) && (CodeActions.SmartFixValidator.ReadVerdict(last.Output) is not null
                                             || CodeActions.SmartFixValidator.CouldNotVerify(last.Output)))
               || (last.Name == "run_command" && CheckCommand.Failed(last.Input, last.Output) is not null)))
