@@ -168,6 +168,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Permet au serveur de réutiliser son cache. 0 : désactivé.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} message(s) d'ancrage KV conservé(s))</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Compaction du contexte…</value></data>
+  <data name="StatusCompactingProgress" xml:space="preserve"><value>Compaction du contexte… {0}, environ {1:N0} {1:jeton|jetons} jusqu'ici</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Contexte compacté : {0} message(s) résumé(s) — conservation des {1} derniers tours.</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ La compaction du contexte a expiré — retour à la troncature forcée. Si votre modèle a besoin de plus de temps, augmentez « {0} » ({1}) dans les réglages.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ La compaction du contexte a échoué — retour à la troncature forcée. Cause : {0}</value></data>

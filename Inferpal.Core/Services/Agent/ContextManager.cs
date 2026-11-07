@@ -112,7 +112,7 @@ internal static class ContextManager
         onStep?.Invoke(Strings.StatusCompacting);
 
         var (summary, cut, omitted, failure) =
-            await SummarizeAsync(history, plan, config, client, ct).ConfigureAwait(false);
+            await SummarizeAsync(history, plan, config, client, onStep, ct).ConfigureAwait(false);
 
         // ⚠ No summary: we truncate, and we SAY so — that is a degraded result, not the one that
         // was asked for. The two look alike on the history and not at all to the user. And the
@@ -241,11 +241,15 @@ internal static class ContextManager
 
     /// <summary>The summarising call, with its own deadline. <c>Text</c> null on any failure, with <c>Failure</c> the
     /// sentence that names it (null when the model merely answered nothing); <c>Cut</c> when the reply stopped at the
-    /// model's length limit; <c>Omitted</c> the oldest messages that did not fit in the request.</summary>
+    /// model's length limit; <c>Omitted</c> the oldest messages that did not fit in the request. <paramref name="onStep"/>
+    /// is where the summary says how far it has come (<see cref="SummaryFuse"/>).</summary>
     private static async Task<(string? Text, bool Cut, int Omitted, string? Failure)> SummarizeAsync(
         IReadOnlyList<ChatMessageDto> history, CompactionPlan plan,
-        InferpalConfig config, IInferenceProvider client, CancellationToken ct)
+        InferpalConfig config, IInferenceProvider client, Action<string>? onStep, CancellationToken ct)
     {
+        // The time the line shows counts from "Compacting context…", said just before: the utility model and its window
+        // are resolved before the fuse.
+        var compacting = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -258,7 +262,7 @@ internal static class ContextManager
             var request = HistoryCompaction.BuildSummarizeRequest(
                 HistoryCompaction.SliceToCompact(history, plan), HistoryCompaction.SummaryInputBudgetChars(window));
             // The fuse now that the size to READ is known (restarts the countdown), rearmed by every streamed chunk.
-            var fuse = new SummaryFuse(cts, config.CompactionTimeoutSeconds);
+            var fuse = new SummaryFuse(cts, config.CompactionTimeoutSeconds, onStep, () => compacting.Elapsed);
             fuse.Arm(request, PrefillRates.Shared.Estimate(config.BaseUrl, model, RequestSize.Of(request.Messages, null).Total));
 
             // ⚠ SendChatAsync, never RunAgentAsync: the agent loop reports a network failure as its

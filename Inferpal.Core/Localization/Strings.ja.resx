@@ -165,6 +165,7 @@
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>サーバーがキャッシュを再利用できます。0 は無効。</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} 件のKVアンカーメッセージを保持)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>コンテキストを圧縮中…</value></data>
+  <data name="StatusCompactingProgress" xml:space="preserve"><value>コンテキストを圧縮中… {0}、これまでに約 {1:N0} トークン</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 コンテキストを圧縮しました：{0} 件のメッセージを要約 — 最後の {1} ターンを保持。</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ コンテキスト圧縮がタイムアウトしました — ハードトランケーションにフォールバック。 モデルにもっと時間が必要な場合は、設定の「{0}」（{1}）を増やしてください。</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ コンテキストの圧縮に失敗しました — 強制切り捨てにフォールバックしました。原因：{0}</value></data>

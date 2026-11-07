@@ -165,6 +165,7 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Permette al server di riutilizzare la cache. 0: disattivato.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} messaggio/i di ancoraggio KV conservato/i)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Compattazione del contesto…</value></data>
+  <data name="StatusCompactingProgress" xml:space="preserve"><value>Compattazione del contesto… {0}, finora circa {1:N0} {1:token|token}</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Contesto compattato: {0} messaggio/i riassunto/i — mantenuti gli ultimi {1} turno/i.</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Timeout compattazione contesto — ripristino al troncamento forzato. Se il modello ha bisogno di più tempo, aumentate «{0}» ({1}) nelle impostazioni.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ La compattazione del contesto non è riuscita — ripiego sul troncamento forzato. Causa: {0}</value></data>

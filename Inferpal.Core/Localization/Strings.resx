@@ -169,6 +169,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Lets the server reuse its cache. 0: off.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} KV anchor message(s) preserved)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Compacting context…</value></data>
+  <data name="StatusCompactingProgress" xml:space="preserve"><value>Compacting context… {0}, about {1:N0} {1:token|tokens} so far</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Context compacted: {0} message(s) summarized — keeping last {1} turn(s).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Context compaction timed out — fell back to hard truncation. If your model needs longer, raise “{0}” ({1}) in the settings.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Context compaction failed — fell back to hard truncation. Cause: {0}</value></data>

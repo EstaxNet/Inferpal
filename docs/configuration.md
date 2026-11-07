@@ -374,7 +374,7 @@ Every persisted setting, its type, and default value.
 | `reasoningEffortAgent` | string | `"server"` | The same for an agent run, one effort for the whole run |
 | `contextWindowKeepTurns` | int | `4` | Recent turns to keep when trimming — at most: turns too long to fit next to the tool definitions are summarized with the rest |
 | `compactionEnabled` | bool | `true` | Summarize old messages (LLM) instead of hard truncation |
-| `compactionTimeoutSeconds` | int | `45` | Compaction safety fuse: seconds the summary may go without writing anything (its reasoning counts), on top of the time needed to read what it summarizes (about 1 s per 100 tokens); past it, the older turns are dropped instead. A model that keeps writing, or reasoning, is waited for |
+| `compactionTimeoutSeconds` | int | `45` | Compaction safety fuse: seconds the summary may go without writing anything (its reasoning counts), on top of the time needed to read what it summarizes (about 1 s per 100 tokens); past it, the older turns are dropped instead. A model that keeps writing, or reasoning, is waited for, and the status line says how long it has taken and how much it has written |
 | `kvCacheAnchorMessages` | int | `3` | First N messages kept verbatim so the backend can reuse its KV cache |
 | `oodaTurnThreshold` | int | `10` | Turns before an OODA recap (0 = off) |
 | `customSystemPrompt` | string | `""` | Appended to the base system prompt |

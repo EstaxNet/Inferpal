@@ -489,6 +489,8 @@ internal sealed class AgentOrchestrator
             return RunSummaryOutcome.NothingToSummarize;
 
         onStep(Strings.StatusCompacting);
+        // The time the line shows counts from here: the utility model and its window are resolved before the fuse.
+        var compacting = System.Diagnostics.Stopwatch.StartNew();
 
         string summary;
         bool   cut, repeating, reasoningOnly;
@@ -506,7 +508,7 @@ internal sealed class AgentOrchestrator
             var window  = await RunWindowAsync(utility, cts.Token);
             var request = HistoryCompaction.BuildSummarizeRequest(range, HistoryCompaction.SummaryInputBudgetChars(window, scale));
             // The fuse now that the size to READ is known (restarts the countdown), rearmed by every streamed chunk.
-            var fuse = new SummaryFuse(cts, _config.CompactionTimeoutSeconds);
+            var fuse = new SummaryFuse(cts, _config.CompactionTimeoutSeconds, onStep, () => compacting.Elapsed);
             fuse.Arm(request, PrefillRates.Shared.Estimate(_config.BaseUrl, utility, RequestSize.Of(request.Messages, null).Total));
 
             var turn = await _client.SendChatAsync(

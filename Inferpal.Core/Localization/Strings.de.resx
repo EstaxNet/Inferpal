@@ -165,6 +165,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Erlaubt dem Server, seinen Cache wiederzuverwenden. 0: aus.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} KV-Ankernachricht(en) beibehalten)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Kontext wird komprimiert…</value></data>
+  <data name="StatusCompactingProgress" xml:space="preserve"><value>Kontext wird komprimiert… {0}, bisher etwa {1:N0} {1:Token|Token}</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Kontext komprimiert: {0} Nachricht(en) zusammengefasst – letzte {1} Runde(n) behalten.</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Kontextkomprimierung abgelaufen – auf harte Kürzung zurückgefallen. Wenn Ihr Modell länger braucht, erhöhen Sie „{0}“ ({1}) in den Einstellungen.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Die Kontextkomprimierung ist fehlgeschlagen – Rückfall auf harte Kürzung. Ursache: {0}</value></data>

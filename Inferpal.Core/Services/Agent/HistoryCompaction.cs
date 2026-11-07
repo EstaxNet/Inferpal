@@ -375,20 +375,51 @@ internal sealed record HistorySummary(
 /// have kept the facts becomes a truncation that keeps none — for a model that was answering. The fuse is for a model
 /// that stops producing; one that keeps repeating itself is stopped by the clients' loop detectors instead.
 /// One fuse for both summarizing calls (the conversation's and an agent run's), so neither counts differently.
+/// ⚠ It is also what says the wait: a model that reasons for minutes before it writes the summary sends chunks, so the
+/// prefill wait has given its place back, and nothing else sees them — without it the step line stays the same for the
+/// whole summary.
 /// </remarks>
-internal sealed class SummaryFuse(CancellationTokenSource cts, int configuredSeconds)
+/// <param name="cts">The summarizing call's own source, disposed when the call returns.</param>
+/// <param name="configuredSeconds">The configured writing time, <c>compactionTimeoutSeconds</c>.</param>
+/// <param name="onStep">Where the call says its step: while chunks come, the step again with the time and the tokens so
+/// far, at the first chunk and then every <see cref="PrefillWait.Beat"/>; <c>null</c> says nothing.</param>
+/// <param name="clock">The time since "Compacting context…" was said, which the line shows; the fuse's own stopwatch
+/// when <c>null</c>.</param>
+internal sealed class SummaryFuse(CancellationTokenSource cts, int configuredSeconds, Action<string>? onStep = null,
+                                  Func<TimeSpan>? clock = null)
 {
     private readonly TimeSpan _idle = TimeSpan.FromSeconds(Math.Max(10, configuredSeconds));
+    private readonly System.Diagnostics.Stopwatch _watch = System.Diagnostics.Stopwatch.StartNew();
+    private readonly object _gate = new();
+    private long _chars;
+    private TimeSpan? _nextSay;   // null until the first chunk, which is said at once
 
     /// <summary>Starts the countdown before the first output: the configured seconds plus the time to read
     /// <paramref name="request"/>, from the summarizer's measured cold read (<paramref name="coldRead"/>) when there is one.</summary>
     public void Arm(SummarizeRequest request, TimeSpan? coldRead = null) =>
         cts.CancelAfter(HistoryCompaction.SummaryTimeout(configuredSeconds, request, coldRead));
 
-    /// <summary>A streamed chunk — answer or reasoning: the model is producing, so the countdown restarts.</summary>
-    public void Progress(string _)
+    /// <summary>A streamed chunk — answer or reasoning: the model is producing, so the countdown restarts, and the step
+    /// says how far the summary has come.</summary>
+    /// <remarks>⚠ The countdown first: a chunk after the call returned finds its source disposed and says nothing, or a
+    /// late step would bring back a status line the turn has already removed.</remarks>
+    public void Progress(string chunk)
     {
         try { cts.CancelAfter(_idle); }
-        catch (ObjectDisposedException) { }   // a late chunk after the call returned: nothing left to guard
+        catch (ObjectDisposedException) { return; }   // a late chunk after the call returned: nothing left to guard
+        if (onStep is null) return;
+
+        string line;
+        lock (_gate)
+        {
+            _chars += chunk.Length;
+            var now = clock?.Invoke() ?? _watch.Elapsed;
+            if (_nextSay is { } next && now < next) return;
+            _nextSay = now + PrefillWait.Beat;
+            // The product's own estimate, four characters to a token, reasoning included — rounded up, so a first chunk
+            // of two characters never reads "about 0 tokens", as if nothing had come.
+            line = Strings.StatusCompactingProgress(RunSummary.Duration(now), (int)Math.Min(int.MaxValue, (_chars + 3) / 4));
+        }
+        onStep(line);
     }
 }

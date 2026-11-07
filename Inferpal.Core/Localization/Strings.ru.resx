@@ -165,6 +165,7 @@
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Позволяет серверу повторно использовать кэш. 0 — выключено.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} якорное(ых) сообщение(й) KV сохранено)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Компактизация контекста…</value></data>
+  <data name="StatusCompactingProgress" xml:space="preserve"><value>Компактизация контекста… {0}, пока примерно {1:N0} {1:токен|токена|токенов}</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Контекст сжат: суммировано {0} сообщений — сохранены последние {1} ход(а/ов).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Компактизация контекста истекла — выполнен откат к жёсткому усечению. Если модели нужно больше времени, увеличьте «{0}» ({1}) в настройках.</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ Сжатие контекста не удалось — выполнено принудительное усечение. Причина: {0}</value></data>
@@ -261,12 +262,12 @@
   <data name="WaitReadingLonger" xml:space="preserve"><value>Чтение промпта — дольше обычного</value></data>
   <data name="WaitTimesOfAbout" xml:space="preserve"><value>{0} из максимум примерно {1}</value></data>
   <data name="WaitTimesOfBound" xml:space="preserve"><value>{0} из {1}</value></data>
-  <data name="WaitDetail" xml:space="preserve"><value>Около {0:N0} {0:токен|токена|токенов}; до примерно {1}, если ничего нет в кэше. Остановится через {2}, если сервер будет молчать.</value></data>
-  <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Около {0:N0} {0:токен|токена|токенов}. Остановится через {1}, если сервер будет молчать.</value></data>
+  <data name="WaitDetail" xml:space="preserve"><value>Примерно {0:N0} {0:токен|токена|токенов}; до примерно {1}, если ничего нет в кэше. Остановится через {2}, если сервер будет молчать.</value></data>
+  <data name="WaitDetailUnmeasured" xml:space="preserve"><value>Примерно {0:N0} {0:токен|токена|токенов}. Остановится через {1}, если сервер будет молчать.</value></data>
   <data name="WaitDetailLonger" xml:space="preserve"><value>Обычно здесь это занимает не больше примерно {0}. Если сервер будет молчать, ожидание остановится через {1} и скажет почему — «Стоп» прервёт его сейчас.</value></data>
   <data name="WaitDetailLongerNoStop" xml:space="preserve"><value>Обычно здесь это занимает не больше примерно {0}. Если сервер будет молчать, ожидание остановится через {1} и скажет почему.</value></data>
   <data name="WaitLoadingModel" xml:space="preserve"><value>Загрузка модели</value></data>
-  <data name="WaitDetailLoading" xml:space="preserve"><value>Модели нет в памяти: сервер загружает её, затем читает около {0:N0} {0:токен|токена|токенов}. Остановится через {1}, если сервер будет молчать.</value></data>
+  <data name="WaitDetailLoading" xml:space="preserve"><value>Модели нет в памяти: сервер загружает её, затем читает примерно {0:N0} {0:токен|токена|токенов}. Остановится через {1}, если сервер будет молчать.</value></data>
   <data name="CutNothingWritten" xml:space="preserve"><value>Ничего не записано: шаги выше только читали файлы.</value></data>
   <data name="CutOpenTimeLimits" xml:space="preserve"><value>Открыть ограничения времени</value></data>
   <data name="MsgPrefillOverran" xml:space="preserve"><value>Нет ответа от {0} через {1}: он ещё читал промпт примерно из {2:N0} {2:токена|токенов|токенов}. Медленный сервер может читать длинный промпт несколько минут: следующий запрос к этой модели будет ждать дольше, а «{3}» задаёт самое короткое ожидание ({4} → {5}).</value></data>

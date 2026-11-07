@@ -250,6 +250,26 @@ public class CountedNounTests
         Assert.True(wrong.Count == 0, string.Join("\n", wrong));
     }
 
+    /// <summary>
+    /// ⚠ The counted forms are the nominative ones ("21 токен", "22 токена", "25 токенов"): after a preposition that
+    /// governs the genitive — Russian "около", Polish "około" — every form but one is wrong ("около 21 токен"). "About"
+    /// is written with a word that governs no case: "примерно", "mniej więcej".
+    /// </summary>
+    [Theory]
+    [InlineData(".ru", "около")]
+    [InlineData(".pl", "około")]
+    public void ACountedNoun_NeverFollowsAPrepositionThatChangesItsCase(string suffix, string preposition)
+    {
+        var resources = Resources(suffix);
+        var counted = new System.Text.RegularExpressions.Regex(
+            System.Text.RegularExpressions.Regex.Escape(preposition) + @"\s+\{(\d)(?::[^}|]*)?\}\s*\{\1:[^}]*\|[^}]*\}",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        Assert.True(resources.Values.Count(v => v.Contains("|", StringComparison.Ordinal)) > 20,
+                    "the counted forms were not read");   // WITNESS
+        var wrong = resources.Where(r => counted.IsMatch(r.Value)).Select(r => $"{r.Key}: {r.Value}").ToList();
+        Assert.True(wrong.Count == 0, string.Join("\n", wrong));
+    }
+
     [Fact]
     public void TheSingular_IsNeverASecondResourceTheCallerChooses()
     {

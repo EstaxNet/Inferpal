@@ -721,6 +721,7 @@ internal static class Strings
     public static string DocsNoResults(string query) => Format(Get(nameof(DocsNoResults)), query);
     public static string StatusOodaSummarizing       => Get(nameof(StatusOodaSummarizing));
     public static string StatusCompacting            => Get(nameof(StatusCompacting));
+    public static string StatusCompactingProgress(string elapsed, int tokens) => Format(Get(nameof(StatusCompactingProgress)), elapsed, tokens);
     public static string OodaSummarizePrompt         => Get(nameof(OodaSummarizePrompt));
 
     public static string CompactionSummarizePrompt(string conversationText) =>

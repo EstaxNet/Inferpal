@@ -168,6 +168,7 @@
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>让服务器复用其缓存。0：关闭。</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} 条 KV 锚点消息已保留)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>正在压缩上下文…</value></data>
+  <data name="StatusCompactingProgress" xml:space="preserve"><value>正在压缩上下文… {0}，目前约 {1:N0} 个令牌</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 上下文已压缩：{0} 条消息已摘要 — 保留最后 {1} 轮。</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ 上下文压缩超时 — 已回退到硬截断。 如果模型需要更长时间，请在设置中调高“{0}”（{1}）。</value></data>
   <data name="MsgContextCompactionFailed" xml:space="preserve"><value>⚠ 上下文压缩失败 — 已回退到强制截断。原因：{0}</value></data>

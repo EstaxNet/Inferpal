@@ -692,6 +692,13 @@ internal sealed class BackgroundTaskQueue : IDisposable
         bool persist;
         lock (_lock)
         {
+            // A line said again in place — a wait, a summary's progress — replaces the one it continues: one step, never
+            // one every beat (StepLines).
+            if (job.Steps.Count > 0 && StepLines.SaysAgain(job.Steps[^1], step))
+            {
+                job.Steps[^1] = step;
+                return;
+            }
             job.StepsTaken++;
             job.Steps.Add(step);
             // Keep the tail: on a long run the recent steps explain where it got to.
