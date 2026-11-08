@@ -97,7 +97,7 @@ public sealed class UnreadSlotKeptTests : IDisposable
                     "the heartbeat never restores the slot of a root that arrived late");
         // Checked again where the conversation is replaced: a question sent meanwhile is never wiped, and a window that
         // held a conversation (emptied by /clear on purpose) is never filled behind the person's back.
-        Assert.Contains("if (_conversationRoot.EverBound || AskedOnScreen()) return;", connection, StringComparison.Ordinal);
+        Assert.Contains("if (rootless ? !UntouchedSinceRootlessRestore() : _conversationRoot.EverBound || AskedOnScreen())", connection, StringComparison.Ordinal);
         // /clear waits for the auto-saves already started.
         Assert.Contains("try { await ClearUnderSaveGateAsync(ct); }", connection, StringComparison.Ordinal);
 

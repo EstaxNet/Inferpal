@@ -328,6 +328,10 @@ public class ConventionCoverageTests
             {
                 // The method that DEFINES the restoration is the point of application, not a caller.
                 if (method.Identifier.Text is "RestoreConversation" or "SettleCurrentTurnAsync") continue;
+                // ⚠ Exempt from the CALL, never from the property: the late restore replaces the conversation only when no
+                // turn is in flight, checked in the same VM-context action as the replacement (nothing starts between the
+                // two). Settling there would press Stop on a turn the person started: RootlessStartTests holds it.
+                if (method.Identifier.Text is "RestoreLateSlotAsync") continue;
 
                 // ⚠ The CALLS, not the text. Written as `body.Contains("SettleCurrentTurnAsync")`,
                 // this rule was green on a disarmed site: the COMMENT documenting the call contains

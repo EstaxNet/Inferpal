@@ -1446,6 +1446,8 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Allows {0} without asking in this workspace until a restart — kept when you come back from another solution.</value></data>
   <data name="ApprovalAlwaysTooltipUntilRestart" xml:space="preserve"><value>Allows {0} without asking in this workspace until a restart.</value></data>
   <data name="SolutionChangedNotice" xml:space="preserve"><value>Solution changed: this conversation now works in **{0}** (`{1}`) — its files, index, rules and tools. It is still saved with **{2}**'s conversations.</value></data>
+  <data name="SolutionOpenedOverRootless" xml:space="preserve"><value>Solution opened: this conversation was restored from a window without a solution. It now works in **{0}** (`{1}`) — its files, index, rules and tools — and is still saved with the conversations of windows without a solution.</value></data>
+  <data name="SolutionOwnConversationKept" xml:space="preserve"><value>**{0}**'s own last conversation is kept: `/history &lt;word&gt;` finds it.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Open diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>New conversation</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Conversations</value></data>

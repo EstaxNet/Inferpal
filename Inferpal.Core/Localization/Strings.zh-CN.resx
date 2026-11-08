@@ -1442,6 +1442,8 @@
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>在此工作区中无需询问即允许 {0}，直到重启——从另一个解决方案返回后仍保留。</value></data>
   <data name="ApprovalAlwaysTooltipUntilRestart" xml:space="preserve"><value>在此工作区中无需询问即允许 {0}，直到重启。</value></data>
   <data name="SolutionChangedNotice" xml:space="preserve"><value>解决方案已切换：此对话现在在 **{0}**（`{1}`）中工作——使用它的文件、索引、规则和工具。它仍与 **{2}** 的对话一起保存。</value></data>
+  <data name="SolutionOpenedOverRootless" xml:space="preserve"><value>已打开解决方案：此对话是从没有解决方案的窗口中恢复的。它现在在 **{0}** (`{1}`) 中工作——使用其文件、索引、规则和工具——并仍与没有解决方案的窗口的对话一起保存。</value></data>
+  <data name="SolutionOwnConversationKept" xml:space="preserve"><value>**{0}** 自己的最后一次对话已保留：`/history &lt;词语&gt;` 可以找到它。</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>打开差异</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>新对话</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>对话</value></data>

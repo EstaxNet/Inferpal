@@ -1442,6 +1442,8 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Consente {0} senza chiedere in questa area di lavoro fino a un riavvio — resta valido quando torni da un’altra soluzione.</value></data>
   <data name="ApprovalAlwaysTooltipUntilRestart" xml:space="preserve"><value>Consente {0} senza chiedere in questa area di lavoro fino a un riavvio.</value></data>
   <data name="SolutionChangedNotice" xml:space="preserve"><value>Soluzione cambiata: questa conversazione ora lavora in **{0}** (`{1}`) — i suoi file, il suo indice, le sue regole e i suoi strumenti. Resta salvata con le conversazioni di **{2}**.</value></data>
+  <data name="SolutionOpenedOverRootless" xml:space="preserve"><value>Soluzione aperta: questa conversazione è stata ripristinata da una finestra senza soluzione. Ora lavora in **{0}** (`{1}`) — i suoi file, indice, regole e strumenti — e resta salvata con le conversazioni delle finestre senza soluzione.</value></data>
+  <data name="SolutionOwnConversationKept" xml:space="preserve"><value>L'ultima conversazione di **{0}** è conservata: `/history &lt;parola&gt;` la trova.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Apri diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Nuova conversazione</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Conversazioni</value></data>

@@ -353,6 +353,7 @@ internal partial class InferpalToolWindowData
             _conversationTurnCount = 0;
             _currentSessionName    = string.Empty;   // the archived conversation keeps its own file
             _conversationRoot.Discarded();           // the next conversation belongs where it is first saved
+            _rootlessRestore = null;                 // and is no conversation restored without a workspace
             ResetTurnAccounting();
             HasBuildFailedBanner   = false;   // dismiss banner on /clear
             RefreshSessionsList();            // the archive just written
@@ -365,41 +366,106 @@ internal partial class InferpalToolWindowData
     /// <summary>The root a late restore was already tried for (<see cref="RestoreLateSlotAsync"/>): once per root.</summary>
     private string? _lateRestoreTried;
 
+    /// <summary>The conversation restored at a start without a workspace, as it stood then (<see cref="LoadSessionAsync"/>):
+    /// what a solution opened later replaces with its own while nothing was done since; <c>null</c> otherwise.</summary>
+    private RootlessRestore? _rootlessRestore;
+
+    /// <param name="State">The conversation's state at the restore (<see cref="CaptureState"/>).</param>
+    /// <param name="Turns">What a save would write of it then, notices aside (<see cref="SavedTurns"/>).</param>
+    /// <param name="Items">The bubbles it put on screen, and the notices said about it since: never kept over the
+    /// solution's conversation.</param>
+    private sealed record RootlessRestore(SessionState State, IReadOnlyList<(string Role, string Content, string? Tool)> Turns,
+                                          HashSet<ChatMessageItem> Items);
+
+    /// <summary>Whether the conversation on screen was restored at a start without a workspace, and belongs to none — never
+    /// one begun in this window before its solution, which the person wrote here.</summary>
+    private bool RootlessOnScreen => _rootlessRestore is not null && _conversationRoot.IsBound && _conversationRoot.Root is null;
+
+    /// <summary>What a save would write of the conversation, notices aside. VM context only.</summary>
+    private List<(string Role, string Content, string? Tool)> SavedTurns() =>
+        [.. SessionManager.BuildSnapshot(Messages.Select(m => m.Saved))
+                          .Where(m => m.ToolName != SessionManager.NoticeMarker)
+                          .Select(m => (m.Role, m.Content, m.ToolName))];
+
+    /// <summary>
+    /// Whether nothing was done to the conversation restored without a workspace since its restore: no question sent or
+    /// on its way, no answer added (notices aside), no mode, plan or session changed, not discarded. VM context only.
+    /// </summary>
+    private bool UntouchedSinceRootlessRestore() =>
+        _rootlessRestore is { } restore && RootlessOnScreen && !IsLoading && !_sendStarting
+        && CaptureState() == restore.State && SavedTurns().SequenceEqual(restore.Turns);
+
     /// <summary>
     /// ⚠ A window built before its solution is known restores nothing (no root yet, <see cref="LoadSessionAsync"/>). Once
     /// the heartbeat pins the root, the solution's own conversation is restored — while nothing was asked in this window.
     /// Without it, yesterday's conversation stayed unseen, and the first question's save replaced it.
     /// </summary>
-    /// <remarks>Never throws but for a cancellation: it runs in the heartbeat, which a throw would end for good.</remarks>
+    /// <remarks>
+    /// ⚠ A conversation restored at a start WITHOUT a workspace (yesterday's, maybe of another project) is no conversation
+    /// of the solution opened next: kept on screen without a word, the model took it for the solution's context. It is
+    /// replaced by the solution's own while nothing was done since its restore, and said otherwise — at every root it meets.
+    /// Never throws but for a cancellation: it runs in the heartbeat, which a throw would end for good.
+    /// </remarks>
     private async Task RestoreLateSlotAsync(CancellationToken ct)
     {
         try
         {
             var root = _indexService.RootDir;
-            // A window that held a conversation (restored, saved, or emptied by /clear on purpose) is never filled behind
-            // the person's back: only the one built before its solution, still untouched.
-            if (_conversationRoot.EverBound || string.IsNullOrEmpty(root) || PathComparer.SameDirectory(root, _lateRestoreTried))
-                return;
-            // Busy now (a command, a send starting): tried again at the next tick, not given up.
-            if (await AskedInThisWindowAsync()) return;
+            if (string.IsNullOrEmpty(root) || PathComparer.SameDirectory(root, _lateRestoreTried)) return;
+            // The start's own restore first: read before it lands, what it restores is taken for an untouched window.
+            // VSTHRD003 is a false positive here, as in ShowAwayNoticeAsync; LoadSessionAsync never throws.
+#pragma warning disable VSTHRD003
+            await _startupSessionLoad;
+#pragma warning restore VSTHRD003
+            // Read off the VM context, as EverBound: checked again there before anything changes.
+            var rootless = RootlessOnScreen;
+            // A window that held a conversation of a workspace (restored, saved, or emptied by /clear on purpose) is never
+            // filled behind the person's back: only the one built before its solution, still untouched.
+            if (!rootless && _conversationRoot.EverBound) return;
+            // Busy now (a command, a send starting): tried again at the next tick, not given up. A conversation restored
+            // without a workspace is judged below, where a turn under way reads as something done.
+            if (!rootless && await AskedInThisWindowAsync()) return;
             _lateRestoreTried = root;
 
-            var session = await _store.LoadAutoSaveAsync(root, ct);
-            if (session is null || !session.Messages.Any(SessionManager.IsQuestion)) return;
+            SessionData? loaded = null;
+            try { loaded = await _store.LoadAutoSaveAsync(root, ct); }
+            catch (UnreadableSessionException damaged)
+            {
+                // Damaged: the store kept a copy of it, named here — the next save writes over the original.
+                Diagnostics.Swallow("Session.LateRestore", damaged);
+                await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(damaged.Message)));
+            }
+            catch (Exception ex) when (rootless && ex is not OperationCanceledException)
+            {
+                // The conversation on screen is still not this solution's, whatever its slot holds.
+                Diagnostics.Swallow("Session.LateRestore", ex);
+            }
+            if (loaded is not { } session || !session.Messages.Any(SessionManager.IsQuestion))
+            {
+                if (rootless) SayRootlessConversation(root, ownKept: false);
+                return;
+            }
 
-            // A turn begun while the slot was read ends first; the check below then sees its question.
-            await SettleCurrentTurnAsync();
+            // ⚠ A turn begun while the slot was read is never settled here: SettleCurrentTurnAsync presses Stop. The check
+            // below sees it (AskedOnScreen and UntouchedSinceRootlessRestore read IsLoading and _sendStarting).
             await RunOnVMContextAsync(() =>
             {
                 // Checked again where the conversation is replaced: a question sent meanwhile keeps its conversation, and
                 // the save that binds it archives the slot instead (ConversationArchive.KeepUnreadSlotAsync).
-                if (_conversationRoot.EverBound || AskedOnScreen()) return;
+                if (rootless ? !UntouchedSinceRootlessRestore() : _conversationRoot.EverBound || AskedOnScreen())
+                {
+                    if (rootless) SayRootlessConversation(root, ownKept: true);
+                    return;
+                }
                 // What the window said before the solution was known (a first-run notice, a window resized) is said once:
-                // kept, after the conversation restored.
-                var said = Messages.Where(m => !ReferenceEquals(m, _anchor0) && !ReferenceEquals(m, _anchor1)).ToList();
+                // kept, after the conversation restored — never the conversation restored without a workspace, nor what
+                // was said of it.
+                var said = Messages.Where(m => !ReferenceEquals(m, _anchor0) && !ReferenceEquals(m, _anchor1)
+                                               && _rootlessRestore?.Items.Contains(m) != true).ToList();
                 RestoreConversation(session.Messages, session.State);
                 foreach (var item in said) InsertThemed(item);
                 _conversationRoot.Restored(root);
+                _rootlessRestore = null;
                 RefreshSessionsList();
                 ScrollToBottom();
             });
@@ -535,6 +601,10 @@ internal partial class InferpalToolWindowData
                                     session.State with { CurrentName = name == "last_session" ? session.CurrentName : name });
                 // Loaded here, it is this workspace's conversation from now on — whatever solution is opened next.
                 _conversationRoot.Restored(here);
+                // Restored without a workspace: what a solution opened later may replace (RestoreLateSlotAsync).
+                _rootlessRestore = string.IsNullOrEmpty(here) && name == ConversationStore.AutoSaveSlot
+                    ? new(CaptureState(), SavedTurns(), new(Messages, ReferenceEqualityComparer.Instance))
+                    : null;
                 IsSessionPanelOpen = false;
                 RefreshSessionsList();
                 ScrollToBottom();

@@ -39,9 +39,13 @@ internal sealed class VsWindowHarness : IDisposable
     /// <param name="folderOpen">Whether Visual Studio has <see cref="Root"/> open.</param>
     /// <param name="root">A folder the test prepared before the window opens it; deleted with this.</param>
     /// <param name="config">The window's settings, for a test that reads or follows them.</param>
-    public VsWindowHarness(FakeInferenceProvider? fake = null, bool folderOpen = true, string? root = null, InferpalConfig? config = null)
+    /// <param name="rootless">Whether the window starts without any workspace, as Visual Studio opened on nothing: it does
+    /// not look near the process's folder (this repository, under a test). Implies no folder open.</param>
+    public VsWindowHarness(FakeInferenceProvider? fake = null, bool folderOpen = true, string? root = null, InferpalConfig? config = null,
+                           bool rootless = false)
     {
         Root = root ?? Directory.CreateTempSubdirectory("inferpal-vm").FullName;
+        if (rootless) folderOpen = false;
         SignalFile._isProcessAliveOverride = _ => true;
         if (folderOpen) ActiveSolutionSignal.WriteFolder(Root);
         Fake = fake ?? new FakeInferenceProvider();
@@ -58,8 +62,19 @@ internal sealed class VsWindowHarness : IDisposable
         Tools  = new ToolRegistry(editor, approval, config, index, Fake, new ProjectMapService(editor),
                                   new McpToolService(config, approval, clientFactory: null, workspaceRoot: () => index.RootDir),
                                   docs, new OpenDocumentOverlay(), new NullDebugSession());
-        Window = new InferpalToolWindowData(Fake, Tools, config, null!, holder, index, Owned(new ModelLifetimeService(Fake, config)),
-                                            Owned(new VsBuildMonitor()), docs);
+        // Static for the window's start, which reads it after the constructor returns: reset by Dispose, or here when the
+        // window never comes to be.
+        InferpalToolWindowData.ProcessFolderIgnoredForTests = rootless;
+        try
+        {
+            Window = new InferpalToolWindowData(Fake, Tools, config, null!, holder, index, Owned(new ModelLifetimeService(Fake, config)),
+                                                Owned(new VsBuildMonitor()), docs);
+        }
+        catch
+        {
+            InferpalToolWindowData.ProcessFolderIgnoredForTests = false;
+            throw;
+        }
     }
 
     private T Owned<T>(T service) where T : IDisposable
@@ -91,6 +106,7 @@ internal sealed class VsWindowHarness : IDisposable
     public void Dispose()
     {
         Window.StopHeartbeatForTests();
+        InferpalToolWindowData.ProcessFolderIgnoredForTests = false;
         foreach (var service in _owned) service.Dispose();
         SignalFile._isProcessAliveOverride = null;
         SignalScope.ResetForTests();

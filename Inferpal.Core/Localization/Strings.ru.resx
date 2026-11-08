@@ -1442,6 +1442,8 @@
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Разрешает {0} без запроса в этой рабочей области до перезапуска — сохраняется, когда вы возвращаетесь из другого решения.</value></data>
   <data name="ApprovalAlwaysTooltipUntilRestart" xml:space="preserve"><value>Разрешает {0} без запроса в этой рабочей области до перезапуска.</value></data>
   <data name="SolutionChangedNotice" xml:space="preserve"><value>Решение сменилось: этот разговор теперь работает в **{0}** (`{1}`) — с его файлами, индексом, правилами и инструментами. Он по-прежнему сохраняется вместе с разговорами **{2}**.</value></data>
+  <data name="SolutionOpenedOverRootless" xml:space="preserve"><value>Решение открыто: этот разговор был восстановлен из окна без решения. Теперь он работает в **{0}** (`{1}`) — с его файлами, индексом, правилами и инструментами — и по-прежнему сохраняется вместе с разговорами окон без решения.</value></data>
+  <data name="SolutionOwnConversationKept" xml:space="preserve"><value>Последний собственный разговор **{0}** сохранён: `/history &lt;слово&gt;` его найдёт.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Открыть diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Новый разговор</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Разговоры</value></data>

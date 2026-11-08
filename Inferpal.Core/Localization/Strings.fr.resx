@@ -1442,6 +1442,8 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Autorise {0} sans demander dans cet espace de travail jusqu’à un redémarrage — gardé quand vous revenez d’une autre solution.</value></data>
   <data name="ApprovalAlwaysTooltipUntilRestart" xml:space="preserve"><value>Autorise {0} sans demander dans cet espace de travail jusqu’à un redémarrage.</value></data>
   <data name="SolutionChangedNotice" xml:space="preserve"><value>Solution changée : cette conversation travaille maintenant dans **{0}** (`{1}`) — ses fichiers, son index, ses règles et ses outils. Elle reste enregistrée avec les conversations de **{2}**.</value></data>
+  <data name="SolutionOpenedOverRootless" xml:space="preserve"><value>Solution ouverte : cette conversation a été restaurée depuis une fenêtre sans solution. Elle travaille maintenant dans **{0}** (`{1}`) — ses fichiers, son index, ses règles et ses outils — et reste enregistrée avec les conversations des fenêtres sans solution.</value></data>
+  <data name="SolutionOwnConversationKept" xml:space="preserve"><value>La dernière conversation de **{0}** est gardée : `/history &lt;mot&gt;` la retrouve.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Ouvrir le diff</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Nouvelle conversation</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Conversations</value></data>

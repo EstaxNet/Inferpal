@@ -139,6 +139,37 @@ internal partial class InferpalToolWindowData
         ScrollToBottom();
     });
 
+    /// <summary>
+    /// A solution opened under a conversation restored without a workspace, which stays (<see cref="RestoreLateSlotAsync"/>):
+    /// it works in that solution now, and is still saved with the conversations of windows without one. Once per switch, as
+    /// <see cref="SaySolutionChanged"/>, never for a root that only grew or narrowed around the same solution.
+    /// </summary>
+    /// <param name="ownKept">Whether the solution has a conversation of its own, left in its place.</param>
+    private void SayRootlessConversation(string root, bool ownKept) => Post(() =>
+    {
+        // Never inside a turn: tried again at the next tick, once it has ended.
+        if (IsLoading || _sendStarting)
+        {
+            _lateRestoreTried = null;
+            return;
+        }
+        if (!RootlessOnScreen || !Messages.Any(m => m.Role == "user")
+            || _rootlessSaidFor is { } said && Nested(said, root)) return;
+        _rootlessSaidFor = root;
+        var name   = Path.GetFileName(Path.TrimEndingDirectorySeparator(root));
+        var notice = ChatMessageItem.NoticeMsg(Strings.SolutionOpenedOverRootless(name, root)
+                                               + (ownKept ? " " + Strings.SolutionOwnConversationKept(name) : string.Empty));
+        ApplyItemTheme(notice);
+        Messages.Insert(Messages.Count - 2, notice);
+        // Said of that conversation: it goes with it if a later solution replaces it.
+        _rootlessRestore?.Items.Add(notice);
+        ScrollToBottom();
+    });
+
+    /// <summary>The root the conversation restored without a workspace was last said for (<see cref="SayRootlessConversation"/>),
+    /// on the VM context.</summary>
+    private string? _rootlessSaidFor;
+
     /// <summary>The root the last solution change was said for (<see cref="SaySolutionChanged"/>), on the VM context.</summary>
     private string? _solutionChangeSaid;
 
@@ -630,10 +661,14 @@ internal partial class InferpalToolWindowData
     // would be rooted in two different folders.
     private string? FindReliableProjectRoot() =>
         SolutionExtent.ActiveRoot()
-        ?? SolutionExtent.RootForDir(_rootLocator.LocateReliable(
+        ?? (ProcessFolderIgnoredForTests ? null : SolutionExtent.RootForDir(_rootLocator.LocateReliable(
             _contextHolder.GetOpenPaths(),
             activeSolutionDir: null,
-            Directory.GetCurrentDirectory()));
+            Directory.GetCurrentDirectory())));
+
+    /// <summary>Under test, the process's folder is this repository: a window meant to start without a workspace does not
+    /// look near it, nor near open files (it has none).</summary>
+    internal static bool ProcessFolderIgnoredForTests { get; set; }
 
     // Resolution order and walk limits live in ProjectRootLocator (unit-tested); the VM
     // only supplies the open editor paths, the authoritative signal, and the CWD.

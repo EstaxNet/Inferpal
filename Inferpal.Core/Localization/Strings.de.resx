@@ -1442,6 +1442,8 @@ Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für O
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Erlaubt {0} ohne Nachfrage in diesem Arbeitsbereich bis zu einem Neustart – bleibt erhalten, wenn Sie aus einer anderen Projektmappe zurückkehren.</value></data>
   <data name="ApprovalAlwaysTooltipUntilRestart" xml:space="preserve"><value>Erlaubt {0} ohne Nachfrage in diesem Arbeitsbereich bis zu einem Neustart.</value></data>
   <data name="SolutionChangedNotice" xml:space="preserve"><value>Projektmappe gewechselt: Diese Unterhaltung arbeitet jetzt in **{0}** (`{1}`) – mit deren Dateien, Index, Regeln und Werkzeugen. Sie bleibt bei den Unterhaltungen von **{2}** gespeichert.</value></data>
+  <data name="SolutionOpenedOverRootless" xml:space="preserve"><value>Projektmappe geöffnet: Diese Unterhaltung wurde aus einem Fenster ohne Projektmappe wiederhergestellt. Sie arbeitet jetzt in **{0}** (`{1}`) — mit deren Dateien, Index, Regeln und Tools — und wird weiterhin bei den Unterhaltungen der Fenster ohne Projektmappe gespeichert.</value></data>
+  <data name="SolutionOwnConversationKept" xml:space="preserve"><value>Die letzte eigene Unterhaltung von **{0}** bleibt erhalten: `/history &lt;Wort&gt;` findet sie.</value></data>
   <data name="ApprovalOpenDiff" xml:space="preserve"><value>Diff öffnen</value></data>
   <data name="ChatNewConversation" xml:space="preserve"><value>Neue Unterhaltung</value></data>
   <data name="ChatConversations" xml:space="preserve"><value>Unterhaltungen</value></data>

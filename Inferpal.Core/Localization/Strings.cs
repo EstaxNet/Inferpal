@@ -164,6 +164,9 @@ internal static class Strings
     /// solution the conversation is saved with.</summary>
     public static string SolutionChangedNotice(string name, string folder, string savedWith) =>
         Format(Get(nameof(SolutionChangedNotice)), name, folder, savedWith);
+    public static string SolutionOpenedOverRootless(string name, string folder) =>
+        Format(Get(nameof(SolutionOpenedOverRootless)), name, folder);
+    public static string SolutionOwnConversationKept(string name) => Format(Get(nameof(SolutionOwnConversationKept)), name);
     public static string ApprovalOpenDiff => Get(nameof(ApprovalOpenDiff));
     public static string ChatNewConversation => Get(nameof(ChatNewConversation));
     public static string ChatConversations => Get(nameof(ChatConversations));
