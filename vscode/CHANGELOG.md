@@ -3,6 +3,30 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.11
+
+The agent checks its work before it says it is done, and your code indexes stop travelling with your Windows profile.
+
+- **The agent runs its checks before it answers.** When its plan calls for the tests or a build after a change, it is
+  asked to run them, and the plan card says a check was skipped when none ran. A plan the model wrote is no longer lost
+  before the first step.
+- **A green check is no longer the last word**: when files changed after it, the result bar says "tests passed, then 2
+  files changed without a check", without the tick. A check that proved nothing (a project never restored, a build dotnet
+  refused) says "not verified", and a filtered test run says it covered part of the suite.
+- **A machine without the .NET SDK or workload a project needs** no longer looks like broken code: the build check says
+  the project was not compiled, instead of errors the agent then tried to fix.
+- **A long compaction shows its progress**: how long the summary has taken and how much the model has written.
+- **See what Inferpal keeps on this machine**: *Settings → Code search* lists the index of each repository you opened,
+  with its size, and forgets the ones you no longer need (`/index list`, `/index forget`). An index unused for 90 days
+  is removed and said. On Windows, the indexes move to your local app data, copied at the next start.
+- **Regenerating a question from a reopened conversation** goes again from its words: its "Attached: …" line no longer
+  reaches the model as if the files went with it, and a line names what was not sent.
+- **llama-server takes your reasoning settings** when it publishes them for the model.
+- **New recommendations**: Ternary Bonsai 2 27B for 12 and 16 GB cards, Ornith 1.5 35B-A3B beside Qwen3.8 27B on 24 GB.
+- **Fixed**: on a Linux machine shared by several accounts, a chat pauses your other windows again; ignore rules hold
+  while their file is busy; a `deny` rule sees past `CI=1 rm …`; Russian and Polish wait lines agree with their numbers;
+  a settings file that cannot be read is said once; Fix them sends the code around each error.
+
 ## 1.8.10
 
 Close the editor in the middle of a run and come back tomorrow: Inferpal tells you what happened and hands your
