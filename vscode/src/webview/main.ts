@@ -26,6 +26,7 @@ import { renderMarkdownInto, setCopySink, stripThinkTags } from './markdown';
 import { renderXray, setXraySink } from './xray';
 import { icon, iconButton, setIcon, type IconName } from './icons';
 import { mentionFor } from '../mentionPaths';
+import { splitBubbleText } from '../bubbleText';
 
 const vscode = window.__vsapi ?? acquireVsCodeApi();
 const post = (msg: WebviewToExt) => vscode.postMessage(msg);
@@ -832,15 +833,7 @@ function metaRow(item: { text: string; timestamp?: string }, copyText?: string):
 
 /** The attachments named under a question ("📎 Attached: a · b"): drawn as chips, the text kept without them. */
 function splitAttachments(text: string): { text: string; names: string[] } {
-  const prefix = attachedRecap.split('{0}')[0];
-  if (!prefix) {
-    return { text, names: [] };
-  }
-  const at = text.lastIndexOf(prefix);
-  if (at < 0 || text.slice(at).includes('\n')) {
-    return { text, names: [] };
-  }
-  return { text: text.slice(0, at).trimEnd(), names: text.slice(at + prefix.length).split(' · ').filter((n) => n) };
+  return splitBubbleText(text, attachedRecap);
 }
 
 function addUser(item: WvTranscriptItem): void {

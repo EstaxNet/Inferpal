@@ -2030,7 +2030,7 @@
   <data name="RewindQuestionGone" xml:space="preserve"><value>Этого вопроса больше нет на прежнем месте в разговоре: ничего не сделано.</value></data>
   <data name="RewindConversationNotCut" xml:space="preserve"><value>Файлы вернулись к состоянию до вопроса {0}, но разговор не удалось обрезать: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>Запуски после этого вопроса изменились с момента показа карточки: проверьте её ещё раз, прежде чем вернуться.</value></data>
-  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>То, что шло вместе с ним ({0}), не прикрепляется заново.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Отправлено вместе с вопросом: {0}. При повторном вопросе заново читается только то, что названо в его словах (@-упоминание; /explain читает редактор в его текущем виде); остальное прикрепите сами.</value></data>
   <data name="CoverageDetecting" xml:space="preserve"><value>Поиск тестов проекта и его инструмента покрытия…</value></data>
   <data name="CoverageMeasuringBefore" xml:space="preserve"><value>Измерение покрытия до, с помощью {0}…</value></data>
   <data name="CoverageMeasuringAfter" xml:space="preserve"><value>Измерение покрытия после…</value></data>

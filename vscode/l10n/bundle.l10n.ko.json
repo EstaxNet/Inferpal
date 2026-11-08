@@ -220,5 +220,7 @@
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "이 터미널에서 끝난 명령이 없습니다. 마지막 명령은 '{0}'에서 끝났습니다. 그쪽으로 전환한 뒤 @terminal을 사용하세요.",
   "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Inferpal이 이 터미널을 추적한 뒤로 끝난 명령이 없습니다. 다시 실행한 뒤 @terminal을 사용하세요.",
   "{0} more @-mentions not looked at (at most {1} per question)": "@ 멘션 {0}개는 확인되지 않았습니다 (질문당 최대 {1}개)",
-  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "어시스턴트가 다시 시작되어 /tools off, 단계 모드, 꺼 둔 X-Ray 섹션을 복원하지 못했습니다."
+  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "어시스턴트가 다시 시작되어 /tools off, 단계 모드, 꺼 둔 X-Ray 섹션을 복원하지 못했습니다.",
+  "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "질문과 함께 보낸 항목: {0}. 다시 물으면 문장에서 가리키는 것만 다시 읽습니다(@멘션; /explain은 현재 편집기를 읽습니다). 나머지는 직접 첨부하세요.",
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "다시 물을 내용이 없습니다: 이 질문은 함께 보낸 항목({0})뿐이었고, 저장된 대화는 그 내용을 보관하지 않습니다. 다시 첨부한 뒤 질문하세요."
 }

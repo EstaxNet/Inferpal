@@ -220,5 +220,7 @@
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "此终端中没有已结束的命令；最后一条命令在“{0}”中结束：请切换过去，然后使用 @terminal。",
   "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "自 Inferpal 开始跟踪此终端以来，没有命令结束：请重新运行，然后使用 @terminal。",
   "{0} more @-mentions not looked at (at most {1} per question)": "另有 {0} 个 @ 提及未检查（每个问题最多 {1} 个）",
-  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "助手已重启，无法恢复 /tools off、单步模式或已关闭的 X-Ray 部分。"
+  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "助手已重启，无法恢复 /tools off、单步模式或已关闭的 X-Ray 部分。",
+  "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "随问题发送的内容：{0}。再次提问时，只会重新读取其文字所指的内容（@ 提及；/explain 读取编辑器当前的内容）；其余内容请自行附加。",
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "没有可重新提问的内容：这个问题只包含随附的内容（{0}），而保存的对话不会保留这些内容。请重新附加后再提问。"
 }

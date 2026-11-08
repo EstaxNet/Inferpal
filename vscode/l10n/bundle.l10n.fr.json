@@ -220,5 +220,7 @@
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "Aucune commande ne s'est terminée dans ce terminal ; la dernière s'est terminée dans « {0} » : passez-y, puis utilisez @terminal.",
   "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Aucune commande ne s'est terminée dans ce terminal depuis qu'Inferpal le suit : relancez-la, puis utilisez @terminal.",
   "{0} more @-mentions not looked at (at most {1} per question)": "{0} autres mentions @ non examinées ({1} au plus par question)",
-  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "L'assistant a redémarré et n'a pas pu rétablir /tools off, le mode pas à pas ni les sections X-Ray désactivées."
+  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "L'assistant a redémarré et n'a pas pu rétablir /tools off, le mode pas à pas ni les sections X-Ray désactivées.",
+  "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "Envoyé avec la question : {0}. La redemander ne relit que ce que ses mots nomment (une @-mention ; /explain lit l'éditeur tel qu'il est maintenant) ; joignez le reste vous-même.",
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Rien à redemander : cette question n'était que ce qui l'accompagnait ({0}), qu'une conversation enregistrée ne garde pas. Joignez-le à nouveau pour demander."
 }

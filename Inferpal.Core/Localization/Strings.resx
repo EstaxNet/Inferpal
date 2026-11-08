@@ -2034,7 +2034,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="RewindQuestionGone" xml:space="preserve"><value>This question is no longer where it was in the conversation: nothing was done.</value></data>
   <data name="RewindConversationNotCut" xml:space="preserve"><value>The files are back as they were before question {0}, but the conversation could not be cut: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>The runs after this question changed since the card was drawn: check it again before going back.</value></data>
-  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>What went with it ({0}) is not attached again.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.</value></data>
   <data name="CoverageDetecting" xml:space="preserve"><value>Looking for the project's tests and coverage tool…</value></data>
   <data name="CoverageMeasuringBefore" xml:space="preserve"><value>Measuring the coverage before, with {0}…</value></data>
   <data name="CoverageMeasuringAfter" xml:space="preserve"><value>Measuring the coverage after…</value></data>

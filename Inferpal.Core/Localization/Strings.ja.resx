@@ -2030,7 +2030,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RewindQuestionGone" xml:space="preserve"><value>この質問は会話の元の位置にもうありません: 何もしていません。</value></data>
   <data name="RewindConversationNotCut" xml:space="preserve"><value>ファイルは質問 {0} の前の状態に戻りましたが、会話を切り詰められませんでした: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>カードの表示後に、この質問の後の実行が変わりました: 戻る前にもう一度確認してください。</value></data>
-  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>一緒に送った内容 ({0}) は再添付されません。</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>質問と一緒に送信されたもの: {0}。もう一度質問すると、言葉で示されたものだけが読み直されます (@メンション、/explain は現在のエディターを読みます)。残りはご自身で添付してください。</value></data>
   <data name="CoverageDetecting" xml:space="preserve"><value>プロジェクトのテストとカバレッジツールを探しています…</value></data>
   <data name="CoverageMeasuringBefore" xml:space="preserve"><value>{0} で実行前のカバレッジを計測しています…</value></data>
   <data name="CoverageMeasuringAfter" xml:space="preserve"><value>実行後のカバレッジを計測しています…</value></data>

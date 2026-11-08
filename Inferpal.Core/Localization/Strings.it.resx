@@ -2030,7 +2030,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="RewindQuestionGone" xml:space="preserve"><value>Questa domanda non è più al suo posto nella conversazione: non è stato fatto nulla.</value></data>
   <data name="RewindConversationNotCut" xml:space="preserve"><value>I file sono tornati com'erano prima della domanda {0}, ma non è stato possibile tagliare la conversazione: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>I run dopo questa domanda sono cambiati da quando la scheda è stata mostrata: ricontrollala prima di tornare indietro.</value></data>
-  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Ciò che l'accompagnava ({0}) non viene allegato di nuovo.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Inviato con la domanda: {0}. Riproporla rilegge solo ciò che le sue parole nominano (una @-menzione; /explain legge l'editor com'è ora); allega tu il resto.</value></data>
   <data name="CoverageDetecting" xml:space="preserve"><value>Ricerca dei test del progetto e del suo strumento di copertura…</value></data>
   <data name="CoverageMeasuringBefore" xml:space="preserve"><value>Misura della copertura prima, con {0}…</value></data>
   <data name="CoverageMeasuringAfter" xml:space="preserve"><value>Misura della copertura dopo…</value></data>

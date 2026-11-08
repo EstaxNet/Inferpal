@@ -2030,7 +2030,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="RewindQuestionGone" xml:space="preserve"><value>Tego pytania nie ma już w tym miejscu rozmowy: niczego nie zrobiono.</value></data>
   <data name="RewindConversationNotCut" xml:space="preserve"><value>Pliki wróciły do stanu sprzed pytania {0}, ale nie udało się przyciąć rozmowy: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>Uruchomienia po tym pytaniu zmieniły się od wyświetlenia karty: sprawdź ją ponownie przed powrotem.</value></data>
-  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>To, co mu towarzyszyło ({0}), nie zostaje ponownie dołączone.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Wysłano z pytaniem: {0}. Ponowne zadanie odczytuje tylko to, co wskazują jego słowa (@-wzmianka; /explain czyta edytor w obecnym stanie); resztę dołącz samodzielnie.</value></data>
   <data name="CoverageDetecting" xml:space="preserve"><value>Szukanie testów projektu i jego narzędzia pokrycia…</value></data>
   <data name="CoverageMeasuringBefore" xml:space="preserve"><value>Pomiar pokrycia przed, za pomocą {0}…</value></data>
   <data name="CoverageMeasuringAfter" xml:space="preserve"><value>Pomiar pokrycia po…</value></data>

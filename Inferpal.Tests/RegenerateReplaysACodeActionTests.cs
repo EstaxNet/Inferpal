@@ -40,6 +40,6 @@ public sealed class RegenerateReplaysACodeActionTests
         Assert.True(dispatch > 0, "send() no longer dispatches on the words: the order is not measured.");   // WITNESS
         Assert.True(replay > 0 && replay < dispatch, "a regenerated question is dispatched again from its words");
         // Not typed again: the prompt history keeps what the user wrote.
-        Assert.Contains("const history = replay ? this.historyEntries() : this.appendHistory(prompt);", send, StringComparison.Ordinal);
+        Assert.Contains("const history = replay || this.regenerating ? this.historyEntries() : this.appendHistory(prompt);", send, StringComparison.Ordinal);
     }
 }

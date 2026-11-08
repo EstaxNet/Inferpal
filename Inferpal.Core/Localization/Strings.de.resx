@@ -2030,7 +2030,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="RewindQuestionGone" xml:space="preserve"><value>Diese Frage steht nicht mehr an ihrer Stelle in der Unterhaltung: Es wurde nichts getan.</value></data>
   <data name="RewindConversationNotCut" xml:space="preserve"><value>Die Dateien sind wieder wie vor Frage {0}, aber die Unterhaltung konnte nicht gekürzt werden: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>Die Läufe nach dieser Frage haben sich seit dem Anzeigen der Karte geändert: Prüfen Sie sie erneut, bevor Sie zurückgehen.</value></data>
-  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Was dazugehörte ({0}), wird nicht erneut angehängt.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Mit der Frage gesendet: {0}. Wird sie erneut gestellt, wird nur gelesen, was ihre Worte nennen (eine @-Erwähnung; /explain liest den Editor, wie er jetzt ist); hängen Sie den Rest selbst an.</value></data>
   <data name="CoverageDetecting" xml:space="preserve"><value>Suche nach den Tests des Projekts und seinem Abdeckungswerkzeug…</value></data>
   <data name="CoverageMeasuringBefore" xml:space="preserve"><value>Abdeckung vorher wird gemessen, mit {0}…</value></data>
   <data name="CoverageMeasuringAfter" xml:space="preserve"><value>Abdeckung nachher wird gemessen…</value></data>

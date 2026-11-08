@@ -8,6 +8,7 @@ import { HostClient } from './hostClient';
 import { say as sayInStatusBar } from './inlineCompletions';
 import { hostErrorText, hostUnavailableMessage, isConnectionLost, promptOpenFolder } from './hostStatus';
 import { mentionTokens, resolveMention } from './mentionPaths';
+import { splitBubbleText } from './bubbleText';
 import { followModelRouterSettings } from './modelRouterSettings';
 import { offerHostRestart, SettingsPanel } from './settingsPanel';
 import { SetupFlow } from './setupFlow';
@@ -174,6 +175,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private resendAttachments: PendingAttachment[] | undefined;
   /** The notes a regenerated question's run read: asked again, it carries them (`chat/send` `notes`). */
   private resendNotes: string[] | undefined;
+  /** What a regenerated question's request named under it as it left (`chatTurn`); `undefined` until it leaves — a
+   *  send refused or stopped before the host names nothing, and nothing is said of it. */
+  private resendNamed: string[] | undefined;
   /** Ids of the notes typed during a turn (`chat/steer`, `chat/noteApplied`). */
   private noteSeq = 0;
   /** How the last turn ended, and how many have: a queued message is sent after a turn that ended normally only —
@@ -2882,7 +2886,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       const question: WvTranscriptItem = { role: 'user', text: prompt, timestamp };
       this.append(question);
       // A regenerated question is not typed again: the prompt history keeps what the user wrote.
-      const history = replay ? this.historyEntries() : this.appendHistory(prompt);
+      const history = replay || this.regenerating ? this.historyEntries() : this.appendHistory(prompt);
       this.post({ type: 'turnStarted', prompt, timestamp, history });
 
       // ⚠ A regenerated question is replayed with what it carried — the same prompt, as a code action if it was one —
@@ -3309,6 +3313,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       }
       startedAt = Date.now();
+      if (this.regenerating) {
+        this.resendNamed = named;
+      }
       const result = await host.chatSend({
         prompt: expanded,
         model: this.model || undefined,
@@ -3524,6 +3531,25 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       }
     }
+    // ⚠ The chips waiting in the composer were attached for the NEXT question: sent with this one, they left the
+    // composer and went to the model with the old question. The question's OWN chips go again — resent from its
+    // words alone, "explain this file" went without the file (Visual Studio resends `_lastSent`).
+    const sent = this.lastSent?.question === question ? this.lastSent : undefined;
+    // ⚠ Without its send kept (a reloaded conversation), the question goes again from its WORDS: its bubble ends with the
+    // line naming what went with it, and resent whole the model read "Attached: X" without X. What its words still name
+    // is read again; the rest is said once the question has gone. Words of none — a question that was only what went with
+    // it — leave nothing to ask, said before anything is taken back.
+    let reloaded = sent ? undefined : splitBubbleText(question.text, t('📎 Attached: {0}'));
+    // An /explain names its excerpt on a line of its own, and the chips that went with it on another: both are cut.
+    for (let inner = reloaded && splitBubbleText(reloaded.text, t('📎 Attached: {0}'));
+         reloaded && inner && inner.names.length > 0;
+         inner = splitBubbleText(reloaded.text, t('📎 Attached: {0}'))) {
+      reloaded = { text: inner.text, names: [...inner.names, ...reloaded.names] };
+    }
+    if (reloaded && reloaded.names.length > 0 && reloaded.text.trim().length === 0) {
+      this.sayOutOfTurn(t('Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.', reloaded.names.join(', ')));
+      return;
+    }
     // ⚠ Taken back only if it is IN the host's history: the rollback removes the LAST question there, so for one
     // that never reached it (a command served without the model, a refused request) it removed the exchange BEFORE.
     // A turn that FAILED is in it: the host keeps the question of a failed turn, like the Visual Studio window.
@@ -3548,18 +3574,25 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const notes = this.transcript.slice(at + 1).filter((m) => m.note === 'read').map((m) => m.text);
     this.transcript.splice(at);
     this.hydrate();
-    // ⚠ The chips waiting in the composer were attached for the NEXT question: sent with this one, they left the
-    // composer and went to the model with the old question. The question's OWN chips go again — resent from its
-    // words alone, "explain this file" went without the file (Visual Studio resends `_lastSent`).
-    const sent = this.lastSent?.question === question ? this.lastSent : undefined;
     this.regenerating = true;
+    this.resendNamed = undefined;
     this.resendAttachments = sent?.attachments;
     this.resendNotes = notes;
     try {
-      await this.send(sent?.shown ?? question.text, false,
+      await this.send(sent?.shown ?? reloaded?.text ?? question.text, false,
                       sent && { prompt: sent.text, codeAction: sent.codeAction, query: sent.query });
+      // Said under it, once it left — never for a send refused or stopped before the host — and only of what its request
+      // did not name again: a name back word for word is back. A label that changed (a file's size) is still said: the
+      // sentence holds for it too.
+      // Written by chatTurn during the send: read with its declared type, never narrowed to the `undefined` set above.
+      const named = this.resendNamed as string[] | undefined;
+      const missing = named && reloaded ? reloaded.names.filter((n) => !named.includes(n)) : [];
+      if (missing.length > 0) {
+        this.sayOutOfTurn(t('Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.', missing.join(', ')));
+      }
     } finally {
       this.regenerating = false;
+      this.resendNamed = undefined;
       this.resendAttachments = undefined;
       this.resendNotes = undefined;
     }

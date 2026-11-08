@@ -37,7 +37,7 @@ public class RegenerateKeepsQueuedChipsTests
         var regenerate = WebviewRebuildTests.Body(Provider(), "private async regenerate(");
         Assert.Contains("this.lastSent?.question === question", regenerate, StringComparison.Ordinal);   // tied to its bubble
         Assert.Contains("this.resendAttachments = sent?.attachments;", regenerate, StringComparison.Ordinal);
-        Assert.Contains("await this.send(sent?.shown ?? question.text, false,", regenerate, StringComparison.Ordinal);
+        Assert.Contains("await this.send(sent?.shown ?? reloaded?.text ?? question.text, false,", regenerate, StringComparison.Ordinal);
         Assert.Contains("sent && { prompt: sent.text, codeAction: sent.codeAction, query: sent.query });", regenerate, StringComparison.Ordinal);
 
         // What is resent is recorded where the turn consumes it: the words before the "📎 Attached" line, the chips sent.

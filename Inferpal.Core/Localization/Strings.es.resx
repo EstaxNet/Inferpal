@@ -2030,7 +2030,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="RewindQuestionGone" xml:space="preserve"><value>Esta pregunta ya no está en su lugar en la conversación: no se hizo nada.</value></data>
   <data name="RewindConversationNotCut" xml:space="preserve"><value>Los archivos volvieron a como estaban antes de la pregunta {0}, pero no se pudo cortar la conversación: {1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>Los runs posteriores a esta pregunta cambiaron desde que se mostró la tarjeta: revísala de nuevo antes de volver.</value></data>
-  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Lo que la acompañaba ({0}) no se adjunta de nuevo.</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>Enviado con la pregunta: {0}. Al volver a hacerla, solo se relee lo que nombran sus palabras (una @-mención; /explain lee el editor tal como está ahora); adjunte el resto usted mismo.</value></data>
   <data name="CoverageDetecting" xml:space="preserve"><value>Buscando los tests del proyecto y su herramienta de cobertura…</value></data>
   <data name="CoverageMeasuringBefore" xml:space="preserve"><value>Midiendo la cobertura antes, con {0}…</value></data>
   <data name="CoverageMeasuringAfter" xml:space="preserve"><value>Midiendo la cobertura después…</value></data>

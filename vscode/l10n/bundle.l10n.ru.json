@@ -220,5 +220,7 @@
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "В этом терминале не завершилась ни одна команда; последняя завершилась в «{0}»: переключитесь туда, затем используйте @terminal.",
   "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "С тех пор как Inferpal отслеживает этот терминал, в нём не завершилась ни одна команда: запустите её снова, затем используйте @terminal.",
   "{0} more @-mentions not looked at (at most {1} per question)": "Ещё упоминаний @ не проверено: {0} (не более {1} на вопрос)",
-  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "Ассистент перезапустился и не смог восстановить /tools off, пошаговый режим и отключённые разделы X-Ray."
+  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "Ассистент перезапустился и не смог восстановить /tools off, пошаговый режим и отключённые разделы X-Ray.",
+  "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "Отправлено вместе с вопросом: {0}. При повторном вопросе заново читается только то, что названо в его словах (@-упоминание; /explain читает редактор в его текущем виде); остальное прикрепите сами.",
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Нечего спрашивать заново: этот вопрос состоял только из того, что к нему прилагалось ({0}), а сохранённый разговор этого не хранит. Прикрепите это снова, чтобы спросить."
 }

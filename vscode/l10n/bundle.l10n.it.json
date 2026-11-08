@@ -220,5 +220,7 @@
   "No command has finished in this terminal; the last one finished in “{0}”: switch to it, then use @terminal.": "Nessun comando è terminato in questo terminale; l'ultimo è terminato in «{0}»: passa a quello, poi usa @terminal.",
   "No command has finished in this terminal since Inferpal began following it: run it again, then use @terminal.": "Nessun comando è terminato in questo terminale da quando Inferpal lo segue: rieseguilo, poi usa @terminal.",
   "{0} more @-mentions not looked at (at most {1} per question)": "Altre {0} menzioni @ non esaminate (al massimo {1} per domanda)",
-  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "L'assistente si è riavviato e non ha potuto ripristinare /tools off, la modalità passo passo né le sezioni X-Ray disattivate."
+  "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "L'assistente si è riavviato e non ha potuto ripristinare /tools off, la modalità passo passo né le sezioni X-Ray disattivate.",
+  "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "Inviato con la domanda: {0}. Riproporla rilegge solo ciò che le sue parole nominano (una @-menzione; /explain legge l'editor com'è ora); allega tu il resto.",
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Niente da richiedere: questa domanda era solo ciò che l'accompagnava ({0}), che una conversazione salvata non conserva. Allegalo di nuovo per chiedere."
 }

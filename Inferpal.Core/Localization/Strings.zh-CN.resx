@@ -2030,7 +2030,7 @@
   <data name="RewindQuestionGone" xml:space="preserve"><value>这个问题已不在对话中原来的位置：什么也没做。</value></data>
   <data name="RewindConversationNotCut" xml:space="preserve"><value>文件已恢复到问题 {0} 之前的状态，但无法截断对话：{1}</value></data>
   <data name="RewindPlanChanged" xml:space="preserve"><value>自卡片显示以来，这个问题之后的运行发生了变化：返回前请再检查一次。</value></data>
-  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>随它一起发送的内容（{0}）不会再次附上。</value></data>
+  <data name="RewindAttachmentsNotAgain" xml:space="preserve"><value>随问题发送的内容：{0}。再次提问时，只会重新读取其文字所指的内容（@ 提及；/explain 读取编辑器当前的内容）；其余内容请自行附加。</value></data>
   <data name="CoverageDetecting" xml:space="preserve"><value>正在查找项目的测试和覆盖率工具…</value></data>
   <data name="CoverageMeasuringBefore" xml:space="preserve"><value>正在用 {0} 测量之前的覆盖率…</value></data>
   <data name="CoverageMeasuringAfter" xml:space="preserve"><value>正在测量之后的覆盖率…</value></data>
