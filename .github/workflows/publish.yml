@@ -1,0 +1,93 @@
+name: Publish
+
+# Publishes a GitHub release's VS Code packages — the bytes release.yml built and listed in SHA256SUMS.txt — to the
+# VS Code Marketplace and Open VSX by trusted publishing (OIDC). No token is stored anywhere: each registry trusts THIS
+# file, by its name, run in the `marketplaces` environment.
+# ⚠ Renaming this file or the environment breaks publishing until each registry's trusted-publisher entry is made again.
+# ⚠ The job waits in `marketplaces` for its required reviewer: publishing stays a person's gesture. An environment that
+# does not exist is created by GitHub WITHOUT protection, so it is created, with its reviewer, before this file lands.
+# Visual Studio's own package is not published here: VsixPublisher's `-oidc` needs a VS SDK build tools release that is
+# not on nuget.org yet.
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish, e.g. v1.8.11
+        required: true
+
+# One publication at a time, never cancelled: a registry half-published is the one state no re-run can read.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    # A release that failed to build has nothing to publish; a manual run names its tag.
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: marketplaces
+    permissions:
+      contents: read     # the release's assets
+      id-token: write    # the OIDC token each registry exchanges for a short-lived credential
+    env:
+      # Through env:, never interpolated into a script: a tag name is text someone else may have written.
+      TAG: ${{ github.event.inputs.tag || github.event.workflow_run.head_branch }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check the tag
+        shell: bash
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$TAG' is not a release tag (vX.Y.Z): nothing is published."
+            exit 1
+          fi
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Download the release's VS Code packages
+        shell: bash
+        run: |
+          mkdir dist
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist \
+            --pattern 'inferpal-vscode-*.vsix' --pattern 'SHA256SUMS.txt'
+
+      - name: Check them against SHA256SUMS.txt
+        shell: bash
+        working-directory: dist
+        run: |
+          # Every target listed and matching: a package missing from the release would publish the listing short.
+          for target in win32-x64 linux-x64 darwin-arm64; do
+            file="inferpal-vscode-$target-$VERSION.vsix"
+            grep -q "  $file\$" SHA256SUMS.txt || { echo "::error::$file is not in SHA256SUMS.txt"; exit 1; }
+          done
+          grep -E '  inferpal-vscode-[a-z0-9-]+-[0-9.]+\.vsix$' SHA256SUMS.txt | sha256sum --check --strict
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # Exact versions: these run with a credential that publishes. vsce has `--oidc` from 4.1.0, ovsx has
+      # `--trusted-publishing` from 1.2.0. `--skip-duplicate` lets a re-run finish what a failed run left.
+      - name: Publish to the VS Code Marketplace
+        shell: bash
+        working-directory: dist
+        run: |
+          npx --yes @vscode/vsce@4.1.0 publish --oidc --skip-duplicate --packagePath \
+            "inferpal-vscode-win32-x64-$VERSION.vsix" \
+            "inferpal-vscode-linux-x64-$VERSION.vsix" \
+            "inferpal-vscode-darwin-arm64-$VERSION.vsix"
+
+      - name: Publish to Open VSX
+        shell: bash
+        working-directory: dist
+        run: |
+          for target in win32-x64 linux-x64 darwin-arm64; do
+            npx --yes ovsx@1.2.0 publish --trusted-publishing --skip-duplicate --packagePath "inferpal-vscode-$target-$VERSION.vsix"
+          done
