@@ -117,6 +117,7 @@ public sealed class RunCheckedThenEditedTests
         Assert.Equal(RunCheck.PassedThenEdited, summary.Check);
     }
 
+#if WINDOWS   // the window's items: off Windows the adapter does not exist, and this file still compiles
     [Fact]
     public void VisualStudio_DrawsIt_WithTheInfoMark_AndAFailedStepBeforeTheGreen_DoesNotTurnItRed()
     {
@@ -131,6 +132,7 @@ public sealed class RunCheckedThenEditedTests
         Assert.Equal(Inferpal.ToolWindow.Glyphs.Info, line.RunGlyph);
         Assert.True(Inferpal.ToolWindow.ChatMessageItem.ResultMsg(summary, null, null, _ => { }).CheckUnproven);
     }
+#endif
 
     // ── The loop sets the fact ──────────────────────────────────────────────────────────────
 

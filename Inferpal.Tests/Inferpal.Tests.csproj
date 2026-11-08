@@ -74,6 +74,7 @@
     <Compile Remove="MaskedApiKeyTests.cs" />
     <Compile Remove="VsWindowHarness.cs" />
     <Compile Remove="VsWindowRunsUnderTestTests.cs" />
+    <Compile Remove="RootlessStartTests.cs" />
     <Compile Remove="GlobalUsings.Windows.cs" />
   </ItemGroup>
 
