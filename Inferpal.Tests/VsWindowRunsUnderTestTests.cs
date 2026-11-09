@@ -55,6 +55,30 @@ public sealed class VsWindowRunsUnderTestTests
         Assert.False(vs.Window.IsLoading);
     }
 
+    /// <summary>A forced card in the chat does not offer "Always" — a command whose text hides what it runs; an ordinary
+    /// command's card does (reference arm).</summary>
+    [Theory]
+    [InlineData("Invoke-Expression $x", false)]
+    [InlineData("echo hi", true)]
+    public async Task ACommandsCard_OffersAlways_OnlyWhenItIsNotForced(string command, bool offers)
+    {
+        string? said = null;
+        var fake = new FakeInferenceProvider();
+        using var vs = new VsWindowHarness(fake);
+        fake.OnAgentRun = async (history, tools, _, _) =>
+        {
+            said = await tools.ExecuteAsync("run_command", JsonSerializer.SerializeToElement(new { command }), CancellationToken.None);
+            return new AgentResult("Done.", [], history);
+        };
+
+        var turn = vs.AskAsync("run it");
+        await VsWindowHarness.UntilAsync(() => said is not null || vs.Window.Messages.Any(m => m.Role == "approval"));
+
+        Assert.Equal(offers, vs.Window.Messages.Single(m => m.Role == "approval").OffersAlways);
+        await vs.AskAsync(string.Empty);
+        await turn.WaitAsync(TimeSpan.FromSeconds(30));
+    }
+
     /// <summary>With nothing open, the last resort is the process's folder: git would read the repository around it. Under a
     /// test that is this very repository, with its solution near: the case itself.</summary>
     /// <remarks>⚠ What only reads. With its guard gone, <c>/commit-exec</c> run here commits to this repository:
