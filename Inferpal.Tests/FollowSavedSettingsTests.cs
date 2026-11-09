@@ -511,7 +511,7 @@ public sealed class FollowSavedSettingsTests : IDisposable
                        ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalToolWindowData.SlashCommands.cs")));
         Assert.Contains("_config.Followed                += OnSettingsFollowed;",
                         ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalToolWindowData.Construction.cs")), StringComparison.Ordinal);
-        Assert.Matches(@"SettingsFollow\.TakeAndApply\(config, client, \(\) => GpuScheduler\.IsTurnInFlight\)[\s\S]{0,900}_opened\s*= config\.SnapshotNow\(\);",
+        Assert.Matches(@"SettingsFollow\.TakeAndApply\(config, client, \(\) => TurnDoor\.Busy\)[\s\S]{0,1000}_opened\s*= config\.SnapshotNow\(\);",
                        ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalSettingsData.cs")));
 
         Assert.Matches(@"await this\.followSettings\(host\);\s*const agentMode = this\.windowAgentMode\(\);",

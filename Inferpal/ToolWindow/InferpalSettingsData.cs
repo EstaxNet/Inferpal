@@ -350,14 +350,14 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         // chat window may not be open: the language, and the MCP servers once no turn runs.
         try
         {
-            var follow = Services.Inference.SettingsFollow.TakeAndApply(config, client, () => GpuScheduler.IsTurnInFlight);
+            var follow = Services.Inference.SettingsFollow.TakeAndApply(config, client, () => TurnDoor.Busy);
             if (follow.Taken.Contains("language"))
             {
                 Strings.ApplyLanguage(config.Language);
                 config.NotifyLanguageChanged();
             }
             if (follow.Taken.Contains("mcpEnabled") || follow.Taken.Contains("mcpServersJson"))
-                _ = mcp.RefreshWhenIdleAsync(() => GpuScheduler.IsTurnInFlight, TimeSpan.FromMilliseconds(500));
+                _ = mcp.RefreshWhenIdleAsync(() => TurnDoor.Busy, TimeSpan.FromMilliseconds(500));
             if (!follow.Busy) FollowServerAtTheDoor(client);
         }
         catch (Exception ex) { Diagnostics.Swallow("Settings.FollowOnOpen", ex); }
@@ -1501,12 +1501,12 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         // ⚠ NOT under a running turn. RefreshAsync tears every server down and respawns it, and an
         // agent loop that is mid-`mcp__server__tool` gets its client disposed underneath: the call
         // comes back as an error the model then has to reason about, because someone pressed Save.
-        // The host closed the same class of race with its turn slot; here
-        // the mechanism already exists — GpuScheduler models "a chat turn is in flight" (every run
-        // holds a lease) and the background index loops already wait on it. Saving must not block
-        // on a long run, so the reconnect is deferred rather than awaited: the configuration is
-        // saved either way, and the servers pick it up as soon as the turn ends.
-        if (GpuScheduler.IsTurnInFlight)
+        // The host closed the same class of race with its turn slot; here the turn door says it
+        // (TurnDoor: held by every turn of the window from start to end — a long command between two
+        // model calls included — and by any model lease). Saving must not block on a long run, so the
+        // reconnect is deferred rather than awaited: the configuration is saved either way, and the
+        // servers pick it up as soon as the turn ends.
+        if (TurnDoor.Busy)
             _ = ReconnectMcpWhenChatIdleAsync();
         else
             await ReconnectMcpAsync();
@@ -1825,12 +1825,9 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     /// <summary>Waits for the running turn to end, then reconnects. Never throws — it runs detached.</summary>
     private async Task ReconnectMcpWhenChatIdleAsync()
     {
-        try
-        {
-            // Bounded: a run that never releases its lease must not strand the server list forever.
-            using var budget = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-            await GpuScheduler.WaitForLocalTurnsToEndAsync(budget.Token);
-        }
+        // ⚠ Not bounded: a long command holds the door for its whole run (/tdd, /test coverage can pass ten minutes), and
+        // a budget that ran out restarted the servers under it. The door is always given back when the turn ends.
+        try { await TurnDoor.IdleAsync(CancellationToken.None); }
         catch (Exception ex) { Diagnostics.Swallow("Settings.WaitChatIdle", ex); }
 
         await ReconnectMcpAsync();

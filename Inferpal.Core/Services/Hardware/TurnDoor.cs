@@ -70,6 +70,10 @@ internal static class TurnDoor
         }
     }
 
+    /// <summary>Returns once no turn of this process runs: for a gesture that must not cut one (its MCP servers restarted
+    /// under its tools), never for GPU work.</summary>
+    public static Task IdleAsync(CancellationToken ct) => WhenIdleAsync(() => { }, ct);
+
     /// <summary>Runs <paramref name="act"/> once no turn of this process runs — at once when none does
     /// (<see cref="TryNow"/>).</summary>
     public static async Task WhenIdleAsync(Action act, CancellationToken ct = default)

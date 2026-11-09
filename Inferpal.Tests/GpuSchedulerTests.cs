@@ -225,17 +225,32 @@ public class GpuSchedulerTests : IDisposable
         Assert.True(await CompletesWithin(started.Task, 30_000));
     }
 
-    /// <summary>Visual Studio's MCP restarts (Settings, /import, a new solution) wait for the turn, a turn waiting at a
-    /// card included — read on the source: the view models cannot be built in the suite.</summary>
+    /// <summary>
+    /// Visual Studio asks whether a turn runs at ONE door (<see cref="TurnDoor"/>): its MCP restarts (Settings, /import, a
+    /// new solution) and its settings follows wait for the turn — a long command between two model calls, a turn waiting at
+    /// a card included —, never for the GPU. A lease read alone missed those gaps. One named exception: /setup's own door,
+    /// which runs as a turn of the window and must still change the server (only a model call in flight keeps it).
+    /// </summary>
     [Fact]
-    public void VisualStudiosMcpRestarts_WaitForTheTurn_NotForTheGpu()
+    public void VisualStudioAsksWhetherATurnRuns_AtTheTurnDoor()
     {
         var folder = Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow");
-        var code = Directory.EnumerateFiles(folder, "*.cs").Select(ConventionCoverageTests.CodeOnly).ToList();
+        var code = Directory.EnumerateFiles(folder, "*.cs").ToDictionary(Path.GetFileName, ConventionCoverageTests.CodeOnly);
         Assert.True(code.Count >= 10);   // witness: the folder was read
-        Assert.DoesNotContain(code, c => c.Contains("GpuScheduler.IsChatActive", StringComparison.Ordinal));
-        Assert.True(code.Sum(c => CountOf(c, "GpuScheduler.IsTurnInFlight")) >= 3);
-        Assert.True(code.Sum(c => CountOf(c, "GpuScheduler.WaitForLocalTurnsToEndAsync(")) >= 2);
+        Assert.DoesNotContain(code.Values, c => c.Contains("GpuScheduler.IsChatActive", StringComparison.Ordinal));
+        Assert.DoesNotContain(code.Values, c => c.Contains("GpuScheduler.WaitForLocalTurnsToEndAsync(", StringComparison.Ordinal));
+        Assert.True(code.Values.Sum(c => CountOf(c, "TurnDoor.Busy")) >= 6);
+        Assert.True(code.Values.Sum(c => CountOf(c, "TurnDoor.IdleAsync(")) >= 2);
+
+        var leaseReads = code.Where(kv => kv.Value.Contains("GpuScheduler.IsTurnInFlight", StringComparison.Ordinal))
+                             .Select(kv => kv.Key).ToList();
+        Assert.Equal(["InferpalToolWindowData.Connection.cs"], leaseReads);
+        var connection = code["InferpalToolWindowData.Connection.cs"];
+        Assert.Equal(1, CountOf(connection, "GpuScheduler.IsTurnInFlight"));
+        var at = connection.IndexOf("private void FollowServerForSetup()", StringComparison.Ordinal);
+        Assert.True(at >= 0, "/setup's own door is gone: its exception names nothing any more");
+        var setup = connection[at..];
+        Assert.Contains("GpuScheduler.IsTurnInFlight", setup[..setup.IndexOf('}')], StringComparison.Ordinal);
 
         static int CountOf(string text, string what) =>
             (text.Length - text.Replace(what, string.Empty, StringComparison.Ordinal).Length) / what.Length;

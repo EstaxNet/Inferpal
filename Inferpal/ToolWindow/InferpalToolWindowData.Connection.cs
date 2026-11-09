@@ -122,7 +122,7 @@ internal partial class InferpalToolWindowData
     {
         try
         {
-            var follow = Services.Inference.SettingsFollow.TakeAndApply(_config, _client, () => GpuScheduler.IsTurnInFlight);
+            var follow = Services.Inference.SettingsFollow.TakeAndApply(_config, _client, () => TurnDoor.Busy);
             // Before the question leaves: it goes to the server the settings name now (a new kind included), checked
             // here — the heartbeat's last answer was the old server's.
             if (!follow.Busy && FollowServer())
@@ -137,8 +137,8 @@ internal partial class InferpalToolWindowData
             if (follow.Taken.Contains("mcpEnabled") || follow.Taken.Contains("mcpServersJson")
                 || _tools.Mcp.RepositoryFilesChanged())
             {
-                if (GpuScheduler.IsTurnInFlight)
-                    _ = _tools.Mcp.RefreshWhenIdleAsync(() => GpuScheduler.IsTurnInFlight, TimeSpan.FromMilliseconds(500));
+                if (TurnDoor.Busy)
+                    _ = _tools.Mcp.RefreshWhenIdleAsync(() => TurnDoor.Busy, TimeSpan.FromMilliseconds(500));
                 else
                     await RefreshMcpAsync();
             }

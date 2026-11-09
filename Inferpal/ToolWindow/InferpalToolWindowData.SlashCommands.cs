@@ -702,7 +702,7 @@ internal partial class InferpalToolWindowData
         FollowServerForSetup();   // a server imported is the next question's
         if ((_config.McpEnabled, _config.McpServersJson) != mcpBefore)
         {
-            if (GpuScheduler.IsTurnInFlight) _ = RefreshMcpWhenChatIdleAsync();
+            if (TurnDoor.Busy) _ = RefreshMcpWhenChatIdleAsync();
             else await RefreshMcpAsync();
         }
         if (!string.Equals(_config.Language, languageBefore, StringComparison.Ordinal))
@@ -714,11 +714,8 @@ internal partial class InferpalToolWindowData
 
     private async Task RefreshMcpWhenChatIdleAsync()
     {
-        try
-        {
-            using var budget = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-            await GpuScheduler.WaitForLocalTurnsToEndAsync(budget.Token);
-        }
+        // Not bounded, like the settings' reconnect: the door is given back when the turn ends, however long it runs.
+        try { await TurnDoor.IdleAsync(CancellationToken.None); }
         catch (Exception ex) { Diagnostics.Swallow("ToolWindow.ImportWaitChatIdle", ex); }
         await RefreshMcpAsync();
     }
