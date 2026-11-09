@@ -41,8 +41,10 @@ internal sealed class VsWindowHarness : IDisposable
     /// <param name="config">The window's settings, for a test that reads or follows them.</param>
     /// <param name="rootless">Whether the window starts without any workspace, as Visual Studio opened on nothing: it does
     /// not look near the process's folder (this repository, under a test). Implies no folder open.</param>
+    /// <param name="client">The client every service holds, in place of <paramref name="fake"/> (Visual Studio's
+    /// <see cref="SwitchingProvider"/> over fakes).</param>
     public VsWindowHarness(FakeInferenceProvider? fake = null, bool folderOpen = true, string? root = null, InferpalConfig? config = null,
-                           bool rootless = false)
+                           bool rootless = false, IInferenceProvider? client = null)
     {
         Root = root ?? Directory.CreateTempSubdirectory("inferpal-vm").FullName;
         if (rootless) folderOpen = false;
@@ -55,11 +57,12 @@ internal sealed class VsWindowHarness : IDisposable
         config.IsFirstRun = false;   // a first run probes the servers of the machine the suite runs on
         var holder = new VsContextHolder();
         var editor = new NullEditorSurface();
-        var index  = Owned(new ProjectIndexService(Fake, config, new LspSemanticProvider()));
+        IInferenceProvider held = client ?? Fake;
+        var index  = Owned(new ProjectIndexService(held, config, new LspSemanticProvider()));
         if (folderOpen) index.SetRoot(Root);
-        var docs   = Owned(new DocsIndexService(Fake, config));
+        var docs   = Owned(new DocsIndexService(held, config));
         var approval = new VsApprovalService(null!, config, index, holder);
-        Tools  = new ToolRegistry(editor, approval, config, index, Fake, new ProjectMapService(editor),
+        Tools  = new ToolRegistry(editor, approval, config, index, held, new ProjectMapService(editor),
                                   new McpToolService(config, approval, clientFactory: null, workspaceRoot: () => index.RootDir),
                                   docs, new OpenDocumentOverlay(), new NullDebugSession());
         // Static for the window's start, which reads it after the constructor returns: reset by Dispose, or here when the
@@ -67,7 +70,7 @@ internal sealed class VsWindowHarness : IDisposable
         InferpalToolWindowData.ProcessFolderIgnoredForTests = rootless;
         try
         {
-            Window = new InferpalToolWindowData(Fake, Tools, config, null!, holder, index, Owned(new ModelLifetimeService(Fake, config)),
+            Window = new InferpalToolWindowData(held, Tools, config, null!, holder, index, Owned(new ModelLifetimeService(held, config)),
                                                 Owned(new VsBuildMonitor()), docs);
         }
         catch

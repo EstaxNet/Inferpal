@@ -53,6 +53,7 @@
   <!-- UI labels -->
   <data name="LabelProvider" xml:space="preserve"><value>サーバーの種類</value></data>
   <data name="HintProvider" xml:space="preserve"><value>Ollama、LM Studio、または OpenAI 互換。テストで自動的に入ります。エディターの再読み込み後に有効になります。</value></data>
+  <data name="HintProviderAtOnce" xml:space="preserve"><value>Ollama、LM Studio、または OpenAI 互換。テストで自動的に入ります。</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>API キー</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>サーバーが求める場合のみ。Ollama と LM Studio には不要です。</value></data>
   <data name="KeyShow" xml:space="preserve"><value>表示</value></data>
@@ -308,7 +309,6 @@ API キーが必要な場合は設定でキーを確認してください。そ�
 
 修正したらヘッダーの ↻ 再試行 をクリックしてください。</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ {0} に再接続しました — 準備完了。</value></data>
-  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>設定のバックエンドは {0} になりましたが、このウィンドウはまだ {1} と通信しています。バックエンドの切り替えは Visual Studio の再起動後に反映されます。{0} を使うには Visual Studio を再起動してください。</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>今すぐ {0} への接続を確認する</value></data>
 
   <!-- Approval dialog -->

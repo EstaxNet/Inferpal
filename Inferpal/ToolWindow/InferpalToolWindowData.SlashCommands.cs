@@ -672,7 +672,8 @@ internal partial class InferpalToolWindowData
         var mcpBefore      = (_config.McpEnabled, _config.McpServersJson);
         var languageBefore = _config.Language;
         var result = Services.Commands.ImportCommandHandler.Handle(
-            parts, Services.Import.ImportContext.For(_config, _indexService.RootDir), _config.SaveFilePath, DateTime.Now);
+            parts, Services.Import.ImportContext.For(_config, _indexService.RootDir) with { ServerAtOnce = true },
+            _config.SaveFilePath, DateTime.Now);
         if (result.SaveConfig)
         {
             _config.Save();
@@ -698,6 +699,7 @@ internal partial class InferpalToolWindowData
     /// turned on, and no tool.</remarks>
     private async Task ApplyImportedSettingsAsync((bool McpEnabled, string McpServersJson) mcpBefore, string languageBefore)
     {
+        FollowServerForSetup();   // a server imported is the next question's
         if ((_config.McpEnabled, _config.McpServersJson) != mcpBefore)
         {
             if (GpuScheduler.IsTurnInFlight) _ = RefreshMcpWhenChatIdleAsync();

@@ -258,7 +258,7 @@ internal static class ContextWindowChoice
     private static string CardGb(InferpalConfig config) => config.VramBudgetGb.ToString("0.#", CultureInfo.CurrentCulture);
 
     /// <summary>An Ollama server to ask, through a client of its type: a backend switched since the client was built
-    /// applies at restart, and its listing would come from the other protocol.</summary>
+    /// (the host's, until it restarts) would answer through the other protocol.</summary>
     private static bool Asks(InferpalConfig config, IInferenceProvider client, string chatModel) =>
         Applies(config.Provider) && !string.IsNullOrWhiteSpace(chatModel)
         && InferenceProviderFactory.PendingSwitch(client, config.Provider) is null;

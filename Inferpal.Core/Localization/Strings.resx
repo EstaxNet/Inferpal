@@ -56,6 +56,7 @@
   <data name="LangAuto" xml:space="preserve"><value>Automatic — same as your editor ({0})</value></data>
   <data name="LabelProvider" xml:space="preserve"><value>Server type</value></data>
   <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio or OpenAI-compatible. Test fills it in. Takes effect after the editor reloads.</value></data>
+  <data name="HintProviderAtOnce" xml:space="preserve"><value>Ollama, LM Studio or OpenAI-compatible. Test fills it in.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>API key</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Only if your server asks for one: Ollama and LM Studio need none.</value></data>
   <data name="KeyShow" xml:space="preserve"><value>Show</value></data>
@@ -309,7 +310,6 @@ If it needs an API key, check the key in Settings; otherwise check that the URL 
 
 Click ↻ Retry in the header once it is fixed.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Reconnected to {0} — ready.</value></data>
-  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>The backend in Settings is now {0}, but this window still talks to {1}: a backend switch applies when Visual Studio restarts. Restart Visual Studio to use {0}.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Check connection to {0} now</value></data>
 
   <!-- Approval dialog -->

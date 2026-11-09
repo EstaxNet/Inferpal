@@ -53,6 +53,7 @@
   <!-- UI labels -->
   <data name="LabelProvider" xml:space="preserve"><value>Тип сервера</value></data>
   <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio или OpenAI-совместимый. «Проверить» заполняет его. Действует после перезагрузки редактора.</value></data>
+  <data name="HintProviderAtOnce" xml:space="preserve"><value>Ollama, LM Studio или OpenAI-совместимый. «Проверить» заполняет его.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>Ключ API</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Только если сервер его требует: Ollama и LM Studio он не нужен.</value></data>
   <data name="KeyShow" xml:space="preserve"><value>Показать</value></data>
@@ -308,7 +309,6 @@
 
 После исправления нажмите ↻ Повторить в заголовке.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Соединение с {0} восстановлено — готово.</value></data>
-  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>В настройках теперь выбран бэкенд {0}, но это окно всё ещё работает с {1}: смена бэкенда вступает в силу после перезапуска Visual Studio. Перезапустите Visual Studio, чтобы использовать {0}.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Проверить соединение с {0} сейчас</value></data>
 
   <!-- Approval dialog -->

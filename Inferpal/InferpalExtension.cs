@@ -124,9 +124,9 @@ public class InferpalExtension : Extension
             Localization.Strings.ApplyLanguage(config.Language);
             return config;
         });
-        // Resolve the active inference backend (Ollama or OpenAI-compatible) from config.Provider.
+        // The inference backend config.Provider names, rebuilt at the turn door when it names another kind: no restart.
         services.AddSingleton<IInferenceProvider>(sp =>
-            InferenceProviderFactory.Create(sp.GetRequiredService<InferpalConfig>()));
+            new SwitchingProvider(sp.GetRequiredService<InferpalConfig>(), InferenceProviderFactory.Create));
         services.AddSingleton<VsContextHolder>();
         services.AddSingleton<Services.Editor.IEditorSurface, VsEditorSurface>();
         services.AddSingleton<IApprovalService, VsApprovalService>();

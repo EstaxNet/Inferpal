@@ -266,22 +266,16 @@ internal partial class InferpalToolWindowData
         // ── 0. Backend auto-detection ─────────────────────────────────────────
         // Probe the URL to pick the right backend (Ollama / LM Studio / OpenAI-compatible) without
         // the user choosing manually. When it differs from the configured one, persist it and use a
-        // matching client for discovery; the active singleton is rebuilt on the next VS reload.
+        // matching client for discovery; the chat's client follows at once (FollowServerForSetup).
         var detected = await Services.Inference.ProviderProbe.DetectAsync(url, _config.ApiKey, ct)
             .ConfigureAwait(false);
         if (detected is not null && !string.Equals(detected, _config.Provider, StringComparison.OrdinalIgnoreCase))
         {
             _config.Provider = detected;
+            FollowServerForSetup();
             _config.Save();
         }
         var client = detected is not null ? Services.Inference.InferenceProviderFactory.Create(_config) : _client;
-        // The discovery below uses a matching client, the chat does not: without this, "auto-selected" is followed by
-        // turns that fail against a running server.
-        if (Services.Inference.InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is { } switchTo)
-        {
-            await present(BackendSwitchPendingText(switchTo)).ConfigureAwait(false);
-            _announcedSwitch = switchTo;   // said here: the heartbeat does not say it again
-        }
 
         // ── 1. Connectivity check ─────────────────────────────────────────────
         // A successful probe already proves reachability; otherwise fall back to the client's own check.
@@ -291,15 +285,9 @@ internal partial class InferpalToolWindowData
         // Where else a server answers: a first run that chose nothing yet takes it (ServerScan.ToAdopt, said in the
         // bubble); otherwise each place's answer goes with the remedy.
         string? foundNote = null;
-        string? adoptedSwitch = null;
-        // A switch is said last in the bubble that names the server: alone and before it, it names one nobody has heard of
-        // yet. Marked once on screen: stopped before that, it stays the heartbeat's to say, and if a tick got there first
-        // (Look again on the card runs beside the heartbeat), it is not said twice.
         async Task<bool> SayFoundAsync(string found)
         {
-            await present(adoptedSwitch is null || adoptedSwitch == _announcedSwitch
-                ? found : found + "\n\n" + BackendSwitchPendingText(adoptedSwitch)).ConfigureAwait(false);
-            if (adoptedSwitch is not null) _announcedSwitch = adoptedSwitch;
+            await present(found).ConfigureAwait(false);
             return true;
         }
         if (!reachable)
@@ -346,13 +334,13 @@ internal partial class InferpalToolWindowData
             _config.BaseUrl  = url = found.Url;
             // Another server: the card and the models chosen for the old one start over (measured or picked below).
             Services.Inference.ServerChange.Follow(before, _config);
+            FollowServerForSetup();
             _config.Save();
             client    = Services.Inference.InferenceProviderFactory.Create(_config);
             reachable = true;
             foundNote = $"**{Strings.SetupFoundTitle}** — " + (found.ListFailure is null
                 ? Strings.SetupFoundLead(found.Name, found.Url, found.ChatModels + found.SearchModels)
                 : found.Line) + "\n\n";
-            adoptedSwitch = Services.Inference.InferenceProviderFactory.PendingSwitch(_client, _config.Provider);
         }
 
         // ── 2. Model discovery ────────────────────────────────────────────────

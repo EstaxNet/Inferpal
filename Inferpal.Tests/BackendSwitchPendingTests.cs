@@ -45,28 +45,31 @@ public class BackendSwitchPendingTests
         Assert.Null(InferenceProviderFactory.PendingSwitch(new FakeInferenceProvider(), InferenceProviderFactory.LmStudio));
     }
 
+    /// <summary>
+    /// Visual Studio's client rebuilds itself at the turn door (<see cref="SwitchingProvider"/>): no message of its window
+    /// waits for a restart any more. The heartbeat probes the CLIENT's server — under a turn, the one it started with —, and
+    /// /setup sends what it adopted through the door.
+    /// </summary>
     [Theory]
-    [InlineData("InferpalToolWindowData.Connection.cs")]   // the heartbeat and UnreachableText
-    [InlineData("InferpalToolWindowData.Rag.cs")]          // /setup and the first run
-    public void EveryVisualStudioConnectionMessage_ChecksForAPendingSwitch(string file)
+    [InlineData("InferpalToolWindowData.Connection.cs", "var url = _client.ServerAddress;")]   // the heartbeat
+    [InlineData("InferpalToolWindowData.Rag.cs", "FollowServerForSetup();")]                   // /setup and the first run
+    public void VisualStudiosConnectionMessages_SpeakOfTheClientsServer_NeverOfARestart(string file, string follows)
     {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md"))) dir = dir.Parent;
-        var path = Path.Combine(dir!.FullName, "Inferpal", "ToolWindow", file);
+        var path = Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow", file);
         Assert.True(File.Exists(path), $"{file} is gone — this guard checks nothing any more.");
+        var code = ConventionCoverageTests.CodeOnly(path);
 
-        Assert.Contains("InferenceProviderFactory.PendingSwitch(_client, _config.Provider)",
-                        ConventionCoverageTests.CodeOnly(path));
+        Assert.Contains(follows, code, StringComparison.Ordinal);
+        Assert.DoesNotContain("PendingSwitch(", code, StringComparison.Ordinal);
     }
 
     /// <summary>
-    /// ⚠ The property, not a list of files: Regenerate's pre-flight said "cannot reach" with a server switch waiting for a
-    /// restart — a fourth site the list above did not name. In the Visual Studio adapter "cannot reach" is written by
-    /// <c>UnreachableText</c> (which checks for a pending switch) and by the heartbeat's edge (which checks it before),
-    /// and nowhere else; every refusal reads <c>UnreachableText</c>.
+    /// ⚠ The property, not a list of files: in the Visual Studio adapter "cannot reach" is written by <c>UnreachableText</c>
+    /// and by the heartbeat's edge, and nowhere else; both name the client's own server, and every refusal reads
+    /// <c>UnreachableText</c>.
     /// </summary>
     [Fact]
-    public void TheVisualStudioUnreachableSentence_HasOneWriter_ThatChecksForAPendingSwitch()
+    public void TheVisualStudioUnreachableSentence_HasOneWriter_ThatNamesTheClientsServer()
     {
         var root = Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal");
         var files = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
@@ -83,8 +86,7 @@ public class BackendSwitchPendingTests
         var connection = ConventionCoverageTests.CodeOnly(Path.Combine(root, "ToolWindow", "InferpalToolWindowData.Connection.cs"));
         var writer = connection[connection.IndexOf("private string UnreachableText()", StringComparison.Ordinal)..];
         writer = writer[..writer.IndexOf(';')];
-        Assert.Contains("InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is { } switchTo", writer, StringComparison.Ordinal);
-        Assert.Contains("Strings.MsgConnectionLost(", writer, StringComparison.Ordinal);
+        Assert.Contains("Strings.MsgConnectionLost(_client.ServerAddress, InferenceProviderFactory.DisplayName(ServerCode),", writer, StringComparison.Ordinal);
 
         // The two refusals read it: the send pre-flight and Regenerate.
         foreach (var file in new[] { "InferpalToolWindowData.ChatTurn.cs", "InferpalToolWindowData.ToolInvocation.cs" })

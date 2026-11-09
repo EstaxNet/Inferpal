@@ -56,6 +56,7 @@
   <data name="LangAuto" xml:space="preserve"><value>Automático — igual que su editor ({0})</value></data>
   <data name="LabelProvider" xml:space="preserve"><value>Tipo de servidor</value></data>
   <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio o compatible con OpenAI. Probar lo rellena. Surte efecto al recargar el editor.</value></data>
+  <data name="HintProviderAtOnce" xml:space="preserve"><value>Ollama, LM Studio o compatible con OpenAI. Probar lo rellena.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>Clave de API</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Solo si su servidor la pide: Ollama y LM Studio no la necesitan.</value></data>
   <data name="KeyShow" xml:space="preserve"><value>Mostrar</value></data>
@@ -308,7 +309,6 @@ Si requiere una clave de API, compruébela en la Configuración; si no, comprueb
 
 Haga clic en ↻ Reintentar en la cabecera una vez corregido.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Reconectado a {0} — listo.</value></data>
-  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>El backend de la Configuración es ahora {0}, pero esta ventana sigue hablando con {1}: un cambio de backend se aplica al reiniciar Visual Studio. Reinicie Visual Studio para usar {0}.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Comprobar la conexión a {0} ahora</value></data>
 
   <!-- Approval dialog -->

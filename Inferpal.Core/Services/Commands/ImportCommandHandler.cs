@@ -83,7 +83,7 @@ internal static class ImportCommandHandler
         var selection = string.Join(' ', tokens.Where(t => !t.StartsWith('#'))).Trim();
         if (Chosen(plan, selection, out var unknown) is not { } ids) return new(Strings.ImportSelectionUnknown(unknown!));
         var outcome = ImportApplier.Apply(plan, ids, context.Current, configFile, context.CommandsFolder, context.Modes, now);
-        return new(ImportPreview.Outcome(outcome, context.CommandsFolder, context.Modes), null, outcome.ConfigChanged,
+        return new(ImportPreview.Outcome(outcome, context.CommandsFolder, context.Modes, context.ServerAtOnce), null, outcome.ConfigChanged,
                    outcome.ServerChanged, outcome.Applied.Any(i => i.Kind == ImportItemKind.Mode));
     }
 

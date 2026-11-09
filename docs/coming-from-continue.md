@@ -35,7 +35,7 @@ ticked), `apply all`, or `apply 1,3,5`.
 
 - The commands are in this machine's prompts folder (`%AppData%\Inferpal\prompts` on Windows,
   `~/.config/Inferpal/prompts` on Linux, `~/Library/Application Support/Inferpal/prompts` on macOS): type `/` to see them, `/prompts` to list where each comes from.
-- A new model server takes effect when Inferpal restarts.
+- A new model server takes effect at the next question in Visual Studio; VS Code restarts its assistant for it.
 - `/permissions` shows the rules in force; `/docs reindex` indexes the imported documentation sites.
 - To undo, put the copy of `config.json` back (its path is in the answer), and delete the command files you do not want.
 
@@ -43,7 +43,7 @@ ticked), `apply all`, or `apply 1,3,5`.
 
 | In Continue / Roo Code | In Inferpal |
 |---|---|
-| The server of your first local chat model (Ollama, LM Studio, llama.cpp, vLLM, any OpenAI-compatible endpoint) | The model server (provider, address, API key) — it takes effect when Inferpal restarts; a key you had set for another server is removed, never sent to the new one |
+| The server of your first local chat model (Ollama, LM Studio, llama.cpp, vLLM, any OpenAI-compatible endpoint) | The model server (provider, address, API key) — the next question uses it in Visual Studio, VS Code restarts its assistant; a key you had set for another server is removed, never sent to the new one |
 | Chat, autocomplete, edit, summarize and embed roles | The chat, completion (FIM), inline edit, utility and embedding models |
 | The chat model's context length | The context window |
 | Rules, a model's system message, Roo's custom instructions | Sections added to the custom system prompt; a rule scoped to files keeps its scope, written in the text the model reads |

@@ -358,6 +358,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             }
             if (follow.Taken.Contains("mcpEnabled") || follow.Taken.Contains("mcpServersJson"))
                 _ = mcp.RefreshWhenIdleAsync(() => GpuScheduler.IsTurnInFlight, TimeSpan.FromMilliseconds(500));
+            if (!follow.Busy) FollowServerAtTheDoor(client);
         }
         catch (Exception ex) { Diagnostics.Swallow("Settings.FollowOnOpen", ex); }
         _opened               = config.SnapshotNow();
@@ -572,7 +573,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         LabelLanguage                = Strings.LabelLanguage;
         HintLanguage                 = Strings.HintLanguage;
         LabelProvider                = Strings.LabelProvider;
-        HintProvider                 = Strings.HintProvider;
+        HintProvider                 = Strings.HintProviderAtOnce;
         LabelApiKey                  = Strings.LabelApiKey;
         MainKey.ApplyLabels(Strings.LabelApiKey, Strings.HintApiKey);
         LabelUrl                     = Strings.LabelUrl;
@@ -1488,6 +1489,9 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                 RagEmbeddingModel     = edited.RagEmbeddingModel;
             });
         }
+        // The server saved reaches the chat's client at the turn door: now, or once the turn running ends — a turn keeps
+        // the server it started with. Before the save: its listeners measure the context window through that client.
+        FollowServerAtTheDoor(_client);
         _config.Save();
         _opened = edited.SnapshotNow();
         await RunOnVMContextAsync(ResetKeys);   // a key just saved is masked from now on
@@ -1804,6 +1808,18 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             SaveStatus = Strings.SettingsSaveFailed(ex.Message);
             return false;
         }
+    }
+
+    /// <summary>
+    /// The settings as they are now reach the chat's client (<see cref="SwitchingProvider.Follow"/>) — a new kind of server
+    /// rebuilt, a new address taken — at once when no turn runs, once the turn running ends otherwise (<see cref="TurnDoor"/>).
+    /// </summary>
+    internal static void FollowServerAtTheDoor(IInferenceProvider client)
+    {
+        if (client is not SwitchingProvider switching) return;
+        _ = TurnDoor.WhenIdleAsync(() => switching.Follow())
+                    .ContinueWith(t => Diagnostics.Swallow("Settings.FollowServer", t.Exception!),
+                                  CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
     }
 
     /// <summary>Waits for the running turn to end, then reconnects. Never throws — it runs detached.</summary>

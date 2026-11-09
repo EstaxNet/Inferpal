@@ -115,14 +115,18 @@ internal partial class InferpalToolWindowData
     /// <summary>
     /// The settings another editor saved since this window took them (<see cref="Services.Inference.SettingsFollow"/>):
     /// taken as the file's, applied as a save applies them (<see cref="OnSettingsFollowed"/>); what this window changed
-    /// itself and did not save stays, unless the file changed that same setting. A new kind of model server is said once:
-    /// it applies when Visual Studio restarts.
+    /// itself and did not save stays, unless the file changed that same setting. A new kind of model server is taken like
+    /// the rest, and reaches the client at the door (<see cref="FollowServer"/>).
     /// </summary>
     private async Task FollowSettingsFileAsync()
     {
         try
         {
             var follow = Services.Inference.SettingsFollow.TakeAndApply(_config, _client, () => GpuScheduler.IsTurnInFlight);
+            // Before the question leaves: it goes to the server the settings name now (a new kind included), checked
+            // here — the heartbeat's last answer was the old server's.
+            if (!follow.Busy && FollowServer())
+                _isBackendReachable = await _client.CheckConnectionAsync(_client.ServerAddress, CancellationToken.None);
             // Said once while it lasts: the person who just edited the file would see their change do nothing, without a word.
             if (follow.Unreadable && !_settingsUnreadableSaid) await ShowInfoAsync(Strings.AcpSettingsUnreadable);
             if (!follow.Busy) _settingsUnreadableSaid = follow.Unreadable;
@@ -142,7 +146,7 @@ internal partial class InferpalToolWindowData
         catch (Exception ex) { Diagnostics.Swallow("Settings.Follow", ex); }
     }
 
-    /// <summary>Settings another editor saved, now this window's: the language, and a new kind of model server said — the
+    /// <summary>Settings another editor saved, now this window's: the language — the
     /// rest follows <see cref="InferpalConfig.Saved"/>, as after a save in this window. The MCP servers are started again
     /// by the gesture that followed (a question before its turn, the settings window once no turn runs): started here
     /// too, they would be torn down twice, the second time under the turn.</summary>
@@ -153,32 +157,50 @@ internal partial class InferpalToolWindowData
             Strings.ApplyLanguage(_config.Language);
             _config.NotifyLanguageChanged();
         }
-        if (newKind is not null)
-            Post(() =>
-            {
-                var notice = ChatMessageItem.NoticeMsg(BackendSwitchPendingText(newKind));
-                ApplyItemTheme(notice);
-                Messages.Insert(Messages.Count - 2, notice);
-            });
+        _ = newKind;   // Visual Studio's client takes a new kind itself (SwitchingProvider): nothing waits for a restart
     }
 
-    /// <summary>A backend chosen since this window's client was built applies at restart
-    /// (<see cref="InferenceProviderFactory.PendingSwitch"/>): said instead of a "cannot reach" that blames it.</summary>
-    private string BackendSwitchPendingText(string switchTo) => Strings.MsgBackendSwitchPending(
-        InferenceProviderFactory.DisplayName(switchTo),
-        InferenceProviderFactory.DisplayName(InferenceProviderFactory.CodeOf(_client)));
+    /// <summary>
+    /// The turn door of the chat's client (<see cref="SwitchingProvider.Follow"/>): the settings as they are now — a new
+    /// kind of server, a new address — reach it, unless a turn of this process runs (<see cref="TurnDoor"/>: a long
+    /// command between two model calls, a <c>/task</c> run, a turn waiting at a card), which keeps the server it started
+    /// with; the heartbeat takes them once it ends. Returns whether the chat's server changed.
+    /// </summary>
+    private bool FollowServer()
+    {
+        if (_client is not SwitchingProvider switching) return false;
+        var changed = false;
+        TurnDoor.TryNow(() => changed = switching.Follow());
+        return changed;
+    }
 
-    /// <summary>What a gesture refused for an unreachable backend says: a server switch waiting for a restart is not
-    /// "cannot reach" — that sends the user to check a server that is fine. One writer for every refusal (send,
-    /// Regenerate); the heartbeat says its edge itself, once per switch.</summary>
+    /// <summary>
+    /// <c>/setup</c>'s own door: it runs as a turn of this window, but its purpose is to change the server and it asks the
+    /// server through a client of its own — only a model call in flight (a <c>/task</c> run) keeps the old one. Called
+    /// BEFORE the save: <see cref="InferpalConfig.Saved"/> measures the context window through the chat's client.
+    /// </summary>
+    private void FollowServerForSetup()
+    {
+        if (!GpuScheduler.IsTurnInFlight) (_client as SwitchingProvider)?.Follow();
+    }
+
+    /// <summary>What a gesture refused for an unreachable backend says: the client's own server, the one the turn would
+    /// go to. One writer for every refusal (send, Regenerate); the heartbeat says its edge itself.</summary>
     private string UnreachableText() =>
-        InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is { } switchTo
-            ? BackendSwitchPendingText(switchTo)
-            : Strings.MsgConnectionLost(
-                _config.BaseUrl, InferenceProviderFactory.DisplayName(_config.Provider), _client.ConnectionRefusal);
+        Strings.MsgConnectionLost(_client.ServerAddress, InferenceProviderFactory.DisplayName(ServerCode), _client.ConnectionRefusal);
 
-    /// <summary>Ends the heartbeat of a window run by a test: left going, it follows the folder the next test opens.</summary>
-    internal void StopHeartbeatForTests() => _heartbeatCts.Cancel();
+    /// <summary>The kind of server the client speaks to (<see cref="SwitchingProvider.Kind"/>): under a turn, the one it
+    /// started with, whatever was saved since.</summary>
+    private string ServerCode => InferenceProviderFactory.CodeOf(_client) ?? _config.Provider;
+
+    /// <summary>Ends the heartbeat of a window run by a test: left going, it follows the folder the next test opens. A turn
+    /// the test left open gives the door back too (<see cref="TurnDoor"/> is the process's): held, it would keep every
+    /// later test's server from following.</summary>
+    internal void StopHeartbeatForTests()
+    {
+        _heartbeatCts.Cancel();
+        _doorHold?.Dispose();
+    }
 
     private async Task StartHeartbeatAsync(CancellationToken? token = null)
     {
@@ -198,18 +220,18 @@ internal partial class InferpalToolWindowData
                 await RestoreLateSlotAsync(ct);
                 await ShowAwayNoticeAsync();
 
-                var url = _config.BaseUrl;
-                // A backend switched in Settings applies at restart: probing the new address with the previous
-                // backend's client only yields a false "cannot reach" (InferenceProviderFactory.PendingSwitch).
-                var switchTo = InferenceProviderFactory.PendingSwitch(_client, _config.Provider);
-                var ok  = switchTo is null && await _client.CheckConnectionAsync(url, ct);
+                // The door, when no turn runs: settings changed by a path that did not pass it reach the client here.
+                FollowServer();
+                // ⚠ The CLIENT's server, not the live settings': under a turn it keeps the one it started with.
+                var url = _client.ServerAddress;
+                var ok  = await _client.CheckConnectionAsync(url, ct);
 
                 _isBackendReachable = ok; // volatile write — read by SendCoreAsync pre-flight
 
                 // A first run says what answers where: before it, the sentence below told someone with LM Studio to start
                 // Ollama. Waited for, so that one fact decides; what it adopted or read from the file is read after it.
                 var firstRunSpoke = !ok && await FirstRunSpokeAsync(ct);
-                if (!ok) (url, switchTo) = (_config.BaseUrl, InferenceProviderFactory.PendingSwitch(_client, _config.Provider));
+                if (!ok) url = _client.ServerAddress;
 
                 var status = presenter.Evaluate(ok, _client.ConnectionRefusal, firstRunSpoke);
 
@@ -221,21 +243,13 @@ internal partial class InferpalToolWindowData
                     _refusal              = ok ? null : _client.ConnectionRefusal;
                     RefreshModelButton();
 
-                    var edgeMessage = switchTo is not null
-                        ? (switchTo == _announcedSwitch ? null : BackendSwitchPendingText(switchTo))
-                        : status.Transition switch
+                    var edgeMessage = status.Transition switch
                     {
-                        ConnectionTransition.Restored => Strings.MsgHeartbeatRestored(
-                                                             InferenceProviderFactory.DisplayName(_config.Provider)),
+                        ConnectionTransition.Restored => Strings.MsgHeartbeatRestored(InferenceProviderFactory.DisplayName(ServerCode)),
                         ConnectionTransition.Lost     => Strings.MsgConnectionLost(
-                                                             url, InferenceProviderFactory.DisplayName(_config.Provider),
-                                                             _client.ConnectionRefusal),
+                                                             url, InferenceProviderFactory.DisplayName(ServerCode), _client.ConnectionRefusal),
                         _                             => null,
                     };
-                    // Said once per switch; a switch back after a "lost" is said by "Restored". Read again: /setup may have
-                    // said one during this check, and null here would have the next tick say it twice.
-                    if (switchTo is not null || InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is null)
-                        _announcedSwitch = switchTo;
                     if (edgeMessage is not null)
                     {
                         var msg = ChatMessageItem.NoticeMsg(edgeMessage);

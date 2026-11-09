@@ -104,7 +104,8 @@ internal static class ImportPreview
 
     /// <summary>What an application did, and what comes next — the copy of the settings named first.</summary>
     /// <param name="modesFolder">Where the modes were written: said when some were.</param>
-    public static string Outcome(ImportOutcome outcome, string commandsFolder, string modesFolder)
+    /// <param name="serverAtOnce">The editor takes a new model server without a restart: none is asked for.</param>
+    public static string Outcome(ImportOutcome outcome, string commandsFolder, string modesFolder, bool serverAtOnce = false)
     {
         if (outcome.Refused is { } refused) return Strings.ImportRefused(refused);
         if (outcome.Applied.Count == 0 && outcome.Failed.Count == 0) return Strings.ImportNothingChosen;
@@ -119,7 +120,7 @@ internal static class ImportPreview
         if (outcome.Applied.Any(i => i.Kind == ImportItemKind.Mode))
             lines.Add(Strings.ImportModesWhere(modesFolder));
         if (outcome.Applied.Any(i => i.Kind == ImportItemKind.DocSite)) lines.Add(Strings.ImportDocsNext);
-        if (outcome.ServerChanged) lines.Add(Strings.ImportRestart);
+        if (outcome.ServerChanged && !serverAtOnce) lines.Add(Strings.ImportRestart);
         return string.Join("\n\n", lines);
     }
 

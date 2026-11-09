@@ -56,6 +56,7 @@
   <data name="LangAuto" xml:space="preserve"><value>自动 — 与编辑器相同（{0}）</value></data>
   <data name="LabelProvider" xml:space="preserve"><value>服务器类型</value></data>
   <data name="HintProvider" xml:space="preserve"><value>Ollama、LM Studio 或兼容 OpenAI。点击测试会自动填写。编辑器重新加载后生效。</value></data>
+  <data name="HintProviderAtOnce" xml:space="preserve"><value>Ollama、LM Studio 或兼容 OpenAI。点击测试会自动填写。</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>API 密钥</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>仅当服务器要求时填写：Ollama 和 LM Studio 不需要。</value></data>
   <data name="KeyShow" xml:space="preserve"><value>显示</value></data>
@@ -308,7 +309,6 @@
 
 修正后点击标题栏中的 ↻ 重试。</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ 已重新连接到 {0} — 就绪。</value></data>
-  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>设置中的后端现在是 {0}，但此窗口仍在与 {1} 通信：后端切换在 Visual Studio 重启后生效。请重启 Visual Studio 以使用 {0}。</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>立即检查与 {0} 的连接</value></data>
 
   <!-- Approval dialog -->

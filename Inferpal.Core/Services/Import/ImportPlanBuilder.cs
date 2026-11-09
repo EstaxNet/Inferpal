@@ -18,9 +18,11 @@ namespace Inferpal.Services.Import;
 /// editor has none open.</param>
 /// <param name="ModesFolder">The person's modes folder, where imported modes are written; <c>null</c>: its usual place
 /// (<see cref="ChatModes.UserDir"/>).</param>
+/// <param name="ServerAtOnce">The editor takes a new model server without a restart (Visual Studio's client rebuilds itself
+/// at the turn door): the outcome does not ask for one.</param>
 internal sealed record ImportContext(InferpalConfig Current, string Home, string CommandsFolder,
                                      Func<string, string?>? EnvironmentVariable = null, string? WorkspaceRoot = null,
-                                     string? ModesFolder = null)
+                                     string? ModesFolder = null, bool ServerAtOnce = false)
 {
     /// <summary>The context of an editor: this user's home, the commands beside these settings, its workspace.</summary>
     public static ImportContext For(InferpalConfig config, string? workspaceRoot) =>
@@ -105,7 +107,8 @@ internal sealed class ImportPlanBuilder
             foreach (var p in paths) Skip(p, ImportSkipCause.AlreadyConfigured, server.BaseUrl);
             return;
         }
-        var notes = new List<ImportItemNote> { new(ImportNote.TakesEffectAfterRestart) };
+        // An editor that takes a new server at once (Visual Studio) promises no restart on the card either.
+        var notes = Context.ServerAtOnce ? new List<ImportItemNote>() : [new(ImportNote.TakesEffectAfterRestart)];
         if (key is null && !string.IsNullOrEmpty(current.ApiKey)
             && ImportServers.Authority(current.BaseUrl) is var before && before != ImportServers.Authority(server.BaseUrl))
         {

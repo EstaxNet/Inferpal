@@ -66,8 +66,9 @@ internal class InferpalConfig
     /// <summary>
     /// Inference backend: <c>"ollama"</c> (default, native Ollama API + full hardware-aware features)
     /// or <c>"openai-compatible"</c> (LM Studio, llama.cpp server, vLLM, Jan, LiteLLM… via the OpenAI
-    /// <c>/v1</c> API). Resolved at startup by <see cref="Services.Inference.InferenceProviderFactory"/>;
-    /// changing it takes effect on the next VS reload.
+    /// <c>/v1</c> API). Resolved by <see cref="Services.Inference.InferenceProviderFactory"/>; Visual Studio's client
+    /// rebuilds itself for a new one at the next question (<see cref="Services.Inference.SwitchingProvider"/>), the host of
+    /// VS Code and ACP at their next start.
     /// </summary>
     [JsonPropertyName("provider")]
     public string Provider { get; set; } = "ollama";
@@ -561,9 +562,9 @@ internal class InferpalConfig
 
     /// <summary>
     /// Raised after a follow took settings another process saved (<see cref="Services.Inference.SettingsFollow"/>), with
-    /// their JSON keys, and the kind of model server the file names when it is a new one (it applies at restart, said
-    /// by the handler): what a save of this copy would have changed is applied, the language and the MCP servers
-    /// included. Not serialized; handlers must marshal to their own UI context.
+    /// their JSON keys, and the kind of model server the file names when it is a new one and the copy's client cannot
+    /// take it (it applies at the next start, said by the handler): what a save of this copy would have changed is
+    /// applied, the language and the MCP servers included. Not serialized; handlers must marshal to their own UI context.
     /// </summary>
     public event Action<IReadOnlyList<string>, string?>? Followed;
 
@@ -884,10 +885,10 @@ internal class InferpalConfig
             foreach (var key in LastSaved.Keys) FollowedFile[key] = mine[key]?.DeepClone();
 
         // The in-memory values are left alone: the file's values are not reloaded here. ⚠ A backend
-        // switched in Settings IS laid over the live instance (ApplyChangesFrom) while Visual Studio's
-        // client stays the previous backend's until restart — InferenceProviderFactory.PendingSwitch
-        // is what the connection messages read to say so. The next save compares against what this
-        // copy holds now, so what it did not change keeps coming from the file.
+        // switched in Settings IS laid over the live instance (ApplyChangesFrom); Visual Studio's client
+        // takes it at the turn door (SwitchingProvider reads its own copy, so a running turn keeps its
+        // server). The next save compares against what this copy holds now, so what it did not change
+        // keeps coming from the file.
         _baseline   = mine;
         _fileAsRead = toWrite.DeepClone().AsObject();
 

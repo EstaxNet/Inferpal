@@ -18,7 +18,9 @@ namespace Inferpal.Services.Inference;
 /// ⚠ The client of a copy speaks ONE kind of server's protocol and reads its address and key live: a new kind taken
 /// here would send the old protocol to the new address — every turn refused while the new server runs. A new kind waits
 /// for a restart (said by the caller, <see cref="Result.ServerChanged"/>), the copy keeping its server whole; a new
-/// address or key of the same kind applies now. ⚠ Unreadable is not "the factory values": the copy keeps what it has.
+/// address or key of the same kind applies now. Visual Studio's client (<see cref="SwitchingProvider"/>) rebuilds itself at
+/// the turn door instead: there a new kind is taken like any setting. ⚠ Unreadable is not "the factory values": the copy
+/// keeps what it has.
 /// </para>
 /// </remarks>
 internal static class SettingsFollow
@@ -72,7 +74,8 @@ internal static class SettingsFollow
     {
         if (fileNow is null) return new([], false, true);
         var asSaved  = fileNow.SnapshotNow();
-        var switchTo = InferenceProviderFactory.PendingSwitch(client, fileNow.Provider);
+        // A client that rebuilds itself at the turn door (Visual Studio's) takes the new kind like any setting.
+        var switchTo = client is SwitchingProvider ? null : InferenceProviderFactory.PendingSwitch(client, fileNow.Provider);
         if (switchTo is not null)
         {
             // Left aside with the server: its models and its card. Taken, the client of the old kind would ask the old

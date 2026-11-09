@@ -161,6 +161,9 @@ internal partial class InferpalToolWindowData
         ct.Register(_tools.History.CutCurrentRun);
         _currentCts = cts;
         IsLoading   = true;
+        // The turn door, held from start to end: a long command's gaps between model calls are still this turn.
+        _doorHold?.Dispose();
+        _doorHold   = TurnDoor.Hold();
         // An Esc pressed as the last turn ended never counts as this turn's first.
         _escape.Reset();
         _turnDone   = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -185,6 +188,8 @@ internal partial class InferpalToolWindowData
         if (!ReferenceEquals(_currentCts, cts)) return;
         _currentCts = null;
         IsLoading   = false;
+        _doorHold?.Dispose();
+        _doorHold   = null;
         CurrentStep = string.Empty;
         RefreshComposerPlaceholder();
         _turnDone?.TrySetResult();

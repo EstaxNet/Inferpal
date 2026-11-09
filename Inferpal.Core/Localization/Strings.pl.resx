@@ -53,6 +53,7 @@
   <!-- UI labels -->
   <data name="LabelProvider" xml:space="preserve"><value>Typ serwera</value></data>
   <data name="HintProvider" xml:space="preserve"><value>Ollama, LM Studio lub zgodny z OpenAI. Test go uzupełnia. Działa po ponownym wczytaniu edytora.</value></data>
+  <data name="HintProviderAtOnce" xml:space="preserve"><value>Ollama, LM Studio lub zgodny z OpenAI. Test go uzupełnia.</value></data>
   <data name="LabelApiKey" xml:space="preserve"><value>Klucz API</value></data>
   <data name="HintApiKey" xml:space="preserve"><value>Tylko jeśli serwer go wymaga: Ollama i LM Studio go nie potrzebują.</value></data>
   <data name="KeyShow" xml:space="preserve"><value>Pokaż</value></data>
@@ -308,7 +309,6 @@ Jeśli wymaga klucza API, sprawdź go w Ustawieniach; w przeciwnym razie sprawd�
 
 Po poprawieniu kliknij ↻ Ponów w nagłówku.</value></data>
   <data name="MsgHeartbeatRestored" xml:space="preserve"><value>✓ Ponownie połączono z {0} — gotowe.</value></data>
-  <data name="MsgBackendSwitchPending" xml:space="preserve"><value>Backend w Ustawieniach to teraz {0}, ale to okno nadal komunikuje się z {1}: zmiana backendu zostanie zastosowana po ponownym uruchomieniu Visual Studio. Uruchom ponownie Visual Studio, aby używać {0}.</value></data>
   <data name="TooltipRetryConnection" xml:space="preserve"><value>Sprawdź połączenie z {0} teraz</value></data>
 
   <!-- Approval dialog -->

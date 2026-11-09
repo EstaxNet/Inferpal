@@ -639,7 +639,9 @@ public class ConventionCoverageTests
         var sites = 0;
         var offenders = new List<string>();
 
-        foreach (var file in CoreSources(Path.Combine("Services", "Inference")))
+        // Exempt: the wrapper that hands every call to the client inside it, which probes — it answers nothing itself.
+        string[] exempt = ["SwitchingProvider.cs"];
+        foreach (var file in CoreSources(Path.Combine("Services", "Inference")).Where(f => !exempt.Contains(Path.GetFileName(f))))
         {
             var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
 

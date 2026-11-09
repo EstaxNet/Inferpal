@@ -91,11 +91,7 @@ public class FirstRunSilenceTests
         Assert.Contains("var firstRunSpoke = !ok && await FirstRunSpokeAsync(ct);", connection, StringComparison.Ordinal);
         Assert.Contains("presenter.Evaluate(ok, _client.ConnectionRefusal, firstRunSpoke)", connection, StringComparison.Ordinal);
         // What the first run adopted, or took from the file, is read after it: the sentence names the address in force.
-        Assert.Contains("if (!ok) (url, switchTo) = (_config.BaseUrl, InferenceProviderFactory.PendingSwitch(_client, _config.Provider));",
-                        connection, StringComparison.Ordinal);
-        // A check started before /setup said a switch does not erase that it was said.
-        Assert.Contains("if (switchTo is not null || InferenceProviderFactory.PendingSwitch(_client, _config.Provider) is null)",
-                        connection, StringComparison.Ordinal);
+        Assert.Contains("if (!ok) url = _client.ServerAddress;", connection, StringComparison.Ordinal);
         // After the pre-flight flag: a question sent during the wait is refused, not sent to a server that did not answer.
         Assert.True(connection.IndexOf("_isBackendReachable = ok;", StringComparison.Ordinal)
                     < connection.IndexOf("await FirstRunSpokeAsync(ct)", StringComparison.Ordinal));
@@ -124,19 +120,20 @@ public class FirstRunSilenceTests
     }
 
     /// <summary>
-    /// An adopted server's switch is said once, last in the bubble that names the server: it came out alone before it, and
-    /// the heartbeat said it again. Marked only once on screen. The Send refusal answers a gesture and stays.
+    /// An adopted server is said once, in the bubble that names it, and reaches the chat's client at once through the turn
+    /// door: no "restart Visual Studio" after it, the first question goes to the server just found.
     /// </summary>
     [Fact]
-    public void AnAdoptedServer_IsSaidOnce_InTheBubbleThatNamesIt()
+    public void AnAdoptedServer_IsSaidInTheBubbleThatNamesIt_AndUsedAtOnce()
     {
         var discovery = Discovery();
-        var say = discovery[discovery.IndexOf("async Task<bool> SayFoundAsync(", StringComparison.Ordinal)..];
-        say = say[..say.IndexOf("return true;", StringComparison.Ordinal)];
+        var adopted = discovery[discovery.IndexOf("_config.BaseUrl  = url = found.Url;", StringComparison.Ordinal)..];
+        adopted = adopted[..adopted.IndexOf("reachable = true;", StringComparison.Ordinal)];
 
-        Assert.True(say.IndexOf("await present(", StringComparison.Ordinal) < say.IndexOf("_announcedSwitch = adoptedSwitch;", StringComparison.Ordinal));
-        Assert.Contains("adoptedSwitch == _announcedSwitch", say, StringComparison.Ordinal);   // a tick said it first
-        Assert.DoesNotContain("present(BackendSwitchPendingText(adoptedSwitch))", discovery, StringComparison.Ordinal);
+        // Followed before the save: the save's own listeners measure the context window through the chat's client.
+        Assert.True(adopted.IndexOf("FollowServerForSetup();", StringComparison.Ordinal) is >= 0 and var follows
+                    && follows < adopted.IndexOf("_config.Save();", StringComparison.Ordinal));
+        Assert.DoesNotContain("PendingSwitch(", discovery, StringComparison.Ordinal);
         Assert.Contains("return await SayFoundAsync(text)", discovery, StringComparison.Ordinal);
         Assert.Contains("return await SayFoundAsync(foundNote + Strings.MsgFirstRunNoModels(", discovery, StringComparison.Ordinal);
     }
