@@ -204,7 +204,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
             // a laptop's battery. Only this turn's lease is let go, held again at the answer.
             using (Services.Hardware.GpuScheduler.PauseThisFlow())
                 promptDecision = await PromptUserAsync(
-                    new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message, rule), ct);
+                    new Services.Presentation.ApprovalPrompt(toolName, details, subject, diff, message, rule, Forced: opaque), ct);
         }
         catch (OperationCanceledException)
         {
@@ -212,7 +212,9 @@ internal abstract class ApprovalServiceBase : IApprovalService
             WorkTreeBracket.NoteRefused();
             throw;
         }
-        if (promptDecision == ApprovalDecision.Always)
+        // ⚠ A forced card grants nothing beyond this call: the next identical call is asked again anyway, and a grant would
+        // open the tool without a card on everything else. "Always" there is a Yes — from any front-end, an old one included.
+        if (promptDecision == ApprovalDecision.Always && !opaque)
             Grant(toolName, cardRoot);
         if (promptDecision == ApprovalDecision.Rule)
         {

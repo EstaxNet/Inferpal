@@ -362,7 +362,8 @@ for the model — each exclusion said, never silent. Writing one of these files 
   `-EncodedCommand`, `FromBase64String`, `[scriptblock]::Create`, `& $var`) and POSIX
   (`eval`, piping into a shell, `base64 -d`, `sh -c "$var"`, `source`/`exec` on a variable)
   alike — is **force-prompted**: never auto-approved by any rule, session grant or setting,
-  never blocked — the approval prompt, where the raw command is visible, is the actual boundary.
+  never blocked — the approval prompt, where the raw command is visible, is the actual boundary. A forced card offers
+  *Allow once* and *Deny* only: "Always" would grant nothing there.
   See **[Tools → Permission rules](tools.md)**.
 
 </details>

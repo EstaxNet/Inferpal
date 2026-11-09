@@ -114,7 +114,8 @@ internal class VsApprovalService : ApprovalServiceBase
     private async Task<ApprovalDecision?> ShowDiffDialogAsync(string message, DiffInfo diff, ApprovalCardModel? card,
                                                               CancellationToken ct)
     {
-        var data = new ApprovalDialogData(message, diff, card?.RuleLabel ?? string.Empty, card?.RuleTooltip ?? string.Empty);
+        var data = new ApprovalDialogData(message, diff, card?.RuleLabel ?? string.Empty, card?.RuleTooltip ?? string.Empty,
+                                          offersAlways: card?.OffersAlways != false);
         using var control = new ApprovalDialogControl(data);
 
         using var close = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -141,7 +142,8 @@ internal class VsApprovalService : ApprovalServiceBase
         // "Always allow this tool" (remembers for the session), and "Cancel" — and the narrow rule when the card offers one.
         var choices = new ChoiceResultCollection<ApprovalDecision>();
         choices.Add(Strings.ApprovalAllowOnce,   ApprovalDecision.Once);
-        choices.Add(Strings.ApprovalAlwaysAllow, ApprovalDecision.Always);
+        // Never on a forced card: it would grant nothing (ApprovalCardModel.OffersAlways).
+        if (card?.OffersAlways != false) choices.Add(Strings.ApprovalAlwaysAllow, ApprovalDecision.Always);
         if (card is { RuleLabel.Length: > 0 }) choices.Add(card.RuleLabel, ApprovalDecision.Rule);
         choices.Add(Strings.ApprovalDeny,        ApprovalDecision.Deny);
 

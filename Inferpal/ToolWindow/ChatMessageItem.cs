@@ -283,6 +283,8 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public string BtnAlwaysRule  { get; private set; } = string.Empty;
     [DataMember] public string CardRuleTip    { get; private set; } = string.Empty;
     [DataMember] public bool   HasRule        { get; private set; }
+    /// <summary>"Always this session" is offered: never on a forced card, where it would grant nothing.</summary>
+    [DataMember] public bool   OffersAlways   { get; private set; } = true;
     [DataMember] public ObservableCollection<DiffLine> CardLines { get; } = [];
     /// <summary>Answered (or retired with its run): the buttons stop answering.</summary>
     [DataMember] public bool   IsAnswered     { get => _isAnswered; set => SetProperty(ref _isAnswered, value); }
@@ -1004,6 +1006,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             BtnAlwaysRule  = card.RuleLabel,
             CardRuleTip    = card.RuleTooltip,
             HasRule        = card.RuleLabel.Length > 0,
+            OffersAlways   = card.OffersAlways,
             _decision      = new TaskCompletionSource<ApprovalDecision>(TaskCreationOptions.RunContinuationsAsynchronously),
             _onOpenDiff    = onOpenDiff,
             CanOpenDiff    = onOpenDiff is not null,

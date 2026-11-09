@@ -382,7 +382,9 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     const always = t('Always this session');
     // The narrow rule the card offers, offered here too: the label is the host's, already in the user's language.
     const rule = note.card?.ruleLabel || undefined;
-    const choices = rule ? [once, always, rule] : [once, always];
+    // Never "Always" on a forced card: it would grant nothing.
+    const offered = note.card?.offersAlways === false ? [once] : [once, always];
+    const choices = rule ? [...offered, rule] : offered;
     let cancelSub: { dispose(): void } | undefined;
     try {
       const cancelled = new Promise<undefined>((resolve) => {

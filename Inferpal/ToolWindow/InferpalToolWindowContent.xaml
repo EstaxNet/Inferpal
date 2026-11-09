@@ -1848,10 +1848,19 @@
                                                     </Border>
                                                 </StackPanel>
                                             </Button>
-                                            <Button Style="{StaticResource LineBtn}" Height="32" Padding="10,0" Margin="0,0,8,6"
+                                            <Button Height="32" Padding="10,0" Margin="0,0,8,6"
                                                     BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
                                                     Command="{Binding AlwaysAllowCommand}" ToolTip="{Binding CardAlwaysTip}"
                                                     AutomationProperties.Name="{Binding BtnAlwaysAllow}">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource LineBtn}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding OffersAlways}" Value="False">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="11" Foreground="{Binding ThemeText}"
                                                                VerticalAlignment="Center" Margin="0,0,6,0">

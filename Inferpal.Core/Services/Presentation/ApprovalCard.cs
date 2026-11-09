@@ -7,8 +7,10 @@ namespace Inferpal.Services.Presentation;
 /// <param name="Subject">The raw subject the rules match (a path for the file tools), or <c>null</c>.</param>
 /// <param name="Message">The one-sentence prompt every editor can show, whatever else it can draw.</param>
 /// <param name="Rule">The narrow rule the card offers beside "Always this session", or <c>null</c>.</param>
+/// <param name="Forced">The card is forced (opaque execution, the agent's own instructions, the repository's code, a deny
+/// that could not be read): it offers Yes and No only — "Always" would grant nothing, the next identical call asks again.</param>
 internal sealed record ApprovalPrompt(string ToolName, string Details, string? Subject, DiffInfo? Diff, string Message,
-                                      Execution.ApprovalRuleProposal.Proposal? Rule = null);
+                                      Execution.ApprovalRuleProposal.Proposal? Rule = null, bool Forced = false);
 
 /// <summary>One line of an approval card's preview: <c>add</c>, <c>del</c>, <c>ctx</c> or <c>gap</c>.</summary>
 internal sealed record ApprovalPreviewLine(string Kind, string Text);
@@ -21,9 +23,11 @@ internal sealed record ApprovalPreviewLine(string Kind, string Text);
 /// <param name="RuleLabel">The button of the narrow rule ("Always: commands that start with `dotnet test`"); empty when
 /// the card offers none.</param>
 /// <param name="RuleTooltip">What that button writes, the rule spelled out; empty when none.</param>
+/// <param name="OffersAlways">Whether the card offers "Always this session": never on a forced card, where it would grant
+/// nothing (<see cref="ApprovalPrompt.Forced"/>).</param>
 internal sealed record ApprovalCardModel(
     string Title, string Subject, string Meta, IReadOnlyList<ApprovalPreviewLine> Preview, string More,
-    string AlwaysTooltip, string Message, string RuleLabel = "", string RuleTooltip = "");
+    string AlwaysTooltip, string Message, string RuleLabel = "", string RuleTooltip = "", bool OffersAlways = true);
 
 /// <summary>Builds <see cref="ApprovalCardModel"/> — the same card in both editors.</summary>
 internal static class ApprovalCard
@@ -133,7 +137,8 @@ internal static class ApprovalCard
                                                                 : Strings.ApprovalAlwaysTooltipUntilRestart(prompt.ToolName),
                                      prompt.Message,
                                      prompt.Rule is { } rule ? Strings.ApprovalAlwaysRule(rule.Describe) : string.Empty,
-                                     prompt.Rule is { } spelled ? Strings.ApprovalRuleTooltip(string.Join("\n", spelled.Lines)) : string.Empty);
+                                     prompt.Rule is { } spelled ? Strings.ApprovalRuleTooltip(string.Join("\n", spelled.Lines)) : string.Empty,
+                                     OffersAlways: !prompt.Forced);
     }
 
     /// <summary>

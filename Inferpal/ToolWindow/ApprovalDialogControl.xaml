@@ -64,7 +64,9 @@
             <Button Content="{Binding BtnRule}" Command="{Binding RuleCommand}" ToolTip="{Binding RuleTip}"
                     Visibility="{Binding HasRule, Converter={StaticResource b2v}}"
                     AutomationProperties.Name="{Binding BtnRule}" />
-            <Button Content="{Binding BtnAlwaysAllow}" Command="{Binding AlwaysAllowCommand}" />
+            <!-- Never on a forced card: it would grant nothing. -->
+            <Button Content="{Binding BtnAlwaysAllow}" Command="{Binding AlwaysAllowCommand}"
+                    Visibility="{Binding OffersAlways, Converter={StaticResource b2v}}" />
             <Button Content="{Binding BtnAllowOnce}"   Command="{Binding AllowOnceCommand}"   IsDefault="True" />
         </StackPanel>
     </Grid>

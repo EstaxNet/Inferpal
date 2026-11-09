@@ -560,6 +560,8 @@ export interface ApprovalCard {
   ruleLabel?: string;
   /** The rule's lines as the settings will hold them. */
   ruleTooltip?: string;
+  /** False on a forced card: "Always this session" is not offered, it would grant nothing. Absent from an older host. */
+  offersAlways?: boolean;
 }
 
 /** One file a run changed. */

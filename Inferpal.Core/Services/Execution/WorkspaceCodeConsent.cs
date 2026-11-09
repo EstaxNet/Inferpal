@@ -84,4 +84,12 @@ internal sealed class WorkspaceCodeConsent(IApprovalService? approval, Func<stri
     {
         lock (Gate) return Answered.TryGetValue(root, out var agreed) ? agreed : null;
     }
+
+    /// <summary>
+    /// Whether the person declined to run <paramref name="root"/>'s own code: a build or a test the model then starts
+    /// through the shell is a forced card (an <c>allow</c> rule, "Always" or approvals turned off do not pass it). ⚠ A
+    /// guard, not a boundary: the shell's check commands are recognised from a list (<c>CheckCommand</c>).
+    /// </summary>
+    internal static bool Declined(string? root) =>
+        root is { Length: > 0 } && Known(Path.TrimEndingDirectorySeparator(root)) == false;
 }

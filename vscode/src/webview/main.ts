@@ -2048,7 +2048,11 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
   deny.className = 'deny';
   deny.append(document.createTextNode(t('deny')), kbd('Esc'));
   deny.addEventListener('click', () => answer(0, deny));
-  actions.append(allow, always);
+  // Never on a forced card: "Always" would grant nothing, the next identical call asks again.
+  actions.append(allow);
+  if (card?.offersAlways !== false) {
+    actions.append(always);
+  }
   // The narrow rule, offered only when one describes the call: written to the machine's rules, where "Always" lasts
   // the session. Its label comes from the host, in the user's language.
   if (card?.ruleLabel) {

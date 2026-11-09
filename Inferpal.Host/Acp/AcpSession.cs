@@ -1525,7 +1525,7 @@ internal sealed class AcpSession : IAsyncDisposable
                     status     = "pending",
                     content,
                 },
-                options = Options(note.Card?.RuleLabel),
+                options = Options(note.Card?.RuleLabel, note.Card?.OffersAlways != false),
             });
             var decision = answer?.Outcome is { Outcome: "selected" } o ? o.OptionId switch
             {
@@ -1549,13 +1549,15 @@ internal sealed class AcpSession : IAsyncDisposable
     /// The answers a permission request offers: the narrow rule the card describes, when it describes one, beside
     /// "always" — written to the machine's rules, where "always" lasts the session.
     /// </summary>
-    private static object[] Options(string? ruleLabel)
+    /// <remarks>A forced card offers no "always" (<paramref name="offersAlways"/> false): it would grant nothing.</remarks>
+    internal static object[] Options(string? ruleLabel, bool offersAlways = true)
     {
         var options = new List<object>
         {
             new { optionId = "allow_once",   name = Strings.ApprovalAllowOnce,   kind = "allow_once" },
-            new { optionId = "allow_always", name = Strings.ApprovalAlwaysAllow, kind = "allow_always" },
         };
+        if (offersAlways)
+            options.Add(new { optionId = "allow_always", name = Strings.ApprovalAlwaysAllow, kind = "allow_always" });
         if (!string.IsNullOrEmpty(ruleLabel))
             options.Add(new { optionId = "allow_rule", name = ruleLabel, kind = "allow_always" });
         options.Add(new { optionId = "reject_once", name = Strings.ApprovalDeny, kind = "reject_once" });
@@ -1603,7 +1605,7 @@ internal sealed class AcpSession : IAsyncDisposable
     public sealed record ToolEndNote(string CallId, string? Output, bool Failed = false);
     public sealed record WaitNote(ModelWaitDto? Wait);
     public sealed record PathNote(string? Path);
-    public sealed record CardNote(string? Title, string? Subject, string? RuleLabel = null);
+    public sealed record CardNote(string? Title, string? Subject, string? RuleLabel = null, bool OffersAlways = true);
     public sealed record DiffNote(string? Path, string? OldText, string? NewText);
     public sealed record ApprovalNote(string Message, CardNote? Card, string? CallId, string? Tool, string? Details, List<DiffNote>? Diffs);
     public sealed record PermissionOutcome(string? Outcome, string? OptionId);

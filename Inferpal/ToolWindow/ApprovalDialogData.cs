@@ -31,6 +31,8 @@ internal sealed class ApprovalDialogData : NotifyPropertyChangedObject
     [DataMember] public string BtnRule        { get; }
     [DataMember] public string RuleTip        { get; }
     [DataMember] public bool   HasRule        { get; }
+    /// <summary>"Always this session" is offered: never on a forced card, where it would grant nothing.</summary>
+    [DataMember] public bool   OffersAlways   { get; }
 
     // Theme colours as plain strings, same pattern as the chat VM (no theme propagation
     // across the Remote UI boundary): resolved once from the last known VS theme.
@@ -51,7 +53,7 @@ internal sealed class ApprovalDialogData : NotifyPropertyChangedObject
     /// <param name="ruleLabel">The narrow rule the card offers, as its button reads (<c>ApprovalCardModel.RuleLabel</c>);
     /// empty when none.</param>
     /// <param name="ruleTip">The rule's lines, for the button's tooltip.</param>
-    public ApprovalDialogData(string message, DiffInfo? diff, string ruleLabel = "", string ruleTip = "")
+    public ApprovalDialogData(string message, DiffInfo? diff, string ruleLabel = "", string ruleTip = "", bool offersAlways = true)
     {
         Message        = message;
         BtnAllowOnce   = Strings.ApprovalAllowOnce;
@@ -60,6 +62,7 @@ internal sealed class ApprovalDialogData : NotifyPropertyChangedObject
         BtnRule        = ruleLabel;
         RuleTip        = ruleTip;
         HasRule        = ruleLabel.Length > 0;
+        OffersAlways   = offersAlways;
 
         var palette = ThemePalette.For(VsThemeDetector.CurrentIsDark, VsThemeDetector.HighContrastOn());
         ThemeText       = palette.Text;

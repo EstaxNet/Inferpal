@@ -32,6 +32,31 @@ internal sealed class RunCommandTool : ITool, IDisposable
     }
 
     public string Name => "run_command";
+
+    // A shell that runs the rest of the line as its own command (cmd /c, bash -c, pwsh -Command…), and dotnet named with its
+    // extension or its folder: read through, so the check they wrap is seen.
+    private static readonly System.Text.RegularExpressions.Regex ShellWrapper = new(
+        @"(?i)(?:^|[;&|(]\s*)(?:\S*[\\/])?(?:cmd(?:\.exe)?\s+/[ck]|(?:ba|z)?sh\s+-l?c|(?:pwsh|powershell)(?:\.exe)?\s+(?:-NoProfile\s+)?-c(?:ommand)?)\s+[""']?",
+        System.Text.RegularExpressions.RegexOptions.CultureInvariant, RegexBudget.Default);
+    private static readonly System.Text.RegularExpressions.Regex DotnetSpelled = new(
+        @"(?i)(?:\S*[\\/])?dotnet\.exe\b", System.Text.RegularExpressions.RegexOptions.CultureInvariant, RegexBudget.Default);
+
+    /// <summary>
+    /// Whether <paramref name="command"/> starts a build or a test run (<see cref="Agent.CheckCommand"/>), read through a
+    /// wrapping shell and each step of the line (<see cref="Execution.CommandLine"/>). ⚠ A guard, not a boundary: the
+    /// runners are a list — <c>dotnet run</c>, <c>msbuild</c>, <c>./build.ps1</c> are not in it.
+    /// </summary>
+    internal static bool RunsACheck(string command)
+    {
+        try
+        {
+            var plain = DotnetSpelled.Replace(ShellWrapper.Replace(command, "; "), "dotnet");
+            return Agent.CheckCommand.IsCheck(plain)
+                   || Execution.CommandLine.Steps(plain).Any(s => Agent.CheckCommand.IsCheck(s.Trim().Trim('"', '\'')));
+        }
+        catch (System.Text.RegularExpressions.RegexMatchTimeoutException) { return Agent.CheckCommand.IsCheck(command); }
+    }
+
     /// <inheritdoc/>
     /// <remarks>Reading a background job's output or the list of jobs runs nothing; a command, or stopping a job, does.</remarks>
     public ToolEffect EffectOf(JsonElement args) =>
@@ -109,7 +134,16 @@ internal sealed class RunCommandTool : ITool, IDisposable
         // ⚠ A rule judges the command line, never the folder: `allow run_command ^dotnet test` would run another
         // repository's build outside the workspace without a card. Outside it, the card is always asked.
         var outside = !PathSanitizer.IsUnderRoot(runIn, _session.WorkspaceRoot);
-        if (!await _approval.RequestApprovalAsync("run_command", details, ct, subject: command, forcePrompt: outside))
+        // A build or a test of a workspace whose own code the person declined to run is forced too — never the person's own
+        // /run, which counts as their agreement (WorkspaceCodeConsent), and is recorded as such.
+        var declinedCheck = false;
+        if (PackageCheck.IsThePersonsOwnCall)
+        {
+            if (RunsACheck(command)) WorkspaceCodeConsent.NoteThePersonsRun(_session.WorkspaceRoot);
+        }
+        else
+            declinedCheck = WorkspaceCodeConsent.Declined(_session.WorkspaceRoot) && RunsACheck(command);
+        if (!await _approval.RequestApprovalAsync("run_command", details, ct, subject: command, forcePrompt: outside || declinedCheck))
             return Strings.RunCancelled;
 
         var background = args.Bool("background", false);

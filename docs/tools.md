@@ -38,6 +38,12 @@ card:
 - Default action is *Allow once*; dismissing the prompt denies the call.
 - "Always this session" allows that tool **for this session, in this workspace** — it is never written to disk, and
   opening another folder or solution asks again.
+- A **forced** card offers only *Allow once* and *Deny*: a command whose text cannot be read for what it runs, a write to
+  the agent's own instructions, a write in `.git`, a command outside the workspace, and — once you have declined to run
+  the workspace's own code — a build or a test the model starts through the shell (`dotnet test`, `pytest`, also inside
+  `cmd /c` or `bash -c`). The next identical call asks again anyway, so "Always" would grant nothing; an editor that still
+  sends it gets a one-time *Allow*. Recognising builds and tests is a list of runners, not a boundary: `dotnet run` or
+  your own build script still get the ordinary card.
 - For file edits (`write_file`, `apply_diff`, `apply_edits`, `delete_file`), the prompt shows
   the **actual diff** so you confirm the change, not just a path.
 
