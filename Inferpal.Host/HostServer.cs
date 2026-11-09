@@ -1464,7 +1464,10 @@ internal sealed partial class HostServer : IDisposable
         // does not say "it just dropped", and that sentence is what the Visual Studio window has
         // always put in the thread. The decision belongs to the Core: first check silent if it
         // succeeds, announced if it fails, and nothing at all while nothing moves.
-        var status = s.Connection.Evaluate(connected, s.Client.ConnectionRefusal);
+        // ⚠ The first run's card speaks where nothing was chosen yet (setup/needed's own test): the first failed check is no
+        // edge then, or "Start Ollama" sits next to a card that found LM Studio — the Visual Studio window passes the same fact.
+        var status = s.Connection.Evaluate(connected, s.Client.ConnectionRefusal,
+                                           firstRunSpoke: !connected && ServerScan.NothingChosen(s.Config));
         var notice = status.Transition switch
         {
             ConnectionTransition.Restored => Strings.MsgHeartbeatRestored(

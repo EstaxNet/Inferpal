@@ -14,7 +14,10 @@
               Version="|Inferpal;GetVsixVersion|"
               Language="en-US"
               Publisher="EstaxNet" />
-    <DisplayName>Inferpal — Local AI Agent for Visual Studio (Ollama, LM Studio)</DisplayName>
+    <!-- ⚠ The display name never changes: Visual Studio 2022 17.14 drops an extension whose UPDATE carries a different
+         display name (no entry under Tools, no chat, nothing logged, and a restart does not bring it back), while a
+         clean install under the new name works. VsixPackagingTests.TheDisplayName_NeverChanges. -->
+    <DisplayName>Inferpal — Local AI Agent for Visual Studio</DisplayName>
     <Description xml:space="preserve">Private AI coding agent for Visual Studio 2026 and 2022, on your own local models — Ollama, LM Studio, llama.cpp, vLLM. Plans, edits, builds, runs your tests and debugs failing .NET tests. 30 built-in tools, every write approved. No cloud, no telemetry, no API key.</Description>
     <MoreInfo>https://github.com/EstaxNet/Inferpal</MoreInfo>
     <!-- The license MUST be a .txt/.rtf file embedded in the VSIX (VSIX 2.0 schema), not a URL

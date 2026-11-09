@@ -23,6 +23,8 @@ The agent checks its work before it says it is done, and your code indexes stop 
   reaches the model as if the files went with it, and a line names what was not sent.
 - **llama-server takes your reasoning settings** when it publishes them for the model.
 - **New recommendations**: Ternary Bonsai 2 27B for 12 and 16 GB cards, Ornith 1.5 35B-A3B beside Qwen3.8 27B on 24 GB.
+- **The first launch no longer tells you to start Ollama beside the card that found your server**: with LM Studio
+  running, or nothing running at all, the card alone says what answers where.
 - **Fixed**: on a Linux machine shared by several accounts, a chat pauses your other windows again; ignore rules hold
   while their file is busy; a `deny` rule sees past `CI=1 rm …`; Russian and Polish wait lines agree with their numbers;
   a settings file that cannot be read is said once; Fix them sends the code around each error.

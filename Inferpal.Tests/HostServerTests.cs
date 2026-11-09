@@ -868,7 +868,8 @@ public partial class HostServerTests
     [InlineData("dev-container", "http://host.docker.internal:11434")]
     public async Task BackendStatus_FromTheRemoteSide_SaysWhereLocalhostIs(string remoteName, string gesture)
     {
-        using var h = CreateHarness(c => { c.Provider = "ollama"; c.BaseUrl = "http://localhost:11434"; });
+        // A server chosen: on a first run the card speaks instead (BackendStatus_OnAFirstRun_TheCardSpeaks_NotTheStatusLine).
+        using var h = CreateHarness(c => { c.Provider = "ollama"; c.BaseUrl = "http://localhost:11434"; c.IsFirstRun = false; });
         await h.Client.InvokeWithParameterObjectAsync<InitializeResult>("initialize", new { rootDir = h.RootDir, remoteName })
                .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         h.Fake.ConnectionOk = false;
@@ -884,7 +885,7 @@ public partial class HostServerTests
     public async Task BackendStatus_WhereThePersonSits_KeepsTheOrdinarySteps()
     {
         // Reference arm: no remote name, the server may simply be stopped.
-        using var h = CreateHarness(c => { c.Provider = "ollama"; c.BaseUrl = "http://localhost:11434"; });
+        using var h = CreateHarness(c => { c.Provider = "ollama"; c.BaseUrl = "http://localhost:11434"; c.IsFirstRun = false; });
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         h.Fake.ConnectionOk = false;
 
@@ -916,7 +917,7 @@ public partial class HostServerTests
         // ⚠ Reference arm for case 1: the first heartbeat is silent only if it SUCCEEDS. A backend
         // already down when the panel opens must be said — otherwise the one state where
         // the user really needs a sentence would be exactly the one that produces none.
-        using var h = CreateHarness();
+        using var h = CreateHarness(c => c.IsFirstRun = false);
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         h.Fake.ConnectionOk = false;
 
@@ -924,6 +925,29 @@ public partial class HostServerTests
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         Assert.NotNull(first.EdgeNotice);
+    }
+
+    /// <summary>
+    /// Nothing chosen yet and nothing answers: the first-run card says what answers where (setup/needed's own test), and
+    /// the status line adding "Cannot reach Ollama — start it" beside a card that found LM Studio sends the person to the
+    /// wrong server. The Visual Studio window passes the same fact (FirstRunSpokeAsync). Reference arm: a chosen server.
+    /// </summary>
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task BackendStatus_OnAFirstRun_TheCardSpeaks_NotTheStatusLine(bool firstRun, bool said)
+    {
+        using var h = CreateHarness(c => c.IsFirstRun = firstRun);
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.ConnectionOk = false;
+
+        Assert.Equal(firstRun ? "unreachable" : null,
+                     await h.Client.InvokeAsync<string?>("setup/needed").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs)));
+        var first = await h.Client.InvokeAsync<BackendStatusResult>("backend/status")
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+        Assert.False(first.Connected);
+        Assert.Equal(said, first.EdgeNotice is not null);
     }
 
     /// <summary>

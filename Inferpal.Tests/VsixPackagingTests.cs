@@ -68,6 +68,17 @@ public class VsixPackagingTests
         AssertDeclaresDotNet8And10(built);
     }
 
+    /// <summary>Visual Studio 2022 17.14 drops an extension whose update carries a different display name: no entry
+    /// under Tools, no chat, nothing logged, and a restart does not bring it back. Every user updating from the
+    /// Marketplace would lose Inferpal, while a clean install under the new name works, so nothing else would see it.</summary>
+    [Fact]
+    public void TheDisplayName_NeverChanges()
+    {
+        var name = System.Xml.Linq.XDocument.Load(ManifestPath()).Descendants()
+            .Single(e => e.Name.LocalName == "DisplayName").Value;
+        Assert.Equal("Inferpal — Local AI Agent for Visual Studio", name);
+    }
+
     private static void AssertDeclaresDotNet8And10(string manifest)
     {
         var declared = System.Xml.Linq.XDocument.Load(manifest).Descendants()
