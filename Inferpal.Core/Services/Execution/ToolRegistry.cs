@@ -543,7 +543,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
 
     public async Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
     {
-        if (!_tools.TryGetValue(name, out var tool))
+        var builtIn = _tools.TryGetValue(name, out var tool);
+        if (!builtIn)
             tool = UserTools.FirstOrDefault(t => t.Name == name)
                 ?? McpTools.FirstOrDefault(t => t.Name == name);
 
@@ -554,6 +555,15 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // went away mid-run was not invented: the model READ it in its own tool list, and the
             // reason it is gone sits one field away from here.
             return _mcp.DescribeMissingTool(name) ?? UnknownTool(name, Definitions);
+        }
+
+        // ⚠ A built-in tool never reaches another machine through a path the model wrote: refused before anything asks the
+        // disk about it (asking is a connection). An MCP or the person's shell tool is not refused — its card decides, and
+        // nothing before the card asks the disk either (NamedFiles, ExcludedNamedFile).
+        if (builtIn && NetworkArgument(args, _indexService.RootDir) is { } network)
+        {
+            _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
+            return NetworkRefusal(network);
         }
 
         // An editor that answers on demand (Visual Studio) is asked now which buffers hold unsaved changes: what the
@@ -686,6 +696,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         return null;
     }
 
+    /// <summary>Called with each path <see cref="NamedFiles"/> and <see cref="ExcludedNamedFile"/> are about to ask the disk
+    /// about, in this flow only: what a test counts to prove a path on another machine is never asked about.</summary>
+    internal static readonly AsyncLocal<Action<string>?> DiskProbeWitness = new();
+
     /// <summary>
     /// The existing files a call's arguments name, wherever they sit in the object (<c>path</c>, <c>edits[].path</c>,
     /// a tool's own key): every string value that is a file on disk, resolved against <paramref name="root"/>.
@@ -715,6 +729,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                     try
                     {
                         var full = Path.IsPathRooted(s) || string.IsNullOrEmpty(root) ? Path.GetFullPath(s) : Path.GetFullPath(Path.Combine(root, s));
+                        // ⚠ Never asked of the disk when it names another machine: the question is a connection to it.
+                        if (NetworkPath.OutsideTheWorkspace(full, root)) return;
+                        DiskProbeWitness.Value?.Invoke(full);
                         if (File.Exists(full)) found.Add(full);
                     }
                     // A string that is no path at all (a query, a regex): not a file the call names.
@@ -724,6 +741,47 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         }
         Walk(args, 0);
         return found;
+    }
+
+    /// <summary>What a built-in tool answers when a path names another machine (model-facing, English).</summary>
+    internal static string NetworkRefusal(string path) =>
+        $"Error: '{path}' is a path on another machine on the network, outside the workspace — refused without reaching it. "
+        + "Use a path inside the workspace.";
+
+    /// <summary>
+    /// The first PATH argument of a call (any string outside <see cref="TextArguments"/>, at any depth) that names another
+    /// machine outside the workspace, read from its text alone (<see cref="NetworkPath"/>); <c>null</c> when none does.
+    /// </summary>
+    internal static string? NetworkArgument(JsonElement args, string? root)
+    {
+        // Only Windows reads a UNC path: elsewhere no string can hit, and the walk is not paid.
+        if (!OperatingSystem.IsWindows()) return null;
+        string? hit = null;
+        void Walk(JsonElement e, string? key, int depth)
+        {
+            if (hit is not null || depth > 64) return;
+            switch (e.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    foreach (var p in e.EnumerateObject()) Walk(p.Value, p.Name, depth + 1);
+                    break;
+                case JsonValueKind.Array:
+                    foreach (var item in e.EnumerateArray()) Walk(item, key, depth + 1);
+                    break;
+                // `snapshot` is text for the exclusion gate (a backup shown on the card), but a PATH restore_file resolves.
+                case JsonValueKind.String when key is null || key == "snapshot" || !TextArguments.Contains(key):
+                    var s = e.GetString();
+                    if (string.IsNullOrWhiteSpace(s)) return;
+                    string full;
+                    // The tools' own reading of a path (no disk access), else the raw spelling: a refused spelling still names a host.
+                    try { full = PathSanitizer.Sanitize(s, root); }
+                    catch (ArgumentException) { full = s.Trim(); }
+                    if (NetworkPath.OutsideTheWorkspace(full, root) || NetworkPath.OutsideTheWorkspace(s.Trim(), root)) hit = s.Trim();
+                    break;
+            }
+        }
+        Walk(args, null, 0);
+        return hit;
     }
 
     /// <summary>The arguments that carry TEXT — a search, an edit's lines, a command — never a path: a search for
@@ -778,6 +836,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                     // ⚠ Judged on the path it RESOLVES to, never on how it is written: `ab://../.env`, or `a/../` a
                     // thousand times, IS `.env` to the tool that reads it.
                     if (full.Length > 4096 || StaysAUrl(s, root, full)) return;
+                    // ⚠ Never asked of the disk when it names another machine: the question is a connection to it.
+                    if (NetworkPath.OutsideTheWorkspace(full, root)) return;
+                    DiskProbeWitness.Value?.Invoke(full);
                     // ⚠ A path that does not exist yet is judged too: a write that CREATES a file where the ignore files
                     // exclude it (`secrets/new.key`, an excluded `.env`) is a change to an excluded file. A folder is
                     // judged by the walk that lists it.

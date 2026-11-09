@@ -120,6 +120,13 @@ internal static class PathSanitizer
     internal static void AssertUnderRoot(string fullPath, string? workspaceRoot)
     {
         if (string.IsNullOrEmpty(workspaceRoot)) throw new NoWorkspaceRootException();
+        // ⚠ Another machine is refused from the path's TEXT, before resolving its links: resolving them is a connection to
+        // that host. One place for every built-in reader, whichever argument the path came in.
+        if (Execution.NetworkPath.OutsideTheWorkspace(fullPath, workspaceRoot))
+            throw new ArgumentException(
+                $"Access denied: path is on another machine on the network, outside the workspace root.\n" +
+                $"  Requested : {fullPath}\n" +
+                $"  Workspace : {workspaceRoot}");
 
         // Compare link-resolved paths: Path.GetFullPath normalises ./ and ../ but follows no
         // symlink or junction, so a link planted inside the workspace would otherwise let a
