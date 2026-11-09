@@ -110,22 +110,14 @@ internal sealed class AgentOrchestrator
               + string.Join(", ", tools.Definitions.Select(d => d.Function.Name)) + "."
               + (tools.Definitions.Any(d => d.Function.Name == "rename_symbol") ? "\n" + ModelPrompts.AgentPlanRename : string.Empty);
 
-    // Read-only tools safe to run concurrently within one batch: pure filesystem reads, no GPU work,
-    // no approval prompt, no VS UI-thread affinity. Deliberately EXCLUDES search_codebase/search_docs
-    // (GPU embeddings — must stay serialized on the single shared GPU, see GpuScheduler), the
-    // approval-gated fetch_url/web_search (would pop concurrent modal prompts), and the VS-context
-    // get_* tools (extensibility calls are not guaranteed thread-safe).
-    private static readonly HashSet<string> ParallelSafeTools = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "read_file", "list_files", "search_in_files",
-    };
-
     /// <summary>
-    /// Whether a tool-call batch may run concurrently: more than one call and every call is a
-    /// parallel-safe read-only tool. Mixed/mutating batches stay sequential.
+    /// Whether a tool-call batch may run concurrently: more than one call and every call is a read its tool declares safe
+    /// beside others (<see cref="Tools.ToolCeilings.ConcurrentSafe"/>: pure file-system reads — no GPU embedding, which
+    /// must stay serialized on the one shared GPU, no approval card, no editor call, which is not guaranteed thread-safe).
+    /// Mixed/mutating batches stay sequential.
     /// </summary>
     internal static bool ShouldRunParallel(IReadOnlyList<ToolCallDto> calls) =>
-        calls.Count > 1 && calls.All(c => ParallelSafeTools.Contains(c.Function.Name));
+        calls.Count > 1 && calls.All(c => Tools.ToolCeilings.ConcurrentSafe(c.Function.Name));
 
     /// <summary>
     /// Executes one model-requested call, turning any failure into a message the model can act on — or refuses it,

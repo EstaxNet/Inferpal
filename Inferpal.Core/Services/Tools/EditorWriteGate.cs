@@ -13,8 +13,8 @@ namespace Inferpal.Services.Tools;
 /// <b>Why this exists.</b> These two tools mutate a file. They went through
 /// none of what every other mutating tool goes through: no approval prompt, no permission rules,
 /// no snapshot — the constructor did not even take an <see cref="IApprovalService"/>. The rest of
-/// the code base already disagreed with that: <c>PlanModeToolRegistry</c>, whose allow-list is the
-/// repository's own definition of "read-only", excludes both.
+/// the code base disagrees with that: <c>ToolCeilings</c>, the repository's own declaration of what each tool can do,
+/// says both write.
 /// </para>
 /// <para>
 /// What was actually bypassed is worth naming, because "the user can see it happen and press

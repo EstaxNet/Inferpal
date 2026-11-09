@@ -303,7 +303,7 @@ internal class GetDiagnosticsTool : ITool
         {
             path = PathSanitizer.Sanitize(rawPath, root);
             // ⚠ Confined like every path-taking tool: a build runs the project's MSBuild targets — code — asked once per
-            // workspace (WorkspaceCodeConsent), and plan mode offers it as a read.
+            // workspace (WorkspaceCodeConsent); plan mode leaves it out for that reason (ToolCeilings).
             PathSanitizer.AssertUnderRoot(path, root);
         }
         var chosen = path is null;   // built by choice, not as asked: what it leaves out is named

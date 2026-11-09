@@ -26,10 +26,9 @@ internal static class AgentLoopPolicy
     /// aborts the run on its first verbatim repeat.
     /// </summary>
     /// <remarks>
-    /// ⚠ <b>Derived, not listed.</b> A second hand-written set beside
-    /// <see cref="PlanModeToolRegistry"/>'s — the one that already answers "does this tool only
-    /// observe?" — drifts, and the misclassification hurts in one direction only, the dangerous
-    /// one: a tool absent here is treated as a mutation, so its <b>second identical call aborts the
+    /// ⚠ <b>Derived, not listed.</b> From <see cref="Tools.ToolCeilings.LeavesTrackedFilesAlone"/> — what plan mode
+    /// allows, plus <c>get_diagnostics</c>, which builds (out of plan mode) yet only reports. A second hand-written set
+    /// drifts, and the misclassification hurts in one direction only, the dangerous one: a tool absent here is treated as a mutation, so its <b>second identical call aborts the
     /// whole run as a loop</b>. Searching the same documentation twice, or asking a paused debugger
     /// "where am I?" twice, is the middle of an ordinary cycle, not a loop. ⚠ And a mutating key is
     /// never cleared — a new mutation resets only the read-only counts — so for those tools the
@@ -40,7 +39,9 @@ internal static class AgentLoopPolicy
     /// result makes the model load the same tool again).
     /// </remarks>
     internal static bool IsObservation(string toolName) =>
-        PlanModeToolRegistry.IsAllowed(toolName)
+        // ⚠ Not plan mode's answer alone: get_diagnostics builds (out of plan mode) yet observes, and a second identical
+        // check in an edit → check cycle must not end the run as a loop.
+        Tools.ToolCeilings.LeavesTrackedFilesAlone(toolName)
         || toolName.Equals("run_tests", StringComparison.OrdinalIgnoreCase)
         || toolName.Equals(Tools.DebugInspectTool.ToolName, StringComparison.OrdinalIgnoreCase)
         || toolName.Equals("tool_search", StringComparison.OrdinalIgnoreCase);

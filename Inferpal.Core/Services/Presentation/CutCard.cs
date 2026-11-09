@@ -24,7 +24,7 @@ internal sealed record CutCard(string? Note, string OpenLimits)
     /// <param name="toolsRun">The tools the turn ran, by name.</param>
     /// <param name="filesChanged">The files its run changed.</param>
     public static CutCard? Of(bool waitRanOut, IReadOnlyCollection<string> toolsRun, int filesChanged) => waitRanOut
-        ? new(toolsRun.Count > 0 && filesChanged == 0 && toolsRun.All(PlanModeToolRegistry.IsAllowed)
+        ? new(toolsRun.Count > 0 && filesChanged == 0 && toolsRun.All(Tools.ToolCeilings.LeavesTrackedFilesAlone)
                   ? Strings.CutNothingWritten : null,
               Strings.CutOpenTimeLimits)
         : null;

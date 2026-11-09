@@ -39,13 +39,6 @@ internal sealed class BackgroundTaskToolRegistry(
             path.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
     }
 
-    private static readonly HashSet<string> AllowedTools = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "read_file", "list_files", "search_in_files", "search_codebase", "search_docs",
-        "get_git_status", "get_solution_info",
-        "generate_project_map", "analyze_code", "read_skill_file",
-    };
-
     /// <summary>
     /// Additionally exposed when the task runs in <b>proposal mode</b>: the file
     /// mutations whose intent is fully described by a diff.
@@ -88,7 +81,8 @@ internal sealed class BackgroundTaskToolRegistry(
         "out of context, so state what you looked at and what you concluded. If the objective " +
         "requires changing code, describe the change precisely instead of attempting it.";
 
-    internal static bool IsAllowed(string toolName) => AllowedTools.Contains(toolName);
+    // Reads only, and never what the person looks at while the task runs (Tools.ToolCeilings).
+    internal static bool IsAllowed(string toolName) => Tools.ToolCeilings.AllowedInBackgroundTask(toolName);
 
     /// <summary>True when this tool may be called by a task running in proposal mode.</summary>
     internal static bool IsProposable(string toolName) => ProposableTools.Contains(toolName);

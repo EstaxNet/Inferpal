@@ -600,9 +600,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         {
             // ⚠ A command, a test run, a user's shell tool, an MCP tool change files WITHOUT a backup of their own: watched
             // here, what they change enters the run like a write — /undo-run gives it back, the result bar counts it.
-            // Every call plan mode does not list as read-only, so a tool added tomorrow is watched without being named — but
+            // Every call ToolCeilings does not declare as leaving the files alone, so a tool added tomorrow is watched without being named — but
             // one that backs up its own writes or writes the editor's buffer says so (NeedsWorkTreeWatch), and is spared it.
-            if (!PlanModeToolRegistry.IsAllowed(name) && tool.NeedsWorkTreeWatchFor(args) && _fileHistory.IsTracking)
+            if (!ToolCeilings.LeavesTrackedFilesAlone(name) && tool.NeedsWorkTreeWatchFor(args) && _fileHistory.IsTracking)
                 WorkTreeBracket.Enter(watch = await WorkTreeBracket.OpenAsync(_indexService.RootDir, UnsavedNow(), ct));
             var result = await tool.ExecuteAsync(args, ct);
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: false);
@@ -654,10 +654,10 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // at the map — the ordinary way to check its own work, and `@tree` reads the same cache —
             // read the map from before, with nothing saying so: the file it had just created was not in
             // the project. Any call that may have changed the workspace drops it; the set that may NOT
-            // is plan mode's, so a tool it does not know (a new one, a user shell tool, an MCP tool)
+            // is ToolCeilings.LeavesTrackedFilesAlone, so a tool it does not declare (a new one, a user shell tool, an MCP tool)
             // costs a rescan, never a stale map. In `finally`: a write that failed halfway wrote halfway.
             // tool_search changes definitions, never the workspace.
-            if (!PlanModeToolRegistry.IsAllowed(name) && tool is not ToolSearchTool) _mapService.Invalidate();
+            if (!ToolCeilings.LeavesTrackedFilesAlone(name) && tool is not ToolSearchTool) _mapService.Invalidate();
         }
     }
 

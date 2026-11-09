@@ -9,24 +9,14 @@ namespace Inferpal.Services.Execution;
 /// files or execute anything.
 /// </summary>
 /// <remarks>
-/// The whitelist is deliberately NOT <c>AgentLoopPolicy</c>'s read-only set: that set
-/// includes <c>run_tests</c> (observing state by executing code is fine for loop
-/// detection, not for plan mode). User shell tools and MCP tools have unknown side
-/// effects, so anything not explicitly whitelisted is excluded. Filtering
-/// <see cref="Definitions"/> keeps write tools out of the model's view; the
-/// <see cref="ExecuteAsync"/> guard is the safety net for inline-parsed tool calls
-/// (see <c>InlineToolCallParser</c>) that bypass the definition list.
+/// What the mode allows is decided by what a tool CAN do (<see cref="Tools.ToolCeilings"/>): reads and the network (each
+/// network call keeps its card), never a write nor a program run — <c>get_diagnostics</c> builds, so it is out, and
+/// <c>run_command</c>'s reads (poll, list) do not bring the command in. User shell tools and MCP tools have unknown side
+/// effects: out. Filtering <see cref="Definitions"/> keeps them out of the model's view; the <see cref="ExecuteAsync"/>
+/// guard is the safety net for inline-parsed tool calls (see <c>InlineToolCallParser</c>) that bypass the definition list.
 /// </remarks>
 internal sealed class PlanModeToolRegistry(IToolRegistry inner) : IToolRegistry
 {
-    private static readonly HashSet<string> AllowedTools = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "read_file", "list_files", "search_in_files", "search_codebase", "search_docs",
-        "get_diagnostics", "get_active_document", "get_open_editors", "get_solution_info",
-        "get_git_status", "get_debugger_state", "generate_project_map", "analyze_code",
-        "web_search", "fetch_url", "read_skill_file",
-    };
-
     /// <summary>Appended to the system prompt while plan mode is active (model-facing, English).</summary>
     public const string SystemPromptSuffix =
         "\n\n## Plan mode (read-only)\n" +
@@ -34,7 +24,7 @@ internal sealed class PlanModeToolRegistry(IToolRegistry inner) : IToolRegistry
         "Explore the codebase with the read-only tools, then present a clear, step-by-step " +
         "implementation plan and wait for the user to apply it. Do not attempt to write files.";
 
-    internal static bool IsAllowed(string toolName) => AllowedTools.Contains(toolName);
+    internal static bool IsAllowed(string toolName) => Tools.ToolCeilings.AllowedInPlan(toolName);
 
     public IReadOnlyList<ToolDefinition> Definitions =>
         inner.Definitions.Where(d => IsAllowed(d.Function.Name)).ToList();

@@ -154,7 +154,7 @@ public class AgentLoopPolicyTests
         var allowed = new[]
         {
             "read_file", "list_files", "search_in_files", "search_codebase", "search_docs",
-            "get_diagnostics", "get_active_document", "get_open_editors", "get_solution_info",
+            "get_active_document", "get_open_editors", "get_solution_info",
             "get_git_status", "get_debugger_state", "generate_project_map", "analyze_code",
             "web_search", "fetch_url",
         };
@@ -168,6 +168,15 @@ public class AgentLoopPolicyTests
             Assert.True(AgentLoopPolicy.IsObservation(name),
                         $"{name} only observes for plan mode but counts as a mutation for loop "
                         + "detection: its second identical call would abort the run.");
+    }
+
+    /// <summary>get_diagnostics builds, so plan mode leaves it out — yet it observes: an edit → check → edit → check cycle
+    /// repeats the same check, and that second identical call must not end the run as a loop.</summary>
+    [Fact]
+    public void GetDiagnostics_IsOutOfPlanMode_YetStillAnObservation()
+    {
+        Assert.False(Inferpal.Services.Execution.PlanModeToolRegistry.IsAllowed("get_diagnostics"));
+        Assert.True(AgentLoopPolicy.IsObservation("get_diagnostics"));
     }
 
     [Fact]
