@@ -216,8 +216,8 @@ export interface CutCard {
   section: string;
 }
 
-/** `chat/thinking` — the throttled reasoning tail, or no text at all when the host only means
- *  "the model is thinking" (plain chat). */
+/** `chat/thinking` — a throttled heartbeat: "the model is thinking". The host sends no text with it: the tail of a
+ *  deliberation read as the model's answer landing in the status line. */
 export interface ThinkingNote {
   text?: string | null;
 }

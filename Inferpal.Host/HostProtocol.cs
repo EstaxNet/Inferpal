@@ -27,7 +27,7 @@
 /// <param name="ToolEvents">The adapter wants every tool call announced when it starts and when it ends
 /// (<c>chat/toolStart</c>, <c>chat/toolEnd</c>), and the approval request tied to its call with the files' changes.</param>
 /// <param name="ReasoningChunks">The adapter shows the model's reasoning as it streams: <c>chat/reasoning</c> carries it
-/// in batched pieces, besides the bounded preview of <c>chat/thinking</c>.</param>
+/// in batched pieces, besides the throttled heartbeat of <c>chat/thinking</c>.</param>
 /// <param name="Secrets">The adapter serves the reverse <c>secrets/*</c> requests (an OS keychain) off Windows.</param>
 /// <param name="IndexesTheFolder">With semantic search on, the host indexes the folder on its own, as a chat needs.
 /// False for the settings window, which shows the index saved for the folder and builds none.</param>

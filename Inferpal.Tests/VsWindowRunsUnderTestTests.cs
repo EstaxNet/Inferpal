@@ -29,6 +29,29 @@ public sealed class VsWindowRunsUnderTestTests
         Assert.False(vs.Window.IsLoading);
     }
 
+    /// <summary>An agent run's reasoning shows in the status line as the generic indicator, never as its text: a tail cut
+    /// mid-word that quotes the question back reads as the model's answer landing there.</summary>
+    [Fact]
+    public async Task AnAgentRunsReasoning_ShowsAsThinking_NeverAsItsText()
+    {
+        var fake = new FakeInferenceProvider { ChatResult = new ChatTurnResult("THE ANSWER", null, 0, 0) };
+        fake.DriveThinking = emit => emit("back and tell me what it contains");
+        using var vs = new VsWindowHarness(fake, config: new InferpalConfig { DefaultModel = "m", AgentModeEnabled = true });
+        var steps = new List<string>();
+        vs.Window.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(vs.Window.CurrentStep)) lock (steps) steps.Add(vs.Window.CurrentStep);
+        };
+
+        await vs.AskAsync("the question");
+
+        lock (steps)
+        {
+            Assert.Contains("\U0001F4AD " + Strings.StatusThinking, steps);   // witness: the reasoning reached the status line
+            Assert.DoesNotContain(steps, s => s.Contains("tell me", StringComparison.Ordinal));
+        }
+    }
+
     /// <summary>The whole way: a write asks on a card in the conversation, Enter answers it, the file is written, the turn ends.</summary>
     [Fact]
     public async Task AWrite_AsksOnItsCard_AndEnterLetsItThrough()

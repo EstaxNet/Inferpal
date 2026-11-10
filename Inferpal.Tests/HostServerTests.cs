@@ -799,11 +799,10 @@ public partial class HostServerTests
     }
 
     [Fact]
-    public async Task ChatThinking_CarriesTheRollingTail_OnTheAgentPath()
+    public async Task ChatThinking_CarriesNoText_OnTheAgentPathEither()
     {
-        // Reference arm for the previous test: where reasoning IS step progress, the text goes out.
-        // Without this second arm, "no text" would be green even if the text never went out
-        // jamais nulle part.
+        // The agent run's reasoning is no step progress either: its tail, cut mid-word and often quoting the
+        // question back, read as the model's answer landing in the status line. A heartbeat, never the text.
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         h.Fake.DriveThinking = emit => { for (var i = 0; i < 50; i++) emit("etape "); };
@@ -815,9 +814,8 @@ public partial class HostServerTests
         var deadline = DateTime.UtcNow.AddSeconds(30);   // same late delivery as the previous test
         while (h.Target.Thinking.IsEmpty && DateTime.UtcNow < deadline) await Task.Delay(20);
 
-        Assert.NotEmpty(h.Target.Thinking);
-        Assert.All(h.Target.Thinking, note => Assert.False(string.IsNullOrEmpty(note)));
-        Assert.Contains(h.Target.Thinking, note => note!.Contains("etape", StringComparison.Ordinal));
+        Assert.NotEmpty(h.Target.Thinking);   // witness: the heartbeat went out, so "no text" is a measure
+        Assert.All(h.Target.Thinking, Assert.Null);
     }
 
     // ── backend/status: the cut ANNOUNCES itself, and only once ───────────────

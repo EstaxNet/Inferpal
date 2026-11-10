@@ -398,16 +398,14 @@ internal sealed partial class HostServer : IDisposable
         // uses) accumulates, bounds the memory, and emits at most every 120 ms.
         var thinking = new ThinkingPreview();
 
-        // And the TEXT only goes out on the agent path. In plain chat a reasoning model pours out
-        // its whole deliberation - sometimes off-topic - and showing it reads as stray output: we
-        // then send a heartbeat only, and the adapter shows its generic indicator. Same arbitration
-        // as the VM, at the same place in the code.
-        var showReasoningTail = false;
+        // And it carries no TEXT, in any mode: a heartbeat only, and the adapter shows its generic
+        // indicator. The tail of a deliberation, cut mid-word and often quoting the question back,
+        // reads as the model's answer landing in the status line. Same arbitration as the VM.
         void OnThinking(string t)
         {
             reasoning?.Append(t);
-            if (thinking.Append(t) is not { } tail) return;
-            Notify("chat/thinking", new { text = showReasoningTail ? tail : null });
+            if (thinking.Append(t) is null) return;
+            Notify("chat/thinking", new { text = (string?)null });
         }
 
         var questionKept = false;
@@ -451,8 +449,6 @@ internal sealed partial class HostServer : IDisposable
             var mode      = p.CodeAction ? null : TurnMode(s);
             var agentMode = mode is null && TurnIsAgent(s, p.CodeAction, p.AgentMode);
             var useTools  = !p.CodeAction && s.ToolsEnabled;
-            // The reasoning tail is step progress only on the orchestrated path.
-            showReasoningTail = agentMode;
             // The model picked in the chat is the CHAT model: the agent loop and the code actions still route to their
             // configured model first, as in Visual Studio. Resolved BEFORE the context check, which needs the window
             // the server really loaded this model with.

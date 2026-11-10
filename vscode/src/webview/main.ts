@@ -3648,7 +3648,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     }
     case 'thinking':
-      // The tail already carries its emoji; with no tail (plain chat), the generic indicator.
+      // A text, when one comes, carries its emoji; the host sends none, so the generic indicator.
       setStatus(msg.text ? msg.text : t('thinking'));
       break;
     case 'status':

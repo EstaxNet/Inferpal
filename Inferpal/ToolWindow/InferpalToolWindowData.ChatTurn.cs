@@ -567,31 +567,18 @@ internal partial class InferpalToolWindowData
                 ScrollToBottom();
             });
 
-            // Live reasoning preview (see ThinkingPreview): the most recent slice of a thinking
-            // model's chain-of-thought is pushed into the status bubble so a long reasoning phase
-            // reads as "the model is working" instead of a blank bubble. This deliberately never
-            // touches the streaming/answer bubble, so the empty-bubble guards (see bug history)
-            // are unaffected.
+            // Reasoning shows as a generic "thinking" indicator in the status bubble, throttled by ThinkingPreview so the
+            // RPC rate stays bounded. Never the reasoning's text, in any mode: a 160-character tail cut mid-word, which
+            // often quotes the question back, reads as the model's answer landing in the status line. The plan bubble
+            // and the step line say how the run progresses. This never touches the streaming/answer bubble.
             var thinkingPreview = new Services.Presentation.ThinkingPreview();
             void OnThinking(string delta)
             {
                 // Reasoning tokens are generated too — count them so the gauge moves during a long
                 // thinking phase (reasoning models can spend most of a turn here before any answer).
                 CountLive(delta.Length);
-                // Plain chat mode: a reasoning model (qwen3.6…) streams its whole chain-of-thought
-                // into the reasoning channel, and surfacing that raw text in the status reads as
-                // stray "agent" output — it can even be off-topic deliberation, not the answer. Show
-                // a generic "thinking" indicator instead (still proves the model is working), but keep
-                // the throttle so the RPC rate stays bounded. The orchestrated agent path is left
-                // untouched: there the live reasoning tail is genuine step progress.
-                if (!useOrchestrator)
-                {
-                    if (thinkingPreview.Append(delta) is not null)
-                        UpsertStatusBubble("\U0001F4AD " + Strings.StatusThinking);
-                    return;
-                }
-                if (thinkingPreview.Append(delta) is { } text)
-                    UpsertStatusBubble(text);
+                if (thinkingPreview.Append(delta) is not null)
+                    UpsertStatusBubble("\U0001F4AD " + Strings.StatusThinking);
             }
 
             if (useOrchestrator)
