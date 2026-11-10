@@ -294,7 +294,7 @@ the request times out. A central scheduler enforces priority **chat > FIM > embe
 | In-process MEF | `Microsoft.VisualStudio.Shell.15.0`, `Microsoft.VisualStudio.Text.UI.Wpf` |
 | Markdown | Markdig 1.2.0 |
 | Vector store | SQLite WAL (`Microsoft.Data.Sqlite` 8.0.16) |
-| C# analysis | `Microsoft.CodeAnalysis.CSharp` 4.14.0 (Roslyn) |
+| C# analysis | `Microsoft.CodeAnalysis.CSharp` 5.9.0 (Roslyn), read at the newest language it knows |
 | MCP client | Home-grown JSON-RPC 2.0 — stdio + Streamable HTTP (with OAuth 2.1), zero extra dependencies |
 
 **Next:** [Development](development.md) — build it, run it, and add a tool or a language.

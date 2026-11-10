@@ -470,9 +470,10 @@
        else. Absence of a symptom in a component that never ran is not evidence.
 
        ⚠ The two assemblies and nothing more. Roslyn's own dependencies — System.Collections.
-       Immutable, System.Reflection.Metadata, System.Threading.Tasks.Dataflow — are in the host
-       closure (10.0.10) AND in the shared framework; shipping our copies is precisely what 1.6.4
-       did wrong. The satellites stay out too: we parse syntax trees, we never render a localized
+       Immutable and System.Reflection.Metadata at 10.0.0.0, System.Threading.Tasks.Dataflow —
+       come from the host closure (10.0.x, both the .NET 8 and the .NET 10 host); a bare .NET 8
+       shared framework serves 8.0 and cannot load this Roslyn. Shipping our copies is precisely
+       what 1.6.4 did wrong. The satellites stay out too: we parse syntax trees, we never render a localized
        diagnostic.
 
        Verified with the repo's bare-folder harness (extract the VSIX, drop a net8 app with no

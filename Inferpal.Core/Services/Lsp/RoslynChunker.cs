@@ -24,7 +24,7 @@ internal static class RoslynChunker
     {
         try
         {
-            var root    = CSharpSyntaxTree.ParseText(content, path: filePath).GetRoot();
+            var root    = CSharpSyntaxTree.ParseText(content, CSharpParsing.Newest, path: filePath).GetRoot();
             var lines   = content.Split('\n');
             var relPath = Path.GetRelativePath(rootDir, filePath);
             var chunks  = new List<RagChunk>();
@@ -91,18 +91,27 @@ internal static class RoslynChunker
     {
         var typeName = typeDecl.Identifier.Text;
 
+        // ⚠ A C# 14 extension block has no name: chunked as a member, it would be one piece named "Type." over every member
+        // it declares. Its members are the type's API, so they are chunked as the type's own.
+        // ⚠ AsEnumerable: without it `[m]` builds a SyntaxList, which re-roots the node and restarts its lines at 0.
         var members = typeDecl switch
         {
-            TypeDeclarationSyntax td => td.Members.ToList(),
+            TypeDeclarationSyntax td => td.Members
+                .SelectMany(m => m is ExtensionBlockDeclarationSyntax block ? block.Members.AsEnumerable() : [m]).ToList(),
             EnumDeclarationSyntax ed => ed.Members.Cast<MemberDeclarationSyntax>().ToList(),
             _                        => new List<MemberDeclarationSyntax>()
         };
+
+        // The first member of an extension block starts at the block: its receiver line and doc are in no other chunk.
+        static int StartLine(MemberDeclarationSyntax m) =>
+            m.Parent is ExtensionBlockDeclarationSyntax block && ReferenceEquals(block.Members[0], m)
+                ? NodeStartLine(block) : NodeStartLine(m);
 
         if (members.Count > 0)
         {
             // Header chunk: type declaration line (with XML docs/attributes) up to first member
             var typeStart  = NodeStartLine(typeDecl);
-            var firstStart = NodeStartLine(members[0]);
+            var firstStart = StartLine(members[0]);
             var headerEnd  = Math.Min(typeStart + 12, firstStart - 1);
             TryAddChunk(typeName, typeStart, headerEnd, lines, filePath, relPath, chunks);
 
@@ -117,14 +126,14 @@ internal static class RoslynChunker
                 var name = oneLiners.Count == 1
                     ? $"{typeName}.{MemberName(oneLiners[0])}"
                     : $"{typeName}.{MemberName(oneLiners[0])}…{MemberName(oneLiners[^1])}";
-                TryAddChunk(name, NodeStartLine(oneLiners[0]), NodeEndLine(oneLiners[^1], lines),
+                TryAddChunk(name, StartLine(oneLiners[0]), NodeEndLine(oneLiners[^1], lines),
                             lines, filePath, relPath, chunks, minLines: 1);
                 oneLiners.Clear();
             }
 
             foreach (var member in members)
             {
-                var (start, end) = (NodeStartLine(member), NodeEndLine(member, lines));
+                var (start, end) = (StartLine(member), NodeEndLine(member, lines));
                 if (end - start + 1 < MinChunkLines) { oneLiners.Add(member); continue; }
                 FlushOneLiners();
                 TryAddChunk($"{typeName}.{MemberName(member)}", start, end, lines, filePath, relPath, chunks);

@@ -2839,6 +2839,56 @@ public class ConventionCoverageTests
             + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
     }
 
+    // ── 40. Every C# parse reads at a language CSharpParsing chose ────────────
+
+    [Fact]
+    public void EveryCSharpParse_ReadsAtALanguageCSharpParsingChose()
+    {
+        // At Roslyn's default language — neither the project's nor the newest — a C# 14 extension block parses as a
+        // constructor and a C# 15 union as a top-level statement, and C# 14's `field` binds as the keyword in a .NET 8
+        // project: the index chunks, and rename_symbol rewrites, a tree the project's compiler never builds. And a
+        // compilation throws on trees parsed at two language versions.
+        // ⚠ The subject is every Roslyn call that turns text or a node into a tree: on CSharpSyntaxTree or SyntaxFactory,
+        // qualified or not, or bare under a `using static` of either. The options come from CSharpParsing, directly or
+        // through a value named for them (`parsing`, `_parsing`, `s.Parsing`).
+        string[] parsers = ["ParseText", "ParseSyntaxTree", "ParseCompilationUnit", "ParseStatement", "ParseExpression",
+                            "ParseMemberDeclaration", "Create"];
+        var offenders = new List<string>();
+        var parses    = 0;
+        foreach (var file in ProjectSources("Inferpal.Core"))
+        {
+            var root = CSharpSyntaxTree.ParseText(File.ReadAllText(file), path: file).GetRoot();
+            var staticImport = root.DescendantNodes().OfType<UsingDirectiveSyntax>().Any(u =>
+                u.StaticKeyword.IsKind(SyntaxKind.StaticKeyword) && u.Name?.ToString() is { } n
+                && (n.EndsWith("CSharpSyntaxTree", StringComparison.Ordinal) || n.EndsWith("SyntaxFactory", StringComparison.Ordinal)));
+            foreach (var call in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
+            {
+                var roslyn = call.Expression switch
+                {
+                    MemberAccessExpressionSyntax { Name.Identifier.ValueText: var name } access =>
+                        parsers.Contains(name) && access.Expression.ToString() is var receiver
+                        && (receiver.EndsWith("CSharpSyntaxTree", StringComparison.Ordinal)
+                            || (name != "Create" && receiver.EndsWith("SyntaxFactory", StringComparison.Ordinal))),
+                    IdentifierNameSyntax { Identifier.ValueText: var bare } => staticImport && parsers.Contains(bare),
+                    _ => false,
+                };
+                if (!roslyn) continue;
+                parses++;
+                if (!call.ArgumentList.Arguments.Any(a => a.Expression.ToString() is var arg
+                        && (arg.Contains("CSharpParsing.", StringComparison.Ordinal) || Regex.IsMatch(arg, @"\b_?[pP]arsing$"))))
+                    offenders.Add($"{Rel(file)}:{call.GetLocation().GetLineSpan().StartLinePosition.Line + 1}  {Squash(call.ToString())}");
+            }
+        }
+
+        // Witness, under the real count (nine today): the parses really are read, otherwise "no offender" means nothing.
+        Assert.True(parses >= 6, $"Only {parses} C# parse(s) read: the scan measures nothing any more.");
+        Assert.True(offenders.Count == 0,
+            "These parses read C# at Roslyn's default language, which is neither the project's nor the newest: today's C# "
+            + "comes back as a wrong tree. Pass CSharpParsing.Newest (syntax alone) or CSharpParsing.For(root) (what binds "
+            + "or renames). Sites:"
+            + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", offenders));
+    }
+
     /// <summary>The type an implicit <c>new()</c> builds when it is the very value a field, variable or property is
     /// initialized with (nullable or not); <c>null</c> elsewhere — an argument's type is not the declaration's.</summary>
     private static string? DeclaredTypeOf(SyntaxNode node)

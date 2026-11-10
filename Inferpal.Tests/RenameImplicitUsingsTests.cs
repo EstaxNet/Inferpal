@@ -97,13 +97,13 @@ public sealed class RenameImplicitUsingsTests : IDisposable
         WriteRules(implicitUsings: true);
         Write("src/Other/Other.csproj",
             "<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><Using Include=\"Shop\" /><Using Include=\"Xunit\" /></ItemGroup></Project>");
-        var source = CSharpSemanticIndex.ImplicitUsingsTree(_root)!.ToString();
+        var source = CSharpSemanticIndex.ImplicitUsingsTree(_root, CSharpParsing.Newest)!.ToString();
         Assert.Contains("global using global::System.Linq;", source);
         Assert.Contains("global using global::Xunit;", source);
 
         // Reference arm: a project that does not opt in gets nothing it did not write.
         Directory.Delete(Path.Combine(_root, "src/Other"), recursive: true);
         WriteRules(implicitUsings: false);
-        Assert.Null(CSharpSemanticIndex.ImplicitUsingsTree(_root));
+        Assert.Null(CSharpSemanticIndex.ImplicitUsingsTree(_root, CSharpParsing.Newest));
     }
 }

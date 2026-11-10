@@ -41,13 +41,15 @@ internal static class MarkupRename
     /// when it resolved nothing.</param>
     /// <param name="OwnerComponent">The <c>.razor</c> file of the component the member belongs to — the one whose
     /// <c>@code</c> declares it, or whose code-behind does; <c>null</c> when it is no component's.</param>
+    /// <param name="Parsing">The language the workspace's C# compiles (<see cref="CSharpParsing.For"/>): a component's code
+    /// binds at it.</param>
     /// <param name="OwnerShown">That file as the report names it (from the workspace root): two components can share a
     /// name and a folder layout.</param>
     /// <param name="OwnerNamespace">The owner component's namespace; <c>null</c> when it cannot be read.</param>
     /// <param name="Namesakes">The namespaces of the other components that bear the owner's name (<c>null</c> for one
     /// that cannot be read): a tag <c>&lt;X …&gt;</c> is the owner's only where the file sees it and none of them.</param>
     internal sealed record Symbol(string OldName, string NewName, MarkupTarget? Target, string? OwnerComponent,
-                                  string? OwnerShown = null, string? OwnerNamespace = null,
+                                  CSharpParseOptions Parsing, string? OwnerShown = null, string? OwnerNamespace = null,
                                   IReadOnlyList<string?>? Namesakes = null)
     {
         /// <summary>The component's class name: its file name.</summary>
@@ -614,7 +616,7 @@ internal static class MarkupRename
         // An injected name is a property of the component; its type is not read, so a member reached through it stays
         // unresolved and is judged by the type @inject names.
         foreach (var name in injected.Keys) source.Append("public object ").Append(name).Append(" { get; }\n");
-        var declared = segments.Where(seg => seg.Members).Any(seg => DeclaredMembers(seg.Code).Contains(s.OldName));
+        var declared = segments.Where(seg => seg.Members).Any(seg => DeclaredMembers(seg.Code, s.Parsing).Contains(s.OldName));
         // A component whose member lives in its code-behind: the member is declared there, not in this file.
         if (isOwner && s.Target is not { IsType: true } && !declared)
             source.Append("public object ").Append(s.OldName).Append(" { get; set; }\n");
@@ -628,7 +630,7 @@ internal static class MarkupRename
         }
         source.Append("}\n");
 
-        var tree = CSharpSyntaxTree.ParseText(source.ToString());
+        var tree = CSharpSyntaxTree.ParseText(source.ToString(), s.Parsing);
         var compilation = CSharpCompilation.Create("__razor", [tree], Framework,
                                                    new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         var semantic = compilation.GetSemanticModel(tree);
@@ -728,10 +730,10 @@ internal static class MarkupRename
     }
 
     /// <summary>The names of the members a <c>@code</c> block declares, at its top level.</summary>
-    private static HashSet<string> DeclaredMembers(string code)
+    private static HashSet<string> DeclaredMembers(string code, CSharpParseOptions parsing)
     {
         var names = new HashSet<string>(StringComparer.Ordinal);
-        var root = CSharpSyntaxTree.ParseText("class __Razor { " + code + "\n}").GetRoot();
+        var root = CSharpSyntaxTree.ParseText("class __Razor { " + code + "\n}", parsing).GetRoot();
         var type = root.DescendantNodes().OfType<ClassDeclarationSyntax>().First();
         foreach (var member in type.Members)
             switch (member)
@@ -898,7 +900,7 @@ internal static class MarkupRename
     /// The components whose <c>@code</c> or <c>@functions</c> declares a member named <paramref name="name"/>.
     /// </summary>
     public static List<RazorDeclaration> RazorDeclarations(IEnumerable<string> razorFiles, string name,
-                                                           Func<string, string?> read)
+                                                           Func<string, string?> read, CSharpParseOptions parsing)
     {
         var result = new List<RazorDeclaration>();
         foreach (var file in razorFiles)
@@ -912,7 +914,7 @@ internal static class MarkupRename
                 var close = MatchingBrace(text, open);
                 if (close < 0) continue;
                 var code = text[(open + 1)..close];
-                var root = CSharpSyntaxTree.ParseText("class __Razor { " + code + "\n}").GetRoot();
+                var root = CSharpSyntaxTree.ParseText("class __Razor { " + code + "\n}", parsing).GetRoot();
                 foreach (var member in root.DescendantNodes().OfType<MemberDeclarationSyntax>())
                 {
                     SyntaxToken? identifier = member switch

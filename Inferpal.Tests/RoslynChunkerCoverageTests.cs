@@ -74,6 +74,50 @@ public class RoslynChunkerCoverageTests
     }
 
     /// <summary>
+    /// The members of a C# 14 extension block are chunked as the members of the type that holds the block, and a C# 15
+    /// <c>union</c> as a type: read at an older language, the block came back as a constructor and the union as a
+    /// top-level statement.
+    /// </summary>
+    [Fact]
+    public void ExtensionBlocksAndUnions_AreChunkedByMember()
+    {
+        var src = string.Join('\n',
+            "public static class Ext",
+            "{",
+            "    extension(string s)",
+            "    {",
+            "        public bool IsBlank",
+            "            => string.IsNullOrWhiteSpace(s);",
+            "    }",
+            "    /// <summary>Sequences.</summary>",
+            "    extension<T>(IEnumerable<T> e)",
+            "    {",
+            "        public bool None()",
+            "        {",
+            "            return !e.Any();",
+            "        }",
+            "    }",
+            "}",
+            "public union Pet(Cat, Dog)",
+            "{",
+            "    public string Describe()",
+            "        => \"pet\";",
+            "}");
+
+        var chunks = RoslynChunker.Chunk(Path.Combine(Root, "Ext.cs"), src, Root);
+        var names = chunks.Select(c => c.TypeName).ToList();
+
+        Assert.Contains("Ext.IsBlank", names);
+        Assert.Contains("Ext.None", names);
+        Assert.Contains("Pet.Describe", names);
+        Assert.DoesNotContain("Ext.", names);
+        // A block's receiver and doc travel with its first member: they are in no other chunk.
+        var none = chunks.Single(c => c.TypeName == "Ext.None").Content;
+        Assert.Contains("/// <summary>Sequences.</summary>", none, StringComparison.Ordinal);
+        Assert.Contains("extension<T>(IEnumerable<T> e)", none, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Every fallback from a chunker tier to the regex tier <b>says so</b>, and only once.
     /// </summary>
     /// <remarks>

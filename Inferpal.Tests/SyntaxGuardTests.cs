@@ -117,6 +117,20 @@ public class SyntaxGuardTests
     public async Task ACSharpFileTheCompilerAccepts_IsNotRefused(string added) =>
         Assert.Null(await Refusal("A.cs", Ok, added + Ok));
 
+    /// <summary>The C# a project writes today is never refused: C# 14 (.NET 10) and C# 15 (the default of <c>net11.0</c>).
+    /// The witnesses are <see cref="ACSharpEditThatBreaksTheSyntax_IsRefused_WithItsLine"/> (the parser still refuses)
+    /// and <see cref="ASemanticError_IsNeverRefused"/> (an ordinary class passes).</summary>
+    [Theory]
+    [InlineData("class P { public int V; public void operator +=(P o) { V += o.V; } }\n")]   // C# 14
+    [InlineData("static class E\n{\n    extension(string s)\n    {\n        public bool IsBlank => s.Length == 0;\n    }\n}\n")]
+    [InlineData("record Cat; record Dog;\npublic union Pet(Cat, Dog);\n")]                       // C# 15
+    [InlineData("public union Pet(Cat, Dog)\n{\n    public string Name => \"x\";\n}\n")]
+    [InlineData("public closed record class G;\n")]
+    [InlineData("class L { void M() { outer: for (;;) { for (;;) { break outer; } } } }\n")]
+    [InlineData("class L { void M() { outer: for (;;) { for (;;) { continue outer; } } } }\n")]
+    public async Task TodaysCSharp_IsNotRefused(string added) =>
+        Assert.Null(await Refusal("A.cs", Ok, Ok + added));
+
     /// <summary>.NET 10's file-based programs: <c>#:package</c> is read as the SDK reads it.</summary>
     [Fact]
     public async Task AFileBasedProgram_IsNotRefused() =>

@@ -146,7 +146,7 @@ internal sealed record ReferenceResult(
 /// </para>
 /// <para>
 /// <b>No MSBuild.</b> A <see cref="CSharpCompilation"/> is built directly from the parsed files
-/// plus the runtime's reference assemblies — no <c>.csproj</c> parsing, no restore, no
+/// plus the runtime's reference assemblies — the <c>.csproj</c> read for its language and implicit usings only, no restore, no
 /// <c>MSBuildLocator</c>, and no extra package (<c>Microsoft.CodeAnalysis.CSharp</c> is already
 /// referenced for RAG chunking). On this repository: ~620 ms to parse 408 files, ~430 ms to build
 /// the compilation, ~75 MB.
@@ -177,6 +177,15 @@ internal sealed class CSharpSemanticIndex
     private readonly object _gate = new();
     private readonly Dictionary<string, SyntaxTree> _treesByPath = new(Services.PathComparer.Default);
     private CSharpCompilation? _compilation;
+    // The language of the last full build: a file updated since is parsed at it, or the compilation refuses its tree.
+    private CSharpParseOptions _parsing = CSharpParsing.Newest;
+
+    /// <summary>The language this index reads its workspace at (<see cref="CSharpParsing.For"/>), built if needed: what
+    /// renames beside it reads alike.</summary>
+    internal CSharpParseOptions Parsing
+    {
+        get { lock (_gate) { if (_compilation is null) BuildLocked(null); return _parsing; } }
+    }
 
     /// <summary>
     /// The state a query reads, built if needed. Queries must never touch the mutable fields
@@ -230,7 +239,11 @@ internal sealed class CSharpSemanticIndex
     /// <remarks>Called from the file watcher, so a failure here must not disturb re-indexing.</remarks>
     public static void NotifyFileChanged(string path)
     {
-        if (!path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)) return;
+        // ⚠ A project or Directory.Build.props changes the language every tree is read at, and the implicit usings: the
+        // index is rebuilt at its next query — a file parsed at the old language would bind as the project no longer does.
+        var buildFile = path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
+                        || Path.GetFileName(path).Equals("Directory.Build.props", StringComparison.OrdinalIgnoreCase);
+        if (!buildFile && !path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)) return;
 
         CSharpSemanticIndex[] indexes;
         lock (_byRoot) indexes = _byRoot.Values.ToArray();
@@ -246,7 +259,11 @@ internal sealed class CSharpSemanticIndex
             // The full build's exclusions: a history snapshot (.inferpal/history/…_Foo.cs) or an obj/ file
             // added here became a second `class Foo`, and queries answered on the stale copy.
             if (WorkspaceScan.IsExcludedPath(path, root)) continue;
-            try { index.Update(path); }
+            try
+            {
+                if (buildFile) lock (index._gate) index._compilation = null;
+                else index.Update(path);
+            }
             catch (Exception ex) { Diagnostics.Swallow("CSharpSemanticIndex.NotifyFileChanged", ex); }
         }
     }
@@ -349,6 +366,7 @@ internal sealed class CSharpSemanticIndex
     private void BuildLocked(IEnumerable<string>? files)
     {
         _treesByPath.Clear();
+        _parsing = CSharpParsing.For(_root);
 
         foreach (var path in files ?? EnumerateCSharpFiles(_root))
         {
@@ -358,7 +376,7 @@ internal sealed class CSharpSemanticIndex
                 // decodes, and a legacy-encoded file read as UTF-8 does not keep one character per byte (é + NBSP +
                 // » is valid UTF-8, one character for three) — every later offset was off, and the rename refused.
                 var text = Tools.TextFileEncoding.ReadText(path);
-                _treesByPath[path] = CSharpSyntaxTree.ParseText(text, path: path);
+                _treesByPath[path] = CSharpSyntaxTree.ParseText(text, _parsing, path: path);
             }
             catch (Exception ex) { Diagnostics.Swallow($"CSharpSemanticIndex.Parse({Path.GetFileName(path)})", ex); }
         }
@@ -369,7 +387,7 @@ internal sealed class CSharpSemanticIndex
         // rename_symbol renamed the declarations and left that call, and the build broke under "applied". The tree
         // joins the compilation only, never _treesByPath: nothing searches or rewrites it.
         var trees = _treesByPath.Values.ToList();
-        if (ImplicitUsingsTree(_root) is { } implicitUsings) trees.Add(implicitUsings);
+        if (ImplicitUsingsTree(_root, _parsing) is { } implicitUsings) trees.Add(implicitUsings);
 
         _compilation = CSharpCompilation.Create(
             "inferpal.semantic",
@@ -398,7 +416,7 @@ internal sealed class CSharpSemanticIndex
     /// The global usings the build would generate for the projects under <paramref name="root"/>, as a syntax tree;
     /// null when no project asks for any.
     /// </summary>
-    internal static SyntaxTree? ImplicitUsingsTree(string root)
+    internal static SyntaxTree? ImplicitUsingsTree(string root, CSharpParseOptions parsing)
     {
         var namespaces = new SortedSet<string>(StringComparer.Ordinal);
         foreach (var file in WorkspaceScan.EnumerateFiles(root, "*.csproj").Concat(WorkspaceScan.EnumerateFiles(root, "Directory.Build.props")))
@@ -417,7 +435,7 @@ internal sealed class CSharpSemanticIndex
         return namespaces.Count == 0
             ? null
             : CSharpSyntaxTree.ParseText(string.Concat(namespaces.Select(ns => $"global using global::{ns};\n")),
-                                         path: "<implicit global usings>");
+                                         parsing, path: "<implicit global usings>");
     }
 
     /// <summary>
@@ -454,7 +472,7 @@ internal sealed class CSharpSemanticIndex
         }
 
         SyntaxTree newTree;
-        try { newTree = CSharpSyntaxTree.ParseText(Tools.TextFileEncoding.ReadText(path), path: path); }
+        try { newTree = CSharpSyntaxTree.ParseText(Tools.TextFileEncoding.ReadText(path), _parsing, path: path); }
         catch (Exception ex)
         {
             // A file being written to is transiently unreadable; keeping the previous tree is a

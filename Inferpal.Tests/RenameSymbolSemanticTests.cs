@@ -52,6 +52,61 @@ public class RenameSymbolSemanticTests : IDisposable
             => Task.FromResult(true);
     }
 
+    /// <summary>A member of a C# 14 extension block is renamed at its declaration and at its calls; read at an older
+    /// language, the block is a constructor and the member is not one.</summary>
+    [Fact]
+    public async Task AnExtensionBlockMember_IsRenamed_WithItsCalls()
+    {
+        Write("Ext.cs", """
+            namespace App;
+            public static class Ext
+            {
+                extension(string s)
+                {
+                    public int Twice() => s.Length * 2;
+                }
+            }
+            """);
+        Write("Caller.cs", """
+            namespace App;
+            public class Caller
+            {
+                public int Run() => "abc".Twice();
+            }
+            """);
+
+        await RunAsync("Twice", "Double", dryRun: false);
+
+        Assert.Contains("public int Double()", Read("Ext.cs"));
+        Assert.Contains("\"abc\".Double()", Read("Caller.cs"));
+    }
+
+    /// <summary>In a .NET 8 project, a member named <c>field</c> read inside an accessor is that member — C# 14's
+    /// <c>field</c> keyword is not the project's language — and it is renamed there too.</summary>
+    [Fact]
+    public async Task AMemberNamedField_InADotNet8Project_IsRenamedInsideItsAccessors()
+    {
+        Write("App.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup></Project>
+            """);
+        Write("Wrapper.cs", """
+            namespace App;
+            public class Wrapper
+            {
+                private readonly string field = "x";
+                public int Length => field.Length;
+                public string Upper { get { return field.ToUpperInvariant(); } }
+            }
+            """);
+
+        await RunAsync("field", "_text", dryRun: false);
+
+        var text = Read("Wrapper.cs");
+        Assert.Contains("private readonly string _text", text);
+        Assert.Contains("=> _text.Length", text);
+        Assert.Contains("return _text.ToUpperInvariant()", text);
+    }
+
     [Fact]
     public async Task AHomonymInAnotherType_IsNotRenamed()
     {

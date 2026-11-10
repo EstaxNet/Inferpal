@@ -149,7 +149,8 @@ internal sealed class RenameSymbolTool : ITool
         // and this tool writes files. Semantics narrows that to the symbol actually asked for.
         // Members a component declares in its @code are no C# the compiler reads: found by their declaration.
         var markupFiles = files.Where(MarkupRename.IsMarkup).ToList();
-        var razorDecls  = MarkupRename.RazorDeclarations(markupFiles, oldName, ReadOrNull);
+        var parsing     = ParsingOf(root);
+        var razorDecls  = MarkupRename.RazorDeclarations(markupFiles, oldName, ReadOrNull, parsing);
         string? owner   = null;
         Lsp.RenamePlan? plan = null;
         if (declaringFile is not null && declaringFile.EndsWith(".razor", StringComparison.OrdinalIgnoreCase))
@@ -199,7 +200,7 @@ internal sealed class RenameSymbolTool : ITool
                                      && MarkupRename.ComponentName(f) == MarkupRename.ComponentName(owner)
                                      && !PathComparer.Default.Equals(Path.GetFullPath(f), Path.GetFullPath(owner)))
                          .Select(NamespaceOf).ToList();
-        var markup = new MarkupRename.Symbol(oldName, newName, semanticSpans is not null ? plan!.Markup : null, owner,
+        var markup = new MarkupRename.Symbol(oldName, newName, semanticSpans is not null ? plan!.Markup : null, owner, parsing,
                                              owner is null ? null : Path.GetRelativePath(root, owner).Replace('\\', '/'),
                                              owner is null ? null : NamespaceOf(owner), namesakes);
         // A component's member is no symbol of the C# files: they cannot be renamed by its name alone.
@@ -255,7 +256,7 @@ internal sealed class RenameSymbolTool : ITool
                 else
                 {
                     (newContent, count) = isCSharp
-                        ? RenameInCSharp(content, oldName, newName)
+                        ? RenameInCSharp(content, oldName, newName, parsing)
                         : RenameWithRegex(content, oldName, newName);
                 }
 
@@ -525,6 +526,18 @@ internal sealed class RenameSymbolTool : ITool
              + "symbols).";
     }
 
+    /// <summary>The language the semantic index reads <paramref name="root"/> at, so both halves of one rename read alike;
+    /// the projects' own when the index cannot be built.</summary>
+    private static CSharpParseOptions ParsingOf(string root)
+    {
+        try { return Lsp.CSharpSemanticIndex.ForWorkspace(root).Parsing; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("RenameSymbolTool.Parsing", ex);
+            return Lsp.CSharpParsing.For(root);
+        }
+    }
+
     /// <summary>
     /// Tokens to rewrite per file, resolved by the compiler — or null when that is not possible
     /// (no workspace, symbol unresolved, index failure), in which case the caller falls back to
@@ -617,9 +630,9 @@ internal sealed class RenameSymbolTool : ITool
     // ── Roslyn rename (C# only) ────────────────────────────────────────────────
 
     private static (string newContent, int count) RenameInCSharp(
-        string content, string oldName, string newName)
+        string content, string oldName, string newName, CSharpParseOptions parsing)
     {
-        var root = CSharpSyntaxTree.ParseText(content).GetRoot();
+        var root = CSharpSyntaxTree.ParseText(content, parsing).GetRoot();
 
         var tokens = root.DescendantTokens()
             .Where(t => t.IsKind(SyntaxKind.IdentifierToken) && t.ValueText == oldName)

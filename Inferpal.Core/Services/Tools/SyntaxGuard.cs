@@ -124,17 +124,13 @@ internal static class SyntaxGuard
     internal static bool ChecksInProcess(string path) =>
         Path.GetExtension(path).ToLowerInvariant() is ".cs" or ".razor" or ".cshtml";
 
-    // File-based programs (.NET 10's `#:package`, `#:sdk`) read as the SDK reads them.
-    private static readonly CSharpParseOptions CSharpOptions = new CSharpParseOptions(LanguageVersion.Preview)
-        .WithFeatures([new KeyValuePair<string, string>("FileBasedProgram", "true")]);
-
     // Not syntax: `#error` in a branch the project's symbols would turn off (they are not known here), and a file-based
     // program's directive in a file the parser does not take for one.
     private static readonly HashSet<string> NotSyntax = new(StringComparer.Ordinal) { "CS1029", "CS9298" };
 
     private static ParseError? CSharpError(string text)
     {
-        var tree = CSharpSyntaxTree.ParseText(text, CSharpOptions);
+        var tree = CSharpSyntaxTree.ParseText(text, Lsp.CSharpParsing.Newest);
         var d = tree.GetDiagnostics().FirstOrDefault(x => x.Severity == DiagnosticSeverity.Error && !NotSyntax.Contains(x.Id));
         return d is null ? null
             : new ParseError(d.Location.GetLineSpan().StartLinePosition.Line + 1,

@@ -62,6 +62,18 @@ public sealed class CSharpTypeDeclarationTests : IDisposable
                      CSharpTypeDeclarations.Read("class Cache<TKey, TValue> : IDictionary<TKey, TValue>, IEquatable<Cache<TKey, TValue>> where TKey : notnull\n{\n}\n")[0].BaseTypes);
     }
 
+    /// <summary>A C# 15 class or record marked <c>closed</c> is a type; a SQL <c>union</c> in a string is none.</summary>
+    [Fact]
+    public void TheReader_SeesClosedTypes_AndNoTypeInASqlUnion()
+    {
+        var types = CSharpTypeDeclarations.Read(
+            "public closed class Shape { }\npublic closed record class Leaf : Shape;\n"
+            + "class Q\n{\n    const string Sql = @\"select a from t\n    union all select b from u\";\n}\n");
+
+        Assert.Equal(["Shape", "Leaf", "Q"], types.Select(t => t.Name));
+        Assert.Equal(["Shape"], types[1].BaseTypes);
+    }
+
     [Fact]
     public async Task TheMap_ListsPositionalRecords_AndClassesWithAPrimaryConstructor()
     {

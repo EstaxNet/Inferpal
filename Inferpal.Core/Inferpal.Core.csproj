@@ -48,7 +48,7 @@
     <!-- DPAPI for the MCP OAuth token store (Windows-only at runtime; the call sites
          are already guarded). -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.16" />
     <!-- ── Security remediation ─────────────────────────────────────────────
          Microsoft.Data.Sqlite 8.x pulls SQLitePCLRaw 2.1.6, whose bundled native

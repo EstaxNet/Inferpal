@@ -18,7 +18,8 @@ internal static class CSharpTypeDeclarations
 {
     /// <summary>One declaration.</summary>
     /// <param name="Kind">The keyword: <c>class</c>, <c>interface</c>, <c>struct</c>, <c>enum</c> or <c>record</c> (a
-    /// record struct included).</param>
+    /// record struct included). ⚠ Not C# 15's <c>union</c>: a pattern reads <c>union all select</c> in a SQL string as a
+    /// type named <c>all</c>.</param>
     /// <param name="Modifiers">As written: <c>public</c>, <c>sealed</c>, <c>abstract</c>…</param>
     /// <param name="BaseTypes">Simple names of the base list, without type arguments or constructor arguments.</param>
     /// <param name="Index">Where the declaration's line starts in the source.</param>
@@ -28,7 +29,7 @@ internal static class CSharpTypeDeclarations
     // Attributes on the same line, then modifiers, then the keyword and the name: what starts a declaration on its line.
     private const string Head =
         @"^[ \t]*(?:\[[^\]\r\n]*\][ \t]*)*" +
-        @"(?<mods>(?:(?:public|internal|private|protected|file|sealed|abstract|static|partial|readonly|new|unsafe|ref)\s+)*)" +
+        @"(?<mods>(?:(?:public|internal|private|protected|file|sealed|closed|abstract|static|partial|readonly|new|unsafe|ref)\s+)*)" +
         @"(?<kind>class|interface|record|enum|struct)\s+(?:(?:class|struct)\s+)?(?<name>[\p{L}\p{Nl}_]\w*)";
 
     /// <summary>A line that starts a declaration (group <c>name</c>), for readers that walk a file line by line.</summary>
