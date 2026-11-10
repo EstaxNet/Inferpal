@@ -154,7 +154,7 @@
   <data name="ThemeInUse" xml:space="preserve"><value>{0} — 使用中</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>コンテキスト ウィンドウ</value></data>
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama はこのサイズでモデルを読み込みます。80 % を超えると古いメッセージを要約します。0 はモデル既定値。</value></data>
-  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>サーバーが読み込んだウィンドウのほうが小さければ、そちらが使われます。80 % を超えると古いメッセージを要約します。0 はモデル既定値。</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>サーバーが読み込んだウィンドウが使われます。既定値のままなら最大 32,768、ここでサイズを設定した場合はそれを超えません。80 % を超えると古いメッセージを要約します。0 はモデル既定値。</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>常にそのまま残す</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>直近のターン。会話を要約するときもそのまま残します (最大数。長すぎるターンは残りと一緒に要約されます)。</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ コンテキストウィンドウ：古いメッセージ {0} 件を削除 — 最後の {1} ターンを保持。古いコンテキストは失われました。</value></data>

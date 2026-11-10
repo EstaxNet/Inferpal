@@ -157,7 +157,7 @@
   <data name="ThemeInUse" xml:space="preserve"><value>{0} — 使用中</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>上下文窗口</value></data>
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama 按此大小加载模型。超过 80% 时，较早的消息会被总结。0：使用模型自身的默认值。</value></data>
-  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>若服务器加载的窗口更小，则以它为准。超过 80% 时，较早的消息会被总结。0：使用模型自身的默认值。</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>以服务器加载的窗口为准：保持默认值时最多 32,768，设置了大小时不会超过该值。超过 80% 时，较早的消息会被总结。0：使用模型自身的默认值。</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>始终完整保留</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>最近的几轮，在总结对话时完整保留——至多此数：过长的轮次会与其余内容一起总结。</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ 上下文窗口：已删除 {0} 条旧消息 — 保留最近 {1} 轮。更早的上下文已丢失。</value></data>

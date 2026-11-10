@@ -65,14 +65,30 @@ public class LoadedWindowCompactionTests
     }
 
     [Fact]
-    public async Task AModelLoadedLargerThanConfigured_KeepsTheConfiguredWindow()
+    public async Task AModelLoadedLargerThanAWindowThePersonSet_KeepsTheirWindow()
     {
-        // The configured window is the user's own budget (it also sizes Ollama's num_ctx): a larger
-        // loaded window never raises it.
+        // A window the person set is their budget: a larger loaded window never raises it. 5,000 tokens: past 80 % of
+        // their 6,000, well under 80 % of the 32,768 an automatic window would take.
+        var config = Config();
+        config.ContextWindowSize = 6_000;
+        var decision = await ContextManager.PrepareAsync(
+            LongHistory(), config, new FakeInferenceProvider { LoadedContextWindow = 65_536 },
+            lastPromptTokens: 5_000, onStep: null, CancellationToken.None, model: "glm");
+
+        Assert.Equal(6_000, decision.Window);
+        Assert.NotEqual(ContextOutcome.None, decision.Outcome);
+    }
+
+    [Fact]
+    public async Task AModelLoadedLargerThanTheFactoryWindow_IsMeasuredAgainstTheLoadedOne_UpToTheCeiling()
+    {
+        // The factory window is nobody's budget. 7,000 tokens: past 80 % of 8,192, under 80 % of 32,768 — the loaded
+        // 65,536 counts up to the largest window the product sizes itself (ContextWindowChoice.MeasuredCeiling).
         var decision = await ContextManager.PrepareAsync(
             LongHistory(), Config(), new FakeInferenceProvider { LoadedContextWindow = 65_536 },
-            LastPrompt, onStep: null, CancellationToken.None, model: "glm");
+            lastPromptTokens: 7_000, onStep: null, CancellationToken.None, model: "glm");
 
+        Assert.Equal(ContextWindowChoice.MeasuredCeiling, decision.Window);
         Assert.Equal(ContextOutcome.None, decision.Outcome);
     }
 
@@ -118,7 +134,8 @@ public class LoadedWindowCompactionTests
     [Theory]
     [InlineData(4_096,  4_096)]    // loaded smaller: that is the window
     [InlineData(null,   8_192)]    // reference arm: the server cannot say
-    [InlineData(65_536, 8_192)]    // loaded larger: the configured budget stands
+    [InlineData(65_536, 32_768)]   // loaded larger under the factory setting: nobody's budget, the server's window up to
+                                   // the product's ceiling (a window the person set stays theirs: LoadedWindowOverAutomaticTests)
     public async Task TheDecision_CarriesTheWindowItMeasuredAgainst(int? loaded, int expected)
     {
         var decision = await ContextManager.PrepareAsync(

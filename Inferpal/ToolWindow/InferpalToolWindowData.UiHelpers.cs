@@ -30,14 +30,14 @@ internal partial class InferpalToolWindowData
 
     /// <summary>
     /// The window every fill indicator shows (the gauge, X-Ray): the one the last context check
-    /// measured against — the loaded one when the server reports a smaller one — else the configured one.
+    /// measured against (<c>ContextManager.EffectiveWindowAsync</c>: the loaded one when it counts) — else the configured one.
     /// </summary>
     private int ContextWindowInUse => _contextWindowInUse > 0 ? _contextWindowInUse : _config.ContextWindowSize;
 
     /// <summary>
     /// Recomputes the context-window fill indicator from <see cref="_lastPromptTokens"/> and the window
-    /// the last context check measured against — the loaded one when the server reports a smaller one
-    /// than configured, or the gauge shows room while requests are refused. Must be called on the VM thread.
+    /// the last context check measured against — the loaded one when it counts (<c>ContextManager.EffectiveWindowAsync</c>),
+    /// or the gauge shows room while requests are refused. Must be called on the VM thread.
     /// </summary>
     private void UpdateContextBudget()
     {

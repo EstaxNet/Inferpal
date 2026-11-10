@@ -166,13 +166,17 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     // The loaded context window changes only on (un)load, so cache it briefly to avoid a native-API
     // round-trip on every agent iteration. Keyed by model so a mid-session model switch re-probes.
     private readonly object _ctxLock = new();
-    private (string Model, int? Ctx, DateTime At) _ctxCache;
+    private (string Model, int? Ctx, DateTime Until) _ctxCache;
+    private static readonly TimeSpan LoadedWindowLife = TimeSpan.FromSeconds(30);
+    /// <summary>How long "listed, not loaded yet" is kept: long enough for one request's two reads, short enough to read
+    /// the window the server loads the model with at the next one. Per instance, so a test can shorten it.</summary>
+    internal TimeSpan NotLoadedLife { get; set; } = TimeSpan.FromSeconds(5);
 
     /// <inheritdoc/>
     private protected override async Task<int?> GetLoadedContextLengthAsync(string model, CancellationToken ct)
     {
         lock (_ctxLock)
-            if (_ctxCache.Model == model && DateTime.UtcNow - _ctxCache.At < TimeSpan.FromSeconds(30))
+            if (_ctxCache.Model == model && DateTime.UtcNow < _ctxCache.Until)
                 return _ctxCache.Ctx;
 
         int? ctx;
@@ -183,6 +187,16 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             // Prefer the loaded instance of this model; the loaded n_ctx is only meaningful when loaded.
             var match = models.FirstOrDefault(m => m.Loaded && IdMatches(m.Id, model));
             ctx = match.Id is not null ? match.LoadedContextLength : null;
+            // ⚠ Listed but not loaded yet is an answer for a few seconds only: the next request loads it, at a window of
+            // the server's choosing. Kept 30 s, it leaves a run measured against the configured window while the server
+            // has loaded a smaller one. Never a window remembered from an earlier load: a reload by request takes the
+            // model's default settings, and a remembered window too small refuses every request here, before the one
+            // that would load the model is ever sent.
+            if (match.Id is null && models.Any(m => IdMatches(m.Id, model)))
+            {
+                lock (_ctxLock) _ctxCache = (model, null, DateTime.UtcNow + NotLoadedLife);
+                return null;
+            }
         }
         // ⚠ The caller's Stop is a cancellation, never "the server did not say": caught, it was cached as unknown for the
         // next questions, which then took the configured window for the loaded one.
@@ -196,7 +210,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             ctx = null;
         }
 
-        lock (_ctxLock) _ctxCache = (model, ctx, DateTime.UtcNow);
+        lock (_ctxLock) _ctxCache = (model, ctx, DateTime.UtcNow + LoadedWindowLife);
         return ctx;
     }
 

@@ -139,7 +139,7 @@ internal sealed class HostSession : IDisposable
 
     /// <summary>
     /// The window every fill indicator shows (X-Ray, the gauge): the one the last turn was measured
-    /// against — the loaded one when the server reports a smaller one — else the configured one.
+    /// against (<c>ContextManager.EffectiveWindowAsync</c>: the loaded one when it counts) — else the configured one.
     /// </summary>
     public int ContextWindowInUse => LastContextWindow > 0 ? LastContextWindow : Config.ContextWindowSize;
 

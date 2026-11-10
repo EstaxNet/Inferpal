@@ -154,7 +154,7 @@
   <data name="ThemeInUse" xml:space="preserve"><value>{0} — используется</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>Окно контекста</value></data>
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama загружает модель с этим размером. После 80 % старые сообщения сжимаются в сводку. 0 — значение модели.</value></data>
-  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Если окно, загруженное сервером, меньше, учитывается оно. После 80 % старые сообщения сжимаются в сводку. 0 — значение модели.</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Учитывается окно, загруженное сервером: до 32 768, пока здесь значение по умолчанию, и не больше размера, заданного здесь. После 80 % старые сообщения сжимаются в сводку. 0 — значение модели.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Всегда сохранять целиком</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Последние ходы сохраняются целиком при сжатии разговора — не больше этого числа: слишком длинные ходы сжимаются вместе с остальным.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Контекстное окно: удалено {0} старых сообщений — сохранены последние {1} ход(а/ов). Старый контекст потерян.</value></data>

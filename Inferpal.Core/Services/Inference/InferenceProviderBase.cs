@@ -659,9 +659,6 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         // The caller's history (system prompt + conversation + the user's task) is the
         // anchored head — intra-run elision never touches it (see CompactRunContext).
         var anchorCount = messages.Count;
-        // The window the model is really loaded with when the server reports a smaller one — measured
-        // against the configured window alone, a run was refused mid-way while elision waited.
-        var window = await Agent.ContextManager.EffectiveWindowAsync(_config, this, model, ct);
         // The server's count of the last request against its estimate (AgentOrchestrator.ServerScale).
         var scale = 1.0;
 
@@ -673,6 +670,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             // results so the model never silently truncates the head (system prompt + task).
             // No LLM summary on this basic path — that extra call is the orchestrator's.
             var toolTokens = RequestSize.ToolTokens(tools.Definitions);
+            // The window the server really loaded the model with (ContextManager.EffectiveWindowAsync), measured each round:
+            // LM Studio loads a model at the run's first request, at a window of its own, and says which only then.
+            var window = await Agent.ContextManager.EffectiveWindowAsync(_config, this, model, ct);
             AgentOrchestrator.CompactRunContext(messages, anchorCount, window, toolTokens, scale);
 
             // The user's notes, the last text read before the next request; a note restarts the loop count (see the

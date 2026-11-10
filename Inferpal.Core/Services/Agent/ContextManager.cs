@@ -212,14 +212,20 @@ internal static class ContextManager
 
     /// <summary>
     /// The window the conversation is measured against: the configured one, or the one the server
-    /// really loaded <paramref name="model"/> with when that is SMALLER — or when none is configured.
+    /// really loaded <paramref name="model"/> with when that is SMALLER — or when none is configured. When the configured
+    /// one is automatic (<see cref="Inference.ContextWindowChoice.IsAutomatic(int, int)"/>), a LARGER loaded one too, up
+    /// to <see cref="Inference.ContextWindowChoice.MeasuredCeiling"/>.
     /// </summary>
     /// <remarks>
     /// ⚠ LM Studio, vLLM and llama-server load a model with a window of their own choosing and say which
     /// (llama-server's default is 4 096 tokens). Measured against the
     /// configured window alone, a conversation between the two was refused on every request while
     /// compaction waited for a threshold it could never reach — stuck until the user cleared it. A larger
-    /// loaded window never raises the configured one: that is the user's budget (and Ollama's num_ctx).
+    /// loaded window never raises a window the person set: that is their budget. An automatic one — the factory window,
+    /// or the one the product sized for Ollama — is nobody's budget: kept, it compacts a model LM Studio loaded at 32 K,
+    /// and cuts its prompt budgets, as if it had 8 K. It rises no higher than the product sizes a window for Ollama (the
+    /// largest the battery measures): a server loading 128 K would otherwise grow every budget the window scales.
+    /// Ollama reports no loaded window, so its num_ctx stays the setting.
     /// ⚠ A window of 0 means "the model's own default", and a server that says which window it loaded has just
     /// said what that default is: answered 0 here, compaction was switched off while the client still refused
     /// every request past the loaded window — the stuck conversation again, by the other door. 0 stays 0 only
@@ -236,7 +242,11 @@ internal static class ContextManager
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) { Diagnostics.Swallow("ContextManager.EffectiveWindow", ex); }
 
-        return loaded is > 0 && (configured <= 0 || loaded < configured) ? loaded.Value : configured;
+        if (loaded is not > 0) return configured;
+        if (configured <= 0 || loaded < configured) return loaded.Value;
+        return Inference.ContextWindowChoice.IsAutomatic(configured, config.ContextWindowSizeAuto)
+            ? Math.Max(configured, Math.Min(loaded.Value, Inference.ContextWindowChoice.MeasuredCeiling))
+            : configured;
     }
 
     /// <summary>The summarising call, with its own deadline. <c>Text</c> null on any failure, with <c>Failure</c> the

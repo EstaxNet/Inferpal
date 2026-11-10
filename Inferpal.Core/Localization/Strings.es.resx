@@ -157,7 +157,7 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="ThemeInUse" xml:space="preserve"><value>{0} — en uso</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>Ventana de contexto</value></data>
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama carga el modelo con este tamaño. Pasado el 80 %, los mensajes antiguos se resumen. 0: el valor del modelo.</value></data>
-  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Cuenta la ventana que cargó su servidor cuando es más pequeña. Pasado el 80 %, los mensajes antiguos se resumen. 0: el valor del modelo.</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Cuenta la ventana que cargó su servidor: hasta 32.768 mientras este valor siga por defecto, nunca por encima de un tamaño que fije. Pasado el 80 %, los mensajes antiguos se resumen. 0: el valor del modelo.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Conservar siempre completos</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Los últimos turnos, conservados enteros al resumir la conversación — como máximo: los turnos demasiado largos se resumen con el resto.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Ventana de contexto: se eliminaron {0} mensaje(s) antiguo(s) — se conservan los últimos {1} turno(s). El contexto anterior se ha perdido.</value></data>

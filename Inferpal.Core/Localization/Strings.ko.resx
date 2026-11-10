@@ -154,7 +154,7 @@
   <data name="ThemeInUse" xml:space="preserve"><value>{0} — 사용 중</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>컨텍스트 창</value></data>
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama는 이 크기로 모델을 불러옵니다. 80 %를 넘으면 오래된 메시지를 요약합니다. 0: 모델 기본값.</value></data>
-  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>서버가 불러온 창이 더 작으면 그 크기를 따릅니다. 80 %를 넘으면 오래된 메시지를 요약합니다. 0: 모델 기본값.</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>서버가 불러온 창 크기를 따릅니다. 기본값이면 최대 32,768이며, 여기서 크기를 지정하면 그 크기를 넘지 않습니다. 80 %를 넘으면 오래된 메시지를 요약합니다. 0: 모델 기본값.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>항상 그대로 유지</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>최근 차례들. 대화를 요약할 때 그대로 유지합니다(최대 개수이며, 너무 긴 차례는 나머지와 함께 요약됩니다).</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ 컨텍스트 창: 오래된 메시지 {0}개 제거 — 마지막 {1}개 턴 유지. 이전 컨텍스트는 손실되었습니다.</value></data>

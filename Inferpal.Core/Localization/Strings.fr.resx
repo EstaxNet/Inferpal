@@ -157,7 +157,7 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="ThemeInUse" xml:space="preserve"><value>{0} — utilisé</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>Fenêtre de contexte</value></data>
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama charge le modèle avec cette taille. Au-delà de 80 %, les anciens messages sont résumés. 0 : la valeur du modèle.</value></data>
-  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>La fenêtre chargée par votre serveur compte quand elle est plus petite. Au-delà de 80 %, les anciens messages sont résumés. 0 : la valeur du modèle.</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>La fenêtre chargée par votre serveur compte : jusqu'à 32 768 tant que ce réglage reste par défaut, jamais au-delà d'une taille que vous fixez. Au-delà de 80 %, les anciens messages sont résumés. 0 : la valeur du modèle.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Toujours garder entiers</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Les derniers tours, gardés entiers quand la conversation est résumée — au plus : les tours trop longs sont résumés avec le reste.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Fenêtre de contexte : {0} ancien(s) message(s) supprimé(s) — conservation des {1} derniers tours. Le contexte plus ancien est perdu.</value></data>

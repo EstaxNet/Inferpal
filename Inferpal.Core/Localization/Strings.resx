@@ -158,7 +158,7 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="ThemeInUse" xml:space="preserve"><value>{0} — in use</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>Context window</value></data>
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama loads the model with this size. Older messages are summarized past 80 %. 0: the model's own default.</value></data>
-  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>The window your server loaded counts when it is smaller. Older messages are summarized past 80 %. 0: the model's own default.</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Your server's loaded window counts: up to 32,768 while this is left at its default, never more than a size you set. Older messages are summarized past 80 %. 0: the model's own default.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Always keep whole</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>The last turns, kept whole when the conversation is summarized — at most: turns too long to fit are summarized with the rest.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Context window: removed {0} old message(s) — keeping last {1} turn(s). Older context is lost.</value></data>

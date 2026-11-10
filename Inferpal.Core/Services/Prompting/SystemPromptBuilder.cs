@@ -47,8 +47,8 @@ internal enum PromptPlacement
 /// <c>memory.md</c>, <c>notes.md</c>) → glob-scoped rules.
 /// Extracted from the tool-window VM so the layering is unit-testable without VS.
 /// </summary>
-/// <param name="contextWindow">The window the prompt is sent into, when the front-end knows a smaller one than the
-/// configured window — the one the server really loaded (<c>ContextWindowInUse</c>). 0 = the configured one.</param>
+/// <param name="contextWindow">The window the prompt is sent into, when the front-end has measured one — the window in
+/// use (<c>ContextWindowInUse</c>, from <c>ContextManager.EffectiveWindowAsync</c>). 0 = the configured one.</param>
 /// <param name="workspaceRoot">The root the file tools confine to, stated to the model; null or empty when none is
 /// pinned. ⚠ Never a guessed root (the view model's <c>FindProjectRoot</c> falls back to the process's directory):
 /// a root the tools refuse is worse than none.</param>
@@ -414,8 +414,8 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// pins, context, memory, notes, rules), and in agent mode the tool definitions already take about 4 900 tokens
     /// of it. The request then overflows on every question — refused by LM Studio, cut at the head by Ollama,
     /// system prompt first — and compaction cannot help: the system prompt is never compacted. The window is the one
-    /// the front-end passes (the smaller of the configured and the loaded one, once a turn has measured it), else
-    /// the configured one.
+    /// the front-end passes (the window in use, <c>ContextManager.EffectiveWindowAsync</c>, once a turn has measured it),
+    /// else the configured one.
     /// </remarks>
     internal static int FileSectionsBudget(int contextWindow) =>
         contextWindow > 0 ? contextWindow : DefaultContextWindow;

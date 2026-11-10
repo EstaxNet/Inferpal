@@ -208,6 +208,16 @@ public class DiagnosticsCommandHandlerTests : IDisposable
         Assert.Contains("not configured (the server's default), size not reported by the server", bundle);
     }
 
+    /// <summary>The window in use can be LARGER than the configured one: an automatic window takes the one the server
+    /// loaded (<c>ContextManager.EffectiveWindowAsync</c>). Named too, or the report points at the setting.</summary>
+    [Fact]
+    public void Export_NamesTheLoadedWindow_WhenItIsLargerThanTheConfiguredOne()
+    {
+        var bundle = DiagnosticsCommandHandler.Handle(Cmd("export"), Ctx() with { WindowInUse = 32_664 }).CopyToClipboard!;
+
+        Assert.Contains("8192 tokens configured, **32664 loaded by the server**", bundle);
+    }
+
     [Theory]
     [InlineData(0)]         // no turn has measured it yet
     [InlineData(8_192)]     // the configured one: nothing more to say

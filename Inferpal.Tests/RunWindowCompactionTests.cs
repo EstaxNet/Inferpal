@@ -21,7 +21,10 @@ public class RunWindowCompactionTests
     /// <summary>The production client's agent loop, with its model turns and its loaded window scripted.</summary>
     /// <param name="countFactor">When above 0, the server counts each request at this many times its chars/4 estimate
     /// (about 2 for Japanese or Chinese text); 0, it counts nothing.</param>
-    private sealed class Scripted(int? loaded, int toolTurns, InferpalConfig config, double countFactor = 0) : OpenAiCompatibleClient(config)
+    /// <param name="loadedOnceAsked">When set, the window the server reports once it has served a request: LM Studio loads
+    /// the model at the first one, and says nothing before.</param>
+    private sealed class Scripted(int? loaded, int toolTurns, InferpalConfig config, double countFactor = 0,
+                                  int? loadedOnceAsked = null) : OpenAiCompatibleClient(config)
     {
         private int _calls;
         public List<int> ElidedPerRequest { get; } = [];
@@ -45,7 +48,8 @@ public class RunWindowCompactionTests
                 : new ChatTurnResult("done", null, 0, counted));
         }
 
-        public override Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct) => Task.FromResult(loaded);
+        public override Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct) =>
+            Task.FromResult(_calls > 0 && loadedOnceAsked is not null ? loadedOnceAsked : loaded);
     }
 
     /// <summary>Each read returns ~1,000 tokens: five of them pass 80 % of 4,096, not of 8,192.</summary>
@@ -78,6 +82,21 @@ public class RunWindowCompactionTests
 
         Assert.True(elided.Count >= 6, $"only {elided.Count} model turn(s)");   // witness: the run went on
         Assert.True(elided.Max() > 0, "no tool result was elided before the loaded window filled up");
+    }
+
+    /// <summary>
+    /// ⚠ LM Studio loads the model at the run's first request, at a window of its own, and says which only then: measured
+    /// once before that request, the whole run is held to the configured window while the server has loaded a smaller one.
+    /// </summary>
+    [Fact]
+    public async Task TheBasicLoop_ElidesAgainstAWindowTheServerSaysOnlyOnceItLoadedTheModel()
+    {
+        var client = new Scripted(loaded: null, toolTurns: 6, Config(), loadedOnceAsked: 4_096);
+        await client.RunAgentAsync("m", [new ChatMessageDto("system", "s"), new ChatMessageDto("user", "read")],
+                                   new BigReads(), onStep: _ => { }, onToken: null, CancellationToken.None);
+
+        Assert.True(client.ElidedPerRequest.Count >= 6, $"only {client.ElidedPerRequest.Count} model turn(s)");   // witness
+        Assert.True(client.ElidedPerRequest.Max() > 0, "the run kept the window measured before the model was loaded");
     }
 
     [Fact]

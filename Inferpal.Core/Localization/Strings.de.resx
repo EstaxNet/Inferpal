@@ -154,7 +154,7 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="ThemeInUse" xml:space="preserve"><value>{0} — aktiv</value></data>
   <data name="LabelContextWindowSize" xml:space="preserve"><value>Kontextfenster</value></data>
   <data name="HintContextWindowSize" xml:space="preserve"><value>Ollama lädt das Modell mit dieser Größe. Ab 80 % werden ältere Nachrichten zusammengefasst. 0: die Vorgabe des Modells.</value></data>
-  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Das vom Server geladene Fenster zählt, wenn es kleiner ist. Ab 80 % werden ältere Nachrichten zusammengefasst. 0: die Vorgabe des Modells.</value></data>
+  <data name="HintContextWindowSizeClientTrim" xml:space="preserve"><value>Das vom Server geladene Fenster zählt: bis 32.768, solange dieser Wert auf der Vorgabe steht, nie über eine hier festgelegte Größe hinaus. Ab 80 % werden ältere Nachrichten zusammengefasst. 0: die Vorgabe des Modells.</value></data>
   <data name="LabelContextWindowKeepTurns" xml:space="preserve"><value>Immer vollständig behalten</value></data>
   <data name="HintContextWindowKeepTurns" xml:space="preserve"><value>Die letzten Durchgänge, beim Zusammenfassen ganz behalten — höchstens: zu lange Durchgänge werden mit dem Rest zusammengefasst.</value></data>
   <data name="MsgContextTruncated" xml:space="preserve"><value>⚠ Kontextfenster: {0} alte Nachricht(en) entfernt – letzte {1} Runde(n) behalten. Älterer Kontext ist verloren.</value></data>
