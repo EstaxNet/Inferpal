@@ -96,19 +96,21 @@ internal sealed class AgentOrchestrator
         && result != Strings.WebSearchRefused
         && !SemanticSearchTool.IsProvisional(result);
 
-    /// <summary>The plan request, followed by the names of the tools the run can call.</summary>
+    /// <summary>The plan request for <paramref name="task"/> (quoted when there is one), followed by the names of the
+    /// tools the run can call.</summary>
     /// <remarks>
     /// ⚠ The plan's JSON asks for a "tool" per step, and the planning call carries no tools: without the names a
     /// model plans tools it cannot see — <c>search_code</c>, <c>list_directory</c> — and the ACT phase, which reads
     /// its own plan, calls them. Names only: the schemas travel with every ACT request. The line is structural,
     /// like the tool names themselves, so it is not localized.
     /// </remarks>
-    internal static string PlanPrompt(IToolRegistry tools) =>
-        tools.Definitions.Count == 0
+    internal static string PlanPrompt(IToolRegistry tools, string task) =>
+        (task.Length == 0 ? string.Empty : ModelPrompts.AgentPlanFor(task))
+        + (tools.Definitions.Count == 0
             ? ModelPrompts.AgentPlanPrompt
             : ModelPrompts.AgentPlanPrompt + "\nTools you can call (use these names for \"tool\"): "
               + string.Join(", ", tools.Definitions.Select(d => d.Function.Name)) + "."
-              + (tools.Definitions.Any(d => d.Function.Name == "rename_symbol") ? "\n" + ModelPrompts.AgentPlanRename : string.Empty);
+              + (tools.Definitions.Any(d => d.Function.Name == "rename_symbol") ? "\n" + ModelPrompts.AgentPlanRename : string.Empty));
 
     /// <summary>
     /// Whether a tool-call batch may run concurrently: more than one call and every call is a read its tool declares safe
@@ -935,7 +937,7 @@ internal sealed class AgentOrchestrator
 
         // Build a separate message list for the planning call: we append the
         // plan-request as a new user message so the original user turn is preserved.
-        var planPrompt   = PlanPrompt(tools);
+        var planPrompt   = PlanPrompt(tools, userTask);
         var planMessages = new List<ChatMessageDto>(messages)
         {
             new ChatMessageDto("user", planPrompt),

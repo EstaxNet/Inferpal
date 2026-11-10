@@ -64,7 +64,7 @@ public class LoopedReplyIsNotKeptTests
     {
         Assert.True(client.SeenMessages.Count >= 2, "the run never got past its plan");               // witness
         var act  = client.SeenMessages[1];
-        var plan = act.FindIndex(m => m.Role == "user" && m.Content == AgentOrchestrator.PlanPrompt(new ReadRegistry()));
+        var plan = act.FindIndex(m => m.Role == "user" && m.Content == AgentOrchestrator.PlanPrompt(new ReadRegistry(), "Create utils/date.js"));
         Assert.True(plan >= 0, "no plan request in the first ACT request");                         // witness
         Assert.Equal("assistant", act[plan + 1].Role);
         return act[plan + 1].Content ?? string.Empty;

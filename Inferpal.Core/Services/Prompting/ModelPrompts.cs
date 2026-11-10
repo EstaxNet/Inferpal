@@ -108,6 +108,13 @@ internal static class ModelPrompts
         return sb.ToString().TrimEnd();
     }
 
+    /// <summary>
+    /// Ahead of <see cref="AgentPlanPrompt"/>: the request to plan, quoted. Without it, a plan request after a
+    /// conversation reads as one for the earlier, bigger task — a small model re-plans it and redoes it.
+    /// </summary>
+    public static string AgentPlanFor(string task) =>
+        "Plan my most recent request, which was: \"" + task + "\" — not an earlier request from this conversation.\n";
+
     /// <summary>User message asking the model for a JSON plan (AgentOrchestrator.PlanPrompt appends the tool names).</summary>
     public const string AgentPlanPrompt =
         "Before using any tools, output ONLY a JSON object with the following structure (no prose, no markdown fences):\n"

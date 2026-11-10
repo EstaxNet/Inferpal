@@ -271,7 +271,7 @@ public class AgentLoopRegressionTests
             new StubRegistry("web_search"), second);
 
         var plan = HistoryCompaction.Decide(
-            run2.UpdatedHistory, contextWindowSize: 1000, lastPromptTokens: 900,
+            run2.UpdatedHistory, contextWindowSize: 2000, lastPromptTokens: 1800,
             keepTurnsConfig: 2, kvAnchorMessages: 0, compactionEnabled: false);
 
         Assert.DoesNotContain(HistoryCompaction.SliceToCompact(run2.UpdatedHistory, plan),

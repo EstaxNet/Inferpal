@@ -13,6 +13,9 @@ namespace Inferpal.Tests;
 //  Its JSON asks for a "tool" per step, and the planning call carries no tools: a model then plans
 //  tools it cannot see (search_code, list_directory) and the ACT phase, reading its own plan, calls
 //  them. Given the names, the plans name the real tools.
+//
+//  And it quotes the request to plan: after a conversation, a plan request that does not reads as
+//  one for the earlier, bigger task, and a small model (Granite 4.2 8B) re-plans it and redoes it.
 // ──────────────────────────────────────────────────────────────────────────────────────────────
 public sealed class PlanPromptToolNamesTests
 {
@@ -41,11 +44,13 @@ public sealed class PlanPromptToolNamesTests
         public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct) => Task.FromResult("result");
     }
 
-    private static async Task<RecordingClient> RunAsync(IToolRegistry tools)
+    private const string Question = "Rename Cart.ComputeTotal.";
+
+    private static async Task<RecordingClient> RunAsync(IToolRegistry tools, List<ChatMessageDto>? history = null)
     {
         var client = new RecordingClient();
         await new AgentOrchestrator(client, new InferpalConfig { ContextWindowSize = 8192, CompactionEnabled = false, AgentMaxIterations = 3 })
-            .RunAsync(model: "m", history: [new ChatMessageDto("user", "Rename Cart.ComputeTotal.")], tools: tools,
+            .RunAsync(model: "m", history: history ?? [new ChatMessageDto("user", Question)], tools: tools,
                       onStep: _ => { }, onToken: null, onPlanReady: null, onStepUpdate: null,
                       onToolExecuted: null, onStreamReset: null, ct: CancellationToken.None);
         return client;
@@ -57,7 +62,7 @@ public sealed class PlanPromptToolNamesTests
         var client = await RunAsync(new Registry("read_file", "search_in_files", "rename_symbol"));
 
         var plan = client.Requests[0][^1].Content!;
-        Assert.StartsWith(ModelPrompts.AgentPlanPrompt, plan, StringComparison.Ordinal);             // witness: the plan request
+        Assert.StartsWith(ModelPrompts.AgentPlanFor(Question) + ModelPrompts.AgentPlanPrompt, plan, StringComparison.Ordinal); // witness: the plan request
         Assert.Contains("Tools you can call (use these names for \"tool\"): read_file, search_in_files, rename_symbol.",
                         plan, StringComparison.Ordinal);
         Assert.True(client.Requests.Count > 1);
@@ -70,6 +75,21 @@ public sealed class PlanPromptToolNamesTests
         // Reference arm: no "Tools you can call:" line naming nothing.
         var client = await RunAsync(new Registry());
 
-        Assert.Equal(ModelPrompts.AgentPlanPrompt, client.Requests[0][^1].Content);
+        Assert.Equal(ModelPrompts.AgentPlanFor(Question) + ModelPrompts.AgentPlanPrompt, client.Requests[0][^1].Content);
+    }
+
+    [Fact]
+    public async Task AfterAnEarlierQuestion_ThePlanRequestQuotesTheLatestOne()
+    {
+        var client = await RunAsync(new Registry("read_file", "write_file"),
+        [
+            new("user", "Create a file named note.txt containing hello, then read it back."),
+            new("assistant", "note.txt contains hello."),
+            new("user", "Reply with the single word: ready."),
+        ]);
+
+        var plan = client.Requests[0][^1].Content!;
+        Assert.StartsWith(ModelPrompts.AgentPlanFor("Reply with the single word: ready."), plan, StringComparison.Ordinal);
+        Assert.DoesNotContain("note.txt", plan, StringComparison.Ordinal);
     }
 }

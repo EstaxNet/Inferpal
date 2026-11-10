@@ -237,8 +237,8 @@ public sealed class RenameThroughTheRightToolTests : IDisposable
     [Fact]
     public void ThePlan_NamesRenameSymbol_OnlyWhenItIsOffered()
     {
-        Assert.EndsWith(ModelPrompts.AgentPlanRename, AgentOrchestrator.PlanPrompt(new Names("read_file", "rename_symbol")));
-        Assert.DoesNotContain(ModelPrompts.AgentPlanRename, AgentOrchestrator.PlanPrompt(new Names("read_file")));
+        Assert.EndsWith(ModelPrompts.AgentPlanRename, AgentOrchestrator.PlanPrompt(new Names("read_file", "rename_symbol"), "Rename Foo."));
+        Assert.DoesNotContain(ModelPrompts.AgentPlanRename, AgentOrchestrator.PlanPrompt(new Names("read_file"), "Rename Foo."));
     }
 
     private sealed class Names(params string[] names) : IToolRegistry
