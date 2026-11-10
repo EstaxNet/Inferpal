@@ -75,6 +75,7 @@
     <Compile Remove="VsWindowHarness.cs" />
     <Compile Remove="VsWindowRunsUnderTestTests.cs" />
     <Compile Remove="RootlessStartTests.cs" />
+    <Compile Remove="ServerSwitchWithoutRestartTests.cs" />
     <Compile Remove="GlobalUsings.Windows.cs" />
   </ItemGroup>
 
