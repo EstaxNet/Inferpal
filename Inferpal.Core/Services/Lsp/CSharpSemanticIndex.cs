@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -916,8 +917,60 @@ internal sealed class CSharpSemanticIndex
             try { refs.Add(MetadataReference.CreateFromFile(path)); }
             catch (Exception ex) { Diagnostics.Swallow("CSharpSemanticIndex.MetadataReference", ex); }
         }
+        if (refs.Count == 0) refs.AddRange(InMemoryFrameworkReferences(FrameworkNamesOf(Assembly.GetEntryAssembly())));
+        // ⚠ Said, never silent: without them `.ToList()` binds to nothing, and rename_symbol misses every call made through
+        // a .NET type while it reports the rename applied.
+        if (refs.Count == 0)
+            Diagnostics.RecordOnce("CSharpSemanticIndex.MetadataReference",
+                "No .NET framework reference could be read: the C# analysis binds no framework type, and rename_symbol or "
+                + "impact analysis can miss the calls made through one.", "none");
         return refs;
     }, LazyThreadSafetyMode.ExecutionAndPublication);
+
+    /// <summary>The framework's assembly names a one-file executable carries (<c>framework-assemblies.txt</c>, written by
+    /// <c>Inferpal.Host.csproj</c>); none for any other.</summary>
+    internal static IReadOnlyList<string> FrameworkNamesOf(Assembly? entry)
+    {
+        using var stream = entry?.GetManifestResourceStream("framework-assemblies.txt");
+        if (stream is null) return [];
+        using var reader = new StreamReader(stream);
+        return [.. reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
+    }
+
+    /// <summary>
+    /// The framework as references read from the assemblies loaded IN MEMORY: what stands in for the files a one-file
+    /// executable does not have (<c>TRUSTED_PLATFORM_ASSEMBLIES</c> is empty there). Each name is loaded, then every
+    /// assembly it references, and each one's metadata — mapped from the executable, never released while the process
+    /// lives — is handed to Roslyn as is.
+    /// </summary>
+    /// <remarks>⚠ The references too: the names come from what the host compiles against, which holds no
+    /// <c>System.Private.*</c>, and the facades forward types there — <c>Uri</c> to System.Private.Uri, <c>XDocument</c> to
+    /// System.Private.Xml.Linq. Without them those types do not bind, and a call made through one is missed.</remarks>
+    internal static IReadOnlyList<MetadataReference> InMemoryFrameworkReferences(IReadOnlyList<string> names)
+    {
+        var refs = new List<MetadataReference>();
+        if (names.Count == 0) return refs;
+        var seen  = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var queue = new Queue<AssemblyName>(names.Prepend(typeof(object).Assembly.GetName().Name!).Select(n => new AssemblyName(n)));
+        while (queue.TryDequeue(out var name))
+        {
+            if (name.Name is null || !seen.Add(name.Name)) continue;
+            try
+            {
+                var assembly = Assembly.Load(name);
+                if (InMemoryReference(assembly) is { } reference) refs.Add(reference);
+                foreach (var referenced in assembly.GetReferencedAssemblies()) queue.Enqueue(referenced);
+            }
+            // Every failure, as the files' loop: this runs inside a Lazy, which would keep an escaped exception for good.
+            catch (Exception ex) { Diagnostics.Swallow("CSharpSemanticIndex.InMemoryReference", ex); }
+        }
+        return refs;
+    }
+
+    private static unsafe MetadataReference? InMemoryReference(Assembly assembly) =>
+        System.Reflection.Metadata.AssemblyExtensions.TryGetRawMetadata(assembly, out var blob, out var length)
+            ? AssemblyMetadata.Create(ModuleMetadata.CreateFromMetadata((IntPtr)blob, length)).GetReference()
+            : null;
 
     /// <summary>
     /// C# files under <paramref name="root"/>, common exclusions applied.

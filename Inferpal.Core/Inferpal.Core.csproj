@@ -14,6 +14,9 @@
          Localization/Strings resources their Inferpal.Localization.* names). -->
     <RootNamespace>Inferpal</RootNamespace>
     <AssemblyName>Inferpal.Core</AssemblyName>
+    <!-- One unsafe member: CSharpSemanticIndex reads an assembly's metadata in memory (TryGetRawMetadata hands a
+         pointer), the only way to the framework inside a one-file executable. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">

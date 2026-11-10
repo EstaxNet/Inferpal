@@ -265,8 +265,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
                     await SendAsync(response, 200, "text/html; charset=utf-8", Page());
                     return;
                 case ("GET", _) when WebFiles.TryGetValue(rest, out var type):
-                    var file = Path.Combine(_webDir, rest);
-                    if (File.Exists(file)) await SendAsync(response, 200, type, await File.ReadAllBytesAsync(file));
+                    if (await ReadWebFileAsync(_webDir, rest) is { } bytes) await SendAsync(response, 200, type, bytes);
                     else await SendAsync(response, 404, "text/plain; charset=utf-8", "Not found");
                     return;
                 case ("POST", "rpc"):
@@ -413,8 +412,43 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
     /// <summary>Where the page's files are: <c>web</c> beside the executable.</summary>
     internal static string DefaultWebDir => Path.Combine(AppContext.BaseDirectory, "web");
 
-    /// <summary>Whether <paramref name="webDir"/> holds every file the page loads.</summary>
-    internal static bool HasItsFiles(string webDir) => WebFiles.Keys.All(name => File.Exists(Path.Combine(webDir, name)));
+    /// <summary>Whether every file the page loads can be read (<see cref="ReadWebFileAsync"/>).</summary>
+    /// <param name="builtIn">Opens a file built into the executable, <c>null</c> when none (test seam; default: its
+    /// resources).</param>
+    internal static bool HasItsFiles(string webDir, Func<string, Stream?>? builtIn = null) =>
+        WebFiles.Keys.All(name => HasBuiltIn(name, builtIn) || File.Exists(Path.Combine(webDir, name)));
+
+    /// <summary>The page's file <paramref name="name"/>: built into the executable, else from <paramref name="webDir"/>;
+    /// <c>null</c> when neither has it.</summary>
+    /// <remarks>Built in first: the ACP archive is ONE executable with the files inside (<c>Inferpal.Host.csproj</c>), and
+    /// a <c>web\</c> left beside it by an earlier version, extracted to the same folder, would serve an older form to
+    /// this host. A build that embeds nothing — the VS Code VSIX, a folder build — reads <c>web\</c>.</remarks>
+    /// <param name="builtIn">Opens a file built into the executable, <c>null</c> when none (test seam; default: its
+    /// resources).</param>
+    internal static async Task<byte[]?> ReadWebFileAsync(string webDir, string name, Func<string, Stream?>? builtIn = null)
+    {
+        await using (var stream = (builtIn ?? OpenBuiltIn)(name))
+        {
+            if (stream is not null)
+            {
+                using var copy = new MemoryStream();
+                await stream.CopyToAsync(copy);
+                return copy.ToArray();
+            }
+        }
+        var file = Path.Combine(webDir, name);
+        return File.Exists(file) ? await File.ReadAllBytesAsync(file) : null;
+    }
+
+    private static bool HasBuiltIn(string name, Func<string, Stream?>? builtIn)
+    {
+        if (builtIn is null) return typeof(SettingsWindowServer).Assembly.GetManifestResourceInfo("web/" + name) is not null;
+        using var stream = builtIn(name);
+        return stream is not null;
+    }
+
+    private static Stream? OpenBuiltIn(string name) =>
+        typeof(SettingsWindowServer).Assembly.GetManifestResourceStream("web/" + name);
 
     /// <summary>Opens <paramref name="url"/> in the system's browser; <c>false</c> when none could be started.</summary>
     internal static bool OpenInBrowser(string url)

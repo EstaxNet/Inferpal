@@ -226,6 +226,55 @@ public sealed class SettingsWindowTests : IAsyncLifetime
         finally { Directory.Delete(empty, recursive: true); }
     }
 
+    // ── The page's files: beside the executable, or inside it (the ACP archive is one file) ───────────────────────────
+
+    private static Stream? BuiltIn(string name) => new MemoryStream(Encoding.UTF8.GetBytes("built-in " + name));
+
+    [Fact]
+    public async Task WithoutAWebFolder_ThePageReadsTheFilesBuiltIntoTheExecutable()
+    {
+        var empty = Directory.CreateTempSubdirectory("inferpal-settings-noweb").FullName;
+        try
+        {
+            Assert.True(SettingsWindowServer.HasItsFiles(empty, BuiltIn));
+            Assert.Equal("built-in settings-standalone.js",
+                         Encoding.UTF8.GetString((await SettingsWindowServer.ReadWebFileAsync(empty, "settings-standalone.js", BuiltIn))!));
+        }
+        finally { Directory.Delete(empty, recursive: true); }
+    }
+
+    [Fact]
+    public async Task FilesBuiltIntoTheExecutable_WinOverAWebFolderLeftBesideIt()
+    {
+        // The one-file archive extracted where an earlier version left web\: that older form must not reach this host.
+        Assert.Equal("built-in settings-standalone.js",
+                     Encoding.UTF8.GetString((await SettingsWindowServer.ReadWebFileAsync(_web, "settings-standalone.js", BuiltIn))!));
+    }
+
+    [Fact]
+    public async Task ABuildThatEmbedsNothing_ReadsTheWebFolder()
+    {
+        // The VS Code VSIX and a folder build ship web\ and no resource: what they serve does not change.
+        Assert.Equal("window.formLoaded = true;",
+                     Encoding.UTF8.GetString((await SettingsWindowServer.ReadWebFileAsync(_web, "settings-standalone.js", _ => null))!));
+        Assert.Equal("window.formLoaded = true;",
+                     Encoding.UTF8.GetString((await SettingsWindowServer.ReadWebFileAsync(_web, "settings-standalone.js"))!));
+    }
+
+    [Fact]
+    public async Task NeitherAFolderNorBuiltInFiles_IsMissing()
+    {
+        var empty = Directory.CreateTempSubdirectory("inferpal-settings-noweb").FullName;
+        try
+        {
+            Assert.False(SettingsWindowServer.HasItsFiles(empty, _ => null));
+            Assert.Null(await SettingsWindowServer.ReadWebFileAsync(empty, "settings.css", _ => null));
+            // An ordinary build embeds nothing: the default is the same as no built-in file.
+            Assert.False(SettingsWindowServer.HasItsFiles(empty));
+        }
+        finally { Directory.Delete(empty, recursive: true); }
+    }
+
     // ── One form, one bridge: the sources ─────────────────────────────────────────────────────────────────────────
 
     [Fact]

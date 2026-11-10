@@ -1,7 +1,13 @@
 ﻿# Builds the archive an Agent Client Protocol client runs Inferpal from: the self-contained Inferpal.Host for one
 # platform, started with `--acp` (Zed, the JetBrains IDEs, Neovim, Emacs).
 # Usage: pwsh ./acp/package.ps1 -Target win32-x64|linux-x64|darwin-arm64 [-OutDir <folder>]
-# Output: inferpal-acp-<target>-<version>.zip (Windows) or .tar.gz (Linux, macOS), the executable at the archive's root.
+# Output: inferpal-acp-<target>-<version>.zip (Windows) or .tar.gz (Linux, macOS), at the archive's root: the executable,
+# SQLite's native library, README.txt (acp/README.txt) and LICENSE.txt (the GPL, verbatim: conveying the program needs it).
+#
+# ⚠ One executable (PublishSingleFile), here only: the settings window's files and the names of the framework's
+#   assemblies become resources of it (Inferpal.Host.csproj). SQLite's native library stays BESIDE it: inside, it would
+#   be extracted at the first start, and an agent whose home folder is not writable (a container, a sandbox) would not
+#   start at all. The VS Code VSIX publishes the host as a folder (vscode/package.ps1), unchanged.
 #
 # ⚠ PowerShell 7: the tarball is written with System.Formats.Tar (.NET 7+), which PowerShell 5.1 does not have.
 # ⚠ The modes are SET, never inherited: built on Windows, the files have no execute bit, and a client that extracts
@@ -36,13 +42,51 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'npm run build failed: the settings window would ship without its form.' }
     }
     finally { Pop-Location }
-
-    dotnet publish (Join-Path $root 'Inferpal.Host/Inferpal.Host.csproj') -c Release -f net10.0 -r $rid --self-contained true -o $stage -v minimal -nologo
-    if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed for $rid" }
-    Remove-Item (Join-Path $stage '*.pdb') -ErrorAction SilentlyContinue
-    foreach ($web in 'settings.css', 'settings-standalone.css', 'settings-standalone.js') {
-        if (-not (Test-Path (Join-Path $stage "web/$web"))) { throw "The archive would lack web/$($web), and the settings window could not open." }
+    # The project embeds the form only when its files exist: missing, the executable would build without them, silently.
+    # The same three files as InferpalSettingsWebFiles (Inferpal.Host.csproj) and SettingsWindowServer.WebFiles.
+    $webFiles = 'settings.css', 'settings-standalone.css', 'settings-standalone.js'
+    foreach ($web in $webFiles) {
+        if (-not (Test-Path (Join-Path $root "vscode/media/$web"))) { throw "vscode/media/$web is missing: the settings window could not open." }
     }
+
+    dotnet publish (Join-Path $root 'Inferpal.Host/Inferpal.Host.csproj') -c Release -f net10.0 -r $rid --self-contained true `
+        -p:PublishSingleFile=true -p:DebugType=none -o $stage -v minimal -nologo
+    if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed for $rid" }
+    $executable = if ($Target -eq 'win32-x64') { 'Inferpal.Host.exe' } else { 'Inferpal.Host' }
+    $sqlite = @{ 'win32-x64' = 'e_sqlite3.dll'; 'linux-x64' = 'libe_sqlite3.so'; 'darwin-arm64' = 'libe_sqlite3.dylib' }[$Target]
+    $published = (@(Get-ChildItem $stage -Recurse -File | ForEach-Object { [IO.Path]::GetRelativePath($stage, $_.FullName) }) | Sort-Object) -join '|'
+    $expected  = (@($executable, $sqlite) | Sort-Object) -join '|'
+    if ($published -ne $expected) {
+        throw "The publish holds $($published.Replace('|', ', ')) instead of $executable and $sqlite alone."
+    }
+    # What the executable must carry inside: the form, and the framework's names (without them the C# analysis binds no
+    # .NET type). The bundle is not compressed, so the resource names read in its bytes — by blocks that overlap by more
+    # than the longest name, never the whole 100 MB as one string.
+    $missing = [Collections.Generic.HashSet[string]]::new([string[]](@($webFiles | ForEach-Object { "web/$_" }) + 'framework-assemblies.txt'))
+    $stream = [IO.File]::OpenRead((Join-Path $stage $executable))
+    try {
+        $block = [byte[]]::new(16MB); $tail = ''
+        while ($missing.Count -gt 0 -and ($read = $stream.Read($block, 0, $block.Length)) -gt 0) {
+            $text = $tail + [Text.Encoding]::Latin1.GetString($block, 0, $read)
+            foreach ($resource in @($missing)) { if ($text.Contains($resource)) { [void]$missing.Remove($resource) } }
+            $tail = $text.Substring([Math]::Max(0, $text.Length - 64))
+        }
+    }
+    finally { $stream.Dispose() }
+    if ($missing.Count -gt 0) { throw "The executable does not carry $($missing -join ', ')." }
+
+    # README.txt from acp/README.txt, and the GPL verbatim. Windows line ends in the Windows archive.
+    $docs = "https://github.com/EstaxNet/Inferpal/blob/v$version/docs/acp.md"
+    $readme = [IO.File]::ReadAllText((Join-Path $PSScriptRoot 'README.txt')).Replace("`r`n", "`n")
+    foreach ($fill in @{ '{version}' = $version; '{executable}' = $executable; '{sqlite}' = $sqlite; '{docs}' = $docs }.GetEnumerator()) {
+        $readme = $readme.Replace($fill.Key, $fill.Value)
+    }
+    if ($readme.Contains('{')) { throw 'acp/README.txt holds a placeholder this script does not fill.' }
+    $license = [IO.File]::ReadAllText((Join-Path $root 'vscode/LICENSE.txt')).Replace("`r`n", "`n")
+    if ($Target -eq 'win32-x64') { $readme = $readme.Replace("`n", "`r`n"); $license = $license.Replace("`n", "`r`n") }
+    $utf8 = [Text.UTF8Encoding]::new($false)
+    [IO.File]::WriteAllText((Join-Path $stage 'README.txt'), $readme, $utf8)
+    [IO.File]::WriteAllText((Join-Path $stage 'LICENSE.txt'), $license, $utf8)
 
     $name = "inferpal-acp-$Target-$version"
     if ($Target -eq 'win32-x64') {
@@ -53,8 +97,8 @@ try {
     else {
         $archive = Join-Path $OutDir "$name.tar.gz"
         Remove-Item $archive -ErrorAction SilentlyContinue
-        # Executables: the host itself and the runtime's crash-dump helper. Everything else is read, never run.
-        $executables = @('Inferpal.Host', 'createdump')
+        # The host is the one file run; the native library is loaded, the texts are read.
+        $executables = @('Inferpal.Host')
         $exec = [IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupExecute, OtherRead, OtherExecute'
         $data = [IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead'
         $file = [IO.File]::Create($archive)

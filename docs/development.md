@@ -268,7 +268,11 @@ See **[Architecture](architecture.md)** for the reasoning behind each.
   `--settings` says which files are missing.
 - The archives an ACP client downloads come from
   `pwsh ./acp/package.ps1 -Target win32-x64|linux-x64|darwin-arm64` (PowerShell 7), which builds the bundle first and
-  refuses an archive without `web/`.
+  publishes the host as **one executable**: the three files are then resources inside it (served before any `web/`
+  left beside it), with the names of the framework's assemblies, which the C# analysis loads in memory — inside one
+  file the runtime lists none on disk. SQLite's native library stays beside the executable, so nothing is extracted at
+  start; `acp/README.txt` and the GPL (`vscode/LICENSE.txt`) complete the archive. The script refuses a publish holding
+  anything else, or an executable without those resources. The VS Code VSIX still ships the host as a folder.
 
 ### Releases
 

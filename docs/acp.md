@@ -28,8 +28,9 @@ flowchart LR
    | Linux x64 | `inferpal-acp-linux-x64-<version>.tar.gz` | `Inferpal.Host` |
    | macOS (Apple Silicon) | `inferpal-acp-darwin-arm64-<version>.tar.gz` | `Inferpal.Host` |
 
-   Check it against `SHA256SUMS.txt` from the same release, then extract it anywhere. Nothing else is needed: the
-   archive carries its own .NET 10 runtime, which asks for macOS 12 or later, or a Linux with glibc 2.27 or later.
+   Check it against `SHA256SUMS.txt` from the same release, then extract it anywhere, keeping its files together:
+   the executable, which carries its own .NET 10 runtime (macOS 12 or later, or a Linux with glibc 2.27 or later),
+   SQLite's native library beside it, a `README.txt` and the `LICENSE.txt`. Nothing else is needed.
 2. Tell your editor to run that executable with the `--acp` argument (below).
 3. Start a thread with Inferpal. When Inferpal is not set up yet, the first session asks: see [Set it up](#set-it-up).
 

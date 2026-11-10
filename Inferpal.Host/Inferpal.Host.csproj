@@ -43,11 +43,38 @@
   <!-- ── The browser settings window (Inferpal.Host settings switch) ─────────
        The very form VS Code shows: its bundle and stylesheets, served from web\ beside the executable. The bundle is
        built by `npm run build` in vscode\ (acp/package.ps1 runs it first); without it the window says what is missing
-       and does not open. -->
-  <ItemGroup Condition="Exists('..\vscode\media\settings-standalone.js')">
-    <None Include="..\vscode\media\settings.css;..\vscode\media\settings-standalone.css;..\vscode\media\settings-standalone.js"
+       and does not open. Published as ONE file (acp/package.ps1 only), they are resources of the executable instead
+       (`web/<name>`, which SettingsWindowServer reads first): an ordinary build — the VS Code VSIX's — is unchanged. -->
+  <PropertyGroup>
+    <InferpalSettingsWebFiles>..\vscode\media\settings.css;..\vscode\media\settings-standalone.css;..\vscode\media\settings-standalone.js</InferpalSettingsWebFiles>
+  </PropertyGroup>
+  <ItemGroup Condition="Exists('..\vscode\media\settings-standalone.js') And '$(PublishSingleFile)' != 'true'">
+    <None Include="$(InferpalSettingsWebFiles)"
           Link="web\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+  <ItemGroup Condition="Exists('..\vscode\media\settings-standalone.js') And '$(PublishSingleFile)' == 'true'">
+    <EmbeddedResource Include="$(InferpalSettingsWebFiles)" LogicalName="web/%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- ── One file (acp/package.ps1): the names of the framework's assemblies, for the C# analysis ──
+       Inside one executable the runtime lists no assembly on disk (TRUSTED_PLATFORM_ASSEMBLIES is empty), and Roslyn
+       would bind no .NET type: rename_symbol would miss every call made through one. The names of the framework this
+       host compiles against travel as a resource; CSharpSemanticIndex loads them and reads their metadata in memory. -->
+  <Target Name="EmbedFrameworkAssemblyNames" AfterTargets="ResolveReferences" BeforeTargets="PrepareResources"
+          Condition="'$(PublishSingleFile)' == 'true'">
+    <ItemGroup>
+      <_InferpalFrameworkName Include="@(ReferencePath->'%(Filename)')"
+                              Condition="'%(ReferencePath.FrameworkReferenceName)' == 'Microsoft.NETCore.App'" />
+    </ItemGroup>
+    <Error Condition="'@(_InferpalFrameworkName)' == ''"
+           Text="No framework assembly among the references: the C# analysis would bind no .NET type in one file." />
+    <WriteLinesToFile File="$(IntermediateOutputPath)framework-assemblies.txt" Lines="@(_InferpalFrameworkName->Distinct())"
+                      Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(IntermediateOutputPath)framework-assemblies.txt" LogicalName="framework-assemblies.txt" />
+      <FileWrites Include="$(IntermediateOutputPath)framework-assemblies.txt" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="StreamJsonRpc" Version="2.22.11" />

@@ -60,8 +60,13 @@ internal static class SqliteBootstrapper
         if (NativeLibrary.TryLoad(libraryName, assembly, searchPath, out var handle))
             return handle;
 
+        // The extension's own folder under Visual Studio's host, whose base directory is the host's. Inside one
+        // executable (the ACP archive) the location is empty and its directory null; the default search above has
+        // already found the native library the archive ships beside it (acp/package.ps1).
+#pragma warning disable IL3000
         var baseDir = Path.GetDirectoryName(typeof(SqliteBootstrapper).Assembly.Location)
                       ?? AppContext.BaseDirectory;
+#pragma warning restore IL3000
 
         var rid = RuntimeInformation.ProcessArchitecture switch
         {
