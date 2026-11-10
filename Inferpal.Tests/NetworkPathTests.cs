@@ -22,7 +22,14 @@ public class NetworkPathTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("netpath-").FullName;
 
-    public void Dispose() { try { Directory.Delete(_root, true); } catch { } }
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
+
+    public void Dispose()
+    {
+        foreach (var owned in _owned) owned.Dispose();
+        try { Directory.Delete(_root, true); } catch { }
+    }
 
     [Theory]
     [InlineData(@"\\host\share", true)]
@@ -103,6 +110,7 @@ public class NetworkPathTests : IDisposable
         var editor = new NullEditorSurface();
         var approval = new NoopApproval();
         var index = new ProjectIndexService(client, config, new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(_root);
         return new ToolRegistry(editor, approval, config, index, client, new ProjectMapService(editor),
                                 new McpToolService(config, approval), new DocsIndexService(client, config),
@@ -147,7 +155,7 @@ public class NetworkPathTests : IDisposable
         var config = new InferpalConfig { CustomTools = "list_share=dir" };
         var client = new FakeInferenceProvider();
         var editor = new NullEditorSurface();
-        var index = new ProjectIndexService(client, config, new LspSemanticProvider());
+        using var index = new ProjectIndexService(client, config, new LspSemanticProvider());
         index.SetRoot(_root);
         var tools = new ToolRegistry(editor, cards, config, index, client, new ProjectMapService(editor),
                                      new McpToolService(config, cards), new DocsIndexService(client, config),

@@ -25,12 +25,15 @@ namespace Inferpal.Tests;
 [Collection(SignalCollection.Name)]
 public sealed class WriteThatDidNotLandTests : IDisposable
 {
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
     private readonly SignalScratchDir _scratch = new();
     private readonly string _root = Directory.CreateDirectory(
         Path.Combine(Path.GetTempPath(), $"inferpal-notlanded-{Guid.NewGuid():N}")).FullName;
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         try
         {
             foreach (var f in Directory.EnumerateFiles(_root, "*", SearchOption.AllDirectories))
@@ -50,6 +53,7 @@ public sealed class WriteThatDidNotLandTests : IDisposable
         var editor = new NullEditorSurface();
         var approval = new NoopApproval();
         var index  = new ProjectIndexService(client, config, new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(_root);
         return new ToolRegistry(editor, approval, config, index, client,
                                 new ProjectMapService(editor, index), new McpToolService(config, approval),

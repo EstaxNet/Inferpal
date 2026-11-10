@@ -22,6 +22,8 @@ namespace Inferpal.Tests;
 /// </summary>
 public sealed class OneTargetOneJudgeTests : IDisposable
 {
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
     private const string Marker = "EXCLUDED_CONTENT_58";
     private readonly string _base = Path.Combine(Path.GetTempPath(), "inferpal-tests", "one-judge-" + Guid.NewGuid().ToString("N")[..8]);
     private string W => Path.Combine(_base, "ws");
@@ -43,6 +45,7 @@ public sealed class OneTargetOneJudgeTests : IDisposable
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         try { Directory.Delete(_base, recursive: true); } catch { /* cleanup */ }
     }
 
@@ -106,6 +109,7 @@ public sealed class OneTargetOneJudgeTests : IDisposable
         editor ??= new NullEditorSurface();
         var approval = new Always(config, () => W);
         var index = new ProjectIndexService(client, config, new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(W);
         return (new ToolRegistry(editor, approval, config, index, client, new ProjectMapService(editor),
                                  new McpToolService(config, approval), new DocsIndexService(client, config),
@@ -385,6 +389,7 @@ public sealed class OneTargetOneJudgeTests : IDisposable
         var client = new FakeInferenceProvider();
         var approval = new Always(config, () => linked);
         var index = new ProjectIndexService(client, config, new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(linked);
         var editor = new NullEditorSurface();
         var tools = new ToolRegistry(editor, approval, config, index, client, new ProjectMapService(editor),

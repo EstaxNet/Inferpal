@@ -20,12 +20,15 @@ namespace Inferpal.Tests;
 /// </summary>
 public sealed class ToolEffectTests : IDisposable
 {
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
     private readonly string _root = Path.Combine(Path.GetTempPath(), "inferpal-tests", "effects-" + Guid.NewGuid().ToString("N")[..8]);
 
     public ToolEffectTests() => Directory.CreateDirectory(_root);
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         try { Directory.Delete(_root, recursive: true); } catch { /* cleanup */ }
     }
 
@@ -36,6 +39,7 @@ public sealed class ToolEffectTests : IDisposable
         var editor = new NullEditorSurface();
         var approval = new NoopApproval();
         var index = new ProjectIndexService(client, config, new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(_root);
         return new ToolRegistry(editor, approval, config, index, client, new ProjectMapService(editor),
                                 new McpToolService(config, approval), new DocsIndexService(client, config),

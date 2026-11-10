@@ -35,11 +35,14 @@ namespace Inferpal.Tests;
 [Collection(ContentExclusionSerialCollection.Name)]
 public sealed class ContentExclusionTests : IDisposable
 {
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
     private const string Marker = "MARKER_7f3a9c51";
     private readonly string _root = Directory.CreateTempSubdirectory("inferpal-exclude").FullName;
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         ContentExclusions.ForgetForTests(_root);
         try { Directory.Delete(_root, recursive: true); } catch { }
     }
@@ -86,6 +89,7 @@ public sealed class ContentExclusionTests : IDisposable
         editor ??= new NullEditorSurface();
         var approval = new NoopApproval();
         var index = new ProjectIndexService(client, config, new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(_root);
         return new ToolRegistry(editor, approval, config, index, client, new ProjectMapService(editor),
                                 new McpToolService(config, approval), new DocsIndexService(client, config),

@@ -308,7 +308,7 @@ public sealed class WorkspaceCodeConsentTests : IDisposable
         var config   = new InferpalConfig();
         var client   = new FakeInferenceProvider();
         var editor   = new NullEditorSurface();
-        var index    = new Inferpal.Services.Rag.ProjectIndexService(client, config, new Inferpal.Services.Lsp.LspSemanticProvider());
+        using var index = new Inferpal.Services.Rag.ProjectIndexService(client, config, new Inferpal.Services.Lsp.LspSemanticProvider());
         index.SetRoot(_root);
         var tools = new ToolRegistry(editor, approval, config, index, client, new Inferpal.Services.ProjectMapService(editor),
                                      new Inferpal.Services.Mcp.McpToolService(config, approval),

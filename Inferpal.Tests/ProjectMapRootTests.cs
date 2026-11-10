@@ -20,12 +20,15 @@ namespace Inferpal.Tests;
 [Collection(SignalCollection.Name)]
 public class ProjectMapRootTests : IDisposable
 {
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
     private readonly SignalScratchDir _scratch = new();
     private readonly string _base =
         Path.Combine(Path.GetTempPath(), $"inferpal-maproot-{Guid.NewGuid():N}");
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         try { Directory.Delete(_base, recursive: true); } catch { }
         _scratch.Dispose();
     }
@@ -49,6 +52,7 @@ public class ProjectMapRootTests : IDisposable
         File.WriteAllText(Path.Combine(root, "Probe.cs"), "namespace MapProbe;\npublic class Probe { }\n");
 
         var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(root);
 
         var map = await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);
@@ -63,6 +67,7 @@ public class ProjectMapRootTests : IDisposable
         var root = Directory.CreateDirectory(Path.Combine(_base, "ts")).FullName;
         File.WriteAllText(Path.Combine(root, "app.ts"), "export const answer = 42;\n");
         var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(root);
 
         var map = await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);
@@ -80,6 +85,7 @@ public class ProjectMapRootTests : IDisposable
         File.WriteAllBytes(Path.Combine(root, "Eleve.cs"),
             System.Text.Encoding.GetEncoding(1252).GetBytes("namespace École;\r\npublic class Élève { }\r\n"));
         var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(root);
 
         var map = await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);
@@ -99,6 +105,7 @@ public class ProjectMapRootTests : IDisposable
             UnicodeEncodedFilesTests.EncodingNamed(name),
             "namespace 上层;\r\npublic interface I用户 { }\r\npublic class 用户 : I用户 { }\r\n"));
         var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(root);
 
         var map = await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);

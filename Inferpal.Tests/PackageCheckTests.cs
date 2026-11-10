@@ -29,10 +29,13 @@ namespace Inferpal.Tests;
 /// </remarks>
 public class PackageCheckTests : IDisposable
 {
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
     private readonly string _root = Directory.CreateTempSubdirectory("inferpal-pkgcheck").FullName;
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         try { Directory.Delete(_root, recursive: true); } catch { /* best effort */ }
     }
 
@@ -91,6 +94,7 @@ public class PackageCheckTests : IDisposable
         var client = new FakeInferenceProvider();
         var editor = new NullEditorSurface();
         var index  = new ProjectIndexService(client, config, new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(_root);
         return new ToolRegistry(editor, approval, config, index, client, new ProjectMapService(editor),
                                 new McpToolService(config, approval), new DocsIndexService(client, config),

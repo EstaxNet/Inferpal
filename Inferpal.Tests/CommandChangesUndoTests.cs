@@ -33,6 +33,8 @@ public class CommandChangesUndoTests : IDisposable
 {
     private readonly string _root;
     private readonly TimeSpan _slowReading = WorkTreeWatch.SlowReading;
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
 
     public CommandChangesUndoTests()
     {
@@ -43,6 +45,7 @@ public class CommandChangesUndoTests : IDisposable
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         WorkTreeWatch.SlowReading = _slowReading;
         try { Directory.Delete(_root, recursive: true); } catch { }
     }
@@ -109,14 +112,15 @@ public class CommandChangesUndoTests : IDisposable
             Assert.True(bytes.AsSpan().SequenceEqual(actual[path]), $"{path} is not given back byte for byte.");
     }
 
-    private static ToolRegistry Registry(string root, IApprovalService? approval = null, string customTools = "",
-                                         OpenDocumentOverlay? overlay = null)
+    private ToolRegistry Registry(string root, IApprovalService? approval = null, string customTools = "",
+                                 OpenDocumentOverlay? overlay = null)
     {
         var config = new InferpalConfig { CustomTools = customTools };
         var client = new FakeInferenceProvider();
         var editor = new NullEditorSurface();
         approval ??= new NoopApproval();
         var index  = new ProjectIndexService(client, config, new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(root);
         return new ToolRegistry(editor, approval, config, index, client, new ProjectMapService(editor),
                                 new McpToolService(config, approval), new DocsIndexService(client, config),

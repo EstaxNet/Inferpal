@@ -26,6 +26,8 @@ namespace Inferpal.Tests;
 [Collection(SignalCollection.Name)]
 public sealed class CSharpTypeDeclarationTests : IDisposable
 {
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
     private readonly SignalScratchDir _scratch = new();
     private readonly string _root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"typedecl-{Guid.NewGuid():N}");
 
@@ -33,6 +35,7 @@ public sealed class CSharpTypeDeclarationTests : IDisposable
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         try { Directory.Delete(_root, recursive: true); } catch { /* best-effort cleanup */ }
         _scratch.Dispose();
     }
@@ -79,6 +82,7 @@ public sealed class CSharpTypeDeclarationTests : IDisposable
     {
         File.WriteAllText(Path.Combine(_root, "Shapes.cs"), Shapes);
         var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(_root);
 
         var map = await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);

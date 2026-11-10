@@ -18,11 +18,14 @@ namespace Inferpal.Tests;
 [Collection(SignalCollection.Name)]
 public sealed class ProjectMapBudgetTests : IDisposable
 {
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
     private readonly SignalScratchDir _scratch = new();
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"inferpal-mapbudget-{Guid.NewGuid():N}");
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         try { Directory.Delete(_root, recursive: true); } catch { }
         _scratch.Dispose();
     }
@@ -40,6 +43,7 @@ public sealed class ProjectMapBudgetTests : IDisposable
                     $"{usings}namespace Contoso.Enterprise.Module{i:D3}.Services;\npublic class Service{i}x{f} {{ }}\n");
         }
         var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(_root);
         return await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);
     }
@@ -74,6 +78,7 @@ public sealed class ProjectMapBudgetTests : IDisposable
         File.WriteAllText(Path.Combine(_root, "Gamma.cs"), "class Gamma { beta lower; Alpha a; }\n");
         File.WriteAllText(Path.Combine(_root, "Delta.cs"), "class Delta { Alpha a; BetaFactory f; }\n");
         var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(_root);
 
         var map = await new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);

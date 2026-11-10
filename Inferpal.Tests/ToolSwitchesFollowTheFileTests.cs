@@ -27,6 +27,8 @@ namespace Inferpal.Tests;
 [Collection(GlobalConfigPathCollection.Name)]
 public sealed class ToolSwitchesFollowTheFileTests : IDisposable
 {
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
     private readonly string? _previous = InferpalConfig.OverridePathForTests;
     private readonly string  _path = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"switches-{Guid.NewGuid():N}.json");
     private readonly string  _root = Directory.CreateTempSubdirectory("inferpal-switches").FullName;
@@ -39,6 +41,7 @@ public sealed class ToolSwitchesFollowTheFileTests : IDisposable
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         InferpalConfig.OverridePathForTests = _previous;
         try { File.Delete(_path); } catch { }
         try { Directory.Delete(_root, recursive: true); } catch { }
@@ -77,6 +80,7 @@ public sealed class ToolSwitchesFollowTheFileTests : IDisposable
         var client = new FakeInferenceProvider();
         var editor = new NullEditorSurface();
         var index  = new ProjectIndexService(client, config, new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(_root);
         var approval = rules ?? new Approves();
         return new ToolRegistry(editor, approval, config, index, client, new ProjectMapService(editor),

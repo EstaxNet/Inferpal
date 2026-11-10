@@ -44,6 +44,8 @@ namespace Inferpal.Tests;
 [Collection(SignalCollection.Name)]
 public sealed class ReadToolsWalkGapTests : IDisposable
 {
+    // ⚠ A rooted index watches the disk (one inotify instance per watcher on Linux, 128 per user): never left undisposed.
+    private readonly List<IDisposable> _owned = [];
     private readonly SignalScratchDir _scratch = new();
     private readonly string _root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"readgap-{Guid.NewGuid():N}");
     private readonly string _lockedDir;
@@ -75,6 +77,7 @@ public sealed class ReadToolsWalkGapTests : IDisposable
 
     public void Dispose()
     {
+        foreach (var owned in _owned) owned.Dispose();
         Unlock();
         try { Directory.Delete(_root, recursive: true); } catch { }
         _scratch.Dispose();
@@ -151,6 +154,7 @@ public sealed class ReadToolsWalkGapTests : IDisposable
     private Task<string> MapAsync()
     {
         var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig(), new LspSemanticProvider());
+        _owned.Add(index);
         index.SetRoot(_root);
         return new ProjectMapService(new NullEditorSurface(), index).GenerateMapAsync(CancellationToken.None);
     }
