@@ -1496,8 +1496,14 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             if (CustomTools == customTools)               _listsShown.Tools  = customTools;
             // ⚠ The pinned files are saved merged — a file the chat pinned meanwhile kept — and _opened holds the merge: the
             // form shows it too, or the next save reads that file as the person's removal and unpins it.
-            if (PinnedContextFiles == pinnedContextFiles && !IsEditingPinned && edited.PinnedContextFiles != pinnedContextFiles)
-            { BuildPinnedRowsFrom(edited.PinnedContextFiles); _listsShown.Pinned = PinnedContextFiles; }
+            if (edited.PinnedContextFiles != pinnedContextFiles)
+            {
+                if (PinnedContextFiles == pinnedContextFiles && !IsEditingPinned)
+                { BuildPinnedRowsFrom(edited.PinnedContextFiles); _listsShown.Pinned = PinnedContextFiles; }
+                // Not shown (a row editor open, the list typed in since): the form's next merge reads against what it
+                // showed, so the file the chat pinned is not its removal.
+                else _opened["pinnedContextFiles"] = pinnedContextFiles;
+            }
         });
 
         // Reconnect MCP servers from the freshly-saved config and report status.
@@ -2125,8 +2131,15 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private void PersistSlash()
     {
         SyncSlashTextFromRows();
-        _config.PromptTemplates = PromptTemplates;
-        if (TrySaveConfig("PersistSlash")) _listsShown.Slash = PromptTemplates;
+        // ⚠ Entry by entry, never the whole list: another editor may have added one since this window opened (VS Code,
+        // /import), and the rows, built at the opening, do not hold it — written whole, the list would drop it.
+        var opened = _opened["promptTemplates"]?.GetValue<string>();
+        _config.PromptTemplates = EditableListText.Merge(opened, _config.PromptTemplates, PromptTemplates);
+        var saved = TrySaveConfig("PersistSlash");
+        if (saved) _opened["promptTemplates"] = _config.PromptTemplates;
+        // What the merge kept from another editor is shown once it is saved; a written-otherwise entry rebuilds nothing.
+        if (saved && !EditableListText.SameEntries(_config.PromptTemplates, PromptTemplates)) BuildSlashRowsFrom(_config.PromptTemplates);
+        if (saved) _listsShown.Slash = PromptTemplates;
     }
 
     private void BeginAddSlash()
@@ -2199,8 +2212,13 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private void PersistTool()
     {
         SyncToolTextFromRows();
-        _config.CustomTools = CustomTools;
-        if (TrySaveConfig("PersistTool")) _listsShown.Tools = CustomTools;
+        // ⚠ Entry by entry, as the commands next door.
+        var opened = _opened["customTools"]?.GetValue<string>();
+        _config.CustomTools = EditableListText.Merge(opened, _config.CustomTools, CustomTools);
+        var saved = TrySaveConfig("PersistTool");
+        if (saved) _opened["customTools"] = _config.CustomTools;
+        if (saved && !EditableListText.SameEntries(_config.CustomTools, CustomTools)) BuildToolRowsFrom(_config.CustomTools);
+        if (saved) _listsShown.Tools = CustomTools;
     }
 
     private void BeginAddTool()

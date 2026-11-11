@@ -148,6 +148,29 @@ public class ConfigCollectionMergeTests : IDisposable
         Assert.Equal(mine.DocSitesJson, OnDisk().DocSitesJson);
     }
 
+    /// <summary>Commands and tools merge by NAME on every save, the Save button's included: a command the file holds as
+    /// <c>/review = …</c>, changed by the other editor, and written <c>/review=…</c> here without being changed, is one
+    /// command — merged line by line, it ends up twice, the other editor's first.</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ACommandOrToolWrittenOtherwise_ChangedByTheOtherEditor_IsNotDoubled(bool commands)
+    {
+        if (commands) new InferpalConfig { PromptTemplates = "/review = Relis\n/x=X" }.Save();
+        else new InferpalConfig { CustomTools = "review = echo relis\nx=echo x" }.Save();
+        var mine = InferpalConfig.Load();
+
+        WriteAsTheOtherEditor(c =>
+        {
+            if (commands) c.PromptTemplates = "/review = Vérifie\n/x=X"; else c.CustomTools = "review = echo vérifie\nx=echo x";
+        });
+        if (commands) mine.PromptTemplates = "/review=Relis\n#/x=X"; else mine.CustomTools = "review=echo relis\n#x=echo x";
+        mine.Save();
+
+        Assert.Equal(commands ? "/review = Vérifie\n#/x=X" : "review = echo vérifie\n#x=echo x",
+                     commands ? OnDisk().PromptTemplates : OnDisk().CustomTools);
+    }
+
     [Fact]
     public void TheSettingsThatHoldACollection_AreDeclaredSo()
     {

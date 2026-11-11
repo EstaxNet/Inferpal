@@ -23,19 +23,31 @@ internal static class EditableListText
         foreach (var line in (text ?? string.Empty)
                      .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            var enabled = !line.StartsWith('#');
-            var body    = enabled ? line : line.TrimStart('#').Trim();
-            var eq      = body.IndexOf('=');
-            var name    = eq > 0 ? body[..eq].Trim() : string.Empty;
-            var value   = eq > 0 ? body[(eq + 1)..].Trim() : string.Empty;
-            if (name.Length == 0 || value.Length == 0) { kept.Add(line); continue; }
-            entries.Add(new Entry(enabled, name, value));
+            if (ParseLine(line) is { } entry) entries.Add(entry);
+            else kept.Add(line);
         }
         unparsed = kept;
         return entries;
     }
 
+    /// <summary>One trimmed line as an entry; <c>null</c> when it is none (no <c>=</c>, an empty side).</summary>
+    public static Entry? ParseLine(string line) =>
+        Config.CollectionMerge.NameValue(line) is { } e ? new Entry(e.Enabled, e.Name, e.Value) : null;
+
+    /// <summary>Whether two texts hold the same entries and other lines, however each line is written.</summary>
+    public static bool SameEntries(string? a, string? b) =>
+        Render(Parse(a, out var ua), ua) == Render(Parse(b, out var ub), ub);
+
     /// <summary>The setting text: one line per entry, then the lines that were not entries.</summary>
     public static string Render(IEnumerable<Entry> entries, IReadOnlyList<string> unparsed) =>
         string.Join("\n", entries.Select(e => (e.Enabled ? "" : "#") + e.Name + "=" + e.Value).Concat(unparsed));
+
+    /// <summary>
+    /// <paramref name="mine"/> with what the file changed since <paramref name="baseline"/>, entry by entry
+    /// (<see cref="Config.CollectionShape.NameValueLines"/>): an entry another editor added is kept, one it changed or
+    /// removed — and left as it was here — follows the file; what this copy added, changed or removed wins.
+    /// </summary>
+    public static string Merge(string? baseline, string? onDisk, string mine) =>
+        Config.CollectionMerge.Merge(Config.CollectionShape.NameValueLines, baseline ?? string.Empty, onDisk ?? string.Empty, mine)
+        ?? mine;
 }

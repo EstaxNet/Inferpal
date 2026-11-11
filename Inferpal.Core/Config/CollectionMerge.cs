@@ -6,8 +6,12 @@ namespace Inferpal.Config;
 /// <summary>How a setting that holds a collection in one string splits into elements.</summary>
 internal enum CollectionShape
 {
-    /// <summary>One element per non-blank line (pinned files, templates, custom tools, permission rules).</summary>
+    /// <summary>One element per non-blank line (pinned files, permission rules).</summary>
     Lines,
+    /// <summary>One <c>name=value</c> entry per line, identified by its name (command templates, custom tools): a line
+    /// written <c>/review = …</c> in the file and <c>/review=…</c> by the settings window is one entry, unchanged — read as
+    /// two lines, the name would end up twice, the other editor's first. A line that is no entry is its own text.</summary>
+    NameValueLines,
     /// <summary>A JSON object keyed by name, bare or under <c>mcpServers</c> (MCP servers).</summary>
     JsonObjectByName,
     /// <summary>A JSON array of objects identified by their <c>id</c> (documentation sources).</summary>
@@ -55,7 +59,7 @@ internal static class CollectionMerge
         var result = new List<Element>();
         foreach (var e in m)
         {
-            if (before.TryGetValue(e.Key, out var was) && was == e.Text)
+            if (before.TryGetValue(e.Key, out var was) && Same(shape, was, e.Text))
             {
                 // This copy left the element as it was: the file's version stands — changed, or gone.
                 if (disk.TryGetValue(e.Key, out var now)) result.Add(new Element(e.Key, now));
@@ -81,6 +85,24 @@ internal static class CollectionMerge
         return Join(shape, result, mine, wrapped);
     }
 
+    /// <summary>An element this copy left as it was: the same text, or for an entry, the same entry however it is
+    /// written.</summary>
+    private static bool Same(CollectionShape shape, string was, string now) =>
+        was == now
+        || shape == CollectionShape.NameValueLines && NameValue(was.Trim()) is { } a && a == NameValue(now.Trim());
+
+    /// <summary>One trimmed line of a <see cref="CollectionShape.NameValueLines"/> setting as an entry: off when it starts
+    /// with <c>#</c>; <c>null</c> when it is none (no <c>=</c>, an empty side). The one reader of that format.</summary>
+    internal static (bool Enabled, string Name, string Value)? NameValue(string line)
+    {
+        var enabled = !line.StartsWith('#');
+        var body    = enabled ? line : line.TrimStart('#').Trim();
+        var eq      = body.IndexOf('=');
+        var name    = eq > 0 ? body[..eq].Trim() : string.Empty;
+        var value   = eq > 0 ? body[(eq + 1)..].Trim() : string.Empty;
+        return name.Length == 0 || value.Length == 0 ? null : (enabled, name, value);
+    }
+
     private static Dictionary<string, string> ToMap(List<Element> elements)
     {
         var map = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -100,6 +122,28 @@ internal static class CollectionMerge
             {
                 var kept = line.TrimEnd('\r');
                 if (kept.Trim().Length > 0) elements.Add(new Element(kept.Trim(), kept));
+            }
+            return true;
+        }
+
+        if (shape == CollectionShape.NameValueLines)
+        {
+            // An entry is its name and whether it is on, then its rank among those (a disabled entry and an active one may
+            // share a name, and one added elsewhere shifts neither); a line that is no entry is keyed by its text.
+            var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var line in text.Split('\n'))
+            {
+                var kept = line.TrimEnd('\r');
+                var trimmed = kept.Trim();
+                if (trimmed.Length == 0) continue;
+                string key;
+                if (NameValue(trimmed) is { } entry)
+                {
+                    var id = (entry.Enabled ? "on\n" : "off\n") + entry.Name.ToLowerInvariant();
+                    key = id + "\n" + (seen[id] = seen.GetValueOrDefault(id) + 1);
+                }
+                else key = "\n" + trimmed;
+                elements.Add(new Element(key, kept));
             }
             return true;
         }
@@ -137,6 +181,7 @@ internal static class CollectionMerge
         switch (shape)
         {
             case CollectionShape.Lines:
+            case CollectionShape.NameValueLines:
             {
                 var eol = mine.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
                 var joined = string.Join(eol, elements.Select(e => e.Text));

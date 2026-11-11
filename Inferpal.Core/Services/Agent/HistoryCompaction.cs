@@ -269,10 +269,108 @@ internal static class HistoryCompaction
     /// copied at the far end — a phrase copied into an assertion matches until the day the phrase is
     /// reworded, then stops without a sign.
     /// </remarks>
-    public static string TruncationMarker(int dropped) =>
-        $"[Context Note] {dropped} earlier message(s) of this conversation were dropped to fit the "
-      + "context window. That part is gone from your context: if the user refers to something said "
-      + "there, say you no longer have it rather than treating it as never said.";
+    /// <param name="dropped">The conversation's messages it stands for, those an earlier marker stood for included.</param>
+    /// <param name="earlierPart">The part before them went too, beyond any count: a summary, or a head this code does not
+    /// read.</param>
+    public static string TruncationMarker(int dropped, bool earlierPart = false) =>
+        (earlierPart
+            ? "[Context Note] The beginning of this conversation was dropped to fit the context window"
+              + (dropped > 0 ? $": {dropped} message(s), and the part before them" : "") + "."
+            : $"[Context Note] {dropped} earlier message(s) of this conversation were dropped to fit the context window.")
+      + " That part is gone from your context: if the user refers to something said there, say you no longer have it "
+      + "rather than treating it as never said.";
+
+    /// <summary>
+    /// Appended to a summary whose turns held a marker: messages dropped before them, which the summarizer read as one
+    /// line of the conversation and may leave out. Not localized, like <see cref="TruncationMarker"/>.
+    /// </summary>
+    /// <remarks>⚠ Without it, the model takes the summary for the whole beginning of the conversation.</remarks>
+    public static string DroppedBeforeSummaryMarker(int dropped, bool earlierPart) =>
+        NoteStart
+      + (earlierPart ? "the beginning of this conversation" + (dropped > 0 ? $" ({dropped} message(s) and the part before them)" : "")
+                     : $"{dropped} earlier message(s) of this conversation")
+      + " had already been dropped to fit the context window. If the user refers to something you cannot find here, say "
+      + "you no longer have it rather than treating it as never said.";
+
+    /// <summary>What the messages <paramref name="plan"/> removes stand for: the conversation's own, plus those each marker
+    /// among them stood for; and whether the part before them goes too, beyond any count.</summary>
+    internal static (int Messages, bool EarlierPart) Covered(IReadOnlyList<ChatMessageDto> history, CompactionPlan plan)
+    {
+        var (own, dropped, droppedEarlier, summary) = Walk(history, plan);
+        return (own + dropped, droppedEarlier || summary);
+    }
+
+    /// <summary>The messages already dropped before those <paramref name="plan"/> removes, as the markers among them say —
+    /// or the note a summary among them carries; <c>null</c> when they hold none.</summary>
+    internal static (int Messages, bool EarlierPart)? AlreadyDropped(IReadOnlyList<ChatMessageDto> history, CompactionPlan plan)
+    {
+        var (_, dropped, droppedEarlier, _) = Walk(history, plan);
+        return dropped > 0 || droppedEarlier ? (dropped, droppedEarlier) : null;
+    }
+
+    /// <summary>Reads the removed range: the conversation's messages, the markers' counts, whether a marker (or a head this
+    /// code does not read) stood for a part beyond any count, and whether a summary is among them.</summary>
+    private static (int Own, int Dropped, bool DroppedEarlier, bool Summary) Walk(IReadOnlyList<ChatMessageDto> history,
+                                                                                 CompactionPlan plan)
+    {
+        var (own, dropped, droppedEarlier, summary) = (0, 0, false, false);
+        var end = Math.Min(plan.Start + plan.Count, history.Count);
+        for (var i = plan.Start; i < end; i++)
+        {
+            var m = history[i];
+            if (!m.IsScaffolding) { own++; continue; }
+            if (m.Content == SummaryHeading)
+            {
+                summary = true;
+                if (i + 1 < end && history[i + 1].Role == "assistant")
+                {
+                    // A summary made over a marker carries what was dropped before it: summarised again, it is said again.
+                    if (NoteOf(history[i + 1].Content) is { } note) { dropped += note.Dropped; droppedEarlier |= note.EarlierPart; }
+                    i++;
+                }
+                continue;
+            }
+            // ⚠ A head this code does not read counts as a part beyond any count, never as one message.
+            if (MarkerOf(m.Content) is { } marker) { dropped += marker.Dropped; droppedEarlier |= marker.EarlierPart; }
+            else droppedEarlier = true;
+        }
+        return (own, dropped, droppedEarlier, summary);
+    }
+
+    /// <summary>A marker this code wrote, read back: recognised only by writing it again from the number it holds.</summary>
+    private static (int Dropped, bool EarlierPart)? MarkerOf(string? content) =>
+        content is null || FirstNumber(content) is not { } dropped ? null
+        : content == TruncationMarker(dropped) ? (dropped, false)
+        : content == TruncationMarker(dropped, earlierPart: true) ? (dropped, true)
+        : null;
+
+    /// <summary>The note <see cref="DroppedBeforeSummaryMarker"/> ends a summary with, read back the same way.</summary>
+    private static (int Dropped, bool EarlierPart)? NoteOf(string? summary)
+    {
+        var at = summary?.LastIndexOf(NoteStart, StringComparison.Ordinal) ?? -1;
+        if (at < 0) return null;
+        var note = summary![at..];
+        return FirstNumber(note) is not { } dropped ? null
+             : note == DroppedBeforeSummaryMarker(dropped, false) ? (dropped, false)
+             : note == DroppedBeforeSummaryMarker(dropped, true) ? (dropped, true)
+             : null;
+    }
+
+    /// <summary>The words every <see cref="DroppedBeforeSummaryMarker"/> starts with: written and read back by the same.</summary>
+    private const string NoteStart = "\n\n[Context Note] Before the part this summary covers, ";
+
+    /// <summary>The first whole number in <paramref name="text"/>, 0 when it holds none; <c>null</c> when it does not fit
+    /// an int.</summary>
+    private static int? FirstNumber(string text)
+    {
+        var start = 0;
+        while (start < text.Length && !char.IsAsciiDigit(text[start])) start++;
+        var length = 0;
+        while (start + length < text.Length && char.IsAsciiDigit(text[start + length])) length++;
+        if (length == 0) return 0;
+        return int.TryParse(text.AsSpan(start, length), System.Globalization.NumberStyles.None,
+                            System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
+    }
 
     /// <summary>
     /// Appended to a summary that stopped at the model's length limit: the summary is kept — better than dropping the
@@ -299,9 +397,12 @@ internal static class HistoryCompaction
     /// </remarks>
     public static void ApplyTruncation(List<ChatMessageDto> history, CompactionPlan plan)
     {
+        // ⚠ The count is what the range stands for, never its length: a marker in it stood for many messages, and counted
+        // as one the model reads "5 dropped" for 41 — what was said there reads as never said.
+        var (dropped, earlierPart) = Covered(history, plan);
         history.RemoveRange(plan.Start, plan.Count);
         history.Insert(plan.Start,
-                       new ChatMessageDto("user", TruncationMarker(plan.Count)) { IsScaffolding = true });
+                       new ChatMessageDto("user", TruncationMarker(dropped, earlierPart)) { IsScaffolding = true });
     }
 
     /// <summary>

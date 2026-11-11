@@ -250,7 +250,7 @@ internal class InferpalConfig
     /// User-defined slash command templates, one per line in the format <c>/name=text</c>.
     /// Use <c>{args}</c> as a placeholder for extra words typed after the command name.
     /// </summary>
-    [CollectionSetting(CollectionShape.Lines)]
+    [CollectionSetting(CollectionShape.NameValueLines)]
     [JsonPropertyName("promptTemplates")]
     public string PromptTemplates { get; set; } = string.Empty;
 
@@ -259,7 +259,7 @@ internal class InferpalConfig
     /// The tool name must be snake_case. The command runs in PowerShell with an optional
     /// <c>args</c> parameter appended when the model provides extra arguments.
     /// </summary>
-    [CollectionSetting(CollectionShape.Lines)]
+    [CollectionSetting(CollectionShape.NameValueLines)]
     [JsonPropertyName("customTools")]
     public string CustomTools { get; set; } = string.Empty;
 

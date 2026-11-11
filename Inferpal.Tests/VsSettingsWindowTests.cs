@@ -89,6 +89,53 @@ public sealed class VsSettingsWindowTests : IDisposable
         Assert.Contains("src/pinned.cs", OnDisk().PinnedContextFiles, StringComparison.Ordinal);
     }
 
+    /// <summary>A command row saved on its own merges with what the settings took since the window opened — a command
+    /// another editor added, followed into the shared copy —, never writes the window's list whole over it. The same for a
+    /// tool.</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task VisualStudiosSettingsWindow_ARowSavedOnItsOwn_KeepsWhatAnotherEditorAddedSince(bool commands)
+    {
+        new InferpalConfig { DefaultModel = "m", PromptTemplates = "/a=A", CustomTools = "a=echo a" }.Save();
+        var config = InferpalConfig.Load();
+        await using var mcp = new Services.Mcp.McpToolService(config, new Approve());
+        var form = new InferpalSettingsData(config, new FakeInferenceProvider(), null!, mcp);
+
+        // Another editor adds one; the chat follows the file into the copy the window shares.
+        if (commands) config.PromptTemplates = "/a=A\n/b=B"; else config.CustomTools = "a=echo a\nb=echo b";
+        (commands ? form.SlashCommandRows : form.CustomToolRows)[0].Enabled = false;   // saved on its own, at once
+
+        var onDisk = commands ? OnDisk().PromptTemplates : OnDisk().CustomTools;
+        string[] expected = commands ? ["#/a=A", "/b=B"] : ["#a=echo a", "b=echo b"];
+        Assert.Equal(expected, onDisk.Split('\n').Order(StringComparer.Ordinal));   // in either order
+        Assert.Equal(2, (commands ? form.SlashCommandRows : form.CustomToolRows).Count);   // and the window shows it
+    }
+
+    /// <summary>Saved while the pinned-file editor is open, the form cannot show the file the chat pinned meanwhile: the
+    /// edit committed after it must not read that file as the person's removal.</summary>
+    [Fact]
+    public async Task VisualStudiosSettingsWindow_SavedWithThePinnedEditorOpen_KeepsWhatTheChatPinned()
+    {
+        new InferpalConfig { DefaultModel = "m" }.Save();
+        var config = InferpalConfig.Load();
+        await using var mcp = new Services.Mcp.McpToolService(config, new Approve());
+        var form = new InferpalSettingsData(config, new FakeInferenceProvider(), null!, mcp);
+
+        await form.AddPinnedCommand.ExecuteAsync(null, null!, CancellationToken.None);
+        Assert.True(form.IsEditingPinned);   // witness: the editor is open
+        config.PinnedContextFiles = "src/pinned.cs";   // the chat pins a file
+        form.ContextWindowSizeText = "30000";
+        await form.SaveCommand.ExecuteAsync(null, null!, CancellationToken.None);
+        Assert.Equal(30000, OnDisk().ContextWindowSize);
+
+        form.EditPinnedPath = "src/mine.cs";
+        await form.SavePinnedCommand.ExecuteAsync(null, null!, CancellationToken.None);
+
+        Assert.Contains("src/mine.cs", OnDisk().PinnedContextFiles, StringComparison.Ordinal);   // witness: the edit landed
+        Assert.Contains("src/pinned.cs", OnDisk().PinnedContextFiles, StringComparison.Ordinal);
+    }
+
     private sealed class Approve : Services.Execution.IApprovalService
     {
         public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null,

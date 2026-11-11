@@ -123,31 +123,31 @@ internal static class ContextManager
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
                                        failure ?? Strings.MsgContextCompactionEmpty, window);
 
+        // ⚠ An incomplete summary is KEPT — dropping it would lose the turns entirely, and the window is fullest
+        // exactly when compaction runs — but it is said to both readers: read as whole, the model denies what was said
+        // in the part it misses, and the user reads "compacted". Two causes, two sentences: the summary stopped at the
+        // length limit, or the oldest turns never reached the summarizer. And messages dropped before the summarised turns
+        // stay said: the marker that held them is summarised away.
+        var shown = summary;
+        var kept  = summary
+                  + (omitted > 0 ? HistoryCompaction.PartialSummaryMarker(omitted) : string.Empty)
+                  + (cut ? HistoryCompaction.CutSummaryMarker : string.Empty)
+                  + (HistoryCompaction.AlreadyDropped(history, plan) is { } gone
+                        ? HistoryCompaction.DroppedBeforeSummaryMarker(gone.Messages, gone.EarlierPart) : string.Empty);
+
         // ⚠ A summary is not bounded by anything but the model: asked to keep "every key fact", a model can write as much
         // as it was given, and each compaction then summarizes the previous summary too. Kept, it leaves the
         // conversation over the trigger — the next request is refused, larger at every turn. Truncation at least fits.
-        if (!FitsAfterSummary(history, plan, summary, toolTokens, window))
+        // Measured as the model keeps it, its notes included.
+        if (!FitsAfterSummary(history, plan, kept, toolTokens, window))
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
                                        Strings.MsgContextSummaryTooLong, window);
 
         var notice = Strings.MsgContextCompacted(plan.Count, plan.KeepTurns)
                    + (plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty);
-        // ⚠ An incomplete summary is KEPT — dropping it would lose the turns entirely, and the window is fullest
-        // exactly when compaction runs — but it is said to both readers: read as whole, the model denies what was said
-        // in the part it misses, and the user reads "compacted". Two causes, two sentences: the summary stopped at the
-        // length limit, or the oldest turns never reached the summarizer.
-        var shown = summary;
-        if (omitted > 0)
-        {
-            summary += HistoryCompaction.PartialSummaryMarker(omitted);
-            notice  += "\n\n" + Strings.MsgContextSummaryPartial(omitted, plan.Count);
-        }
-        if (cut)
-        {
-            summary += HistoryCompaction.CutSummaryMarker;
-            notice  += "\n\n" + Strings.MsgContextSummaryCut;
-        }
-        return new ContextDecision(ContextOutcome.Compacted, plan, summary, notice, window,
+        if (omitted > 0) notice += "\n\n" + Strings.MsgContextSummaryPartial(omitted, plan.Count);
+        if (cut)         notice += "\n\n" + Strings.MsgContextSummaryCut;
+        return new ContextDecision(ContextOutcome.Compacted, plan, kept, notice, window,
                                    SummaryIncomplete: cut || omitted > 0, ShownSummary: shown);
     }
 
