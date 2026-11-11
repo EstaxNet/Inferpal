@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
 using System.Text.Json;
 
 namespace Inferpal.GhostText;
@@ -54,8 +55,31 @@ internal static class InProcConfig
         UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", "config.json");
 
     private static readonly object _gate = new object();
-    private static Snapshot _cached = new Snapshot { Stamp = -1 };
+    // ⚠ Off until a read says otherwise: the factory values for a file that exists and cannot be read at VS's start
+    // would turn completion back on for someone who has turned it off. An absent file reads as the factory values.
+    private static Snapshot _cached = Unknown();
+
+    /// <summary>What is known before any read: nothing, so no suggestion.</summary>
+    private static Snapshot Unknown() => new Snapshot { Stamp = -1, Enabled = false };
     private static long _cachedStamp = -1;
+
+    // A read that failed is tried again from this time on (Stopwatch timestamp: a clock set back must not hold it off),
+    // never at every keystroke; long.MaxValue once read.
+    private static long _retryAt;
+
+    /// <summary>How long a read that failed is trusted to stay so before it is tried again (tests set it to zero).</summary>
+    internal static TimeSpan RetryUnread { get; set; } = TimeSpan.FromSeconds(2);
+
+    /// <summary>Forgets what was read (tests: the state is the process's).</summary>
+    internal static void ResetForTests()
+    {
+        lock (_gate)
+        {
+            _cached      = Unknown();
+            _cachedStamp = -1;
+            _retryAt     = 0;
+        }
+    }
 
     /// <summary>
     /// The current settings. Re-reads the file only when it changed; never throws — a missing or
@@ -71,11 +95,24 @@ internal static class InProcConfig
         }
         catch (Exception ex) { Diagnostics.Swallow("InProcConfig.Stat", ex); return _cached; }
 
+        Snapshot kept;
         lock (_gate)
         {
-            if (stamp == _cachedStamp) return _cached;
-            _cached      = Read(stamp);
+            if (stamp == _cachedStamp && Stopwatch.GetTimestamp() < _retryAt) return _cached;
+            kept = _cached;
+        }
+        // Read outside the lock: a file held a moment is read again (off the UI thread), and a keystroke on the UI thread
+        // must not wait behind it.
+        var (snapshot, failed) = Read(stamp, kept);
+        lock (_gate)
+        {
+            _cached      = snapshot;
             _cachedStamp = stamp;
+            // ⚠ A failed read is not cached under the file's date: a file read while it is replaced — the person has just
+            // turned completion off — would keep the old values under the new date, and never be read again.
+            _retryAt     = failed
+                ? Stopwatch.GetTimestamp() + (long)(RetryUnread.TotalSeconds * Stopwatch.Frequency)
+                : long.MaxValue;
             return _cached;
         }
     }
@@ -88,32 +125,32 @@ internal static class InProcConfig
     /// The distinction is not cosmetic: <c>Enabled</c> defaults to <c>true</c>, so a truncated
     /// <c>config.json</c> — a concurrent write, a full disk — turned inline completion back on for
     /// someone who had turned it off, and put the sidecar back to consuming GPU without a word. A
-    /// preference one can no longer read is not a preference that has just changed.
+    /// preference one can no longer read is not a preference that has just changed. ⚠ The values kept carry the stamp
+    /// they were read at: a new stamp recycles the sidecar, whose own read of the unreadable file would give it the
+    /// factory backend and model for its life.
     /// </remarks>
-    private static Snapshot Read(long stamp)
+    private static (Snapshot Snapshot, bool Failed) Read(long stamp, Snapshot kept)
     {
         var snap = new Snapshot { Stamp = stamp };
         try
         {
-            if (!File.Exists(ConfigPath)) return snap;
-            Parse(File.ReadAllText(ConfigPath), snap);
+            if (!File.Exists(ConfigPath)) return (snap, false);
+            Parse(Inferpal.Services.Signals.SignalFile.ReadShared(ConfigPath), snap);
         }
         catch (Exception ex)
         {
-            Diagnostics.Swallow("InProcConfig.Read", ex);
-            // The last values READ, at the new stamp so as not to re-read on every keystroke a file
-            // that will not be read. Nothing is lost: the next valid write changes the stamp and
-            // comes back through here.
-            return new Snapshot
+            // Once per state of the file: tried again every few seconds while typing, it would flush the ring.
+            Diagnostics.RecordOnce("InProcConfig.Read", $"{ex.GetType().Name}: {ex.Message}", stamp.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            return (new Snapshot
             {
-                Enabled  = _cached.Enabled,
-                Mode     = _cached.Mode,
-                Model    = _cached.Model,
-                OnDemand = _cached.OnDemand,
-                Stamp    = stamp,
-            };
+                Enabled  = kept.Enabled,
+                Mode     = kept.Mode,
+                Model    = kept.Model,
+                OnDemand = kept.OnDemand,
+                Stamp    = kept.Stamp,
+            }, true);
         }
-        return snap;
+        return (snap, false);
     }
 
     /// <summary>Fills <paramref name="snap"/> from the text of <c>config.json</c>; a key absent keeps its default. Throws

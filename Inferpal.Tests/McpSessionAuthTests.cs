@@ -25,6 +25,7 @@ namespace Inferpal.Tests;
 /// service the user no longer uses, kept by a store that nothing ever pruned.
 /// </para>
 /// </remarks>
+[Collection(GlobalConfigPathCollection.Name)]   // one test reads the settings file through the default reader
 public sealed class McpSessionAuthTests : IDisposable
 {
     private readonly string _storePath = Path.Combine(Path.GetTempPath(), $"inferpal-mcp-oauth-{Guid.NewGuid():N}.dat");
@@ -223,6 +224,37 @@ public sealed class McpSessionAuthTests : IDisposable
         await service.RefreshAsync();
 
         Assert.NotNull(Store().Get("removed"));
+    }
+
+    /// <summary>The default reader of the shared list: a settings file that exists and cannot be read is not the factory
+    /// values' empty server list — the sign-ins of the servers only the file declares (the other editor's) stay.</summary>
+    [Fact]
+    public async Task ASettingsFileThatCannotBeRead_ForgetsNoSignIn()
+    {
+        var previous = InferpalConfig.OverridePathForTests;
+        var dir = Directory.CreateTempSubdirectory("inferpal-mcp-config").FullName;
+        InferpalConfig.OverridePathForTests = Path.Combine(dir, "config.json");
+        try
+        {
+            var store = Store();
+            store.Save("added-elsewhere", SignedIn());
+            store.Save("removed", SignedIn());
+            File.WriteAllText(InferpalConfig.OverridePathForTests, "{ \"mcpServersJson\": ");   // cut off: not JSON
+            var service = new McpToolService(OneRemoteServer("kept"), new Approves(), cfg => new Offline(cfg), tokenStore: store);
+            await service.RefreshAsync();
+            Assert.NotNull(Store().Get("added-elsewhere"));
+            Assert.NotNull(Store().Get("removed"));
+
+            // Reference arm: the file read, and listing neither server, they are gone.
+            new InferpalConfig { McpServersJson = """{ "kept": { "url": "https://mcp.example.com/mcp" } }""" }.Save();
+            await service.RefreshAsync();
+            Assert.Null(Store().Get("removed"));
+        }
+        finally
+        {
+            InferpalConfig.OverridePathForTests = previous;
+            try { Directory.Delete(dir, recursive: true); } catch { /* best-effort cleanup */ }
+        }
     }
 
     [Theory]

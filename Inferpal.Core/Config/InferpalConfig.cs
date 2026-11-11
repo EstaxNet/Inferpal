@@ -636,8 +636,22 @@ internal class InferpalConfig
     private static InferpalConfig?          _cached;
     private static string?                  _cachedPath;
     private static DateTime                 _cachedStamp;
+    private static long                     _cachedRetryAt = long.MaxValue;
+    private static bool                     _lastLoadUnreadable;
+
+    /// <summary>How long a file that could not be read is trusted to stay so before it is read again (tests set it to
+    /// zero).</summary>
+    internal static TimeSpan RetryUnreadable { get; set; } = TimeSpan.FromSeconds(2);
+
+    /// <summary>Whether the settings file existed and could not be read at <see cref="Load"/>'s last read — what it
+    /// answers is then the values read before, or the factory ones: what the file holds now is unknown.</summary>
+    internal static bool LastLoadUnreadable { get { lock (_loadLock) return _lastLoadUnreadable; } }
 
     /// <summary>Reads the configuration, reusing the last parse while the file is unchanged.</summary>
+    /// <remarks>⚠ A file that cannot be read is not the factory values, nor a reason to cache them under its date: read
+    /// while the other editor replaces it, they would stand until the next write — the ignore files of Visual Studio's
+    /// menus, the completion settings. It keeps the instance read before (the factory values only at the first read),
+    /// and is read again after <see cref="RetryUnreadable"/>, never at every keystroke.</remarks>
     public static InferpalConfig Load()
     {
         var path  = EffectiveConfigPath;
@@ -645,14 +659,23 @@ internal class InferpalConfig
 
         lock (_loadLock)
         {
-            if (_cached is not null && _cachedPath == path && _cachedStamp == stamp)
+            if (_cached is not null && _cachedPath == path && _cachedStamp == stamp
+                && Environment.TickCount64 < _cachedRetryAt)
                 return _cached;
         }
 
         var fresh = LoadUncached();
+        var unreadable = fresh.FileUnreadable;
 
         lock (_loadLock)
         {
+            _lastLoadUnreadable = unreadable;
+            _cachedRetryAt = unreadable ? Environment.TickCount64 + (long)RetryUnreadable.TotalMilliseconds : long.MaxValue;
+            if (unreadable && _cached is not null && _cachedPath == path)
+            {
+                _cachedStamp = stamp;
+                return _cached;
+            }
             _cached      = fresh;
             _cachedPath  = path;
             _cachedStamp = stamp;
@@ -725,14 +748,16 @@ internal class InferpalConfig
             // MUTE: a user whose backends, per-role models, MCP servers and permission rules have
             // "disappeared" otherwise has nowhere to look, and nothing tells that apart from a
             // first install.
-            Services.Diagnostics.Record("InferpalConfig.Load",
+            // Once while it lasts: a read that fails is tried again every few seconds on a path read at each keystroke.
+            Services.Diagnostics.RecordOnce("InferpalConfig.Load",
                 $"{path} exists but could not be read ({error!.GetType().Name}: {error.Message}) — "
-                + "factory defaults are used for this session, and the file will be set aside at the "
-                + "next save rather than overwritten.");
-            cfg = new InferpalConfig();
+                + "the settings read before (factory defaults at the first read) are used until it can be, and the "
+                + "file will be set aside at the next save rather than overwritten.", path);
+            cfg = new InferpalConfig { FileUnreadable = true };
         }
 
         if (follow) Services.Diagnostics.Forget("InferpalConfig.Follow", path);
+        else if (!cfg.FileUnreadable) Services.Diagnostics.Forget("InferpalConfig.Load", path);   // read, or gone: said again if it breaks
         // ⚠ No Strings.ApplyLanguage here: the interface language belongs to the process, and is applied by the adapter
         // that owns it. Applied by every read, "Auto" put the VS Code host back to the system's language — in place of
         // the editor's — whenever anything read the file: the MCP servers at each refresh, a thread following the file.
@@ -754,7 +779,9 @@ internal class InferpalConfig
         repaired = [];
         try
         {
-            cfg = JsonSerializer.Deserialize<InferpalConfig>(File.ReadAllText(path));
+            // Opened sharing write and delete, a held file read again (off the UI thread): the other editor replacing
+            // the file neither makes it unreadable nor is refused its rename.
+            cfg = JsonSerializer.Deserialize<InferpalConfig>(Services.Signals.SignalFile.ReadShared(path));
             if (cfg is not null)
             {
                 repaired = RepairNullText(cfg);
@@ -847,6 +874,10 @@ internal class InferpalConfig
     // only. Null for a copy that never saw a readable file.
     private System.Text.Json.Nodes.JsonObject? _fileAsRead;
 
+    /// <summary>This copy holds the factory values because the file existed and could not be read — not a first install.</summary>
+    [JsonIgnore]
+    internal bool FileUnreadable { get; private init; }
+
     public void Save()
     {
         var path = SavePathForTests ?? EffectiveConfigPath;
@@ -917,7 +948,7 @@ internal class InferpalConfig
         snapshot = Snapshot(cfg!);
         try
         {
-            if (System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path)) is System.Text.Json.Nodes.JsonObject raw)
+            if (System.Text.Json.Nodes.JsonNode.Parse(Services.Signals.SignalFile.ReadShared(path)) is System.Text.Json.Nodes.JsonObject raw)
                 foreach (var (key, value) in raw)
                     if (!snapshot.ContainsKey(key))
                         snapshot[key] = value?.DeepClone();

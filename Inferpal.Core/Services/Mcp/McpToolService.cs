@@ -197,7 +197,13 @@ internal sealed class McpToolService : IAsyncDisposable
         _clientFactory     = clientFactory ?? DefaultClientFactory;
         _reconnectBackoff  = reconnectBackoff ?? DefaultReconnectBackoff;
         _tokenStore        = tokenStore ?? new McpTokenStore(McpTokenStore.DefaultPath);
-        _sharedServersJson = sharedServersJson ?? (() => InferpalConfig.Load().McpServersJson);
+        // ⚠ What the file holds NOW decides: on a file that cannot be read, Load() answers the list read before (or the
+        // factory one, empty and valid), and a server the other editor has just added would lose its sign-in. Unreadable,
+        // the reader throws, and nothing is forgotten (ForgetSignInsOfRemovedServers).
+        _sharedServersJson = sharedServersJson ?? (() =>
+            InferpalConfig.Load() is var config && !InferpalConfig.LastLoadUnreadable
+                ? config.McpServersJson
+                : throw new IOException("config.json exists but cannot be read"));
         if (_config.McpEnabled)
             _ = RefreshAsync();
     }
