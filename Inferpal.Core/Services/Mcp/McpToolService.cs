@@ -337,6 +337,69 @@ internal sealed class McpToolService : IAsyncDisposable
     }
 
     /// <summary>
+    /// Whether the repository's servers must be read again before the question: their MCP files changed
+    /// (<see cref="RepositoryFilesChanged"/>), or a checkout, a pull or a commit changed the files an agreed server runs —
+    /// its definition stays, and it would answer from the code of the commit left until the editor restarts. Read again,
+    /// its agreement is asked for anew (it covers those files) and the new code starts once agreed to.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Followed at a COMMIT, not at every write: a server that writes beside its code (a log, a cache) outside git, and a
+    /// person editing their own server, would otherwise be asked about at every question; their next start is checked, as
+    /// before. HEAD is read from its files (<see cref="GitProcess.HeadStamp"/>), and the agreed files are listed only when it
+    /// moved, each server's at once. ⚠ The move counts as looked at only once a comparison ENDED: a stopped question, or
+    /// files that cannot be looked at now (git gave no answer: said, and nothing started again), are looked at again at the
+    /// next question — marked seen, the new code would answer until the editor restarts. Never while a refresh runs (it
+    /// reads them itself).
+    /// </remarks>
+    public async Task<bool> RepositoryChangedAsync(CancellationToken ct = default)
+    {
+        if (RepositoryFilesChanged()) return true;
+        if (_gate.CurrentCount == 0) return false;
+        if (_repoRead is not { } read || !PathComparer.SameDirectory(read.Workspace, WorkspaceRoot?.Invoke())) return false;
+        var agreed = _agreedRepository.Values.Where(a => a.Server.Files is not null).ToList();
+        if (agreed.Count == 0) return false;
+        var head = GitProcess.WorkTreeOf(read.Root) is { } tree ? GitProcess.HeadStamp(tree) : null;
+        if (head is null || head == _agreedHead) return false;
+        (string? Changed, string? Unknown)[] checks;
+        try
+        {
+            checks = await Task.WhenAll(agreed.Select(a => Task.Run(
+                () => RepoMcpServers.CheckAsync(a.Server, a.Root, CoveredFilesCap, ct), ct))).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("McpToolService.RepositoryCode", ex);
+            return false;
+        }
+        for (var i = 0; i < checks.Length; i++)
+            if (checks[i].Changed is { } changed)
+            {
+                Diagnostics.Record("Mcp", $"Repository MCP server '{agreed[i].Server.Name}' ({agreed[i].Server.Source}): {changed} " +
+                                          "changed with the commit checked out; its servers are read again before the question.");
+                _agreedHead = head;
+                return true;
+            }
+        for (var i = 0; i < checks.Length; i++)
+            if (checks[i].Unknown is { } why)
+            {
+                Diagnostics.RecordOnce("Mcp", $"Repository MCP server '{agreed[i].Server.Name}' ({agreed[i].Server.Source}): the " +
+                                              $"commit checked out moved, and {why}; looked at once more before the next question, " +
+                                              "then at the server's next start.", "repo-mcp-unknown:" + head);
+                // Once more, not at every question: git that stays silent would hold every question for its whole budget.
+                if (_unknownHead == head) _agreedHead = head;
+                _unknownHead = head;
+                return false;
+            }
+        _agreedHead = head;
+        return false;
+    }
+
+    // The commit checked out when the agreed servers' files were covered or last looked at (GitProcess.HeadStamp): a later
+    // question compares it (RepositoryChangedAsync). And the one whose files could not be looked at once already.
+    private volatile string? _agreedHead;
+    private volatile string? _unknownHead;
+
+    /// <summary>
     /// Tears down any running servers and re-connects from the current config. Safe to call
     /// repeatedly (e.g. after the user edits MCP settings); calls are serialized.
     /// </summary>
@@ -382,6 +445,7 @@ internal sealed class McpToolService : IAsyncDisposable
             var repository = await RepositoryServersAsync(
                 [.. servers.Select(s => s.Name), .. rejected.Select(r => r.Name)]).ConfigureAwait(false);
             _agreedRepository = repository.Agreed;
+            _agreedHead = repository.Head;
             // An editor's server signed in to keeps its sign-in while the editor passes it.
             ForgetSignInsOfRemovedServers(servers, rejected, [.. repository.Names, .. given.Select(g => g.Name)]);
             // The editor's servers come last, and a name already taken is the user's own server: said, not started twice.
@@ -515,7 +579,7 @@ internal sealed class McpToolService : IAsyncDisposable
     /// folders hold too many files to cover (<see cref="RepoMcpServer.Files"/> <c>null</c>) keeps no agreement.
     /// </remarks>
     private async Task<(List<McpServerConfig> Start, List<McpServerStatus> NotStarted, List<string> Names,
-                        Dictionary<McpServerConfig, (string Root, RepoMcpServer Server)> Agreed)> RepositoryServersAsync(
+                        Dictionary<McpServerConfig, (string Root, RepoMcpServer Server)> Agreed, string? Head)> RepositoryServersAsync(
         IReadOnlyCollection<string> configured)
     {
         var start = new List<McpServerConfig>();
@@ -530,9 +594,11 @@ internal sealed class McpToolService : IAsyncDisposable
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             Diagnostics.Swallow("McpToolService.RepositoryServers", ex);
-            return (start, notStarted, names, agreedTo);
+            return (start, notStarted, names, agreedTo, null);
         }
-        if (scan.Root is not { } root) return (start, notStarted, names, agreedTo);
+        if (scan.Root is not { } root) return (start, notStarted, names, agreedTo, null);
+        // The commit checked out, read BEFORE the files are covered: a checkout between the two is seen at the next question.
+        var head = GitProcess.WorkTreeOf(root) is { } tree ? GitProcess.HeadStamp(tree) : null;
         // What these servers were read from: a later question compares it (RepositoryFilesChanged).
         if (scan is { Stamp: { } stamp, Content: { } content }) _repoRead = new RepoRead(workspace, root, stamp, content);
 
@@ -634,7 +700,7 @@ internal sealed class McpToolService : IAsyncDisposable
             start.Add(config);
             agreedTo[config] = (root, server);
         }
-        return (start, notStarted, names, agreedTo);
+        return (start, notStarted, names, agreedTo, head);
     }
 
     /// <summary>

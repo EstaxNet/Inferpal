@@ -18,7 +18,9 @@ internal sealed record RepoMcpFile(string Path, string Digest, string Stamp);
 /// <summary>What an agreement to start a repository's server covers: its files, or why they cannot be covered.</summary>
 /// <param name="Files">In path order; <c>null</c> when they cannot be covered.</param>
 /// <param name="Uncovered">Why not, in English: the server's status line and <c>/diagnostics</c> read it.</param>
-internal sealed record RepoMcpCoverage(IReadOnlyList<RepoMcpFile>? Files, string? Uncovered);
+/// <param name="Unknown">The files could not be looked at NOW — git gave no answer, a file could not be read —, which says
+/// nothing of whether they changed: unlike a folder grown past what can be covered.</param>
+internal sealed record RepoMcpCoverage(IReadOnlyList<RepoMcpFile>? Files, string? Uncovered, bool Unknown = false);
 
 /// <summary>
 /// The repository's files a server's definition runs: every file its command, its arguments, its environment — or the
@@ -160,7 +162,7 @@ internal static class RepoMcpFiles
             // The folders: what git tracks under them, or the walk outside git.
             var listed = await ListAsync(folders.Where(f => !Same(f, root)).Order(StringComparer.Ordinal).ToList(),
                                          root, cap, ct).ConfigureAwait(false);
-            if (listed.Uncovered is { } why) return new RepoMcpCoverage(null, why);
+            if (listed.Uncovered is { } why) return new RepoMcpCoverage(null, why, Unknown: listed.Unknown);
 
             // ⚠ Every named file is covered, tracked or not: "git does not track it" cannot be read safely — a path
             // written in another case than git's matches no pathspec, and a workspace inside another repository's work
@@ -179,14 +181,14 @@ internal static class RepoMcpFiles
                 ct.ThrowIfCancellationRequested();
                 if (entry.Kind == Kind.Outside) { files.Add(new RepoMcpFile(path, "link:" + entry.Path, "")); continue; }
                 if (Digest(entry.Path, prior?.GetValueOrDefault(path), ref budget) is not { } file)
-                    return new RepoMcpCoverage(null, $"{path} cannot be read");
+                    return new RepoMcpCoverage(null, $"{path} cannot be read", Unknown: true);
                 files.Add(file with { Path = path });
             }
             return new RepoMcpCoverage(files, null);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or RegexMatchTimeoutException)
         {
-            return new RepoMcpCoverage(null, $"its files could not be read ({ex.Message})");
+            return new RepoMcpCoverage(null, $"its files could not be read ({ex.Message})", Unknown: true);
         }
     }
 
@@ -286,10 +288,10 @@ internal static class RepoMcpFiles
     /// <summary>
     /// The files under <paramref name="folders"/>: tracked by git, or walked outside git — or why they cannot be listed.
     /// </summary>
-    private static async Task<(IReadOnlyList<string>? Files, string? Uncovered)> ListAsync(
+    private static async Task<(IReadOnlyList<string>? Files, string? Uncovered, bool Unknown)> ListAsync(
         IReadOnlyList<string> folders, string root, int cap, CancellationToken ct)
     {
-        if (folders.Count == 0) return ([], null);
+        if (folders.Count == 0) return ([], null, false);
         var relative = folders.Select(f => Relative(f, root)).ToList();
 
         // A name git's command line cannot carry as written is walked instead.
@@ -304,27 +306,27 @@ internal static class RepoMcpFiles
             // ⚠ --recurse-submodules: without it a submodule is one gitlink entry, and what a pull rewrites inside it
             // is covered by nothing.
             var run = await GitProcess.CaptureAsync("ls-files -z --recurse-submodules -- " + pathspecs, root, ct).ConfigureAwait(false);
-            if (run.TimedOut) return (null, "git gave no answer when its files were listed");
+            if (run.TimedOut) return (null, "git gave no answer when its files were listed", true);
             if (run.ExitCode == 0)
             {
                 if (run.Stdout.Length >= ChildProcess.MaxCapturedChars)
-                    return (null, $"the folders it names hold more than {cap} files");
+                    return (null, $"the folders it names hold more than {cap} files", false);
                 var tracked = run.Stdout.Split('\0', StringSplitOptions.RemoveEmptyEntries);
-                if (tracked.Length > cap) return (null, $"the folders it names hold more than {cap} files");
+                if (tracked.Length > cap) return (null, $"the folders it names hold more than {cap} files", false);
                 var listed = tracked.Select(t => Join(root, t)).OfType<string>().Where(p => Under(p, root)).ToList();
                 // ⚠ A folder git lists nothing under, while it holds files, is not git's to describe: written in
                 // another case than git's (a pathspec matches case), or a workspace inside another repository's work
                 // tree that does not track it. Walked, as outside git — covered too much rather than not at all.
                 var untracked = folders.Where(f => !listed.Any(p => ListedUnder(p, f, icase))).ToList();
-                if (untracked.Count == 0) return (listed, null);
+                if (untracked.Count == 0) return (listed, null, false);
                 var (walked, overCap) = Walk(untracked, cap - listed.Count);
-                return overCap ? (null, $"the folders it names hold more than {cap} files") : ([.. listed, .. walked], null);
+                return overCap ? (null, $"the folders it names hold more than {cap} files", false) : ([.. listed, .. walked], null, false);
             }
             // Not a git repository, or no git: the walk below.
         }
 
         var (all, over) = Walk(folders, cap);
-        return over ? (null, $"the folders it names hold more than {cap} files") : (all, null);
+        return over ? (null, $"the folders it names hold more than {cap} files", false) : (all, null, false);
     }
 
     /// <summary>

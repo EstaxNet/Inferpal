@@ -1782,8 +1782,9 @@ internal sealed partial class HostServer : IDisposable
             var follow = Services.Inference.SettingsFollow.Take(s.Config, _fileSettings(), s.Client, ref followed);
             s.FileSettings = followed;
             if (follow.Taken.Count > 0) await AfterSettingsChangedAsync(s, mcpBefore, token);
-            // The repository's MCP files changed (a checkout): its servers are read again — before the question.
-            if (s.Mcp.RepositoryFilesChanged()) await s.Mcp.RefreshAsync();
+            // The repository's MCP files changed, or a checkout changed the code an agreed server runs: its servers are
+            // read again — before the question.
+            if (await s.Mcp.RepositoryChangedAsync(token)) await s.Mcp.RefreshAsync();
             return new ConfigReloadResult(follow.Taken, s.Config.DefaultModel, follow.ServerChanged, s.Config.AgentModel,
                                           Unreadable: follow.Unreadable,
                                           Notice: follow.Unreadable ? Strings.AcpSettingsUnreadable : null);

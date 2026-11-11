@@ -379,6 +379,49 @@ internal static class GitProcess
         return null;
     }
 
+    /// <summary>
+    /// What a checkout, a pull or a commit moves in the work tree <paramref name="workTree"/>, read from its files without
+    /// running git: the size and time of HEAD, of the ref it names, of the packed refs and of the reftable's list; <c>null</c>
+    /// when they cannot be read (said once).
+    /// </summary>
+    /// <remarks>A signal that the commit may have moved, not the commit: cheap enough to read before every question. Git
+    /// rewriting them unchanged (refs packed by gc) costs one look at what it guards, never a wrong answer. A linked work
+    /// tree keeps HEAD in its own git folder and the refs in the common one; a reftable repository keeps a placeholder in
+    /// HEAD and every ref in <c>reftable/</c>, whose list a commit rewrites.</remarks>
+    internal static string? HeadStamp(string workTree)
+    {
+        try
+        {
+            var dotGit = Path.Combine(workTree, ".git");
+            string? gitDir = Directory.Exists(dotGit) ? dotGit : null;
+            if (gitDir is null && File.Exists(dotGit) && File.ReadAllText(dotGit).Trim() is var link
+                && link.StartsWith("gitdir:", StringComparison.Ordinal))
+                gitDir = Path.GetFullPath(Path.Combine(workTree, link["gitdir:".Length..].Trim()));
+            if (gitDir is null) return null;
+            var commonFile = Path.Combine(gitDir, "commondir");
+            var common = File.Exists(commonFile)
+                ? Path.GetFullPath(Path.Combine(gitDir, File.ReadAllText(commonFile).Trim()))
+                : gitDir;
+            var head = Path.Combine(gitDir, "HEAD");
+            var parts = new List<string>
+            {
+                Stamp(head), Stamp(Path.Combine(common, "packed-refs")), Stamp(Path.Combine(common, "reftable", "tables.list")),
+            };
+            if (File.ReadAllText(head).Trim() is var target && target.StartsWith("ref:", StringComparison.Ordinal))
+                parts.Add(Stamp(Path.Combine(common, target[4..].Trim().Replace('/', Path.DirectorySeparatorChar))));
+            return string.Join("|", parts);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException
+                                         or System.Security.SecurityException)
+        {
+            Diagnostics.RecordOnce("Git", $"HEAD of {workTree} could not be read ({ex.GetType().Name}: {ex.Message}): a commit " +
+                                          "there is not followed before a question.", "headstamp:" + workTree);
+            return null;
+        }
+
+        static string Stamp(string path) => new FileInfo(path) is { Exists: true } f ? $"{f.Length}:{f.LastWriteTimeUtc.Ticks}" : "-";
+    }
+
     /// <summary>Whether <paramref name="dir"/> itself is the top of a git work tree (see <see cref="WorkTreeOf"/>).</summary>
     internal static bool IsWorkTreeRoot(string dir)
     {

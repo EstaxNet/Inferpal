@@ -293,7 +293,7 @@ public sealed class RepoMcpServersTests : IDisposable
 
     private (McpToolService Service, RecordingApproval Approval, List<McpServerConfig> Started) Service(
         InferpalConfig? config = null, ApprovalDecision answer = ApprovalDecision.Once,
-        Func<RepoMcpServer, RepoMcpInput, CancellationToken, Task<string?>>? askInput = null)
+        Func<RepoMcpServer, RepoMcpInput, CancellationToken, Task<string?>>? askInput = null, Func<string?>? workspace = null)
     {
         config ??= new InferpalConfig();
         config.McpEnabled = false;                      // no refresh at construction: each test refreshes itself
@@ -302,7 +302,7 @@ public sealed class RepoMcpServersTests : IDisposable
         var service = new McpToolService(config, approval, cfg => new FakeClient(cfg, started, _clients),
                                          reconnectBackoff: [TimeSpan.FromMilliseconds(10)],
                                          tokenStore: new McpTokenStore(Path.Combine(_state, "tokens.bin")),
-                                         sharedServersJson: () => null, workspaceRoot: () => _repo, askInput: askInput)
+                                         sharedServersJson: () => null, workspaceRoot: workspace ?? (() => _repo), askInput: askInput)
         {
             Consents = new RepoMcpConsents { PathOverride = Path.Combine(_state, "consents.json") },
         };
@@ -675,6 +675,175 @@ public sealed class RepoMcpServersTests : IDisposable
         Write("tools/mcp/server.js", "console.log('v2, other code');");   // what a `git pull` does
         await service.RefreshAsync();
         Assert.Equal(2, approval.Prompts);
+        await service.DisposeAsync();
+    }
+
+    /// <summary>
+    /// ⚠ The code a running server runs follows the branch too: a checkout, a pull or a commit that changes only its script
+    /// (its definition stays) is seen at the next question, and the refresh asks its agreement again — otherwise the server
+    /// answers from the code of the commit left until the editor restarts. An edit not committed is not followed there: its
+    /// next start is checked, as before (a server that writes beside its code, a person writing their own server).
+    /// </summary>
+    [Fact]
+    public async Task InAGitRepository_ARunningServersCode_ChangedByACommit_IsAskedAboutAgainBeforeTheNextQuestion()
+    {
+        Write("tools/mcp/server.js", "console.log('v1');");
+        Write(".mcp.json", LocalScript);
+        Assert.True(Git("init -q", _repo) && Git("add -A", _repo) && Git(Commit, _repo),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        var (service, approval, started) = Service();
+        await service.RefreshAsync();
+        Assert.False(await service.RepositoryChangedAsync());           // reference arm: nothing moved
+
+        Write("tools/mcp/server.js", "console.log('v2, being written');");
+        Assert.False(await service.RepositoryChangedAsync());           // not committed: checked at its next start
+        Assert.True(Git("add -A", _repo) && Git(Commit, _repo), "git could not commit: UNDECIDED, not green.");
+        Assert.False(service.RepositoryFilesChanged());                  // its definition did not change
+        Assert.True(await service.RepositoryChangedAsync());
+        await service.RefreshAsync();
+        Assert.Equal(2, approval.Prompts);                               // asked again, for the new code
+        Assert.Equal(2, started.Count);
+        Assert.False(await service.RepositoryChangedAsync());           // the new agreement is the reference now
+        await service.DisposeAsync();
+    }
+
+    /// <summary>Both editors ask before each question whether the code changed with the commit: Visual Studio as it follows
+    /// the settings file, the host at <c>config/reload</c> (VS Code and ACP). Read on the source: the window and the editors
+    /// are not driven here.</summary>
+    [Fact]
+    public void BothEditors_AskWhetherTheRepositoryChanged_BeforeEachQuestion()
+    {
+        var root = ConventionCoverageTests.RepoRoot();
+        Assert.Contains("await _tools.Mcp.RepositoryChangedAsync()", ConventionCoverageTests.CodeOnly(
+            Path.Combine(root, "Inferpal", "ToolWindow", "InferpalToolWindowData.Connection.cs")), StringComparison.Ordinal);
+        Assert.Contains("if (await s.Mcp.RepositoryChangedAsync(token)) await s.Mcp.RefreshAsync();", ConventionCoverageTests.CodeOnly(
+            Path.Combine(root, "Inferpal.Host", "HostServer.cs")), StringComparison.Ordinal);
+    }
+
+    /// <summary>Visual Studio open on nothing has no workspace yet: the refresh still starts the person's own servers — a
+    /// repository's commit is read only where its servers were found.</summary>
+    [Fact]
+    public async Task WithNoWorkspace_TheRefreshStartsThePersonsServers()
+    {
+        var config = new InferpalConfig { McpServersJson = """{ "fs": { "command": "my-server" } }""" };
+        var (service, _, started) = Service(config, workspace: () => string.Empty);
+
+        await service.RefreshAsync();
+
+        Assert.Equal(["fs"], started.Select(c => c.Name));
+        Assert.False(await service.RepositoryChangedAsync());
+        await service.DisposeAsync();
+    }
+
+    /// <summary>A question stopped while the files were compared does not count the commit as looked at: the next question
+    /// compares them — otherwise the new code answers until the editor restarts.</summary>
+    [Fact]
+    public async Task InAGitRepository_AStoppedCheck_IsDoneAgainAtTheNextQuestion()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", LocalScript);
+        Assert.True(Git("init -q", _repo) && Git("add -A", _repo) && Git(Commit, _repo),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        var (service, _, _) = Service();
+        await service.RefreshAsync();
+
+        Write("tools/mcp/server.js", "v2");
+        Assert.True(Git("add -A", _repo) && Git(Commit, _repo), "git could not commit: UNDECIDED, not green.");
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.RepositoryChangedAsync(new CancellationToken(true)));
+        Assert.True(await service.RepositoryChangedAsync());
+        await service.DisposeAsync();
+    }
+
+    /// <summary>A server whose agreement covered no file yet (its script not written, its folder empty) is followed too: the
+    /// commit that brings its code is a change.</summary>
+    [Fact]
+    public async Task InAGitRepository_AServerWhoseFilesWereNone_IsFollowedWhenACommitBringsThem()
+    {
+        Write(".mcp.json", LocalScript);
+        Assert.True(Git("init -q", _repo) && Git("add -A", _repo) && Git(Commit, _repo),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        var (service, _, started) = Service();
+        await service.RefreshAsync();
+        Assert.Single(started);                                          // WITNESS: agreed, and started
+
+        Write("tools/mcp/server.js", "the code");
+        Assert.True(Git("add -A", _repo) && Git(Commit, _repo), "git could not commit: UNDECIDED, not green.");
+        Assert.True(await service.RepositoryChangedAsync());
+        await service.DisposeAsync();
+    }
+
+    /// <summary>A commit that leaves the server's files as they were starts nothing again — and is looked at once.</summary>
+    [Fact]
+    public async Task InAGitRepository_ACommitThatLeavesTheServersCode_AsksNothing()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", LocalScript);
+        Assert.True(Git("init -q", _repo) && Git("add -A", _repo) && Git(Commit, _repo),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        var (service, approval, started) = Service();
+        await service.RefreshAsync();
+
+        Write("README.md", "elsewhere in the repository");
+        Assert.True(Git("add -A", _repo) && Git(Commit, _repo), "git could not commit: UNDECIDED, not green.");
+        Assert.False(await service.RepositoryChangedAsync());
+        Assert.Equal((1, 1), (approval.Prompts, started.Count));
+
+        // Looked at once: an edit not committed since is not compared at the next question (the commit did not move).
+        Write("tools/mcp/server.js", "v2, being written");
+        Assert.False(await service.RepositoryChangedAsync());
+        await service.DisposeAsync();
+    }
+
+    /// <summary>A server that was declined runs nothing to follow: a commit changing its code asks for no refresh — it is
+    /// asked about at its next start.</summary>
+    [Fact]
+    public async Task InAGitRepository_ADeclinedServersCode_ChangingAsksForNoRefresh()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", LocalScript);
+        Assert.True(Git("init -q", _repo) && Git("add -A", _repo) && Git(Commit, _repo),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        var (service, approval, _) = Service(answer: ApprovalDecision.Deny);
+        await service.RefreshAsync();
+
+        Write("tools/mcp/server.js", "v2");
+        Assert.True(Git("add -A", _repo) && Git(Commit, _repo), "git could not commit: UNDECIDED, not green.");
+        Assert.False(await service.RepositoryChangedAsync());
+        Assert.Equal(1, approval.Prompts);
+        await service.DisposeAsync();
+    }
+
+    /// <summary>Outside git there is no commit to follow, and a server that writes beside its code would be asked about at
+    /// every question: its code is checked at its next start only, as before.</summary>
+    [Fact]
+    public async Task OutsideGit_ARunningServersCode_IsCheckedAtItsNextStart_NotAtEveryQuestion()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", LocalScript);
+        var (service, _, _) = Service();
+        await service.RefreshAsync();
+
+        Write("tools/mcp/server.js", "v2");
+        Assert.False(await service.RepositoryChangedAsync());
+        await service.DisposeAsync();
+    }
+
+    /// <summary>Files a commit grew past what can be covered are a change, never "cannot tell": the server is read again
+    /// (and asked about at every start from then on).</summary>
+    [Fact]
+    public async Task InAGitRepository_ACodeACommitGrewPastTheCap_IsAChange()
+    {
+        Write("tools/mcp/server.js", "v1");
+        Write(".mcp.json", LocalScript);
+        Assert.True(Git("init -q", _repo) && Git("add -A", _repo) && Git(Commit, _repo),
+            "git could not make the repository this test needs: UNDECIDED, not green.");
+        var (service, _, _) = Service();
+        await service.RefreshAsync();
+
+        service.CoveredFilesCap = 3;
+        for (var i = 0; i < 4; i++) Write($"tools/mcp/extra{i}.js", "x");
+        Assert.True(Git("add -A", _repo) && Git(Commit, _repo), "git could not commit: UNDECIDED, not green.");
+        Assert.True(await service.RepositoryChangedAsync());
         await service.DisposeAsync();
     }
 

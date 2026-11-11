@@ -131,11 +131,11 @@ internal partial class InferpalToolWindowData
             if (follow.Unreadable && !_settingsUnreadableSaid) await ShowInfoAsync(Strings.AcpSettingsUnreadable);
             if (!follow.Busy) _settingsUnreadableSaid = follow.Unreadable;
             // The question answers with the MCP servers the other editor saved, and the ones the repository declares now
-            // (a checkout changed its .mcp.json): started again before it, not after.
+            // (a checkout changed its .mcp.json, or the code an agreed server runs): started again before it, not after.
             // ⚠ Never under a running turn: a refresh tears every server down, and a slash command (/resume during a
             // step pause) runs this mid-run — then it waits for the turn to end (RefreshWhenIdleAsync says why).
             if (follow.Taken.Contains("mcpEnabled") || follow.Taken.Contains("mcpServersJson")
-                || _tools.Mcp.RepositoryFilesChanged())
+                || await _tools.Mcp.RepositoryChangedAsync())
             {
                 if (TurnDoor.Busy)
                     _ = _tools.Mcp.RefreshWhenIdleAsync(() => TurnDoor.Busy, TimeSpan.FromMilliseconds(500));

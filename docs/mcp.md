@@ -165,9 +165,12 @@ flowchart LR
   pull or an edit changed one of them (or added one), the repository's servers are read again before the question —
   a changed definition is asked about again, a server the files no longer declare stops. No restart, no command.
 - **Your agreement also covers the repository's files the server runs.** When one of these files changes, the server
-  is asked about again. They are
-  checked once more just before the server starts, and before Inferpal restarts a server that exited: one whose files
-  changed stays stopped, and its status names the file.
+  is asked about again. In a git repository, a checkout, a pull or a commit that changes them is seen before the next
+  question: the servers are read again, you are asked about the new code, and it starts once you agree — the old code
+  does not keep answering. An edit you have not committed is not followed there (a server you are writing yourself, or
+  one that writes beside its code, would ask at every question). These files are checked once more just before the
+  server starts, and before Inferpal restarts a server that exited: one whose files changed stays stopped, and its
+  status names the file.
 - A repository's server you agreed to — and a server your ACP client passes — has a card of its own in the settings,
   under your list, with its state and its cause. It cannot be edited from there (its definition is not yours), but an
   HTTP server that asks for a sign-in is signed in to there, with the same **Sign in** button as yours.

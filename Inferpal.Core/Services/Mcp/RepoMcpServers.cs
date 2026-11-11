@@ -317,11 +317,32 @@ internal static class RepoMcpServers
     public static async Task<string?> ChangedSinceAsync(RepoMcpServer agreed, string root, int cap = RepoMcpFiles.MaxFiles,
                                                          CancellationToken ct = default)
     {
-        if (agreed.Files is not { } then) return null;
+        var (changed, unknown) = await CheckAsync(agreed, root, cap, ct).ConfigureAwait(false);
+        return changed ?? (unknown is { } why ? $"its files ({why})" : null);
+    }
+
+    /// <summary>
+    /// An agreed server's files now against what its agreement covered: the first that changed — changed, new, gone, or
+    /// files grown past what can be covered —, or why they cannot be looked at now (<c>Unknown</c>: git gave no answer, a
+    /// file could not be read), or neither. Neither as well for a server whose files were never covered, which the caller
+    /// judges itself.
+    /// </summary>
+    /// <remarks>A start takes "cannot be looked at" for a change (<see cref="ChangedSinceAsync"/>: nothing runs on code no
+    /// one could check); a question does not — it is no reason to start everything again.</remarks>
+    internal static async Task<(string? Changed, string? Unknown)> CheckAsync(RepoMcpServer agreed, string root,
+        int cap = RepoMcpFiles.MaxFiles, CancellationToken ct = default)
+    {
+        if (agreed.Files is not { } then) return (null, null);
         var now = await RepoMcpFiles.CoverAsync(agreed.Definition, root, cap, previous: then, ct: ct).ConfigureAwait(false);
-        if (now.Files is not { } files) return $"its files ({now.Uncovered})";
+        if (now.Files is { } files) return (FirstDifference(then, files), null);
+        return now.Unknown ? (null, now.Uncovered) : ($"its files ({now.Uncovered})", null);
+    }
+
+    /// <summary>The first file of <paramref name="now"/> not as it was <paramref name="then"/> — changed, new or gone.</summary>
+    private static string? FirstDifference(IReadOnlyList<RepoMcpFile> then, IReadOnlyList<RepoMcpFile> now)
+    {
         var before = then.ToDictionary(f => f.Path, f => f.Digest, StringComparer.Ordinal);
-        foreach (var file in files)
+        foreach (var file in now)
             if (!before.Remove(file.Path, out var digest) || digest != file.Digest) return file.Path;
         return before.Keys.Order(StringComparer.Ordinal).FirstOrDefault();
     }
