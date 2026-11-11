@@ -18,12 +18,34 @@ public class PermissionsCommandHandlerTests
 
     // ── The state that brought the command into being ───────────────────────
 
+    /// <summary>A file that does not read is not "nothing in force": the approval card keeps the rules it last read from
+    /// it, or asks for every action — the listing says so, never the opposite.</summary>
     [Fact]
-    public void BrokenJson_SaysNoneOfTheRestrictionsAreInForce()
+    public void BrokenJson_SaysTheRulesLastReadStay_OrEveryActionAsks()
     {
         var text = Run("{ this is not json");
 
-        Assert.Contains(Strings.PermissionsOverlayUnusable, text);
+        Assert.Contains(Strings.PermissionsOverlayUnreadable, text);
+        Assert.DoesNotContain(Strings.PermissionsOverlayUnusable, text);
+    }
+
+    /// <summary>A file another program holds reads as the unreadable state, never as absent nor as "no rules" — the
+    /// settings tables of both editors read it through the same reader. (Windows' sharing; a POSIX lock is advisory.)</summary>
+    [Fact]
+    public void AHeldFile_IsSaidUnreadable()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var root = System.IO.Directory.CreateTempSubdirectory("inferpal-perms-held").FullName;
+        try
+        {
+            var path = System.IO.Path.Combine(root, ".inferpal", "permissions.json");
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+            System.IO.File.WriteAllText(path, "{ \"rules\": [ \"deny run_command make .*\" ] }");
+            using (new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.None))
+                Assert.Equal(PermissionsCommandHandler.Unreadable, PermissionsCommandHandler.ReadOverlayFile(root));
+            Assert.Contains(Strings.PermissionsOverlayUnreadable, Run(PermissionsCommandHandler.Unreadable));
+        }
+        finally { try { System.IO.Directory.Delete(root, recursive: true); } catch { /* best-effort cleanup */ } }
     }
 
     [Fact]

@@ -604,6 +604,7 @@ Cliquez sur **Corriger avec l'IA** pour lancer la correction automatique en bouc
   <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_Aucun workspace ouvert._</value></data>
   <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_Aucun overlay dans ce workspace._</value></data>
   <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ Ce fichier n'a pas pu être lu comme une liste de règles : **aucune de ses restrictions n'est en vigueur**. Il doit être du JSON valide avec un tableau `rules`.</value></data>
+  <data name="PermissionsOverlayUnreadable" xml:space="preserve"><value>⚠ Ce fichier ne se lit pas pour l'instant (ce n'est pas du JSON valide, ou un autre programme le tient). **Les règles de refus lues en dernier restent en vigueur ; si aucune n'a été lue, chaque action vous est demandée avant de s'exécuter.** Corrigez le fichier, ou fermez ce qui le tient.</value></data>
   <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_Ne déclare aucune règle deny._</value></data>
   <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ {0} entrée(s) ignorée(s) (ligne malformée ou regex invalide) — ces restrictions ne sont pas en vigueur.</value></data>
   <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>{0} règle(s) `allow` ignorée(s) : un overlay de workspace ne peut que restreindre.</value></data>

@@ -605,6 +605,7 @@ Click **Fix with AI** to automatically fix in a loop, or type `/fix-build`.</val
   <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_No workspace is open._</value></data>
   <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_No overlay in this workspace._</value></data>
   <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ This file could not be read as a rule list: **none of its restrictions are in force**. It must be valid JSON with a `rules` array.</value></data>
+  <data name="PermissionsOverlayUnreadable" xml:space="preserve"><value>⚠ This file cannot be read right now (it is not valid JSON, or another program holds it). **The deny rules last read from it stay in force; if none were read, every action asks you before it runs.** Fix the file, or close what holds it.</value></data>
   <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_Declares no deny rule._</value></data>
   <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ {0} entry(ies) ignored (malformed line or invalid regex) — those restrictions are not in force.</value></data>
   <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>{0} `allow` rule(s) ignored: a workspace overlay can only restrict.</value></data>

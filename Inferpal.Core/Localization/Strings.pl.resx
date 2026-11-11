@@ -604,6 +604,7 @@ Kliknij **Napraw z AI**, aby automatycznie naprawić w pętli, lub wpisz `/fix-b
   <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_Żadna przestrzeń robocza nie jest otwarta._</value></data>
   <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_Brak nakładki w tej przestrzeni roboczej._</value></data>
   <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ Nie udało się odczytać tego pliku jako listy reguł: **żadne z jego ograniczeń nie obowiązuje**. Musi to być poprawny JSON z tablicą `rules`.</value></data>
+  <data name="PermissionsOverlayUnreadable" xml:space="preserve"><value>⚠ Tego pliku nie można teraz odczytać (to nie jest poprawny JSON albo trzyma go inny program). **Ostatnio odczytane z niego reguły odmowy pozostają w mocy; jeśli nie odczytano żadnej, każda czynność wymaga Twojej zgody przed wykonaniem.** Popraw plik albo zamknij to, co go trzyma.</value></data>
   <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_Nie deklaruje żadnej reguły deny._</value></data>
   <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ Pominięto {0} wpis(ów) (błędny wiersz lub wyrażenie regularne) — te ograniczenia nie obowiązują.</value></data>
   <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>Pominięto {0} reguł(y) `allow`: nakładka przestrzeni roboczej może tylko ograniczać.</value></data>

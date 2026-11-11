@@ -604,6 +604,7 @@
   <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_未打开工作区。_</value></data>
   <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_此工作区没有覆盖文件。_</value></data>
   <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ 无法将此文件读为规则列表：**其中的限制全部未生效**。它必须是包含 `rules` 数组的合法 JSON。</value></data>
+  <data name="PermissionsOverlayUnreadable" xml:space="preserve"><value>⚠ 当前无法读取此文件（不是有效的 JSON，或被其他程序占用）。**最后读取的拒绝规则仍然有效；如果从未读取过任何规则，每个操作执行前都会征求您的同意。** 请修复该文件，或关闭占用它的程序。</value></data>
   <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_未声明任何 deny 规则。_</value></data>
   <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ 已忽略 {0} 条条目（格式错误或正则无效）— 这些限制未生效。</value></data>
   <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>已忽略 {0} 条 `allow` 规则：工作区覆盖只能收紧权限。</value></data>

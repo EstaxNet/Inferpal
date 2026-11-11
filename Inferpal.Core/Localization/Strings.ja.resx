@@ -604,6 +604,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_ワークスペースが開いていません。_</value></data>
   <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_このワークスペースにオーバーレイはありません。_</value></data>
   <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ このファイルをルール一覧として読めませんでした: **どの制限も有効ではありません**。`rules` 配列を持つ正しい JSON が必要です。</value></data>
+  <data name="PermissionsOverlayUnreadable" xml:space="preserve"><value>⚠ このファイルは現在読み取れません (有効な JSON ではないか、別のプログラムが保持しています)。**最後に読み取った拒否ルールは引き続き有効です。ひとつも読み取れていない場合、すべての操作は実行前に確認されます。** ファイルを修正するか、保持しているものを閉じてください。</value></data>
   <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_deny ルールは宣言されていません。_</value></data>
   <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ {0} 件のエントリを無視しました（不正な行または正規表現）— それらの制限は有効ではありません。</value></data>
   <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>{0} 件の `allow` ルールを無視しました。オーバーレイは制限することしかできません。</value></data>

@@ -57,7 +57,12 @@ internal static class PermissionsCommandHandler
 
                 // ⚠ The state that motivated this command comes first, and it is named: the file is
                 // there, the user wrote it, and nothing in it applies.
-                if (report.Unusable)
+                // ⚠ Two states, said apart: a file that does not read (not JSON, held) keeps the rules the approval card
+                // last read from it, or makes every action ask — "nothing is in force" would be the opposite of what
+                // happens; valid JSON without a rules array restricts nothing.
+                if (report.NotJson is not null)
+                    sb.Append('\n').Append(Strings.PermissionsOverlayUnreadable);
+                else if (report.Unusable)
                     sb.Append('\n').Append(Strings.PermissionsOverlayUnusable);
 
                 foreach (var r in report.Rules)
@@ -151,21 +156,26 @@ internal static class PermissionsCommandHandler
 
     /// <summary>
     /// The team file of <paramref name="projectRoot"/>, as <c>/permissions</c> reads it: <c>null</c> when there is no
-    /// workspace or no file, <c>"{}"</c> (unusable) when the file is there and cannot be read. One reader for the
-    /// command and the settings table of both editors.
+    /// workspace or no file, <see cref="Unreadable"/> (not JSON) when the file is there and cannot be read. One reader
+    /// for the command and the settings table of both editors.
     /// </summary>
     internal static string? ReadOverlayFile(string? projectRoot) =>
         string.IsNullOrEmpty(projectRoot) ? null : ReadFileOrNull(OverlayPath(projectRoot));
 
+    /// <summary>What a file that is there and cannot be read reads as: text that is not JSON, the state the approval
+    /// service treats alike (the rules last read, or every action asked).</summary>
+    internal const string Unreadable = "(the file could not be read)";
+
     private static string? ReadFileOrNull(string path)
     {
-        try { return File.Exists(path) ? File.ReadAllText(path) : null; }
+        try { return File.Exists(path) ? Signals.SignalFile.ReadShared(path) : null; }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) { return null; }
         catch (Exception ex)
         {
             // Reading failed although the file is there: do not return `null`, which would read as
             // "no overlay" — the exact failure this command exists to show.
             Diagnostics.Swallow("PermissionsCommandHandler.ReadOverlay", ex);
-            return "{}";
+            return Unreadable;
         }
     }
 }

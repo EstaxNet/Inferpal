@@ -604,6 +604,7 @@ Fai clic su **Correggi con l'IA** per correggere automaticamente in loop, o digi
   <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_Nessun workspace aperto._</value></data>
   <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_Nessun overlay in questo workspace._</value></data>
   <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ Questo file non è stato letto come elenco di regole: **nessuna delle sue restrizioni è in vigore**. Deve essere JSON valido con un array `rules`.</value></data>
+  <data name="PermissionsOverlayUnreadable" xml:space="preserve"><value>⚠ Questo file non è leggibile al momento (non è JSON valido, o un altro programma lo tiene aperto). **Le regole di divieto lette per ultime restano in vigore; se non ne è stata letta nessuna, ogni azione ti viene chiesta prima di essere eseguita.** Correggi il file o chiudi ciò che lo tiene.</value></data>
   <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_Non dichiara alcuna regola deny._</value></data>
   <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ {0} voce/i ignorata/e (riga malformata o regex non valida) — quelle restrizioni non sono in vigore.</value></data>
   <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>{0} regola/e `allow` ignorata/e: un overlay di workspace può solo restringere.</value></data>

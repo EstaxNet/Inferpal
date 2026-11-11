@@ -106,6 +106,9 @@ internal static class InProcConfig
         var (snapshot, failed) = Read(stamp, kept);
         lock (_gate)
         {
+            // Another thread read this very file while this read failed (the UI thread reads once, a pool thread retries):
+            // what it read stands.
+            if (failed && stamp == _cachedStamp && _retryAt == long.MaxValue) return _cached;
             _cached      = snapshot;
             _cachedStamp = stamp;
             // ⚠ A failed read is not cached under the file's date: a file read while it is replaced — the person has just

@@ -201,7 +201,7 @@ internal sealed class McpToolService : IAsyncDisposable
         // factory one, empty and valid), and a server the other editor has just added would lose its sign-in. Unreadable,
         // the reader throws, and nothing is forgotten (ForgetSignInsOfRemovedServers).
         _sharedServersJson = sharedServersJson ?? (() =>
-            InferpalConfig.Load() is var config && !InferpalConfig.LastLoadUnreadable
+            InferpalConfig.Load(out var unreadable) is var config && !unreadable
                 ? config.McpServersJson
                 : throw new IOException("config.json exists but cannot be read"));
         if (_config.McpEnabled)

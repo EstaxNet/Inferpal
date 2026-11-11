@@ -31,6 +31,14 @@ for (var i = 0; i < args.Length - 1; i++)
 // changes, which is safer than a hot reload (switching backend in flight would leave an HttpClient
 // and a loaded model behind).
 var config = InferpalConfig.Load();
+// ⚠ Read once for this process's life: a file that cannot be read at this moment (an edit in progress) gives it the
+// factory server, model and ignore files until the next recycle, which only a change of the file's date brings. It exits
+// instead, said on stderr: the in-proc client notes the death and starts a sidecar again at a later request.
+if (config.FileUnreadable)
+{
+    Console.Error.WriteLine("The settings file could not be read; stopping so that the next request reads it again.");
+    Environment.Exit(3);
+}
 // The sentences this process writes (the pause notice) in the person's language: the setting, else ("Auto") Visual
 // Studio's interface language, which devenv passes — not the operating system's.
 var uiCulture = Array.IndexOf(args, "--ui-culture") is var at and >= 0 && at + 1 < args.Length ? args[at + 1] : null;

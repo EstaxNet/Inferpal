@@ -604,6 +604,7 @@ Klicken Sie auf **Mit KI reparieren**, um die automatische Korrektur in einer Sc
   <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_Kein Workspace geöffnet._</value></data>
   <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_Kein Overlay in diesem Workspace._</value></data>
   <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ Diese Datei konnte nicht als Regelliste gelesen werden: **keine ihrer Einschränkungen gilt**. Sie muss gültiges JSON mit einem `rules`-Array sein.</value></data>
+  <data name="PermissionsOverlayUnreadable" xml:space="preserve"><value>⚠ Diese Datei kann gerade nicht gelesen werden (kein gültiges JSON, oder ein anderes Programm hält sie). **Die zuletzt daraus gelesenen Ablehnungsregeln bleiben in Kraft; wurden keine gelesen, wird jede Aktion vor der Ausführung erfragt.** Korrigieren Sie die Datei oder schließen Sie, was sie hält.</value></data>
   <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_Deklariert keine deny-Regel._</value></data>
   <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ {0} Eintrag/Einträge ignoriert (fehlerhafte Zeile oder ungültiger Regex) — diese Einschränkungen gelten nicht.</value></data>
   <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>{0} `allow`-Regel(n) ignoriert: ein Workspace-Overlay kann nur einschränken.</value></data>

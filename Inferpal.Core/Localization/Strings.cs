@@ -1535,6 +1535,7 @@ internal static class Strings
     public static string PermissionsNoWorkspace        => Get(nameof(PermissionsNoWorkspace));
     public static string PermissionsOverlayAbsent      => Get(nameof(PermissionsOverlayAbsent));
     public static string PermissionsOverlayUnusable    => Get(nameof(PermissionsOverlayUnusable));
+    public static string PermissionsOverlayUnreadable => Get(nameof(PermissionsOverlayUnreadable));
     public static string PermissionsOverlayEmpty       => Get(nameof(PermissionsOverlayEmpty));
     public static string PermissionsOverlayMalformed(int count) =>
         Format(Get(nameof(PermissionsOverlayMalformed)), count);

@@ -604,6 +604,7 @@
   <data name="PermissionsNoWorkspace" xml:space="preserve"><value>_Рабочее пространство не открыто._</value></data>
   <data name="PermissionsOverlayAbsent" xml:space="preserve"><value>_Оверлея в этом рабочем пространстве нет._</value></data>
   <data name="PermissionsOverlayUnusable" xml:space="preserve"><value>⚠ Этот файл не удалось прочитать как список правил: **ни одно его ограничение не действует**. Нужен корректный JSON с массивом `rules`.</value></data>
+  <data name="PermissionsOverlayUnreadable" xml:space="preserve"><value>⚠ Этот файл сейчас не удаётся прочитать (это не корректный JSON, или его удерживает другая программа). **Последние прочитанные из него правила запрета остаются в силе; если ни одно не было прочитано, каждое действие требует вашего подтверждения перед выполнением.** Исправьте файл или закройте программу, которая его удерживает.</value></data>
   <data name="PermissionsOverlayEmpty" xml:space="preserve"><value>_Не объявляет ни одного правила deny._</value></data>
   <data name="PermissionsOverlayMalformed" xml:space="preserve"><value>⚠ Проигнорировано записей: {0} (неверная строка или неверное регулярное выражение) — эти ограничения не действуют.</value></data>
   <data name="PermissionsOverlayAllowIgnored" xml:space="preserve"><value>Проигнорировано правил `allow`: {0}. Оверлей может только ограничивать.</value></data>

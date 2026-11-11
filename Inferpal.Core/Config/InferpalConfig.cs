@@ -11,7 +11,7 @@ namespace Inferpal.Config;
 /// All user-configurable settings, persisted as JSON at <c>%AppData%/Inferpal/config.json</c>.
 /// </summary>
 /// <remarks>
-/// Load via <see cref="Load"/> at startup (also applies the saved language override).
+/// Load via <see cref="Load()"/> at startup (also applies the saved language override).
 /// Persist changes by calling <see cref="Save"/>.
 /// </remarks>
 internal class InferpalConfig
@@ -21,7 +21,7 @@ internal class InferpalConfig
         "Inferpal", "config.json");
 
     /// <summary>
-    /// Test seam: redirects <see cref="Load"/>/<see cref="Save"/> to another file. Set once by the
+    /// Test seam: redirects <see cref="Load()"/>/<see cref="Save"/> to another file. Set once by the
     /// test assembly's module initializer so no test can ever clobber the developer's real
     /// %AppData% config (handlers legitimately call <see cref="Save"/>). Null = production path.
     /// </summary>
@@ -29,7 +29,7 @@ internal class InferpalConfig
 
     private static string EffectiveConfigPath => OverridePathForTests ?? ConfigPath;
 
-    /// <summary>Whether a settings file exists — an editor, or the setup, wrote one. Absent, <see cref="Load"/> returns
+    /// <summary>Whether a settings file exists — an editor, or the setup, wrote one. Absent, <see cref="Load()"/> returns
     /// the factory settings.</summary>
     internal static bool SettingsFileExists => File.Exists(EffectiveConfigPath);
 
@@ -643,16 +643,17 @@ internal class InferpalConfig
     /// zero).</summary>
     internal static TimeSpan RetryUnreadable { get; set; } = TimeSpan.FromSeconds(2);
 
-    /// <summary>Whether the settings file existed and could not be read at <see cref="Load"/>'s last read — what it
-    /// answers is then the values read before, or the factory ones: what the file holds now is unknown.</summary>
-    internal static bool LastLoadUnreadable { get { lock (_loadLock) return _lastLoadUnreadable; } }
-
     /// <summary>Reads the configuration, reusing the last parse while the file is unchanged.</summary>
     /// <remarks>⚠ A file that cannot be read is not the factory values, nor a reason to cache them under its date: read
     /// while the other editor replaces it, they would stand until the next write — the ignore files of Visual Studio's
     /// menus, the completion settings. It keeps the instance read before (the factory values only at the first read),
     /// and is read again after <see cref="RetryUnreadable"/>, never at every keystroke.</remarks>
-    public static InferpalConfig Load()
+    public static InferpalConfig Load() => Load(out _);
+
+    /// <summary><see cref="Load()"/>, and whether the file existed and could not be read at that read — what it answers
+    /// is then the values read before, or the factory ones: what the file holds now is unknown.</summary>
+    /// <remarks>⚠ Both from the same read, under one lock: a flag read after the call would be another thread's.</remarks>
+    internal static InferpalConfig Load(out bool unreadable)
     {
         var path  = EffectiveConfigPath;
         var stamp = StampOf(path);
@@ -661,11 +662,14 @@ internal class InferpalConfig
         {
             if (_cached is not null && _cachedPath == path && _cachedStamp == stamp
                 && Environment.TickCount64 < _cachedRetryAt)
+            {
+                unreadable = _lastLoadUnreadable;
                 return _cached;
+            }
         }
 
         var fresh = LoadUncached();
-        var unreadable = fresh.FileUnreadable;
+        unreadable = fresh.FileUnreadable;
 
         lock (_loadLock)
         {
@@ -687,7 +691,7 @@ internal class InferpalConfig
     /// The configuration read now, as an instance nobody else holds: what a host session changes in memory (a model for
     /// its thread, a mode) stays its own.
     /// </summary>
-    /// <remarks>⚠ <see cref="Load"/> hands every caller the same instance while the file is unchanged. An ACP agent runs
+    /// <remarks>⚠ <see cref="Load()"/> hands every caller the same instance while the file is unchanged. An ACP agent runs
     /// several threads in one process: through the shared copy, a model picked in one thread became the model every
     /// other thread asked, while their model selectors still showed their own.</remarks>
     public static InferpalConfig LoadOwnCopy() => LoadUncached(follow: false)!;

@@ -140,9 +140,12 @@ internal sealed class SmartFixValidator
         var skipped = 0;
 
         var targets = new List<Target>();
+        string? unreadCause = null;   // validators.json as it was when the checks were chosen, never read again after
         foreach (var path in writtenFilePaths)
         {
-            if (ResolveTarget(path) is not { } target) continue;
+            var resolved = ResolveTarget(path);
+            unreadCause ??= _overlayUnread;
+            if (resolved is not { } target) continue;
             if (!seen.Add(target.ProjectDir + "\n<>\n" + target.Command)) continue;
             if (seen.Count > MaxBatchTargets) { skipped++; continue; }
             targets.Add(target);
@@ -159,7 +162,7 @@ internal sealed class SmartFixValidator
             notes.Add(Strings.SmartFixBatchCapped(MaxBatchTargets, skipped));
         // A built-in check that ran does not vouch for the repository's, which could not be read. A write no check covers
         // says nothing: the note on every README edit would be noise until the file is fixed (named in /diagnostics).
-        if (targets.Count > 0 && UnreadOverlayNote() is { } unread) notes.Insert(0, unread);
+        if (targets.Count > 0 && UnreadOverlayNote(unreadCause) is { } unread) notes.Insert(0, unread);
 
         return notes.Count == 0 ? null : string.Join("\n\n", notes);
     }
@@ -461,13 +464,10 @@ internal sealed class SmartFixValidator
 
     /// <summary>The note saying the repository's own checks did not run because their file could not be read, or
     /// <c>null</c>.</summary>
-    private string? UnreadOverlayNote()
-    {
-        LoadOverlay();
-        return _overlayUnread is { } cause
-            ? Strings.SmartFixCouldNotRun($"the repository's checks (.inferpal/validators.json) could not be read: {cause}")
-            : null;
-    }
+    private static string? UnreadOverlayNote(string? cause) =>
+        cause is null
+            ? null
+            : Strings.SmartFixCouldNotRun($"the repository's checks (.inferpal/validators.json) could not be read: {cause}");
 
     // Runs the command line under the machine's shell (resolved like run_command — powershell.exe
     // was hard-coded, so validators silently failed on the published Linux/macOS hosts), in the

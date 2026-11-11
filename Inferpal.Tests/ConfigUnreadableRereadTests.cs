@@ -54,12 +54,13 @@ public sealed class ConfigUnreadableRereadTests : IDisposable
     {
         InferpalConfig.RetryUnreadable = TimeSpan.Zero;
         Write(Off, At);
-        Assert.False(InferpalConfig.Load().InlineCompletionEnabled);
-        Assert.False(InferpalConfig.LastLoadUnreadable);
+        Assert.False(InferpalConfig.Load(out var unreadable).InlineCompletionEnabled);
+        Assert.False(unreadable);
 
         Write(CutOff, At.AddSeconds(5));
-        Assert.False(InferpalConfig.Load().InlineCompletionEnabled);   // not the factory "on"
-        Assert.True(InferpalConfig.LastLoadUnreadable);
+        Assert.False(InferpalConfig.Load(out unreadable).InlineCompletionEnabled);   // not the factory "on"
+        Assert.True(unreadable);
+        Assert.True(InferpalConfig.Load(out var again) is not null && again);      // and at the next read, still
     }
 
     [Fact]
@@ -69,6 +70,7 @@ public sealed class ConfigUnreadableRereadTests : IDisposable
         Write(CutOff, At);
         InferpalConfig.Load();
         Write(Off, At);
-        Assert.True(InferpalConfig.Load().InlineCompletionEnabled);    // within the delay: the cached answer
+        Assert.True(InferpalConfig.Load(out var unreadable).InlineCompletionEnabled);   // within the delay: the cached answer...
+        Assert.True(unreadable);                                                       // ...still said unreadable
     }
 }

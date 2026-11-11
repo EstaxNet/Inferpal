@@ -18,7 +18,7 @@ public sealed class GlobalConfigPathCollection
 }
 
 /// <summary>
-/// <see cref="InferpalConfig.Load"/> sits on hot paths — the ghost-text controller calls it on
+/// <see cref="InferpalConfig.Load()"/> sits on hot paths — the ghost-text controller calls it on
 /// every keystroke — so it caches the parse and invalidates on the file's write stamp. These tests
 /// pin both halves: the cache must actually be reused, and it must never serve stale values after
 /// a save.
