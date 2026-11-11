@@ -43,6 +43,10 @@ internal static class TestConfigIsolation
         // lease let go at once instead of ten seconds later (GpuSchedulerTests sets it back to measure the grace).
         Inferpal.Services.Hardware.GpuScheduler.PauseGrace = TimeSpan.Zero;
 
+        // And for the budget a model switch gives the server's list: three seconds are not three seconds on a runner that
+        // builds and plays two test series at once, and a fake server answering late read as a list never received.
+        Inferpal.Services.Commands.ModelsCommandHandler.SwitchListBudget = TimeSpan.FromSeconds(30);
+
         // And for the editors an ACP agent has told what it does not do in them.
         Inferpal.Host.Acp.AcpAgent.LimitsToldShared.PathOverride =
             Path.Combine(root, $"acp-limits-told-{Environment.ProcessId}.json");
