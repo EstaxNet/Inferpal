@@ -104,9 +104,9 @@ internal static class AgentLoopPolicy
     }
 
     /// <summary>
-    /// Forgets <paramref name="calls"/> in <paramref name="counts"/> when the syntax guard refused one of them
-    /// (<paramref name="results"/>): the refusal asks for the same edit again when the code is valid for the project,
-    /// and that repeat, stopped as a loop before it ran, would never be written.
+    /// Forgets <paramref name="calls"/> in <paramref name="counts"/> when the syntax guard, or the copy guard that shares
+    /// its pass, refused one of them (<paramref name="results"/>): the refusal asks for the same edit again when the edit
+    /// is meant as it is, and that repeat, stopped as a loop before it ran, would never be written.
     /// </summary>
     /// <remarks>Never a loop for all that: within a run the guard lets an edit through once it was refused, so the repeat
     /// is written or refused for another reason, and a third identical batch counts as a repeat again. ⚠ Only a refusal

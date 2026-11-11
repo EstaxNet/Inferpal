@@ -22,7 +22,9 @@ namespace Inferpal.Services.Tools;
 /// the checker can be older than the project's language (a C# or Python version it does not know), so the same edit
 /// sent again after a refusal IN THE SAME RUN is written; outside a run no pass is offered, and the loop policy counts
 /// the repeats (<see cref="OffersPass"/>). ⚠ A <c>.js</c> file is not checked: whether it parses depends on the project
-/// (ES modules or not, JSX, Flow), which a copy checked on its own does not carry.
+/// (ES modules or not, JSX, Flow), which a copy checked on its own does not carry. ⚠ It also carries the refusal of an
+/// edit that replays the lines around it (<see cref="CopiedContext"/>): both are judged at once and share ONE pass —
+/// two guards with a pass each would refuse the same edit by turns, each resend clearing one and tripping the other.
 /// </remarks>
 internal static class SyntaxGuard
 {
@@ -56,7 +58,9 @@ internal static class SyntaxGuard
     /// <summary>Whether a tool's result is a refusal that lets the same edit through when it is sent again — never outside
     /// a run, where the loop policy must count the repeats.</summary>
     internal static bool OffersPass(string toolResult) =>
-        Refused(toolResult) && toolResult.Contains(PassOffered, StringComparison.Ordinal);
+        (Refused(toolResult) && toolResult.Contains(PassOffered, StringComparison.Ordinal))
+        || (toolResult.Contains(CopiedContext.RefusalMarker, StringComparison.Ordinal)
+            && toolResult.Contains(CopiedContext.PassOffered, StringComparison.Ordinal));
 
     /// <summary>Forgets the refusals and the checkers found unavailable (tests).</summary>
     internal static void ResetForTests()
@@ -73,11 +77,14 @@ internal static class SyntaxGuard
     /// <param name="root">The workspace root, to name the file by its path in the refusal.</param>
     /// <param name="runId">The run the edit belongs to (<see cref="Execution.FileHistoryService.CurrentRunId"/>); the
     /// same edit sent again passes only within it.</param>
+    /// <param name="copied">What the edit replays of the lines around it (<see cref="CopiedContext.Find"/>), refused
+    /// with the parse error if there is one, under the same pass.</param>
     public static async Task<string?> RefusalAsync(string path, string? original, string proposed, string? root,
-                                                   string? runId, CancellationToken ct)
+                                                   string? runId, CancellationToken ct, CopiedContext.Copy? copied = null)
     {
-        if (await FirstErrorAsync(path, proposed, ct) is not { } error) return null;
-        if (original is not null && await FirstErrorAsync(path, original, ct) is not null) return null;
+        ParseError? error = await FirstErrorAsync(path, proposed, ct) is { } added
+                            && (original is null || await FirstErrorAsync(path, original, ct) is null) ? added : null;
+        if (error is null && copied is null) return null;
 
         if (runId is not null)
         {
@@ -86,9 +93,15 @@ internal static class SyntaxGuard
             if (RefusedOnce.Count > 256) RefusedOnce.Clear();
             RefusedOnce[key] = 0;
         }
-        return $"{RefusalMarker}{Shown(path, root)} at line {error.Line} ({error.Message}). "
-               + "Nothing was written: correct the edit and send it again."
-               + (runId is null ? string.Empty : PassOffered);
+        var shown = Shown(path, root);
+        var reasons = new List<string>();
+        if (copied is not null)
+            reasons.Add(CopiedContext.Refusal(copied, shown) + (runId is null ? string.Empty : CopiedContext.PassOffered));
+        if (error is { } parse)
+            reasons.Add($"{RefusalMarker}{shown} at line {parse.Line} ({parse.Message}). "
+                        + "Nothing was written: correct the edit and send it again."
+                        + (runId is null ? string.Empty : PassOffered));
+        return string.Join("\n", reasons);
     }
 
     private static string Shown(string path, string? root)

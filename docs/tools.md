@@ -158,6 +158,15 @@ None is offered for:
   file (whether it parses depends on your project: modules, JSX), and a check that cannot run (no
   Python or Node, past 5 seconds) let the edit through. The same edit sent again after its refusal
   is written: the check may not know a language version your project uses.
+- An `apply_diff` or `apply_edits` edit that would **leave lines twice** is refused before the
+  prompt: the model matched a part of the file in `old_content` but sent back more in `new_content`
+  — typically the whole page for one paragraph of it. The replacement's first lines are the file's
+  first lines or the lines just before the matched text, its last lines are the file's last lines or
+  the lines just after, or it adds back most of what stays around it. The model is told which lines
+  and what to send instead (the matched part only, or the whole file with `write_file`). Lines that
+  hold no word (closing braces) do not count, nor what the matched text itself starts or ends with.
+  In a conversation, the same edit sent again is written — some code does repeat — and the model
+  can be refused for a copy and a syntax error at once, then write the edit at its first resend.
 - A file with **unsaved changes** in the editor is never written over, in Visual Studio as in VS
   Code: the edit is refused before the prompt, and checked again after you approve — so what you
   type while the prompt waits is kept. Save the file and ask again. `read_file` shows the unsaved

@@ -12,7 +12,12 @@ internal static class ApplyDiffMatcher
     /// Outcome of resolving an edit. <see cref="Modified"/> is <c>null</c> on failure; inspect
     /// <see cref="Count"/> to tell "not found" (0) from "ambiguous" (&gt;1).
     /// </summary>
-    internal sealed record Result(string? Modified, int Count, bool Fuzzy);
+    internal sealed record Result(string? Modified, int Count, bool Fuzzy)
+    {
+        /// <summary>On success, the ranges of the file the edit replaced (what <see cref="CopiedContext"/> judges);
+        /// empty on failure.</summary>
+        public IReadOnlyList<Range> Zones { get; init; } = [];
+    }
 
     /// <summary>The whole vocabulary of <c>occurrence</c>, written once.</summary>
     private static readonly string[] Modes = ["unique", "first", "all"];
@@ -51,27 +56,29 @@ internal static class ApplyDiffMatcher
         var eol = LineEndings.Dominant(file);
         newContent = LineEndings.ToEol(newContent, eol);
 
-        var exact = CountOccurrences(file, oldContent);
+        var starts = Starts(file, oldContent);
         // The same text in the file's endings: an LF old_content spanning lines still matches a CRLF
         // file exactly, instead of falling to the tolerant pass.
-        if (exact == 0 && eol == "\r\n")
+        if (starts.Count == 0 && eol == "\r\n")
         {
             var inFileEndings = LineEndings.ToEol(oldContent, eol);
-            if (inFileEndings != oldContent && (exact = CountOccurrences(file, inFileEndings)) > 0)
+            if (inFileEndings != oldContent && (starts = Starts(file, inFileEndings)).Count > 0)
                 oldContent = inFileEndings;
         }
 
+        var exact = starts.Count;
         if (exact > 0)
         {
+            Range[] ZonesOf(int count) => starts.Take(count).Select(s => new Range(s, s + oldContent.Length)).ToArray();
             switch (mode)
             {
                 case "all":
-                    return new Result(file.Replace(oldContent, newContent, StringComparison.Ordinal), exact, false);
+                    return new Result(file.Replace(oldContent, newContent, StringComparison.Ordinal), exact, false) { Zones = ZonesOf(exact) };
                 case "first":
-                    return new Result(ReplaceFirst(file, oldContent, newContent), 1, false);
+                    return new Result(ReplaceFirst(file, oldContent, newContent), 1, false) { Zones = ZonesOf(1) };
                 default:
                     return exact == 1
-                        ? new Result(file.Replace(oldContent, newContent, StringComparison.Ordinal), 1, false)
+                        ? new Result(file.Replace(oldContent, newContent, StringComparison.Ordinal), 1, false) { Zones = ZonesOf(1) }
                         : new Result(null, exact, false);   // ambiguous → caller reports
             }
         }
@@ -142,7 +149,10 @@ internal static class ApplyDiffMatcher
         }
         lines.AddRange(fileLines[at..]);
 
-        return new Result(string.Join("\n", lines), chosen.Count, true);
+        // Each block from its first line's start to its last line's end (the break after it stays in the file).
+        var offsets = CopiedContext.LineStarts(fileLines);
+        var zones = chosen.Select(s => new Range(offsets[s], offsets[s + k - 1] + fileLines[s + k - 1].Length)).ToArray();
+        return new Result(string.Join("\n", lines), chosen.Count, true) { Zones = zones };
     }
 
     /// <summary>
@@ -263,15 +273,17 @@ internal static class ApplyDiffMatcher
         return idx < 0 ? text : text[..idx] + newValue + text[(idx + oldValue.Length)..];
     }
 
-    private static int CountOccurrences(string text, string pattern)
+    // Where pattern occurs, left to right and without overlap — the occurrences string.Replace replaces.
+    private static List<int> Starts(string text, string pattern)
     {
-        if (string.IsNullOrEmpty(pattern)) return 0;
-        int count = 0, idx = 0;
+        var starts = new List<int>();
+        if (string.IsNullOrEmpty(pattern)) return starts;
+        int idx = 0;
         while ((idx = text.IndexOf(pattern, idx, StringComparison.Ordinal)) != -1)
         {
-            count++;
+            starts.Add(idx);
             idx += pattern.Length;
         }
-        return count;
+        return starts;
     }
 }

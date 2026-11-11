@@ -141,6 +141,7 @@ internal sealed class ApplyEditsTool : ITool
         // other's name. This is the one site of that class which loses data.
         var current  = new Dictionary<string, string>(PathComparer.Default);
         var original = new Dictionary<string, string>(PathComparer.Default);
+        var copies   = new Dictionary<string, CopiedContext.Copy>(PathComparer.Default);   // the first copy per file
 
         for (int i = 0; i < edits.Count; i++)
         {
@@ -166,6 +167,9 @@ internal sealed class ApplyEditsTool : ITool
                 var closest = res.Count > 1 ? null : ApplyDiffMatcher.Closest(current[edit.Path], edit.Old);
                 return Aborted(i + 1, edits.Count, $"edit #{i + 1} in {rel}: {reason} for old_content") + closest + hint;
             }
+            // Judged against what the earlier edits of the batch made of the file, as the match was.
+            if (!copies.ContainsKey(edit.Path) && CopiedContext.Find(current[edit.Path], res.Zones, edit.New) is { } copy)
+                copies[edit.Path] = copy;
             current[edit.Path] = res.Modified;
         }
 
@@ -175,12 +179,13 @@ internal sealed class ApplyEditsTool : ITool
         if (changed.Count == 0) return Strings.ApplyEditsOk(edits.Count, 0);
         foreach (var p in changed)
             if (FileTarget.EncodingRefusal(p, current[p]) is { } cannotHold) return ToolFailure.Said(Strings.ApplyEditsAborted(cannotHold));
-        // All or nothing, like every other refusal of the batch: one file left unparsable refuses them all. ⚠ Every file
-        // is judged, never up to the first refusal: each refusal is let through once sent again, so the same batch sent
-        // again passes whole instead of being refused file after file.
+        // All or nothing, like every other refusal of the batch: one file left unparsable, or holding lines twice, refuses
+        // them all. ⚠ Every file is judged, never up to the first refusal: each refusal is let through once sent again,
+        // so the same batch sent again passes whole instead of being refused file after file.
         var broken = new List<string>();
         foreach (var p in changed)
-            if (await SyntaxGuard.RefusalAsync(p, original[p], current[p], root, _history.CurrentRunId, ct) is { } refusal) broken.Add(refusal);
+            if (await SyntaxGuard.RefusalAsync(p, original[p], current[p], root, _history.CurrentRunId, ct,
+                    copies.GetValueOrDefault(p)) is { } refusal) broken.Add(refusal);
         if (broken.Count > 0) return ToolFailure.Said(Strings.ApplyEditsAborted(string.Join("\n", broken)));
 
         // ── Approval: one prompt with the combined diff across files ───────────
