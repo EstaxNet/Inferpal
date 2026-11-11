@@ -54,10 +54,11 @@ public class HistorySummaryKeptTests
 
         public void Turns(int n) { for (var i = 0; i < n; i++) { Ask(); Answer(); } }
 
-        /// <summary>The pre-send check when it may decide nothing: applied only if it compacts.</summary>
-        public bool TryCompact(string? summary, int anchors, int keepTurns)
+        /// <summary>The pre-send check when it may decide nothing: applied only if it compacts. <paramref name="load"/>: the
+        /// request's measure, for a window of 1 000 (over 800 the check runs; over 1 000 the request does not fit).</summary>
+        public bool TryCompact(string? summary, int anchors, int keepTurns, int load = 100_000)
         {
-            var plan = HistoryCompaction.Decide(History, 1_000, 100_000, keepTurnsConfig: keepTurns, kvAnchorMessages: anchors,
+            var plan = HistoryCompaction.Decide(History, 1_000, load, keepTurnsConfig: keepTurns, kvAnchorMessages: anchors,
                                                 compactionEnabled: true);
             if (plan.Action == CompactionAction.None) return false;
             Summary = HistoryCompaction.Apply(History, plan, summary, Summary);
@@ -148,19 +149,21 @@ public class HistorySummaryKeptTests
     }
 
     /// <summary>The mirror: a compaction soon after another, more turns to keep than questions since — the turns kept would
-    /// reach back over the summary held (the room shrank, the setting grew). Never kept beside a new one; and the summary
-    /// alone is not summarised again (poorer) nor dropped (its facts gone for no room): nothing is decided.</summary>
+    /// reach back over the summary held (the room shrank, the setting grew). Never kept beside a new one; and while the
+    /// request fits, the summary alone is not summarised again (poorer, at every question) nor dropped: nothing is decided.
+    /// </summary>
     [Theory]
     [InlineData(0, "SECOND SUMMARY")]
+    [InlineData(0, null)]   // a summary that fell back: the turns would be dropped
     [InlineData(3, "SECOND SUMMARY")]
-    [InlineData(3, null)]   // a summary that fell back: the turns would be dropped
+    [InlineData(3, null)]
     public void ACompactionRightAfterAnother_NeverKeepsTheSummaryHeldAmongTheTurnsKept(int anchors, string? second)
     {
         var c = new Conversation();
         c.Turns(6);
         c.Ask(); c.Compact("FIRST SUMMARY", anchors); c.Answer();
         c.Turns(1);
-        c.Ask(); c.TryCompact(second, anchors, keepTurns: 5); c.Answer();
+        c.Ask(); Assert.False(c.TryCompact(second, anchors, keepTurns: 5, load: 900)); c.Answer();
 
         var (restored, kept) = SessionManager.BuildRestoredHistory("sys", c.Saved, c.Summary);
 
@@ -169,6 +172,50 @@ public class HistorySummaryKeptTests
         Assert.Equal(c.Summary, kept);
         Assert.Equal(c.History.Select(Shape), restored.Select(Shape));
         Assert.Single(c.History, m => m.Content == HistoryCompaction.SummaryHeading);   // never two summaries side by side
+    }
+
+    /// <summary>The same plan, where it must act — a request that no longer fits (a smaller window loaded since): sent as it
+    /// is, a server refuses it or cuts its head. The anchors before the summary held go with it; with none, the summary is
+    /// summarised again. Either way, one head after.</summary>
+    [Theory]
+    [InlineData(3, "SECOND SUMMARY")]
+    [InlineData(3, null)]   // a summary that fell back: anchors and summary dropped, the marker in their place
+    [InlineData(0, "SECOND SUMMARY")]
+    [InlineData(0, null)]
+    public void ARequestOverTheWindow_RightAfterACompaction_ReplacesTheSummaryHeld_WithTheAnchorsBeforeIt(
+        int anchors, string? second)
+    {
+        var c = new Conversation();
+        c.Turns(6);
+        c.Ask(); c.Compact("FIRST SUMMARY", anchors); c.Answer();
+        c.Turns(1);
+        c.Ask(); Assert.True(c.TryCompact(second, anchors, keepTurns: 5)); c.Answer();
+
+        var (restored, kept) = SessionManager.BuildRestoredHistory("sys", c.Saved, c.Summary);
+
+        Assert.NotNull(c.Summary);
+        Assert.Equal(0, c.Summary!.Anchors);
+        Assert.DoesNotContain(c.History, m => m.Content == "FIRST SUMMARY");
+        Assert.Equal(c.Summary, kept);
+        Assert.Equal(c.History.Select(Shape), restored.Select(Shape));
+        // Exactly one head: a summary under its heading, or a marker.
+        Assert.Single(c.History, m => m.IsScaffolding);
+        Assert.Equal(second is null ? 0 : 1, c.History.Count(m => m.Content == HistoryCompaction.SummaryHeading));
+    }
+
+    /// <summary>A marker alone in the plan frees nothing, and replaced it would tell the model that only itself was dropped
+    /// — the turns it stands for read as never said. Nothing is decided, over the window too.</summary>
+    [Fact]
+    public void AMarkerAloneInThePlan_IsNeverReplaced()
+    {
+        var c = new Conversation();
+        c.Turns(6);
+        c.Ask(); c.Compact(summary: null, anchors: 0); c.Answer();
+        var marker = Assert.Single(c.History, m => m.IsScaffolding).Content;
+        c.Turns(1);
+        c.Ask(); Assert.False(c.TryCompact(summary: null, anchors: 0, keepTurns: 5)); c.Answer();
+
+        Assert.Equal(marker, Assert.Single(c.History, m => m.IsScaffolding).Content);
     }
 
     /// <summary>Turns dropped without a summary (compaction off, or its fallback) are kept as the model had them too — the

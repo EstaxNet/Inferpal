@@ -133,6 +133,10 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     /// displayed would revert that.
     /// </summary>
     private System.Text.Json.Nodes.JsonObject _opened;
+    /// <summary>The four lists' text as the form last showed the saved settings — built, reloaded, saved. The form writes
+    /// each list back in its own form (an empty server list reads <c>{}</c>), so <see cref="_opened"/>'s raw text is never
+    /// what it shows.</summary>
+    private (string? Mcp, string? Pinned, string? Slash, string? Tools) _listsShown;
     private string _mcpStatusText                       = string.Empty;
     private string _labelSectionMcp                     = string.Empty;
     private string _labelMcpEnabled                     = string.Empty;
@@ -430,6 +434,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         BuildPinnedRows();
         BuildSlashRows();
         BuildToolRows();
+        _listsShown = ListsNow();
         InitRoleServers(config);   // after the chat's server and the models: the roles resolve against them
         ResetKeys();               // the roles' keys are in their boxes only now
 
@@ -1481,6 +1486,19 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         _config.Save();
         _opened = edited.SnapshotNow();
         await RunOnVMContextAsync(ResetKeys);   // a key just saved is masked from now on
+        await RunOnVMContextAsync(() =>
+        {
+            // A list the form still shows as the save read it is shown as saved; one typed in since is an edit not saved
+            // yet, and one a row editor saved meanwhile has its own mark already.
+            if (McpServersJson == mcpServersJson)         _listsShown.Mcp    = mcpServersJson;
+            if (PinnedContextFiles == pinnedContextFiles) _listsShown.Pinned = pinnedContextFiles;
+            if (PromptTemplates == promptTemplates)       _listsShown.Slash  = promptTemplates;
+            if (CustomTools == customTools)               _listsShown.Tools  = customTools;
+            // ⚠ The pinned files are saved merged — a file the chat pinned meanwhile kept — and _opened holds the merge: the
+            // form shows it too, or the next save reads that file as the person's removal and unpins it.
+            if (PinnedContextFiles == pinnedContextFiles && !IsEditingPinned && edited.PinnedContextFiles != pinnedContextFiles)
+            { BuildPinnedRowsFrom(edited.PinnedContextFiles); _listsShown.Pinned = PinnedContextFiles; }
+        });
 
         // Reconnect MCP servers from the freshly-saved config and report status.
         //
@@ -1767,12 +1785,14 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                                  ?? McpServersJson;
         // Saved or not, the servers are reconnected from the in-memory config: the change applies to this
         // session, and a failed save is said. Unsaved, the edit still counts as a change for the next Save.
-        if (TrySaveConfig("PersistMcpServers")) _opened["mcpServersJson"] = _config.McpServersJson;
+        var saved = TrySaveConfig("PersistMcpServers");
+        if (saved) _opened["mcpServersJson"] = _config.McpServersJson;
         if (_config.McpServersJson != McpServersJson)
         {
             McpServersJson = _config.McpServersJson;
             BuildRowsFromConfig();
         }
+        if (saved) _listsShown.Mcp = McpServersJson;
         _ = ReconnectMcpAsync();
     }
 
@@ -1848,11 +1868,12 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         catch (Exception ex) { Diagnostics.Swallow("Settings.ShowAgain", ex); }
     }
 
-    /// <summary>The four lists' text differs from the settings the form shows: an edit in their raw editors, rows imported
-    /// and not saved.</summary>
-    private bool ListsEdited() =>
-        McpServersJson != (string?)_opened["mcpServersJson"] || PinnedContextFiles != (string?)_opened["pinnedContextFiles"]
-        || PromptTemplates != (string?)_opened["promptTemplates"] || CustomTools != (string?)_opened["customTools"];
+    /// <summary>The four lists' text differs from what the form last showed of the saved settings: an edit in their raw
+    /// editors, rows imported and not saved.</summary>
+    private bool ListsEdited() => ListsNow() != _listsShown;
+
+    private (string? Mcp, string? Pinned, string? Slash, string? Tools) ListsNow() =>
+        (McpServersJson, PinnedContextFiles, PromptTemplates, CustomTools);
 
     /// <summary>
     /// The settings as they are now reach the chat's client (<see cref="SwitchingProvider.Follow"/>) — a new kind of server
@@ -1975,9 +1996,10 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         var opened = _opened["pinnedContextFiles"]?.GetValue<string>();
         _config.PinnedContextFiles = PinnedFilesPolicy.MergeEdits(_config.PinnedContextFiles, opened, PinnedContextFiles);
         // Unsaved, the edit must still count as a change for the next Save: the reference moves only on success.
-        if (TrySaveConfig("PersistPinned"))
-            _opened["pinnedContextFiles"] = _config.PinnedContextFiles;
+        var saved = TrySaveConfig("PersistPinned");
+        if (saved) _opened["pinnedContextFiles"] = _config.PinnedContextFiles;
         BuildPinnedRowsFrom(_config.PinnedContextFiles);
+        if (saved) _listsShown.Pinned = PinnedContextFiles;
     }
 
     private void BeginAddPinned()
@@ -2104,7 +2126,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     {
         SyncSlashTextFromRows();
         _config.PromptTemplates = PromptTemplates;
-        TrySaveConfig("PersistSlash");
+        if (TrySaveConfig("PersistSlash")) _listsShown.Slash = PromptTemplates;
     }
 
     private void BeginAddSlash()
@@ -2178,7 +2200,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     {
         SyncToolTextFromRows();
         _config.CustomTools = CustomTools;
-        TrySaveConfig("PersistTool");
+        if (TrySaveConfig("PersistTool")) _listsShown.Tools = CustomTools;
     }
 
     private void BeginAddTool()

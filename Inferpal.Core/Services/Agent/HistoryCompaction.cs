@@ -118,9 +118,18 @@ internal static class HistoryCompaction
         var start = ToolBlockBoundary.SnapStart(history, 1 + kvAnchor, floor: 1);
         var count = keepFromIdx - start;
         if (count <= 0) return CompactionPlan.None;
-        // The summary alone is not worth a request: summarised again it only gets poorer, and dropped (compaction off, a
-        // summary that failed) its facts go for no room at all.
-        if (heads.Count > 0 && start >= headFirst && keepFromIdx <= headLast + 1) return CompactionPlan.None;
+        // A plan that would replace only the head held acts only when the request does not fit at all — ⚠ sent as it is, a
+        // server refuses it or cuts its head in silence, the system prompt first. Under the window, done at every question,
+        // it summarises the summary again (poorer) or drops it (compaction off) for next to no room. Over it, the anchors
+        // before the head go with it; with none, a summary is summarised again — a lone marker frees nothing, and replaced
+        // it would count only itself as dropped.
+        if (heads.Count > 0 && start >= headFirst && keepFromIdx <= headLast + 1)
+        {
+            if (lastPromptTokens <= contextWindowSize) return CompactionPlan.None;
+            if (kvAnchor > 0) start = ToolBlockBoundary.SnapStart(history, 1, floor: 1);
+            else if (!heads.Any(i => history[i].Content == SummaryHeading)) return CompactionPlan.None;
+            count = keepFromIdx - start;
+        }
 
         // Report the anchor actually preserved, so the chat notice never overstates it.
         kvAnchor = start - 1;

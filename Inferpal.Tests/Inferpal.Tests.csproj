@@ -74,6 +74,7 @@
     <Compile Remove="OwningDevenvTests.cs" />
     <Compile Remove="MaskedApiKeyTests.cs" />
     <Compile Remove="VsWindowHarness.cs" />
+    <Compile Remove="VsSettingsWindowTests.cs" />
     <Compile Remove="VsWindowRunsUnderTestTests.cs" />
     <Compile Remove="RootlessStartTests.cs" />
     <Compile Remove="ServerSwitchWithoutRestartTests.cs" />

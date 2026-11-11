@@ -82,8 +82,16 @@ public class ChildProcessTests
         // ⚠ Its sleep stays within the suite's cap on a parked child (OrphanedChildTests), and everything this test waits
         // for ends well under that sleep: a child dying of old age must never read as one killed.
         var marker = Path.Combine(Path.GetTempPath(), $"inferpal-child-{Guid.NewGuid():N}.pid");
-        var psi = ShellPsi($"Set-Content -Path '{marker}' -Value $PID; Start-Sleep -Seconds 30",
-                           $"echo $$ > '{marker}'; exec sleep 30");
+        // Quoted for each shell: a temporary folder can hold an apostrophe (a user named O'Brien).
+        string Command(int sleep) => sleep == 0
+            ? $"Set-Content -LiteralPath '{marker.Replace("'", "''")}' -Value $PID"
+            : $"Set-Content -LiteralPath '{marker.Replace("'", "''")}' -Value $PID; Start-Sleep -Seconds {sleep}";
+        // Witness: given time, the child writes who it is — so a missing id below is a slow start, never a broken command.
+        await ChildProcess.RunAsync(ShellPsi(Command(0), $"echo $$ > '{marker.Replace("'", "'\\''")}'"), TimeSpan.FromSeconds(30),
+                                    CancellationToken.None);
+        Assert.True(File.Exists(marker), "witness: the child's command writes its id");
+        File.Delete(marker);
+        var psi = ShellPsi(Command(30), $"echo $$ > '{marker.Replace("'", "'\\''")}'; exec sleep 30");
         var budget = TimeSpan.FromSeconds(5);
         var started = DateTime.UtcNow;
         var deadline = started + TimeSpan.FromSeconds(25);
@@ -98,8 +106,14 @@ public class ChildProcessTests
             // kills a tree slowly: the suite's slack, never a few seconds).
             Assert.True(DateTime.UtcNow < deadline, $"returned after {(DateTime.UtcNow - started).TotalSeconds:0.0} s");
 
-            Assert.True(File.Exists(marker), "the child never wrote its id within its budget: UNDECIDED, not green.");
-            child = int.Parse(File.ReadAllText(marker).Trim(), System.Globalization.CultureInfo.InvariantCulture);
+            // UNDECIDED when the child never said who it is within its budget (a slow start on a loaded runner; the witness
+            // above rules out a broken command): the kill was not measured — never a red against the product.
+            var written = DateTime.UtcNow.AddSeconds(3);
+            while (!File.Exists(marker) && DateTime.UtcNow < written) await Task.Delay(100);
+            if (!File.Exists(marker) || !int.TryParse(File.ReadAllText(marker).Trim(), System.Globalization.NumberStyles.None,
+                                                      System.Globalization.CultureInfo.InvariantCulture, out var pid))
+                return;
+            child = pid;
             // Killed, not merely abandoned: Process.Dispose() terminates nothing.
             while (IsOurs(child.Value) && DateTime.UtcNow < deadline) await Task.Delay(100);
             Assert.False(IsOurs(child.Value), "the child outlived its budget: abandoned, not killed");

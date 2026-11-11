@@ -481,6 +481,7 @@ internal partial class InferpalSettingsData
         BuildSlashRows();
         CustomTools = c.CustomTools;
         BuildToolRows();
+        _listsShown = ListsNow();
         LoadRoleServerFields(c);
         ResetKeys();
         _ = ListRoleModelsAsync(force: false, CancellationToken.None);   // a server put back that was never listed

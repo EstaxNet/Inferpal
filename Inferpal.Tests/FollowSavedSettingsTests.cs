@@ -533,8 +533,8 @@ public sealed class FollowSavedSettingsTests : IDisposable
 
     /// <summary>Closing Visual Studio's settings window only hides it, and its form lives on: shown again, it follows the file
     /// and shows the settings — unless the person has edits of their own in it —, and Cancel takes the file before it puts
-    /// the boxes back. Without it, a setting saved in VS Code reads as the old one in the reopened window. Read on the source:
-    /// the window cannot be driven from the suite.</summary>
+    /// the boxes back. Without it, a setting saved in VS Code reads as the old one in the reopened window. The wiring is read
+    /// on the source (the tool window is Visual Studio's); the form itself, by <c>VsSettingsWindowTests</c> (Windows only).</summary>
     [Fact]
     public void VisualStudiosSettingsWindow_FollowsTheFile_EachTimeItIsShown_AndOnCancel()
     {
