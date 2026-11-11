@@ -318,7 +318,9 @@ internal sealed class SlowReadServer : IDisposable
     /// <param name="headersFirst">Headers at once, then the parts (LM Studio, vLLM); otherwise with the first part.</param>
     /// <param name="contentType">The body's type.</param>
     /// <param name="reply">The parts of the reply to the request of this index (0 first).</param>
-    public SlowReadServer(bool headersFirst, string contentType, Func<int, IReadOnlyList<Part>> reply)
+    /// <param name="get">The JSON a GET of this path answers at once (a server's loaded models); <c>null</c>: 404.</param>
+    public SlowReadServer(bool headersFirst, string contentType, Func<int, IReadOnlyList<Part>> reply,
+                          Func<string, string?>? get = null)
     {
         _listener.Start();
         _ = Task.Run(async () =>
@@ -337,10 +339,14 @@ internal sealed class SlowReadServer : IDisposable
                             var stream = client.GetStream();
                             var buffer = new byte[65536];
                             var read   = await stream.ReadAsync(buffer);
-                            if (!Encoding.ASCII.GetString(buffer, 0, read).StartsWith("POST", StringComparison.Ordinal))
+                            var head   = Encoding.ASCII.GetString(buffer, 0, read);
+                            if (!head.StartsWith("POST", StringComparison.Ordinal))
                             {
-                                await stream.WriteAsync(Encoding.ASCII.GetBytes(
-                                    "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"));
+                                var json = get?.Invoke(head.Split(' ') is { Length: > 1 } words ? words[1] : "");
+                                await stream.WriteAsync(Encoding.UTF8.GetBytes(json is null
+                                    ? "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                                    : "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: "
+                                      + Encoding.UTF8.GetByteCount(json) + "\r\nConnection: close\r\n\r\n" + json));
                                 return;
                             }
                             // The rest of a long request is drained meanwhile: a socket closed on unread bytes is reset,
@@ -467,6 +473,76 @@ public sealed class SlowPrefillOpenAiTests : IDisposable
             }
             lock (scoped) Assert.Equal(saidBefore, scoped.Count);
         }
+    }
+
+    /// <summary>LM Studio: by its <c>/api/v0</c> state, the model "loading" until <paramref name="loadedAt"/> after the
+    /// first chat request (never, when <c>null</c>); the reply to request <c>i</c> sent after <c>holds[i]</c>, the last
+    /// hold for the rest.</summary>
+    /// <remarks>Timed from the request, not from the server's start: what comes before it (the client, a first look at
+    /// the models) takes what a busy runner gives it.</remarks>
+    private SlowReadServer LmStudioLoading(TimeSpan? loadedAt, params TimeSpan[] holds)
+    {
+        var since = new System.Diagnostics.Stopwatch();
+        return new SlowReadServer(headersFirst: true, "text/event-stream",
+            i =>
+            {
+                lock (since) since.Start();
+                return [new SlowReadServer.Part(holds[Math.Min(i, holds.Length - 1)], Sse)];
+            },
+            get: path =>
+            {
+                if (!path.StartsWith("/api/v0/models", StringComparison.Ordinal)) return null;
+                bool loaded;
+                lock (since) loaded = loadedAt is { } at && since.IsRunning && since.Elapsed >= at;
+                return "{\"data\":[{\"id\":\"" + _model + "\",\"state\":\"" + (loaded ? "loaded" : "loading") + "\"}]}";
+            });
+    }
+
+    private static LmStudioClient LmStudio(string url) =>
+        new(new InferpalConfig { Provider = "lmstudio", BaseUrl = url, QuickTimeoutSeconds = 30, NormalTimeoutSeconds = 30 });
+
+    /// <summary>
+    /// LM Studio unloads a model left idle and loads it again for the next question. Timed from the request, that read
+    /// counted the load, and the estimate follows the slowest read of its size: the waiting line promised a load's time
+    /// for every read after. A load the wait saw end is left out — and the first read of the model is then a sample:
+    /// what was in it is known. It is the model's first read too: the next one, the model in memory from the start, is a
+    /// sample, not set aside as the first.
+    /// </summary>
+    [Fact]
+    public async Task ALoadTheWaitSawEnd_IsNotLearnedAsReading()
+    {
+        using var server = LmStudioLoading(loadedAt: TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(13));
+        var client = LmStudio(server.BaseUrl);
+
+        await client.SendChatAsync(_model, new List<ChatMessageDto>(Question), EmptyToolRegistry.Instance, null,
+                                   CancellationToken.None);
+
+        // 20 000 tokens read anew in 6 to 7 s once loaded (timed from the last "loading" question, up to a beat early):
+        // the whole request, cold, 9 to 10.5 s. Counting the 4 s load, ~15 s.
+        var whole = PrefillRates.Shared.Estimate(server.BaseUrl, _model, RequestSize.Of(Question, null).Total);
+        Assert.NotNull(whole);
+        Assert.InRange(whole!.Value.TotalSeconds, 8.5, 13);
+
+        // A slower read, the model loaded from the start: the estimate follows it (~19.5 s), not the first read alone.
+        await client.SendChatAsync(_model, new List<ChatMessageDto>(Question), EmptyToolRegistry.Instance, null,
+                                   CancellationToken.None);
+        whole = PrefillRates.Shared.Estimate(server.BaseUrl, _model, RequestSize.Of(Question, null).Total);
+        Assert.InRange(whole!.Value.TotalSeconds, 17, 23);
+    }
+
+    /// <summary>A load the wait never saw end leaves the read's share unknown: nothing is learned, even past the first
+    /// read of the model.</summary>
+    [Fact]
+    public async Task ALoadNotSeenEnding_TeachesNothing()
+    {
+        using var server = LmStudioLoading(loadedAt: null, TimeSpan.FromSeconds(6));
+        // The first read of the model in the process is spent already: only the unseen load keeps this one out.
+        PrefillRates.Shared.Record(server.BaseUrl, _model, 0, 0, TimeSpan.Zero, mayIncludeLoad: true);
+
+        await LmStudio(server.BaseUrl).SendChatAsync(_model, new List<ChatMessageDto>(Question), EmptyToolRegistry.Instance,
+                                                     null, CancellationToken.None);
+
+        Assert.Null(PrefillRates.Shared.Estimate(server.BaseUrl, _model, RequestSize.Of(Question, null).Total));
     }
 
     /// <summary>

@@ -102,6 +102,65 @@ public class ModelLoadingWaitTests
         Assert.Equal((true, true, TimeSpan.Zero), PrefillWait.Next(false, loading: false, TimeSpan.Zero, TimeSpan.FromSeconds(8)));
     }
 
+    private static async Task<bool> Within(Func<bool> done)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!done() && DateTime.UtcNow < deadline) await Task.Delay(10);
+        return done();
+    }
+
+    /// <summary>A request with no line to say (a gesture, a compaction under a task) still learns from its read: the wait
+    /// follows the load when asked to, and says it ended after the last question answered "not loaded" — the instant the
+    /// question was ASKED: the server said it then or later. Timed from the answer (here 0.7 s late) or from the "loaded"
+    /// one, the read would be counted short.</summary>
+    [Fact]
+    public async Task WithNoLineToSay_TheLoadIsFollowed_WhenAsked()
+    {
+        var calls = 0;
+        using var wait = new PrefillWait(null, 12_000, null, TimeSpan.FromMinutes(10), followLoad: true,
+            isLoaded: async _ =>
+            {
+                if (Interlocked.Increment(ref calls) > 1) return true;
+                await Task.Delay(700);
+                return false;
+            });
+
+        Assert.True(await Within(() => wait.Load.EndedAfter > TimeSpan.Zero), "the load's end was never seen");
+        Assert.False(wait.Load.Loading);
+        Assert.True(wait.Load.EndedAfter < TimeSpan.FromMilliseconds(350), $"timed from {wait.Load.EndedAfter}");
+    }
+
+    /// <summary>Reference arm: not asked to, a wait with no line asks the server nothing (Ollama measures its own read).
+    /// The first question would be asked in the constructor.</summary>
+    [Fact]
+    public void WithNoLineToSay_NothingIsAsked_UnlessTheLoadIsFollowed()
+    {
+        var asked = 0;
+        using (new PrefillWait(null, 12_000, null, TimeSpan.FromMinutes(10),
+                               isLoaded: _ => { Interlocked.Increment(ref asked); return Task.FromResult<bool?>(false); }))
+            Assert.Equal(0, Volatile.Read(ref asked));
+    }
+
+    /// <summary>What the wait saw is frozen at the first token: an answer that comes after it says nothing of the read.</summary>
+    [Fact]
+    public async Task WhatTheWaitSaw_IsFrozenAtTheFirstToken()
+    {
+        // Continuations inline: the late answer runs the wait's code before SetResult returns, so what is read after it
+        // is what the wait made of it.
+        var late = new TaskCompletionSource<bool?>();
+        var answers = 0;
+        using var wait = new PrefillWait(null, 12_000, null, TimeSpan.FromMinutes(10), followLoad: true,
+                                         isLoaded: _ => Interlocked.Increment(ref answers) == 1 ? Task.FromResult<bool?>(false) : late.Task);
+
+        Assert.True(await Within(() => wait.Load.Loading), "the load was never seen");
+        Assert.True(await Within(() => Volatile.Read(ref answers) >= 2), "the server was not asked again");
+        wait.Arrived();
+        late.SetResult(true);   // the load's end, said after the first token
+
+        Assert.True(wait.Load.Loading);
+        Assert.Equal(TimeSpan.Zero, wait.Load.EndedAfter);
+    }
+
     /// <summary>
     /// LM Studio's <c>/api/v1</c> lists an instance from the start of a JIT load (measured: 0.5 s into a 5 s load), so the
     /// load read as "in memory"; only <c>/api/v0</c>'s state says <c>loading</c>. And it names a model with its variant

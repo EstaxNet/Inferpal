@@ -46,6 +46,8 @@ internal static class TestConfigIsolation
         // And for the budget a model switch gives the server's list: three seconds are not three seconds on a runner that
         // builds and plays two test series at once, and a fake server answering late read as a list never received.
         Inferpal.Services.Commands.ModelsCommandHandler.SwitchListBudget = TimeSpan.FromSeconds(30);
+        // And for the question "is the model loaded?": a fake server's late answer would read as a server that cannot say.
+        Inferpal.Services.Inference.PrefillWait.LoadedAskBudget = TimeSpan.FromSeconds(30);
 
         // And for the editors an ACP agent has told what it does not do in them.
         Inferpal.Host.Acp.AcpAgent.LimitsToldShared.PathOverride =

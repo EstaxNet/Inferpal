@@ -455,7 +455,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var reading   = PrefillRates.Shared.Describe(base_, model, size.Total);
         var firstWait = PrefillDeadline.For(deadline, reading.ColdRead);
         var toRead    = reading.Tokens;
-        wait = new PrefillWait(onWaiting, toRead, reading.Measured, firstWait, isLoaded: LoadedProbe(model));
+        wait = new PrefillWait(onWaiting, toRead, reading.Measured, firstWait, isLoaded: LoadedProbe(model), followLoad: true);
         using var waitScope = wait;
         TimeSpan? firstUseful = null;
         // No first token when the wait ran out — never before the connection deadline (PrefillDeadline.AfterConnect): the
@@ -762,9 +762,13 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         }
 
         // A read that went through is a sample of the server's speed: the tokens it read anew (what it served from its
-        // cache, when it says, is not reading), from sending to the first useful chunk.
-        if (firstUseful is { } read)
-            PrefillRates.Shared.RecordRead(base_, model, size.Total, promptTokens, cachedTokens ?? 0, read, mayIncludeLoad: true);
+        // cache, when it says, is not reading), from sending to the first useful chunk. ⚠ A load the wait saw is not
+        // reading: an LM Studio model unloaded while idle and loaded again by this request would be learned as the
+        // slowest read of its size. Timed from the load's end; a load not seen ending teaches nothing. With no load seen
+        // (none, or a server that cannot say), the first read of a model in the process is no sample (mayIncludeLoad).
+        if (firstUseful is { } read && wait!.Load is { Loading: false } load)
+            PrefillRates.Shared.RecordRead(base_, model, size.Total, promptTokens, cachedTokens ?? 0, read - load.EndedAfter,
+                                           mayIncludeLoad: load.EndedAfter == TimeSpan.Zero);
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.
         var (lastAnswer, lastThought) = envelope.Flush();

@@ -84,7 +84,8 @@ internal sealed class PrefillRates
     /// <param name="read">From sending to the first useful chunk.</param>
     /// <param name="mayIncludeLoad">The client cannot tell a model's load from its read (an OpenAI-compatible server
     /// that loads on demand: LM Studio, llama-swap): the first read of a model in this process is no sample — a load
-    /// of a minute recorded as reading would be the slowest read of its size, and the estimate follows the slowest.</param>
+    /// of a minute recorded as reading would be the slowest read of its size, and the estimate follows the slowest. A
+    /// read known to hold no load is the model's first read too: the next one is a sample.</param>
     /// <remarks>⚠ Only a read that says a speed replaces a bound an expiry left. A short or cached read that beats the bound
     /// scaled down to its size says nothing of a long cold read: cleared by it, a long run that timed out, then a quick
     /// question, then the run again, would time out again at the configured wait. A bound only lengthens the wait of a
@@ -92,7 +93,7 @@ internal sealed class PrefillRates
     public void Record(string server, string model, int estimated, int tokens, TimeSpan read, bool mayIncludeLoad = false)
     {
         // The first read of a model is spent on this mark whatever its size: the load happens then, not later.
-        var first = mayIncludeLoad && _seen.TryAdd(Key(server, model), 0);
+        var first = _seen.TryAdd(Key(server, model), 0) && mayIncludeLoad;
         if (first || estimated <= 0 || tokens < MinTokens || read < MinRead) return;
         Update(server, model, entry =>
         {
@@ -326,6 +327,18 @@ internal sealed class PrefillWait : IDisposable
     private readonly CancellationTokenSource _stop = new();
     private readonly object _gate = new();
     private bool _stopped, _said, _disposed;
+    private LoadSeen _load;
+
+    /// <summary>What a wait saw of a load before the first token.</summary>
+    /// <param name="Loading">The server said the model was not in memory, and the wait never saw the load end: what part
+    /// of the time was reading is unknown.</param>
+    /// <param name="EndedAfter">A load the wait saw end ended after this — the last question answered "not loaded";
+    /// zero when no load was seen (none, or a server that could not say). The read is timed from there: at worst a little
+    /// long, the direction the store takes (a sample may only lengthen a wait).</param>
+    internal readonly record struct LoadSeen(bool Loading, TimeSpan EndedAfter);
+
+    /// <summary>What the wait saw of a load, frozen when the first token came (<see cref="Arrived"/>).</summary>
+    public LoadSeen Load { get { lock (_gate) return _load; } }
 
     /// <param name="onWaiting">The wait, or <c>null</c> when it gives its place back; <c>null</c> for the open
     /// <see cref="ModelWaitScope"/>'s, and nothing said without one. ⚠ It must not block (the editors post it): it is
@@ -338,11 +351,13 @@ internal sealed class PrefillWait : IDisposable
     /// <param name="isLoaded">Whether the server has the model in memory now — <c>null</c> when it cannot say. Asked with
     /// the request, then every <see cref="LoadingBeat"/> while the answer is "no": a load is named as such
     /// (<see cref="ModelWait.Loading"/>). <c>null</c> for a server that publishes no loaded models.</param>
+    /// <param name="followLoad">The load is followed even with no line to say, for <see cref="Load"/>: a client that cannot
+    /// tell a load from a read learns the read alone.</param>
     public PrefillWait(Action<ModelWait?>? onWaiting, int tokens, TimeSpan? coldRead, TimeSpan bound, TimeSpan? firstSaid = null,
-                       Func<CancellationToken, Task<bool?>>? isLoaded = null)
+                       Func<CancellationToken, Task<bool?>>? isLoaded = null, bool followLoad = false)
     {
         // Every call reaches this line, so the scope is read here once for both clients.
-        _onWaiting = onWaiting ?? ModelWaitScope.Current;
+        _onWaiting = onWaiting ?? ModelWaitScope.Current ?? (followLoad && isLoaded is not null ? static _ => { } : null);
         if (_onWaiting is not null) _ = SayAsync(tokens, coldRead, bound, firstSaid ?? FirstSaid, isLoaded, _stop.Token);
     }
 
@@ -363,12 +378,25 @@ internal sealed class PrefillWait : IDisposable
             var loading  = false;
             var asking   = isLoaded is not null;
             var readFrom = TimeSpan.Zero;
+            var lastLoading = TimeSpan.Zero;
             var nextSay  = firstSaid;
             while (!ct.IsCancellationRequested)
             {
                 if (asking)
-                    (loading, asking, readFrom) = Next(await AskLoadedAsync(isLoaded!, ct).ConfigureAwait(false),
-                                                       loading, readFrom, _clock.Elapsed);
+                {
+                    // The server said "not loaded" at or after the question, never before: from there, a read is at
+                    // worst a little long.
+                    var asked  = _clock.Elapsed;
+                    var loaded = await AskLoadedAsync(isLoaded!, ct).ConfigureAwait(false);
+                    (loading, asking, readFrom) = Next(loaded, loading, readFrom, _clock.Elapsed);
+                    if (loaded == false) lastLoading = asked;
+                    lock (_gate)
+                    {
+                        // ⚠ Frozen at the first token: an answer that comes after it would say of the read what came after.
+                        if (_stopped) return;
+                        _load = new LoadSeen(loading, readFrom > TimeSpan.Zero ? lastLoading : TimeSpan.Zero);
+                    }
+                }
                 if (_clock.Elapsed >= nextSay)
                 {
                     lock (_gate)

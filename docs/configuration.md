@@ -417,7 +417,9 @@ These budgets wait for the model, and measure silence: a model that keeps writin
 - In an ACP client (Zed, JetBrains…), the same wait is said as the agent's thinking: once when it shows, with its
   stop, and once more when it runs longer than usual.
 - It is an estimate from earlier reads: Ollama and the OpenAI-compatible routes send nothing while they read a
-  prompt.
+  prompt. A model load is not reading: Ollama measures its read itself, and on LM Studio, which says when a model is
+  loading, the load is left out. A server that does not say (llama-server, llama-swap) can count a load once in a
+  while: on those, the first read of each model in a session is not counted.
 - A turn stopped there says why, says when its steps wrote nothing, and offers **Open time limits** (this page of
   the settings) beside its **Regenerate**.
 - A request given up while the server was still reading a long prompt says so (and the next one to that model waits
