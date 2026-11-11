@@ -70,7 +70,12 @@ internal sealed class LoopbackHttpServer : IDisposable
                         var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, true);
                         var line = await reader.ReadLineAsync();
                         var path = line?.Split(' ') is [_, var p, ..] ? p : string.Empty;
-                        lock (_paths) _paths.Add(path);
+                        // ⚠ The body goes at its path's index: requests that arrive together (a client that asks the
+                        // server's loaded models while it sends a chat) finish reading in another order, and Paths zipped
+                        // with Bodies would pair a chat with the empty body of a GET.
+                        int index;
+                        lock (_paths) { index = _paths.Count; _paths.Add(path); }
+                        lock (_bodies) { while (_bodies.Count <= index) _bodies.Add(string.Empty); }
                         var contentLength = 0;
                         var chunked       = false;
                         while (true)
@@ -111,7 +116,7 @@ internal sealed class LoopbackHttpServer : IDisposable
                             request.Append(block);
                         }
                         var requestBody = request.ToString();
-                        lock (_bodies) _bodies.Add(requestBody);
+                        lock (_bodies) _bodies[index] = requestBody;
                         var payload = body(path, requestBody);
                         var bytes = Encoding.UTF8.GetBytes(payload ?? "{}");
                         var code   = payload is null ? 404 : status?.Invoke(path, requestBody) ?? 200;

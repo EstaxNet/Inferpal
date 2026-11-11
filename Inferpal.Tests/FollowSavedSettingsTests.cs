@@ -511,8 +511,9 @@ public sealed class FollowSavedSettingsTests : IDisposable
                        ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalToolWindowData.SlashCommands.cs")));
         Assert.Contains("_config.Followed                += OnSettingsFollowed;",
                         ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalToolWindowData.Construction.cs")), StringComparison.Ordinal);
-        Assert.Matches(@"SettingsFollow\.TakeAndApply\(config, client, \(\) => TurnDoor\.Busy\)[\s\S]{0,1000}_opened\s*= config\.SnapshotNow\(\);",
-                       ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalSettingsData.cs")));
+        var form = ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalSettingsData.cs"));
+        Assert.Matches(@"FollowTheFile\(config, client, mcp, ""Settings\.FollowOnOpen""\);\s*_opened\s*= config\.SnapshotNow\(\);", form);
+        Assert.Matches(@"void FollowTheFile\([^)]*\)\s*\{\s*try\s*\{\s*var follow = Services\.Inference\.SettingsFollow\.TakeAndApply\(config, client, \(\) => TurnDoor\.Busy\);", form);
 
         Assert.Matches(@"await this\.followSettings\(host\);\s*const agentMode = this\.windowAgentMode\(\);",
                        WebviewRebuildTests.TsCode("chatViewProvider.ts"));
@@ -528,5 +529,42 @@ public sealed class FollowSavedSettingsTests : IDisposable
         foreach (var file in new[] { "HostServer.cs", "HostSetup.cs" })
             Assert.DoesNotContain("s.FileSettings = (_fileSettings() ?? s.Config).SnapshotNow();",
                                   ConventionCoverageTests.CodeOnly(Path.Combine(repo, "Inferpal.Host", file)), StringComparison.Ordinal);
+    }
+
+    /// <summary>Closing Visual Studio's settings window only hides it, and its form lives on: shown again, it follows the file
+    /// and shows the settings — unless the person has edits of their own in it —, and Cancel takes the file before it puts
+    /// the boxes back. Without it, a setting saved in VS Code reads as the old one in the reopened window. Read on the source:
+    /// the window cannot be driven from the suite.</summary>
+    [Fact]
+    public void VisualStudiosSettingsWindow_FollowsTheFile_EachTimeItIsShown_AndOnCancel()
+    {
+        var repo = ConventionCoverageTests.RepoRoot();
+        var tool = Path.Combine(repo, "Inferpal", "ToolWindow");
+        var form = ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalSettingsData.cs"));
+
+        Assert.Matches(@"override Task OnShowAsync\([^)]*\)\s*\{\s*if \(_data is \{ \} data\) data\.SynchronizationContext\.Post\(_ => data\.ShowAgain\(\), null\);",
+                       ConventionCoverageTests.CodeOnly(Path.Combine(repo, "Inferpal", "InferpalSettingsToolWindow.cs")));
+        Assert.Matches(@"void ShowAgain\(\)\s*\{\s*try\s*\{\s*FollowTheFile\(_config, _client, _mcp, ""Settings\.FollowOnShow""\);\s*" +
+                       @"if \(CountUnsaved\(\) > 0 \|\| IsEditingServer \|\| IsEditingPinned \|\| IsEditingSlash \|\| IsEditingTool \|\| ListsEdited\(\)\) return;\s*" +
+                       @"if \(System\.Text\.Json\.Nodes\.JsonNode\.DeepEquals\(_opened, _config\.SnapshotNow\(\)\)\) return;\s*" +
+                       @"var \(fold, status\) = \(ShowAdvanced, SaveStatus\);\s*ReloadFromConfig\(\);", form);
+        Assert.Contains(@"FollowTheFile(_config, _client, _mcp, ""Settings.FollowOnCancel""); ReloadFromConfig();", form, StringComparison.Ordinal);
+    }
+
+    /// <summary>The reload puts back every list the form builds when it opens: past <c>_opened</c>, a form that keeps its old
+    /// rows saves them over another editor's — a server VS Code added disappears from the file, read as the person's
+    /// deletion by the merge.</summary>
+    [Fact]
+    public void TheSettingsReload_RebuildsEveryListTheFormBuildsAtItsOpening()
+    {
+        var tool = Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow");
+        var form = ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalSettingsData.cs"));
+        var pages = ConventionCoverageTests.CodeOnly(Path.Combine(tool, "InferpalSettingsData.Pages.cs"));
+        var ctor = System.Text.RegularExpressions.Regex.Match(form, @"public InferpalSettingsData\([\s\S]*?\n    \}").Value;
+        var reload = System.Text.RegularExpressions.Regex.Match(pages, @"private void ReloadFromConfig\(\)[\s\S]*?\n    \}").Value;
+        var built = System.Text.RegularExpressions.Regex.Matches(ctor, @"\b(Build\w*Rows\w*)\(\)").Select(m => m.Groups[1].Value).Distinct().ToList();
+
+        Assert.True(built.Count >= 3, $"witness: the form's opening builds its lists ({string.Join(", ", built)})");
+        Assert.All(built, b => Assert.Contains(b + "()", reload, StringComparison.Ordinal));
     }
 }

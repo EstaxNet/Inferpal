@@ -84,6 +84,14 @@ internal class InferpalSettingsToolWindow : VsToolWindow
         return base.OnHideAsync(cancellationToken);
     }
 
+    /// <summary>The window shown again: closing it only hid it, and its form follows the file now
+    /// (<see cref="InferpalSettingsData.ShowAgain"/>).</summary>
+    public override Task OnShowAsync(CancellationToken cancellationToken)
+    {
+        if (_data is { } data) data.SynchronizationContext.Post(_ => data.ShowAgain(), null);
+        return base.OnShowAsync(cancellationToken);
+    }
+
     /// <summary>The settings' "Open Context X-Ray": the chat window, shown, with its panel open.</summary>
     private async Task OpenXrayAsync()
     {

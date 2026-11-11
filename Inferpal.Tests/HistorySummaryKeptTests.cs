@@ -44,15 +44,59 @@ public class HistorySummaryKeptTests
         }
 
         /// <summary>The pre-send check, as both front-ends run it: after the question, before the answer.</summary>
-        public void Compact(string? summary, int anchors)
+        public void Compact(string? summary, int anchors, int keepTurns = 2)
         {
-            var plan = HistoryCompaction.Decide(History, 1_000, 100_000, keepTurnsConfig: 2, kvAnchorMessages: anchors,
+            var plan = HistoryCompaction.Decide(History, 1_000, 100_000, keepTurnsConfig: keepTurns, kvAnchorMessages: anchors,
                                                 compactionEnabled: true);
             Assert.NotEqual(CompactionAction.None, plan.Action);   // witness: it compacts
             Summary = HistoryCompaction.Apply(History, plan, summary, Summary);
         }
 
         public void Turns(int n) { for (var i = 0; i < n; i++) { Ask(); Answer(); } }
+
+        /// <summary>The pre-send check when it may decide nothing: applied only if it compacts.</summary>
+        public bool TryCompact(string? summary, int anchors, int keepTurns)
+        {
+            var plan = HistoryCompaction.Decide(History, 1_000, 100_000, keepTurnsConfig: keepTurns, kvAnchorMessages: anchors,
+                                                compactionEnabled: true);
+            if (plan.Action == CompactionAction.None) return false;
+            Summary = HistoryCompaction.Apply(History, plan, summary, Summary);
+            return true;
+        }
+
+        /// <summary>The editor closed and opened again: the model's history is the one the session file rebuilds.</summary>
+        public void Reopen()
+        {
+            var (restored, kept) = SessionManager.BuildRestoredHistory("sys", Saved, Summary);
+            History.Clear();
+            History.AddRange(restored);
+            Summary = kept;
+        }
+    }
+
+    /// <summary>A conversation compacted, reopened, compacted again — the next day's session — and reopened: it comes back
+    /// as the model had it, the second summary in place, not whole.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void ACompactedConversation_ReopenedThenCompactedAgain_IsRestoredAsTheModelHadIt(int anchors)
+    {
+        var c = new Conversation();
+        c.Turns(6);
+        c.Ask(); c.Compact("FIRST SUMMARY", anchors); c.Answer();
+        c.Turns(2);
+        c.Reopen();
+        c.Turns(5);
+        c.Ask(); c.Compact("SECOND SUMMARY", anchors); c.Answer();
+        c.Turns(1);
+
+        var (restored, kept) = SessionManager.BuildRestoredHistory("sys", c.Saved, c.Summary);
+
+        Assert.NotNull(c.Summary);
+        Assert.Equal(c.Summary, kept);
+        Assert.Equal(c.History.Select(Shape), restored.Select(Shape));
+        Assert.Contains(restored, m => m.Content == "SECOND SUMMARY");
     }
 
     [Theory]
@@ -76,6 +120,55 @@ public class HistorySummaryKeptTests
         Assert.Equal(c.Summary, kept);
         Assert.Equal(c.History.Select(Shape), restored.Select(Shape));
         Assert.Contains(restored, m => m.Content == "SECOND SUMMARY");
+    }
+
+    /// <summary>Compacted first without anchors (a small window has no room for them), then with them (the window grew):
+    /// the summary held is in what the second plan replaces, never kept as an anchor beside the new one. Without that, the
+    /// second summary could not be counted, the session file kept none, and the conversation reopened whole.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ACompactionWithMoreAnchorsThanTheSummaryHeld_KeepsItsSummary(bool reopenedBetween)
+    {
+        var c = new Conversation();
+        c.Turns(6);
+        c.Ask(); c.Compact("FIRST SUMMARY", anchors: 0); c.Answer();
+        c.Turns(2);
+        if (reopenedBetween) c.Reopen();
+        c.Turns(5);
+        c.Ask(); c.Compact("SECOND SUMMARY", anchors: 3); c.Answer();
+        c.Turns(1);
+
+        var (restored, kept) = SessionManager.BuildRestoredHistory("sys", c.Saved, c.Summary);
+
+        Assert.NotNull(c.Summary);
+        Assert.Equal(c.Summary, kept);
+        Assert.Equal(c.History.Select(Shape), restored.Select(Shape));
+        Assert.Contains(restored, m => m.Content == "SECOND SUMMARY");
+    }
+
+    /// <summary>The mirror: a compaction soon after another, more turns to keep than questions since — the turns kept would
+    /// reach back over the summary held (the room shrank, the setting grew). Never kept beside a new one; and the summary
+    /// alone is not summarised again (poorer) nor dropped (its facts gone for no room): nothing is decided.</summary>
+    [Theory]
+    [InlineData(0, "SECOND SUMMARY")]
+    [InlineData(3, "SECOND SUMMARY")]
+    [InlineData(3, null)]   // a summary that fell back: the turns would be dropped
+    public void ACompactionRightAfterAnother_NeverKeepsTheSummaryHeldAmongTheTurnsKept(int anchors, string? second)
+    {
+        var c = new Conversation();
+        c.Turns(6);
+        c.Ask(); c.Compact("FIRST SUMMARY", anchors); c.Answer();
+        c.Turns(1);
+        c.Ask(); c.TryCompact(second, anchors, keepTurns: 5); c.Answer();
+
+        var (restored, kept) = SessionManager.BuildRestoredHistory("sys", c.Saved, c.Summary);
+
+        Assert.NotNull(c.Summary);
+        Assert.Equal("FIRST SUMMARY", c.Summary!.Text);
+        Assert.Equal(c.Summary, kept);
+        Assert.Equal(c.History.Select(Shape), restored.Select(Shape));
+        Assert.Single(c.History, m => m.Content == HistoryCompaction.SummaryHeading);   // never two summaries side by side
     }
 
     /// <summary>Turns dropped without a summary (compaction off, or its fallback) are kept as the model had them too — the

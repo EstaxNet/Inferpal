@@ -75,12 +75,23 @@ internal static class HistoryCompaction
         if (contextWindowSize <= 0 || lastPromptTokens == 0) return CompactionPlan.None;
         if (lastPromptTokens <= contextWindowSize * 8 / 10)  return CompactionPlan.None;
 
+        // ⚠ What the history holds in place of its first turns — the summary, or the marker of the turns dropped: the only
+        // scaffolding of a durable history — is replaced whole or not at all. Kept among the anchors (the window grew since
+        // a compaction made without them) or among the kept turns (it shrank since one made with them), two summaries
+        // stand side by side: the session file cannot describe that, keeps none, and the conversation reopens whole.
+        var heads     = history.Select((m, i) => (m, i)).Skip(1).Where(x => x.m.IsScaffolding).Select(x => x.i).ToList();
+        var headFirst = heads.Count > 0 ? heads[0] : int.MaxValue;
+        var headLast  = heads.Count == 0 ? 0
+                      : heads[^1] + (history[heads[^1]].Content == SummaryHeading && heads[^1] + 1 < history.Count ? 1 : 0);
+
         var userIndices = history
             .Select((m, i) => (m, i))
             .Skip(1)                       // system[0] never counts as a turn
             .Where(x => x.m.Role == "user" && !x.m.IsScaffolding)   // the loop's own prompts are not turns
+            .Where(x => x.i > headLast)    // the turns kept come after what stands for the first ones
             .Select(x => x.i)
             .ToList();
+        if (userIndices.Count == 0) return CompactionPlan.None;
 
         var room = contextWindowSize * 6 / 10 - toolTokens - AgentOrchestrator.EstimateTokens(history.Take(1));
         int Tail(int turns) => AgentOrchestrator.EstimateTokens(history.Skip(userIndices[userIndices.Count - turns]));
@@ -88,14 +99,16 @@ internal static class HistoryCompaction
         var keepTurns = Math.Min(Math.Max(1, keepTurnsConfig), Math.Max(1, userIndices.Count));
         while (keepTurns > 1 && Tail(keepTurns) > room) keepTurns--;
 
-        if (userIndices.Count <= keepTurns) return CompactionPlan.None;
+        // With a summary held, the turns kept are counted after it: before them stand the anchors and the summary.
+        if (userIndices.Count <= keepTurns && heads.Count == 0) return CompactionPlan.None;
 
         var keepFromIdx = userIndices[userIndices.Count - keepTurns];
         var removed     = keepFromIdx - 1;
 
-        var kvAnchor = (kvAnchorMessages > 0 && removed > kvAnchorMessages
-                        && Tail(keepTurns) + AgentOrchestrator.EstimateTokens(history.Skip(1).Take(kvAnchorMessages)) <= room)
-            ? kvAnchorMessages
+        var anchorCap = Math.Min(kvAnchorMessages, headFirst - 1);   // the anchors end before the summary held
+        var kvAnchor = (anchorCap > 0 && removed > anchorCap
+                        && Tail(keepTurns) + AgentOrchestrator.EstimateTokens(history.Skip(1).Take(anchorCap)) <= room)
+            ? anchorCap
             : 0;
 
         // The tail is safe by construction (it starts on a user message), but the KV-cache anchor
@@ -105,6 +118,9 @@ internal static class HistoryCompaction
         var start = ToolBlockBoundary.SnapStart(history, 1 + kvAnchor, floor: 1);
         var count = keepFromIdx - start;
         if (count <= 0) return CompactionPlan.None;
+        // The summary alone is not worth a request: summarised again it only gets poorer, and dropped (compaction off, a
+        // summary that failed) its facts go for no room at all.
+        if (heads.Count > 0 && start >= headFirst && keepFromIdx <= headLast + 1) return CompactionPlan.None;
 
         // Report the anchor actually preserved, so the chat notice never overstates it.
         kvAnchor = start - 1;

@@ -469,6 +469,18 @@ internal partial class InferpalSettingsData
         RunEndSoundEnabled = c.RunEndSoundEnabled;
         ChatDensity = c.IsCompactChat ? "compact" : "comfortable";
         HistoryStorage = ShownHistoryStorage(c);
+        // ⚠ The four lists and their rows too, as the constructor builds them: past _opened (advanced above), a form that kept
+        // its old rows would save them over another editor's — a server VS Code added, a file the chat pinned — which the
+        // merge reads as the person's deletions.
+        McpServersJson = c.McpServersJson;
+        BuildRowsFromConfig();
+        McpStatusText = BuildMcpStatus();
+        PinnedContextFiles = c.PinnedContextFiles;
+        BuildPinnedRows();
+        PromptTemplates = c.PromptTemplates;
+        BuildSlashRows();
+        CustomTools = c.CustomTools;
+        BuildToolRows();
         LoadRoleServerFields(c);
         ResetKeys();
         _ = ListRoleModelsAsync(force: false, CancellationToken.None);   // a server put back that was never listed

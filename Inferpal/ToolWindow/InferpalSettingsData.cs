@@ -344,23 +344,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                                 SettingsLiveSources? live = null)
     {
         _config               = config;
-        // The window shows the file: what another editor saved since this Visual Studio took the settings is taken
-        // first, as the chat takes it before a question.
-        // Not while a turn runs (its loop reads these settings): the next question takes them. Applied here too, the
-        // chat window may not be open: the language, and the MCP servers once no turn runs.
-        try
-        {
-            var follow = Services.Inference.SettingsFollow.TakeAndApply(config, client, () => TurnDoor.Busy);
-            if (follow.Taken.Contains("language"))
-            {
-                Strings.ApplyLanguage(config.Language);
-                config.NotifyLanguageChanged();
-            }
-            if (follow.Taken.Contains("mcpEnabled") || follow.Taken.Contains("mcpServersJson"))
-                _ = mcp.RefreshWhenIdleAsync(() => TurnDoor.Busy, TimeSpan.FromMilliseconds(500));
-            if (!follow.Busy) FollowServerAtTheDoor(client);
-        }
-        catch (Exception ex) { Diagnostics.Swallow("Settings.FollowOnOpen", ex); }
+        // The window shows the file: what another editor saved since this Visual Studio took the settings is taken first.
+        FollowTheFile(config, client, mcp, "Settings.FollowOnOpen");
         _opened               = config.SnapshotNow();
         _client               = client;
         _mcp                  = mcp;
@@ -466,7 +451,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         SelectPageAppearanceCommand   = new AsyncCommand((_, _) => { SelectPage("appearance");   return Task.CompletedTask; });
         EditRulesCommand              = new AsyncCommand((_, _) => { SelectPage("tools");        return Task.CompletedTask; });
         ToggleTimeLimitsCommand       = new AsyncCommand((_, _) => { TimeLimitsExpanded = !TimeLimitsExpanded; return Task.CompletedTask; });
-        CancelCommand                 = new AsyncCommand((_, _) => { ReloadFromConfig(); return Task.CompletedTask; });
+        // What is saved is the file: another editor's save since the window opened is taken before the boxes are put back.
+        CancelCommand                 = new AsyncCommand((_, _) => { FollowTheFile(_config, _client, _mcp, "Settings.FollowOnCancel"); ReloadFromConfig(); return Task.CompletedTask; });
 
         AddPinnedCommand            = new AsyncCommand((_, _) => { BeginAddPinned();   return Task.CompletedTask; });
         BrowsePinnedCommand         = new AsyncCommand(async (_, _) => await BrowsePinnedAsync());
@@ -1809,6 +1795,64 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             return false;
         }
     }
+
+    /// <summary>
+    /// What another editor saved since this Visual Studio took the settings, taken as the chat takes it before a question —
+    /// not while a turn runs (its loop reads these settings): the next question takes them. Applied here too, the chat
+    /// window may not be open: the language, and the MCP servers once no turn runs.
+    /// </summary>
+    /// <remarks>Its arguments, never the fields: the constructor calls it before it sets them.</remarks>
+    /// <param name="config">The settings this window and the chat share.</param>
+    /// <param name="client">The chat's client, which follows a new server at the turns' door.</param>
+    /// <param name="mcp">The MCP service, restarted when its servers changed.</param>
+    /// <param name="site">Where a failure is traced: the gesture that followed.</param>
+    private static void FollowTheFile(InferpalConfig config, IInferenceProvider client, Services.Mcp.McpToolService mcp, string site)
+    {
+        try
+        {
+            var follow = Services.Inference.SettingsFollow.TakeAndApply(config, client, () => TurnDoor.Busy);
+            if (follow.Taken.Contains("language"))
+            {
+                Strings.ApplyLanguage(config.Language);
+                config.NotifyLanguageChanged();
+            }
+            if (follow.Taken.Contains("mcpEnabled") || follow.Taken.Contains("mcpServersJson"))
+                _ = mcp.RefreshWhenIdleAsync(() => TurnDoor.Busy, TimeSpan.FromMilliseconds(500));
+            if (!follow.Busy) FollowServerAtTheDoor(client);
+        }
+        catch (Exception ex) { Diagnostics.Swallow(site, ex); }
+    }
+
+    /// <summary>
+    /// The window shown again — closing it only hides it, and its form lives on: what another editor saved since is taken,
+    /// then the boxes show the settings, unless the person has edits of their own in them.
+    /// </summary>
+    /// <remarks>⚠ Without it a reopened window shows the values of its first opening: a setting saved in VS Code reads as
+    /// the old one. Reloaded only when the form no longer shows the settings (<see cref="_opened"/>), never on what the
+    /// follow took: the chat shares the followed file, and when it took a change first the window takes nothing. The four
+    /// lists' raw text counts as an edit too — JSON pasted, servers imported and not saved yet. Called on the form's
+    /// context.</remarks>
+    internal void ShowAgain()
+    {
+        try
+        {
+            FollowTheFile(_config, _client, _mcp, "Settings.FollowOnShow");
+            if (CountUnsaved() > 0 || IsEditingServer || IsEditingPinned || IsEditingSlash || IsEditingTool || ListsEdited()) return;
+            if (System.Text.Json.Nodes.JsonNode.DeepEquals(_opened, _config.SnapshotNow())) return;
+            // What the person chose to see stays: the advanced fold they opened, a failed save they have not read.
+            var (fold, status) = (ShowAdvanced, SaveStatus);
+            ReloadFromConfig();
+            ShowAdvanced = ShowAdvanced || fold;
+            if (status.Length > 0 && !status.StartsWith("✓", StringComparison.Ordinal)) SaveStatus = status;
+        }
+        catch (Exception ex) { Diagnostics.Swallow("Settings.ShowAgain", ex); }
+    }
+
+    /// <summary>The four lists' text differs from the settings the form shows: an edit in their raw editors, rows imported
+    /// and not saved.</summary>
+    private bool ListsEdited() =>
+        McpServersJson != (string?)_opened["mcpServersJson"] || PinnedContextFiles != (string?)_opened["pinnedContextFiles"]
+        || PromptTemplates != (string?)_opened["promptTemplates"] || CustomTools != (string?)_opened["customTools"];
 
     /// <summary>
     /// The settings as they are now reach the chat's client (<see cref="SwitchingProvider.Follow"/>) — a new kind of server
