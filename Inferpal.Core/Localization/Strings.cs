@@ -1251,6 +1251,8 @@ internal static class Strings
     public static string MentionCommitUnknown(string revision) => Format(Get(nameof(MentionCommitUnknown)), revision);
     public static string MentionCommitRange(string range) => Format(Get(nameof(MentionCommitRange)), range);
     public static string MentionUrlNotAllowed(string url) => Format(Get(nameof(MentionUrlNotAllowed)), url);
+    public static string MentionUrlRulesUnreadable(string url) => Format(Get(nameof(MentionUrlRulesUnreadable)), url);
+    public static string PermissionRulesUnreadable => Get(nameof(PermissionRulesUnreadable));
     public static string MentionCommitNoneYet => Get(nameof(MentionCommitNoneYet));
     public static string MentionCodeNothingFound(string reason) => Format(Get(nameof(MentionCodeNothingFound)), reason);
     public static string MentionTreeNoRoot => Get(nameof(MentionTreeNoRoot));

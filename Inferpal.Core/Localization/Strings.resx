@@ -430,6 +430,8 @@ Backup: {0}</value></data>
   <data name="MentionCommitUnknown" xml:space="preserve"><value>Nothing attached for @commit: no commit is named '{0}'. A hash, a branch or a tag names one.</value></data>
   <data name="MentionCommitRange" xml:space="preserve"><value>Nothing attached for @commit: '{0}' is a range, and @commit attaches one commit. `/check {0}` reviews a range.</value></data>
   <data name="MentionUrlNotAllowed" xml:space="preserve"><value>Nothing attached for @url: your settings do not let Inferpal fetch {0} (fetch_url is turned off, or a deny rule matches it).</value></data>
+  <data name="PermissionRulesUnreadable" xml:space="preserve"><value>The workspace's permission rules (.inferpal/permissions.json) cannot be read: every action asks you before it runs until they can.</value></data>
+  <data name="MentionUrlRulesUnreadable" xml:space="preserve"><value>Nothing attached for @url: the workspace's permission rules (.inferpal/permissions.json) cannot be read, and one of them may refuse {0}.</value></data>
   <data name="MentionCommitNoneYet" xml:space="preserve"><value>Nothing attached for @commit: this repository has no commit yet.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Nothing attached for @diff: there is no uncommitted change to a tracked file. A new file that was never added to git is not part of a diff — attach it with @file.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>Nothing attached for @code — {0}</value></data>

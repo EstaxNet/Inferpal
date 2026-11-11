@@ -122,4 +122,29 @@ public class BuildBannerTests : IDisposable
             Assert.Equal(build, count);
         }
     }
+
+    /// <summary>A signal another program held while it was taken stays on disk, and no watcher event will come for it:
+    /// read again a moment later, its banner still comes. (Windows' sharing; a POSIX lock is advisory.)</summary>
+    [Fact]
+    public async Task ASignalLeftUnread_IsReadAgain_AndItsBannerComes()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var delay = BuildSignalFile.SecondReadDelay;
+        BuildSignalFile.SecondReadDelay = TimeSpan.FromMilliseconds(20);
+        try
+        {
+            var monitor = new VsBuildMonitor { RereadDelay = TimeSpan.FromMilliseconds(200) };
+            var failures = new System.Collections.Concurrent.BlockingCollection<int>();
+            monitor.BuildFailed += (count, _) => failures.Add(count);
+            BuildSignalFile.Write(@"C:\work\Sln.sln", ["A.cs(1,1): error CS0103: nope"], errorCount: 7);
+
+            using (new FileStream(BuildSignalFile.FilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+                await Task.Run(() => monitor.TakeAndDispatch(rereadsLeft: 3));
+            Assert.Equal(0, failures.Count);                      // witness: held, nothing dispatched yet
+
+            Assert.True(failures.TryTake(out var count, TimeSpan.FromSeconds(30)), "the signal left unread was never read again");
+            Assert.Equal(7, count);
+        }
+        finally { BuildSignalFile.SecondReadDelay = delay; }
+    }
 }

@@ -429,6 +429,8 @@ Kopia zapasowa: {0}</value></data>
   <data name="MentionCommitUnknown" xml:space="preserve"><value>Nic nie dołączono dla @commit: żaden commit nie nazywa się '{0}'. Commit wskazuje hash, gałąź lub tag.</value></data>
   <data name="MentionCommitRange" xml:space="preserve"><value>Nic nie dołączono dla @commit: '{0}' to zakres, a @commit dołącza jeden commit. `/check {0}` przegląda zakres.</value></data>
   <data name="MentionUrlNotAllowed" xml:space="preserve"><value>Nic nie dołączono dla @url: Twoje ustawienia nie pozwalają Inferpal pobrać {0} (fetch_url jest wyłączone albo pasuje reguła deny).</value></data>
+  <data name="PermissionRulesUnreadable" xml:space="preserve"><value>Nie można odczytać reguł uprawnień obszaru roboczego (.inferpal/permissions.json): każda czynność wymaga Twojej zgody przed wykonaniem, dopóki nie da się ich odczytać.</value></data>
+  <data name="MentionUrlRulesUnreadable" xml:space="preserve"><value>Nic nie dołączono dla @url: nie można odczytać reguł uprawnień obszaru roboczego (.inferpal/permissions.json), a któraś z nich może odrzucać {0}.</value></data>
   <data name="MentionCommitNoneYet" xml:space="preserve"><value>Nic nie dołączono dla @commit: to repozytorium nie ma jeszcze żadnego commita.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Nic nie dołączono dla @diff: brak niezatwierdzonych zmian w śledzonym pliku. Nowy plik, którego nigdy nie dodano do git, nie należy do diffu — dołącz go przez @file.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>Nic nie dołączono dla @code — {0}</value></data>

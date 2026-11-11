@@ -30,6 +30,9 @@ internal sealed record BuildValidator(
 /// </summary>
 internal static class BuildValidators
 {
+    /// <summary>How a rejection of the whole file begins, as opposed to one of its entries.</summary>
+    internal const string WholeFileIgnored = "validators.json ignored: ";
+
     // Built-in defaults. The .NET entry reproduces the historical behaviour (nearest .csproj, else
     // .sln; targeted dotnet build). The others are common, widely-available toolchain commands; a
     // missing toolchain is reported as "not installed" and stays silent (see SmartFixValidator).
@@ -63,7 +66,7 @@ internal static class BuildValidators
             using var doc = JsonDocument.Parse(json);
             if (doc.RootElement.ValueKind != JsonValueKind.Object)
             {
-                reject?.Invoke("validators.json ignored: the file must contain a JSON object");
+                reject?.Invoke(WholeFileIgnored + "the file must contain a JSON object");
                 return [];
             }
 
@@ -106,7 +109,7 @@ internal static class BuildValidators
         }
         catch (JsonException ex)
         {
-            reject?.Invoke($"validators.json ignored: {ex.Message}");
+            reject?.Invoke(WholeFileIgnored + ex.Message);
             return [];
         }
     }

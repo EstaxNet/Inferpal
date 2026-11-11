@@ -447,7 +447,9 @@ internal class FileHistoryService
             // was deleted by this one's twentieth snapshot of the file, and that editor's /undo-run could no longer put
             // the file back. Each process publishes what it holds; the others honour it.
             PublishHeld(historyDir, held);
-            held.UnionWith(HeldByOthers(historyDir));
+            // ⚠ A live editor's list that cannot be read holds what it holds, unknown: nothing is pruned this time.
+            if (HeldByOthers(historyDir) is not { } others) return;
+            held.UnionWith(others);
 
             // The folder listed once, each snapshot under the suffixes its name can carry (MatchesSuffix reads both forms).
             var bySuffix = new Dictionary<string, List<string>>(PathComparer.Default);
@@ -519,9 +521,10 @@ internal class FileHistoryService
 
     /// <summary>
     /// The snapshots other live instances hold in <paramref name="historyDir"/>. A list left by a process that has ended
-    /// holds nothing and is removed; one whose process cannot be asked about is honoured.
+    /// holds nothing and is removed; one whose process cannot be asked about is honoured; <c>null</c> when a live one's
+    /// list cannot be read — not "it holds nothing".
     /// </summary>
-    private IEnumerable<string> HeldByOthers(string historyDir)
+    private List<string>? HeldByOthers(string historyDir)
     {
         var own = HeldFile(historyDir);
         var held = new List<string>();
@@ -540,11 +543,13 @@ internal class FileHistoryService
             }
             try
             {
-                held.AddRange(File.ReadAllLines(list).Where(l => l.Length > 0).Select(l => Path.Combine(historyDir, l)));
+                held.AddRange(Signals.SignalFile.ReadShared(list).Split('\n').Select(l => l.TrimEnd('\r'))
+                                     .Where(l => l.Length > 0).Select(l => Path.Combine(historyDir, l)));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 Diagnostics.Swallow("FileHistoryService.HeldByOthers", ex);
+                if (File.Exists(list)) return null;   // gone meanwhile: its process ended, it holds nothing
             }
         }
         return held;
@@ -875,7 +880,16 @@ internal class FileHistoryService
         {
             try
             {
-                if (run.ManifestPath is { } existing) MergeFrom(run, existing, key);   // what the other editor marked stays
+                // What the other editor marked stays — and a manifest that cannot be read is not written over: its marks
+                // (undone, given back, kept) would go, and a file the person kept would be put back by this editor's undo.
+                // Tried again once on a pool thread, where a file still held is read again (never on the UI thread):
+                // skipped for good, this run's own marks (undone, kept, closed) would never reach the disk.
+                if (run.ManifestPath is { } existing && !MergeFrom(run, existing, key))
+                {
+                    if (SynchronizationContext.Current is not null) _ = Task.Run(() => Persist(run, open));
+                    else Diagnostics.Record("FileHistory", $"Run {run.Id} not written: its file could not be read.");
+                    return;
+                }
                 string text;
                 int files;
                 lock (_runLock)
@@ -926,18 +940,21 @@ internal class FileHistoryService
         if (files != persisted && (files <= 200 || files % 50 == 0)) Persist(run, open: true);
     }
 
-    /// <summary>Brings into <paramref name="run"/> the marks another process wrote in its file (undone, given back).</summary>
-    private void MergeFrom(HistoryRun run, string file, byte[] key)
+    /// <summary>Brings into <paramref name="run"/> the marks another process wrote in its file (undone, given back, kept);
+    /// false when the file exists and cannot be read — its marks are then unknown, not absent.</summary>
+    private bool MergeFrom(HistoryRun run, string file, byte[] key)
     {
         try
         {
-            if (!File.Exists(file)) return;
-            var text = File.ReadAllText(file);
+            var text = Signals.SignalFile.ReadShared(file);
             lock (_runLock) RunManifest.MergeMarks(run, text, key);
+            return true;
         }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) { return true; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Diagnostics.Swallow("FileHistoryService.MergeFrom", ex);
+            return false;
         }
     }
 

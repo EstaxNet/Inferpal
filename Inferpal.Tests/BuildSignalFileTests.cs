@@ -12,9 +12,8 @@ namespace Inferpal.Tests;
 /// <remarks>
 /// <para>
 /// This channel has a particularity the others do not, and it is what decides the shape of its
-/// write: its reader — <c>VsBuildMonitor.OnSignalFileEvent</c> — calls <c>Clear()</c>
-/// <b>unconditionally</b> right after <c>TryRead()</c>. A read landing on a truncated file therefore
-/// does not return "no signal, I will read again": it returns <c>default</c> and then <b>deletes</b>
+/// write: its reader — <c>VsBuildMonitor.OnSignalFileEvent</c> — TAKES the signal (<c>Take()</c>): read,
+/// then removed. A read landing on a truncated file finds it malformed and removes it, <b>deleting</b>
 /// the real payload. The build failed, and the product says nothing — no banner, no "Fix with AI"
 /// entry towards <c>/fix-build</c>.
 /// </para>
@@ -130,5 +129,47 @@ public class BuildSignalFileTests : IDisposable
         var payload = BuildSignalFile.TryRead();
         Assert.Equal(@"C:\work\Sln.sln", payload.SolutionPath);
         Assert.Empty(payload.ErrorLines);
+    }
+
+    // ── Taking the signal: a read that fails is not "no signal" ──────────
+
+    [Fact]
+    public void ASignalRead_IsTaken_AndRemoved()
+    {
+        BuildSignalFile.Write(@"C:\work\Sln.sln", ["A.cs(1,1): error CS0103: nope"]);
+        Assert.Equal(@"C:\work\Sln.sln", BuildSignalFile.Take().SolutionPath);
+        Assert.False(File.Exists(BuildSignalFile.FilePath));
+    }
+
+    [Fact]
+    public void AMalformedSignal_NeverReads_AndIsRemoved()
+    {
+        BuildSignalFile.EnsureDir();
+        File.WriteAllText(BuildSignalFile.FilePath, "{ \"solutionPath\": ");
+        Assert.Null(BuildSignalFile.Take().SolutionPath);
+        Assert.False(File.Exists(BuildSignalFile.FilePath));
+    }
+
+    /// <summary>A signal another program holds past both reads is left in place, never removed unread: removed, a failed
+    /// build lost its banner without a word. (Windows' sharing; a POSIX lock is advisory.)</summary>
+    [Fact]
+    public async Task ASignalThatCannotBeRead_IsLeftInPlace_ForTheNextRead()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var delay = BuildSignalFile.SecondReadDelay;
+        BuildSignalFile.SecondReadDelay = TimeSpan.FromMilliseconds(20);
+        try
+        {
+            BuildSignalFile.Write(@"C:\work\Sln.sln", ["A.cs(1,1): error CS0103: nope"]);
+            BuildSignalFile.SignalPayload held;
+            // A holder that lets others delete but not read: removing the signal unread would succeed.
+            using (new FileStream(BuildSignalFile.FilePath, FileMode.Open, FileAccess.Read, FileShare.Delete))
+                held = await Task.Run(BuildSignalFile.Take);   // a pool thread, as the watcher's: the retries apply
+            Assert.Null(held.SolutionPath);
+
+            Assert.Equal(@"C:\work\Sln.sln", BuildSignalFile.Take().SolutionPath);   // released: still there, read and taken
+            Assert.False(File.Exists(BuildSignalFile.FilePath));
+        }
+        finally { BuildSignalFile.SecondReadDelay = delay; }
     }
 }

@@ -226,6 +226,11 @@ deny  * \.env$                                       # never write secrets (read
   restrictions is always safe.
 - **Writing the overlay or an ignore file always asks**, even after "Always": a rewrite
   that empties one lifts every restriction it held.
+- **An overlay that exists but cannot be read is not an empty one.** Held by another program,
+  denied to you, or not valid JSON: the deny rules last read from it stay in force; if none was
+  ever read, every action asks you before it runs (no `allow` rule, "Always" or switched-off
+  approval skips it), you are told once in the conversation, and an `@url` is not fetched. Once
+  the file reads again, its rules apply.
 
 <details>
 <summary><b>In detail: the built-in denylist, and the calls that always reach the card</b></summary>

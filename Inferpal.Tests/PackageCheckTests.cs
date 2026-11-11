@@ -949,6 +949,20 @@ public class PackageCheckTests : IDisposable
         Assert.Contains("pyproject.toml", PackageManagerLookup.OtherPythonIndex(_root, _root, Env, []), StringComparison.Ordinal);
     }
 
+    /// <summary>A configuration that exists and cannot be read may declare a private index: it is not "none declared" (the
+    /// name would leave for the public registry). The read fails up to the check, which answers "unknown" and names it —
+    /// here a path that is a folder, which no platform reads as a file.</summary>
+    [Fact]
+    public void AConfigurationThatCannotBeRead_IsNotNoIndexDeclared()
+    {
+        string? Env(string _) => null;
+        var conf = Path.Combine(_root, "pip.conf");
+        Directory.CreateDirectory(conf);
+        var thrown = Assert.ThrowsAny<Exception>(() => PackageManagerLookup.OtherPythonIndex(_root, _root, Env, [conf]));
+        Assert.True(thrown is IOException or UnauthorizedAccessException, thrown.GetType().Name);
+        Assert.Contains("pip.conf", thrown.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(200, "Exists")]
     [InlineData(404, "Absent")]

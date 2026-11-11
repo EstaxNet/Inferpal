@@ -173,7 +173,7 @@ internal sealed class PackageManagerLookup : IPackageLookup
                 files = [.. Directory.EnumerateFiles(dir, "*.*proj"), .. Directory.EnumerateFiles(dir, "Directory.*.props"),
                          .. Directory.EnumerateFiles(dir, "Directory.*.targets")];
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { continue; }
+            catch (DirectoryNotFoundException) { continue; }   // a folder that cannot be listed may hold a source: up to the check
             foreach (var file in files)
                 if (Read(file) is { } text && PackageManifests.DeclaresSource("Directory.Build.props", text))
                     return $"{file} declares a restore source";
@@ -451,7 +451,7 @@ internal sealed class PackageManagerLookup : IPackageLookup
         {
             List<string> manifests;
             try { manifests = [.. Directory.EnumerateFiles(dir, "requirements*.txt"), Path.Combine(dir, "pyproject.toml")]; }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { continue; }
+            catch (DirectoryNotFoundException) { continue; }   // a folder that cannot be listed may hold a source: up to the check
             foreach (var file in manifests)
                 if (Read(file) is { } text && PackageManifests.DeclaresSource(Path.GetFileName(file), text))
                     return $"{file} declares another package index";
@@ -538,7 +538,7 @@ internal sealed class PackageManagerLookup : IPackageLookup
                 {
                     next.AddRange(Directory.EnumerateDirectories(dir).Where(s => Path.GetFileName(s) is var n && n != "node_modules" && !n.StartsWith('.')));
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }   // a data folder, not a package: skipped
             }
             level = next;
         }
@@ -580,10 +580,12 @@ internal sealed class PackageManagerLookup : IPackageLookup
         catch (JsonException) { return null; }
     }
 
+    /// <remarks>⚠ Only an absent file is "nothing declared". One that exists and cannot be read may declare a private
+    /// index: the exception goes up to <see cref="PackageCheck"/>, which answers "unknown", names it, and sends no name.</remarks>
     private static string? Read(string path)
     {
-        try { return File.Exists(path) ? TextFileEncoding.ReadText(path) : null; }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
+        try { return TextFileEncoding.ReadText(path); }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) { return null; }
     }
 
     private static string FirstLine(string text) => text.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? "";

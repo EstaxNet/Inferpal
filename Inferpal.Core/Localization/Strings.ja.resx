@@ -429,6 +429,8 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="MentionCommitUnknown" xml:space="preserve"><value>@commit には何も添付されていません: '{0}' という名前のコミットはありません。ハッシュ、ブランチ、タグでコミットを指定できます。</value></data>
   <data name="MentionCommitRange" xml:space="preserve"><value>@commit には何も添付されていません: '{0}' は範囲です。@commit は 1 つのコミットを添付します。範囲は `/check {0}` でレビューできます。</value></data>
   <data name="MentionUrlNotAllowed" xml:space="preserve"><value>@url には何も添付されていません: 設定により Inferpal は {0} を取得できません (fetch_url がオフになっているか、deny ルールが一致しています)。</value></data>
+  <data name="PermissionRulesUnreadable" xml:space="preserve"><value>ワークスペースの権限ルール (.inferpal/permissions.json) を読み取れません。読み取れるようになるまで、すべての操作は実行前に確認されます。</value></data>
+  <data name="MentionUrlRulesUnreadable" xml:space="preserve"><value>@url には何も添付されていません: ワークスペースの権限ルール (.inferpal/permissions.json) を読み取れず、そのいずれかが {0} を拒否している可能性があります。</value></data>
   <data name="MentionCommitNoneYet" xml:space="preserve"><value>@commit には何も添付されていません: このリポジトリにはまだコミットがありません。</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>@diff には何も添付されていません: 追跡対象ファイルに未コミットの変更はありません。git に一度も追加されていない新しいファイルは diff に含まれません — @file で添付してください。</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>@code には何も添付されていません — {0}</value></data>

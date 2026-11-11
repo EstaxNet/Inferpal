@@ -36,9 +36,25 @@ internal abstract class ApprovalServiceBase : IApprovalService
     // (including the auto-approved ones inside an agent loop), so we must not reparse each time.
     private PermissionPolicy _policy = PermissionPolicy.Empty;
     private string?          _cachedConfigRules;
+    private IReadOnlyList<PermissionRule> _configRules = [];
     private string?          _cachedOverlayPath;
     private DateTime         _cachedOverlayStamp;
     private readonly object  _policyLock = new();
+
+    // The workspace overlay as last read, and where from: a read that fails keeps them (one slot: back in another
+    // workspace whose file does not read, nothing is kept and every card is asked). A failed read is tried again after
+    // RetryUnread — a holder lets go without changing the file's date —, never at every call (each read of a held file
+    // waits); the overlay never read is said once, again after a read that worked.
+    private IReadOnlyList<PermissionRule>? _lastOverlay;
+    private string?          _lastOverlayPath;
+    private long             _overlayRetryAt;
+    private bool             _overlayUnread, _overlayUnreadSaid;
+
+    /// <summary>How long a workspace overlay that could not be read is trusted to stay so before it is read again.</summary>
+    internal TimeSpan RetryUnread { get; init; } = TimeSpan.FromSeconds(2);
+
+    /// <summary>The overlay's date when it could not be asked: a file that cannot be stat'ed is not an absent one.</summary>
+    private static readonly DateTime StampUnknown = DateTime.MaxValue;
 
     /// <param name="rootDir">Workspace root provider (null/empty = no workspace overlay).</param>
     protected ApprovalServiceBase(InferpalConfig config, Func<string?> rootDir)
@@ -82,6 +98,9 @@ internal abstract class ApprovalServiceBase : IApprovalService
     public bool Refuses(string toolName, string subject) =>
         Decide(toolName, subject, out var unreadableDeny, out _) == PermissionDecision.Deny || unreadableDeny;
 
+    /// <inheritdoc/>
+    public bool RulesUnreadable => GetPolicy().OverlayUnread;
+
     /// <summary>
     /// The rules' decision on <paramref name="subject"/>, and a <c>deny</c> on every other form of a path it names — the file
     /// the path reaches and that file's other names: a refusal written for a file holds through a link or a hard link to it.
@@ -92,9 +111,12 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// files, the forced card). <paramref name="deniedOn"/> is the form a deny matched, what the refusal names.</remarks>
     private PermissionDecision Decide(string toolName, string subject, out bool unreadableDeny, out string deniedOn)
     {
-        var policy = GetPolicy();
+        var (policy, overlayUnread) = GetPolicy();
         deniedOn = subject;
         var decision = policy.Evaluate(toolName, subject, out unreadableDeny);
+        // The workspace's deny rules exist and could not be read: any of them may match, so nothing is allowed without a
+        // card — the same answer as one deny rule the engine could not evaluate.
+        unreadableDeny |= overlayUnread;
         // A command line is read by its own reader: its words are not a path.
         if (decision == PermissionDecision.Deny || PermissionPolicy.IsCommandTool(toolName)) return decision;
         foreach (var form in PathForms(subject))
@@ -364,33 +386,80 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// Overlay rules (deny-only) are evaluated before config rules — see
     /// <see cref="PermissionPolicy.Compose"/> for why the order is load-bearing.
     /// </summary>
-    private PermissionPolicy GetPolicy()
+    /// <remarks>
+    /// ⚠ An overlay that exists and cannot be read is not an absent one: read as "no rules", the restrictions the team
+    /// wrote were lifted until the file was written again. A read that fails keeps the rules last read from that file;
+    /// with none, the policy says so (<c>OverlayUnread</c>) and every call is asked — a file that is not JSON too (a write
+    /// cut short, an edit in progress), never a valid one without a <c>rules</c> array, which says nothing to enforce
+    /// (<c>/permissions</c> names it). The file is opened sharing write and delete, as a signal is, so an editor saving
+    /// it does not make it unreadable; one gone between its date and its read is absent.
+    /// </remarks>
+    private (PermissionPolicy Policy, bool OverlayUnread) GetPolicy()
     {
         var configRules = _config.SharedPermissionRules;
         var overlayPath = OverlayPath();
         var overlayStamp = OverlayStamp(overlayPath);
+        bool sayUnread;
+        PermissionPolicy policy;
+        bool unread;
 
         lock (_policyLock)
         {
             if (configRules == _cachedConfigRules
                 && overlayPath == _cachedOverlayPath
-                && overlayStamp == _cachedOverlayStamp)
-                return _policy;
+                && overlayStamp == _cachedOverlayStamp
+                && Environment.TickCount64 < _overlayRetryAt)
+                return (_policy, _overlayUnread);
 
-            IReadOnlyList<PermissionRule> overlayRules = [];
-            if (overlayPath is not null && overlayStamp != default)
+            if (configRules != _cachedConfigRules)
             {
-                try { overlayRules = PermissionPolicy.ParseJsonOverlay(File.ReadAllText(overlayPath)); }
-                catch (Exception ex) { Diagnostics.Swallow("PermissionOverlayRead", ex); }
+                _configRules       = PermissionPolicy.ParseRules(configRules);
+                _cachedConfigRules = configRules;
             }
 
-            _policy             = new PermissionPolicy(
-                PermissionPolicy.Compose(PermissionPolicy.ParseRules(configRules), overlayRules));
-            _cachedConfigRules  = configRules;
+            IReadOnlyList<PermissionRule> overlayRules = [];
+            var failed = false;
+            unread = false;
+            if (overlayPath is not null && overlayStamp != default)
+            {
+                IReadOnlyList<PermissionRule>? read = null;
+                try
+                {
+                    var report = PermissionPolicy.ReadOverlay(Signals.SignalFile.ReadShared(overlayPath));
+                    read = report.NotJson is null ? report.Rules : null;
+                }
+                catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+                {
+                    read = [];   // gone since its date was read: absent
+                }
+                catch (Exception ex)
+                {
+                    Diagnostics.Swallow("PermissionOverlayRead", ex);
+                    failed = true;
+                }
+                if (read is not null)
+                {
+                    overlayRules     = read;
+                    _lastOverlay     = read;
+                    _lastOverlayPath = overlayPath;
+                }
+                else if (_lastOverlay is not null && _lastOverlayPath == overlayPath) overlayRules = _lastOverlay;
+                else unread = true;
+            }
+            else if (_lastOverlayPath == overlayPath) _lastOverlay = null;   // the file is gone: nothing left to keep
+
+            _policy             = new PermissionPolicy(PermissionPolicy.Compose(_configRules, overlayRules));
             _cachedOverlayPath  = overlayPath;
             _cachedOverlayStamp = overlayStamp;
-            return _policy;
+            _overlayRetryAt     = failed || overlayStamp == StampUnknown ? Environment.TickCount64 + (long)RetryUnread.TotalMilliseconds : long.MaxValue;
+            _overlayUnread      = unread;
+            sayUnread           = unread && !_overlayUnreadSaid;
+            _overlayUnreadSaid  = unread;
+            policy              = _policy;
         }
+        // Outside the lock: the editor's notice may wait on its own thread.
+        if (sayUnread) (Warning ?? Notice)?.Invoke(Strings.PermissionRulesUnreadable);
+        return (policy, unread);
     }
 
     private string? OverlayPath()
@@ -400,11 +469,11 @@ internal abstract class ApprovalServiceBase : IApprovalService
     }
 
     // File's last-write time, or default(DateTime) when absent — also the cache key, so deleting
-    // the overlay invalidates the cached policy. A stat failure is traced: treating the overlay
-    // as absent silently drops workspace deny rules, which must at least show up in /diagnostics.
+    // the overlay invalidates the cached policy. A stat that fails is StampUnknown, never "absent": read as absent, it
+    // dropped the workspace deny rules, kept ones included; unknown, the read is tried and judged like any other.
     private static DateTime OverlayStamp(string? path)
     {
         try { return path is not null && File.Exists(path) ? File.GetLastWriteTimeUtc(path) : default; }
-        catch (Exception ex) { Diagnostics.Swallow("PermissionOverlayStamp", ex); return default; }
+        catch (Exception ex) { Diagnostics.Swallow("PermissionOverlayStamp", ex); return StampUnknown; }
     }
 }

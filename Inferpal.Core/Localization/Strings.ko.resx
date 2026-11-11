@@ -429,6 +429,8 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="MentionCommitUnknown" xml:space="preserve"><value>@commit에 첨부된 내용이 없습니다: '{0}'(이)라는 커밋이 없습니다. 해시, 브랜치 또는 태그로 커밋을 지정합니다.</value></data>
   <data name="MentionCommitRange" xml:space="preserve"><value>@commit에 첨부된 내용이 없습니다: '{0}'은(는) 범위이며, @commit은 커밋 하나만 첨부합니다. 범위는 `/check {0}`로 검토합니다.</value></data>
   <data name="MentionUrlNotAllowed" xml:space="preserve"><value>@url에 첨부된 내용이 없습니다: 설정에 따라 Inferpal이 {0}을(를) 가져올 수 없습니다(fetch_url이 꺼져 있거나 deny 규칙이 일치함).</value></data>
+  <data name="PermissionRulesUnreadable" xml:space="preserve"><value>작업 영역의 권한 규칙(.inferpal/permissions.json)을 읽을 수 없습니다. 읽을 수 있을 때까지 모든 작업은 실행 전에 확인을 요청합니다.</value></data>
+  <data name="MentionUrlRulesUnreadable" xml:space="preserve"><value>@url에 첨부된 것이 없습니다: 작업 영역의 권한 규칙(.inferpal/permissions.json)을 읽을 수 없으며, 그중 하나가 {0}을(를) 거부할 수 있습니다.</value></data>
   <data name="MentionCommitNoneYet" xml:space="preserve"><value>@commit에 첨부된 내용이 없습니다: 이 저장소에는 아직 커밋이 없습니다.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>@diff에 첨부된 내용이 없습니다: 추적 중인 파일에 커밋되지 않은 변경이 없습니다. git에 한 번도 추가되지 않은 새 파일은 diff에 포함되지 않습니다 — @file로 첨부하세요.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>@code에 첨부된 내용이 없습니다 — {0}</value></data>

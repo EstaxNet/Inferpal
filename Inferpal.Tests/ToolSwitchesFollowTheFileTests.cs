@@ -132,6 +132,27 @@ public sealed class ToolSwitchesFollowTheFileTests : IDisposable
         Assert.Null(tools.PersonFetchRefusal("https://example.com/docs"));                // the rule is narrow
     }
 
+    /// <summary>The workspace's deny rules unread: <c>@url</c>, which no card follows, is refused — and the refusal names
+    /// the file it could not read, never a rule that did not match.</summary>
+    [Fact]
+    public void ThePersonsOwnFetch_UnderUnreadableWorkspaceRules_IsRefused_NamingTheFile()
+    {
+        new InferpalConfig().Save();
+        var config = InferpalConfig.Load();
+        Directory.CreateDirectory(Path.Combine(_root, ".inferpal"));
+        File.WriteAllText(Path.Combine(_root, ".inferpal", "permissions.json"), "{ \"rules\": [");   // not JSON
+        var tools = Registry(config, rules: new RootedRules(config, _root));
+
+        Assert.Equal(Localization.Strings.MentionUrlRulesUnreadable("https://example.com/docs"),
+                     tools.PersonFetchRefusal("https://example.com/docs"));
+    }
+
+    private sealed class RootedRules(InferpalConfig config, string root) : ApprovalServiceBase(config, () => root)
+    {
+        protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct) =>
+            Task.FromResult(ApprovalDecision.Once);
+    }
+
     [Fact]
     public void AToolTurnedOffInTheOtherEditor_IsTurnedBackOnHere_InTheFile()
     {

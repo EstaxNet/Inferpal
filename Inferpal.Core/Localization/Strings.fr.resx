@@ -429,6 +429,8 @@ Sauvegarde : {0}</value></data>
   <data name="MentionCommitUnknown" xml:space="preserve"><value>Rien de joint pour @commit : aucun commit ne s'appelle '{0}'. Un hash, une branche ou un tag en désigne un.</value></data>
   <data name="MentionCommitRange" xml:space="preserve"><value>Rien de joint pour @commit : '{0}' est une plage, et @commit joint un seul commit. `/check {0}` relit une plage.</value></data>
   <data name="MentionUrlNotAllowed" xml:space="preserve"><value>Rien de joint pour @url : vos réglages ne laissent pas Inferpal récupérer {0} (fetch_url est désactivé, ou une règle deny la vise).</value></data>
+  <data name="PermissionRulesUnreadable" xml:space="preserve"><value>Les règles de permission de l'espace de travail (.inferpal/permissions.json) ne se lisent pas : chaque action vous est demandée avant de s'exécuter, tant qu'elles ne se lisent pas.</value></data>
+  <data name="MentionUrlRulesUnreadable" xml:space="preserve"><value>Rien de joint pour @url : les règles de permission de l'espace de travail (.inferpal/permissions.json) ne se lisent pas, et l'une d'elles peut refuser {0}.</value></data>
   <data name="MentionCommitNoneYet" xml:space="preserve"><value>Rien de joint pour @commit : ce dépôt n'a encore aucun commit.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Rien de joint pour @diff : aucun changement non commité dans un fichier suivi. Un nouveau fichier jamais ajouté à git ne fait pas partie d’un diff — joignez-le avec @file.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>Rien de joint pour @code — {0}</value></data>

@@ -348,9 +348,11 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// rules as the model's call, never to its card.
     /// </summary>
     internal string? PersonFetchRefusal(string url) =>
-        (_tools.TryGetValue("fetch_url", out var fetch) && TurnedOff(fetch)) || _rules.Refuses("fetch_url", url)
-            ? Localization.Strings.MentionUrlNotAllowed(url)
-            : null;
+        _tools.TryGetValue("fetch_url", out var fetch) && TurnedOff(fetch) ? Localization.Strings.MentionUrlNotAllowed(url)
+        : !_rules.Refuses("fetch_url", url)                               ? null
+        // No card follows a person's fetch: unread deny rules refuse it, and the refusal names the file, not a rule.
+        : _rules.RulesUnreadable                                          ? Localization.Strings.MentionUrlRulesUnreadable(url)
+        :                                                                   Localization.Strings.MentionUrlNotAllowed(url);
 
     /// <summary>
     /// Whether <paramref name="tool"/> is turned off — by the user (<see cref="InferpalConfig.DisabledTools"/>) or, for an

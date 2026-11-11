@@ -69,6 +69,12 @@ internal interface IApprovalService
     bool Refuses(string toolName, string subject) => false;
 
     /// <summary>
+    /// The workspace's own permission rules exist and cannot be read now: <see cref="Refuses"/> answers yes for every call
+    /// until they can, and what refuses says this file, not a rule. False when the service holds no rules.
+    /// </summary>
+    bool RulesUnreadable => false;
+
+    /// <summary>
     /// Asks the person to fill a server's form: the card shows again with what to fix until the values pass its schema,
     /// or the person declines or cancels. Never answered by anything but the person — no rule, no grant, no setting.
     /// </summary>

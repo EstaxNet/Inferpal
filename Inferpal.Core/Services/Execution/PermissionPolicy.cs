@@ -524,8 +524,10 @@ internal sealed class PermissionPolicy
     /// malformed line, invalid regex): each one is a restriction the user believes is set.</param>
     /// <param name="AllowIgnored">Discarded <c>allow</c> rules — BY DESIGN (the overlay is
     /// deny-only), so to be said differently from a defect.</param>
+    /// <param name="NotJson">Why the file is not valid JSON, when it is not — a write cut short or an edit in progress,
+    /// whose rules are unknown; <c>null</c> for valid JSON without a <c>rules</c> array (a placeholder <c>{}</c>).</param>
     internal readonly record struct OverlayReport(
-        IReadOnlyList<PermissionRule> Rules, bool Unusable, int Malformed, int AllowIgnored);
+        IReadOnlyList<PermissionRule> Rules, bool Unusable, int Malformed, int AllowIgnored, string? NotJson = null);
 
     /// <summary>
     /// Parses the workspace <c>.inferpal/permissions.json</c> overlay — a JSON object with a
@@ -564,7 +566,9 @@ internal sealed class PermissionPolicy
         try
         {
             using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty("rules", out var arr) || arr.ValueKind != JsonValueKind.Array)
+            // An array or a value at the root holds no "rules" either (TryGetProperty throws on anything but an object).
+            if (doc.RootElement.ValueKind != JsonValueKind.Object
+                || !doc.RootElement.TryGetProperty("rules", out var arr) || arr.ValueKind != JsonValueKind.Array)
             {
                 unusable = true;
                 return [];
@@ -596,7 +600,7 @@ internal sealed class PermissionPolicy
             Diagnostics.Record("Permission", error is null
                 ? "Workspace overlay has no \"rules\" array: none of its restrictions are in force."
                 : $"Workspace overlay is not valid JSON: none of its deny rules are in force ({error}).");
-            return new([], Unusable: true, 0, 0);
+            return new([], Unusable: true, 0, 0, error);
         }
 
         var rules = new List<PermissionRule>();

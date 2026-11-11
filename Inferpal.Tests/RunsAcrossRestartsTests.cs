@@ -418,6 +418,30 @@ public sealed class RunsAcrossRestartsTests : IDisposable
         Assert.Equal("pre-run", await System.IO.File.ReadAllTextAsync(file));
     }
 
+    /// <summary>A live editor's list of the copies it holds that cannot be read holds what it holds, unknown — not
+    /// nothing: no snapshot is pruned while it cannot be read. Held by "another program" through Windows' sharing.</summary>
+    [Fact]
+    public async Task ALiveEditorsHeldListThatCannotBeRead_StopsThePruning()
+    {
+        if (!OperatingSystem.IsWindows()) return;   // a POSIX lock is advisory
+        var file = File("Hot.cs", "v0");
+        var t = new DateTime(2026, 10, 24, 10, 0, 0, DateTimeKind.Utc);
+        var history = new FileHistoryService { WorkspaceRoot = () => _dir, UserHistoryRoot = _user, UtcNow = () => t = t.AddSeconds(1) };
+        await Edit(history, file, "v1");
+        var dir = Path.Combine(_dir, ".inferpal", "history");
+        // Another editor of this very process (alive by its id), whose list another program holds shut.
+        var list = Path.Combine(dir, $".held-{Environment.ProcessId}-other");
+        System.IO.File.WriteAllText(list, "");
+        int Snapshots() => Directory.GetFiles(dir).Count(f => Path.GetFileName(f).Contains("Hot.cs", StringComparison.Ordinal));
+
+        using (new FileStream(list, FileMode.Open, FileAccess.Read, FileShare.None))
+            for (var i = 0; i < 25; i++) await Edit(history, file, $"later {i}");
+        Assert.True(Snapshots() > 20, $"{Snapshots()} snapshots: pruned under a list that could not be read");
+
+        await Edit(history, file, "released");                       // read again: pruning resumes
+        Assert.True(Snapshots() <= 21, $"{Snapshots()} snapshots once the list reads");
+    }
+
     [Fact]
     public async Task OutsideTheProject_TheRunGoesToTheUsersFolder_NeverIntoTheProject()
     {

@@ -429,6 +429,8 @@
   <data name="MentionCommitUnknown" xml:space="preserve"><value>Для @commit ничего не прикреплено: нет коммита с именем '{0}'. Коммит указывается хешем, веткой или тегом.</value></data>
   <data name="MentionCommitRange" xml:space="preserve"><value>Для @commit ничего не прикреплено: '{0}' — это диапазон, а @commit прикрепляет один коммит. `/check {0}` проверяет диапазон.</value></data>
   <data name="MentionUrlNotAllowed" xml:space="preserve"><value>Для @url ничего не прикреплено: ваши настройки не позволяют Inferpal загрузить {0} (fetch_url отключён или совпало правило deny).</value></data>
+  <data name="PermissionRulesUnreadable" xml:space="preserve"><value>Правила разрешений рабочей области (.inferpal/permissions.json) не удаётся прочитать: каждое действие будет требовать вашего подтверждения перед выполнением, пока их не удастся прочитать.</value></data>
+  <data name="MentionUrlRulesUnreadable" xml:space="preserve"><value>Ничего не прикреплено для @url: правила разрешений рабочей области (.inferpal/permissions.json) не удаётся прочитать, и одно из них может запрещать {0}.</value></data>
   <data name="MentionCommitNoneYet" xml:space="preserve"><value>Для @commit ничего не прикреплено: в этом репозитории ещё нет коммитов.</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>Для @diff ничего не прикреплено: в отслеживаемых файлах нет незакоммиченных изменений. Новый файл, который ни разу не добавляли в git, не входит в diff — прикрепите его через @file.</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>Для @code ничего не прикреплено — {0}</value></data>

@@ -45,6 +45,13 @@ internal sealed class VsBuildMonitor : IDisposable
 
     private FileSystemWatcher? _watcher;
 
+    // One taker at a time: a read tried again later and a watcher event must never both dispatch the same signal.
+    private readonly object _takeGate = new();
+
+    /// <summary>How long before a signal left unread (held by another program) is read again, and how many times.</summary>
+    internal TimeSpan RereadDelay { get; set; } = TimeSpan.FromSeconds(2);
+    private const int Rereads = 3;
+
     // ── Initialization ─────────────────────────────────────────────────────────
 
     /// <summary>
@@ -62,10 +69,7 @@ internal sealed class VsBuildMonitor : IDisposable
 
         // Check for a signal that was written before we started watching
         // (e.g., build failed while the tool window was still initialising).
-        var early = BuildSignalFile.TryRead();
-        BuildSignalFile.Clear();
-        if (!string.IsNullOrEmpty(early.SolutionPath))
-            Dispatch(early);
+        TakeAndDispatch(Rereads);
 
         // Watch for future signals from the in-process package.
         try
@@ -94,11 +98,21 @@ internal sealed class VsBuildMonitor : IDisposable
         // Brief pause so the in-process writer has time to finish flushing.
         Thread.Sleep(150);
 
-        var payload = BuildSignalFile.TryRead();
-        BuildSignalFile.Clear();
+        TakeAndDispatch(Rereads);
+    }
 
-        if (!string.IsNullOrEmpty(payload.SolutionPath))
-            Dispatch(payload);
+    /// <summary>Takes the signal and dispatches it; one left in place unread is read again later.</summary>
+    /// <remarks>⚠ No watcher event comes for a signal that stays: left unread and never read again, its build's
+    /// banner was lost all the same. Read again <see cref="Rereads"/> times, <see cref="RereadDelay"/> apart.</remarks>
+    internal void TakeAndDispatch(int rereadsLeft)
+    {
+        lock (_takeGate)
+        {
+            var payload = BuildSignalFile.Take();
+            if (!string.IsNullOrEmpty(payload.SolutionPath)) Dispatch(payload);
+            else if (rereadsLeft > 0 && File.Exists(BuildSignalFile.FilePath))
+                _ = Task.Delay(RereadDelay).ContinueWith(_ => TakeAndDispatch(rereadsLeft - 1), TaskScheduler.Default);
+        }
     }
 
     /// <summary>A success clears, a failure raises the banner.</summary>

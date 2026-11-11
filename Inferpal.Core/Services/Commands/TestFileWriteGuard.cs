@@ -24,6 +24,12 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
     /// <summary>A server's form is the person's to fill, as outside the loop: the card is the inner pipeline's.</summary>
     public bool CanAskForInput => inner.CanAskForInput;
 
+    // The person's rules travel through the guard: unforwarded, the interface's default says "nothing refuses", and the
+    // package check sends a name for a call a deny rule refuses.
+    public bool Refuses(string toolName, string subject) => inner.Refuses(toolName, subject);
+
+    public bool RulesUnreadable => inner.RulesUnreadable;
+
     public Task<Mcp.McpInputAnswer> AskForInputAsync(Mcp.McpInputForm form, CancellationToken ct) =>
         inner.AskForInputAsync(form, ct);
 

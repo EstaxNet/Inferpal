@@ -429,6 +429,8 @@
   <data name="MentionCommitUnknown" xml:space="preserve"><value>@commit 未附加任何内容：没有名为“{0}”的提交。哈希、分支或标签可以指定一个提交。</value></data>
   <data name="MentionCommitRange" xml:space="preserve"><value>@commit 未附加任何内容：“{0}”是一个范围，而 @commit 只附加一个提交。`/check {0}` 用于审查范围。</value></data>
   <data name="MentionUrlNotAllowed" xml:space="preserve"><value>@url 未附加任何内容：你的设置不允许 Inferpal 获取 {0}（fetch_url 已关闭，或有 deny 规则匹配）。</value></data>
+  <data name="PermissionRulesUnreadable" xml:space="preserve"><value>无法读取工作区的权限规则 (.inferpal/permissions.json)：在能够读取之前，每个操作执行前都会征求您的同意。</value></data>
+  <data name="MentionUrlRulesUnreadable" xml:space="preserve"><value>@url 未附加任何内容：无法读取工作区的权限规则 (.inferpal/permissions.json)，其中某条规则可能拒绝 {0}。</value></data>
   <data name="MentionCommitNoneYet" xml:space="preserve"><value>@commit 未附加任何内容：此仓库还没有任何提交。</value></data>
   <data name="MentionDiffEmpty" xml:space="preserve"><value>@diff 未附加任何内容：已跟踪的文件没有未提交的更改。从未添加到 git 的新文件不属于 diff——请用 @file 附加。</value></data>
   <data name="MentionCodeNothingFound" xml:space="preserve"><value>@code 未附加任何内容 — {0}</value></data>

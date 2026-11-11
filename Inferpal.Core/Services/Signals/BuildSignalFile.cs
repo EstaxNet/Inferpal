@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 
 namespace Inferpal.Services.Signals;
 
@@ -15,7 +16,7 @@ namespace Inferpal.Services.Signals;
 ///         errors already collected from the VS Error List so the OOP monitor does not need
 ///         to run a second <c>dotnet build</c>.</item>
 ///   <item>Out-of-process: detects the file via <see cref="System.IO.FileSystemWatcher"/>,
-///         calls <see cref="TryRead"/> then <see cref="Clear"/>.</item>
+///         takes it (<see cref="Take"/>): read, then removed.</item>
 /// </list>
 /// </summary>
 internal static class BuildSignalFile
@@ -41,9 +42,8 @@ internal static class BuildSignalFile
     /// <remarks>
     /// ⚠ Through <see cref="SignalFile.Write{T}"/> — stage then rename — and not for uniformity:
     /// this is the channel where a torn read does not degrade the signal, it <b>destroys</b> it.
-    /// <c>VsBuildMonitor.OnSignalFileEvent</c> calls <see cref="Clear"/>
-    /// <b>unconditionally</b>, right after <see cref="TryRead"/>: a read that landed on the
-    /// truncated file returns <c>default</c> and then deletes the real payload. The failure is then
+    /// <c>VsBuildMonitor.OnSignalFileEvent</c> takes the signal (<see cref="Take"/>): a read that landed on a
+    /// truncated file would find it malformed and remove it, deleting the real payload. The failure is then
     /// mute and total — no "build failed" banner, hence no "Fix with AI" entry into
     /// <c>/fix-build</c>, on a compilation that did fail. This is exactly the distinction
     /// <see cref="SignalFile.Write{T}"/> documents between a <i>hint</i> channel (re-read next
@@ -81,7 +81,41 @@ internal static class BuildSignalFile
     /// Returns a default value (null solution path, empty errors) if the file is absent,
     /// unreadable, or stale.
     /// </summary>
-    internal static SignalPayload TryRead()
+    internal static SignalPayload TryRead() => Read().Payload;
+
+    /// <summary>How long <see cref="Take"/> waits before its second read of a signal it could not read.</summary>
+    internal static TimeSpan SecondReadDelay { get; set; } = TimeSpan.FromMilliseconds(500);
+
+    /// <summary>
+    /// The signal, taken: read, then removed so it is not dispatched twice. A signal that exists and cannot be read is
+    /// read once more after <see cref="SecondReadDelay"/>, and left in place if it still cannot be.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Removed unread, a failed build lost its banner — and the way into <c>/fix-build</c> — without a word: a read
+    /// that fails is not "no signal". A sleep, not a delay: the watcher's handlers run one at a time on a pool
+    /// thread, and two awaiting at once would both read the newer signal. An absent or stale one is cleared as before.
+    /// </remarks>
+    internal static SignalPayload Take()
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            var (payload, unreadable) = Read();
+            if (!unreadable)
+            {
+                Clear();
+                return payload;
+            }
+            if (attempt == 2)
+            {
+                Diagnostics.Record("BuildSignal", "The build signal could not be read; left in place for the next read.");
+                return default;
+            }
+            Thread.Sleep(SecondReadDelay);
+        }
+    }
+
+    /// <summary>The signal, and whether reading it FAILED — which is not the same as there being none (absent, stale).</summary>
+    private static (SignalPayload Payload, bool Unreadable) Read()
     {
         try
         {
@@ -110,9 +144,14 @@ internal static class BuildSignalFile
                 : errors.Length;
             var succeeded = obj.TryGetProperty("succeeded", out var okEl) && okEl.ValueKind == JsonValueKind.True;
 
-            return new SignalPayload(path, errors, count, succeeded);
+            return (new SignalPayload(path, errors, count, succeeded), false);
         }
-        catch { return default; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("BuildSignal.Read", ex);
+            return (default, true);
+        }
+        catch { return default; }   // malformed: it will never read, cleared like a stale one
     }
 
     /// <summary>Deletes the signal file (safe to call when it doesn't exist).</summary>

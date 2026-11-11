@@ -113,9 +113,7 @@ internal sealed class SmartFixValidator
         || output.Contains("could not determine executable to run", StringComparison.Ordinal);
 
     public Task<string?> ValidateAsync(string writtenFilePath, CancellationToken ct) =>
-        ResolveTarget(writtenFilePath) is { } target
-            ? RunTargetAsync(target, ct)
-            : Task.FromResult<string?>(null);
+        ValidateManyAsync([writtenFilePath], ct);
 
     /// <summary>Distinct checks a single batch may run before it stops and says so.</summary>
     /// <remarks>
@@ -159,6 +157,9 @@ internal sealed class SmartFixValidator
 
         if (skipped > 0)
             notes.Add(Strings.SmartFixBatchCapped(MaxBatchTargets, skipped));
+        // A built-in check that ran does not vouch for the repository's, which could not be read. A write no check covers
+        // says nothing: the note on every README edit would be noise until the file is fixed (named in /diagnostics).
+        if (targets.Count > 0 && UnreadOverlayNote() is { } unread) notes.Insert(0, unread);
 
         return notes.Count == 0 ? null : string.Join("\n\n", notes);
     }
@@ -177,9 +178,6 @@ internal sealed class SmartFixValidator
         var (validator, projectDir, projectFile) = match.Value;
         return new Target(validator, projectDir, validator.Command.Replace("{project}", projectFile));
     }
-
-    private async Task<string?> RunTargetAsync(Target target, CancellationToken ct) =>
-        await GateAsync(target, ct) is { } instead ? (instead.Length == 0 ? null : instead) : await ExecuteAsync(target, ct);
 
     /// <summary>Whether <paramref name="target"/> may run — <c>null</c> when it may — asking what needs asking; otherwise
     /// what the check answers instead (empty: nothing to say).</summary>
@@ -404,27 +402,71 @@ internal sealed class SmartFixValidator
     /// <summary>Overlay text whose rejections were last recorded.</summary>
     private string? _reportedOverlay;
 
+    // The overlay as last read whole, and from where; and why it could not be read now when nothing read earlier stands
+    // in for it (null: read, absent, or kept).
+    private IReadOnlyList<BuildValidator>? _lastOverlay;
+    private string? _lastOverlayPath;
+    private string? _overlayUnread;
+
+    /// <remarks>
+    /// ⚠ A <c>validators.json</c> that exists and cannot be read — held by another program, or not a JSON object — is not
+    /// an absent one: read as "no validators", the built-in check ran in place of the repository's, and its "build OK"
+    /// read as verified. The overlay last read whole stays (the read before a write and the one after it then agree, and
+    /// so does <see cref="MayRunWorkspaceCommandFor"/>); with none, a batch a built-in check ran for says the repository's checks did not
+    /// run (<see cref="UnreadOverlayNote"/>), which <see cref="ReadVerdict(string)"/> reads as unproven.
+    /// </remarks>
     private IReadOnlyList<BuildValidator> LoadOverlay()
     {
+        _overlayUnread = null;
         var root = _getWorkspaceRoot();
         if (string.IsNullOrEmpty(root)) return [];
         var path = Path.Combine(root, ".inferpal", "validators.json");
         try
         {
-            if (!File.Exists(path)) return [];
-            var text = File.ReadAllText(path);
+            if (!File.Exists(path))
+            {
+                if (_lastOverlayPath == path) _lastOverlay = null;
+                return [];
+            }
+            var text = Signals.SignalFile.ReadShared(path);
 
             // The overlay is re-read after every write; its rejections are recorded once per content,
             // or the same message would fill the diagnostics ring.
             var report = !string.Equals(text, _reportedOverlay, StringComparison.Ordinal);
             _reportedOverlay = text;
-            return BuildValidators.ParseConfig(text, report ? r => Diagnostics.Record("ValidatorsOverlay", r) : null);
+            string? whole = null;   // the file as a whole was ignored — an entry ignored leaves the others in force
+            var parsed = BuildValidators.ParseConfig(text, r =>
+            {
+                if (r.StartsWith(BuildValidators.WholeFileIgnored, StringComparison.Ordinal)) whole = r;
+                if (report) Diagnostics.Record("ValidatorsOverlay", r);
+            });
+            if (whole is not null && !string.IsNullOrWhiteSpace(text)) return Kept(path, whole);
+            _lastOverlay     = parsed;
+            _lastOverlayPath = path;
+            return parsed;
         }
         catch (Exception ex)
         {
             Diagnostics.Swallow("ValidatorsOverlayRead", ex);
-            return [];
+            return Kept(path, Diagnostics.RootMessage(ex));
         }
+    }
+
+    private IReadOnlyList<BuildValidator> Kept(string path, string cause)
+    {
+        if (_lastOverlay is not null && _lastOverlayPath == path) return _lastOverlay;
+        _overlayUnread = cause;
+        return [];
+    }
+
+    /// <summary>The note saying the repository's own checks did not run because their file could not be read, or
+    /// <c>null</c>.</summary>
+    private string? UnreadOverlayNote()
+    {
+        LoadOverlay();
+        return _overlayUnread is { } cause
+            ? Strings.SmartFixCouldNotRun($"the repository's checks (.inferpal/validators.json) could not be read: {cause}")
+            : null;
     }
 
     // Runs the command line under the machine's shell (resolved like run_command — powershell.exe
