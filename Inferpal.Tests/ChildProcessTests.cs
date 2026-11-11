@@ -77,18 +77,56 @@ public class ChildProcessTests
     [Fact]
     public async Task ATimeoutKillsTheChildAndReportsInsteadOfThrowing()
     {
-        var psi = ShellPsi("Start-Sleep -Seconds 20", "sleep 20");
-
+        // The child says who it is first: the call returns at its budget whether the child was killed or only abandoned,
+        // so the return proves nothing — the child gone does.
+        // ⚠ Its sleep stays within the suite's cap on a parked child (OrphanedChildTests), and everything this test waits
+        // for ends well under that sleep: a child dying of old age must never read as one killed.
+        var marker = Path.Combine(Path.GetTempPath(), $"inferpal-child-{Guid.NewGuid():N}.pid");
+        var psi = ShellPsi($"Set-Content -Path '{marker}' -Value $PID; Start-Sleep -Seconds 30",
+                           $"echo $$ > '{marker}'; exec sleep 30");
+        var budget = TimeSpan.FromSeconds(5);
         var started = DateTime.UtcNow;
-        var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(2), CancellationToken.None);
+        var deadline = started + TimeSpan.FromSeconds(25);
+        int? child = null;
+        try
+        {
+            var run = await ChildProcess.RunAsync(psi, budget, CancellationToken.None);
 
-        Assert.True(run.TimedOut);
-        Assert.Equal(-1, run.ExitCode);
-        // Killed, not merely abandoned: Process.Dispose() terminates nothing.
-        // ⚠ The ceiling stays well UNDER the child's own sleep: at 30 s against a 20 s sleep the
-        // assertion is met by the child dying of old age, so a kill that never happened reads the
-        // same as one that did.
-        Assert.True(DateTime.UtcNow - started < TimeSpan.FromSeconds(10));
+            Assert.True(run.TimedOut);
+            Assert.Equal(-1, run.ExitCode);
+            // The call returns at its budget, not when held pipes let go (a runner that plays two test series at once
+            // kills a tree slowly: the suite's slack, never a few seconds).
+            Assert.True(DateTime.UtcNow < deadline, $"returned after {(DateTime.UtcNow - started).TotalSeconds:0.0} s");
+
+            Assert.True(File.Exists(marker), "the child never wrote its id within its budget: UNDECIDED, not green.");
+            child = int.Parse(File.ReadAllText(marker).Trim(), System.Globalization.CultureInfo.InvariantCulture);
+            // Killed, not merely abandoned: Process.Dispose() terminates nothing.
+            while (IsOurs(child.Value) && DateTime.UtcNow < deadline) await Task.Delay(100);
+            Assert.False(IsOurs(child.Value), "the child outlived its budget: abandoned, not killed");
+        }
+        finally
+        {
+            // Only the child itself, recognised by when it started: a number the system gave to another process since
+            // is never touched.
+            if (child is { } id && IsOurs(id))
+                try { using var left = Process.GetProcessById(id); left.Kill(entireProcessTree: true); } catch { /* best-effort cleanup */ }
+            try { File.Delete(marker); } catch { /* best-effort cleanup */ }
+        }
+
+        // The process with this id is the child: alive, and started between the call and the end of its budget.
+        bool IsOurs(int id)
+        {
+            try
+            {
+                using var p = Process.GetProcessById(id);
+                var since = p.StartTime.ToUniversalTime();
+                return !p.HasExited && since >= started.AddSeconds(-1) && since <= started + budget + TimeSpan.FromSeconds(1);
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+                return false;   // gone, or another account's: not ours
+            }
+        }
     }
 
     [Fact]
