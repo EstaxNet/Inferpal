@@ -76,6 +76,19 @@ public sealed class VsContextHolderTests
         Assert.Contains("if (isDisposing) _documentEvents?.Dispose();", code, StringComparison.Ordinal);
     }
 
+    /// <summary>⚠ Visual Studio 2022 can leave the active view request unanswered for minutes: without a budget of its own,
+    /// get_active_document waits with the whole turn. The expiry says the editor did not answer, never "no document".</summary>
+    [Fact]
+    public void TheActiveViewRequest_HasABudget_AndItsExpiryNamesTheEditor()
+    {
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(),
+                                                                 "Inferpal", "Services", "VsIntegration", "VsContextHolder.cs"));
+        Assert.Contains("GetActiveTextViewAsync(context, ct).WaitAsync(ActiveViewBudget, ct)", code, StringComparison.Ordinal);
+        Assert.Contains("catch (TimeoutException ex)", code, StringComparison.Ordinal);
+        Assert.Contains("Visual Studio did not say which editor is active", code, StringComparison.Ordinal);
+        Assert.InRange(VsContextHolder.ActiveViewBudget, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30));
+    }
+
     [Fact]
     public void ClosingTheActiveDocument_LeavesNoActiveDocument_AndSaysSo()
     {

@@ -263,6 +263,9 @@ internal class VsContextHolder
         lock (_lock) return _closed.Contains(path);
     }
 
+    /// <summary>How long Visual Studio has to name the active view before the request is given up.</summary>
+    internal static readonly TimeSpan ActiveViewBudget = TimeSpan.FromSeconds(10);
+
     /// <summary>
     /// The view the user works in: the one that took the latest edit, caret move or opening — or, before any, the one the
     /// latest Inferpal command was run from. The ONE reader for the agent's editor tools and the chat window.
@@ -276,7 +279,16 @@ internal class VsContextHolder
     {
         if (LatestView is { } latest) return latest;
         if (!ContextNewerThanTheActiveClose || Context is not { } context) return null;
-        var view = await vs.Editor().GetActiveTextViewAsync(context, ct);
+        ITextViewSnapshot? view;
+        // ⚠ A budget of its own: Visual Studio 2022 can leave this request unanswered for minutes, and the tool asking
+        // waits with the whole turn. The expiry is a third outcome — the editor did not answer — never "no document".
+        try { view = await vs.Editor().GetActiveTextViewAsync(context, ct).WaitAsync(ActiveViewBudget, ct); }
+        catch (TimeoutException ex)
+        {
+            throw new TimeoutException(
+                $"Visual Studio did not say which editor is active within {ActiveViewBudget.TotalSeconds:0} s: it may be busy. "
+                + "Click into the file and ask again, or name the file.", ex);
+        }
         // The frozen context outlives the document it was taken on: a closed one is no active document.
         return view is not null && IsKnownClosed(view.Document.Uri.LocalPath) ? null : view;
     }
