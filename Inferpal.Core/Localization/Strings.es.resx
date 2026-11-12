@@ -478,6 +478,7 @@ Copia de seguridad: {0}</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ El backend no ofrece **{0}**. No se ha cambiado nada — `/models` muestra lo que ofrece.</value></data>
   <data name="SlashToolsCurrent" xml:space="preserve"><value>Herramientas en esta conversación: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Herramientas → **{0}**</value></data>
+  <data name="EditorNoAnswer" xml:space="preserve"><value>⚠ Visual Studio no indicó qué archivo está activo en 10 segundos: puede estar ocupado. Haz clic en el archivo y vuelve a intentarlo.</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ No hay documento activo. Abre un archivo en el editor.</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ Pruebas generadas → **{0}** (abierto en el editor).</value></data>
   <data name="TestsExtended" xml:space="preserve"><value>✅ Pruebas añadidas a **{0}** (abierto: deshaz con Ctrl+Z).</value></data>

@@ -478,6 +478,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ バックエンドは **{0}** を提供していません。何も変更されていません — `/models` で提供中のモデルを確認できます。</value></data>
   <data name="SlashToolsCurrent" xml:space="preserve"><value>この会話のツール: **{0}**（`/tools on|off`）。</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>ツール → **{0}**</value></data>
+  <data name="EditorNoAnswer" xml:space="preserve"><value>⚠ Visual Studio が 10 秒以内にアクティブなファイルを返しませんでした。ビジー状態の可能性があります。ファイル内をクリックしてもう一度お試しください。</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ アクティブなドキュメントがありません。まずエディターでファイルを開いてください。</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ テストを生成しました → **{0}**（エディターで開きました）。</value></data>
   <data name="TestsExtended" xml:space="preserve"><value>✅ **{0}** にテストを追加しました（オープン中 — Ctrl+Z で元に戻せます）。</value></data>

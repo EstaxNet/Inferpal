@@ -1363,6 +1363,7 @@ internal static class Strings
     public static string ToolStateNotOffered  => Get(nameof(ToolStateNotOffered));
     public static string ToolTurnOff          => Get(nameof(ToolTurnOff));
     public static string ToolTurnOn           => Get(nameof(ToolTurnOn));
+    public static string EditorNoAnswer                   => Get(nameof(EditorNoAnswer));
     public static string SlashNoActiveDocument            => Get(nameof(SlashNoActiveDocument));
     public static string SlashUsage(string syntax)        => Format(Get(nameof(SlashUsage)),        syntax);
     public static string SlashUsageRestore                => Get(nameof(SlashUsageRestore));

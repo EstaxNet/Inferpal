@@ -3,6 +3,28 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.12
+
+Switch servers without restarting, today's C# read as C#, and files that are busy or broken no longer taken for empty.
+
+- **Change model server without restarting**: from the settings, `/setup` or `/import`, the next question goes to the new
+  server, and an answer already running finishes where it started. On LM Studio, the context window counted is the one
+  the server actually loaded.
+- **Today's C#**: a C# 14 or 15 edit is no longer refused as a syntax error, and renaming reads your code at the language
+  your projects compile.
+- **An edit no longer leaves half of your file twice**: a model that sends back the whole page to change one part is
+  asked to send only that part.
+- **The agent plans the question you just asked**, not the one before it.
+- **Safer cards**: Plan mode no longer builds your project, a card that always asks no longer offers "Always", your "No"
+  to a repository's code also covers the shell, and a path to another machine is refused without contacting it.
+- **Files that are busy or broken**: a team's permission rules keep applying while their file cannot be read, and your
+  settings file read at the wrong moment no longer undoes a choice.
+- **Long conversations**: one compacted twice comes back compacted, the model learns how many messages a truncation
+  really dropped, and the compaction and recap bubbles have a readable title, outside the agent's run. A run that only
+  read files no longer shows as failed because the conversation was shortened.
+- **A repository's MCP server follows the code a checkout brings**, and asks your agreement again.
+- **Fixed**: the status line no longer shows the model's thinking; the ACP agent comes as one executable.
+
 ## 1.8.11
 
 The agent checks its work before it says it is done, and your code indexes stop travelling with your Windows profile.

@@ -36,7 +36,9 @@ internal partial class InferpalToolWindowData
     /// that says so.</remarks>
     private async Task<(string RawCode, string FileName, string Label, string? Excluded)> GetActiveCodeAsync(CancellationToken ct)
     {
-        var view = await ResolveActiveViewAsync(ct);
+        ITextViewSnapshot? view;
+        try { view = await ResolveActiveViewAsync(ct); }
+        catch (TimeoutException ex) { return (string.Empty, string.Empty, string.Empty, ex.Message); }
         if (view is null) return (string.Empty, string.Empty, string.Empty, null);
         if (Services.Governance.ContentExclusions.NoticeFor(view.Document.Uri.LocalPath, _indexService.RootDir) is { } excluded)
             return (string.Empty, string.Empty, string.Empty, excluded);

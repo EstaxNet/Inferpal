@@ -479,6 +479,7 @@ Backup: {0}</value></data>
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ The backend does not serve **{0}**. Nothing changed — `/models` shows what it serves.</value></data>
   <data name="SlashToolsCurrent" xml:space="preserve"><value>Tools in this conversation: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Tools → **{0}**</value></data>
+  <data name="EditorNoAnswer" xml:space="preserve"><value>⚠ Visual Studio did not say which file is active within 10 seconds: it may be busy. Click into the file and try again.</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ No active document. Open a file in the editor first.</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ Tests generated → **{0}** (opened in the editor).</value></data>
   <data name="TestsExtended" xml:space="preserve"><value>✅ Tests added to **{0}** (open — undo with Ctrl+Z).</value></data>

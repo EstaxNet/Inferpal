@@ -478,6 +478,7 @@
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ 后端未提供 **{0}**。未做任何更改 — `/models` 显示它提供的模型。</value></data>
   <data name="SlashToolsCurrent" xml:space="preserve"><value>本对话中的工具：**{0}**（`/tools on|off`）。</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>工具 → **{0}**</value></data>
+  <data name="EditorNoAnswer" xml:space="preserve"><value>⚠ Visual Studio 未在 10 秒内告知当前活动文件，可能正忙。请在文件中单击后重试。</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ 没有活动文档，请先在编辑器中打开一个文件。</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ 已生成测试 → **{0}**（已在编辑器中打开）。</value></data>
   <data name="TestsExtended" xml:space="preserve"><value>✅ 已向 **{0}** 添加测试（已打开 — 可用 Ctrl+Z 撤销）。</value></data>

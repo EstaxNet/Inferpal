@@ -89,6 +89,32 @@ public sealed class VsContextHolderTests
         Assert.InRange(VsContextHolder.ActiveViewBudget, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(30));
     }
 
+    /// <summary>⚠ The chat window's own reader swallows what it cannot resolve into "no view": an expiry must cross it,
+    /// translated, and the slash commands and code actions say it — never "no active document".</summary>
+    [Fact]
+    public void TheChatWindow_SaysTheEditorDidNotAnswer_NeverNoDocument()
+    {
+        var root = Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow");
+        string Code(string area) => ConventionCoverageTests.CodeOnly(Path.Combine(root, $"InferpalToolWindowData.{area}.cs"));
+
+        Assert.Contains("catch (TimeoutException ex) { throw new TimeoutException(Strings.EditorNoAnswer, ex); }", Code("Attachments"), StringComparison.Ordinal);
+        Assert.Contains("catch (TimeoutException ex) { return (string.Empty, string.Empty, string.Empty, ex.Message); }", Code("CodeActions"), StringComparison.Ordinal);
+        Assert.Equal(2, Regex.Matches(Code("SlashCommands"), @"catch \(TimeoutException ex\) \{ await ShowInfoAsync\(ex\.Message\); return; \}").Count);
+        Assert.NotEqual(Localization.Strings.SlashNoActiveDocument, Localization.Strings.EditorNoAnswer);
+    }
+
+    [Fact]
+    public void ADocumentClosed_IsNotMadeActiveByALateShow()
+    {
+        var (holder, _) = Opened(A, B);   // B is active
+        holder.ViewClosed(A);
+
+        holder.Shown(A);
+
+        Assert.Equal(B, holder.ActiveFilePath);
+        Assert.True(holder.IsKnownClosed(A));
+    }
+
     [Fact]
     public void ClosingTheActiveDocument_LeavesNoActiveDocument_AndSaysSo()
     {

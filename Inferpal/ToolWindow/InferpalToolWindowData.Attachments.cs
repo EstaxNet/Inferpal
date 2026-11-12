@@ -130,6 +130,8 @@ internal partial class InferpalToolWindowData
     {
         try { return await _contextHolder.ResolveActiveViewAsync(_vs, ct); }
         catch (OperationCanceledException) { throw; }
+        // ⚠ An editor that did not answer is not "no document": it reaches the person as such, translated.
+        catch (TimeoutException ex) { throw new TimeoutException(Strings.EditorNoAnswer, ex); }
         catch (Exception ex) { Diagnostics.Swallow("Editor.ResolveActiveView", ex); return null; }
     }
 

@@ -478,6 +478,7 @@
   <data name="SlashModelNotServed" xml:space="preserve"><value>⚠ Бэкенд не предоставляет **{0}**. Ничего не изменено — `/models` показывает, что он предоставляет.</value></data>
   <data name="SlashToolsCurrent" xml:space="preserve"><value>Инструменты в этой беседе: **{0}** (`/tools on|off`).</value></data>
   <data name="SlashToolsChanged" xml:space="preserve"><value>Инструменты → **{0}**</value></data>
+  <data name="EditorNoAnswer" xml:space="preserve"><value>⚠ Visual Studio не сообщила за 10 секунд, какой файл активен: возможно, она занята. Щёлкните в файле и повторите попытку.</value></data>
   <data name="SlashNoActiveDocument" xml:space="preserve"><value>⚠ Нет активного документа. Сначала откройте файл в редакторе.</value></data>
   <data name="TestsGenerated" xml:space="preserve"><value>✅ Тесты созданы → **{0}** (открыто в редакторе).</value></data>
   <data name="TestsExtended" xml:space="preserve"><value>✅ Тесты добавлены в **{0}** (открыто — отменить через Ctrl+Z).</value></data>

@@ -125,7 +125,9 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private async Task RunGenerateTestsAsync(CancellationToken ct, string? request = null)
     {
-        var view = await ResolveActiveViewAsync(ct);
+        ITextViewSnapshot? view;
+        try { view = await ResolveActiveViewAsync(ct); }
+        catch (TimeoutException ex) { await ShowInfoAsync(ex.Message); return; }
         if (view is null) { await ShowInfoAsync(Strings.SlashNoActiveDocument); return; }
 
         var model  = ModelRouter.Resolve(_config, ModelRole.CodeActions);
@@ -148,7 +150,9 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private async Task RunInPlaceCodeActionAsync(SlashCodeActionKind kind, CancellationToken ct, string? request = null)
     {
-        var view = await ResolveActiveViewAsync(ct);
+        ITextViewSnapshot? view;
+        try { view = await ResolveActiveViewAsync(ct); }
+        catch (TimeoutException ex) { await ShowInfoAsync(ex.Message); return; }
         if (view is null) { await ShowInfoAsync(Strings.SlashNoActiveDocument); return; }
 
         // The pair, enrichment included, comes from the Core: the same call the host makes, so

@@ -118,7 +118,11 @@ internal class VsContextHolder
     public string ActiveFilePath => _activeFilePath;
 
     /// <summary>Records <paramref name="view"/> as the latest view, of the document at <paramref name="path"/>.</summary>
-    internal void Activate(ITextViewSnapshot? view, string? path)
+    internal void Activate(ITextViewSnapshot? view, string? path) => Activate(view, path, onlyIfOpen: false);
+
+    /// <summary>Records the view, unless <paramref name="onlyIfOpen"/> and the document has no view left: the check and
+    /// the activation are one locked section.</summary>
+    private void Activate(ITextViewSnapshot? view, string? path, bool onlyIfOpen)
     {
         // Check-and-set under the lock: concurrent open+changed activations could interleave
         // the test and the write (duplicate or out-of-order ActiveFileChanged), despite the
@@ -127,6 +131,7 @@ internal class VsContextHolder
         string? changed = null;
         lock (_lock)
         {
+            if (onlyIfOpen && (path is null || !_viewsByPath.TryGetValue(path, out view))) return;
             _latestView = view;
             if (path is not null) _viewsByPath[path] = view;
             if (path is not null && path != _activeFilePath)
@@ -147,12 +152,9 @@ internal class VsContextHolder
     public void Shown(string path)
     {
         if (string.IsNullOrEmpty(path)) return;
-        ITextViewSnapshot? view;
-        lock (_lock)
-        {
-            if (!_viewsByPath.TryGetValue(path, out view)) return;
-        }
-        Activate(view, path);
+        // The view is looked up in the activation's own locked section: a close between a lookup and the activation would
+        // make the closed document active again.
+        Activate(null, path, onlyIfOpen: true);
     }
 
     // ── Pending prompt (editor context menu → chat window) ─────────────────
