@@ -169,12 +169,8 @@ require("codecompanion").setup({
             clientInfo = { name = "CodeCompanion.nvim", version = "1.0.0" },
           },
           handlers = {
-            setup = function(self) return true end,
-            auth = function(self) return true end,
-            form_messages = function(self, messages, capabilities)
-              return helpers.form_messages(self, messages, capabilities)
-            end,
-            on_exit = function(self, code) end,
+            lifecycle = { setup = function(self) return true end },
+            request = { build_messages = helpers.build_messages },
           },
         }
       end,
@@ -185,6 +181,12 @@ require("codecompanion").setup({
 ```
 
 A local model can take a while to load on the first question: keep `timeout` generous.
+
+Seen with CodeCompanion 20.0 in Neovim 0.12 on Ubuntu: answers with their thinking, semantic search, every change asked
+first with its diff in CodeCompanion's approval prompt (**View** opens it side by side), and Stop.
+
+- After you stop an answer, CodeCompanion sends the stopped question again with your next one, as a single message.
+  Inferpal answers both; to drop the stopped question, start a new chat.
 
 ### acp-ui (desktop)
 

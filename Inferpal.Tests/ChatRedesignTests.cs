@@ -224,6 +224,17 @@ public sealed class ChatRedesignTests : IDisposable
         Assert.Equal(details.Split('\n').Length, card.Preview.Count);   // nothing dropped
     }
 
+    /// <summary>The repository's validator after a write runs a command: its card says so and shows the command, never
+    /// "Use smart_fix_validator" — the title an ACP client draws alone.</summary>
+    [Fact]
+    public void TheValidatorAfterAWrite_IsTitledAsTheCommandItRuns()
+    {
+        var card = ApprovalCard.Build(new ApprovalPrompt("smart_fix_validator", "dotnet build", "dotnet build", null, "m"), _dir);
+
+        Assert.Equal(Strings.ApprovalRunCommand, card.Title);
+        Assert.Contains(card.Preview, l => l is { Kind: "ctx", Text: "dotnet build" });
+    }
+
     [Theory]
     [InlineData("insert_at_cursor")]
     [InlineData("replace_selection")]

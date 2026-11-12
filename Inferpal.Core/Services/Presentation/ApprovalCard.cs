@@ -78,7 +78,8 @@ internal static class ApprovalCard
         {
             "write_file" when created => Strings.ApprovalCreateFile,
             "delete_file"             => Strings.ApprovalDeleteFile,
-            "run_command"             => Strings.ApprovalRunCommand,
+            // The repository's validator after a write (Smart Fix) runs a command too: never titled by its internal name.
+            "run_command" or "smart_fix_validator" => Strings.ApprovalRunCommand,
             "fetch_url"               => Strings.ApprovalReadPage,
             "web_search"              => Strings.ApprovalSearchWeb,
             var t when FileChanges.Contains(t) && paths.Length > 1 => Strings.ApprovalChangeFiles(paths.Length),
@@ -118,7 +119,7 @@ internal static class ApprovalCard
             // "Open diff" shows the rest; a command cut after eight lines, or an MCP call cut to its first 160
             // characters, was approved unread in Visual Studio, which has no other view of it.
             var lines = prompt.Details.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
-            if (prompt.ToolName == "run_command" || lines.Length > 1 || lines[0].Length > SubjectChars)
+            if (prompt.ToolName is "run_command" or "smart_fix_validator" || lines.Length > 1 || lines[0].Length > SubjectChars)
             {
                 // ⚠ The tools that render their change into their details (RenderTheirChange) are drawn as a change:
                 // read as plain lines, "-" and "+" show as text, the change uncoloured. Every other tool's lines stay as
