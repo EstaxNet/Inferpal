@@ -7,6 +7,7 @@ using Inferpal.Host;
 using Inferpal.Host.Acp;
 using Inferpal.Localization;
 using Inferpal.Models;
+using Inferpal.Services;
 using Nerdbank.Streams;
 using StreamJsonRpc;
 using Xunit;
@@ -556,6 +557,15 @@ public sealed class AcpAgentTests : IDisposable
         },
         clientInfo = new { name = "test-client", version = "1.0" },
     };
+
+    /// <summary>The ACP page the limits notice links to is the one of the version installed, never <c>master</c> for a
+    /// release: there it describes what this version may not have yet.</summary>
+    [Fact]
+    public void TheAcpDocsLink_IsAtTheInstalledVersionsTag()
+    {
+        Assert.Equal(DocsLinks.For("acp.md", DocsLinks.InstalledVersion), AcpReadiness.DocsUrl);
+        Assert.Equal("https://github.com/EstaxNet/Inferpal/blob/v1.8.12/docs/acp.md", DocsLinks.For("acp.md", "1.8.12"));
+    }
 
     /// <summary>
     /// What the agent says beside the answer — here, once per editor, what it does not do in it — is a session notice for a

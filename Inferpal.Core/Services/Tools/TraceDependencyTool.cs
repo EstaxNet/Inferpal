@@ -178,7 +178,7 @@ internal class TraceDependencyTool : ITool
             sb.AppendLine("### Callers");
             sb.AppendLine();
             var callerBlocks = new List<(string Name, string Text)>();
-            coverage = AppendCallers(callerBlocks, methods, rootDir, ext, filePath, index, ct);
+            coverage = AppendCallers(callerBlocks, methods, rootDir, ext, index, ct);
             AppendBlocks(callerBlocks, showCallees ? room * 2 / 5 : room);
         }
 
@@ -311,7 +311,6 @@ internal class TraceDependencyTool : ITool
         List<MethodInfo> targets,
         string           rootDir,
         string           ext,
-        string           targetFile,
         DefinitionIndex? index,
         CancellationToken ct)
     {
@@ -330,7 +329,7 @@ internal class TraceDependencyTool : ITool
         foreach (var file in callerFiles)
         {
             ct.ThrowIfCancellationRequested();
-            if (file == targetFile) continue;
+            // ⚠ The target's own file is scanned too: a caller one line below the target is a caller.
             try
             {
                 var src      = TextFileEncoding.ReadText(file);
