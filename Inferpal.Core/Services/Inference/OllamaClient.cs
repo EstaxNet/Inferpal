@@ -113,6 +113,8 @@ internal class OllamaClient : InferenceProviderBase
         using var gpuLease = GpuScheduler.AcquireChatLease();
 
         var defs    = tools.Definitions.Count > 0 ? tools.Definitions.ToList() : null;
+        // A call written as text never reaches the editor's stream: held, then dropped once read (ToolCallTextGate).
+        var shownStream = new ToolCallTextGate(onToken, toolsOffered: defs is not null);
         // A model whose template declares no tools is refused by Ollama ("does not support tools") before it loads:
         // its tools then go in the system prompt (PromptedTools), for this request and every later one to it.
         var promptedKey = base_ + "|" + model;
@@ -302,7 +304,7 @@ internal class OllamaClient : InferenceProviderBase
                         if (answerPart.Length > 0)
                         {
                             contentBuilder.Append(answerPart);
-                            onToken?.Invoke(answerPart);
+                            shownStream.Push(answerPart);
                             // Tools in the prompt: a model that opens the tool's response is waiting for it — whatever
                             // follows is invented. Stops here, for a server that ignored the request's stop.
                             if (prompted && PromptedTools.ResponseStart(contentBuilder, answerPart.Length) is var at and >= 0)
@@ -347,20 +349,23 @@ internal class OllamaClient : InferenceProviderBase
                 }
             }
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        // ⚠ A turn ending on an exception never reaches the gate's Finish: what it held is released first.
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { shownStream.Release(); throw; }
         catch (OperationCanceledException)
         {
             // Nothing yet: still reading. Else no chunk for `deadline` — the server hung mid-stream.
             if (firstUseful is null) throw Overran();   // its headers came: it was reached
             RecordFailure();
+            shownStream.Release();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
-        catch (AgentHttpException) { throw; } // an in-stream server error already mapped — keep its message
+        catch (AgentHttpException) { shownStream.Release(); throw; } // an in-stream server error already mapped — keep its message
         catch (Exception ex)
         {
             // Mid-stream network failure (connection reset, Ollama crash…). ⚠ The server WAS reached — it answered and
             // streamed: "cannot reach… check the URL" sends the user to a URL that is fine.
             RecordFailure();
+            shownStream.Release();
             throw new AgentHttpException(Strings.MsgStreamDropped(base_) + "\n" + ex.Message, isTimeout: false);
         }
 
@@ -391,7 +396,7 @@ internal class OllamaClient : InferenceProviderBase
         if (lastAnswer.Length > 0)
         {
             contentBuilder.Append(lastAnswer);
-            onToken?.Invoke(lastAnswer);
+            shownStream.Push(lastAnswer);
         }
 
         // Some models emit their tool call as plain-text JSON in the content instead of in the
@@ -402,13 +407,21 @@ internal class OllamaClient : InferenceProviderBase
             var known = OfferedNames(tools);
             var (inlineCalls, cleaned) = InlineToolCallParser.FromContent(contentBuilder.ToString(), known, ToolSchemas.Of(defs));
             if (inlineCalls is { Count: > 0 })
+            {
+                shownStream.Finish(cleaned);
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
+            }
             // A call written as text and cut before its closing marker: never the answer.
             if (cut && InlineToolCallParser.CutCall(contentBuilder.ToString(), known) is { } cutCall)
+            {
+                shownStream.Finish(cutCall.Before);
                 return new ChatTurnResult(cutCall.Before, [cutCall.Call], tokensUsed, promptTokens, cut, StoppedRepeating: looping);
+            }
         }
 
         var contentText      = contentBuilder.ToString();
+        // Whatever the gate held is no call: the editor gets it now.
+        shownStream.Finish(contentText);
         var noCall           = toolCalls is null || toolCalls.Count == 0;
         var contentPrintable = MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(contentText));
 

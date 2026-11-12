@@ -361,6 +361,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         using var gpuLease = GpuScheduler.AcquireChatLease();
 
         var defs    = tools.Definitions.Count > 0 ? tools.Definitions.ToList() : null;
+        // A call written as text never reaches the editor's stream: held, then dropped once read (ToolCallTextGate).
+        var shownStream = new ToolCallTextGate(onToken, toolsOffered: defs is not null);
 
         // Proactive context-fit guard. A model loaded with a smaller context than the request needs
         // doesn't fail cleanly: it eval's the whole (oversized) prompt — minutes on a no-cache model —
@@ -674,7 +676,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                     if (answerPart.Length > 0)
                     {
                         contentBuilder.Append(answerPart);
-                        onToken?.Invoke(answerPart);
+                        shownStream.Push(answerPart);
                         // Tools in the prompt: a model that opens the tool's response is waiting for it — whatever
                         // follows is invented. Stops here, for a server that ignored the request's stop.
                         if (prompted && PromptedTools.ResponseStart(contentBuilder, answerPart.Length) is var at and >= 0)
@@ -730,7 +732,8 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 }
             }
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        // ⚠ A turn ending on an exception never reaches the gate's Finish: what it held is released first.
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { shownStream.Release(); throw; }
         catch (OperationCanceledException) when (closedQuiet)
         {
             // Not a dead server: the calls were complete and the model went on writing what the server keeps to itself.
@@ -743,9 +746,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         {
             if (firstUseful is null) throw Overran();   // its headers came: it was reached
             RecordFailure();
+            shownStream.Release();
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
-        catch (AgentHttpException) { throw; } // an in-stream server error we already mapped — keep its message
+        catch (AgentHttpException) { shownStream.Release(); throw; } // an in-stream server error we already mapped — keep its message
         catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
         {
             // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
@@ -758,6 +762,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         {
             // The stream broke after the server had answered: it was reached, so not "cannot reach… check the URL".
             RecordFailure();
+            shownStream.Release();
             throw new AgentHttpException(Strings.MsgStreamDropped(base_) + "\n" + ex.Message, isTimeout: false);
         }
 
@@ -780,7 +785,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         if (lastAnswer.Length > 0)
         {
             contentBuilder.Append(lastAnswer);
-            onToken?.Invoke(lastAnswer);
+            shownStream.Push(lastAnswer);
         }
 
         // Stopped mid-call: whatever its arguments parse into, it is not the call the model meant (the funnel refuses it).
@@ -807,11 +812,19 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             var known = OfferedNames(tools);
             var (inlineCalls, cleaned) = InlineToolCallParser.FromContent(contentText, known, schemaOf);
             if (inlineCalls is { Count: > 0 })
+            {
+                shownStream.Finish(cleaned);
                 return new ChatTurnResult(cleaned, inlineCalls, tokensUsed, promptTokens, cut, StoppedRepeating: looping);
+            }
             // A call written as text and cut before its closing marker: never the answer.
             if (cut && InlineToolCallParser.CutCall(contentText, known) is { } cutCall)
+            {
+                shownStream.Finish(cutCall.Before);
                 return new ChatTurnResult(cutCall.Before, [cutCall.Call], tokensUsed, promptTokens, cut, StoppedRepeating: looping);
+            }
         }
+        // Whatever the gate held is no call: the editor gets it now.
+        shownStream.Finish(contentText);
 
         // Last-resort: a reasoning model under tool_choice:"required" (e.g. Qwen3 on LM Studio) can
         // emit its <tool_call><function=…> call as text in the reasoning channel, leaving the content
