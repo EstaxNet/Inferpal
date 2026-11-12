@@ -1128,10 +1128,11 @@ internal sealed class AcpSession : IAsyncDisposable
                 case "tool":
                     var id = "replay_" + Interlocked.Increment(ref _replayed).ToString(CultureInfo.InvariantCulture);
                     // The saved name is the title drawn live ("read_file · alpha.txt"), or a bare tool name (VS, VS Code).
-                    var title = m.ToolName is { Length: > 0 } t && t != SessionManager.NoticeMarker ? t : "tool";
+                    var name = m.ToolName is { Length: > 0 } t && t != SessionManager.NoticeMarker ? t : "tool";
                     Update(new
                     {
-                        sessionUpdate = "tool_call", toolCallId = id, title, kind = AcpToolCalls.Kind(AcpToolCalls.ToolOf(title)),
+                        sessionUpdate = "tool_call", toolCallId = id, title = ToolNoticeTitle.For(name),
+                        kind = AcpToolCalls.Kind(AcpToolCalls.ToolOf(name)),
                         status = Services.Execution.ToolFailure.IsFailure(m.Content) ? "failed" : "completed",
                         content = new[] { TextContent(AcpToolCalls.Block(m.Content, 4_000)) },
                     });
@@ -1404,7 +1405,7 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             sessionUpdate = "tool_call",
             toolCallId    = id,
-            title         = note.Name,
+            title         = ToolNoticeTitle.For(note.Name),   // the chat's own notices translated, a tool by its name
             kind          = AcpToolCalls.Kind(note.Name, note.Effect),
             // HasErrors is get_diagnostics finding build errors; a call that did not do its work is the Core's one reader's.
             status        = note.HasErrors || Services.Execution.ToolFailure.IsFailure(output) ? "failed" : "completed",
@@ -1427,7 +1428,7 @@ internal sealed class AcpSession : IAsyncDisposable
         if (!InTurn) return;
         if (!_agent.ClientShowsCompaction)
         {
-            ChatTool(new ToolNotice("context_compact", string.Empty, note.Notice, note.Degraded));
+            ChatTool(new ToolNotice(ToolNoticeTitle.ContextCompact, string.Empty, note.Notice, note.Degraded));
             return;
         }
         var id = "cmp_" + Guid.NewGuid().ToString("N");

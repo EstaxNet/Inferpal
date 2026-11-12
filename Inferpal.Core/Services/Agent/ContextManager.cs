@@ -105,9 +105,13 @@ internal static class ContextManager
         if (plan.Action == CompactionAction.None)
             return new ContextDecision(ContextOutcome.None, plan, null, string.Empty, window);
 
+        // The person reads the conversation's messages, never the head the range holds (a marker, a summary); a plan that
+        // replaces only the summary held (over the window) says so.
+        var own = HistoryCompaction.ConversationMessages(history, plan);
         if (plan.Action == CompactionAction.Truncate)
             return new ContextDecision(ContextOutcome.Truncated, plan, null,
-                                       Strings.MsgContextTruncated(plan.Count, plan.KeepTurns), window);
+                                       own > 0 ? Strings.MsgContextTruncated(own, plan.KeepTurns)
+                                               : Strings.MsgContextTruncatedSummaryOnly(plan.KeepTurns), window);
 
         onStep?.Invoke(Strings.StatusCompacting);
 
@@ -128,9 +132,13 @@ internal static class ContextManager
         // in the part it misses, and the user reads "compacted". Two causes, two sentences: the summary stopped at the
         // length limit, or the oldest turns never reached the summarizer. And messages dropped before the summarised turns
         // stay said: the marker that held them is summarised away.
+        // What the request left out, as the conversation's messages and the summary held: a marker left out is said by
+        // the note of what was dropped before (once), and alone it makes no partial summary.
+        var lost    = omitted > 0 ? HistoryCompaction.Omitted(history, plan, omitted) : (Messages: 0, Summary: false);
+        var partial = lost.Messages > 0 || lost.Summary;
         var shown = summary;
         var kept  = summary
-                  + (omitted > 0 ? HistoryCompaction.PartialSummaryMarker(omitted) : string.Empty)
+                  + (partial ? HistoryCompaction.PartialSummaryMarker(lost.Messages, lost.Summary) : string.Empty)
                   + (cut ? HistoryCompaction.CutSummaryMarker : string.Empty)
                   + (HistoryCompaction.AlreadyDropped(history, plan) is { } gone
                         ? HistoryCompaction.DroppedBeforeSummaryMarker(gone.Messages, gone.EarlierPart) : string.Empty);
@@ -143,12 +151,13 @@ internal static class ContextManager
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
                                        Strings.MsgContextSummaryTooLong, window);
 
-        var notice = Strings.MsgContextCompacted(plan.Count, plan.KeepTurns)
+        var notice = (own > 0 ? Strings.MsgContextCompacted(own, plan.KeepTurns) : Strings.MsgContextCompactedSummaryOnly(plan.KeepTurns))
                    + (plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty);
-        if (omitted > 0) notice += "\n\n" + Strings.MsgContextSummaryPartial(omitted, plan.Count);
-        if (cut)         notice += "\n\n" + Strings.MsgContextSummaryCut;
+        if (lost.Messages > 0) notice += "\n\n" + Strings.MsgContextSummaryPartial(lost.Messages, own);
+        else if (lost.Summary) notice += "\n\n" + Strings.MsgContextSummaryEarlierLost;
+        if (cut)     notice += "\n\n" + Strings.MsgContextSummaryCut;
         return new ContextDecision(ContextOutcome.Compacted, plan, kept, notice, window,
-                                   SummaryIncomplete: cut || omitted > 0, ShownSummary: shown);
+                                   SummaryIncomplete: cut || partial, ShownSummary: shown);
     }
 
     /// <summary>

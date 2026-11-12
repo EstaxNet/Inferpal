@@ -492,7 +492,7 @@ internal partial class InferpalToolWindowData
                     ApplySystemPrompt();
 
                     var recapItem = ChatMessageItem.ToolMsg(
-                        "ooda_recap",
+                        ToolNoticeTitle.OodaRecap,
                         Strings.MsgOodaRecap(_conversationTurnCount, summary),
                         _config.ToolBubblesExpanded);
                     ApplyItemTheme(recapItem);
@@ -562,7 +562,7 @@ internal partial class InferpalToolWindowData
             // same way.
             InsertThemed(decision.IsDegraded
                 ? ChatMessageItem.NoticeMsg(decision.Notice)
-                : ChatMessageItem.ToolMsg("context_compact", decision.Notice, _config.ToolBubblesExpanded));
+                : ChatMessageItem.ToolMsg(ToolNoticeTitle.ContextCompact, decision.Notice, _config.ToolBubblesExpanded));
             ScrollToBottom();
         });
     }

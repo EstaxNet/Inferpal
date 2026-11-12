@@ -54,6 +54,8 @@
   "Cancelled.": "已取消。",
   "Copy": "复制",
   "Regenerate": "重新生成",
+  "Context window": "上下文窗口",
+  "Session recap": "会话摘要",
   "Deny": "拒绝",
   "See all commands": "查看所有命令",
   "Context X-Ray — ~{0} tokens": "上下文 X-Ray — 约 {0} 个令牌",

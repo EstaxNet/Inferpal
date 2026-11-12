@@ -22,6 +22,8 @@ export function webviewStrings(): Record<string, string> {
     cancelled: t('Cancelled.'),
     copy: t('Copy'),
     regenerate: t('Regenerate'),
+    toolTitleContextCompact: t('Context window'),
+    toolTitleOodaRecap: t('Session recap'),
     continueTurn: t('Continue'),
     deny: t('Deny'),
     allowOnce: t('Allow once'),

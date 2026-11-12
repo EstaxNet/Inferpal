@@ -179,6 +179,9 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ El modelo se repetía en bucle al resumir y se detuvo — se recurrió al truncamiento forzado.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ El resumen se detuvo en el límite de longitud del modelo: falta una parte de la conversación anterior.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ La conversación anterior era demasiado larga para resumirse en una sola solicitud: faltan en el resumen sus primeros {0} de {1} mensajes.</value></data>
+  <data name="MsgContextTruncatedSummaryOnly" xml:space="preserve"><value>⚠ Ventana de contexto: se eliminó el resumen de la conversación anterior para que quepa — se conservan los últimos {0} turno(s). El contexto anterior se ha perdido.</value></data>
+  <data name="MsgContextCompactedSummaryOnly" xml:space="preserve"><value>📦 Contexto compactado: el resumen de la conversación anterior se resumió de nuevo para que quepa — conservando los últimos {0} turno(s).</value></data>
+  <data name="MsgContextSummaryEarlierLost" xml:space="preserve"><value>⚠ El resumen de la conversación anterior no cabía en la solicitud de resumen: lo que contenía falta en el nuevo resumen.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>El siguiente es el comienzo de nuestra conversación. Resúmelo de forma densa, conservando todas las decisiones clave, hechos, archivos modificados y contexto necesario para mensajes futuros. Sé conciso pero completo — este resumen reemplazará los mensajes originales:
 
 {0}</value></data>
@@ -198,6 +201,8 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Objetivo, progreso y preguntas abiertas, guardados en las instrucciones cuando se resumen los turnos antiguos. 0: nunca.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generando resumen de sesión…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**Resumen de sesión OODA** (turno {0})</value></data>
+  <data name="ToolTitleContextCompact" xml:space="preserve"><value>Ventana de contexto</value></data>
+  <data name="ToolTitleOodaRecap" xml:space="preserve"><value>Resumen de sesión</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Resume nuestra conversación hasta ahora. Produce un resumen de estilo OODA con tres secciones — Objetivo (lo que el usuario quiere lograr), Progreso (pasos ya completados) y Abierto (tareas pendientes o preguntas sin resolver). Máximo 150 palabras.</value></data>
   <data name="TooltipAttachFile" xml:space="preserve"><value>Adjuntar el archivo activo al siguiente mensaje</value></data>
   <data name="TooltipAttachSelection" xml:space="preserve"><value>Adjuntar la selección al siguiente mensaje (archivo completo si no hay selección)</value></data>

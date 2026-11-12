@@ -5,7 +5,9 @@ namespace Inferpal.Services.Persistence;
 
 /// <summary>A chat bubble flattened for export (role filtered upstream by the VM).</summary>
 /// <param name="IsNotice">A notice in the user's place (VS Code shows a slash command as typed): not a turn.</param>
-internal sealed record ExportMessage(string Role, string Label, string Content, string Timestamp, bool IsNotice = false);
+/// <param name="ToolName">A tool bubble's saved name: the chat's own notices are no tool call to count.</param>
+internal sealed record ExportMessage(string Role, string Label, string Content, string Timestamp, bool IsNotice = false,
+                                     string? ToolName = null);
 
 /// <summary>
 /// Pure document formatting for "Export Conversation" extracted from the tool-window
@@ -35,7 +37,7 @@ internal static class ConversationExporter
     public static string RoleLabel(string role, string? name = null) => role switch
     {
         "user"      => Strings.ChatRoleYou,
-        "tool"      => $"🔧 {name}",
+        "tool"      => $"🔧 {ToolNoticeTitle.For(name)}",
         // A restored notice brings its marker in the name's place: never a name to show or read aloud.
         "assistant" => string.IsNullOrEmpty(name) || name == SessionManager.NoticeMarker ? Strings.ChatRoleAssistant : name!,
         _           => string.Empty,
@@ -61,7 +63,7 @@ internal static class ConversationExporter
         string? durationStr)
     {
         var turns     = messages.Count(m => m.Role == "user" && !m.IsNotice);
-        var toolCalls = messages.Count(m => m.Role == "tool");
+        var toolCalls = messages.Count(m => m.Role == "tool" && !ToolNoticeTitle.IsChatNotice(m.ToolName));
         var sb        = new StringBuilder();
 
         if (asPlainText)

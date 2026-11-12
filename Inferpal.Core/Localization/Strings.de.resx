@@ -176,6 +176,9 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ Das Modell hat sich beim Zusammenfassen ständig wiederholt und wurde gestoppt – Rückfall auf harte Kürzung.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Die Zusammenfassung endete an der Längengrenze des Modells: Ein Teil des früheren Gesprächs fehlt darin.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ Das frühere Gespräch war zu lang für eine einzige Zusammenfassungsanfrage: Die ersten {0} von {1} Nachrichten fehlen in der Zusammenfassung.</value></data>
+  <data name="MsgContextTruncatedSummaryOnly" xml:space="preserve"><value>⚠ Kontextfenster: Die Zusammenfassung des früheren Gesprächs wurde entfernt, damit es passt – letzte {0} Runde(n) behalten. Älterer Kontext ist verloren.</value></data>
+  <data name="MsgContextCompactedSummaryOnly" xml:space="preserve"><value>📦 Kontext komprimiert: Die Zusammenfassung des früheren Gesprächs wurde erneut zusammengefasst, damit es passt – letzte {0} Runde(n) behalten.</value></data>
+  <data name="MsgContextSummaryEarlierLost" xml:space="preserve"><value>⚠ Die Zusammenfassung des früheren Gesprächs passte nicht in die Zusammenfassungsanfrage: Ihr Inhalt fehlt in der neuen Zusammenfassung.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Folgendes ist der Anfang unseres Gesprächs. Fasse es dicht zusammen und bewahre alle wichtigen Entscheidungen, Fakten, geänderten Dateien und den Kontext für zukünftige Nachrichten. Sei prägnant aber vollständig — diese Zusammenfassung ersetzt die ursprünglichen Nachrichten:
 
 {0}</value></data>
@@ -195,6 +198,8 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Ziel, Fortschritt und offene Fragen, in den Anweisungen behalten, sobald ältere Runden zusammengefasst werden. 0: nie.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Sitzungszusammenfassung wird erstellt…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA-Sitzungszusammenfassung** (Runde {0})</value></data>
+  <data name="ToolTitleContextCompact" xml:space="preserve"><value>Kontextfenster</value></data>
+  <data name="ToolTitleOodaRecap" xml:space="preserve"><value>Sitzungszusammenfassung</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Fasse unser bisheriges Gespräch zusammen. Erstelle eine kurze OODA-Zusammenfassung mit drei Abschnitten — Ziel (was der Benutzer erreichen möchte), Fortschritt (bereits abgeschlossene Schritte) und Offen (verbleibende Aufgaben oder offene Fragen). Maximal 150 Wörter.</value></data>
   <data name="LabelLanguage" xml:space="preserve"><value>Sprache</value></data>
   <data name="HintLanguage" xml:space="preserve"><value>Das Fenster, die Einstellungen und die Antworten des Modells. English, Français, Deutsch, Español, Italiano, Русский, 日本語, 한국어, Polski, 中文.</value></data>

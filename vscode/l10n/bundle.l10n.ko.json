@@ -54,6 +54,8 @@
   "Cancelled.": "취소되었습니다.",
   "Copy": "복사",
   "Regenerate": "다시 생성",
+  "Context window": "컨텍스트 창",
+  "Session recap": "세션 요약",
   "Deny": "거부",
   "See all commands": "모든 명령 보기",
   "Context X-Ray — ~{0} tokens": "컨텍스트 X-Ray — 약 {0} 토큰",

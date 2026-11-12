@@ -54,6 +54,8 @@
   "Cancelled.": "キャンセルされました。",
   "Copy": "コピー",
   "Regenerate": "再生成",
+  "Context window": "コンテキスト ウィンドウ",
+  "Session recap": "セッション要約",
   "Deny": "拒否",
   "See all commands": "すべてのコマンドを表示",
   "Context X-Ray — ~{0} tokens": "コンテキスト X-Ray — 約 {0} トークン",

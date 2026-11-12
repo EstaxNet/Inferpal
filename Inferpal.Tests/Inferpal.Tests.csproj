@@ -75,6 +75,8 @@
     <Compile Remove="MaskedApiKeyTests.cs" />
     <Compile Remove="VsWindowHarness.cs" />
     <Compile Remove="VsSettingsWindowTests.cs" />
+    <Compile Remove="ToolNoticeTitleVsTests.cs" />
+    <Compile Remove="ChatNoticesAreNoStepsVsTests.cs" />
     <Compile Remove="VsWindowRunsUnderTestTests.cs" />
     <Compile Remove="RootlessStartTests.cs" />
     <Compile Remove="ServerSwitchWithoutRestartTests.cs" />

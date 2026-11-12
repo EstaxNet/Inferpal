@@ -60,10 +60,11 @@ public class WebviewTurnOrderTests
     {
         var webview = WebviewRebuildTests.TsCode("webview/main.ts");
 
-        // Witness: the turn holds its answer area from the start, and the result bar closes the section after it.
+        // Witness: the turn holds its answer area from the start, and the result bar closes the section after it (above
+        // the session recap only, which closes the turn).
         Assert.Contains("body.className = 'turn-body'", WebviewRebuildTests.Body(webview, "function newTurn("),
                         StringComparison.Ordinal);
-        Assert.Contains("target.el.appendChild(bar)", WebviewRebuildTests.Body(webview, "function renderRunSummary("),
+        Assert.Contains("target.el.insertBefore(bar, target.el.querySelector(", WebviewRebuildTests.Body(webview, "function renderRunSummary("),
                         StringComparison.Ordinal);
         // Same flow as the step-by-step banner, which already lands in the answer area.
         Assert.Contains("ensureTurn().body.appendChild(pause)", webview, StringComparison.Ordinal);

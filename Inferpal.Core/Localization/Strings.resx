@@ -180,6 +180,9 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ The model kept repeating itself while summarizing and was stopped — fell back to hard truncation.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ The summary stopped at the model's length limit: part of the earlier conversation is missing from it.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ The earlier conversation was too long to summarize in one request: its first {0} of {1} messages are missing from the summary.</value></data>
+  <data name="MsgContextTruncatedSummaryOnly" xml:space="preserve"><value>⚠ Context window: the summary of the earlier conversation was removed to fit — keeping last {0} turn(s). Older context is lost.</value></data>
+  <data name="MsgContextCompactedSummaryOnly" xml:space="preserve"><value>📦 Context compacted: the summary of the earlier conversation was summarized again to fit — keeping last {0} turn(s).</value></data>
+  <data name="MsgContextSummaryEarlierLost" xml:space="preserve"><value>⚠ The summary of the earlier conversation did not fit in the summarizing request: what it held is missing from the new summary.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>The following is the beginning of our conversation. Summarize it densely, preserving all key decisions, facts, modified files, and context needed for future messages. Be concise but complete — this summary will replace the original messages:
 
 {0}</value></data>
@@ -199,6 +202,8 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Goal, progress and open questions, kept in the instructions once older turns are summarized. 0: never.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generating session recap…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA Session Recap** (turn {0})</value></data>
+  <data name="ToolTitleContextCompact" xml:space="preserve"><value>Context window</value></data>
+  <data name="ToolTitleOodaRecap" xml:space="preserve"><value>Session recap</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Summarize our conversation so far. Produce a short OODA-style recap with three labeled sections — Goal (what the user wants to achieve), Progress (steps already completed), and Open (remaining tasks or unresolved questions). Keep the total under 150 words.</value></data>
   <data name="TooltipAttachFile" xml:space="preserve"><value>Attach active file to next prompt</value></data>
   <data name="TooltipAttachSelection" xml:space="preserve"><value>Attach selection to next prompt (full file if no selection)</value></data>

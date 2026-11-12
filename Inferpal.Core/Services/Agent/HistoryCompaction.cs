@@ -255,10 +255,36 @@ internal static class HistoryCompaction
     /// read as whole, it makes the model deny what was said in the part it never saw. Not localized, like
     /// <see cref="TruncationMarker"/>: a structural marker in the transcript.
     /// </summary>
-    public static string PartialSummaryMarker(int omitted) =>
-        $"\n\n[Context Note] This summary covers only the most recent part of the earlier conversation: its first "
-      + $"{omitted} message(s) did not fit in the summarizing request and are missing from it. If the user refers to "
-      + "something you cannot find here, say you no longer have it rather than treating it as never said.";
+    /// <param name="omitted">The conversation's messages left out.</param>
+    /// <param name="summary">The summary held was left out too: what it stood for is beyond any count.</param>
+    public static string PartialSummaryMarker(int omitted, bool summary = false) =>
+        "\n\n[Context Note] This summary covers only the most recent part of the earlier conversation: "
+      + (!summary ? $"its first {omitted} message(s) did not fit in the summarizing request and are missing from it."
+         : omitted > 0 ? $"its first {omitted} message(s), and the summary of the part before them, did not fit in the "
+                         + "summarizing request and are missing from it."
+         : "the summary of its beginning did not fit in the summarizing request and is missing from it.")
+      + " If the user refers to something you cannot find here, say you no longer have it rather than treating it as "
+      + "never said.";
+
+    /// <summary>The conversation's messages <paramref name="plan"/> removes, the head it holds aside (a marker, a summary):
+    /// what a notice to the person counts as messages.</summary>
+    internal static int ConversationMessages(IReadOnlyList<ChatMessageDto> history, CompactionPlan plan) =>
+        Walk(history, plan).Own;
+
+    /// <summary>What the first <paramref name="omitted"/> messages of <paramref name="plan"/> — those the summarizing
+    /// request left out — stand for: the conversation's messages among them, and whether the summary held is.</summary>
+    /// <remarks>A marker among them is not counted here: the note of what was dropped before the summary
+    /// (<see cref="AlreadyDropped"/>) says it, once. The heading of a summary whose text was sent goes with the text.</remarks>
+    internal static (int Messages, bool Summary) Omitted(IReadOnlyList<ChatMessageDto> history, CompactionPlan plan, int omitted)
+    {
+        var count = Math.Clamp(omitted, 0, plan.Count);
+        var last  = plan.Start + count - 1;
+        if (count > 0 && history[last].IsScaffolding && history[last].Content == SummaryHeading && count < plan.Count
+            && !string.IsNullOrEmpty(history[last + 1].Content))   // an empty text is skipped, never sent
+            count--;
+        var (own, _, _, summary) = Walk(history, plan with { Count = count });
+        return (own, summary);
+    }
 
     /// <summary>
     /// What the model is told in place of the turns that were dropped without a summary.

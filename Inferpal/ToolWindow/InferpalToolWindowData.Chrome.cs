@@ -1033,7 +1033,8 @@ internal partial class InferpalToolWindowData
         for (var i = 0; i < Messages.Count; i++)
         {
             var m = Messages[i];
-            if (m.Role != "tool")
+            // The chat's own notices stand outside the run, as they were drawn live: no call of the model, no step.
+            if (m.Role != "tool" || ToolNoticeTitle.IsChatNotice(m.ToolName))
             {
                 run?.EndRun(null);
                 run = null;

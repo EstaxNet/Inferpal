@@ -672,12 +672,12 @@ public sealed class AcpAgentTests : IDisposable
         var sid = await NewSessionAsync(h);
 
         int Compactions() => h.Client.Updates(sid, "compaction_update").Count()
-                           + h.Client.Updates(sid, "tool_call").Count(u => u.GetProperty("title").GetString() == "context_compact");
+                           + h.Client.Updates(sid, "tool_call").Count(u => u.GetProperty("title").GetString() == Strings.ToolTitleContextCompact);
         for (var i = 0; i < 16 && Compactions() < 2; i++) await PromptAsync(h, sid, $"long question {i}");
         Assert.True(Compactions() >= 2, "the conversation did not outgrow its window twice");   // WITNESS: two compactions
 
         var updates = h.Client.Updates(sid, "compaction_update").ToList();
-        var calls = h.Client.Updates(sid, "tool_call").Where(u => u.GetProperty("title").GetString() == "context_compact").ToList();
+        var calls = h.Client.Updates(sid, "tool_call").Where(u => u.GetProperty("title").GetString() == Strings.ToolTitleContextCompact).ToList();
         if (shows)
         {
             Assert.Empty(calls);

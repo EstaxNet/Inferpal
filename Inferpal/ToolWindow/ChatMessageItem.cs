@@ -40,6 +40,9 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
 
     [DataMember] public string Role      { get; set; } = string.Empty;
     [DataMember] public string ToolName  { get; set; } = string.Empty;
+    /// <summary>What the bubble's title shows: the chat's own notices translated, a tool's name as it is
+    /// (<see cref="ToolNoticeTitle"/>) — computed, so a reloaded conversation shows it too.</summary>
+    [DataMember] public string ToolTitle => ToolNoticeTitle.For(ToolName);
     [DataMember] public string Timestamp { get; set; } = string.Empty;
     [DataMember] public string Content          { get => _content;          set => SetProperty(ref _content,          value); }
     [DataMember] public string Label            { get => _label;            set => SetProperty(ref _label,            value); }

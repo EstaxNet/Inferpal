@@ -751,8 +751,13 @@ internal static class Strings
     public static string MsgContextSummaryCut => Get(nameof(MsgContextSummaryCut));
     public static string MsgContextSummaryPartial(int omitted, int total) =>
         Format(Get(nameof(MsgContextSummaryPartial)), omitted, total);
+    public static string MsgContextTruncatedSummaryOnly(int keepTurns) => Format(Get(nameof(MsgContextTruncatedSummaryOnly)), keepTurns);
+    public static string MsgContextCompactedSummaryOnly(int keepTurns) => Format(Get(nameof(MsgContextCompactedSummaryOnly)), keepTurns);
+    public static string MsgContextSummaryEarlierLost => Get(nameof(MsgContextSummaryEarlierLost));
     public static string MsgOodaRecap(int turn, string summary) =>
         Format(Get(nameof(MsgOodaRecap)), turn) + "\n\n" + summary;
+    public static string ToolTitleContextCompact => Get(nameof(ToolTitleContextCompact));
+    public static string ToolTitleOodaRecap      => Get(nameof(ToolTitleOodaRecap));
 
     public static string MsgContextTruncated(int removed, int keepTurns) =>
         Format(Get(nameof(MsgContextTruncated)), removed, keepTurns);

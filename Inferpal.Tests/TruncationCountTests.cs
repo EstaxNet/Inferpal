@@ -1,4 +1,5 @@
 using Inferpal.Config;
+using Inferpal.Localization;
 using Inferpal.Models;
 using Xunit;
 
@@ -9,6 +10,7 @@ namespace Inferpal.Tests;
 /// earlier marker stands for every message that marker stood for — counted as one, the model reads "5 dropped" for 41 and
 /// takes what was said there for never said.
 /// </summary>
+[Collection(CultureSerialCollection.Name)]   // compares localized sentences
 public sealed class TruncationCountTests
 {
     private static List<ChatMessageDto> Conversation(int turns)
@@ -112,6 +114,79 @@ public sealed class TruncationCountTests
         Assert.Null(HistoryCompaction.AlreadyDropped(Conversation(20), Plan(Conversation(20), summarise: true)));
     }
 
+    /// <summary>The person's notice counts the conversation's messages a second truncation drops — the marker the range
+    /// holds is no message of theirs.</summary>
+    [Fact]
+    public async Task ASecondTruncationsNotice_CountsTheConversationsMessages()
+    {
+        var history = Conversation(20);
+        HistoryCompaction.Apply(history, Plan(history), summary: null, held: null);
+        AddTurns(history, 20, 3);
+        var config = Summarising();
+        config.CompactionEnabled = false;
+
+        var decision = await ContextManager.PrepareAsync(history, config, new FakeInferenceProvider(), lastPromptTokens: 100_000,
+                                                         onStep: null, ct: CancellationToken.None);
+
+        Assert.Equal(ContextOutcome.Truncated, decision.Outcome);
+        Assert.Equal(1, decision.Plan.Start);   // witness: the marker is in the range
+        Assert.Equal(Strings.MsgContextTruncated(decision.Plan.Count - 1, decision.Plan.KeepTurns), decision.Notice);
+    }
+
+    /// <summary>A plan that replaces only the summary held (the request over the window, every turn after it kept) removes
+    /// none of the person's messages: the notice says the summary went, never "2 old messages".</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OnlyTheSummaryHeld_Replaced_IsSaidAsTheSummary(bool summarise)
+    {
+        var history = new List<ChatMessageDto> { new("system", "sys") };
+        history.AddRange(HistoryCompaction.SummaryPair("EARLIER SUMMARY"));
+        AddTurns(history, 0, 1);
+        var config = Summarising();
+        config.CompactionEnabled = summarise;
+        config.ContextWindowKeepTurns = 5;
+
+        var decision = await CompactAsync(history, "AGAIN", config);
+
+        Assert.Equal((1, 2), (decision.Plan.Start, decision.Plan.Count));   // witness: the summary pair, alone
+        Assert.StartsWith(summarise ? Strings.MsgContextCompactedSummaryOnly(decision.Plan.KeepTurns)
+                                    : Strings.MsgContextTruncatedSummaryOnly(decision.Plan.KeepTurns), decision.Notice);
+    }
+
+    [Fact]
+    public void WhatTheSummarisingRequestLeftOut_IsTheConversationsMessages_AndTheSummaryHeld()
+    {
+        var history = Conversation(10);
+        history.InsertRange(1, HistoryCompaction.SummaryPair("S"));
+        var plan = new CompactionPlan(CompactionAction.Compact, 1, 16, 0, 2);
+
+        Assert.Equal((3, true), HistoryCompaction.Omitted(history, plan, 5));    // heading, summary, three messages
+        // The heading of a summary whose text was sent goes with it: nothing of the conversation left out.
+        Assert.Equal((0, false), HistoryCompaction.Omitted(history, plan, 1));
+        // An empty summary text is skipped by the request, never sent: its heading left out is the summary left out.
+        var blank = Conversation(10);
+        blank.InsertRange(1, HistoryCompaction.SummaryPair(""));
+        Assert.Equal((0, true), HistoryCompaction.Omitted(blank, plan, 1));
+
+        var marked = Conversation(10);
+        marked.Insert(1, new ChatMessageDto("user", HistoryCompaction.TruncationMarker(40)) { IsScaffolding = true });
+        // A marker left out is not counted here (the note of what was dropped before says it), and alone it is no
+        // partial summary.
+        Assert.Equal((0, false), HistoryCompaction.Omitted(marked, plan with { Count = 15 }, 1));
+        Assert.Equal((2, false), HistoryCompaction.Omitted(marked, plan with { Count = 15 }, 3));
+    }
+
+    [Fact]
+    public void ThePartialNote_SaysTheSummaryHeld_WithOrWithoutMessages()
+    {
+        Assert.Contains("its first 4 message(s), and the summary of the part before them, did not fit",
+                        HistoryCompaction.PartialSummaryMarker(4, summary: true), StringComparison.Ordinal);
+        Assert.Contains("the summary of its beginning did not fit", HistoryCompaction.PartialSummaryMarker(0, summary: true),
+                        StringComparison.Ordinal);
+        Assert.Contains("its first 4 message(s) did not fit", HistoryCompaction.PartialSummaryMarker(4), StringComparison.Ordinal);
+    }
+
     private static InferpalConfig Summarising() => new()
     {
         ContextWindowSize        = 1000,
@@ -121,8 +196,8 @@ public sealed class TruncationCountTests
         CompactionTimeoutSeconds = 10,
     };
 
-    private static Task<ContextDecision> CompactAsync(List<ChatMessageDto> history, string summary) =>
-        ContextManager.PrepareAsync(history, Summarising(), new FakeInferenceProvider { ChatResult = new ChatTurnResult(summary, null, 0, 0) },
+    private static Task<ContextDecision> CompactAsync(List<ChatMessageDto> history, string summary, InferpalConfig? config = null) =>
+        ContextManager.PrepareAsync(history, config ?? Summarising(), new FakeInferenceProvider { ChatResult = new ChatTurnResult(summary, null, 0, 0) },
                                     lastPromptTokens: 100_000, onStep: null, ct: CancellationToken.None);
 
     /// <summary>The summary the conversation keeps carries what was dropped before its turns — and says it again when it is

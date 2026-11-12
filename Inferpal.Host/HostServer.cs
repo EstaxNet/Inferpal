@@ -508,7 +508,7 @@ internal sealed partial class HostServer : IDisposable
                         Degraded: ctxDecision.IsDegraded));
                 else
                     Notify("chat/tool", new ToolNotice(
-                        "context_compact", string.Empty, ctxDecision.Notice, ctxDecision.IsDegraded));
+                        ToolNoticeTitle.ContextCompact, string.Empty, ctxDecision.Notice, ctxDecision.IsDegraded));
             }
 
             if (agentMode)
@@ -820,7 +820,7 @@ internal sealed partial class HostServer : IDisposable
             s.OodaSummary = summary;
             RefreshSystemPrompt(s);
             Notify("chat/tool", new ToolNotice(
-                "ooda_recap", string.Empty, Strings.MsgOodaRecap(s.ConversationTurnCount, summary), false));
+                ToolNoticeTitle.OodaRecap, string.Empty, Strings.MsgOodaRecap(s.ConversationTurnCount, summary), false));
         }
         // The answer is already complete: a stop during the summary must not turn it into a cancelled turn.
         catch (OperationCanceledException) { }
@@ -1130,7 +1130,8 @@ internal sealed partial class HostServer : IDisposable
                                            ConversationExporter.RoleLabel(m.Role, m.Name),
                                            m.Content ?? string.Empty,
                                            m.Timestamp ?? string.Empty,
-                                           m.Notice))
+                                           m.Notice,
+                                           m.Name))
             .ToList();
 
         var duration = p.DurationSeconds is int seconds && seconds > 0

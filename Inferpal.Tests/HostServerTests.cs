@@ -1026,6 +1026,7 @@ public partial class HostServerTests
             messages = new object[]
             {
                 new { role = "user",      name = (string?)null, content = "bonjour", timestamp = "10:00" },
+                new { role = "tool",      name = "context_compact", content = "compacted", timestamp = "10:00" },
                 new { role = "tool",      name = "read_file",   content = "contenu", timestamp = "10:00" },
                 new { role = "assistant", name = (string?)null, content = "salut",   timestamp = "10:01" },
                 new { role = "status",    name = (string?)null, content = "ignore",  timestamp = "10:01" },
@@ -1044,7 +1045,7 @@ public partial class HostServerTests
         // red per machine rather than per product.
         Assert.Contains(1234.ToString("N0"), markdown, StringComparison.Ordinal);
         Assert.Contains("3m 4s",            markdown, StringComparison.Ordinal);
-        // One user turn and one tool call; the status bubble counts for neither.
+        // One user turn and one tool call; the status bubble and the chat's own notice count for neither.
         Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(markdown, @"^\| [^|\r\n]+ \| 1 \|\r?$",
             System.Text.RegularExpressions.RegexOptions.Multiline).Count);
 

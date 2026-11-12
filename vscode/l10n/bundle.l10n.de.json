@@ -54,6 +54,8 @@
   "Cancelled.": "Abgebrochen.",
   "Copy": "Kopieren",
   "Regenerate": "Neu generieren",
+  "Context window": "Kontextfenster",
+  "Session recap": "Sitzungszusammenfassung",
   "Deny": "Ablehnen",
   "See all commands": "Alle Befehle anzeigen",
   "Context X-Ray — ~{0} tokens": "Kontext-Röntgen — ~{0} Token",

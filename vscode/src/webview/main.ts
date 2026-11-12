@@ -1191,6 +1191,14 @@ function ensureRun(target: TurnView): HTMLElement {
   return list;
 }
 
+/** The title a step shows: the chat's own two notices translated (the Core's ToolNoticeTitle names them), a tool by its
+ *  documented name. Computed from the saved name, so a reloaded conversation shows it too. */
+function toolTitle(name: string): string {
+  return name === 'context_compact' ? t('toolTitleContextCompact')
+       : name === 'ooda_recap' ? t('toolTitleOodaRecap')
+       : name;
+}
+
 /** What a step acted on: the path, command, query or address its arguments name. */
 function stepSubject(input: string | undefined): string {
   if (!input) {
@@ -1256,16 +1264,28 @@ function showNote(id: string, text: string, state: 'waiting' | 'read', afterCall
   }
 }
 
+/** The chat's own two notices (the Core's ToolNoticeTitle.IsChatNotice): no call of the model, so no step of a run. */
+// shortcut: a custom tool named like a notice is taken for one; a flag on chat/tool would tell them apart if it matters.
+function isChatNotice(name: string): boolean {
+  return name === 'context_compact' || name === 'ooda_recap';
+}
+
 /** One tool call: a line of the run, its arguments and output folded under it. */
 function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
   const target = ensureTurn();
-  const list = ensureRun(target);
-  target.steps++;
-  if (target.runTitle) {
-    target.runTitle.textContent = target.steps === 1 ? t('stepsOne') : t('stepsMany', target.steps);
-  }
-  if (busy) {
-    target.when.textContent = t('turnWorking', target.steps + 1);
+  // ⚠ A notice of the chat in the run would count as a step, offer "Fix with AI" on a truncation, and, degraded, make the
+  // verdict of a run without a check: a red cross on a run that only read files. It stands outside the run, as Visual
+  // Studio draws it.
+  const notice = isChatNotice(item.text);
+  const list = notice ? null : ensureRun(target);
+  if (!notice) {
+    target.steps++;
+    if (target.runTitle) {
+      target.runTitle.textContent = target.steps === 1 ? t('stepsOne') : t('stepsMany', target.steps);
+    }
+    if (busy) {
+      target.when.textContent = t('turnWorking', target.steps + 1);
+    }
   }
 
   const step = document.createElement('div');
@@ -1273,7 +1293,7 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
   const line = document.createElement('button');
   line.className = 'step-line';
   const name = document.createElement('code');
-  name.textContent = item.text;
+  name.textContent = toolTitle(item.text);
   const subject = document.createElement('span');
   subject.className = 'step-subject';
   subject.textContent = stepSubject(item.toolInput);
@@ -1285,7 +1305,7 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
   }
   step.appendChild(line);
 
-  if (item.hasErrors) {
+  if (item.hasErrors && !notice) {
     // "Fix with AI": pre-fills the prompt with the failing output (VS parity).
     const fix = document.createElement('button');
     fix.className = 'bubble-action';
@@ -1332,8 +1352,15 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
     body.hidden = !open;
   });
   step.appendChild(body);
-  list.appendChild(step);
-  if (item.hasErrors) {
+  if (list) {
+    list.appendChild(step);
+  } else {
+    // By its name, never by what the turn holds yet: the transcript keeps the recap BEFORE the answer (it comes during
+    // chat/send), so a redrawn conversation, or a turn whose answer arrives only at its end, would put it on top.
+    step.dataset.notice = item.text;
+    target.el.insertBefore(step, item.text === 'ooda_recap' ? null : (target.run ?? target.body));
+  }
+  if (item.hasErrors && list) {
     (target.run as HTMLElement & { openRun?: () => void }).openRun?.();
   }
   scrollToBottom();
@@ -1526,7 +1553,8 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     undo.addEventListener('click', () => post({ type: 'send', text: `/undo-run #${runId}` }));
     bar.appendChild(undo);
   }
-  target.el.appendChild(bar);
+  // Above the session recap, written during the turn: the bar closes the run, the recap the turn (Visual Studio's order).
+  target.el.insertBefore(bar, target.el.querySelector(':scope > [data-notice="ooda_recap"]'));
 }
 
 /** A run's result bar as it stands: undone, "Run undone · N changes kept" in place of its files, its check and Undo

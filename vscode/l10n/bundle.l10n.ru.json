@@ -54,6 +54,8 @@
   "Cancelled.": "Отменено.",
   "Copy": "Копировать",
   "Regenerate": "Сгенерировать заново",
+  "Context window": "Окно контекста",
+  "Session recap": "Сводка сессии",
   "Deny": "Отклонить",
   "See all commands": "Все команды",
   "Context X-Ray — ~{0} tokens": "Рентген контекста — ~{0} токенов",

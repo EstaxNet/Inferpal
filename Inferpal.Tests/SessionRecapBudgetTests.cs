@@ -48,6 +48,30 @@ public partial class HostServerTests
     }
 }
 
+/// <summary>The session recap left without the summary held says so, never counting it as two messages: the recap joins
+/// every following system prompt.</summary>
+public class SessionRecapPartialNoteTests
+{
+    [Fact]
+    public async Task ARecapWithoutTheSummaryHeld_SaysTheSummary_NotTwoMessages()
+    {
+        var history = new List<ChatMessageDto> { new("system", "sys") };
+        history.AddRange(HistoryCompaction.SummaryPair("EARLIER SUMMARY " + new string('e', 200_000)));
+        for (var i = 0; i < 3; i++)
+        {
+            history.Add(new ChatMessageDto("user", $"question {i}"));
+            history.Add(new ChatMessageDto("assistant", $"answer {i}"));
+        }
+        var client = new FakeInferenceProvider { ChatResult = new ChatTurnResult("Goal: ship.", null, 1, 1) };
+
+        var recap = await SessionRecap.WriteAsync(history, previousRecap: null,
+                                                  new InferpalConfig { ContextWindowSize = 8_192, DefaultModel = "m" }, client,
+                                                  CancellationToken.None);
+
+        Assert.Equal("Goal: ship." + HistoryCompaction.PartialSummaryMarker(0, summary: true), recap.Recap);
+    }
+}
+
 public class SessionRecapRequestTests
 {
     private static List<ChatMessageDto> History(int turns, int answerChars)

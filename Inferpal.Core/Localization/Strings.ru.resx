@@ -176,6 +176,9 @@
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ Модель зациклилась при составлении сводки и была остановлена — выполнено принудительное усечение.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Сводка остановилась на ограничении длины модели: часть предыдущего разговора в ней отсутствует.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ Предыдущий разговор был слишком длинным, чтобы сжать его одним запросом: первые {0} из {1} сообщений в сводку не вошли.</value></data>
+  <data name="MsgContextTruncatedSummaryOnly" xml:space="preserve"><value>⚠ Контекстное окно: сводка предыдущего разговора удалена, чтобы всё поместилось — сохранены последние {0} ход(а/ов). Старый контекст потерян.</value></data>
+  <data name="MsgContextCompactedSummaryOnly" xml:space="preserve"><value>📦 Контекст сжат: сводка предыдущего разговора сжата заново, чтобы всё поместилось — сохранены последние {0} ход(а/ов).</value></data>
+  <data name="MsgContextSummaryEarlierLost" xml:space="preserve"><value>⚠ Сводка предыдущего разговора не поместилась в запрос на сжатие: её содержимое отсутствует в новой сводке.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Ниже представлено начало нашего разговора. Сожми его плотно, сохранив все ключевые решения, факты, изменённые файлы и контекст, необходимый для будущих сообщений. Будь краток, но полон — это резюме заменит исходные сообщения:
 
 {0}</value></data>
@@ -195,6 +198,8 @@
   <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Цель, ход работы и открытые вопросы сохраняются в инструкциях, когда старые ходы сворачиваются в сводку. 0 — никогда.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Генерация сводки сессии…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**Сводка сессии OODA** (ход {0})</value></data>
+  <data name="ToolTitleContextCompact" xml:space="preserve"><value>Окно контекста</value></data>
+  <data name="ToolTitleOodaRecap" xml:space="preserve"><value>Сводка сессии</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Подведи итог нашего разговора до сих пор. Составь краткую сводку в стиле OODA с тремя разделами — Цель (чего хочет достичь пользователь), Прогресс (уже выполненные шаги) и Открытые (оставшиеся задачи или неразрешённые вопросы). Не более 150 слов.</value></data>
   <data name="LabelLanguage" xml:space="preserve"><value>Язык</value></data>
   <data name="HintLanguage" xml:space="preserve"><value>Панель, настройки и ответы модели. English, Français, Deutsch, Español, Italiano, Русский, 日本語, 한국어, Polski, 中文.</value></data>

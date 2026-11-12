@@ -333,7 +333,7 @@
                             <Setter Property="AutomationProperties.Name" Value="{Binding UserText}"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Role}" Value="tool">
-                            <Setter Property="AutomationProperties.Name" Value="{Binding ToolName}"/>
+                            <Setter Property="AutomationProperties.Name" Value="{Binding ToolTitle}"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Role}" Value="status">
                             <Setter Property="AutomationProperties.Name" Value="{Binding Content}"/>
@@ -636,7 +636,7 @@
                             <Button Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="0" Padding="4,3"
                                     HorizontalContentAlignment="Stretch" Cursor="Hand"
                                     Command="{Binding ToggleExpandCommand}"
-                                    AutomationProperties.Name="{Binding ToolName}">
+                                    AutomationProperties.Name="{Binding ToolTitle}">
                                 <DockPanel LastChildFill="True">
                                     <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" FontSize="12" Width="18"
                                                VerticalAlignment="Center">
@@ -653,7 +653,7 @@
                                             </Style>
                                         </TextBlock.Style>
                                     </TextBlock>
-                                    <TextBlock DockPanel.Dock="Left" Text="{Binding ToolName}" FontFamily="Cascadia Mono, Consolas"
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding ToolTitle}" FontFamily="Cascadia Mono, Consolas"
                                                FontSize="12" Foreground="{Binding ThemeText}" VerticalAlignment="Center"/>
                                     <TextBlock Text="{Binding StepSubject}" FontSize="12" Foreground="{Binding ThemeSubtleText}"
                                                Margin="8,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>

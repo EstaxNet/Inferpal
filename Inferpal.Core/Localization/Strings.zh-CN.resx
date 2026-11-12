@@ -179,6 +179,9 @@
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ 模型在生成摘要时不断重复同一内容，已被停止 — 已回退到强制截断。</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ 摘要在模型的长度限制处中断：其中缺少部分先前的对话。</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ 先前的对话太长，无法在一次请求中摘要：摘要中缺少其 {1} 条消息中的前 {0} 条。</value></data>
+  <data name="MsgContextTruncatedSummaryOnly" xml:space="preserve"><value>⚠ 上下文窗口：为适应窗口已删除先前对话的摘要 — 保留最近 {0} 轮。更早的上下文已丢失。</value></data>
+  <data name="MsgContextCompactedSummaryOnly" xml:space="preserve"><value>📦 上下文已压缩：为适应窗口已重新摘要先前对话的摘要 — 保留最后 {0} 轮。</value></data>
+  <data name="MsgContextSummaryEarlierLost" xml:space="preserve"><value>⚠ 先前对话的摘要放不进摘要请求：其内容不在新摘要中。</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>以下是我们对话的开头。请密集地总结它，保留所有关键决定、事实、修改的文件以及未来消息所需的上下文。简洁但完整 — 此摘要将替换原始消息：
 
 {0}</value></data>
@@ -198,6 +201,8 @@
   <data name="HintOodaTurnThreshold" xml:space="preserve"><value>目标、进展和待解决的问题会在较早的对话被总结时保存在指令中。0：从不。</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>正在生成会话摘要…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**OODA 会话摘要**（第 {0} 轮）</value></data>
+  <data name="ToolTitleContextCompact" xml:space="preserve"><value>上下文窗口</value></data>
+  <data name="ToolTitleOodaRecap" xml:space="preserve"><value>会话摘要</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>总结我们到目前为止的对话。用三个部分生成 OODA 风格的摘要——目标（用户想要实现的目标）、进度（已完成的步骤）和待办（剩余任务或未解决的问题）。总字数不超过 150 字。</value></data>
   <data name="TooltipAttachFile" xml:space="preserve"><value>将当前文件附加到下一条消息</value></data>
   <data name="TooltipAttachSelection" xml:space="preserve"><value>将选中内容附加到下一条消息（未选中则附加整个文件）</value></data>

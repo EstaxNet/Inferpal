@@ -255,7 +255,8 @@ internal partial class InferpalToolWindowData
             snapshot = Messages
                 .Where(m => m.Role is "user" or "assistant" or "tool")
                 // A note is not a turn of its own: the export counts the questions.
-                .Select(m => new Services.Persistence.ExportMessage(m.Role, m.Label, m.Content, m.Timestamp, IsNotice: m.IsNote))
+                .Select(m => new Services.Persistence.ExportMessage(m.Role, m.Label, m.Content, m.Timestamp, IsNotice: m.IsNote,
+                                                                    ToolName: m.ToolName))
                 .ToList();
         });
 

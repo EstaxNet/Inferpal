@@ -176,6 +176,9 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ Il modello si ripeteva in loop durante il riepilogo ed è stato fermato — ripiego sul troncamento forzato.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Il riepilogo si è interrotto al limite di lunghezza del modello: manca una parte della conversazione precedente.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ La conversazione precedente era troppo lunga per essere riassunta in una sola richiesta: i suoi primi {0} messaggi su {1} mancano dal riepilogo.</value></data>
+  <data name="MsgContextTruncatedSummaryOnly" xml:space="preserve"><value>⚠ Finestra di contesto: il riepilogo della conversazione precedente è stato rimosso per farla stare — mantenuti gli ultimi {0} turno/i. Il contesto precedente è perso.</value></data>
+  <data name="MsgContextCompactedSummaryOnly" xml:space="preserve"><value>📦 Contesto compattato: il riepilogo della conversazione precedente è stato riassunto di nuovo per farla stare — mantenuti gli ultimi {0} turno/i.</value></data>
+  <data name="MsgContextSummaryEarlierLost" xml:space="preserve"><value>⚠ Il riepilogo della conversazione precedente non entrava nella richiesta di riepilogo: ciò che conteneva manca dal nuovo riepilogo.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Di seguito è l'inizio della nostra conversazione. Riassumilo in modo denso, preservando tutte le decisioni chiave, i fatti, i file modificati e il contesto necessario per i messaggi futuri. Sii conciso ma completo — questo riepilogo sostituirà i messaggi originali:
 
 {0}</value></data>
@@ -195,6 +198,8 @@ Per ogni problema cita la riga o il simbolo, spiega il rischio e suggerisci una 
   <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Obiettivo, avanzamento e domande aperte, conservati nelle istruzioni quando i turni precedenti vengono riassunti. 0: mai.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generazione riepilogo sessione…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**Riepilogo sessione OODA** (turno {0})</value></data>
+  <data name="ToolTitleContextCompact" xml:space="preserve"><value>Finestra di contesto</value></data>
+  <data name="ToolTitleOodaRecap" xml:space="preserve"><value>Riepilogo sessione</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Riassumi la nostra conversazione finora. Produci un riepilogo in stile OODA con tre sezioni — Obiettivo (cosa vuole fare l'utente), Progresso (passi già completati) e Aperto (compiti rimanenti o domande irrisolte). Massimo 150 parole.</value></data>
   <data name="LabelLanguage" xml:space="preserve"><value>Lingua</value></data>
   <data name="HintLanguage" xml:space="preserve"><value>Il pannello, le impostazioni e le risposte del modello. English, Français, Deutsch, Español, Italiano, Русский, 日本語, 한국어, Polski, 中文.</value></data>

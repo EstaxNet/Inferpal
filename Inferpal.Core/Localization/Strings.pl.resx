@@ -176,6 +176,9 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="MsgContextCompactionRepeating" xml:space="preserve"><value>⚠ Model zapętlił się podczas podsumowywania i został zatrzymany — zastosowano twarde przycięcie.</value></data>
   <data name="MsgContextSummaryCut" xml:space="preserve"><value>⚠ Podsumowanie zatrzymało się na limicie długości modelu: brakuje w nim części wcześniejszej rozmowy.</value></data>
   <data name="MsgContextSummaryPartial" xml:space="preserve"><value>⚠ Wcześniejsza rozmowa była zbyt długa, by podsumować ją jednym żądaniem: w podsumowaniu brakuje pierwszych {0} z {1} wiadomości.</value></data>
+  <data name="MsgContextTruncatedSummaryOnly" xml:space="preserve"><value>⚠ Okno kontekstu: usunięto podsumowanie wcześniejszej rozmowy, aby się zmieścić — zachowano ostatnie {0} tur(y). Starszy kontekst jest utracony.</value></data>
+  <data name="MsgContextCompactedSummaryOnly" xml:space="preserve"><value>📦 Kontekst skompaktowany: podsumowanie wcześniejszej rozmowy podsumowano ponownie, aby się zmieścić — zachowano ostatnie {0} tur(y).</value></data>
+  <data name="MsgContextSummaryEarlierLost" xml:space="preserve"><value>⚠ Podsumowanie wcześniejszej rozmowy nie zmieściło się w żądaniu podsumowania: jego treści brakuje w nowym podsumowaniu.</value></data>
   <data name="CompactionSummarizePrompt" xml:space="preserve"><value>Poniżej jest początek naszej rozmowy. Streszcz go gęsto, zachowując wszystkie kluczowe decyzje, fakty, zmodyfikowane pliki i kontekst potrzebny do przyszłych wiadomości. Bądź zwięzły, ale kompletny — to podsumowanie zastąpi oryginalne wiadomości:
 
 {0}</value></data>
@@ -195,6 +198,8 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="HintOodaTurnThreshold" xml:space="preserve"><value>Cel, postęp i otwarte pytania, zachowane w instrukcjach, gdy starsze tury zostaną podsumowane. 0: nigdy.</value></data>
   <data name="StatusOodaSummarizing" xml:space="preserve"><value>Generowanie podsumowania sesji…</value></data>
   <data name="MsgOodaRecap" xml:space="preserve"><value>**Podsumowanie sesji OODA** (tura {0})</value></data>
+  <data name="ToolTitleContextCompact" xml:space="preserve"><value>Okno kontekstu</value></data>
+  <data name="ToolTitleOodaRecap" xml:space="preserve"><value>Podsumowanie sesji</value></data>
   <data name="OodaSummarizePrompt" xml:space="preserve"><value>Podsumuj naszą rozmowę do tej pory. Stwórz krótkie podsumowanie w stylu OODA z trzema sekcjami — Cel (co użytkownik chce osiągnąć), Postęp (już wykonane kroki) i Otwarte (pozostałe zadania lub nierozwiązane pytania). Maksymalnie 150 słów.</value></data>
   <data name="LabelLanguage" xml:space="preserve"><value>Język</value></data>
   <data name="HintLanguage" xml:space="preserve"><value>Panel, ustawienia i odpowiedzi modelu. English, Français, Deutsch, Español, Italiano, Русский, 日本語, 한국어, Polski, 中文.</value></data>

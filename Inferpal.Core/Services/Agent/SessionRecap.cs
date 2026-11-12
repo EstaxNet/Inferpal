@@ -62,7 +62,12 @@ internal static class SessionRecap
         // The basic loop returns the reply whole: the reasoning must not be folded into every following system prompt.
         var recap = MarkdownParser.StripThinkTags(result.FinalResponse);
         if (string.IsNullOrWhiteSpace(recap)) return new SessionRecapResult(null, null);
-        if (request.Omitted > 0) recap += HistoryCompaction.PartialSummaryMarker(request.Omitted);
+        // What was left out, as the conversation's messages and the summary held — never a head counted as messages.
+        var start = history.Count > 0 && history[0].Role == "system" ? 1 : 0;
+        var lost  = request.Omitted > 0
+            ? HistoryCompaction.Omitted(history, new CompactionPlan(CompactionAction.Compact, start, history.Count - start, 0, 0), request.Omitted)
+            : (Messages: 0, Summary: false);
+        if (lost.Messages > 0 || lost.Summary) recap += HistoryCompaction.PartialSummaryMarker(lost.Messages, lost.Summary);
         if (result.AnswerCut)    recap += HistoryCompaction.CutSummaryMarker;
         return new SessionRecapResult(recap, null);
     }

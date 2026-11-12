@@ -113,6 +113,44 @@ public class SummarizeRequestBudgetTests
         Assert.DoesNotContain(Strings.MsgContextSummaryCut, decision.Notice);
     }
 
+    /// <summary>The summary held left out with the first turns: the note counts the conversation's messages left out and says
+    /// the summary went too — never its two messages as two of the conversation's — and the person's notice counts the
+    /// conversation's messages, the summary's heading aside.</summary>
+    [Fact]
+    public async Task ASummaryHeldLeftOut_IsSaidAsTheSummary_NotCountedAsMessages()
+    {
+        var history = Conversation(turns: 30, answerChars: 3_000);
+        history.InsertRange(1, HistoryCompaction.SummaryPair("EARLIER SUMMARY"));
+
+        var (decision, _, request) = await Compact(history);
+
+        Assert.DoesNotContain("EARLIER SUMMARY", request);   // witness: it was left out
+        var plan = decision.Plan;
+        var shown = request.Replace("\r\n", "\n");
+        var firstShown = Enumerable.Range(0, 30).First(i => shown.Contains($"question {i}\n", StringComparison.Ordinal));
+        var omitted = 2 * firstShown;   // the conversation's messages before the first one sent
+        Assert.Contains(HistoryCompaction.PartialSummaryMarker(omitted, summary: true), decision.Summary);
+        Assert.Contains(Strings.MsgContextSummaryPartial(omitted, plan.Count - 2), decision.Notice);
+        Assert.StartsWith(Strings.MsgContextCompacted(plan.Count - 2, plan.KeepTurns), decision.Notice);
+    }
+
+    /// <summary>Only the summary held left out (it is the oldest of the range, and too large): no message of the person's
+    /// is missing, the earlier summary is — said as such to both readers, never as "the first 2 of N messages".</summary>
+    [Fact]
+    public async Task OnlyTheSummaryHeld_LeftOut_IsSaidAsTheSummary()
+    {
+        var history = Conversation(turns: 6, answerChars: 200);
+        history.InsertRange(1, HistoryCompaction.SummaryPair("EARLIER SUMMARY " + new string('e', 60_000)));
+
+        var (decision, _, request) = await Compact(history);
+
+        Assert.DoesNotContain("EARLIER SUMMARY", request);   // witness: it was left out
+        Assert.Contains("question 0", request);              // and no message of the person's
+        Assert.Contains(HistoryCompaction.PartialSummaryMarker(0, summary: true), decision.Summary);
+        Assert.Contains(Strings.MsgContextSummaryEarlierLost, decision.Notice);
+        Assert.DoesNotContain(Strings.MsgContextSummaryPartial(2, decision.Plan.Count - 2), decision.Notice);
+    }
+
     private static int ReadOmitted(string summary)
     {
         var m = System.Text.RegularExpressions.Regex.Match(summary, @"its first (\d+) message\(s\) did not fit");
