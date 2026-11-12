@@ -98,6 +98,9 @@ internal class VsContextHolder
     private ITextViewSnapshot? _latestView;
     private volatile string    _activeFilePath = string.Empty;
 
+    /// <summary>The last view seen of each open document: the one its tab brings back when it is shown again.</summary>
+    private readonly Dictionary<string, ITextViewSnapshot?> _viewsByPath = new(PathComparer.Default);
+
     /// <summary>
     /// Fired when the active file path changes (different document gains focus).
     /// The event arg is the new file path.
@@ -125,6 +128,7 @@ internal class VsContextHolder
         lock (_lock)
         {
             _latestView = view;
+            if (path is not null) _viewsByPath[path] = view;
             if (path is not null && path != _activeFilePath)
             {
                 _activeFilePath = path;
@@ -132,6 +136,23 @@ internal class VsContextHolder
             }
         }
         if (changed is not null) ActiveFileChanged?.Invoke(this, changed);
+    }
+
+    /// <summary>A document's window was shown — its tab chosen: it is the active document again, with the last view seen
+    /// of it.</summary>
+    /// <remarks>⚠ No view opens or changes when a person goes back to a tab already open without moving the caret: without
+    /// this, the previous tab stays "active" — the agent reads it as the file in front of the person, the prompt's active
+    /// file block names it, and an insert at the cursor goes there. A document never seen as a text view (a designer)
+    /// changes nothing.</remarks>
+    public void Shown(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return;
+        ITextViewSnapshot? view;
+        lock (_lock)
+        {
+            if (!_viewsByPath.TryGetValue(path, out view)) return;
+        }
+        Activate(view, path);
     }
 
     // ── Pending prompt (editor context menu → chat window) ─────────────────
@@ -223,6 +244,7 @@ internal class VsContextHolder
                 return;
             }
             _openCounts.Remove(path);
+            _viewsByPath.Remove(path);
             _closed.Add(path);
             if (string.Equals(path, _activeFilePath, PathComparer.Comparison))
             {

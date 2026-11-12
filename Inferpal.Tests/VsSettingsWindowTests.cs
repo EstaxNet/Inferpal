@@ -39,6 +39,19 @@ public sealed class VsSettingsWindowTests : IDisposable
 
     private InferpalConfig OnDisk() => JsonSerializer.Deserialize<InferpalConfig>(File.ReadAllText(_path))!;
 
+    /// <summary>⚠ A button's accessible name reads its first underscore as an access key ("Couper readfile" in UI
+    /// Automation, the Tools page): doubled, the tool's name is announced as written.</summary>
+    [Fact]
+    public void AToolButtonsAccessibleName_KeepsTheToolsUnderscores()
+    {
+        var row = new ToolRowItem(new ToolListRow("search_in_files", "search_in_files", "1", "on", "on", false, true, "Couper"),
+                                  string.Empty, "#000",
+                                  new Microsoft.VisualStudio.Extensibility.UI.AsyncCommand((_, _) => Task.CompletedTask));
+
+        Assert.Equal("Couper search__in__files", row.ActionName);
+        Assert.Equal("search_in_files", row.Key);   // reference arm: the text shown keeps its single underscores
+    }
+
     /// <summary>The window shown again takes what another editor saved since — with the four lists as an untouched form
     /// shows them: the form writes each list back in its own form (an empty server list reads <c>{}</c>), which is no edit
     /// of the person's — and leaves a form the person is editing as it is.</summary>

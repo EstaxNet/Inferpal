@@ -121,7 +121,9 @@ internal sealed class ToolRowItem : NotifyPropertyChangedObject
         StateForeground = stateForeground;
         CanToggle       = row.CanToggle;
         ActionLabel     = row.ActionLabel;
-        ActionName      = $"{row.ActionLabel} {row.Key}";
+        // ⚠ Read as an access key, a tool name's first underscore vanishes from the button's accessible name ("read_file"
+        // announced "readfile"): doubled, it reads as written.
+        ActionName      = $"{row.ActionLabel} {row.Key.Replace("_", "__", StringComparison.Ordinal)}";
         GroupTitle      = groupTitle;
         IsGroupStart    = groupTitle.Length > 0;
         ToggleCommand   = toggle;

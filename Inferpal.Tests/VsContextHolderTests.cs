@@ -39,6 +39,43 @@ public sealed class VsContextHolderTests
         return (holder, changes);
     }
 
+    /// <summary>⚠ Going back to a tab already open, the caret not moved, opens no view and changes none: the document shown
+    /// is the active one again — else the agent reads, and inserts at the cursor of, the tab left.</summary>
+    [Fact]
+    public void ADocumentShownAgain_IsTheActiveDocument()
+    {
+        var (holder, changes) = Opened(A, B);   // B is active
+
+        holder.Shown(A);
+
+        Assert.Equal(A, holder.ActiveFilePath);
+        Assert.Equal(A, changes[^1]);
+    }
+
+    [Fact]
+    public void ADocumentNeverSeenAsAView_OrClosed_ChangesNothingWhenShown()
+    {
+        var (holder, changes) = Opened(A, B);   // B is active
+        var said = changes.Count;
+
+        holder.Shown(Path.Combine(Path.GetTempPath(), "ws", "Form1.cs"));   // a designer: never a text view
+        holder.ViewClosed(A);
+        holder.Shown(A);                                                     // closed since
+
+        Assert.Equal(B, holder.ActiveFilePath);
+        Assert.Equal(said, changes.Count);
+    }
+
+    [Fact]
+    public void TheTracker_FollowsTheTabShown()
+    {
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(),
+                                                                 "Inferpal", "Services", "VsIntegration", "ActiveDocumentTracker.cs"));
+        Assert.Contains("_documentEvents = await Extensibility.Documents().SubscribeAsync(this, null, cancellationToken);", code, StringComparison.Ordinal);
+        Assert.Contains("if (e.Moniker is { IsFile: true } moniker) _contextHolder.Shown(moniker.LocalPath);", code, StringComparison.Ordinal);
+        Assert.Contains("if (isDisposing) _documentEvents?.Dispose();", code, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void ClosingTheActiveDocument_LeavesNoActiveDocument_AndSaysSo()
     {
