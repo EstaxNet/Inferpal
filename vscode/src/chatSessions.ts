@@ -16,6 +16,11 @@ export function toSavedMessages(transcript: readonly WvTranscriptItem[], wholeOu
   return transcript.filter((item) => !item.modeLine).map((item) =>
     item.savedAs
       ? item.savedAs
+      // A compaction that lost turns (the Core's ToolNoticeTitle.ContextCompact, degraded), saved as Visual Studio saves
+      // it: a notice, read in plain text after a reload in either editor. Saved as a tool bubble, it would come back
+      // folded under its title, with a check.
+      : item.role === 'tool' && item.text === 'context_compact' && item.hasErrors
+        ? { role: 'assistant', content: item.toolOutput ?? '', toolName: NOTICE_MARKER, timestamp: item.timestamp }
       : item.role === 'tool'
         // Saved as Visual Studio keeps it, never the whole output: every search and file read rewritten at each turn.
         ? { role: 'tool', content: (wholeOutputs ? undefined : item.toolKept) ?? item.toolOutput ?? '', toolName: item.text, timestamp: item.timestamp }

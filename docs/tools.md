@@ -311,7 +311,8 @@ Each becomes a native tool (lower-cased, spaces → `_`) and goes through approv
 workspace root.
 
 Write `{args}` where the agent's arguments go (`run_e2e=npm run test:e2e -- {args}`); without it, they are appended
-to the command. Built-in tools take priority over a custom tool with the same name; prefix a line with `#` to
+to the command. Built-in tools take priority over a custom tool with the same name, and `context_compact` and `ooda_recap` are taken
+by the chat's own notices; prefix a line with `#` to
 disable it.
 
 ## Turning a tool off

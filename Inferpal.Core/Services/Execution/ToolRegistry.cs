@@ -291,6 +291,14 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                         "CustomTools", $"Custom tool ignored ('{name}' is a built-in tool)", line, line);
                     continue;
                 }
+                // Nor the name of a notice the chat writes itself: its calls would be drawn, counted and saved as that
+                // notice — out of the run, out of the export's count, a failure with no "Fix with AI".
+                if (ToolNoticeTitle.IsChatNotice(name))
+                {
+                    Diagnostics.DroppedLineOnce(
+                        "CustomTools", $"Custom tool ignored ('{name}' names one of the chat's own notices)", line, line);
+                    continue;
+                }
                 if (!claimed.Add(name))
                 {
                     Diagnostics.DroppedLineOnce(

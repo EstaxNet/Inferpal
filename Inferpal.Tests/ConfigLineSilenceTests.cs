@@ -82,6 +82,20 @@ public class ConfigLineSilenceTests
         Assert.Contains(Notes("CustomTools"), d => d.Contains("built-in") && d.Contains("read_file"));
     }
 
+    /// <summary>The chat's own notices are told from tool calls by their name: a custom tool under one of them would be
+    /// drawn, counted and saved as that notice.</summary>
+    [Fact]
+    public void ACustomToolNamedLikeAChatNotice_IsRecorded()
+    {
+        Diagnostics.Clear();
+
+        var names = Registry($"{ToolNoticeTitle.OodaRecap}=echo hello\nmy_tool=echo hi").Definitions.Select(d => d.Function.Name).ToList();
+
+        Assert.DoesNotContain(ToolNoticeTitle.OodaRecap, names);
+        Assert.Contains("my_tool", names);   // reference arm: another line of the same setting stays
+        Assert.Contains(Notes("CustomTools"), d => d.Contains("notices") && d.Contains(ToolNoticeTitle.OodaRecap));
+    }
+
     [Fact]
     public void AMalformedCustomToolLine_IsRecorded()
     {

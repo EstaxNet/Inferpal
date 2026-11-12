@@ -1264,8 +1264,8 @@ function showNote(id: string, text: string, state: 'waiting' | 'read', afterCall
   }
 }
 
-/** The chat's own two notices (the Core's ToolNoticeTitle.IsChatNotice): no call of the model, so no step of a run. */
-// shortcut: a custom tool named like a notice is taken for one; a flag on chat/tool would tell them apart if it matters.
+/** The chat's own two notices (the Core's ToolNoticeTitle.IsChatNotice): no call of the model, so no step of a run. No
+ *  tool takes their names: the Core drops a custom tool declared under one. */
 function isChatNotice(name: string): boolean {
   return name === 'context_compact' || name === 'ooda_recap';
 }

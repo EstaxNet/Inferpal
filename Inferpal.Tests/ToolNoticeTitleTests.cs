@@ -74,6 +74,18 @@ public sealed class ToolNoticeTitleTests
                         summary, StringComparison.Ordinal);
     }
 
+    /// <summary>⚠ Both editors write the same session files. A compaction that lost turns is a notice in Visual Studio's;
+    /// saved by VS Code as a tool bubble, it would come back — in either editor — folded under its title with a check, the
+    /// loss out of sight.</summary>
+    [Fact]
+    public void VsCode_SavesADegradedCompaction_AsVisualStudioDoes()
+    {
+        var saved = WebviewRebuildTests.Body(WebviewRebuildTests.TsCode("chatSessions.ts"), "export function toSavedMessages(");
+        Assert.Contains($"item.role === 'tool' && item.text === '{ToolNoticeTitle.ContextCompact}' && item.hasErrors", saved, StringComparison.Ordinal);
+        Assert.Contains("? { role: 'assistant', content: item.toolOutput ?? '', toolName: NOTICE_MARKER", saved, StringComparison.Ordinal);
+        Assert.Equal("notice", SessionManager.NoticeMarker);   // the marker the TypeScript mirror spells
+    }
+
     /// <summary>VS Code's view computes the title from the saved name with the same two names: renamed in the Core and not
     /// there, the bubble would show the internal name again with nothing turning red.</summary>
     [Fact]
