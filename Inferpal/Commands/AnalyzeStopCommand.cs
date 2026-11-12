@@ -48,7 +48,7 @@ internal class AnalyzeStopCommand : Command
     // One group per menu: GroupPlacement.VsctParent parents a group to one VSCT menu.
     [VisualStudioContribution]
     internal static CommandGroupConfiguration DebugMenuGroup { get; } =
-        new(GroupPlacement.VsctParent(VsctMenus.ShlMainMenu, VsctMenus.DebugMenu, DebugMenuPriority))
+        new(GroupPlacement.VsctParent(VsctMenus.VsDebugGroup, VsctMenus.DebugMenu, DebugMenuPriority))
         { Children = [GroupChild.Command<AnalyzeStopCommand>()] };
 
     [VisualStudioContribution]

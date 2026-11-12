@@ -11,13 +11,15 @@ internal static class VsctMenus
     internal static readonly Guid ShlMainMenu = new("d309f791-903f-11d0-9efc-00a0c911004f");
     internal const uint CodeWindowContext = 0x040D;   // IDM_VS_CTXT_CODEWIN — the text editor
     internal const uint ErrorListContext  = 0x0405;   // IDM_VS_CTXT_ERRORLIST
-    internal const uint DebugMenu         = 0x0089;   // IDM_VS_MENU_DEBUG
     internal const uint ProjectContext    = 0x0402;   // IDM_VS_CTXT_PROJNODE — Solution Explorer: a project
     internal const uint ItemContext       = 0x0430;   // IDM_VS_CTXT_ITEMNODE — a file
     internal const uint FolderContext     = 0x0431;   // IDM_VS_CTXT_FOLDERNODE — a folder
 
     /// <summary><c>guidVSDebugGroup</c>: the debugger's windows.</summary>
     internal static readonly Guid VsDebugGroup = new("c9dd4a58-47fb-11d2-83e7-00c04f9902c1");
+    /// <summary><c>IDM_DEBUG_MENU</c>: the Debug menu Visual Studio shows, the debugger package's. ⚠ Not the shell's
+    /// <c>IDM_VS_MENU_DEBUG</c> (<c>guidSHLMainMenu</c>, 0x0089): a group parented there is on no menu anyone sees.</summary>
+    internal const uint DebugMenu        = 0x0401;
     internal const uint WatchContext     = 0x0500;    // IDM_WATCH_CONTEXT
     internal const uint LocalsContext    = 0x0501;    // IDM_LOCALS_CONTEXT
     internal const uint AutosContext     = 0x0502;    // IDM_AUTOS_CONTEXT

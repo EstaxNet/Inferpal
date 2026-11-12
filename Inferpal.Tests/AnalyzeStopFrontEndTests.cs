@@ -20,11 +20,12 @@ public sealed class AnalyzeStopFrontEndTests
         var command = ConventionCoverageTests.CodeOnly(Path.Combine(Root, "Inferpal", "Commands", "AnalyzeStopCommand.cs"));
         var menus   = ConventionCoverageTests.CodeOnly(Path.Combine(Root, "Inferpal", "Commands", "VsctMenus.cs"));
 
-        // guidSHLMainMenu / IDM_VS_MENU_DEBUG (vsshlids.h); guidVSDebugGroup / IDM_*_CONTEXT (VsDbgCmd.h); UICONTEXT_Debugging.
-        Assert.Contains("ShlMainMenu = new(\"d309f791-903f-11d0-9efc-00a0c911004f\")", menus, StringComparison.Ordinal);
+        // guidVSDebugGroup / IDM_DEBUG_MENU and IDM_*_CONTEXT (VsDbgCmd.h); UICONTEXT_Debugging. ⚠ The Debug menu on screen
+        // is the debugger package's: a group under the shell's IDM_VS_MENU_DEBUG (guidSHLMainMenu, 0x0089) shows nowhere.
         Assert.Contains("VsDebugGroup = new(\"c9dd4a58-47fb-11d2-83e7-00c04f9902c1\")", menus, StringComparison.Ordinal);
         Assert.Contains("DebuggingContext = new(\"adfc4e61-0397-11d1-9f4e-00a0c911004f\")", menus, StringComparison.Ordinal);
-        foreach (var (group, menu, id) in new[] { ("ShlMainMenu", "DebugMenu", "0x0089"), ("VsDebugGroup", "WatchContext", "0x0500"),
+        Assert.DoesNotContain("0x0089", menus, StringComparison.Ordinal);
+        foreach (var (group, menu, id) in new[] { ("VsDebugGroup", "DebugMenu", "0x0401"), ("VsDebugGroup", "WatchContext", "0x0500"),
                                                   ("VsDebugGroup", "LocalsContext", "0x0501"), ("VsDebugGroup", "AutosContext", "0x0502"),
                                                   ("VsDebugGroup", "CallStackContext", "0x0504") })
         {
