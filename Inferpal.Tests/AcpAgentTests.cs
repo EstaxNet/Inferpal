@@ -149,9 +149,7 @@ public sealed class AcpAgentTests : IDisposable
         };
         var agent = new AcpAgent(
             () => host?.Invoke(provider)
-                  // 32K: at the default 8K the built-in tools take more than half the window, and the notice that says so
-                  // (HeadShareNoticeTests) would open every streamed answer these tests read.
-                  ?? new HostServer(_ => provider, () => new InferpalConfig { RagEnabled = false, DefaultModel = "test-model", ContextWindowSize = 32_768 }),
+                  ?? new HostServer(_ => provider, () => new InferpalConfig { RagEnabled = false, DefaultModel = "test-model" }),
             ready ?? (_ => Task.FromResult(true)), webDir, openBrowser ?? (_ => true), told);
         var (agentSide, clientSide) = FullDuplexStream.CreatePair();
         var rpc = AcpRpc.Create(agentSide, agentSide, agent);
@@ -294,7 +292,9 @@ public sealed class AcpAgentTests : IDisposable
         var r = await PromptAsync(h, sid, "hello");
 
         Assert.Equal("end_turn", StopReason(r));
-        Assert.StartsWith("First line\nsecond line", h.Client.Said(sid));
+        // Whole, inside the transcript: at the suite's 8K window the first prompt opens on the notice that the tools take most of it
+        // (HeadShareNoticeTests), which a client that shows no notices reads in the transcript.
+        Assert.Contains("First line\nsecond line", h.Client.Said(sid));
         // Every line the agent wrote is one JSON-RPC message: an answer's line breaks travel escaped.
         Assert.All(h.Client.Lines, line => Assert.Equal("2.0", JsonDocument.Parse(line).RootElement.GetProperty("jsonrpc").GetString()));
     }
@@ -313,7 +313,7 @@ public sealed class AcpAgentTests : IDisposable
         await PromptAsync(h, sid, "hello");
 
         var said = h.Client.Said(sid);
-        Assert.StartsWith("The answer.", said);
+        Assert.Contains("The answer.", said);   // between the window notice of the first prompt and the limits notice
         Assert.DoesNotContain("private reasoning", said);
         Assert.DoesNotContain("<thi", said);
     }
@@ -583,8 +583,8 @@ public sealed class AcpAgentTests : IDisposable
             await h.Client.RequestAsync("initialize", InitShowing(notices: true, compaction: false));
             var sid = await NewSessionAsync(h);
             await PromptAsync(h, sid, "first");
-            var shown = Assert.Single(h.Client.Updates(sid, "notice"));
-            Assert.Equal("info", shown.GetProperty("severity").GetString());
+            // The limits notice is the one "info" notice; the window notice of the first prompt is a warning.
+            var shown = Assert.Single(h.Client.Updates(sid, "notice"), u => u.GetProperty("severity").GetString() == "info");
             // A plain-text title, the first sentence; the rest as the description — the notice as a whole, without Markdown.
             var (title, description) = AcpSession.NoticeParts(notice)!.Value;
             Assert.Equal(title, shown.GetProperty("title").GetString());

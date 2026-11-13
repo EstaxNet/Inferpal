@@ -19,6 +19,8 @@ internal partial class InferpalToolWindowData
 
     /// <summary>The mode whose missing models this conversation was already told about: said once, not at every turn.</summary>
     private string? _modeModelNoticeSaid;
+    // What ContextManager.HeadShareNotice said in this window.
+    private readonly HashSet<string> _headShareSaid = [];
 
     /// <summary>How many modes the last reading found here; <c>null</c> before the first reading, which never says
     /// "no mode" for a workspace not read yet.</summary>

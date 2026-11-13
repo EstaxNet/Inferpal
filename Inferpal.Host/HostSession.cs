@@ -219,6 +219,9 @@ internal sealed class HostSession : IDisposable
     /// <summary>The mode whose missing model the thread was told about: said once per conversation and mode.</summary>
     public string? ModeModelNoticeSaid { get; set; }
 
+    /// <summary>What <c>ContextManager.HeadShareNotice</c> said in this session (an editor window, an ACP thread).</summary>
+    public HashSet<string> HeadShareSaid { get; } = [];
+
     /// <summary>Plan the session is working on (mirror of the VS VM's <c>_activePlan</c>), so
     /// `/plan next` and `/plan done n` need no argument; kept with the conversation (<see cref="SessionState"/>).</summary>
     public string? ActivePlan { get; set; }
