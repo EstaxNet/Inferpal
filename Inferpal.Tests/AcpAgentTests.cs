@@ -2000,6 +2000,21 @@ public sealed class AcpAgentTests : IDisposable
         Assert.EndsWith(" — " + Strings.AcpPlanStepSkipped, last.GetProperty("content").GetString(), StringComparison.Ordinal);
     }
 
+    /// <summary>A search is titled by what it looks for — by its path, every search of the workspace read
+    /// <c>search_in_files · .</c> (seen in Zed); its folder follows when it is not the workspace.</summary>
+    [Fact]
+    public void ASearch_IsTitledByItsPattern_ItsFolderAfterIt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "acp-title");
+        JsonElement Args(object o) => JsonSerializer.SerializeToElement(o);
+
+        Assert.Equal("search_in_files · Add", AcpToolCalls.Title("search_in_files", Args(new { path = ".", pattern = "Add" }), root));
+        Assert.Equal("search_in_files · Add", AcpToolCalls.Title("search_in_files", Args(new { path = root, pattern = "Add" }), root));
+        Assert.Equal("search_in_files · Add — src", AcpToolCalls.Title("search_in_files", Args(new { path = "src", pattern = "Add" }), root));
+        Assert.Equal("list_files · src/app", AcpToolCalls.Title("list_files", Args(new { path = Path.Combine(root, "src", "app") }), root));
+        Assert.Equal("read_file · alpha.txt", AcpToolCalls.Title("read_file", Args(new { path = "alpha.txt" }), root));   // reference arm
+    }
+
     [Fact]
     public void AToolOutput_IsSentAsACodeBlock_ThatNoRunOfBackticksInItCloses()
     {

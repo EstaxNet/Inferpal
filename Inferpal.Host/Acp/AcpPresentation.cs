@@ -104,15 +104,29 @@ internal static class AcpToolCalls
 
     /// <summary>The tool and what it acts on ("read_file · src/Program.cs"), the target cut to one readable line — a
     /// path under <paramref name="root"/> shown relative to it.</summary>
+    /// <remarks>⚠ A search names what it looks for: its <c>pattern</c> is the subject, its folder said after it only when
+    /// it is not the workspace — titled by its path, every search of the workspace read <c>search_in_files · .</c>.</remarks>
     public static string Title(string tool, JsonElement args, string? root = null)
     {
-        var subject = Services.Execution.ToolRegistry.ExtractSubject(args);
-        if (string.IsNullOrWhiteSpace(subject)) return tool;
-        var line = subject.Replace('\r', ' ').Replace('\n', ' ').Trim();
-        if (root is not null && System.IO.Path.IsPathRooted(line) && Services.Tools.PathSanitizer.IsUnderRoot(line, root))
-            line = System.IO.Path.GetRelativePath(root, line).Replace('\\', '/');
-        if (line.Length > 120) line = line[..119] + "…";
-        return $"{tool} · {line}";
+        var path = Services.Execution.ToolRegistry.ExtractSubject(args);
+        if (args.ValueKind == JsonValueKind.Object && args.TryGetProperty("pattern", out var p) && p.ValueKind == JsonValueKind.String
+            && OneLine(p.GetString()) is { Length: > 0 } pattern)
+        {
+            var folder = OneLine(path) is { Length: > 0 } f ? Relative(f) : null;
+            // The workspace itself comes back from Relative as "."
+            return folder is null or "." or "./"
+                ? $"{tool} · {Cut(pattern)}"
+                : $"{tool} · {Cut($"{pattern} — {folder}")}";
+        }
+        if (OneLine(path) is not { Length: > 0 } line) return tool;
+        return $"{tool} · {Cut(Relative(line))}";
+
+        string Relative(string s) =>
+            root is not null && System.IO.Path.IsPathRooted(s) && Services.Tools.PathSanitizer.IsUnderRoot(s, root)
+                ? System.IO.Path.GetRelativePath(root, s).Replace('\\', '/')
+                : s;
+        static string OneLine(string? s) => (s ?? string.Empty).Replace('\r', ' ').Replace('\n', ' ').Trim();
+        static string Cut(string s) => s.Length > 120 ? s[..119] + "…" : s;
     }
 
     /// <summary>The arguments as an object, or <c>null</c> when the model wrote something that is not one.</summary>
