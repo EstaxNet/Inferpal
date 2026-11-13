@@ -140,6 +140,7 @@ internal class RunTestsTool : ITool
             path = chosen.Target;
         }
 
+        note += OtherTestProjects(path, root);
         var (output, exitCode) = await RunProcessAsync("dotnet", string.Empty, workDir, budget, ct, DotnetTestArguments(path, filter));
         return note + ParseDotnetOutput(output, exitCode);
     }
@@ -173,6 +174,47 @@ internal class RunTestsTool : ITool
             + " — pass 'path' to run one.";
         return (chosen, $"{ClampedArgument.NotePrefix}{folder} holds no single solution or project, so this run used "
                       + $"{Path.GetRelativePath(folder, chosen).Replace('\\', '/')}.{notRun}\n\n");
+    }
+
+    /// <summary>
+    /// The note of a dotnet run that took ONE test project of the solution a run without <c>path</c> takes — naming the
+    /// solution's other test projects, so the verdict reads as part of the suite (<see cref="RanPartOfTheSuite"/>);
+    /// <c>null</c> when it ran that solution, when the workspace's whole run is no solution, or when the project is the
+    /// solution's only test project.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Never "a path was given": the root, the solution and the only test project are paths too, and the most common ones
+    /// (<c>/tdd</c> passes the root). ⚠ And never "every test project on disk": samples, templates and vendored code hold test
+    /// projects no whole run builds — named, they made a whole run read as a part, and the remedy (omit <c>path</c>) a promise
+    /// the run would not keep. The comparison is with what that remedy runs.
+    /// </remarks>
+    internal static string? OtherTestProjects(string? ran, string? root)
+    {
+        if (ran is null || string.IsNullOrEmpty(root) || !Directory.Exists(root)) return null;
+        // A folder holding one project is that project for dotnet.
+        var project = Directory.Exists(ran) ? FilesIn(ran).Where(IsDotnetProject).ToList() is [var only] ? only : null : ran;
+        if (project is null || SolutionFiles.IsSolution(project) || !IsDotnetProject(project)) return null;
+
+        // What a run without 'path' takes: the root's single solution, or the one DotnetFolderTarget chooses.
+        var whole = FilesIn(root).Where(IsDotnetProject).ToList() is [var single] ? single : DotnetFolderTarget(root)?.Target;
+        if (whole is null || !SolutionFiles.IsSolution(whole)) return null;
+        string text;
+        try { text = File.ReadAllText(whole); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Diagnostics.Swallow("RunTestsTool.OtherTestProjects", ex); return null; }
+        var inSolution = SolutionFiles.ParseProjects(whole, text).Projects.Select(p => p.AbsolutePath).Where(File.Exists).ToList();
+        if (!inSolution.Any(p => PathComparer.Default.Equals(p, project))) return null;   // not the whole run's: nothing to compare
+        var others = inSolution.Where(p => !PathComparer.Default.Equals(p, project) && IsReadableTestProject(p))
+                               .Select(p => Path.GetRelativePath(root, p).Replace('\\', '/')).ToList();
+        if (others.Count == 0) return null;
+        return $"{ClampedArgument.NotePrefix}Only {Path.GetRelativePath(root, project).Replace('\\', '/')} ran, one test project of "
+             + $"{others.Count + 1} in {Path.GetFileName(whole)}.{NotRunNote}{string.Join(", ", others.Take(5))}"
+             + $"{(others.Count > 5 ? $" and {others.Count - 5} more" : "")} — omit 'path' to run the whole suite.\n\n";
+
+        static bool IsReadableTestProject(string csproj)
+        {
+            try { return CodeActions.TestFilePathResolver.IsTestProject(csproj); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+        }
     }
 
     /// <summary>The <c>dotnet test</c> command line, one element per argument.</summary>

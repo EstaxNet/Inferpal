@@ -321,7 +321,7 @@ internal static class TestFilePathResolver
     /// <summary>A test project: one that names a test framework or declares itself one — or, its packages coming from a
     /// <c>Directory.Build.props</c>, one named the way test projects are (<c>Lib.Tests</c>, <c>Lib.UnitTests</c>,
     /// <c>LibTests</c>, <c>Lib.Specs</c>).</summary>
-    private static bool IsTestProject(string csproj)
+    internal static bool IsTestProject(string csproj)
     {
         var name = Path.GetFileNameWithoutExtension(csproj);
         if (name.EndsWith(".Tests", StringComparison.OrdinalIgnoreCase) || name.EndsWith(".Test", StringComparison.OrdinalIgnoreCase)
