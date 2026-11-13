@@ -674,7 +674,8 @@ suggestion right now: with *When I ask*, nothing is ever sent until you do.
 
 - Three speeds, picked as cards in the settings: **Fast** (128 tok / 0.4 / 300 ms) · **Balanced** (256 / 0.2 /
   600 ms) · **Accurate** (512 / 0.1 / 1 000 ms).
-- **Alt+'** (the key left of Enter on a US keyboard; **Ctrl+Option+'** in VS Code on macOS) asks for a suggestion at
+- **Alt+'** (the key left of Enter on a US keyboard, wherever that key sits on yours: **Alt+²** on a French AZERTY
+  keyboard in Visual Studio; **Ctrl+Option+'** in VS Code on macOS) asks for a suggestion at
   the caret, without waiting for a pause, or takes the one shown — a second accept key where an open list
   (IntelliSense, ReSharper's) holds Tab. A key that brings nothing says why in the status bar: completion turned off,
   the file excluded from AI tools, no model chosen for an OpenAI-compatible server, a chat or a task answering on the

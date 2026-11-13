@@ -1344,7 +1344,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="FimTriggerAuto" xml:space="preserve"><value>Pendant la frappe</value></data>
   <data name="FimTriggerAutoDesc" xml:space="preserve"><value>Après une pause dans la frappe.</value></data>
   <data name="FimTriggerOnDemand" xml:space="preserve"><value>Quand je les demande</value></data>
-  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>Seulement avec Alt+' (clavier américain ; Ctrl+Option+' sur Mac). Rien n'est envoyé sinon.</value></data>
+  <data name="FimTriggerOnDemandDesc" xml:space="preserve"><value>Seulement avec Alt+' (clavier américain ; Alt+² sur un clavier AZERTY dans Visual Studio ; Ctrl+Option+' sur Mac). Rien n'est envoyé sinon.</value></data>
   <data name="CompletionAskedOff" xml:space="preserve"><value>Inferpal : la complétion est désactivée — réglages d'Inferpal, page {0}.</value></data>
   <data name="CompletionAskedChatBusy" xml:space="preserve"><value>Inferpal : le modèle répond à un chat ou à une tâche sur la machine du serveur de complétion — redemandez quand il a fini.</value></data>
   <data name="CompletionAskedNoModel" xml:space="preserve"><value>Inferpal : aucun modèle n'est choisi pour la complétion sur ce serveur — réglages d'Inferpal, page {0}.</value></data>
