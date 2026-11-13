@@ -1417,6 +1417,7 @@ Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama ser
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} token</value></data>
   <data name="PinnedFileTokensSent" xml:space="preserve"><value>{0} token inviati su {1} — tagliato per stare nel prompt</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>non trovato</value></data>
+  <data name="PinnedFileUnreadable" xml:space="preserve"><value>non leggibile</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>Da questo progetto</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>presentazione del progetto</value></data>
   <data name="ProjectFileMemory" xml:space="preserve"><value>ciò che l'agente ricorda</value></data>
@@ -2071,6 +2072,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>il posto del suo test non è un nuovo file di test</value></data>
   <data name="CoverageLeft" xml:space="preserve"><value>{0} {0:altro metodo|altri metodi} con righe non coperte: esegui di nuovo /test coverage.</value></data>
   <data name="CoverageExcluded" xml:space="preserve"><value>{0} {0:file escluso|file esclusi} dagli strumenti di IA {0:lasciato|lasciati} fuori.</value></data>
+  <data name="CoverageUnreadable" xml:space="preserve"><value>{0} {0:file illeggibile escluso|file illeggibili esclusi}: {1}.</value></data>
   <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ La suite non era verde prima di questo comando: è stata misurata così com'è, e i suoi errori non vengono da questo comando.</value></data>
   <data name="CoverageAfterFailed" xml:space="preserve"><value>Non è stato possibile misurare la copertura dopo: i test tenuti restano, e /undo-run li rimuove.</value></data>
   <data name="CoverageWhyModelCut" xml:space="preserve"><value>il suo file è stato troncato al limite di lunghezza del modello</value></data>

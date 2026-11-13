@@ -371,6 +371,7 @@ internal static class Strings
     public static string LabelIgnoreFiles => Get(nameof(LabelIgnoreFiles));
     public static string HintIgnoreFiles => Get(nameof(HintIgnoreFiles));
     public static string PinnedFileMissing => Get(nameof(PinnedFileMissing));
+    public static string PinnedFileUnreadable => Get(nameof(PinnedFileUnreadable));
     public static string ProjectFilesTitle => Get(nameof(ProjectFilesTitle));
     public static string ProjectFileContext => Get(nameof(ProjectFileContext));
     public static string ProjectFileMemory => Get(nameof(ProjectFileMemory));
@@ -1886,6 +1887,7 @@ internal static class Strings
     public static string CoverageSuiteBrokenAfter => Get(nameof(CoverageSuiteBrokenAfter));
     public static string CoverageLeft(int count) => Format(Get(nameof(CoverageLeft)), count);
     public static string CoverageExcluded(int count) => Format(Get(nameof(CoverageExcluded)), count);
+    public static string CoverageUnreadable(int count, string names) => Format(Get(nameof(CoverageUnreadable)), count, names);
     public static string CoverageSuiteRed => Get(nameof(CoverageSuiteRed));
     public static string CoverageAfterFailed => Get(nameof(CoverageAfterFailed));
     public static string CoverageStopped(int done, int count) => Format(Get(nameof(CoverageStopped)), done, count);

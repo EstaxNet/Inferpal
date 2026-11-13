@@ -1417,6 +1417,7 @@
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} 个 token</value></data>
   <data name="PinnedFileTokensSent" xml:space="preserve"><value>发送 {1} 个令牌中的 {0} 个——已截断以适应提示</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>未找到</value></data>
+  <data name="PinnedFileUnreadable" xml:space="preserve"><value>无法读取</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>来自此项目</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>项目简介</value></data>
   <data name="ProjectFileMemory" xml:space="preserve"><value>代理记住的内容</value></data>
@@ -2071,6 +2072,7 @@
   <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>其测试的位置不是新的测试文件</value></data>
   <data name="CoverageLeft" xml:space="preserve"><value>还有 {0} 个方法有未覆盖的行：请再次运行 /test coverage。</value></data>
   <data name="CoverageExcluded" xml:space="preserve"><value>已跳过 {0} 个从 AI 工具中排除的文件。</value></data>
+  <data name="CoverageUnreadable" xml:space="preserve"><value>已跳过 {0} 个无法读取的文件：{1}。</value></data>
   <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ 在此命令之前测试套件就未全部通过：已按原样测量，其失败并非此命令造成。</value></data>
   <data name="CoverageAfterFailed" xml:space="preserve"><value>无法测量之后的覆盖率：保留的测试仍在，/undo-run 可将其移除。</value></data>
   <data name="CoverageWhyModelCut" xml:space="preserve"><value>其文件在模型的长度上限处被截断</value></data>

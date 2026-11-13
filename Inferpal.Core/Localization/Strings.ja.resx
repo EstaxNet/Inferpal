@@ -1417,6 +1417,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} トークン</value></data>
   <data name="PinnedFileTokensSent" xml:space="preserve"><value>{1} トークン中 {0} トークンを送信 — プロンプトに収まるよう切り詰め</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>見つかりません</value></data>
+  <data name="PinnedFileUnreadable" xml:space="preserve"><value>読み取れません</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>このプロジェクトから</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>プロジェクトの概要</value></data>
   <data name="ProjectFileMemory" xml:space="preserve"><value>エージェントが覚えていること</value></data>
@@ -2071,6 +2072,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>テストの置き場所が新しいテストファイルではない</value></data>
   <data name="CoverageLeft" xml:space="preserve"><value>未カバー行のあるメソッドがあと {0} 件あります: もう一度 /test coverage を実行してください。</value></data>
   <data name="CoverageExcluded" xml:space="preserve"><value>AI ツールから除外されたファイル {0} 件は対象外にしました。</value></data>
+  <data name="CoverageUnreadable" xml:space="preserve"><value>読み取れないファイル {0} 件は対象外にしました: {1}。</value></data>
   <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ このコマンドの前からスイートは成功していませんでした: そのまま計測しており、その失敗はこのコマンドによるものではありません。</value></data>
   <data name="CoverageAfterFailed" xml:space="preserve"><value>実行後のカバレッジを計測できませんでした: 保持したテストは残り、/undo-run で取り除けます。</value></data>
   <data name="CoverageWhyModelCut" xml:space="preserve"><value>ファイルがモデルの長さ上限で途切れた</value></data>

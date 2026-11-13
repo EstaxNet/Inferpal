@@ -147,6 +147,54 @@ public sealed class RootStateTests : IDisposable
         Assert.Empty(svc.ProfileExcludes);
     }
 
+    /// <summary>
+    /// A profile that does not read when the root is opened is not a profile without exclusions: search says the index may
+    /// hold what it keeps out, until it reads; then its exclusions apply and the note goes.
+    /// </summary>
+    [Fact]
+    public void AProfileThatDoesNotReadAtTheOpening_IsSaidBySearch_UntilItReads()
+    {
+        var profile = Services.Governance.ProjectProfile.PathIn(_a);
+        Directory.CreateDirectory(Path.GetDirectoryName(profile)!);
+        File.WriteAllText(profile, """{ "indexExclude": ["generated/**" """);   // malformed: cut mid-array
+        var svc = Service();
+        svc.SetRoot(_a);
+        var search = new Services.Tools.SemanticSearchTool(svc, new FakeInferenceProvider(), new InferpalConfig { RagEnabled = true });
+
+        Assert.True(svc.ProfileUnread);
+        Assert.Empty(svc.ProfileExcludes);
+        Assert.Contains(".inferpal/project.json could not be read", search.CoverageNote());
+
+        // Reference arm: the same file, readable.
+        WhileTheWatcherReads(() => File.WriteAllText(profile, """{ "indexExclude": ["generated/**"] }"""));
+        svc.OnProfileChanged(profile);
+        Assert.False(svc.ProfileUnread);
+        Assert.Equal(["generated/**"], svc.ProfileExcludes);
+        Assert.DoesNotContain("project.json", search.CoverageNote());
+    }
+
+    /// <summary>The same root opened again with its profile unreadable keeps the exclusions last read: never "none".</summary>
+    [Fact]
+    public void TheSameRootReopenedWithItsProfileUnreadable_KeepsTheExclusionsLastRead()
+    {
+        var profile = Services.Governance.ProjectProfile.PathIn(_a);
+        Directory.CreateDirectory(Path.GetDirectoryName(profile)!);
+        File.WriteAllText(profile, """{ "indexExclude": ["generated/**"] }""");
+        var svc = Service();
+        svc.SetRoot(_a);
+        Assert.Equal(["generated/**"], svc.ProfileExcludes);   // witness
+
+        WhileTheWatcherReads(() => File.WriteAllText(profile, """{ "indexExclude": [ """));
+        svc.SetRoot(_a);
+        Assert.Equal(["generated/**"], svc.ProfileExcludes);
+        Assert.False(svc.ProfileUnread);
+
+        // Truncated before it is written again (mid-save): no byte is not a profile without exclusions.
+        WhileTheWatcherReads(() => File.WriteAllText(profile, ""));
+        svc.SetRoot(_a);
+        Assert.Equal(["generated/**"], svc.ProfileExcludes);
+    }
+
     /// <summary>A file the profile excludes since it was indexed leaves the index, as one an ignore file excludes.</summary>
     [Fact]
     public void AFileTheProfileNowExcludes_IsExcludedFromTheIndex()

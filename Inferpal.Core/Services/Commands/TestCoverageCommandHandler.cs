@@ -105,8 +105,17 @@ internal static class TestCoverageCommandHandler
         var excluded = baseline.Files.Keys.Where(f => CoverageTargets.InFolder(f, folder)
                            && Governance.ContentExclusions.NoticeFor(Path.Combine(root, f), null) is not null)
                        .ToHashSet(StringComparer.Ordinal);
-        var all = CoverageTargets.Rank(baseline, folder, f => excluded.Contains(f) ? [] : ReadLines(root, f))
-                                 .Where(t => !excluded.Contains(t.File)).ToList();
+        // ⚠ A file that does not read is no target: ranked on no text and sent to the model as an empty file. Left out, named.
+        // Found as the ranking reads the files it ranks: only those that could be targets.
+        var unread = new HashSet<string>(StringComparer.Ordinal);
+        var all = CoverageTargets.Rank(baseline, folder, f =>
+                      {
+                          if (excluded.Contains(f)) return [];
+                          if (ReadOrNull(Path.Combine(root, f)) is not { } text) { unread.Add(f); return []; }
+                          return Lines(text);
+                      })
+                                 .Where(t => !excluded.Contains(t.File) && !unread.Contains(t.File)).ToList();
+        var unreadable = unread.OrderBy(f => f, StringComparer.Ordinal).ToList();
         var files = baseline.Files.Keys.Where(f => CoverageTargets.InFolder(f, folder) && !excluded.Contains(f)).ToList();
         var (covered0, total0) = baseline.Of(files);
         // A folder of tests (or only generated files): measured, and nothing in it is a target — said, not "0 %".
@@ -114,7 +123,8 @@ internal static class TestCoverageCommandHandler
             return $"{header}\n\n{Strings.CoverageNoSourceInScope($"`{folder}`")}";
         if (all.Count == 0)
             return $"{header}\n\n{Strings.CoverageNothingToCover(Percent(covered0, total0))}"
-                 + (excluded.Count > 0 ? "\n" + Strings.CoverageExcluded(excluded.Count) : string.Empty);
+                 + (excluded.Count > 0 ? "\n" + Strings.CoverageExcluded(excluded.Count) : string.Empty)
+                 + (unreadable.Count > 0 ? "\n" + Unreadable(unreadable) : string.Empty);
 
         var taken    = all.Take(CoverageTargets.MaxPerRun).ToList();
         var covered  = files.ToDictionary(f => f, f => baseline.Files[f].Where(l => l.Value > 0).Select(l => l.Key).ToHashSet(),
@@ -163,7 +173,7 @@ internal static class TestCoverageCommandHandler
         // Each kept test passed alone: the suite run after says whether they pass together.
         var brokenAfter = !stopped && !ReferenceEquals(after, before) && before.Passed && after is { Passed: false };
         var report = Report(header, baseline, stopped ? null : after, files, outcomes, all.Count - outcomes.Count,
-                            excluded.Count, before.Passed, brokenAfter);
+                            excluded.Count, before.Passed, brokenAfter, unreadable);
         return stopped ? report + "\n\n" + Strings.CoverageStopped(outcomes.Count, taken.Count) : report;
     }
 
@@ -413,13 +423,13 @@ internal static class TestCoverageCommandHandler
         foreach (var file in candidates)
         {
             if (Governance.ContentExclusions.NoticeFor(file, null) is not null) continue;
-            var text  = ReadOrEmpty(file);
+            if (ReadOrNull(file) is not { } text) continue;   // an example that does not read would go as an empty file
             var score = CountOf(text, stem) + (Path.GetFileName(file).Contains(stem, StringComparison.OrdinalIgnoreCase) ? 5 : 0)
                       + (last.Length > 0 && text.Contains(last + "/", StringComparison.Ordinal) ? 50 : 0);
             if (best is null || score > best.Value.Score) best = (file, score);
         }
         if (best is not { } chosen) return null;
-        var content = ReadOrEmpty(chosen.Path);
+        if (ReadOrNull(chosen.Path) is not { } content) return null;
         return (Path.GetRelativePath(root, chosen.Path).Replace('\\', '/'),
                 content.Length <= ExampleBudget ? content : content[..ExampleBudget] + "\n# ... (rest not shown)");
     }
@@ -432,14 +442,24 @@ internal static class TestCoverageCommandHandler
         return count;
     }
 
-    private static string[] ReadLines(string root, string relative) => ReadOrEmpty(Path.Combine(root, relative)).Split('\n')
-        .Select(l => l.TrimEnd('\r')).ToArray();
+    private static string[] ReadLines(string root, string relative) => Lines(ReadOrEmpty(Path.Combine(root, relative)));
 
-    private static string ReadOrEmpty(string path)
+    private static string[] Lines(string text) => text.Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
+
+    private static string ReadOrEmpty(string path) => ReadOrNull(path) ?? string.Empty;
+
+    /// <summary>The text of <paramref name="path"/>, empty when it does not exist, <c>null</c> when it exists and does not
+    /// read.</summary>
+    private static string? ReadOrNull(string path)
     {
         try { return File.Exists(path) ? Tools.TextFileEncoding.ReadText(path) : string.Empty; }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return string.Empty; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
     }
+
+    /// <summary>The files left out because they do not read, named: five, then how many more.</summary>
+    private static string Unreadable(IReadOnlyList<string> files) =>
+        Strings.CoverageUnreadable(files.Count, string.Join(", ", files.Take(5).Select(f => $"`{f}`"))
+                                               + (files.Count > 5 ? $" (+{files.Count - 5})" : string.Empty));
 
     private static string Tail(string text, int max) => text.Length <= max ? text.Trim() : "…" + text[^max..].Trim();
 
@@ -459,7 +479,7 @@ internal static class TestCoverageCommandHandler
     /// reason, what is left for another run.</summary>
     internal static string Report(string header, CoberturaReport before, CoverageRun? after, IReadOnlyList<string> files,
                                   IReadOnlyList<CoverageTargetOutcome> outcomes, int left, int excluded, bool suiteGreen,
-                                  bool brokenAfter = false)
+                                  bool brokenAfter = false, IReadOnlyList<string>? unreadable = null)
     {
         var sb = new StringBuilder(header).AppendLine().AppendLine();
         var (c0, t0) = before.Of(files);
@@ -497,6 +517,7 @@ internal static class TestCoverageCommandHandler
         }
         if (left > 0) sb.AppendLine().AppendLine(Strings.CoverageLeft(left));
         if (excluded > 0) sb.AppendLine(Strings.CoverageExcluded(excluded));
+        if (unreadable is { Count: > 0 }) sb.AppendLine(Unreadable(unreadable));
         if (!suiteGreen) sb.AppendLine().AppendLine(Strings.CoverageSuiteRed);
         if (brokenAfter) sb.AppendLine().AppendLine(Strings.CoverageSuiteBrokenAfter);
         return sb.ToString().TrimEnd();

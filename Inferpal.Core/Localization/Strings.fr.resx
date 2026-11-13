@@ -1417,6 +1417,7 @@ Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} jetons</value></data>
   <data name="PinnedFileTokensSent" xml:space="preserve"><value>{0} jetons envoyés sur {1} — coupé pour tenir dans le prompt</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>introuvable</value></data>
+  <data name="PinnedFileUnreadable" xml:space="preserve"><value>illisible</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>De ce projet</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>présentation du projet</value></data>
   <data name="ProjectFileMemory" xml:space="preserve"><value>ce dont l'agent se souvient</value></data>
@@ -2071,6 +2072,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>la place de son test n'est pas un nouveau fichier de tests</value></data>
   <data name="CoverageLeft" xml:space="preserve"><value>{0} {0:autre méthode|autres méthodes} avec des lignes non couvertes : relancez /test coverage pour {0:elle|elles}.</value></data>
   <data name="CoverageExcluded" xml:space="preserve"><value>{0} {0:fichier exclu|fichiers exclus} des outils d'IA {0:laissé|laissés} de côté.</value></data>
+  <data name="CoverageUnreadable" xml:space="preserve"><value>{0} {0:fichier illisible laissé|fichiers illisibles laissés} de côté : {1}.</value></data>
   <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ La suite n'était pas verte avant cette commande : elle a été mesurée telle quelle, et ses échecs ne viennent pas de cette commande.</value></data>
   <data name="CoverageAfterFailed" xml:space="preserve"><value>La couverture après n'a pas pu être mesurée : les tests gardés restent, et /undo-run les retire.</value></data>
   <data name="CoverageWhyModelCut" xml:space="preserve"><value>son fichier a été coupé à la limite de longueur du modèle</value></data>

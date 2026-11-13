@@ -1421,6 +1421,7 @@ Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} tokens</value></data>
   <data name="PinnedFileTokensSent" xml:space="preserve"><value>{0} tokens sent of {1} — cut to fit the prompt</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>not found</value></data>
+  <data name="PinnedFileUnreadable" xml:space="preserve"><value>could not be read</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>From this project</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>project brief</value></data>
   <data name="ProjectFileMemory" xml:space="preserve"><value>what the agent remembers</value></data>
@@ -2075,6 +2076,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>the place for its test is not a new test file</value></data>
   <data name="CoverageLeft" xml:space="preserve"><value>{0} {0:more method|more methods} with uncovered lines: run /test coverage again for them.</value></data>
   <data name="CoverageExcluded" xml:space="preserve"><value>{0} {0:file|files} excluded from AI tools left out.</value></data>
+  <data name="CoverageUnreadable" xml:space="preserve"><value>{0} {0:file|files} that could not be read left out: {1}.</value></data>
   <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ The suite was not green before this command: it was measured as it is, and its failures are not this command's.</value></data>
   <data name="CoverageAfterFailed" xml:space="preserve"><value>The coverage after could not be measured: the tests kept stay, and /undo-run gives them back.</value></data>
   <data name="CoverageWhyModelCut" xml:space="preserve"><value>its file was cut at the model's length limit</value></data>

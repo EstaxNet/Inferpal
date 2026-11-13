@@ -1417,6 +1417,7 @@ Inicie {1} y haga clic en **↻ Reintentar** en la cabecera (para Ollama: `ollam
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} tokens</value></data>
   <data name="PinnedFileTokensSent" xml:space="preserve"><value>{0} tokens enviados de {1}: recortado para caber en el prompt</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>no encontrado</value></data>
+  <data name="PinnedFileUnreadable" xml:space="preserve"><value>no se puede leer</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>De este proyecto</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>resumen del proyecto</value></data>
   <data name="ProjectFileMemory" xml:space="preserve"><value>lo que recuerda el agente</value></data>
@@ -2071,6 +2072,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>el lugar de su test no es un archivo de tests nuevo</value></data>
   <data name="CoverageLeft" xml:space="preserve"><value>{0} {0:método más|métodos más} con líneas sin cubrir: vuelve a ejecutar /test coverage para {0:él|ellos}.</value></data>
   <data name="CoverageExcluded" xml:space="preserve"><value>{0} {0:archivo excluido|archivos excluidos} de las herramientas de IA {0:omitido|omitidos}.</value></data>
+  <data name="CoverageUnreadable" xml:space="preserve"><value>{0} {0:archivo que no se pudo leer quedó|archivos que no se pudieron leer quedaron} fuera: {1}.</value></data>
   <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ La suite no estaba en verde antes de este comando: se midió tal como está, y sus fallos no son de este comando.</value></data>
   <data name="CoverageAfterFailed" xml:space="preserve"><value>No se pudo medir la cobertura después: los tests conservados se quedan, y /undo-run los quita.</value></data>
   <data name="CoverageWhyModelCut" xml:space="preserve"><value>su archivo se cortó en el límite de longitud del modelo</value></data>

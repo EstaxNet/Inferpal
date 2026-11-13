@@ -1417,6 +1417,7 @@ Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w 
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} tokenów</value></data>
   <data name="PinnedFileTokensSent" xml:space="preserve"><value>wysłano {0} z {1} tokenów — przycięte, by zmieścić się w prompcie</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>nie znaleziono</value></data>
+  <data name="PinnedFileUnreadable" xml:space="preserve"><value>nie można odczytać</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>Z tego projektu</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>opis projektu</value></data>
   <data name="ProjectFileMemory" xml:space="preserve"><value>co pamięta agent</value></data>
@@ -2071,6 +2072,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>miejsce na jego test nie jest nowym plikiem testów</value></data>
   <data name="CoverageLeft" xml:space="preserve"><value>Pozostałe metody z niepokrytymi wierszami: {0}. Uruchom ponownie /test coverage.</value></data>
   <data name="CoverageExcluded" xml:space="preserve"><value>Pominięte pliki wykluczone z narzędzi AI: {0}.</value></data>
+  <data name="CoverageUnreadable" xml:space="preserve"><value>Pominięte pliki, których nie udało się odczytać ({0}): {1}.</value></data>
   <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ Zestaw nie był zielony przed tym poleceniem: został zmierzony w obecnym stanie, a jego błędy nie pochodzą z tego polecenia.</value></data>
   <data name="CoverageAfterFailed" xml:space="preserve"><value>Nie udało się zmierzyć pokrycia po: zachowane testy zostają, a /undo-run je usuwa.</value></data>
   <data name="CoverageWhyModelCut" xml:space="preserve"><value>jego plik został ucięty na limicie długości modelu</value></data>

@@ -283,6 +283,9 @@ internal sealed class SemanticSearchTool : ITool
             sb.Append($"Note: {_index.SkippedBySize} file(s) over the {CodeChunker.MaxFileSizeKilobytes} KB indexing cap "
                     + $"are not in the index{named} — search_in_files and read_file read them.\n\n");
         }
+        if (_index.ProfileUnread)
+            sb.Append("Note: .inferpal/project.json could not be read (held, being saved, or malformed): its indexExclude "
+                    + "patterns are not applied, so the index may hold files the project keeps out of search.\n\n");
         // ⚠ No tool reads these: the workspace keeps them out of every AI tool, so no remedy is named.
         if (_index.ExcludedByIgnoreFiles is { Count: > 0 } ignored)
             sb.Append($"Note: {ignored.Count} source file(s) are excluded from AI tools by {ignored.Rules} and are not "

@@ -181,6 +181,25 @@ internal sealed class ProjectIndexService : IDisposable
     /// <summary>The exclusion patterns of <c>.inferpal/project.json</c> the index applies — what the settings page lists.</summary>
     public IReadOnlyList<string> ProfileExcludes => _profileExcludes;
 
+    /// <summary>
+    /// Whether <c>.inferpal/project.json</c> could not be read (held, mid-save, malformed) for this root while none of its
+    /// exclusions ever was; false once it reads. <c>search_codebase</c> says it: the index may hold what it keeps out.
+    /// </summary>
+    public bool ProfileUnread { get; private set; }
+
+    /// <summary>Delay before a profile that did not read at the root's pinning is read again (nobody may write it).</summary>
+    internal static TimeSpan ProfileRereadDelay { get; set; } = TimeSpan.FromSeconds(2);
+
+    private async Task RereadProfileLaterAsync(string root)
+    {
+        try
+        {
+            await Task.Delay(ProfileRereadDelay).ConfigureAwait(false);
+            if (PathComparer.SameDirectory(RootDir, root)) OnProfileChanged(ProjectProfile.PathIn(root));
+        }
+        catch (Exception ex) { Diagnostics.Swallow("ProjectIndexService.RereadProfile", ex); }
+    }
+
     /// <summary>How many times the root moved to another workspace: what was read under a root before a switch (a map in
     /// cache) is not what that root holds after coming back.</summary>
     public int RootSwitches { get; private set; }
@@ -231,7 +250,20 @@ internal sealed class ProjectIndexService : IDisposable
             // gone. The root left is forgotten (its memory too): rebuilt from its files at its next use.
             Lsp.CSharpSemanticIndex.Forget(previous);
         }
-        lock (_profileLock) _profileExcludes = ProjectProfile.Load(rootDir).IndexExcludes;
+        // ⚠ A profile that does not read is not a profile without exclusions: what it keeps out of search would enter the
+        // index. The same root keeps the exclusions last read; a root never read has none, says so, and is read again.
+        // Read as the watcher reads it: a file held, or read with no byte mid-save, is not a profile without exclusions.
+        var profile = ProjectProfile.ReadUnlessMidSave(rootDir);
+        var read = profile is { Problem: null };
+        var sameRoot = previous.Length > 0 && PathComparer.SameDirectory(previous, rootDir);
+        bool reread;
+        lock (_profileLock)
+        {
+            if (read) { _profileExcludes = profile!.IndexExcludes; ProfileUnread = false; }
+            else if (!sameRoot || ProfileUnread) { _profileExcludes = []; ProfileUnread = true; }
+            reread = ProfileUnread;
+        }
+        if (reread) _ = RereadProfileLaterAsync(rootDir);
         // The workspace's ignore files apply below it, to everything that reads for the model (ContentExclusions). Both
         // front-ends and every ACP thread set their root here: one declaration per workspace.
         ContentExclusions.Declare(rootDir, () => _config.IgnoreFiles);
@@ -975,6 +1007,7 @@ internal sealed class ProjectIndexService : IDisposable
                 return false;
             // Unreadable, or truncated before it is written again (a save in two steps): mid-save, the exclusions stay.
             if (ProjectProfile.ReadUnlessMidSave(root) is not { Problem: null } profile) return false;
+            ProfileUnread = false;
             if (profile.IndexExcludes.SequenceEqual(_profileExcludes, StringComparer.Ordinal)) return false;
             _profileExcludes = profile.IndexExcludes;
         }

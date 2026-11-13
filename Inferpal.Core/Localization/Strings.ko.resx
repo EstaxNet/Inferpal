@@ -1417,6 +1417,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} 토큰</value></data>
   <data name="PinnedFileTokensSent" xml:space="preserve"><value>{1}토큰 중 {0}토큰 전송 — 프롬프트에 맞게 잘림</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>찾을 수 없음</value></data>
+  <data name="PinnedFileUnreadable" xml:space="preserve"><value>읽을 수 없음</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>이 프로젝트에서</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>프로젝트 개요</value></data>
   <data name="ProjectFileMemory" xml:space="preserve"><value>에이전트가 기억하는 내용</value></data>
@@ -2071,6 +2072,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>테스트를 둘 곳이 새 테스트 파일이 아님</value></data>
   <data name="CoverageLeft" xml:space="preserve"><value>커버되지 않은 줄이 있는 메서드가 {0}개 더 있습니다: /test coverage를 다시 실행하세요.</value></data>
   <data name="CoverageExcluded" xml:space="preserve"><value>AI 도구에서 제외된 파일 {0}개는 제외했습니다.</value></data>
+  <data name="CoverageUnreadable" xml:space="preserve"><value>읽을 수 없는 파일 {0}개를 제외했습니다: {1}.</value></data>
   <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ 이 명령 전에 이미 스위트가 통과하지 않았습니다: 있는 그대로 측정했으며, 그 실패는 이 명령 때문이 아닙니다.</value></data>
   <data name="CoverageAfterFailed" xml:space="preserve"><value>실행 후 커버리지를 측정할 수 없습니다: 유지한 테스트는 남아 있으며 /undo-run으로 되돌릴 수 있습니다.</value></data>
   <data name="CoverageWhyModelCut" xml:space="preserve"><value>파일이 모델의 길이 한도에서 잘림</value></data>

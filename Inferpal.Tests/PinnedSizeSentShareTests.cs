@@ -77,4 +77,29 @@ public sealed class PinnedSizeSentShareTests : IDisposable
         Assert.Contains("SettingsWidgets.PinnedSizes(PinnedFileRows.Select(r => r.Field1), _lastPrompt);", vs);
         Assert.Contains("_lastPrompt = xray;", vs);
     }
+
+    /// <summary>
+    /// A pinned file that exists and does not read is said unreadable, never "not found": the person would look for a file
+    /// that is there. Reference arm: a file that is gone is "not found". (A lock that excludes readers is Windows's.)
+    /// </summary>
+    [Fact]
+    public void APinnedFileThatDoesNotRead_IsSaidUnreadable_NotMissing()
+    {
+        Assert.Equal(Strings.PinnedFileMissing,
+                     Assert.Single(SettingsWidgets.PinnedSizes([Path.Combine(Path.GetTempPath(), "inferpal-no-such-pin.md")])).Size);
+        if (!OperatingSystem.IsWindows()) return;
+
+        var held = Path.Combine(Path.GetTempPath(), $"inferpal-held-pin-{Guid.NewGuid():N}.md");
+        File.WriteAllText(held, "# notes");
+        try
+        {
+            using (new FileStream(held, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                var row = Assert.Single(SettingsWidgets.PinnedSizes([held]));
+                Assert.Equal(Strings.PinnedFileUnreadable, row.Size);
+                Assert.True(row.Missing);   // still shown as a problem
+            }
+        }
+        finally { try { File.Delete(held); } catch { } }
+    }
 }

@@ -339,7 +339,13 @@ internal static class OnboardCommandHandler
                   .Append('\n');
             }
             catch (OperationCanceledException) { throw; }
-            catch (Exception ex) { Diagnostics.Swallow("Onboard.Readme", ex); }
+            catch (Exception ex)
+            {
+                // ⚠ Left out without a word, the brief — a later system prompt — reads as a repository without a README.
+                Diagnostics.Swallow("Onboard.Readme", ex);
+                sb.Append("\n## ").Append(Path.GetFileName(readme)).Append('\n')
+                  .Append("- ⚠ could not be read: ").Append(ReadFailure(ex)).Append('\n');
+            }
         }
 
         // ⚠ This brief is what `/onboard context` writes into `.inferpal/context.md`, i.e. into the

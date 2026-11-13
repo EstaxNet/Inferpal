@@ -191,7 +191,8 @@ internal static class SettingsWidgets
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                return new PinnedFileSize(path, Strings.PinnedFileMissing, Missing: true);
+                // ⚠ It exists: "not found" would send the person looking for a file that is there.
+                return new PinnedFileSize(path, Strings.PinnedFileUnreadable, Missing: true);
             }
         })];
 

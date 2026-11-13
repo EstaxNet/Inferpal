@@ -1417,6 +1417,7 @@
   <data name="PinnedFileTokens" xml:space="preserve"><value>{0} токенов</value></data>
   <data name="PinnedFileTokensSent" xml:space="preserve"><value>отправлено {0} из {1} токенов — обрезано, чтобы поместиться в промпт</value></data>
   <data name="PinnedFileMissing" xml:space="preserve"><value>не найден</value></data>
+  <data name="PinnedFileUnreadable" xml:space="preserve"><value>не читается</value></data>
   <data name="ProjectFilesTitle" xml:space="preserve"><value>Из этого проекта</value></data>
   <data name="ProjectFileContext" xml:space="preserve"><value>описание проекта</value></data>
   <data name="ProjectFileMemory" xml:space="preserve"><value>что помнит агент</value></data>
@@ -2071,6 +2072,7 @@
   <data name="CoverageWhyNotATestPath" xml:space="preserve"><value>место для его теста — не новый файл тестов</value></data>
   <data name="CoverageLeft" xml:space="preserve"><value>Ещё методов с непокрытыми строками: {0}. Запустите /test coverage снова.</value></data>
   <data name="CoverageExcluded" xml:space="preserve"><value>Пропущено файлов, исключённых из инструментов ИИ: {0}.</value></data>
+  <data name="CoverageUnreadable" xml:space="preserve"><value>Пропущено файлов, которые не удалось прочитать: {0} ({1}).</value></data>
   <data name="CoverageSuiteRed" xml:space="preserve"><value>⚠ Набор тестов не был зелёным до этой команды: он измерен как есть, и его сбои не от этой команды.</value></data>
   <data name="CoverageAfterFailed" xml:space="preserve"><value>Не удалось измерить покрытие после: оставленные тесты остаются, /undo-run их убирает.</value></data>
   <data name="CoverageWhyModelCut" xml:space="preserve"><value>его файл обрезан на пределе длины модели</value></data>

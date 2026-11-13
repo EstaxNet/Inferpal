@@ -261,6 +261,24 @@ public sealed class TestCoverageCommandTests : IDisposable
         Assert.Contains(Strings.CoverageExcluded(1), report, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// A source that does not read is no target: ranked on no text, it went to the model as an empty file. Left out and
+    /// named. (A lock that excludes readers is Windows's; the readable case is every other test here.)
+    /// </summary>
+    [Fact]
+    public async Task AFileThatDoesNotRead_IsNoTarget_AndIsNamed()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Answer((_, _) => "assert True\n# covers: 7,8,9");
+
+        string report;
+        using (new FileStream(Path.Combine(_root, "src", "calc.py"), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            report = await RunAsync();
+
+        Assert.Empty(_client.ChatModels);
+        Assert.Contains(Strings.CoverageUnreadable(1, "`src/calc.py`"), report, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task NoEcosystem_IsTheDetectionsNotice()
     {
