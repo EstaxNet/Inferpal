@@ -294,6 +294,12 @@ Détail du serveur : {0}</value></data>
 {2}
 
 Réduisez la plus grande part, ou chargez le modèle avec un contexte plus grand (plus de ~{0} tokens).</value></data>
+  <data name="MsgHeadShare" xml:space="preserve"><value>Le prompt système et les définitions d'outils prennent {0} % de la fenêtre de {1:N0} jetons : il reste {2:N0} jetons pour la conversation et la réponse, et une longue tâche peut s'arrêter avant d'avoir rien écrit. {3}
+Plus grosse part — {4}.</value></data>
+  <data name="HeadShareRemedyOllama" xml:space="preserve"><value>Une fenêtre plus grande, si votre carte graphique la tient : /hardware dit laquelle.</value></data>
+  <data name="HeadShareRemedyLmStudio" xml:space="preserve"><value>Une fenêtre plus grande dans les réglages ({0}).</value></data>
+  <data name="HeadShareRemedyLmStudioLoaded" xml:space="preserve"><value>LM Studio a chargé ce modèle avec une fenêtre de {0:N0} jetons : rechargez-le avec une longueur de contexte plus grande dans LM Studio.</value></data>
+  <data name="HeadShareRemedyServer" xml:space="preserve"><value>Une fenêtre de contexte plus grande sur le serveur.</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>définitions d'outils : ~{0} tokens — moins d'outils activés</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>définitions d'outils : ~{0} tokens, dont ~{1} pour {2} {2:outil|outils} de serveurs MCP — moins d'outils activés, à commencer par ceux de ces serveurs</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>prompt système : ~{0} tokens — fichiers épinglés, contexte du projet, mémoire, règles</value></data>

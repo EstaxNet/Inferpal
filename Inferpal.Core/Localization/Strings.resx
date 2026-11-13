@@ -295,6 +295,12 @@ Server detail: {0}</value></data>
 {2}
 
 Reduce the largest part, or load the model with a larger context (more than ~{0} tokens).</value></data>
+  <data name="MsgHeadShare" xml:space="preserve"><value>The system prompt and the tool definitions take {0} % of the {1:N0}-token context window: {2:N0} tokens are left for the conversation and the answer, and a long task may stop before it writes anything. {3}
+Largest part — {4}.</value></data>
+  <data name="HeadShareRemedyOllama" xml:space="preserve"><value>A larger window, if your graphics card holds it: /hardware says which.</value></data>
+  <data name="HeadShareRemedyLmStudio" xml:space="preserve"><value>A larger window in the settings ({0}).</value></data>
+  <data name="HeadShareRemedyLmStudioLoaded" xml:space="preserve"><value>LM Studio loaded this model with a {0:N0}-token window: load it again with a larger context length in LM Studio.</value></data>
+  <data name="HeadShareRemedyServer" xml:space="preserve"><value>A larger context window on the server.</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>tool definitions: ~{0} tokens — fewer enabled tools</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>tool definitions: ~{0} tokens, ~{1} of them for {2} MCP server {2:tool|tools} — fewer enabled tools, starting with those servers' tools</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>system prompt: ~{0} tokens — pinned files, project context, memory, rules</value></data>

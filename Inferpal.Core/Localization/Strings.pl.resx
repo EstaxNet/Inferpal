@@ -294,6 +294,12 @@ Szczegóły serwera: {0}</value></data>
 {2}
 
 Zmniejsz największą część albo załaduj model z większym kontekstem (ponad ~{0} tokenów).</value></data>
+  <data name="MsgHeadShare" xml:space="preserve"><value>Prompt systemowy i definicje narzędzi zajmują {0} % okna kontekstu o rozmiarze {1:N0} tokenów: na rozmowę i odpowiedź zostaje {2:N0} tokenów, a długie zadanie może się zatrzymać, zanim cokolwiek zapisze. {3}
+Największa część — {4}.</value></data>
+  <data name="HeadShareRemedyOllama" xml:space="preserve"><value>Większe okno, jeśli karta graficzna je zmieści: /hardware podpowie, jakie.</value></data>
+  <data name="HeadShareRemedyLmStudio" xml:space="preserve"><value>Większe okno w ustawieniach ({0}).</value></data>
+  <data name="HeadShareRemedyLmStudioLoaded" xml:space="preserve"><value>LM Studio wczytało ten model z oknem {0:N0} tokenów: wczytaj go ponownie w LM Studio z większą długością kontekstu.</value></data>
+  <data name="HeadShareRemedyServer" xml:space="preserve"><value>Większe okno kontekstu na serwerze.</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>definicje narzędzi: ~{0} tokenów — mniej włączonych narzędzi</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>definicje narzędzi: ~{0} tokenów, w tym ~{1} na {2} {2:narzędzie|narzędzia|narzędzi} serwerów MCP — mniej włączonych narzędzi, zaczynając od narzędzi tych serwerów</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>prompt systemowy: ~{0} tokenów — przypięte pliki, kontekst projektu, pamięć, reguły</value></data>

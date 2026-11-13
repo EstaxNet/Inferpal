@@ -294,6 +294,12 @@
 {2}
 
 请缩减最大的部分，或以更大的上下文（超过约 {0} 个 token）加载模型。</value></data>
+  <data name="MsgHeadShare" xml:space="preserve"><value>系统提示和工具定义占用了 {1:N0} 个令牌上下文窗口的 {0} %：留给对话和回答的只有 {2:N0} 个令牌，长任务可能在写下任何内容之前就停止。{3}
+最大部分 — {4}。</value></data>
+  <data name="HeadShareRemedyOllama" xml:space="preserve"><value>更大的窗口（如果显卡能容纳）：/hardware 会给出建议。</value></data>
+  <data name="HeadShareRemedyLmStudio" xml:space="preserve"><value>在设置中使用更大的窗口（{0}）。</value></data>
+  <data name="HeadShareRemedyLmStudioLoaded" xml:space="preserve"><value>LM Studio 以 {0:N0} 个令牌的窗口加载了此模型：请在 LM Studio 中以更大的上下文长度重新加载。</value></data>
+  <data name="HeadShareRemedyServer" xml:space="preserve"><value>在服务器上使用更大的上下文窗口。</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>工具定义：约 {0} 个 token — 减少已启用的工具</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>工具定义：约 {0} 个 token，其中 MCP 服务器的 {2} 个工具约占 {1} — 减少已启用的工具，先从这些服务器的工具开始</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>系统提示词：约 {0} 个 token — 固定的文件、项目上下文、记忆、规则</value></data>

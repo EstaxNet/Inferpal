@@ -466,11 +466,12 @@ internal sealed partial class HostServer : IDisposable
             // contextWindowKeepTurns and compactionTimeoutSeconds, three controls with no effect.
             // Same service as the Visual Studio window, same order: after the user message.
             var windowBefore = s.ContextWindowInUse;
+            var turnToolTokens = Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, useTools, s.PlanMode, mode);
             var ctxDecision = await Services.Agent.ContextManager.PrepareAsync(
                 s.History, s.Config, s.Client, s.LastPromptTokens,
                 onStep: Step,
                 ct: cts.Token, model: model,
-                toolTokens: Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, useTools, s.PlanMode, mode));
+                toolTokens: turnToolTokens);
             s.LastContextWindow = ctxDecision.Window;
             // The prompt was built above, against the window known then: when this check reveals another one — the
             // first question, a model loaded smaller since — its files are re-budgeted before anything is sent.
@@ -479,6 +480,13 @@ internal sealed partial class HostServer : IDisposable
                 RefreshSystemPrompt(s);
                 ActiveFileContext.Restore(s.History, BuildActiveFileBlock(s));   // the block too: built for that window
             }
+
+            // What every request of the turn carries before the conversation, against the window just measured — after
+            // the prompt was rebuilt for it (the Visual Studio window says it at the same point, before any compaction).
+            if (Services.Agent.ContextManager.HeadShareNotice(s.RootDir, model, s.Config.Provider, ctxDecision.Window, s.Config.ContextWindowSize,
+                    s.History is [{ Role: "system" } system, ..] ? Services.Agent.AgentOrchestrator.EstimateTokens([system]) : 0,
+                    turnToolTokens) is { } headNotice)
+                Notify("host/notice", new { text = headNotice, severity = "warning" });
 
             if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)
             {

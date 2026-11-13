@@ -149,7 +149,9 @@ public sealed class AcpAgentTests : IDisposable
         };
         var agent = new AcpAgent(
             () => host?.Invoke(provider)
-                  ?? new HostServer(_ => provider, () => new InferpalConfig { RagEnabled = false, DefaultModel = "test-model" }),
+                  // 32K: at the default 8K the built-in tools take more than half the window, and the notice that says so
+                  // (HeadShareNoticeTests) would open every streamed answer these tests read.
+                  ?? new HostServer(_ => provider, () => new InferpalConfig { RagEnabled = false, DefaultModel = "test-model", ContextWindowSize = 32_768 }),
             ready ?? (_ => Task.FromResult(true)), webDir, openBrowser ?? (_ => true), told);
         var (agentSide, clientSide) = FullDuplexStream.CreatePair();
         var rpc = AcpRpc.Create(agentSide, agentSide, agent);

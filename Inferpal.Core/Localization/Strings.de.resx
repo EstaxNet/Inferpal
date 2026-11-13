@@ -294,6 +294,12 @@ Serverdetails: {0}</value></data>
 {2}
 
 Verkleinern Sie den größten Teil oder laden Sie das Modell mit einem größeren Kontext (mehr als ~{0} Tokens).</value></data>
+  <data name="MsgHeadShare" xml:space="preserve"><value>Systemprompt und Werkzeugdefinitionen belegen {0} % des Kontextfensters von {1:N0} Token: Für Unterhaltung und Antwort bleiben {2:N0} Token, und eine lange Aufgabe kann enden, bevor sie etwas schreibt. {3}
+Größter Teil — {4}.</value></data>
+  <data name="HeadShareRemedyOllama" xml:space="preserve"><value>Ein größeres Fenster, wenn Ihre Grafikkarte es fasst: /hardware sagt, welches.</value></data>
+  <data name="HeadShareRemedyLmStudio" xml:space="preserve"><value>Ein größeres Fenster in den Einstellungen ({0}).</value></data>
+  <data name="HeadShareRemedyLmStudioLoaded" xml:space="preserve"><value>LM Studio hat dieses Modell mit einem Fenster von {0:N0} Token geladen: Laden Sie es in LM Studio mit einer größeren Kontextlänge neu.</value></data>
+  <data name="HeadShareRemedyServer" xml:space="preserve"><value>Ein größeres Kontextfenster auf dem Server.</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>Werkzeugdefinitionen: ~{0} Tokens — weniger aktivierte Werkzeuge</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>Werkzeugdefinitionen: ~{0} Tokens, davon ~{1} für {2} {2:Werkzeug|Werkzeuge} von MCP-Servern — weniger aktivierte Werkzeuge, zuerst die dieser Server</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>System-Prompt: ~{0} Tokens — angeheftete Dateien, Projektkontext, Gedächtnis, Regeln</value></data>

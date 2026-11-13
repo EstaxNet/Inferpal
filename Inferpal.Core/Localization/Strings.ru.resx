@@ -294,6 +294,12 @@
 {2}
 
 Уменьшите самую большую часть или загрузите модель с большим контекстом (более ~{0} токенов).</value></data>
+  <data name="MsgHeadShare" xml:space="preserve"><value>Системный промпт и описания инструментов занимают {0} % окна контекста в {1:N0} токенов: на беседу и ответ остаётся {2:N0} токенов, и длинная задача может остановиться, ничего не записав. {3}
+Самая большая часть — {4}.</value></data>
+  <data name="HeadShareRemedyOllama" xml:space="preserve"><value>Окно побольше, если видеокарта его вместит: /hardware подскажет какое.</value></data>
+  <data name="HeadShareRemedyLmStudio" xml:space="preserve"><value>Окно побольше в настройках ({0}).</value></data>
+  <data name="HeadShareRemedyLmStudioLoaded" xml:space="preserve"><value>LM Studio загрузила эту модель с окном в {0:N0} токенов: загрузите её заново в LM Studio с большей длиной контекста.</value></data>
+  <data name="HeadShareRemedyServer" xml:space="preserve"><value>Окно контекста побольше на сервере.</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>определения инструментов: ~{0} токенов — меньше включённых инструментов</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>определения инструментов: ~{0} токенов, из них ~{1} — {2} {2:инструмент|инструмента|инструментов} MCP-серверов — меньше включённых инструментов, начиная с инструментов этих серверов</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>системный промпт: ~{0} токенов — закреплённые файлы, контекст проекта, память, правила</value></data>

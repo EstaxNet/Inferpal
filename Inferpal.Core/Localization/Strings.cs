@@ -921,6 +921,14 @@ internal static class Strings
     public static string MsgContextWontFit(int estimateTokens, int loadedContext, string breakdown) =>
         Format(Get(nameof(MsgContextWontFit)), estimateTokens, loadedContext, breakdown);
 
+    // The notice of a turn whose system prompt and tools take more than half the window (ContextManager.HeadShareNotice).
+    public static string MsgHeadShare(int percent, int window, int left, string remedy, string largestPart) =>
+        Format(Get(nameof(MsgHeadShare)), percent, window, left, remedy, largestPart);
+    public static string HeadShareRemedyOllama   => Get(nameof(HeadShareRemedyOllama));
+    public static string HeadShareRemedyLmStudio => Format(Get(nameof(HeadShareRemedyLmStudio)), SettingsPageServer);
+    public static string HeadShareRemedyLmStudioLoaded(int loaded) => Format(Get(nameof(HeadShareRemedyLmStudioLoaded)), loaded);
+    public static string HeadShareRemedyServer   => Get(nameof(HeadShareRemedyServer));
+
     // One line per part of an oversized request (RequestSize.Breakdown): its size and what shrinks it.
     public static string ContextPartTools(int tokens) =>
         Format(Get(nameof(ContextPartTools)), tokens);

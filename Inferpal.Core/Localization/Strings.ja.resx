@@ -294,6 +294,12 @@
 {2}
 
 最も大きい部分を減らすか、より大きなコンテキスト（約 {0} トークン超）でモデルをロードしてください。</value></data>
+  <data name="MsgHeadShare" xml:space="preserve"><value>システムプロンプトとツール定義が {1:N0} トークンのコンテキストウィンドウの {0} % を占めています。会話と回答に残るのは {2:N0} トークンで、長いタスクは何も書かないうちに止まることがあります。{3}
+最大の部分 — {4}。</value></data>
+  <data name="HeadShareRemedyOllama" xml:space="preserve"><value>グラフィックカードが対応していれば、より大きなウィンドウを: /hardware が目安を示します。</value></data>
+  <data name="HeadShareRemedyLmStudio" xml:space="preserve"><value>設定でより大きなウィンドウを ({0})。</value></data>
+  <data name="HeadShareRemedyLmStudioLoaded" xml:space="preserve"><value>LM Studio はこのモデルを {0:N0} トークンのウィンドウで読み込みました: LM Studio でより大きなコンテキスト長で再読み込みしてください。</value></data>
+  <data name="HeadShareRemedyServer" xml:space="preserve"><value>サーバー側でより大きなコンテキストウィンドウを。</value></data>
   <data name="ContextPartTools" xml:space="preserve"><value>ツール定義: 約 {0} トークン — 有効なツールを減らす</value></data>
   <data name="ContextPartToolsMcp" xml:space="preserve"><value>ツール定義: 約 {0} トークン（うち MCP サーバーのツール {2} 個で約 {1}）— 有効なツールを減らす（まずそれらのサーバーのツールから）</value></data>
   <data name="ContextPartSystem" xml:space="preserve"><value>システムプロンプト: 約 {0} トークン — ピン留めしたファイル、プロジェクトコンテキスト、メモリ、ルール</value></data>

@@ -541,6 +541,12 @@ internal partial class InferpalToolWindowData
                 RefreshSystemPrompt();
                 ActiveFileContext.Restore(_history, BuildActiveFileBlock());   // the block too: built for that window
             }
+            // What every request of the turn carries before the conversation, against the window just measured — after
+            // the prompt was rebuilt for it (the host says it at the same point, for VS Code and ACP).
+            if (Services.Agent.ContextManager.HeadShareNotice(FindProjectRoot(), model, _config.Provider, decision.Window, _config.ContextWindowSize,
+                    _history is [{ Role: "system" } system, ..] ? Services.Agent.AgentOrchestrator.EstimateTokens([system]) : 0,
+                    toolTokens) is { } headNotice)
+                InsertThemed(ChatMessageItem.NoticeMsg(headNotice));
         });
 
         if (decision.Outcome == Services.Agent.ContextOutcome.None) return;

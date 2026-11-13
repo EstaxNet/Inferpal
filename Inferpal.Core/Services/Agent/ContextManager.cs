@@ -188,6 +188,45 @@ internal static class ContextManager
         return AgentOrchestrator.EstimateTokens(truncated) + toolTokens > trigger;
     }
 
+    /// <summary>The share of the window above which the system prompt and the tool definitions are said to crowd the turn.</summary>
+    internal const int HeadSharePercent = 50;
+
+    // The (root, model, window, tools on) a notice was said for, in this process: said again when one of them changes,
+    // never at each /clear.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _headShareSaid = new();
+
+    /// <summary>
+    /// The notice a turn shows when what every request of it carries before the conversation — the system message and the
+    /// tool definitions — takes more than <see cref="HeadSharePercent"/> % of the window it is measured against; <c>null</c>
+    /// under it, with no known window, or when it was already said in this process for the same root, model, window and
+    /// tools. The remedy is the one that works on the person's server.
+    /// </summary>
+    /// <remarks>⚠ After the window is measured AND the prompt rebuilt for it: measured before, it reads a prompt budgeted
+    /// for another window. At 8K the built-in tools alone take more than half: the conversation and the answer share the
+    /// rest, and a run there writes nothing before it is cut — said nowhere but in the X-Ray, which with a window set looks
+    /// at the project layers only.</remarks>
+    internal static string? HeadShareNotice(string? root, string model, string provider, int window, int configuredWindow,
+                                            int systemTokens, int toolTokens)
+    {
+        if (window <= 0) return null;
+        var head = systemTokens + toolTokens;
+        var share = (int)Math.Round(head * 100.0 / window);
+        // Over the whole window the request is refused, and the refusal says why (MsgContextWontFit): one sentence, not two.
+        if (share <= HeadSharePercent || head > window) return null;
+        if (!_headShareSaid.TryAdd($"{root}|{model}|{window}|{toolTokens > 0}", 0)) return null;
+
+        var remedy = provider switch
+        {
+            InferenceProviderFactory.Ollama   => Strings.HeadShareRemedyOllama,
+            // ⚠ LM Studio loads a model at a window of its own: when that is the limit, a larger setting changes nothing.
+            InferenceProviderFactory.LmStudio => window < configuredWindow ? Strings.HeadShareRemedyLmStudioLoaded(window)
+                                                                           : Strings.HeadShareRemedyLmStudio,
+            _                                 => Strings.HeadShareRemedyServer,
+        };
+        return Strings.MsgHeadShare(share, window, window - head, remedy,
+                                    toolTokens >= systemTokens ? Strings.ContextPartTools(toolTokens) : Strings.ContextPartSystem(systemTokens));
+    }
+
     /// <summary>
     /// The tool definitions the next chat turn carries, in tokens: none with tools off, the read-only subset in plan
     /// mode, the mode's tools in a mode the person picked, every offered tool otherwise (MCP and custom tools included) —
