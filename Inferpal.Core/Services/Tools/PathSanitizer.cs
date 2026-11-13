@@ -127,6 +127,12 @@ internal static class PathSanitizer
                 $"Access denied: path is on another machine on the network, outside the workspace root.\n" +
                 $"  Requested : {fullPath}\n" +
                 $"  Workspace : {workspaceRoot}");
+        // A local path whose link leads to another machine: refused from the link's own data, before resolving it.
+        if (Execution.NetworkPath.LeadsOutside(fullPath, workspaceRoot))
+            throw new ArgumentException(
+                $"Access denied: a link on this path leads to another machine on the network ({Execution.NetworkPath.Landing(fullPath)}), outside the workspace root.\n" +
+                $"  Requested : {fullPath}\n" +
+                $"  Workspace : {workspaceRoot}");
 
         // Compare link-resolved paths: Path.GetFullPath normalises ./ and ../ but follows no
         // symlink or junction, so a link planted inside the workspace would otherwise let a

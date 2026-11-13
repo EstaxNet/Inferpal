@@ -35,6 +35,70 @@ internal static class NetworkPath
         return !(p.Equals(r, PathComparer.Comparison) || p.StartsWith(r + '\\', PathComparer.Comparison));
     }
 
+    /// <summary>
+    /// Where <paramref name="fullPath"/> lands on another machine through the links on its way — the network path, link
+    /// targets substituted and the rest of the path kept — or <c>null</c> when it stays on this machine. Each link is read
+    /// from its own data and its target walked as text, never through it: following a link to a share is the connection
+    /// (SMB, ~21 s against a host that does not answer), a chain of local links included.
+    /// </summary>
+    /// <remarks>Windows only. A path already spelled on another machine is not walked (<see cref="Is"/> judges it). A mapped
+    /// network drive is not walked either (a stat of a dead one waits for its timeout); a junction cannot target a share. Stops
+    /// at the first component that does not exist: nothing after it can be a link.</remarks>
+    public static string? Landing(string? fullPath)
+    {
+        if (!OperatingSystem.IsWindows() || string.IsNullOrWhiteSpace(fullPath) || !Path.IsPathFullyQualified(fullPath.Trim())) return null;
+        var path = fullPath.Trim();
+        for (var hops = 0; hops < 32; hops++)
+        {
+            if (Is(path)) return Plain(path);
+            string full;
+            try { full = Path.GetFullPath(path); }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return null; }
+            var volume = Path.GetPathRoot(full);
+            if (string.IsNullOrEmpty(volume) || volume.StartsWith(@"\\", StringComparison.Ordinal) || IsNetworkDrive(volume)) return null;
+            var parts = full[volume.Length..].Split(['\\', '/'], StringSplitOptions.RemoveEmptyEntries);
+            var current = volume;
+            string? next = null;
+            for (var i = 0; i < parts.Length && next is null; i++)
+            {
+                var parent = current;
+                current = Path.Combine(current, parts[i]);
+                try
+                {
+                    // The attributes of the entry itself: a link's are read without following it.
+                    var attributes = File.GetAttributes(current);
+                    if ((attributes & FileAttributes.ReparsePoint) == 0) continue;
+                    FileSystemInfo entry = (attributes & FileAttributes.Directory) != 0 ? new DirectoryInfo(current) : new FileInfo(current);
+                    if (entry.LinkTarget is not { } target) continue;
+                    // The target, as written (relative to the link's folder), then the rest of the path: walked again.
+                    var rest = string.Join('\\', parts.Skip(i + 1));
+                    var landed = Path.IsPathFullyQualified(target) || Is(target) ? target : Path.Combine(parent, target);
+                    next = rest.Length == 0 ? landed : landed.TrimEnd('\\', '/') + '\\' + rest;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+                {
+                    return null;   // a component that does not exist (or cannot be read): nothing after it is reached
+                }
+            }
+            if (next is null) return null;
+            path = next;
+        }
+        return null;   // a cycle of links: nothing lands
+    }
+
+    /// <summary>
+    /// Whether <paramref name="fullPath"/> leads, through links, to another machine outside the workspace — the workspace's
+    /// own links followed the same way: a workspace that is a link to a share keeps its files.
+    /// </summary>
+    public static bool LeadsOutside(string? fullPath, string? root) =>
+        Landing(fullPath) is { } landed && OutsideTheWorkspace(landed, Landing(root) ?? root);
+
+    private static bool IsNetworkDrive(string volume)
+    {
+        try { return volume.Length >= 2 && volume[1] == ':' && new DriveInfo(volume[..1]).DriveType == DriveType.Network; }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException) { return false; }
+    }
+
     /// <summary>The host a UNC spelling names, or <c>null</c> when the path is not a UNC path (or not on Windows).</summary>
     private static string? Host(string? path)
     {

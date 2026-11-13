@@ -755,8 +755,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
 
     /// <summary>What a built-in tool answers when a path names another machine (model-facing, English).</summary>
     internal static string NetworkRefusal(string path) =>
-        $"Error: '{path}' is a path on another machine on the network, outside the workspace — refused without reaching it. "
-        + "Use a path inside the workspace.";
+        $"Error: '{path}' is, or leads through a link to, a path on another machine on the network, outside the workspace — "
+        + "refused without reaching it. Use a path inside the workspace.";
 
     /// <summary>
     /// The first PATH argument of a call (any string outside <see cref="TextArguments"/>, at any depth) that names another
@@ -786,7 +786,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                     // The tools' own reading of a path (no disk access), else the raw spelling: a refused spelling still names a host.
                     try { full = PathSanitizer.Sanitize(s, root); }
                     catch (ArgumentException) { full = s.Trim(); }
-                    if (NetworkPath.OutsideTheWorkspace(full, root) || NetworkPath.OutsideTheWorkspace(s.Trim(), root)) hit = s.Trim();
+                    if (NetworkPath.OutsideTheWorkspace(full, root) || NetworkPath.OutsideTheWorkspace(s.Trim(), root)
+                        || NetworkPath.LeadsOutside(full, root)) hit = s.Trim();
                     break;
             }
         }
