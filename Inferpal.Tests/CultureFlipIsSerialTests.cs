@@ -43,7 +43,10 @@ public class CultureFlipIsSerialTests
         Assert.Contains(CultureSerialCollection.Name, serial);                // witness: the definitions are read
 
         var flipping = new List<Type>();
-        foreach (var file in Directory.GetFiles(TestsDir(), "*.cs", SearchOption.TopDirectoryOnly))
+        // Every folder of the suite (WindowsOnly/ and Probes/ hold tests too), never what the build generates.
+        foreach (var file in Directory.GetFiles(TestsDir(), "*.cs", SearchOption.AllDirectories)
+                     .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                                 && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)))
         {
             var code = ConventionCoverageTests.CodeOnly(file);
             if (!Regex.IsMatch(code, @"\bApplyLanguage\s*\(|\bOverrideCulture\s*=(?!=)")) continue;

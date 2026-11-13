@@ -33,16 +33,27 @@ public sealed class RewindTests : IDisposable
     private static string Text(string path) => File.ReadAllText(path);
 
     /// <summary>A closed run that writes each (file, content) pair.</summary>
+    // The millisecond the last run of ANY service of this class opened in.
+    private static long _lastOpened;
+
+    /// <summary>One run of <paramref name="history"/>, after every run before it.</summary>
+    /// <remarks>⚠ A run's identifier is its millisecond, then the service's random instance: two services opening a run in
+    /// the same millisecond order at random, and "the other conversation's run, in between" was sometimes after (two reds
+    /// under POSIX). A real run lasts seconds; here none opens in the millisecond of the one before, whatever its service.</remarks>
     private static async Task<string> RunAsync(FileHistoryService history, params (string Path, string Content)[] writes)
     {
-        history.BeginRun();
+        while (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() <= Interlocked.Read(ref _lastOpened)) await Task.Delay(1);
+        var id = history.BeginRun();
+        Interlocked.Exchange(ref _lastOpened, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         foreach (var (path, content) in writes)
         {
             Assert.True((await history.BackUpBeforeChangeAsync(path, CancellationToken.None)).Item1);
             await File.WriteAllTextAsync(path, content);
         }
         history.EndRun();
-        return history.Runs.OrderByDescending(r => r.Id, StringComparer.Ordinal).First().Id;
+        // What every test here builds on: the run just ended comes after every run the history knows.
+        Assert.All(history.Runs.Where(r => r.Id != id), r => Assert.True(string.CompareOrdinal(r.Id, id) < 0, $"{r.Id} is after {id}"));
+        return id;
     }
 
     /// <summary>Three questions; the runs of the 2nd and 3rd edit A.cs one after the other, the 3rd creates New.cs.</summary>

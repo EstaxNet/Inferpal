@@ -39,6 +39,9 @@ public sealed class ContentExclusionTests : IDisposable
     private readonly List<IDisposable> _owned = [];
     private const string Marker = "MARKER_7f3a9c51";
     private readonly string _root = Directory.CreateTempSubdirectory("inferpal-exclude").FullName;
+    private readonly Xunit.Abstractions.ITestOutputHelper _output;
+
+    public ContentExclusionTests(Xunit.Abstractions.ITestOutputHelper output) => _output = output;
 
     public void Dispose()
     {
@@ -204,13 +207,20 @@ public sealed class ContentExclusionTests : IDisposable
             var refBackup = Path.Combine(_root, ".inferpal", "history", "20261018_000000_1a2b3c4d_keys.txt.bak");
             Directory.CreateDirectory(Path.GetDirectoryName(refBackup)!);
             File.WriteAllText(refBackup, Marker);
-            // The rules of a root deleted by a class that ran before are re-read on their next recheck: until then the
-            // process still "excludes something", and the backup read would measure that, not this arm.
-            var settled = Stopwatch.StartNew();
-            while (ContentExclusions.AnyRules() && settled.Elapsed < TimeSpan.FromSeconds(30)) await Task.Delay(100);
-            Assert.False(ContentExclusions.AnyRules(),
-                "UNDECIDED, not green: another declared root still has rules, so the reference backup read cannot be measured.");
+            // What another class can leave behind, made here: a root still declared, with rules.
+            var leftBehind = Directory.CreateTempSubdirectory("inferpal-left").FullName;
+            File.WriteAllText(Path.Combine(leftBehind, ".aiignore"), "*.secret\n");
+            ContentExclusions.Declare(leftBehind, () => ".aiignore");
+            Assert.True(ContentExclusions.AnyRules());   // witness: the process now "excludes something"
+            // A root another class left declared with rules keeps the process "excluding something", and the backup read
+            // would measure that, not this arm. This collection runs alone: the others are forgotten — named in the output,
+            // so a class that leaks its root stays seen — and this one declared again.
+            foreach (var leaked in ContentExclusions.ForgetAllForTests())
+                if (!Services.PathComparer.SameDirectory(leaked, _root)) _output.WriteLine($"root left with rules by another class: {leaked}");
+            ContentExclusions.Declare(_root, () => ContentExclusions.DefaultFiles);
+            Assert.False(ContentExclusions.AnyRules(), "the reference arm's own root has no ignore file");
             Assert.Contains(Marker, await tools.ExecuteAsync("read_file", Args(new { path = refBackup }), default));
+            try { Directory.Delete(leftBehind, recursive: true); } catch { }
             return;
         }
         Assert.DoesNotContain(Marker, read + keys + search + listed);

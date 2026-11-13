@@ -56,31 +56,11 @@
     <!-- The window's observable items (NotifyPropertyChangedObject, AsyncCommand), built by MaskedApiKeyTests; the SDK's version. -->
     <PackageReference Include="Microsoft.VisualStudio.Extensibility.Framework" Version="17.14.2098" />
   </ItemGroup>
+  <!-- What only the Windows legs compile (the VSIX, the in-process half, WPF, Visual Studio's SDK) lives in WindowsOnly/: the
+       agnostic leg leaves the folder out, never file by file. A file that reaches Windows-only types belongs there; one
+       outside breaks the POSIX build, which the public clone's pre-push builds before anything reaches CI. -->
   <ItemGroup Condition="'$(IsWindowsLeg)' != 'true'">
-    <Compile Remove="InlineEditResponseTests.cs" />
-    <Compile Remove="TestFilePathResolverTests.cs" />
-    <Compile Remove="VsThemeDetectorTests.cs" />
-    <Compile Remove="ChatAutoScrollerTests.cs" />
-    <Compile Remove="ChatDropTargetTests.cs" />
-    <Compile Remove="BuildEventsBootstrapTests.cs" />
-    <Compile Remove="GhostTextKeysTests.cs" />
-    <Compile Remove="GhostTextCodeLensRowTests.cs" />
-    <Compile Remove="VsEditResultTests.cs" />
-    <Compile Remove="VsContextHolderTests.cs" />
-    <Compile Remove="InProcConfigKeyTests.cs" />
-    <Compile Remove="InProcConfigUnreadableTests.cs" />
-    <Compile Remove="ErrorListSelectionWatcherTests.cs" />
-    <Compile Remove="ExtensionEntryPointTests.cs" />
-    <Compile Remove="OwningDevenvTests.cs" />
-    <Compile Remove="MaskedApiKeyTests.cs" />
-    <Compile Remove="VsWindowHarness.cs" />
-    <Compile Remove="VsSettingsWindowTests.cs" />
-    <Compile Remove="ToolNoticeTitleVsTests.cs" />
-    <Compile Remove="ChatNoticesAreNoStepsVsTests.cs" />
-    <Compile Remove="VsWindowRunsUnderTestTests.cs" />
-    <Compile Remove="RootlessStartTests.cs" />
-    <Compile Remove="ServerSwitchWithoutRestartTests.cs" />
-    <Compile Remove="GlobalUsings.Windows.cs" />
+    <Compile Remove="WindowsOnly/**" />
   </ItemGroup>
 
   <!-- The VSIX project ships the in-process assembly's net472 build as copied content, and content

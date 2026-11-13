@@ -76,8 +76,15 @@ public sealed class ExclusionFileHeldTests : IDisposable
     public void AFileNeverRead_IsReadAtTheNextLook_OnceItCanBe()
     {
         if (!OperatingSystem.IsWindows()) return;
+        ContentExclusions.AnyRules();   // what a test beside this one does: every declared root read, this one cached
         using (Held())
+        {
+            // Declared again while held: a test running beside this one (AnyRules reads every declared root) could
+            // otherwise read the file before it is held, and the rules it read stay for RecheckEvery.
+            ContentExclusions.ForgetForTests(_root);
+            ContentExclusions.Declare(_root, () => ".aiignore");
             Assert.Null(ContentExclusions.Of(Secret));   // nothing was ever read: no rule to keep, and it is said in /diagnostics
+        }
 
         ContentExclusions.Changed(Ignore);
         Assert.NotNull(ContentExclusions.Of(Secret));

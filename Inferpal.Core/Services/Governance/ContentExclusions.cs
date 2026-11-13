@@ -439,7 +439,19 @@ internal static class ContentExclusions
         return sb.ToString();
     }
 
-    /// <summary>Forgets every declared root — for tests that declare their own.</summary>
+    /// <summary>
+    /// Forgets every declared root and returns those that still excluded something — for a test that runs alone and must
+    /// measure the absence of any rule. ⚠ Only from a collection that runs alone (<c>ExclusionStateTests</c> holds it): beside
+    /// other tests it would drop their rules mid-test.
+    /// </summary>
+    internal static IReadOnlyList<string> ForgetAllForTests()
+    {
+        var withRules = Roots.Values.Where(r => r.HasRules()).Select(r => r.Root).ToList();
+        Roots.Clear();
+        return withRules;
+    }
+
+    /// <summary>Forgets one declared root — for tests that declare their own.</summary>
     internal static void ForgetForTests(string root)
     {
         try { Roots.TryRemove(Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)), out _); }
