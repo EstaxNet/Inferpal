@@ -1454,7 +1454,8 @@ internal sealed class AcpSession : IAsyncDisposable
     {
         if (string.IsNullOrEmpty(note.Text)) return;
         // A notice is live only: shown as one, it is not kept to come back as the answer's text when the thread reloads.
-        if (asNotice && Notice(note.Severity ?? "info", note.Text, "\n\n" + note.Text)) return;
+        // Its own paragraph in the fallback: said before the answer, the answer's first word would join its last sentence.
+        if (asNotice && Notice(note.Severity ?? "info", note.Text, "\n\n" + note.Text + "\n\n")) return;
         if (!asNotice) Say("\n\n" + note.Text);
         // ⚠ Kept with the thread, as both editors keep it — a notice, out of what the model reads back. Shown only, a
         // /task's report (the only place its result is) was gone once the thread was reloaded, or reopened after an

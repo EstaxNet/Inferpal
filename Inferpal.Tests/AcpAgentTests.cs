@@ -294,7 +294,11 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Equal("end_turn", StopReason(r));
         // Whole, inside the transcript: at the suite's 8K window the first prompt opens on the notice that the tools take most of it
         // (HeadShareNoticeTests), which a client that shows no notices reads in the transcript.
-        Assert.Contains("First line\nsecond line", h.Client.Said(sid));
+        var said = h.Client.Said(sid);
+        Assert.Contains("First line\nsecond line", said);
+        // Its own paragraph: a notice said before it (the window notice of the first prompt) ends with a blank line.
+        var at = said.IndexOf("First line", StringComparison.Ordinal);
+        Assert.True(at == 0 || said[..at].EndsWith("\n\n", StringComparison.Ordinal), said[..Math.Min(at + 20, said.Length)]);
         // Every line the agent wrote is one JSON-RPC message: an answer's line breaks travel escaped.
         Assert.All(h.Client.Lines, line => Assert.Equal("2.0", JsonDocument.Parse(line).RootElement.GetProperty("jsonrpc").GetString()));
     }
