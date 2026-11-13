@@ -81,14 +81,13 @@ public class AgentOrchestratorCompactionTests
         Assert.Equal(4000, msgs[0].Content!.Length);
         Assert.Equal("execute the plan", msgs[1].Content);
 
-        // The 5 most recent messages are kept verbatim (KeepRecentMessages = 5).
-        for (int i = msgs.Count - 5; i < msgs.Count; i++)
-            Assert.Equal(8000, msgs[i].Content!.Length);
-
-        // At least one of the oldest tool results was elided to a short placeholder.
-        var elided = msgs.Skip(2).Take(msgs.Count - 5 - 2).Where(m => m.Content!.Length < 200).ToList();
+        // The last result (a run without an assistant message: the last tool result is its last batch) is kept whole; the
+        // others are elided oldest first until the run is under the target — the recent tail too, when it does not fit.
+        Assert.Equal(8000, msgs[^1].Content!.Length);
+        var elided = msgs.Skip(2).Where(m => m.Content!.Length < 200).ToList();
         Assert.NotEmpty(elided);
         Assert.All(elided, m => Assert.Equal("tool", m.Role));
+        Assert.True(AgentOrchestrator.EstimateTokens(msgs) <= AgentOrchestrator.CompactionBudget(8192).Target);
     }
 
     [Fact]

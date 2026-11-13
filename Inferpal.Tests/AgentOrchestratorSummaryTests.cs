@@ -72,9 +72,11 @@ public class AgentOrchestratorSummaryTests
         // its newest part and says so (SummarizeRequestBudgetTests).
         Assert.StartsWith("SUMMARY OF OLD TURNS", msgs[3].Content);
 
-        // The recent tail (5) survives verbatim.
-        for (int i = msgs.Count - 5; i < msgs.Count; i++)
-            Assert.Equal(8000, msgs[i].Content!.Length);
+        // The recent tail is left out of the summary; what of it does not fit the window afterwards is elided oldest first,
+        // the last result kept (the summary is no round of calls: AnswerRoomCompactionTests).
+        Assert.DoesNotContain("elided", msgs[^1].Content);
+        Assert.True(AgentOrchestrator.EstimateTokens(msgs) <= AgentOrchestrator.CompactionBudget(8192).Target);
+        Assert.True(AgentOrchestrator.EstimateTokens(msgs) <= AgentOrchestrator.CompactionBudget(8192).Target);
     }
 
     [Fact]

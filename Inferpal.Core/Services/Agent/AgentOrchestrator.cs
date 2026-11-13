@@ -66,7 +66,7 @@ internal sealed class AgentOrchestrator
     /// ⚠ One large result — a web page, a search report, a chatty command — can exceed the model's window on its own,
     /// and intra-run elision cannot shrink it: <see cref="CompactRunContext"/> keeps the most recent act/observe cycle
     /// verbatim. Uncapped, the backend refuses the request or drops its head (system prompt, task, plan) and the agent
-    /// derails. <see cref="CapForContext"/> applies the bound; a tool that can return more offers a way to resume under
+    /// derails. <see cref="CapForContext(string)"/> applies the bound; a tool that can return more offers a way to resume under
     /// it (<c>read_file</c>'s <c>start_line</c>, <c>fetch_url</c>'s <c>start_char</c>).
     /// </remarks>
     internal const int MaxToolResultCharsInContext = 8000;
@@ -255,21 +255,33 @@ internal sealed class AgentOrchestrator
     /// progress lines, with neither the error nor the exit code. The head stays the larger part: a
     /// report's own notes are written at its top.
     /// </remarks>
-    internal static string CapForContext(string result)
-    {
-        if (result.Length <= MaxToolResultCharsInContext) return result;
+    internal static string CapForContext(string result) => CapForContext(result, MaxToolResultCharsInContext);
 
-        var head      = SafeTruncate.Truncate(result, MaxToolResultCharsInContext - TailCharsInContext);
-        var tailStart = result.Length - TailCharsInContext;
+    /// <summary><see cref="CapForContext(string)"/> at <paramref name="cap"/> characters: the same head, end and mark — the one
+    /// cutter of a tool result, whether it enters the context or is shrunk later to leave the answer room.</summary>
+    internal static string CapForContext(string result, int cap)
+    {
+        if (result.Length <= cap) return result;
+
+        var tailChars = cap / 4;
+        var head      = SafeTruncate.Truncate(result, cap - tailChars);
+        var tailStart = result.Length - tailChars;
         if (char.IsLowSurrogate(result[tailStart])) tailStart++;   // never start on half a pair
         var tail = result[tailStart..];
-        var cut  = result.Length - head.Length - tail.Length;
+        // ⚠ A result cut before is counted from what it WAS: its own mark falls in the middle, and the second count said
+        // "of 8 180" for a 50 000-character output.
+        var whole = CutMark.Match(result) is { Success: true } m && int.TryParse(m.Groups["of"].Value, out var was) && was > result.Length
+            ? was : result.Length;
+        var cut  = whole - head.Length - tail.Length;
 
         return head
-             + $"\n\n[... truncated: {cut} of {result.Length} characters cut from the middle to stay within the "
+             + $"\n\n[... truncated: {cut} of {whole} characters cut from the middle to stay within the "
              + "context window — the beginning and the end are shown ...]\n\n"
              + tail;
     }
+
+    private static readonly System.Text.RegularExpressions.Regex CutMark =
+        new(@"\[\.\.\. truncated: \d+ of (?<of>\d+) characters cut from the middle", System.Text.RegularExpressions.RegexOptions.None, RegexBudget.Default);
 
     /// <summary>The plan the model wrote in its plan reply, or <c>null</c> when it wrote none the loop can read.</summary>
     /// <remarks>
@@ -308,8 +320,8 @@ internal sealed class AgentOrchestrator
     internal static string TaskSnippet(string task) =>
         task.Length <= 400 ? task : "…" + task[^400..];
 
-    // Number of trailing messages kept verbatim by CompactRunContext (the most recent act/observe
-    // cycle), and the placeholder that replaces an elided older tool result.
+    // Number of trailing messages the intra-run summary leaves out of what it summarizes (the most recent act/observe
+    // cycle), and the placeholder that replaces an elided tool result.
     private const int    KeepRecentMessages = 5;
     private const string ElidedToolResult   =
         "[Older tool result elided to stay within the context window.]";
@@ -360,11 +372,10 @@ internal sealed class AgentOrchestrator
 
     /// <summary>
     /// Intra-run context compaction. When the estimated size of <paramref name="messages"/> nears
-    /// the configured num_ctx, replaces the content of the <em>oldest</em> tool results — those
-    /// between the anchored head (<paramref name="anchorCount"/>) and the last
-    /// <see cref="KeepRecentMessages"/> messages — with a short placeholder. This frees tokens while
-    /// preserving the message structure, the system prompt + task + plan, and the most recent
-    /// results. A re-request of an elided call runs the tool again: the dedup cache keeps only network and search
+    /// the window (<see cref="CompactionBudget"/>), replaces the content of the <em>oldest</em> tool results with a short
+    /// placeholder, oldest first — the recent tail's too when the older ones were not enough, up to the last batch, which is
+    /// cut (<see cref="CapForContext(string, int)"/>) rather than elided. This frees tokens while preserving the message
+    /// structure, the system prompt + task + plan, and the results of the last round. A re-request of an elided call runs the tool again: the dedup cache keeps only network and search
     /// results, never a file read. No-op when no context window is configured (num_ctx = model default).
     /// </summary>
     /// <param name="toolTokens">The tool definitions every request of the run carries (<see cref="RequestSize.ToolTokens"/>).
@@ -376,23 +387,69 @@ internal sealed class AgentOrchestrator
                                            double scale = 1.0)
     {
         if (budget <= 0) return;
+        var (trigger, target) = CompactionBudget(budget);
         // Counted once, then kept current as results are elided: re-estimating the whole list for
         // every message examined was quadratic on a long run.
         var chars = EstimateChars(messages);
         int Weighed() => (int)((chars / 4 + toolTokens) * scale);
-        if (Weighed() <= budget * 8 / 10) return;                  // under 80% — nothing to do
+        if (Weighed() <= trigger) return;
 
-        var target          = budget * 7 / 10;                     // compact down to ~70%
-        var lastCompactable = messages.Count - KeepRecentMessages; // keep the recent tail verbatim
-
-        for (int i = anchorCount; i < lastCompactable; i++)
+        // Oldest first: the results before the recent tail, then — only when those were not enough — the tail's own,
+        // up to the last batch. ⚠ A tail kept whole whatever its size left the answer nothing: two 8 000-character reads
+        // in it put every request of a run past an 8K window, and at 16K the model answered in a few hundred tokens.
+        var lastBatch = LastBatchStart(messages, anchorCount);
+        for (int i = anchorCount; i < lastBatch; i++)
         {
-            if (Weighed() <= target) break;
+            if (Weighed() <= target) return;
             var m = messages[i];
             if (m.Role != "tool" || m.Content == ElidedToolResult) continue;
             chars -= (m.Content?.Length ?? 0) - ElidedToolResult.Length;
             messages[i] = m with { Content = ElidedToolResult };
         }
+        if (Weighed() <= target) return;
+
+        // The last batch — what the model asked for in its last round, every result of a parallel batch — is cut, never
+        // elided: each result keeps its beginning and its end (a command's verdict is at its end), the cut said, its share
+        // of what the target leaves and never under MinCutResultChars.
+        var batch = Enumerable.Range(lastBatch, messages.Count - lastBatch)
+                              .Where(i => messages[i].Role == "tool" && messages[i].Content is { } c && c != ElidedToolResult).ToList();
+        if (batch.Count == 0) return;
+        var excess = chars - (int)((target / scale - toolTokens) * 4);
+        var room   = batch.Sum(i => messages[i].Content!.Length) - excess;
+        // Smallest first: what a short result leaves of its share goes to the longer ones.
+        var left = batch.Count;
+        foreach (var i in batch.OrderBy(i => messages[i].Content!.Length))
+        {
+            var share = Math.Max(0, room) / left--;
+            var kept  = messages[i].Content!.Length;
+            // The mark CapForContext writes in the middle of each cut weighs too: under 200 characters.
+            if (kept > share) messages[i] = messages[i] with { Content = CapForContext(messages[i].Content!, Math.Max(MinCutResultChars, share - 200)) };
+            room -= Math.Min(kept, share);
+        }
+    }
+
+    /// <summary>The fewest characters a result of the last batch keeps when it is cut to leave the answer room.</summary>
+    internal const int MinCutResultChars = 2000;
+
+    /// <summary>
+    /// When a run is compacted (<see cref="CompactRunContext"/>, <see cref="CompactRunContextAsync"/>): over the trigger
+    /// (80 % of <paramref name="window"/>), down to the target (70 %) — the 30 % above it are the answer's.
+    /// </summary>
+    /// <remarks>⚠ One reader for the summary and the elision: thresholds computed apart let the summary fire, or be
+    /// skipped, on another budget than the elision it precedes.</remarks>
+    internal static (int Trigger, int Target) CompactionBudget(int window) => (window * 8 / 10, window * 7 / 10);
+
+    /// <summary>Where the last batch starts: the first message after the last assistant message of the run that called
+    /// tools — its results — or, in a run without one, the last tool result.</summary>
+    /// <remarks>⚠ The last assistant message that CALLED tools: a nudge leaves a text-only one after the results the model
+    /// must answer from (a plan echoed, a narration), and so does the run's summary — taken for the last round, every
+    /// result before it was elided.</remarks>
+    private static int LastBatchStart(List<ChatMessageDto> messages, int anchorCount)
+    {
+        for (var i = messages.Count - 1; i >= anchorCount; i--)
+            if (messages[i].Role == "assistant" && messages[i].ToolCalls is { Count: > 0 }) return i + 1;
+        var lastTool = messages.FindLastIndex(m => m.Role == "tool");
+        return lastTool >= anchorCount ? lastTool : messages.Count;
     }
 
     /// <summary>
@@ -431,12 +488,13 @@ internal sealed class AgentOrchestrator
         // against the configured window alone, a run was refused mid-way while elision waited.
         var budget = await RunWindowAsync(model, ct);
         if (budget <= 0) return alreadySummarized;
-        if ((EstimateTokens(messages) + toolTokens) * scale <= budget * 8 / 10) return alreadySummarized;
+        var (trigger, target) = CompactionBudget(budget);
+        if ((EstimateTokens(messages) + toolTokens) * scale <= trigger) return alreadySummarized;
 
         // ⚠ A summary that cannot bring the run under the target is not asked for. When the anchored head and the tool
         // definitions alone fill the 70 % target — the default 8K window with the built-in tools — the summary is a whole
         // extra inference call, rewrites the context, and elision follows anyway.
-        var cannotFit = (EstimateTokens(messages.Take(anchorCount)) + toolTokens) * scale >= budget * 7 / 10;
+        var cannotFit = (EstimateTokens(messages.Take(anchorCount)) + toolTokens) * scale >= target;
 
         if (!alreadySummarized && _config.CompactionEnabled && !cannotFit)
         {
@@ -672,7 +730,7 @@ internal sealed class AgentOrchestrator
 
     /// <summary>
     /// Builds a compact, size-bounded digest of the tool results gathered during a run, for the
-    /// synthesis prompt. Each result is capped (<see cref="CapForContext"/>); when the combined size
+    /// synthesis prompt. Each result is capped (<see cref="CapForContext(string)"/>); when the combined size
     /// would exceed <paramref name="budgetChars"/> the OLDEST results are dropped (the most recent are
     /// usually the relevant ones). The most recent result is always kept even if it alone exceeds the
     /// budget. Returns the empty string when no tools ran.
