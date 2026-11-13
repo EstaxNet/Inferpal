@@ -30,6 +30,41 @@ public sealed class RunCheckedThenEditedTests
         Assert.Contains(summary.CheckText, summary.Detail);
     }
 
+    /// <summary>
+    /// A tool that is no file edit and changed files after the green — a command, an MCP tool, a custom tool, by what the
+    /// watch of the work tree recorded — is said as such, never as a count of files it does not name; one that changed nothing
+    /// leaves the green; the memory written aside is no change of the project.
+    /// </summary>
+    [Fact]
+    public void AGreenThenAToolThatChangedFiles_SaysTheTool_AndNeverACount()
+    {
+        var command = new ToolExecution("run_command", """{"command":"npm run format"}""", "done", Wrote: true);
+        var mcp     = new ToolExecution("mcp__fmt__fix", "{}", "fixed", Wrote: true);
+
+        var byCommand = RunSummary.Build([Tests(), command], null)!;
+        Assert.Equal(RunCheck.PassedThenEdited, byCommand.Check);
+        Assert.Equal(Strings.RunCheckedThenToolChanged(Strings.RunTestsPassed), byCommand.CheckText);
+        Assert.Equal(Strings.RunCheckedThenToolChanged(Strings.RunTestsPassed), RunSummary.Build([Tests(), mcp], null)!.CheckText);
+
+        // An edit and a tool: the edit's files counted, the tool's said beside them.
+        Assert.Equal(Strings.RunCheckedThenEditedAndToolChanged(Strings.RunTestsPassed, 1),
+                     RunSummary.Build([Tests(), Edit(wrote: true), command], null)!.CheckText);
+
+        // Reference arms: a tool that wrote nothing, the memory written aside.
+        Assert.Equal(RunCheck.TestsPassed, RunSummary.Build([Tests(), command with { Wrote = false }], null)!.Check);
+        Assert.Equal(RunCheck.TestsPassed, RunSummary.Build([Tests(), Edit(wrote: true, tool: "update_memory")], null)!.Check);
+    }
+
+    /// <summary>The count around a call reads for every tool, not a list: what <c>WorkTreeBracket</c> records is any call's.</summary>
+    [Fact]
+    public void TheCountAroundACall_SaysWhetherAnyToolWrote()
+    {
+        Assert.True(ChatTurnPolicy.WroteAFile("run_command", 3, 5));
+        Assert.True(ChatTurnPolicy.WroteAFile("mcp__x__y", 0, 1));
+        Assert.False(ChatTurnPolicy.WroteAFile("run_command", 2, 2));
+        Assert.Null(ChatTurnPolicy.WroteAFile("run_command", null, null));   // a registry that does not count
+    }
+
     [Fact]
     public void AGreenBuild_ThenAnEdit_SaysTheEdit()
     {
@@ -176,7 +211,7 @@ public sealed class RunCheckedThenEditedTests
             .RunAsync(model: "m", history: [new("system", "s"), new("user", "Edit it.")], tools: new Counting(), onStep: _ => { },
                       onToken: null, onPlanReady: null, onStepUpdate: null, onToolExecuted: null, onStreamReset: null, ct: CancellationToken.None);
 
-        Assert.Null(result.Executions.Single(e => e.Name == "read_file").Wrote);
+        Assert.False(result.Executions.Single(e => e.Name == "read_file").Wrote);   // counted for every call: it wrote nothing
         Assert.True(result.Executions.Single(e => e.Name == "apply_diff").Wrote);
         Assert.False(result.Executions.Single(e => e.Name == "write_file").Wrote);
     }

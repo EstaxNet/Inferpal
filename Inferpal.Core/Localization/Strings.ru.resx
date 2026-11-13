@@ -1431,6 +1431,8 @@
   <data name="RunTestsPassed" xml:space="preserve"><value>тесты пройдены</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>тесты пройдены, только часть набора</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, затем {1:N0} {1:файл изменён|файла изменены|файлов изменено} без проверки</value></data>
+  <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, затем инструмент изменил файлы без проверки</value></data>
+  <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, затем {1:N0} {1:файл изменён|файла изменены|файлов изменено} и изменения инструмента без проверки</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>не проверено</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Не открыты ни решение, ни папка, поэтому читать нечего: репозитория нет. Откройте что-нибудь и повторите.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>тесты не пройдены</value></data>

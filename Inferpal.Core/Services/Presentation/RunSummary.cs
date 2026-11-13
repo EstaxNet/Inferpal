@@ -57,11 +57,20 @@ internal static class RunSummary
         var checkText = CheckText(check);
         // ⚠ A green last check is not the last word over files changed after it that nothing checked. Counted by file, as
         // the line counts what the run edited: three edits of one file are one file not checked.
+        // ⚠ A tool's changes (a command, an MCP or custom tool) name no file: said as such, never folded into a count of
+        // files that would read as exact.
         if (check is RunCheck.BuildPassed or RunCheck.TestsPassed or RunCheck.TestsPassedPart
-            && FilesOf(ChatTurnPolicy.EditsAfter(executions, at)) is var changed and > 0)
+            && ChatTurnPolicy.EditsAfter(executions, at) is { Count: > 0 } after)
         {
-            checkText = Strings.RunCheckedThenEdited(checkText, changed);
-            check     = RunCheck.PassedThenEdited;
+            var changed = FilesOf(after.Where(e => !ChatTurnPolicy.ToolChangedFiles(e)).ToList());
+            var byTools = after.Any(ChatTurnPolicy.ToolChangedFiles);
+            checkText = (changed, byTools) switch
+            {
+                (> 0, true) => Strings.RunCheckedThenEditedAndToolChanged(checkText, changed),
+                (> 0, _)    => Strings.RunCheckedThenEdited(checkText, changed),
+                _           => Strings.RunCheckedThenToolChanged(checkText),
+            };
+            check = RunCheck.PassedThenEdited;
         }
 
         var parts = new List<string>();

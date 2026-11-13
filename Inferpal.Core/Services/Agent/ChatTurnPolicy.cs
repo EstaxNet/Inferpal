@@ -144,11 +144,17 @@ internal static class ChatTurnPolicy
     /// <summary>Whether <paramref name="toolName"/> writes a file of the project: a file edit, the memory aside.</summary>
     internal static bool ChangesProject(string toolName) => IsFileEdit(toolName) && toolName != "update_memory";
 
-    /// <summary>Whether a call to <paramref name="toolName"/> wrote a file, by the registry's count of writes before and
-    /// after it; <c>null</c> for a tool that changes no file of the project, or a registry that does not count — what
-    /// <see cref="ToolExecution.Wrote"/> carries.</summary>
+    /// <summary>Whether a call wrote a file, by the registry's count of writes before and after it — an edit's own write, or
+    /// what the watch of the work tree saw a command, an MCP tool or a custom tool change; <c>null</c> for a registry that
+    /// does not count — what <see cref="ToolExecution.Wrote"/> carries.</summary>
+    /// <remarks>⚠ Every tool, not a list: a command is not the only call whose writes the run records (<c>WorkTreeBracket</c>
+    /// watches every call that does not leave tracked files alone). <paramref name="toolName"/> is kept for the call sites.</remarks>
     internal static bool? WroteAFile(string toolName, int? before, int? after) =>
-        ChangesProject(toolName) && before is { } b && after is { } a ? a > b : null;
+        before is { } b && after is { } a ? a > b : null;
+
+    /// <summary>Whether <paramref name="execution"/> is a call that is no file edit and changed files of the project — what
+    /// the watch of the work tree recorded around it (a command, an MCP tool, a custom tool, a test run that writes).</summary>
+    internal static bool ToolChangedFiles(ToolExecution execution) => !IsFileEdit(execution.Name) && execution.Wrote == true;
 
     /// <summary>What a run's checks proved, since its last edit that landed and over the whole run.</summary>
     /// <param name="LastEdit">The index of the run's last edit that landed; -1 when none did.</param>
@@ -253,17 +259,19 @@ internal static class ChatTurnPolicy
     }
 
     /// <summary>
-    /// The edits that wrote a file after the check at <paramref name="at"/> (<see cref="LastCheckAt"/>): what that check,
-    /// green or red, has not seen. None when no check proved anything (<paramref name="at"/> below 0).
+    /// The calls that changed the project after the check at <paramref name="at"/> (<see cref="LastCheckAt"/>): what that
+    /// check, green or red, has not seen — the edits that wrote a file, and the other calls whose writes the run recorded
+    /// (<see cref="ToolChangedFiles"/>). None when no check proved anything (<paramref name="at"/> below 0).
     /// </summary>
     /// <remarks>⚠ An edit that carries its own verdict (an edit's Smart Fix) is itself that last check, so it is never
-    /// counted after it. A file a shell command changed is not counted: the run does not tell its writes per call.</remarks>
+    /// counted after it. ⚠ What the watch of the work tree does not see is not counted (outside git, past its caps, files
+    /// git ignores): there the bar keeps its verdict.</remarks>
     internal static IReadOnlyList<ToolExecution> EditsAfter(IReadOnlyList<ToolExecution> executions, int at)
     {
         var edits = new List<ToolExecution>();
         if (at < 0) return edits;
         for (var i = at + 1; i < executions.Count; i++)
-            if (EditLanded(executions[i])) edits.Add(executions[i]);
+            if (EditLanded(executions[i]) || ToolChangedFiles(executions[i])) edits.Add(executions[i]);
         return edits;
     }
 

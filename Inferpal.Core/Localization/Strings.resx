@@ -1435,6 +1435,8 @@ Type `/setup` to try again.</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>tests passed</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>tests passed, on part of the suite</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, then {1:N0} {1:file|files} changed without a check</value></data>
+  <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, then a tool changed files without a check</value></data>
+  <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, then {1:N0} {1:file|files} and a tool's changes without a check</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>not verified</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>No solution or folder is open, so there is no repository to read. Open one, then try again.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>tests failed</value></data>

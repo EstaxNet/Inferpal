@@ -1431,6 +1431,8 @@ Escribe `/setup` para volver a intentarlo.</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>pruebas superadas</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>pruebas superadas, solo parte del conjunto</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, luego {1:N0} {1:archivo cambiado|archivos cambiados} sin comprobar</value></data>
+  <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, luego una herramienta cambió archivos sin comprobar</value></data>
+  <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, luego {1:N0} {1:archivo cambiado|archivos cambiados} y los cambios de una herramienta sin comprobar</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>sin verificar</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>No hay ninguna solución ni carpeta abierta, así que no hay repositorio que leer. Abra una y vuelva a intentarlo.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>pruebas fallidas</value></data>

@@ -968,8 +968,9 @@ internal record AgentResult(
 /// <param name="HasErrors"><c>true</c> when the tool is <c>get_diagnostics</c> and the output contains build errors
 /// — triggers the "Fix with AI" button.</param>
 /// <param name="Diff">Line-level diff produced by write_file / apply_diff, or <c>null</c> for all other tools.</param>
-/// <param name="Wrote">Whether a file edit wrote a file, by the registry's count of writes around the call; <c>null</c> when
-/// the call is no file edit, or the registry does not count (its result is then the only witness).</param>
+/// <param name="Wrote">Whether the call wrote a file, by the registry's count of writes around it — an edit's own, or what the
+/// watch of the work tree recorded for a command or another tool; <c>null</c> when the registry does not count (an edit's
+/// result is then the only witness).</param>
 internal record ToolExecution(
     string    Name,
     string    Input,

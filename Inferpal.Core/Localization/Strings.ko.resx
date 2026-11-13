@@ -1431,6 +1431,8 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RunTestsPassed" xml:space="preserve"><value>테스트 통과</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>테스트 통과(일부 테스트만)</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, 이후 파일 {1:N0}개가 확인 없이 변경됨</value></data>
+  <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, 이후 도구가 확인 없이 파일을 변경함</value></data>
+  <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, 이후 파일 {1:N0}개와 도구의 변경이 확인 없이 남음</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>확인되지 않음</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>솔루션이나 폴더가 열려 있지 않아 읽을 저장소가 없습니다. 하나를 연 다음 다시 시도하세요.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>테스트 실패</value></data>

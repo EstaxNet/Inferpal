@@ -1431,6 +1431,8 @@ Geben Sie `/setup` ein, um es erneut zu versuchen.</value></data>
   <data name="RunTestsPassed" xml:space="preserve"><value>Tests bestanden</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>Tests bestanden, nur ein Teil der Suite</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, danach {1:N0} {1:Datei|Dateien} ohne Prüfung geändert</value></data>
+  <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, danach hat ein Werkzeug Dateien ohne Prüfung geändert</value></data>
+  <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, danach {1:N0} {1:Datei|Dateien} und die Änderungen eines Werkzeugs ohne Prüfung</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>nicht geprüft</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Es ist keine Projektmappe und kein Ordner geöffnet, daher gibt es kein Repository zu lesen. Öffnen Sie eines, und versuchen Sie es erneut.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>Tests fehlgeschlagen</value></data>
