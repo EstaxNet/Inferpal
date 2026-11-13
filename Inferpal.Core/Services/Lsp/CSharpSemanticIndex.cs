@@ -20,10 +20,13 @@ internal sealed record SymbolLocation(string RelPath, int Line, string Snippet)
 /// <param name="Spans">Tokens to rewrite per file; empty when ambiguous or unresolved.</param>
 /// <param name="Candidates">Each symbol the name designates, when there is more than one.</param>
 /// <param name="Markup">What markup may bind of the symbol renamed; <c>null</c> when nothing resolved.</param>
+/// <param name="Unread">C# files of the workspace the index could not read, read again before planning: a rename cannot
+/// know their uses. Empty when every file read.</param>
 internal sealed record RenamePlan(
     IReadOnlyDictionary<string, IReadOnlyList<Microsoft.CodeAnalysis.Text.TextSpan>> Spans,
     IReadOnlyList<(string Symbol, SymbolLocation Location)> Candidates,
-    MarkupTarget? Markup = null);
+    MarkupTarget? Markup = null,
+    IReadOnlyList<string>? Unread = null);
 
 /// <summary>A C# type as markup names it: its namespace and its simple name.</summary>
 internal sealed record TypeName(string Namespace, string Name)
@@ -177,6 +180,10 @@ internal sealed class CSharpSemanticIndex
 
     private readonly object _gate = new();
     private readonly Dictionary<string, SyntaxTree> _treesByPath = new(Services.PathComparer.Default);
+    // ⚠ C# files that exist and could not be read (held by another program): not in the compilation, so none of their
+    // uses is found. Kept so that rename_symbol refuses rather than write a partial rename, and read again before each
+    // rename; references and impact still answer without them.
+    private readonly HashSet<string> _unread = new(Services.PathComparer.Default);
     private CSharpCompilation? _compilation;
     // The language of the last full build: a file updated since is parsed at it, or the compilation refuses its tree.
     private CSharpParseOptions _parsing = CSharpParsing.Newest;
@@ -367,6 +374,7 @@ internal sealed class CSharpSemanticIndex
     private void BuildLocked(IEnumerable<string>? files)
     {
         _treesByPath.Clear();
+        _unread.Clear();
         _parsing = CSharpParsing.For(_root);
 
         foreach (var path in files ?? EnumerateCSharpFiles(_root))
@@ -379,7 +387,11 @@ internal sealed class CSharpSemanticIndex
                 var text = Tools.TextFileEncoding.ReadText(path);
                 _treesByPath[path] = CSharpSyntaxTree.ParseText(text, _parsing, path: path);
             }
-            catch (Exception ex) { Diagnostics.Swallow($"CSharpSemanticIndex.Parse({Path.GetFileName(path)})", ex); }
+            catch (Exception ex)
+            {
+                Diagnostics.Swallow($"CSharpSemanticIndex.Parse({Path.GetFileName(path)})", ex);
+                if (File.Exists(path)) _unread.Add(path);
+            }
         }
 
         // ⚠ The SDK's implicit global usings (ImplicitUsings, on by default since .NET 6) live in a file the build
@@ -466,6 +478,7 @@ internal sealed class CSharpSemanticIndex
         // read — and rename_symbol, whose edits come from these trees, never writes it.
         if (!File.Exists(path) || Governance.ContentExclusions.OfInWalk(path) is not null)
         {
+            _unread.Remove(path);
             if (!existed) return false;
             _treesByPath.Remove(path);
             _compilation = _compilation.RemoveSyntaxTrees(oldTree!);
@@ -479,9 +492,11 @@ internal sealed class CSharpSemanticIndex
             // A file being written to is transiently unreadable; keeping the previous tree is a
             // better answer than dropping the file out of the index.
             Diagnostics.Swallow($"CSharpSemanticIndex.Update({Path.GetFileName(path)})", ex);
+            if (!existed) _unread.Add(path);
             return false;
         }
 
+        _unread.Remove(path);
         _treesByPath[path] = newTree;
         _compilation = existed
             ? _compilation.ReplaceSyntaxTree(oldTree!, newTree)
@@ -594,6 +609,16 @@ internal sealed class CSharpSemanticIndex
     /// </remarks>
     public RenamePlan PlanRename(string symbolName, string? declaringFile, int? declaringLine, CancellationToken ct = default)
     {
+        // A file held while the index was built may read now: read again before a rename is refused for it.
+        string[] unread;
+        lock (_gate)
+        {
+            if (_compilation is null) BuildLocked(null);
+            foreach (var path in _unread.ToList()) UpdateLocked(path);
+            unread = [.. _unread];
+        }
+        if (unread.Length > 0)
+            return new RenamePlan(new Dictionary<string, IReadOnlyList<TextSpan>>(), [], Unread: unread);
         var snap = Current();
         var declarations = ResolveDeclarations(snap, symbolName, declaringFile, ct);
         if (declaringLine is { } line) declarations = AtLine(declarations, line);
@@ -632,7 +657,10 @@ internal sealed class CSharpSemanticIndex
             TypeName[] self = [NameOf(type)];
             return new MarkupTarget(true, self, Namesakes(self), files);
         }
-        var declaring = targets.Select(t => t.ContainingType).OfType<INamedTypeSymbol>()
+        // ⚠ A member of an extension block is held by the static class around the block: the block's own type has no name,
+        // and every other extension block of the compilation read as its namesake.
+        var declaring = targets.Select(t => t.ContainingType is { TypeKind: TypeKind.Extension, ContainingType: { } outer }
+                                                ? outer : t.ContainingType).OfType<INamedTypeSymbol>()
                                .Select(t => t.OriginalDefinition).Distinct(SymbolEqualityComparer.Default)
                                .Cast<INamedTypeSymbol>().ToList();
         var holders = new HashSet<TypeName>();

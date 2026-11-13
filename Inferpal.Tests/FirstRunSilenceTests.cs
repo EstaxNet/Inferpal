@@ -112,7 +112,7 @@ public class FirstRunSilenceTests
     {
         var discovery = Discovery();
         var automatic = discovery[discovery.IndexOf("if (automatic)", StringComparison.Ordinal)..];
-        automatic = automatic[..automatic.IndexOf("await present((client.ConnectionRefusal", StringComparison.Ordinal)];
+        automatic = automatic[..automatic.IndexOf("await present(SetupFoundNothing(client.ConnectionRefusal", StringComparison.Ordinal)];
 
         Assert.Contains("&& await OfferServerInstallAsync(", automatic, StringComparison.Ordinal);
         Assert.Contains("return client.ConnectionRefusal is null", automatic, StringComparison.Ordinal);

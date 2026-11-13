@@ -716,9 +716,6 @@ Get one — the models measured with Inferpal, for each graphics card, are liste
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal's first-run setup could not complete: {0}
 
 Type `/setup` to try again.</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **First launch** — {1} is not reachable at **{0}**.
-
-Start {1} and click **↻ Retry** in the header (for Ollama: `ollama serve` in a terminal).</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — the selected models need about **{0} GB** together, more than your **{1} GB** budget. They may spill to system RAM and run slowly. Consider a smaller model, or run `/hardware` to review.</value></data>
   <data name="SectionMcp" xml:space="preserve"><value>MCP servers</value></data>
   <data name="LabelMcpEnabled" xml:space="preserve"><value>Use MCP servers</value></data>

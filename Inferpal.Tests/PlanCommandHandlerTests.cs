@@ -59,6 +59,24 @@ public class PlanCommandHandlerTests : IDisposable
         Assert.False(Run("/plan list", noRoot: true).ToggleMode);
     }
 
+    /// <summary>A plan that exists and could not be read is listed as unreadable, never "0/0", which reads as an empty plan.
+    /// Reference arm: a readable plan keeps its counts. (A lock that excludes readers is Windows's.)</summary>
+    [Fact]
+    public void AnUnreadablePlan_IsListedAsUnreadable_NotAsEmpty()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        PlanStore.Save(_root, "held", "# Held\n\n- [ ] one\n");
+        PlanStore.Save(_root, "read", "# Read\n\n- [x] one\n- [ ] two\n");
+
+        string listed;
+        using (new FileStream(PlanStore.PathFor(_root, "held"), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            listed = Run("/plan list").Message!;
+
+        Assert.Contains("⚠ `held` — " + Strings.PinnedFileUnreadable, listed);
+        Assert.DoesNotContain("(0/0)", listed);
+        Assert.Contains("`read` — Read (1/2)", listed);
+    }
+
     // ── save ───────────────────────────────────────────────────────────────────
 
     [Fact]

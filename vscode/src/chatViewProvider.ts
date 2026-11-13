@@ -76,6 +76,12 @@ export function looksLikeCommand(text: string): boolean {
   return /^[\p{L}\p{N}]/u.test(name) && !/[/\\]/.test(name);
 }
 
+/** A text the Core writes for the chat, as a notification shows it: a notification draws no Markdown, so the bold marks
+ *  and the code spans (a model's name, a file, a command) would show as `**` and backticks. */
+export function notificationText(markdown: string): string {
+  return markdown.replace(/\*\*/g, '').replace(/`([^`\n]+)`/g, '$1');
+}
+
 /** A context chip waiting for the next question: its label, its content, and the file it came from. */
 /** `origin`: the file the chip's text comes from, whole or part — what the workspace's ignore files are asked about. */
 type PendingAttachment = { name: string; content: string; sourcePath?: string; origin?: string; auto?: boolean };
@@ -3884,8 +3890,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     if (!proposal.message) {
       // The refusal, and what the host noted on the way (a diff cut, files left out): both said.
-      // A notification draws no Markdown: the Core's refusal names the model in bold for the chat.
-      void vscode.window.showWarningMessage([proposal.refusal, proposal.notice].filter(Boolean).join('\n\n').replace(/\*\*/g, ''));
+      void vscode.window.showWarningMessage(notificationText([proposal.refusal, proposal.notice].filter(Boolean).join('\n\n')));
       return;
     }
     const typed = repo.inputBox.value.trim();
@@ -3909,8 +3914,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (proposal.notice) {
       // A cut diff or reply, files left undescribed: a warning; "nothing staged" alone is information.
       void (proposal.notice.includes('⚠')
-        ? vscode.window.showWarningMessage(proposal.notice)
-        : vscode.window.showInformationMessage(proposal.notice));
+        ? vscode.window.showWarningMessage(notificationText(proposal.notice))
+        : vscode.window.showInformationMessage(notificationText(proposal.notice)));
     }
   }
 

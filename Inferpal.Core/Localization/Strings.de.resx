@@ -692,9 +692,6 @@ Laden Sie eines herunter — die mit Inferpal gemessenen Modelle stehen pro Graf
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Die Ersteinrichtung von Inferpal konnte nicht abgeschlossen werden: {0}
 
 Geben Sie `/setup` ein, um es erneut zu versuchen.</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Erster Start** — {1} ist unter **{0}** nicht erreichbar.
-
-Starten Sie {1} und klicken Sie auf **↻ Wiederholen** in der Kopfzeile (für Ollama: `ollama serve` in einem Terminal).</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — die ausgewählten Modelle benötigen zusammen etwa **{0} GB**, mehr als Ihr Budget von **{1} GB**. Sie könnten in den System-RAM auslagern und langsam laufen. Erwägen Sie ein kleineres Modell oder führen Sie `/hardware` aus.</value></data>
 
   <!-- Agent Mode -->

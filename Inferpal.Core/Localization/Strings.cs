@@ -1631,8 +1631,6 @@ internal static class Strings
     /// and waiting, and naming the gesture that re-runs it.</summary>
     public static string FirstRunFailed(string detail) =>
         Format(Get(nameof(FirstRunFailed)), detail);
-    public static string MsgFirstRunBackendDown(string url, string backend) =>
-        Format(Get(nameof(MsgFirstRunBackendDown)), url, backend);
     public static string MsgFirstRunVramWarning(string neededGb, string budgetGb) =>
         Format(Get(nameof(MsgFirstRunVramWarning)), neededGb, budgetGb);
 

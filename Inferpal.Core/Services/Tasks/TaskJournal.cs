@@ -98,6 +98,8 @@ internal sealed class TaskJournal(string path)
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
+            // ⚠ Unreadable is taken as "nothing said" on purpose: a dismissed notice may come back once, where "unknown"
+            // would have to withhold the notice of a run the closing really cut. Saying twice is the lesser harm.
             Diagnostics.Swallow("TaskJournal.SaidRuns", ex);
             return new HashSet<string>(StringComparer.Ordinal);
         }

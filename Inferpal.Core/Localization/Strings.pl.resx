@@ -692,9 +692,6 @@ Pobierz jeden — modele zmierzone z Inferpal, według karty graficznej, są w [
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Nie udało się ukończyć pierwszej konfiguracji Inferpal: {0}
 
 Wpisz `/setup`, aby spróbować ponownie.</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Pierwsze uruchomienie** — {1} nie jest dostępny pod adresem **{0}**.
-
-Uruchom {1} i kliknij **↻ Ponów** w nagłówku (dla Ollama: `ollama serve` w terminalu).</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — wybrane modele potrzebują łącznie około **{0} GB**, więcej niż Twój budżet **{1} GB**. Mogą przejść do pamięci RAM systemu i działać wolno. Rozważ mniejszy model lub uruchom `/hardware`.</value></data>
 
   <!-- Agent Mode -->

@@ -69,7 +69,9 @@ public sealed class Lot0Cycle12GesturesTests
     public void ACommitRefusal_ReachesTheNotificationWithoutItsMarkdown()
     {
         Assert.Contains("**model**", Strings.MsgOnlyReasoningFrom("model"));
-        Assert.Contains("join('\\n\\n').replace(/\\*\\*/g, '')", VsCode("chatViewProvider.ts"));
+        var source = VsCode("chatViewProvider.ts");
+        Assert.Contains("showWarningMessage(notificationText([proposal.refusal, proposal.notice].filter(Boolean).join('\\n\\n')))", source);
+        Assert.Contains("return markdown.replace(/\\*\\*/g, '')", source);
     }
 
     /// <summary>Every colour the settings window computes gives way to Windows' high contrast.</summary>

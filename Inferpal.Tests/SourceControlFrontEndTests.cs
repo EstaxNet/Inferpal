@@ -61,6 +61,11 @@ public sealed class SourceControlFrontEndTests
         Assert.Contains("{ modal: true, detail: proposal.message }, replace)", gesture, StringComparison.Ordinal);
         // A refusal keeps what was noted on the way.
         Assert.Contains("[proposal.refusal, proposal.notice].filter(Boolean).join('\\n\\n')", gesture, StringComparison.Ordinal);
+        // A notification draws no Markdown: both of them flattened by one reader (bold and code spans), never shown raw.
+        Assert.Contains("showWarningMessage(notificationText([proposal.refusal, proposal.notice]", gesture, StringComparison.Ordinal);
+        Assert.Contains("showWarningMessage(notificationText(proposal.notice))", gesture, StringComparison.Ordinal);
+        Assert.Contains("showInformationMessage(notificationText(proposal.notice))", gesture, StringComparison.Ordinal);
+        Assert.DoesNotContain("showInformationMessage(proposal.notice)", gesture, StringComparison.Ordinal);
         // A repository the Git extension no longer has is named, never "open a folder under Git".
         Assert.Contains("if (repo === 'unknown')", gesture, StringComparison.Ordinal);
         Assert.Contains("return api.getRepository(rootUri) ?? 'unknown';",

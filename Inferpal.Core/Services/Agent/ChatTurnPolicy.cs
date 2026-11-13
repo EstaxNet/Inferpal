@@ -435,6 +435,21 @@ internal static class ChatTurnPolicy
         return names.Length == 0 ? (bubble, []) : (bubble[..at].TrimEnd('\n'), names);
     }
 
+    /// <summary>
+    /// A saved question as a reloaded conversation hands it to the model: its words, and what went with it said gone. English
+    /// and never translated: it structures the model's transcript, like the compaction markers.
+    /// </summary>
+    /// <remarks>⚠ Only the names of the attachments are saved (<see cref="BuildBubbleText"/>). Handed on as the bubble's
+    /// recap, they read to the model as files it has: it answered about content it never received in this conversation.</remarks>
+    public static string RestoredQuestion(string saved)
+    {
+        var (text, names) = SplitBubbleText(saved);
+        if (names.Count == 0) return saved;
+        var marker = $"[Attached when this was asked, not part of this reloaded conversation: {string.Join(", ", names)}. "
+                   + "Read them again if they are needed.]";
+        return text.Length == 0 ? marker : text + "\n\n" + marker;
+    }
+
     /// <summary>The heading of the notes a question keeps (<see cref="WithUserNotes"/>). English and never translated: it
     /// structures the model's transcript, like the compaction markers.</summary>
     public const string UserNotesHeader = "[Notes I added while you were working on this request]";

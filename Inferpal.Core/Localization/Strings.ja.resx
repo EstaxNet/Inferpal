@@ -692,9 +692,6 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal の初期セットアップを完了できませんでした: {0}
 
 `/setup` と入力すると再試行できます。</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **初回起動** — **{0}** の {1} に接続できません。
-
-{1} を起動してヘッダーの **↻ 再試行** をクリックしてください（Ollama の場合: ターミナルで `ollama serve`）。</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — 選択したモデルは合計で約 **{0} GB** 必要で、予算の **{1} GB** を超えています。システム RAM にあふれて動作が遅くなる可能性があります。より小さいモデルを検討するか、`/hardware` で確認してください。</value></data>
 
   <!-- Agent Mode -->

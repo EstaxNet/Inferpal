@@ -692,9 +692,6 @@
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ Inferpal 的首次设置未能完成：{0}
 
 输入 `/setup` 可重试。</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **首次启动** — 无法连接到 **{0}** 上的 {1}。
-
-请启动 {1} 并点击标题栏中的 **↻ 重试**（Ollama：在终端中运行 `ollama serve`）。</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — 所选模型合计约需 **{0} GB**，超过你的 **{1} GB** 预算。它们可能溢出到系统内存并运行缓慢。请考虑更小的模型，或运行 `/hardware` 查看。</value></data>
 
   <!-- Agent Mode -->

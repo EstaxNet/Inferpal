@@ -692,9 +692,6 @@ Scaricane uno — i modelli misurati con Inferpal, per scheda grafica, sono elen
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ La configurazione iniziale di Inferpal non è riuscita: {0}
 
 Digita `/setup` per riprovare.</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Primo avvio** — {1} non è raggiungibile all'indirizzo **{0}**.
-
-Avvia {1} e clicca su **↻ Riprova** nell'intestazione (per Ollama: `ollama serve` in un terminale).</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — i modelli selezionati richiedono circa **{0} GB** insieme, più del tuo budget di **{1} GB**. Potrebbero riversarsi nella RAM di sistema ed essere lenti. Valuta un modello più piccolo o esegui `/hardware` per controllare.</value></data>
 
   <!-- Agent Mode -->

@@ -38,7 +38,6 @@ public class ConnectionTextsNameTheBackendTests
                      Strings.MsgHeartbeatRestored("LM Studio"),
                      Strings.TooltipRetryConnection("LM Studio"),
                      Strings.MsgFirstRunNoModels("LM Studio", canPull: true),
-                     Strings.MsgFirstRunBackendDown("http://localhost:1234", "LM Studio"),
                  })
             Assert.True(text.Contains("LM Studio", StringComparison.Ordinal), $"{culture}: {text}");
 

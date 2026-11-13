@@ -16,6 +16,24 @@ namespace Inferpal.Tests;
 [Collection(SignalCollection.Name)]
 public sealed class VsWindowRunsUnderTestTests
 {
+    /// <summary>
+    /// A typed <c>/setup</c> that finds no server says the search's result — "no model server found here" and what each
+    /// address answered —, as VS Code's card does; never "⚠ First run — Ollama is not reachable", which is no first run and
+    /// names one address of the several looked at. A server that refused the key is running, and is said so.
+    /// </summary>
+    [Fact]
+    public void ASetupThatFindsNothing_SaysTheSearchsResult_NotAFirstRun()
+    {
+        const string places = "Each address answered:\n- http://localhost:11434 — nothing";
+
+        var nothing = Inferpal.ToolWindow.InferpalToolWindowData.SetupFoundNothing(null, "http://localhost:11434", places);
+        Assert.Equal($"**{Strings.SetupNothingTitle}**\n\n{places}", nothing);
+
+        var refused = Inferpal.ToolWindow.InferpalToolWindowData.SetupFoundNothing("401 Unauthorized", "http://localhost:1234", places);
+        Assert.StartsWith(Strings.MsgBackendRefused("http://localhost:1234", "401 Unauthorized"), refused);
+        Assert.EndsWith(places, refused);
+    }
+
     [Fact]
     public async Task AQuestion_GoesThroughTheWindow_AndItsAnswerIsShown()
     {

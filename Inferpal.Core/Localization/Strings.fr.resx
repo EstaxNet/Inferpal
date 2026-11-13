@@ -692,9 +692,6 @@ Installez-en un — les modèles mesurés avec Inferpal, par carte graphique, so
   <data name="FirstRunFailed" xml:space="preserve"><value>⚠ La configuration initiale d'Inferpal n'a pas pu aboutir : {0}
 
 Tapez `/setup` pour réessayer.</value></data>
-  <data name="MsgFirstRunBackendDown" xml:space="preserve"><value>⚠ **Premier lancement** — {1} n'est pas joignable à **{0}**.
-
-Démarrez {1} et cliquez sur **↻ Réessayer** dans l'en-tête (pour Ollama : `ollama serve` dans un terminal).</value></data>
   <data name="MsgFirstRunVramWarning" xml:space="preserve"><value>⚠ **VRAM** — les modèles sélectionnés nécessitent environ **{0} Go** au total, plus que votre budget de **{1} Go**. Ils risquent de déborder en RAM système et de ralentir. Envisagez un modèle plus petit, ou lancez `/hardware` pour vérifier.</value></data>
 
   <!-- Agent Mode -->

@@ -9,7 +9,8 @@ namespace Inferpal.Services.Persistence;
 /// <param name="Title">Heading of the document.</param>
 /// <param name="Done">Steps ticked.</param>
 /// <param name="Total">Steps in total.</param>
-internal sealed record PlanSummary(string Name, string Path, string Title, int Done, int Total)
+/// <param name="Unreadable">The file exists and could not be read: its counts say nothing.</param>
+internal sealed record PlanSummary(string Name, string Path, string Title, int Done, int Total, bool Unreadable = false)
 {
     /// <summary><c>true</c> when every step is ticked (and there is at least one).</summary>
     public bool Complete => Total > 0 && Done == Total;
@@ -118,7 +119,7 @@ internal static class PlanStore
                 // A plan we cannot read is still a plan the user has: list it rather than hide it,
                 // so a permission problem shows up instead of a silently shorter list.
                 Diagnostics.Swallow($"PlanStore.List({file})", ex);
-                result.Add(new PlanSummary(name, file, name, 0, 0));
+                result.Add(new PlanSummary(name, file, name, 0, 0, Unreadable: true));
                 continue;
             }
 

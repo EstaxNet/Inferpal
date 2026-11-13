@@ -166,6 +166,10 @@ internal sealed class RenameSymbolTool : ITool
         else
         {
             plan = TryPlanRename(oldName, root, declaringFile, declaringLine, ct);
+            // ⚠ A C# file that cannot be read is not in the compilation: its uses would stay on the old name and the
+            // build break under "renamed in N files". The rename is all or nothing, so it waits for the file.
+            if (plan is { Unread: { Count: > 0 } unread })
+                return UnreadRefusal(oldName, root, unread);
             var resolved = plan is { Spans.Count: > 0 };
             var narrowed = declaringFile is not null || declaringLine is not null;
             if (plan is { Candidates.Count: > 1 } || (!narrowed && razorDecls.Count > (resolved ? 0 : 1)))
@@ -514,6 +518,18 @@ internal sealed class RenameSymbolTool : ITool
             return [.. wide.Spans.Keys.Where(f => !IsUnder(f, root)).OrderBy(f => f, StringComparer.Ordinal)];
         return [.. (RenameIntent.FilesStillNaming(workspace, ".cs", oldName) ?? []).Where(f => !IsUnder(f, root))
                    .OrderBy(f => f, StringComparer.Ordinal)];
+    }
+
+    private static string UnreadRefusal(string oldName, string root, IReadOnlyList<string> unread)
+    {
+        var named = string.Join(", ", unread.Take(5).Select(f => Path.GetRelativePath(root, f)))
+                  + (unread.Count > 5 ? $" and {unread.Count - 5} more" : string.Empty);
+        // The coverage line every scan of this tool carries (its description sends the model to it), then the refusal.
+        return Strings.ScanUnreadable(unread.Count) + "\n\n"
+             + $"Error: {unread.Count} C# file(s) could not be read ({named}): their uses of `{oldName}` cannot be found, "
+             + "and a rename that misses them breaks the build; nothing was renamed. Another program may hold them: try "
+             + "again once it lets go. A file that never reads (its permissions) can be excluded in .inferpalignore, which "
+             + "takes it out of the rename too.";
     }
 
     private static string OutsideRootRefusal(string oldName, string root, string workspace, List<string> outside)

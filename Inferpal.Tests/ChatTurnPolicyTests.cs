@@ -168,6 +168,23 @@ public class ChatTurnPolicyTests
         Assert.Contains("Selection (Bar.cs)", restored[1].Content);
     }
 
+    /// <summary>
+    /// A reloaded question hands the model its words and says what went with it is gone: only the names were saved, and the
+    /// screen's recap ("📎 …") read to the model as files it had. Reference arm: a question without attachments, unchanged.
+    /// </summary>
+    [Fact]
+    public void AReloadedQuestion_SaysItsAttachmentsAreNotInTheConversation()
+    {
+        var saved = ChatTurnPolicy.BuildBubbleText("explain this", ["Foo.cs", "Selection (Bar.cs)"]);
+        var recap = Strings.MsgAttachedRecap("Foo.cs · Selection (Bar.cs)");
+
+        var restored = SessionManager.BuildRestoredHistory("SYS", [new("user", saved), new("assistant", "a")])[1].Content!;
+
+        Assert.StartsWith("explain this\n\n[Attached when this was asked, not part of this reloaded conversation: Foo.cs, Selection (Bar.cs).", restored);
+        Assert.DoesNotContain(recap, restored);
+        Assert.Equal("plain", SessionManager.BuildRestoredHistory("SYS", [new("user", "plain")])[1].Content);
+    }
+
     [Fact]
     public void BuildBubbleText_IsLocalized_AndKeepsTheLabelsVerbatim()
     {

@@ -187,7 +187,7 @@ internal static class SessionManager
                 // A question the saved conversation has no answer for (a failed turn is a notice on screen, a turn stopped
                 // before any text leaves nothing): marked, as live, or the model reads the two as one request.
                 ChatTurnPolicy.CloseUnanswered(history);
-                history.Add(new ChatMessageDto(m.Role, m.Content));
+                history.Add(new ChatMessageDto(m.Role, ChatTurnPolicy.RestoredQuestion(m.Content)));
                 asked = history.Count - 1;
             }
             // ⚠ A question that never reached the model (a notice in the user's place: a command served without it, a

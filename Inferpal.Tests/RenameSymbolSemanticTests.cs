@@ -52,6 +52,51 @@ public class RenameSymbolSemanticTests : IDisposable
             => Task.FromResult(true);
     }
 
+    /// <summary>
+    /// A C# file held by another program is not in the compilation: a rename that renamed the others left its uses on the
+    /// old name, the build broken under "renamed". Refused, the file named, nothing written; once it reads, the same call
+    /// renames both (the index reads it again before planning). (A lock that excludes readers is Windows's.)
+    /// </summary>
+    [Fact]
+    public async Task AFileThatCannotBeRead_RefusesTheRename_UntilItReads()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Write("Calc.cs", "namespace App;\npublic class Calc { public int Add(int a, int b) => a + b; }\n");
+        Write("Use.cs", "namespace App;\npublic class Use { public int Run() => new Calc().Add(1, 2); }\n");
+
+        string held;
+        using (new FileStream(Path.Combine(_root, "Use.cs"), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            held = await RunAsync("Add", "Plus", dryRun: false);
+
+        Assert.Contains("could not be read (Use.cs)", held);
+        Assert.Contains("nothing was renamed", held);
+        Assert.Contains("int Add(", Read("Calc.cs"));
+
+        await RunAsync("Add", "Plus", dryRun: false);
+        Assert.Contains("int Plus(", Read("Calc.cs"));
+        Assert.Contains(".Plus(1, 2)", Read("Use.cs"));
+    }
+
+    /// <summary>
+    /// What markup may bind of an extension block's member is held by the static class around the block, never by the
+    /// block's unnamed type: taken as the holder, every other extension block of the compilation was its namesake.
+    /// </summary>
+    [Fact]
+    public void AnExtensionBlockMember_IsHeldByItsStaticClass_WithNoNamesakes()
+    {
+        Write("Ext.cs", """
+            namespace App;
+            public static class Ext { extension(string s) { public int Twice() => s.Length * 2; } }
+            public static class Other { extension(int i) { public int Half() => i / 2; } }
+            """);
+
+        var plan = Services.Lsp.CSharpSemanticIndex.ForWorkspace(_root).PlanRename("Twice", null, null);
+
+        var markup = Assert.IsType<Services.Lsp.MarkupTarget>(plan.Markup);
+        Assert.Equal("App.Ext", Assert.Single(markup.Holders).ToString());
+        Assert.Empty(markup.Namesakes);
+    }
+
     /// <summary>A member of a C# 14 extension block is renamed at its declaration and at its calls; read at an older
     /// language, the block is a constructor and the member is not one.</summary>
     [Fact]

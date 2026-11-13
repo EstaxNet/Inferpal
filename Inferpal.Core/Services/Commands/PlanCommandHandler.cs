@@ -95,9 +95,10 @@ internal static class PlanCommandHandler
 
         var sb = new StringBuilder(Strings.PlanListHeader).Append("\n\n");
         foreach (var p in plans)
-            sb.Append("- ").Append(p.Complete ? "✅ " : "▫ ")
-              .Append('`').Append(p.Name).Append("` — ").Append(p.Title)
-              .Append(" (").Append(p.Done).Append('/').Append(p.Total).Append(")\n");
+            // ⚠ "0/0" for a plan that could not be read reads as an empty plan.
+            sb.Append("- ").Append(p.Unreadable ? "⚠ " : p.Complete ? "✅ " : "▫ ")
+              .Append('`').Append(p.Name).Append("` — ")
+              .Append(p.Unreadable ? Strings.PinnedFileUnreadable : $"{p.Title} ({p.Done}/{p.Total})").Append('\n');
 
         return new(sb.ToString().TrimEnd());
     }

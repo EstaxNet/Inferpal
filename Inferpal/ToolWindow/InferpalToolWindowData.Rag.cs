@@ -314,13 +314,7 @@ internal partial class InferpalToolWindowData
                         && await OfferServerInstallAsync($"**{Strings.SetupNothingTitle}**\n\n" + placesText, once: true)
                             .ConfigureAwait(false);
                 }
-                // A server that refused the check (a wrong API key) is running: "start it" is the wrong remedy.
-                await present((client.ConnectionRefusal is { } refusal
-                    ? Strings.MsgBackendRefused(url, refusal)
-                    : Strings.MsgFirstRunBackendDown(
-                        url, Services.Inference.InferenceProviderFactory.DisplayName(_config.Provider)))
-                    + "\n\n" + placesText)
-                    .ConfigureAwait(false);
+                await present(SetupFoundNothing(client.ConnectionRefusal, url, placesText)).ConfigureAwait(false);
                 // Only where the installed server would be used: nothing chosen yet, or Ollama's own address chosen.
                 if (client.ConnectionRefusal is null && Services.Inference.ServerInstall.Offers(places)
                     && (Services.Inference.ServerScan.NothingChosen(_config)
@@ -421,6 +415,14 @@ internal partial class InferpalToolWindowData
         if (vramWarning is not null) text += "\n\n" + vramWarning;
         return await SayFoundAsync(text).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// What a <c>/setup</c> that found no server says. A server that refused the check (a wrong API key) is running: "start
+    /// it" is the wrong remedy. Otherwise the search's own result, as VS Code's card says it: a typed <c>/setup</c> is no
+    /// first run, and it looked at every address in <paramref name="placesText"/>, not only the configured one.
+    /// </summary>
+    internal static string SetupFoundNothing(string? refusal, string url, string placesText) =>
+        (refusal is { } refused ? Strings.MsgBackendRefused(url, refused) : $"**{Strings.SetupNothingTitle}**") + "\n\n" + placesText;
 
     /// <summary>Handles <c>/setup</c>: re-runs the first-run discovery on demand (re-detect backend, re-pick models).</summary>
     private async Task HandleSetupCommandAsync(string[] parts, CancellationToken ct)
