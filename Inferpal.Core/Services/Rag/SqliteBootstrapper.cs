@@ -17,7 +17,8 @@ namespace Inferpal.Services.Rag;
 /// the <see cref="Microsoft.Data.Sqlite.SqliteConnection"/> type initializer
 /// throws. We register a <see cref="NativeLibrary"/> resolver on the SQLitePCLRaw
 /// provider assembly that loads the native DLL by absolute path next to our
-/// managed assemblies — independent of the deployment layout.
+/// managed assemblies — independent of the deployment layout. Where no <c>e_sqlite3</c> is found (the file left behind
+/// when the ACP archive was unpacked), it loads the system's SQLite instead (<see cref="SystemLibraries"/>).
 /// </remarks>
 internal static class SqliteBootstrapper
 {
@@ -61,13 +62,22 @@ internal static class SqliteBootstrapper
             return handle;
 
         // The extension's own folder under Visual Studio's host, whose base directory is the host's. Inside one
-        // executable (the ACP archive) the location is empty and its directory null; the default search above has
-        // already found the native library the archive ships beside it (acp/package.ps1).
+        // executable (the ACP archive) the location is empty and its directory null: the default search above found
+        // the e_sqlite3 the archive ships beside it (acp/package.ps1), or, that file missing, the system's SQLite answers.
 #pragma warning disable IL3000
         var baseDir = Path.GetDirectoryName(typeof(SqliteBootstrapper).Assembly.Location)
                       ?? AppContext.BaseDirectory;
 #pragma warning restore IL3000
+        return LoadOutsideTheDefaultSearch(baseDir);
+    }
 
+    /// <summary>
+    /// Where the default search found nothing: e_sqlite3 under <paramref name="baseDir"/> (the VSIX layouts), then the
+    /// system's SQLite. <see cref="IntPtr.Zero"/> when none loads, said once in <c>/diagnostics</c>.
+    /// </summary>
+    internal static IntPtr LoadOutsideTheDefaultSearch(string baseDir)
+    {
+        IntPtr handle;
         var rid = RuntimeInformation.ProcessArchitecture switch
         {
             Architecture.X64   => "win-x64",
@@ -87,14 +97,41 @@ internal static class SqliteBootstrapper
         if (File.Exists(flatPath) && NativeLibrary.TryLoad(flatPath, out handle))
             return handle;
 
+        // 4. The system's own SQLite: the code search still works when the native file was not kept beside the agent.
+        if (TryLoadSystem(out handle)) return handle;
+
         // ⚠ Returning Zero hands the failure back to the runtime, which throws a
         // TypeInitializationException whose own message names nothing. Said ONCE (this resolver runs
-        // on every P/Invoke attempt), with the two paths that were tried — that is what turns "the
+        // on every P/Invoke attempt), with what was tried — that is what turns "the
         // index does not work" into something a user can act on.
         Diagnostics.RecordOnce("SqliteBootstrapper.Resolve",
-            $"the native e_sqlite3 library was not found (tried {ridPath} and {flatPath}); "
-            + "the semantic index cannot open its database",
+            $"no SQLite library was found (tried e_sqlite3 at {ridPath} and {flatPath}, then the system's "
+            + $"{string.Join(", ", SystemLibraries())}); the semantic index cannot open its database"
+            + (OperatingSystem.IsLinux() ? " - install libsqlite3-0 (sqlite-libs on Fedora and Alpine)" : ""),
             key: baseDir);
         return IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// The SQLite every supported system ships, by the names its loader finds. <c>e_sqlite3</c> is SQLite under another
+    /// name, with the same <c>sqlite3_*</c> exports; the index uses plain SQL and WAL, which any of these carries.
+    /// </summary>
+    /// <remarks>⚠ Never <c>winsqlite3</c> in a 32-bit process: there it exports <c>__stdcall</c> functions, and the
+    /// provider calls them <c>__cdecl</c>. ⚠ On Linux the versioned name: <c>libsqlite3.so</c> exists only with the
+    /// development package.</remarks>
+    internal static IReadOnlyList<string> SystemLibraries()
+    {
+        if (OperatingSystem.IsWindows())
+            return RuntimeInformation.ProcessArchitecture == Architecture.X86 ? [] : ["winsqlite3.dll"];
+        if (OperatingSystem.IsMacOS()) return ["/usr/lib/libsqlite3.dylib", "libsqlite3.dylib"];
+        return ["libsqlite3.so.0", "libsqlite3.so"];
+    }
+
+    internal static bool TryLoadSystem(out IntPtr handle)
+    {
+        foreach (var name in SystemLibraries())
+            if (NativeLibrary.TryLoad(name, out handle)) return true;
+        handle = IntPtr.Zero;
+        return false;
     }
 }
