@@ -37,7 +37,7 @@ public sealed class DocumentationAccessTests
     /// What is published beside a release — the two Marketplace listings, the VSIX manifest, the site — links the docs of
     /// the version it ships, like the product: a listing is only changed by publishing it, and <c>master</c> describes
     /// what is not released yet. Red between a version bump and the links following it (the release wizard's bump
-    /// rewrites them). The ACP registry entry is the exception (<see cref="TheRegistryEntry_LinksTheDocsOnMaster"/>).
+    /// rewrites them). The ACP registry entry is the exception (<see cref="TheRegistryEntry_LinksTheDocsAndLicenseOnMaster"/>).
     /// </summary>
     [Theory]
     [InlineData("MARKETPLACE.md", true)]                          // private repo only
@@ -57,16 +57,18 @@ public sealed class DocumentationAccessTests
 
     /// <summary>
     /// The ACP registry follows each release by itself, but rewrites only the archive URLs: a docs link pinned to a tag
-    /// would stay on the version the entry was first sent with. Its docs link is on <c>master</c>; its license may stay
-    /// pinned (the text does not change).
+    /// would stay on the version the entry was first sent with. Its docs and license links are on <c>master</c>.
     /// </summary>
     [Fact]
-    public void TheRegistryEntry_LinksTheDocsOnMaster()
+    public void TheRegistryEntry_LinksTheDocsAndLicenseOnMaster()
     {
         var script = File.ReadAllText(Path.Combine(Root, "acp", "registry-entry.ps1"));
         var website = Regex.Match(script, @"website\s*=\s*'([^']+)'");
         Assert.True(website.Success, "acp/registry-entry.ps1 no longer writes a website link");   // witness
         Assert.Equal("https://github.com/EstaxNet/Inferpal/blob/master/docs/acp.md", website.Groups[1].Value);
+        var license = Regex.Match(script, @"license_url\s*=\s*'([^']+)'");
+        Assert.True(license.Success, "acp/registry-entry.ps1 no longer writes a license link");   // witness
+        Assert.Equal("https://github.com/EstaxNet/Inferpal/blob/master/LICENSE", license.Groups[1].Value);
     }
 
     /// <summary>
