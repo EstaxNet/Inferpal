@@ -254,7 +254,50 @@ internal class RunTestsTool : ITool
         var (cwd, args) = PytestInvocation(workDir, root, path, filter, File.Exists);
 
         var (output, exitCode) = await RunProcessAsync(python, string.Empty, cwd, budget, ct, args, PytestEnvironment);
-        return ParsePytestOutput(output, exitCode, python);
+        var report = ParsePytestOutput(output, exitCode, python);
+
+        // A green run narrowed by 'path' (and by nothing else that already says "part"): pytest itself counts the whole
+        // suite, with its own exclusions, so a run of part of it never reads as all of it.
+        if (path is null || exitCode != 0 || budget.Expired || !string.IsNullOrWhiteSpace(filter)
+            || PathComparer.Default.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(path, cwd)), Path.TrimEndingDirectorySeparator(cwd)))
+            return report;
+        var (collected, collectExit) = await RunProcessAsync(python, string.Empty, cwd, new RunBudget(CollectSeconds), ct,
+                                                             ["-m", "pytest", "--collect-only", "-q"], PytestEnvironment);
+        return OtherPytestTests(Path.GetRelativePath(cwd, path), output, collected, collectExit) + report;
+    }
+
+    /// <summary>How long the count of the whole suite may take, beside a run narrowed by 'path'.</summary>
+    private const int CollectSeconds = 60;
+
+    /// <summary>
+    /// The note of a green pytest run narrowed by <paramref name="path"/>: how many of the tests pytest collects for the
+    /// whole suite did not run (<paramref name="collectOutput"/>, <c>pytest --collect-only -q</c>), so the verdict reads as
+    /// part of the suite (<see cref="RanPartOfTheSuite"/>); <c>null</c> when the run took every test.
+    /// </summary>
+    /// <remarks>⚠ Counted by pytest, never by walking the folders: <c>testpaths</c>, <c>norecursedirs</c>, environments and
+    /// conftest hooks decide what a whole run takes, and a count of our own is wrong both ways. A count that cannot be
+    /// made — of the run (<c>addopts = -q</c> prints none) or of the suite (a collection error, a timeout, an unread line) —
+    /// is said as such and reads as part: nothing proved the whole.
+    /// ⚠ With <c>addopts = -v</c> the run prints <c>collecting ... collected N items</c> and the collection's line comes
+    /// framed in <c>=</c>: both are read.</remarks>
+    internal static string? OtherPytestTests(string path, string runOutput, string collectOutput, int collectExit)
+    {
+        Match ranMatch, total;
+        try
+        {
+            ranMatch = Regex.Match(runOutput, @"\bcollected (\d+) items?\b", RegexOptions.None, RegexBudget.Default);
+            total    = Regex.Match(collectOutput, @"^[=\s]*(\d+) tests? collected in\b", RegexOptions.Multiline, RegexBudget.Default);
+        }
+        catch (RegexMatchTimeoutException) { ranMatch = total = Match.Empty; }
+        var shown = path.Replace('\\', '/');
+        if (!ranMatch.Success || !int.TryParse(ranMatch.Groups[1].Value, out var ran)
+            || collectExit != 0 || !total.Success || !int.TryParse(total.Groups[1].Value, out var all))
+            return $"{ClampedArgument.NotePrefix}Only {shown} ran; the rest of the suite could not be counted "
+                 + $"(pytest --collect-only did not finish cleanly).{NotRunNote}possibly other tests — omit 'path' to run the "
+                 + "whole suite.\n\n";
+        return all <= ran ? null
+             : $"{ClampedArgument.NotePrefix}Only {shown} ran: {ran} of the {all} tests pytest collects.{NotRunNote}"
+             + $"{all - ran} other test{(all - ran == 1 ? "" : "s")} — omit 'path' to run the whole suite.\n\n";
     }
 
     /// <summary>What pytest's interpreter is told: its pipes are UTF-8, as this tool reads them.</summary>
