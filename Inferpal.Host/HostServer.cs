@@ -485,7 +485,7 @@ internal sealed partial class HostServer : IDisposable
             // the prompt was rebuilt for it (the Visual Studio window says it at the same point, before any compaction).
             if (Services.Agent.ContextManager.HeadShareNotice(s.RootDir, model, s.Config.Provider, ctxDecision.Window, s.Config.ContextWindowSize,
                     s.History is [{ Role: "system" } system, ..] ? Services.Agent.AgentOrchestrator.EstimateTokens([system]) : 0,
-                    turnToolTokens, s.HeadShareSaid) is { } headNotice)
+                    turnToolTokens, s.HeadShareSaid, ctxDecision.WindowRead) is { } headNotice)
                 Notify("host/notice", new { text = headNotice, severity = "warning" });
 
             if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)

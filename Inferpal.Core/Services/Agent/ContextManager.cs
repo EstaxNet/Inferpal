@@ -33,9 +33,11 @@ internal enum ContextOutcome
 /// The window, in tokens, the conversation was measured against (<see cref="ContextManager.EffectiveWindowAsync"/>)
 /// — what the context gauges must show too, or they announce room a smaller loaded window does not have.
 /// </param>
+/// <param name="WindowRead">The server said the window it loaded the model with; <c>false</c> when <paramref name="Window"/> is
+/// the configured one standing in (<see cref="ContextManager.MeasureWindowAsync"/>).</param>
 internal sealed record ContextDecision(
     ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice, int Window = 0,
-    bool SummaryIncomplete = false, string? ShownSummary = null)
+    bool SummaryIncomplete = false, string? ShownSummary = null, bool WindowRead = true)
 {
     /// <summary>
     /// The conversation lost turns with nothing — or only part of a summary — put in their place: a degraded
@@ -92,7 +94,7 @@ internal static class ContextManager
         string?                       model = null,
         int                           toolTokens = 0)
     {
-        var window = await EffectiveWindowAsync(config, client, model, ct).ConfigureAwait(false);
+        var (window, read) = await MeasureWindowAsync(config, client, model, ct).ConfigureAwait(false);
         // ⚠ The question about to go is already in the history — with its attachments, the auto-context and the
         // workspace block — and not in lastPromptTokens, measured after the previous turn. Decided on that figure alone,
         // a large attachment sent near the trigger goes out over the window: Ollama drops the head of the conversation
@@ -103,7 +105,7 @@ internal static class ContextManager
             config.ContextWindowKeepTurns, config.KvCacheAnchorMessages, config.CompactionEnabled, toolTokens);
 
         if (plan.Action == CompactionAction.None)
-            return new ContextDecision(ContextOutcome.None, plan, null, string.Empty, window);
+            return new ContextDecision(ContextOutcome.None, plan, null, string.Empty, window) { WindowRead = read };
 
         // The person reads the conversation's messages, never the head the range holds (a marker, a summary); a plan that
         // replaces only the summary held (over the window) says so.
@@ -111,7 +113,7 @@ internal static class ContextManager
         if (plan.Action == CompactionAction.Truncate)
             return new ContextDecision(ContextOutcome.Truncated, plan, null,
                                        own > 0 ? Strings.MsgContextTruncated(own, plan.KeepTurns)
-                                               : Strings.MsgContextTruncatedSummaryOnly(plan.KeepTurns), window);
+                                               : Strings.MsgContextTruncatedSummaryOnly(plan.KeepTurns), window) { WindowRead = read };
 
         onStep?.Invoke(Strings.StatusCompacting);
 
@@ -125,7 +127,7 @@ internal static class ContextManager
         // compaction the same way).
         if (string.IsNullOrEmpty(summary))
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
-                                       failure ?? Strings.MsgContextCompactionEmpty, window);
+                                       failure ?? Strings.MsgContextCompactionEmpty, window) { WindowRead = read };
 
         // ⚠ An incomplete summary is KEPT — dropping it would lose the turns entirely, and the window is fullest
         // exactly when compaction runs — but it is said to both readers: read as whole, the model denies what was said
@@ -149,7 +151,7 @@ internal static class ContextManager
         // Measured as the model keeps it, its notes included.
         if (!FitsAfterSummary(history, plan, kept, toolTokens, window))
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
-                                       Strings.MsgContextSummaryTooLong, window);
+                                       Strings.MsgContextSummaryTooLong, window) { WindowRead = read };
 
         var notice = (own > 0 ? Strings.MsgContextCompacted(own, plan.KeepTurns) : Strings.MsgContextCompactedSummaryOnly(plan.KeepTurns))
                    + (plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty);
@@ -157,7 +159,7 @@ internal static class ContextManager
         else if (lost.Summary) notice += "\n\n" + Strings.MsgContextSummaryEarlierLost;
         if (cut)     notice += "\n\n" + Strings.MsgContextSummaryCut;
         return new ContextDecision(ContextOutcome.Compacted, plan, kept, notice, window,
-                                   SummaryIncomplete: cut || partial, ShownSummary: shown);
+                                   SummaryIncomplete: cut || partial, ShownSummary: shown) { WindowRead = read };
     }
 
     /// <summary>
@@ -199,14 +201,21 @@ internal static class ContextManager
     /// on the person's server.
     /// </summary>
     /// <param name="said">What this session said already; the key is added when the notice is returned.</param>
+    /// <param name="windowRead">The server said the window it loaded the model with (<see cref="ContextDecision.WindowRead"/>).</param>
     /// <remarks>⚠ After the window is measured AND the prompt rebuilt for it: measured before, it reads a prompt budgeted
     /// for another window. At 8K the built-in tools alone take more than half: the conversation and the answer share the
     /// rest, and a run there writes nothing before it is cut — said nowhere but in the X-Ray, which with a window set looks
-    /// at the project layers only.</remarks>
+    /// at the project layers only.
+    /// ⚠ Only Ollama loads the model at the configured window (num_ctx, sent with every request). Elsewhere a window the
+    /// server did not say is the setting standing in — a model not loaded yet is then loaded at the server's own size, often
+    /// far larger — and the notice would describe a window the model never has, with a remedy that changes nothing: nothing
+    /// is said until the window is read (the next question, once the model is loaded). A server that never says its
+    /// window is never told it: there the setting is only a guess.</remarks>
     internal static string? HeadShareNotice(string? root, string model, string provider, int window, int configuredWindow,
-                                            int systemTokens, int toolTokens, ISet<string> said)
+                                            int systemTokens, int toolTokens, ISet<string> said, bool windowRead = true)
     {
         if (window <= 0) return null;
+        if (!windowRead && InferenceProviderFactory.KindOf(provider) != InferenceProviderFactory.Ollama) return null;
         var head = systemTokens + toolTokens;
         var share = (int)Math.Round(head * 100.0 / window);
         // Over the whole window the request is refused, and the refusal says why (MsgContextWontFit): one sentence, not two.
@@ -279,20 +288,26 @@ internal static class ContextManager
     /// </remarks>
     internal static async Task<int> EffectiveWindowAsync(
         InferpalConfig config, IInferenceProvider client, string? model, CancellationToken ct)
+        => (await MeasureWindowAsync(config, client, model, ct).ConfigureAwait(false)).Window;
+
+    /// <summary><see cref="EffectiveWindowAsync"/>, and whether the server said the window it loaded the model with
+    /// (<c>Read</c>): <c>false</c> when the configured window stands in for one nobody could read.</summary>
+    internal static async Task<(int Window, bool Read)> MeasureWindowAsync(
+        InferpalConfig config, IInferenceProvider client, string? model, CancellationToken ct)
     {
         var configured = config.ContextWindowSize;
-        if (string.IsNullOrWhiteSpace(model)) return configured;
+        if (string.IsNullOrWhiteSpace(model)) return (configured, false);
 
         int? loaded = null;
         try { loaded = await client.GetLoadedContextWindowAsync(model, ct).ConfigureAwait(false); }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex) { Diagnostics.Swallow("ContextManager.EffectiveWindow", ex); }
 
-        if (loaded is not > 0) return configured;
-        if (configured <= 0 || loaded < configured) return loaded.Value;
-        return Inference.ContextWindowChoice.IsAutomatic(configured, config.ContextWindowSizeAuto)
+        if (loaded is not > 0) return (configured, false);
+        if (configured <= 0 || loaded < configured) return (loaded.Value, true);
+        return (Inference.ContextWindowChoice.IsAutomatic(configured, config.ContextWindowSizeAuto)
             ? Math.Max(configured, Math.Min(loaded.Value, Inference.ContextWindowChoice.MeasuredCeiling))
-            : configured;
+            : configured, true);
     }
 
     /// <summary>The summarising call, with its own deadline. <c>Text</c> null on any failure, with <c>Failure</c> the

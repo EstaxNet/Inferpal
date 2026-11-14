@@ -545,7 +545,7 @@ internal partial class InferpalToolWindowData
             // the prompt was rebuilt for it (the host says it at the same point, for VS Code and ACP).
             if (Services.Agent.ContextManager.HeadShareNotice(FindProjectRoot(), model, _config.Provider, decision.Window, _config.ContextWindowSize,
                     _history is [{ Role: "system" } system, ..] ? Services.Agent.AgentOrchestrator.EstimateTokens([system]) : 0,
-                    toolTokens, _headShareSaid) is { } headNotice)
+                    toolTokens, _headShareSaid, decision.WindowRead) is { } headNotice)
                 InsertThemed(ChatMessageItem.NoticeMsg(headNotice));
         });
 

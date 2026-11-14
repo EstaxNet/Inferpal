@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Inferpal.Localization;
 using Inferpal.Services.Agent;
 using Inferpal.Services.Inference;
@@ -60,6 +62,33 @@ public sealed class HeadShareNoticeTests
             ContextManager.HeadShareNotice(Root(), "m", InferenceProviderFactory.OpenAiCompatible, 8192, 8192, System, Tools, Said()));
     }
 
+    /// <summary>A window the server did not say is the setting standing in: LM Studio then loads the model at its own size
+    /// — the notice would describe a window the model never has. Ollama loads at the setting (num_ctx): its unread window is
+    /// the real one, an unknown provider code included (served as Ollama).</summary>
+    [Fact]
+    public void AWindowNoOneRead_IsNotSaid_ExceptOnOllama()
+    {
+        Assert.Null(ContextManager.HeadShareNotice(Root(), "m", InferenceProviderFactory.LmStudio, 8192, 8192, System, Tools, Said(), windowRead: false));
+        Assert.Null(ContextManager.HeadShareNotice(Root(), "m", InferenceProviderFactory.OpenAiCompatible, 8192, 8192, System, Tools, Said(), windowRead: false));
+        Assert.NotNull(ContextManager.HeadShareNotice(Root(), "m", InferenceProviderFactory.Ollama, 8192, 8192, System, Tools, Said(), windowRead: false));
+        Assert.NotNull(ContextManager.HeadShareNotice(Root(), "m", InferenceProviderFactory.LmStudio, 8192, 8192, System, Tools, Said(), windowRead: true));
+        Assert.NotNull(ContextManager.HeadShareNotice(Root(), "m", "", 8192, 8192, System, Tools, Said(), windowRead: false));
+    }
+
+    /// <summary>The context check says whether the window was read: a model listed and not loaded yet reads as unknown.</summary>
+    [Theory]
+    [InlineData(null, 8192, false)]
+    [InlineData(55_296, 32_768, true)]
+    [InlineData(4_096, 4_096, true)]
+    public async Task TheContextCheck_SaysWhetherTheWindowWasRead(int? loaded, int window, bool read)
+    {
+        var decision = await ContextManager.PrepareAsync([], new Inferpal.Config.InferpalConfig(),
+            new FakeInferenceProvider { LoadedContextWindow = loaded }, 0, null, CancellationToken.None, model: "m");
+
+        Assert.Equal(window, decision.Window);
+        Assert.Equal(read, decision.WindowRead);
+    }
+
     /// <summary>The largest part is named; over the whole window the refusal says it, not this notice.</summary>
     [Fact]
     public void TheLargestPart_IsNamed_AndAHeadOverTheWindow_IsLeftToTheRefusal()
@@ -80,5 +109,6 @@ public sealed class HeadShareNoticeTests
         var code = ConventionCoverageTests.CodeOnly(Path.Combine(dir!.FullName, Path.Combine(parts)));
         Assert.Contains("ContextManager.PrepareAsync(", code);                                     // WITNESS
         Assert.Contains("ContextManager.HeadShareNotice(", code);
+        Assert.Contains(".WindowRead)", code);   // the notice is told whether the window was read
     }
 }
