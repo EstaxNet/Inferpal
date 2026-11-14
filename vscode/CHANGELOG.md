@@ -3,6 +3,24 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.8.13
+
+Long agent runs that leave room for the answer, and a result bar that says what really happened.
+
+- **Long runs leave the model room to answer**: when the last tool results no longer fit the context window, they are
+  shortened (beginning and end kept, the cut said) instead of crowding out the answer.
+- **A file the agent no longer has whole is not rewritten whole**: it reads the file again, or edits it in place.
+- **A small context window is said, once**: when the system prompt and the tool descriptions take more than half of the
+  window your server loaded, the chat says so, with the remedy that works on that server.
+- **"Tests passed" says what it covers**: a green on one test project of several says "part of the suite", and files a
+  command or a tool changed after the green are named.
+- **A tool call the model writes as text no longer shows in the chat** (Gemma 4, and models that write their calls
+  between tags).
+- **Fixed**: a reloaded conversation no longer claims files the model no longer has; `rename_symbol` refuses when a C#
+  file cannot be read; a workspace link to a network share no longer stalls a tool; a file another program holds is no
+  longer taken for missing or empty; commit-message notifications show plain text; `analyze_code` finds callers in the
+  target's own file.
+
 ## 1.8.12
 
 Switch servers without restarting, today's C# read as C#, and files that are busy or broken no longer taken for empty.
