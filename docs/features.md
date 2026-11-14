@@ -258,7 +258,8 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
 - **A run you can read at a glance** *(both editors)* — a run's steps show as they come, then
   fold into one line (`3 steps · read 1 file · edited 1 · build passed`, a ✗ when its last check
   failed). Under the answer, a **result bar** lists the files it changed with their lines added and
-  removed, the last build or test check, and **Undo run** (`/undo-run`), offered on the latest run; once undone, the bar says **Run undone** and how many
+  removed, the last build or test check — "part of the suite" when the tests that ran were a selection, through `run_tests` or
+  the shell (`dotnet test --filter`, `pytest -k`, `go test -run`…) —, and **Undo run** (`/undo-run`), offered on the latest run; once undone, the bar says **Run undone** and how many
   changes you kept stay as the run made them.
 - **Run replay** — `/replay [n]` shows a post-mortem timeline of an agent run: every tool
   call with its target and duration, then the files it touched.

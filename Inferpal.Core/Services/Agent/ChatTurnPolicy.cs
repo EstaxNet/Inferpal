@@ -284,6 +284,16 @@ internal static class ChatTurnPolicy
                    failed == false && Tools.RunTestsTool.RanPartOfTheSuite(run.Output, FilterOf(run.Input)));
     }
 
+    // A pass through the shell speaks for part of the suite when its test step selects tests (CheckCommand.NarrowsTests).
+    private static CheckVerdict ShellVerdict(ToolExecution run)
+    {
+        var command = CheckCommand.CommandOf(run.Input);
+        var failed  = CheckCommand.Failed(run.Input, run.Output);
+        return CheckCommand.RunsTests(command)
+            ? new(CheckKind.Tests, failed, failed == false && CheckCommand.NarrowsTests(command))
+            : new(CheckKind.Build, failed);
+    }
+
     private static string? FilterOf(string? input)
     {
         if (string.IsNullOrWhiteSpace(input)) return null;
@@ -312,9 +322,7 @@ internal static class ChatTurnPolicy
                 _                                            => null,
             }),
             { Name: "run_tests" } => RunTestsVerdict(last),
-            { Name: "run_command" } => new CheckVerdict(
-                CheckCommand.RunsTests(CheckCommand.CommandOf(last.Input)) ? CheckKind.Tests : CheckKind.Build,
-                CheckCommand.Failed(last.Input, last.Output)),
+            { Name: "run_command" } => ShellVerdict(last),
             _ => new CheckVerdict(CheckKind.Build, CodeActions.SmartFixValidator.ReadVerdict(last.Output)),
         };
     }

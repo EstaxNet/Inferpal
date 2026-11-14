@@ -43,6 +43,47 @@ internal static class CheckCommand
         catch (RegexMatchTimeoutException) { return false; }
     }
 
+    // A test selector, by runner, read in what follows the runner on its own step: "python -m pytest" is no marker, and
+    // "dotnet test -m:1" is MSBuild's, not pytest's.
+    private static readonly (Regex Runner, Regex Selector)[] Selectors =
+    [
+        (Rx(@"\bdotnet\s+test\b"), Rx(@"(?:^|\s)--filter(?:[\s:=]|$)")),
+        (Rx(@"\bpytest\b"), Rx(@"(?:^|\s)(?:-[km]\S*|--lf|--last-failed)(?:\s|$)|(?:^|\s)[^\s=-][^\s=]*\.py(?:::\S*)?(?:\s|$)")),
+        (Rx(@"\b(?:jest|vitest|(?:npm|pnpm|yarn)\s+(?:run\s+)?test)\b"), Rx(@"(?:^|\s)(?:-t|--testNamePattern|--testPathPatterns?)(?:[\s=]|$)|(?:^|\s)[^\s-]\S*\.(?:test|spec)\.\S+")),
+        (Rx(@"\bgo\s+test\b"), Rx(@"(?:^|\s)-(?:run|skip)(?:[\s=]|$)")),
+        (Rx(@"\bcargo\s+test\b"), Rx(@"^\s+[^\s\-<>&|0-9*]")),
+        (Rx(@"\bmocha\b"), Rx(@"(?:^|\s)(?:--grep|-g|--fgrep|-f)(?:[\s=]|$)")),
+    ];
+
+    private static Regex Rx(string pattern) =>
+        new(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexBudget.Default);
+
+    /// <summary>
+    /// Whether the step of <paramref name="command"/> that runs the tests selects some of them — a filter, a name pattern, a
+    /// marker, one test file: its pass then speaks for part of the suite only.
+    /// </summary>
+    /// <remarks>⚠ Only selectors are read, never a path to a folder (it may hold the whole suite) nor a script whose
+    /// content is unknown (<c>make test</c>, <c>npm run ci</c>): "part" said wrongly costs a word, "whole" said wrongly
+    /// hides what did not run — an unknown form keeps today's "tests passed".</remarks>
+    public static bool NarrowsTests(string? command)
+    {
+        if (string.IsNullOrWhiteSpace(command)) return false;
+        try
+        {
+            foreach (var step in Execution.CommandLine.Steps(command))
+            {
+                // A build before the tests ("dotnet build && dotnet test --filter X") is not the step read.
+                if (!IsCheck(step) || !RunsTests(step)) continue;
+                foreach (var (runner, selector) in Selectors)
+                    if (runner.Match(step) is { Success: true } m)
+                        return selector.IsMatch(step[(m.Index + m.Length)..]);
+                return false;
+            }
+        }
+        catch (RegexMatchTimeoutException) { }
+        return false;
+    }
+
     /// <summary>The <c>command</c> argument of a run_command call that ran it, from its JSON input — <c>null</c> for a
     /// call that managed a background job instead (an <c>action</c>: poll, stop, list), which runs no command.</summary>
     /// <remarks>⚠ A model repeats <c>command</c> next to <c>action: "poll"</c>: read as a run, the poll of a job that
