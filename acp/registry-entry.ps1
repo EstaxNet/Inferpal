@@ -44,7 +44,8 @@ $entry = [ordered]@{
     version      = $Version
     description  = 'A coding agent that runs on your own model server (Ollama, LM Studio or any OpenAI-compatible endpoint): no account, no telemetry.'
     repository   = 'https://github.com/EstaxNet/Inferpal'
-    website      = "https://github.com/EstaxNet/Inferpal/blob/v$Version/docs/acp.md"
+    # The registry's hourly update rewrites the archive URLs only: a docs link pinned to a tag would stay on it.
+    website      = 'https://github.com/EstaxNet/Inferpal/blob/master/docs/acp.md'
     authors      = @('EstaxNet')
     license      = 'GPL-3.0-only'
     license_url  = "https://github.com/EstaxNet/Inferpal/blob/v$Version/LICENSE"
