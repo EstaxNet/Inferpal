@@ -7,6 +7,7 @@
 # opens deliberately: this script writes the file, it publishes nothing.
 # acp/icon.svg is the chat bubble with a spark, 16 x 16, drawn in currentColor only, and it carries no comment: the
 # registry's build refuses an icon with a hardcoded colour or an HTML comment (a comment breaks its MDX embedding).
+# The entry carries no "icon": the registry's build sets it from that file.
 param(
     [Parameter(Mandatory)][string]$Version,
     [string]$Sums,
@@ -47,7 +48,6 @@ $entry = [ordered]@{
     authors      = @('EstaxNet')
     license      = 'GPL-3.0-only'
     license_url  = "https://github.com/EstaxNet/Inferpal/blob/v$Version/LICENSE"
-    icon         = 'https://raw.githubusercontent.com/EstaxNet/Inferpal/master/acp/icon.svg'
     distribution = [ordered]@{ binary = $binary }
 }
 New-Item -ItemType Directory -Force -Path (Split-Path $Out -Parent) | Out-Null
