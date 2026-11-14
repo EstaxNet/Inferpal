@@ -181,7 +181,8 @@ public sealed class PrCommandHandlerTests : IDisposable
         var answer = await Pr(client, "main");
 
         var sent = Sent(client);
-        Assert.Contains("- feat: total an invoice\n- feat: add the tax\n- c001", sent);
+        // The whole prompt on failure: red once in CI (net8, 43 s) where xUnit's truncated string hid the cause.
+        Assert.True(sent.Contains("- feat: total an invoice\n- feat: add the tax\n- c001", StringComparison.Ordinal), sent);
         Assert.Contains("- c098", sent);
         Assert.DoesNotContain("- c099", sent);   // 2 + 98 = the first 100
         Assert.Contains(Strings.PrSubjectsCut(PrCommandHandler.MaxSubjects, PrCommandHandler.MaxSubjects + 5), answer);
