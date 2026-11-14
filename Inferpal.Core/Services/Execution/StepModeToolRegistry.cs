@@ -25,6 +25,7 @@ internal sealed class StepModeToolRegistry(IToolRegistry inner, Func<Cancellatio
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
 
     public int? WritesInRun => inner.WritesInRun;
+    public void ForgetWholeRead(string path) => inner.ForgetWholeRead(path);
 
     public IEnumerable<string> CallableNames => inner.CallableNames;
 

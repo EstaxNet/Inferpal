@@ -673,7 +673,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             // The window the server really loaded the model with (ContextManager.EffectiveWindowAsync), measured each round:
             // LM Studio loads a model at the run's first request, at a window of its own, and says which only then.
             var window = await Agent.ContextManager.EffectiveWindowAsync(_config, this, model, ct);
-            AgentOrchestrator.CompactRunContext(messages, anchorCount, window, toolTokens, scale);
+            AgentOrchestrator.ForgetShrunkReads(messages,
+                AgentOrchestrator.CompactRunContext(messages, anchorCount, window, toolTokens, scale), tools);
 
             // The user's notes, the last text read before the next request; a note restarts the loop count (see the
             // orchestrator: the call it corrects is sent again).

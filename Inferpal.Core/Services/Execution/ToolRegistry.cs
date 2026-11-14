@@ -54,6 +54,16 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <inheritdoc/>
     public int? WritesInRun => _fileHistory.CurrentRunWriteCount;
 
+    /// <inheritdoc/>
+    public void ForgetWholeRead(string path)
+    {
+        try { _fileHistory.ForgetRead(PathSanitizer.Sanitize(path, _indexService.RootDir)); }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or IOException or NotSupportedException)
+        {
+            Diagnostics.Swallow("ToolRegistry.ForgetWholeRead", ex);   // a path the read itself would have refused
+        }
+    }
+
     /// <summary>
     /// The debugger surface the two debug tools were built with, or <c>null</c> on a front-end that
     /// has none. Exposed so <c>/debug</c> reports on the very session the model drives rather than

@@ -36,6 +36,14 @@ internal interface IToolRegistry
     int? WritesInRun => null;
 
     /// <summary>
+    /// The model no longer has <paramref name="path"/> (as a call wrote it) whole in front of it — its read was cut or elided
+    /// to leave the answer room: it is no longer "read" for a whole-file rewrite. Nothing when this registry tracks no reads.
+    /// </summary>
+    /// <remarks>⚠ A decorator forwards it: answered by default, a read the run cut would still let <c>write_file</c> replace
+    /// the whole file from what is left of it.</remarks>
+    void ForgetWholeRead(string path) { }
+
+    /// <summary>
     /// The names a call may carry: the declared ones, and the ones a request does not declare but the model can read and
     /// call (MCP tools waiting on demand). The only names a call written as text is recognized by.
     /// </summary>

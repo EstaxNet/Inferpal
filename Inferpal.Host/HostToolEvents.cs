@@ -34,6 +34,7 @@ internal sealed class ToolEventRegistry(
     public IReadOnlyList<ToolDefinition> Definitions => inner.Definitions;
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
     public int? WritesInRun => inner.WritesInRun;
+    public void ForgetWholeRead(string path) => inner.ForgetWholeRead(path);
     public IEnumerable<string> CallableNames => inner.CallableNames;
     public string? TurnedOffRefusal(string name) => inner.TurnedOffRefusal(name);
     public bool Knows(string name) => inner.Knows(name);

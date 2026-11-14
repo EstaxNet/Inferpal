@@ -771,6 +771,13 @@ internal class FileHistoryService
         lock (_runLock) Run?.NoteRead(filePath);
     }
 
+    /// <summary>The model no longer has <paramref name="filePath"/> whole in front of it in the current run (its read was cut
+    /// or elided by the run's compaction): no longer read, for <see cref="WasRead"/>.</summary>
+    internal void ForgetRead(string filePath)
+    {
+        lock (_runLock) Run?.ForgetRead(filePath);
+    }
+
     /// <summary>Records that <c>read_file</c> read <paramref name="filePath"/> in the current run — a page of it counts,
     /// a write does not (see <see cref="HistoryRun.FilesOpened"/>).</summary>
     internal void NoteOpened(string filePath)
@@ -2103,6 +2110,12 @@ internal sealed class HistoryRun
             : null;
 
     public bool WasRead(string path) => _read.Contains(path);
+
+    public void ForgetRead(string path)
+    {
+        _read.Remove(path);
+        _partial.Remove(path);
+    }
 
     // Files read_file read in this run, a page being enough: what the run line counts. Distinct from _read, which a
     // write_file also feeds (the model knows what it wrote) and which waits for every line.

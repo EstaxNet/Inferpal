@@ -383,16 +383,17 @@ internal sealed class AgentOrchestrator
     /// window, so a run measured on its messages alone elided only once the backend had already refused the request
     /// (LM Studio) or cut its head (Ollama).</param>
     /// <param name="scale">How much the server's count of the last request exceeded its estimate (<see cref="ServerScale"/>).</param>
-    internal static void CompactRunContext(List<ChatMessageDto> messages, int anchorCount, int budget, int toolTokens = 0,
-                                           double scale = 1.0)
+    internal static IReadOnlyList<int> CompactRunContext(List<ChatMessageDto> messages, int anchorCount, int budget,
+                                                          int toolTokens = 0, double scale = 1.0)
     {
-        if (budget <= 0) return;
+        var shrunk = new List<int>();
+        if (budget <= 0) return shrunk;
         var (trigger, target) = CompactionBudget(budget);
         // Counted once, then kept current as results are elided: re-estimating the whole list for
         // every message examined was quadratic on a long run.
         var chars = EstimateChars(messages);
         int Weighed() => (int)((chars / 4 + toolTokens) * scale);
-        if (Weighed() <= trigger) return;
+        if (Weighed() <= trigger) return shrunk;
 
         // Oldest first: the results before the recent tail, then — only when those were not enough — the tail's own,
         // up to the last batch. ⚠ A tail kept whole whatever its size left the answer nothing: two 8 000-character reads
@@ -400,20 +401,21 @@ internal sealed class AgentOrchestrator
         var lastBatch = LastBatchStart(messages, anchorCount);
         for (int i = anchorCount; i < lastBatch; i++)
         {
-            if (Weighed() <= target) return;
+            if (Weighed() <= target) return shrunk;
             var m = messages[i];
             if (m.Role != "tool" || m.Content == ElidedToolResult) continue;
             chars -= (m.Content?.Length ?? 0) - ElidedToolResult.Length;
             messages[i] = m with { Content = ElidedToolResult };
+            shrunk.Add(i);
         }
-        if (Weighed() <= target) return;
+        if (Weighed() <= target) return shrunk;
 
         // The last batch — what the model asked for in its last round, every result of a parallel batch — is cut, never
         // elided: each result keeps its beginning and its end (a command's verdict is at its end), the cut said, its share
         // of what the target leaves and never under MinCutResultChars.
         var batch = Enumerable.Range(lastBatch, messages.Count - lastBatch)
                               .Where(i => messages[i].Role == "tool" && messages[i].Content is { } c && c != ElidedToolResult).ToList();
-        if (batch.Count == 0) return;
+        if (batch.Count == 0) return shrunk;
         var excess = chars - (int)((target / scale - toolTokens) * 4);
         var room   = batch.Sum(i => messages[i].Content!.Length) - excess;
         // Smallest first: what a short result leaves of its share goes to the longer ones.
@@ -423,9 +425,71 @@ internal sealed class AgentOrchestrator
             var share = Math.Max(0, room) / left--;
             var kept  = messages[i].Content!.Length;
             // The mark CapForContext writes in the middle of each cut weighs too: under 200 characters.
-            if (kept > share) messages[i] = messages[i] with { Content = CapForContext(messages[i].Content!, Math.Max(MinCutResultChars, share - 200)) };
+            if (kept > share)
+            {
+                messages[i] = messages[i] with { Content = CapForContext(messages[i].Content!, Math.Max(MinCutResultChars, share - 200)) };
+                shrunk.Add(i);
+            }
             room -= Math.Min(kept, share);
         }
+        return shrunk;
+    }
+
+    /// <summary>
+    /// Of the tool results <see cref="CompactRunContext"/> elided or cut, the files <c>read_file</c> had read: no longer
+    /// read whole for <paramref name="tools"/> — unless a later call of the run wrote the file, whose content the model then
+    /// has in that call's own arguments, never elided.
+    /// </summary>
+    /// <remarks>⚠ Without it, a read the compaction left as its head and end still let <c>write_file</c> replace the whole
+    /// file — rebuilt from a view with its middle missing.</remarks>
+    internal static void ForgetShrunkReads(List<ChatMessageDto> messages, IReadOnlyList<int> shrunk, IToolRegistry? tools)
+    {
+        if (tools is null) return;
+        var gone = shrunk.ToHashSet();
+        foreach (var i in shrunk)
+        {
+            if (ReadPathOf(messages, i) is not { } path) continue;
+            if (!StillWhole(path, i)) tools.ForgetWholeRead(path);
+        }
+
+        // The model still has the file whole when, after this result, a write_file wrote it (its content is in that call's
+        // arguments, never elided) or a read of it came back untouched — never on any later call that merely names it.
+        bool StillWhole(string path, int after)
+        {
+            for (var j = after + 1; j < messages.Count; j++)
+            {
+                if (messages[j].Role == "assistant" && messages[j].ToolCalls is { } calls
+                    && calls.Any(c => c.Function.Name == "write_file" && SamePath(c, path)))
+                    return true;
+                if (messages[j].Role == "tool" && !gone.Contains(j) && messages[j].Content != ElidedToolResult
+                    && ReadPathOf(messages, j) == path)
+                    return true;
+            }
+            return false;
+        }
+
+        static bool SamePath(ToolCallDto c, string path) =>
+            ToolArgs.Str(c.Function.Arguments, "path") is { } p && string.Equals(p, path, StringComparison.Ordinal);
+    }
+
+    /// <summary>The path a read_file call wrote, for the tool result at <paramref name="index"/>; <c>null</c> for any other.</summary>
+    private static string? ReadPathOf(List<ChatMessageDto> messages, int index) =>
+        CallOf(messages, index) is { Function.Name: "read_file" } call
+        && ToolArgs.Str(call.Function.Arguments, "path") is { Length: > 0 } path ? path : null;
+
+    /// <summary>The call a tool result at <paramref name="index"/> answers: the assistant message before it that called tools,
+    /// the results after it taken in the order of its calls.</summary>
+    private static ToolCallDto? CallOf(List<ChatMessageDto> messages, int index)
+    {
+        var k = 0;
+        for (var j = index - 1; j >= 0; j--)
+        {
+            if (messages[j].Role == "tool") { k++; continue; }
+            if (messages[j].Role == "assistant" && messages[j].ToolCalls is { Count: > 0 } calls)
+                return k < calls.Count ? calls[k] : null;
+            if (messages[j].Role != "user") return null;   // an observe prompt may sit between batches, nothing else
+        }
+        return null;
     }
 
     /// <summary>The fewest characters a result of the last batch keeps when it is cut to leave the answer room.</summary>
@@ -482,7 +546,8 @@ internal sealed class AgentOrchestrator
     /// </summary>
     internal async Task<bool> CompactRunContextAsync(
         List<ChatMessageDto> messages, int anchorCount, string model,
-        bool alreadySummarized, Action<string> onStep, CancellationToken ct, int toolTokens = 0, double scale = 1.0)
+        bool alreadySummarized, Action<string> onStep, CancellationToken ct, int toolTokens = 0, double scale = 1.0,
+        IToolRegistry? tools = null)
     {
         // ⚠ The window the model is really loaded with when the server reports a smaller one: measured
         // against the configured window alone, a run was refused mid-way while elision waited.
@@ -498,21 +563,21 @@ internal sealed class AgentOrchestrator
 
         if (!alreadySummarized && _config.CompactionEnabled && !cannotFit)
         {
-            switch (await TrySummarizeOldTurnsAsync(messages, anchorCount, model, onStep, ct, scale))
+            switch (await TrySummarizeOldTurnsAsync(messages, anchorCount, model, onStep, ct, scale, tools))
             {
                 case RunSummaryOutcome.Summarized:
                     // A summary can still leave the run over budget (a large recent tail): elide on top.
-                    CompactRunContext(messages, anchorCount, budget, toolTokens, scale);
+                    ForgetShrunkReads(messages, CompactRunContext(messages, anchorCount, budget, toolTokens, scale), tools);
                     return true;
                 case RunSummaryOutcome.NothingToSummarize:
                     // ⚠ Not spent: a later overflow, with more old turns, is worth the one summary.
-                    CompactRunContext(messages, anchorCount, budget, toolTokens, scale);
+                    ForgetShrunkReads(messages, CompactRunContext(messages, anchorCount, budget, toolTokens, scale), tools);
                     return false;
             }
         }
 
         // No summary (disabled, already spent, or it failed/timed out) → elide.
-        CompactRunContext(messages, anchorCount, budget, toolTokens, scale);
+        ForgetShrunkReads(messages, CompactRunContext(messages, anchorCount, budget, toolTokens, scale), tools);
         return true;
     }
 
@@ -526,7 +591,7 @@ internal sealed class AgentOrchestrator
     /// </summary>
     private async Task<RunSummaryOutcome> TrySummarizeOldTurnsAsync(
         List<ChatMessageDto> messages, int anchorCount, string model, Action<string> onStep, CancellationToken ct,
-        double scale = 1.0)
+        double scale = 1.0, IToolRegistry? tools = null)
     {
         // Snap both ends to a tool-block boundary: removing half of an assistant(tool_calls)+tool
         // group leaves a structurally invalid history that OpenAI-compatible backends reject
@@ -604,6 +669,9 @@ internal sealed class AgentOrchestrator
         // Replace the summarised range with a single [summary] pair — followed by the user's notes it held, word for word:
         // paraphrased by the summary, or left out of it, a correction is no longer the one the user gave.
         var notes = range.Where(m => m.IsUserNote).ToList();
+        // What the summary paraphrases is no longer in front of the model: the files it had read in that range are no longer
+        // read whole — unless it still has them after it (ForgetShrunkReads).
+        ForgetShrunkReads(messages, [.. Enumerable.Range(start, rangeLen).Where(i => messages[i].Role == "tool")], tools);
         messages.RemoveRange(start, rangeLen);
         messages.InsertRange(start,
         [
@@ -1075,7 +1143,7 @@ internal sealed class AgentOrchestrator
             // overflow → one LLM summary of the old turns; later overflows → deterministic elision.
             var toolTokens = RequestSize.ToolTokens(tools.Definitions);
             runSummarized = await CompactRunContextAsync(messages, anchorCount, model, runSummarized, onStep, ct,
-                                                         toolTokens, serverScale);
+                                                         toolTokens, serverScale, tools);
 
             // ── The user's notes, the last text read before acting ───────────
             // ⚠ A note restarts the loop count: told "not that file", the model sends the call it was refused again with
