@@ -1582,6 +1582,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="UnloadUnverified" xml:space="preserve"><value>Déchargement demandé pour {0}, mais le serveur n'a pas répondu à la vérification qui suit — on ne sait pas s'il est encore chargé.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Suggérer les meilleurs modèles</value></data>
   <data name="HintSuggestModels" xml:space="preserve"><value>Choisit parmi les modèles installés, d'après les mesures d'Inferpal, et sous Ollama la fenêtre de contexte pour la carte. Rien n'est enregistré tant que vous ne cliquez pas sur Enregistrer.</value></data>
+  <data name="LinkModelsMeasured" xml:space="preserve"><value>Comment ces modèles ont été mesurés</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Chargés maintenant</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Un modèle déchargé se recharge à la prochaine requête qui en a besoin.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Décharger</value></data>

@@ -123,9 +123,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         typeof page === 'string' ? page : undefined,
         typeof section === 'string' ? section : undefined,
       )),
-    // The "?" beside the gear: this version's documentation, in the browser; not opened, its address is said.
-    vscode.commands.registerCommand('inferpal.openDocs', async () => {
-      const docs = docsUrl(context.extension.packageJSON.version as string | undefined);
+    // The "?" beside the gear: this version's documentation, in the browser; not opened, its address is said. The settings
+    // panel names a page of it (the models measured, by card).
+    vscode.commands.registerCommand('inferpal.openDocs', async (page?: unknown) => {
+      const docs = docsUrl(context.extension.packageJSON.version as string | undefined,
+        typeof page === 'string' && page ? page : undefined);
       if (!(await vscode.env.openExternal(vscode.Uri.parse(docs)))) {
         void vscode.window.showInformationMessage(t('Full documentation (in English): {0}', docs));
       }

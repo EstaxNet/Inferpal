@@ -2478,6 +2478,8 @@ internal static class Strings
         Format(Get(nameof(UnloadUnverified)), a);
     public static string BtnSuggestModels => Get(nameof(BtnSuggestModels));
     public static string HintSuggestModels => Get(nameof(HintSuggestModels));
+    /// <summary>The link, beside the model suggestion, to the page of docs/models.md that says how the models were measured.</summary>
+    public static string LinkModelsMeasured => Get(nameof(LinkModelsMeasured));
     public static string SettingsSectionLoadedModels => Get(nameof(SettingsSectionLoadedModels));
     public static string NoteLoadedModels => Get(nameof(NoteLoadedModels));
     public static string BtnUnloadModel => Get(nameof(BtnUnloadModel));

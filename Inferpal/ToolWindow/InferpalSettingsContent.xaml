@@ -278,6 +278,10 @@
                                 AutomationProperties.Name="{Binding BtnSuggestModels}"/>
                     </StackPanel>
                     <TextBlock Text="{Binding HintSuggestModels}" Style="{StaticResource Hint}"/>
+                    <TextBlock Margin="0,2,0,0">
+                        <Hyperlink Command="{Binding OpenModelsMeasuredCommand}" Foreground="{Binding LinkForeground}"
+                                   AutomationProperties.Name="{Binding LinkModelsMeasured}"><Run Text="{Binding LinkModelsMeasured, Mode=OneWay}"/></Hyperlink>
+                    </TextBlock>
                     <StackPanel Margin="0,6,0,0" Visibility="{Binding HasSuggestion, Converter={StaticResource b2v}}">
                         <ItemsControl ItemsSource="{Binding SuggestionLines}">
                             <ItemsControl.ItemTemplate>

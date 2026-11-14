@@ -1582,6 +1582,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="UnloadUnverified" xml:space="preserve"><value>Scaricamento richiesto per {0}, ma il server non ha risposto alla verifica successiva: non si sa se sia ancora caricato.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Suggerisci i modelli migliori</value></data>
   <data name="HintSuggestModels" xml:space="preserve"><value>Sceglie tra i modelli installati, in base alle misurazioni di Inferpal, e con Ollama la finestra di contesto per la scheda. Nulla viene salvato finché non fai clic su Salva.</value></data>
+  <data name="LinkModelsMeasured" xml:space="preserve"><value>Come sono stati misurati questi modelli</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Caricati ora</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Un modello scaricato si ricarica alla prossima richiesta che ne ha bisogno.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Scarica</value></data>

@@ -30,6 +30,10 @@ internal partial class InferpalSettingsData
     [DataMember] public bool   HasSuggestion     { get => _hasSuggestion;     set => SetProperty(ref _hasSuggestion,     value); }
     [DataMember] public bool   NotSuggesting     { get => !_suggesting;       set => SetProperty(ref _suggesting,        !value); }
     [DataMember] public AsyncCommand SuggestModelsCommand { get; private set; } = null!;
+    private string _linkModelsMeasured = "";
+    /// <summary>The link to the page the suggestion draws from (<see cref="Services.DocsLinks.ModelsByCard"/>).</summary>
+    [DataMember] public string LinkModelsMeasured { get => _linkModelsMeasured; set => SetProperty(ref _linkModelsMeasured, value); }
+    [DataMember] public AsyncCommand OpenModelsMeasuredCommand { get; private set; } = null!;
 
     // ── Loaded now ───────────────────────────────────────────────────────────
     private string _loadedModelsSummary = "", _loadedModelsMessage = "", _labelLoadedModels = "", _noteLoadedModels = "",
@@ -52,6 +56,19 @@ internal partial class InferpalSettingsData
     private void InitModelBlocks()
     {
         SuggestModelsCommand = new AsyncCommand((_, ct) => SuggestModelsAsync(ct));
+        OpenModelsMeasuredCommand = new AsyncCommand((_, _) =>
+        {
+            var page = Services.DocsLinks.ModelsByCard;
+            // Not opened, the address is said instead, under the button.
+            if (WebLink.Open(page)) return Task.CompletedTask;
+            return RunOnVMContextAsync(() =>
+            {
+                SuggestionLines.Clear();
+                SuggestionNotes.Clear();
+                SuggestionSummary = Strings.HelpDocumentation(page);
+                HasSuggestion     = true;
+            });
+        });
         UnloadAllCommand     = new AsyncCommand((_, ct) => UnloadAsync(null, ct));
         RefreshLoadedCommand = new AsyncCommand((_, ct) => RefreshLoadedModelsAsync(ct));
     }
@@ -61,6 +78,7 @@ internal partial class InferpalSettingsData
     {
         BtnSuggestModels  = Strings.BtnSuggestModels;
         HintSuggestModels = Strings.HintSuggestModels;
+        LinkModelsMeasured = Strings.LinkModelsMeasured;
         LabelLoadedModels = Strings.SettingsSectionLoadedModels;
         NoteLoadedModels  = Strings.NoteLoadedModels;
         BtnUnloadAll      = Strings.BtnUnloadAll;

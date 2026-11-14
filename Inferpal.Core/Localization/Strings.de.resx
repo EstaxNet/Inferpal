@@ -1582,6 +1582,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="UnloadUnverified" xml:space="preserve"><value>Entladen für {0} angefordert, aber der Server hat auf die anschließende Prüfung nicht geantwortet — ob es noch geladen ist, ist unbekannt.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Die besten Modelle vorschlagen</value></data>
   <data name="HintSuggestModels" xml:space="preserve"><value>Wählt unter den installierten Modellen anhand der Messungen von Inferpal, und unter Ollama das Kontextfenster für die Karte. Nichts wird gespeichert, bevor Sie auf Speichern klicken.</value></data>
+  <data name="LinkModelsMeasured" xml:space="preserve"><value>Wie diese Modelle gemessen wurden</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Jetzt geladen</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Ein entladenes Modell wird bei der nächsten Anfrage, die es braucht, wieder geladen.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Entladen</value></data>

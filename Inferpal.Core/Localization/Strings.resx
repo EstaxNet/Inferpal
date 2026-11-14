@@ -1586,6 +1586,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="UnloadUnverified" xml:space="preserve"><value>Unload asked for {0}, but the server did not answer the check afterwards — whether it is still loaded is unknown.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Suggest the best models</value></data>
   <data name="HintSuggestModels" xml:space="preserve"><value>Picks among the installed models, from Inferpal's measurements, and on Ollama the context window for the card. Nothing is saved until you click Save.</value></data>
+  <data name="LinkModelsMeasured" xml:space="preserve"><value>How these models were measured</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Loaded now</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>An unloaded model loads again at the next request that needs it.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Unload</value></data>

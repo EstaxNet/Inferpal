@@ -1582,6 +1582,7 @@
   <data name="UnloadUnverified" xml:space="preserve"><value>已请求卸载 {0}，但服务器未响应随后的检查——无法确定它是否仍处于加载状态。</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>建议最佳模型</value></data>
   <data name="HintSuggestModels" xml:space="preserve"><value>根据 Inferpal 的测量从已安装模型中挑选，在 Ollama 上还会按显卡选择上下文窗口。点击“保存”之前不会保存任何内容。</value></data>
+  <data name="LinkModelsMeasured" xml:space="preserve"><value>这些模型是如何测量的</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>当前已加载</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>已卸载的模型会在下一次需要它的请求时重新加载。</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>卸载</value></data>

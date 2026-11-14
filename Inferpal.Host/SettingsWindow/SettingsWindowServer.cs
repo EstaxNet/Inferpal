@@ -361,6 +361,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
             gone     = _gone,
             noPicker = Strings.SettingsWindowNoPicker,
             noXray   = Strings.SettingsWindowNoXray,
+            docs     = Services.DocsLinks.For("", Services.DocsLinks.InstalledVersion),
         });
         var language = Strings.UiCulture.TwoLetterISOLanguageName;
         var title    = WebUtility.HtmlEncode(Strings.SettingsWindowTitle);

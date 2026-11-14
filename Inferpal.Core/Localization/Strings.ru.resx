@@ -1582,6 +1582,7 @@
   <data name="UnloadUnverified" xml:space="preserve"><value>Выгрузка {0} запрошена, но сервер не ответил на последующую проверку — неизвестно, загружена ли модель до сих пор.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Предложить лучшие модели</value></data>
   <data name="HintSuggestModels" xml:space="preserve"><value>Выбирает среди установленных моделей по измерениям Inferpal, а в Ollama — и окно контекста для видеокарты. Ничего не сохраняется, пока вы не нажмёте «Сохранить».</value></data>
+  <data name="LinkModelsMeasured" xml:space="preserve"><value>Как измерялись эти модели</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Загружено сейчас</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Выгруженная модель снова загрузится при следующем запросе, которому она нужна.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Выгрузить</value></data>

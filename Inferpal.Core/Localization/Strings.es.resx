@@ -1582,6 +1582,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="UnloadUnverified" xml:space="preserve"><value>Se pidió descargar {0}, pero el servidor no respondió a la comprobación posterior: no se sabe si sigue cargado.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Sugerir los mejores modelos</value></data>
   <data name="HintSuggestModels" xml:space="preserve"><value>Elige entre los modelos instalados, según las mediciones de Inferpal, y con Ollama la ventana de contexto para la tarjeta. No se guarda nada hasta que pulse Guardar.</value></data>
+  <data name="LinkModelsMeasured" xml:space="preserve"><value>Cómo se midieron estos modelos</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Cargados ahora</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Un modelo descargado vuelve a cargarse en la siguiente solicitud que lo necesite.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Descargar</value></data>

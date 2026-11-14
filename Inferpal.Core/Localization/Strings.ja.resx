@@ -1582,6 +1582,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="UnloadUnverified" xml:space="preserve"><value>{0} のアンロードを要求しましたが、その後の確認にサーバーが応答しませんでした。まだ読み込まれているかは不明です。</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>最適なモデルを提案</value></data>
   <data name="HintSuggestModels" xml:space="preserve"><value>Inferpal の測定に基づき、インストール済みモデルから選びます。Ollama ではカードに合わせたコンテキストウィンドウも選びます。保存をクリックするまで何も保存されません。</value></data>
+  <data name="LinkModelsMeasured" xml:space="preserve"><value>これらのモデルの測定方法</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>現在読み込み中</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>アンロードしたモデルは、次に必要になったリクエストで再び読み込まれます。</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>アンロード</value></data>

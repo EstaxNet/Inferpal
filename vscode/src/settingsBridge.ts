@@ -63,6 +63,8 @@ export interface SettingsShell {
   /** A file picked by the user, or undefined. */
   browseFile(): Promise<string | undefined>;
   openXray(): void;
+  /** Opens `page` of the docs folder, at the version installed (`models.md#by-graphics-card`). */
+  openDocs(page: string): void;
   /** After a save the host accepted: what changed may need the app (a new language, a new server). */
   saved(before: SavedKeys | null, after: SavedKeys | null): Promise<void>;
   /** Settings another editor saved, followed as the form loads: the chat adopts them. */
@@ -78,7 +80,9 @@ export interface SettingsInbound {
     | 'indexCard' | 'indexRebuild' | 'exclusions' | 'docsSites' | 'docsAction' | 'keptIndexes' | 'keptForget'
     | 'contextUsage' | 'projectFiles'
     | 'repoInstructions' | 'toolList' | 'toolSet'
-    | 'pinSizes' | 'openFile' | 'openXray' | 'loadedModels' | 'unloadModels' | 'suggestModels';
+    | 'pinSizes' | 'openFile' | 'openXray' | 'openDocs' | 'loadedModels' | 'unloadModels' | 'suggestModels';
+  /** openDocs: the docs page, with its anchor. */
+  page?: string;
   /** unloadModels: the models to unload; absent = every loaded one. */
   names?: string[];
   /** testConnection / refreshModels: the role whose server is probed or listed (inlineCompletion, ragEmbedding);
@@ -374,6 +378,11 @@ export class SettingsBridge {
       }
       case 'openXray':
         this.shell.openXray();
+        return;
+      case 'openDocs':
+        if (msg.page) {
+          this.shell.openDocs(msg.page);
+        }
         return;
       case 'browsePinned': {
         const picked = await this.shell.browseFile();

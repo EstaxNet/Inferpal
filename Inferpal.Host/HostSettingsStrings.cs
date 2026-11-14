@@ -133,7 +133,7 @@ internal sealed partial class HostServer
     private static readonly string[] EditorStrings =
     [
         // Server and models: the suggestion and the loaded models (the sentences themselves come with the facts)
-        "BtnSuggestModels", "HintSuggestModels", "BtnUnloadModel", "BtnUnloadAll", "BtnRefreshLoaded", "SettingsNoModelChosen",
+        "BtnSuggestModels", "HintSuggestModels", "LinkModelsMeasured", "BtnUnloadModel", "BtnUnloadAll", "BtnRefreshLoaded", "SettingsNoModelChosen",
         "SettingsEditAsJson", "SettingsEditAsText", "SettingsEditAsList",
         "HintRowEdit", "HintRowDelete", "RowEditTitle", "ListLineNotRead",
         // MCP server cards and their form

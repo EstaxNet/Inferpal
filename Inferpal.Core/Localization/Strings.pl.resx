@@ -1582,6 +1582,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="UnloadUnverified" xml:space="preserve"><value>Zażądano zwolnienia {0}, ale serwer nie odpowiedział na późniejsze sprawdzenie — nie wiadomo, czy nadal jest załadowany.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>Zasugeruj najlepsze modele</value></data>
   <data name="HintSuggestModels" xml:space="preserve"><value>Wybiera spośród zainstalowanych modeli na podstawie pomiarów Inferpal, a w Ollama także okno kontekstu dla karty. Nic nie zostanie zapisane, dopóki nie klikniesz Zapisz.</value></data>
+  <data name="LinkModelsMeasured" xml:space="preserve"><value>Jak zmierzono te modele</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>Załadowane teraz</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>Zwolniony model załaduje się ponownie przy następnym żądaniu, które go potrzebuje.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>Zwolnij</value></data>

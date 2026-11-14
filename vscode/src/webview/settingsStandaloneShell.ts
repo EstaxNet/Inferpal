@@ -13,6 +13,8 @@ interface StandalonePage {
   noPicker: string;
   /** The X-Ray lives in an editor's chat panel. */
   noXray: string;
+  /** The docs folder at the version the host runs, ending in "/": a page's address is this and its name. */
+  docs?: string;
 }
 
 declare global {
@@ -96,6 +98,12 @@ const bridge = new SettingsBridge({
     return undefined;
   },
   openXray: () => post({ type: 'error', message: page.noXray }),
+  // A web page opens in the browser this form runs in, beside it.
+  openDocs: (docsPage) => {
+    if (page.docs) {
+      window.open(page.docs + docsPage, '_blank', 'noopener');
+    }
+  },
   // No chat beside this page: what the follow took is the host's, shown by the form it loads.
   followed: async () => undefined,
   // A new language: the page is drawn again by the server, in it (the host switched with the save).

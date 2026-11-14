@@ -127,9 +127,13 @@ function suggestModels(host: WidgetHost): LiveWidget {
   button.type = 'button';
   const head = el('div', 'blockhead');
   head.append(button, el('span', 'hint', host.res('HintSuggestModels')));
+  // The page the suggestion draws from, at the version installed: the shell opens it (an extension's webview, a browser).
+  const measured = el('button', 'linkbtn', host.res('LinkModelsMeasured'));
+  measured.type = 'button';
+  measured.addEventListener('click', () => host.post({ type: 'openDocs', page: 'models.md#by-graphics-card' }));
   const result = el('div', 'suggestresult');
   result.setAttribute('aria-live', 'polite');
-  block.append(head, result);
+  block.append(head, measured, result);
   button.addEventListener('click', () => {
     button.disabled = true;
     result.textContent = '…';

@@ -475,7 +475,7 @@ input[type="checkbox"] {
 .ruleadd button,
 .statuscard button:not(.linkbtn),
 .docsites button:not(.linkbtn):not(.icon-button),
-.suggestblock button,
+.suggestblock button:not(.linkbtn),
 .loadedmodels button:not(.icon-button) {
   border-radius: 4px;
   padding: 4px 12px;
@@ -1300,6 +1300,10 @@ body.vscode-high-contrast-light .segment:has(input:checked) {
 
 .suggestblock .blockhead {
   justify-content: flex-start;
+}
+
+.suggestblock .linkbtn {
+  align-self: flex-start;
 }
 
 .suggestresult {

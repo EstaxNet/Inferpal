@@ -1582,6 +1582,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="UnloadUnverified" xml:space="preserve"><value>{0} 언로드를 요청했지만 서버가 이후 확인에 응답하지 않았습니다. 아직 로드되어 있는지는 알 수 없습니다.</value></data>
   <data name="BtnSuggestModels" xml:space="preserve"><value>가장 좋은 모델 제안</value></data>
   <data name="HintSuggestModels" xml:space="preserve"><value>Inferpal의 측정을 바탕으로 설치된 모델 중에서 고르고, Ollama에서는 카드에 맞는 컨텍스트 창도 정합니다. 저장을 누르기 전에는 아무것도 저장되지 않습니다.</value></data>
+  <data name="LinkModelsMeasured" xml:space="preserve"><value>이 모델들을 측정한 방법</value></data>
   <data name="SettingsSectionLoadedModels" xml:space="preserve"><value>현재 로드됨</value></data>
   <data name="NoteLoadedModels" xml:space="preserve"><value>언로드한 모델은 그 모델이 필요한 다음 요청에서 다시 로드됩니다.</value></data>
   <data name="BtnUnloadModel" xml:space="preserve"><value>언로드</value></data>

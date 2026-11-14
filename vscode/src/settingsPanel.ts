@@ -60,6 +60,7 @@ export class SettingsPanel {
         return picked?.[0]?.fsPath;
       },
       openXray: () => this.openXray(),
+      openDocs: (page) => void vscode.commands.executeCommand('inferpal.openDocs', page),
       saved: (before, after) => this.afterSave(before, after),
     });
     panel.webview.html = this.renderHtml(panel.webview);

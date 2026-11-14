@@ -18,6 +18,12 @@ internal static class DocsLinks
     /// <summary>How to write a mode (the mode selector's "Write a mode"), for this build.</summary>
     public static string Modes => For("configuration.md#modes", InstalledVersion);
 
+    /// <summary>The page the model suggestion draws from: which model for which card, and how each was measured.</summary>
+    public static string ModelsByCard => For(ModelsByCardPage, InstalledVersion);
+
+    /// <summary>The docs page of <see cref="ModelsByCard"/>, as the settings pages of VS Code and the browser ask for it.</summary>
+    internal const string ModelsByCardPage = "models.md#by-graphics-card";
+
     /// <summary><paramref name="page"/> of the <c>docs</c> folder, for <paramref name="version"/>.</summary>
     internal static string For(string page, string? version) => $"{Repository}/blob/{RefFor(version)}/docs/{page}";
 
