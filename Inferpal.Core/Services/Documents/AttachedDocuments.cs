@@ -50,9 +50,15 @@ internal static class AttachedDocuments
         var info = new FileInfo(path);
         if (!info.Exists || info.Length > DocumentText.MaxBytes) return false;
         var result = DocumentText.Extract(path, ct, password);
-        if (result.Problem == DocumentProblem.Encrypted) return false;
+        // ⚠ A wrong password can also come back as damaged: a part with no checksum decrypts to bytes that do not inflate,
+        // a size read from garbage runs past the data. Only a document that opened is a right password — kept, it would
+        // close the card and read the file as damaged.
+        if (result.Problem is DocumentProblem.Encrypted or DocumentProblem.Unreadable) return false;
         Passwords[path] = password;
+        // A right password whose read ran out of time: the "locked" answer kept from before must go, or the file would read
+        // as locked again until it changed on disk.
         if (result.Problem != DocumentProblem.TooSlow) Known[path] = (info.LastWriteTimeUtc, info.Length, result);
+        else Known.TryRemove(path, out _);
         return true;
     }
 

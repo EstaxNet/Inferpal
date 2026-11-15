@@ -42,12 +42,15 @@ internal static class EmailText
     private static DocumentExtraction Msg(byte[] bytes, CancellationToken ct)
     {
         using var root = RootStorage.Open(DocText.Expandable(bytes));
-        var codePage = Int(root, 0x3FDE) ?? Int(root, 0x3FFD) ?? 1252;
+        // Narrow (8-bit) properties are in the message's code page (PR_MESSAGE_CODEPAGE); the HTML body in the internet one
+        // (PR_INTERNET_CPID). An ANSI message with a UTF-8 body read its subject "Réunion" as "R�union" with one for both.
+        var codePage = Int(root, 0x3FFD) ?? Int(root, 0x3FDE) ?? 1252;
+        var htmlCodePage = Int(root, 0x3FDE) ?? codePage;
         string? Text(Storage storage, int id) => String(storage, id, codePage);
 
         var body = Text(root, 0x1000);
         if (string.IsNullOrWhiteSpace(body) && Binary(root, 0x1013) is { } htmlBytes)
-            body = Tools.FetchUrlTool.HtmlToText(Decode(htmlBytes, codePage));
+            body = Tools.FetchUrlTool.HtmlToText(Decode(htmlBytes, htmlCodePage));
         if (string.IsNullOrWhiteSpace(body) && Binary(root, 0x1009) is { } compressed && CompressedRtf.Decompress(compressed) is { } rtf)
             body = RtfText.Extract(rtf, ct).Text;
         ct.ThrowIfCancellationRequested();

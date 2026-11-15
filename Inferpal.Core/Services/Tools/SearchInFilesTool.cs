@@ -19,7 +19,7 @@ internal class SearchInFilesTool : ITool
     public string Name => "search_in_files";
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
-    public string Description => "Searches for text or a regex pattern in files, the text of documents (PDF, Office, OpenDocument, RTF, notebooks, e-mails) included. Returns file:line:content.";
+    public string Description => "Searches for text or a regex pattern in files, the text of documents (PDF, Office, OpenDocument, Outlook .msg) included. Returns file:line:content.";
     public object Parameters => new
     {
         type = "object",
@@ -100,6 +100,7 @@ internal class SearchInFilesTool : ITool
             {
                 var relPath = file[searchRoot.Length..].TrimStart('\\', '/');
                 List<string> lines;
+                var headerLines = 0;
                 // ⚠ The unsaved buffer when the editor holds one, as read_file shows it: searched on disk only, a
                 // symbol the user just typed came back "no results" — read "not defined" — from the very file
                 // read_file showed it in.
@@ -108,7 +109,7 @@ internal class SearchInFilesTool : ITool
                     lines = [.. buffered.ReplaceLineEndings("\n").Split('\n')];
                     if (lines.Count > 0 && lines[^1].Length == 0) lines.RemoveAt(lines.Count - 1);
                 }
-                else if (Documents.DocumentText.Handles(file))
+                else if (Documents.DocumentText.ToolsRead(file))
                 {
                     // A PDF or DOCX is searched in its extracted text — read_file's, so a line reported here is the line it
                     // shows. Extraction is bounded per search: past its time, the rest are counted and said, never "no match".
@@ -119,6 +120,9 @@ internal class SearchInFilesTool : ITool
                     if (extracted is null) { documentsWithoutText++; continue; }
                     documentsSearched++;
                     lines = [.. extracted.Split('\n')];
+                    // Inferpal's own header ("[Text extracted from …: images are not here.]") is not the document: never
+                    // a match, its lines kept so the numbers stay read_file's.
+                    headerLines = lines.IndexOf(string.Empty) + 1;
                 }
                 else
                 {
@@ -135,7 +139,7 @@ internal class SearchInFilesTool : ITool
                         continue;
                     }
                 }
-                for (int i = 0; i < lines.Count && results.Count < MaxResults; i++)
+                for (int i = headerLines; i < lines.Count && results.Count < MaxResults; i++)
                 {
                     if (!regex.IsMatch(lines[i]) && literal?.IsMatch(lines[i]) != true) continue;
                     var line = lines[i].Trim();

@@ -925,8 +925,12 @@ internal sealed class AcpSession : IAsyncDisposable
                 string? notAttached = null, reason = null;
                 try
                 {
-                    if (MentionController.BinaryRefusal(path!) is { } binary) (notAttached, reason) = (binary, "a binary file");
-                    else if ((body = new FileInfo(path!).Length > MentionController.MaxAttachedFileSize ? null
+                    // A document (PDF, DOCX…) is read under the documents' own limit, not the text one, and its refusal
+                    // tells the model why it gave no text (a scan, a password) rather than "a binary file".
+                    var document = Services.Documents.DocumentText.Handles(path!);
+                    if (MentionController.BinaryRefusal(path!) is { } binary)
+                        (notAttached, reason) = (binary, document && Services.Documents.AttachedDocuments.WhyNoText(path!) is { } noText ? noText : "a binary file");
+                    else if ((body = !document && new FileInfo(path!).Length > MentionController.MaxAttachedFileSize ? null
                                  : await EditorBuffer(new PathNote(path), CancellationToken.None) is { } buffered
                                      ? (buffered.Length > MentionController.MaxAttachedFileSize ? null : buffered)
                                      : await MentionController.FileMentionTextAsync(path!, null, CancellationToken.None)) is null)

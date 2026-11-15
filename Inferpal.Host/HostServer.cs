@@ -1552,7 +1552,7 @@ internal sealed partial class HostServer : IDisposable
         await MentionController.OpenIfProtectedAsync(path, Session().Approval, ct);
         if (MentionController.BinaryRefusal(path) is { } refused)
             return new AttachReadResult(null, refused,
-                "(not attached: " + (Services.Documents.AttachedDocuments.WhyNoText(path) is { } why && Services.Documents.DocumentText.Handles(path)
+                "(not attached: " + (Services.Documents.DocumentText.Handles(path) && Services.Documents.AttachedDocuments.WhyNoText(path) is { } why
                     ? why : "a binary file: it has no text") + ")");
         return await MentionController.FileMentionTextAsync(path, null, ct) is { } text
             ? new AttachReadResult(text, null, null)

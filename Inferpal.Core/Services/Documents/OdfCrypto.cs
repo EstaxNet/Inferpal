@@ -20,7 +20,10 @@ internal static class OdfCrypto
     /// <summary>Argon2 memory a file may ask for at most, in KiB: LibreOffice asks 64 MiB; more would let a file take the
     /// editor's memory.</summary>
     private const int MaxArgon2MemoryKiB = 256 * 1024;
-    private const int MaxIterations = 10_000_000;
+    /// <summary>The most a file may ask, per derivation: LibreOffice writes 100 000 PBKDF2 rounds, 3 Argon2 passes. Neither
+    /// call can be interrupted, so a file asking millions would hold the reader for hours once a password is typed.</summary>
+    private const int MaxPbkdf2Iterations = 1_000_000;
+    private const int MaxArgon2Iterations = 64;
 
     /// <summary>How a part is encrypted, from its <c>manifest:encryption-data</c>.</summary>
     internal sealed record Encryption(string Path, string Algorithm, byte[] Iv, string StartKey, string Derivation, byte[] Salt,
@@ -128,10 +131,12 @@ internal static class OdfCrypto
 
     private static byte[]? Key(Encryption encryption, byte[] startKey, CancellationToken ct)
     {
-        if (encryption.Iterations is <= 0 or > MaxIterations) return null;
+        // AES-128 or AES-256: any other key size is no key these ciphers take (a file asking 2 GB of key is refused).
+        if (encryption.Iterations <= 0 || encryption.KeySize is not (16 or 32)) return null;
         if (encryption.Derivation.EndsWith("argon2id", StringComparison.Ordinal))
         {
-            if (encryption.MemoryKiB is <= 0 or > MaxArgon2MemoryKiB || encryption.Lanes is <= 0 or > 64) return null;
+            if (encryption.Iterations > MaxArgon2Iterations || encryption.MemoryKiB is <= 0 or > MaxArgon2MemoryKiB
+                || encryption.Lanes is <= 0 or > 64) return null;
             ct.ThrowIfCancellationRequested();
             using var argon = new Argon2id(startKey)
             {
@@ -140,7 +145,7 @@ internal static class OdfCrypto
             };
             return argon.GetBytes(encryption.KeySize);
         }
-        if (encryption.Derivation.EndsWith("PBKDF2", StringComparison.OrdinalIgnoreCase))
+        if (encryption.Derivation.EndsWith("PBKDF2", StringComparison.OrdinalIgnoreCase) && encryption.Iterations <= MaxPbkdf2Iterations)
             return Rfc2898DeriveBytes.Pbkdf2(startKey, encryption.Salt, encryption.Iterations, HashAlgorithmName.SHA1, encryption.KeySize);
         return null;
     }

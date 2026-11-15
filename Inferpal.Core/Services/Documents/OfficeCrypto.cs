@@ -24,18 +24,46 @@ internal static class OfficeCrypto
             using var root = OpenMcdf.RootStorage.Open(DocText.Expandable(bytes));
             return root.EnumerateEntries().Any(e => e.Type == OpenMcdf.EntryType.Stream && e.Name == "EncryptedPackage");
         }
-        catch (Exception ex) when (ex is IOException or FormatException or ArgumentException or NotSupportedException)
+        // OpenMcdf is stricter than the extractors: a compound file it refuses (one ExcelDataReader reads) is no package,
+        // and its reader goes on — never refused here.
+        catch (Exception ex) when (ex is IOException or FormatException or ArgumentException or NotSupportedException
+                                       or InvalidDataException or InvalidOperationException)
         {
+            Diagnostics.Swallow("OfficeCrypto.IsEncryptedPackage", ex);
             return false;
         }
     }
 
-    /// <summary>The spin count a file may ask for at most: Office writes 100 000; far more would stall the reader.</summary>
-    private const int MaxSpinCount = 10_000_000;
+    /// <summary>The spin count a file may ask for at most: Office writes 100 000; a file asking far more stalls the reader on
+    /// a hash it cannot interrupt.</summary>
+    private const int MaxSpinCount = 1_000_000;
 
     private static readonly byte[] VerifierInputBlock = [0xfe, 0xa7, 0xd2, 0x76, 0x3b, 0x4b, 0x9e, 0x79];
     private static readonly byte[] VerifierValueBlock = [0xd7, 0xaa, 0x0f, 0x6d, 0x30, 0x61, 0x34, 0x4e];
     private static readonly byte[] KeyValueBlock      = [0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6];
+
+    /// <summary>
+    /// Whether this reader opens the encryption of <paramref name="file"/> at all — agile (4.4) or standard (3.2, 4.2) with
+    /// AES — with the right password. ⚠ Another one (an RC4 CryptoAPI package, a .doc renamed .docx) is no card to ask:
+    /// every right password would be called wrong three times, then the file left closed.
+    /// </summary>
+    internal static bool Opens(byte[] file)
+    {
+        try
+        {
+            using var root = OpenMcdf.RootStorage.Open(DocText.Expandable(file));
+            if (Stream(root, "EncryptionInfo") is not { Length: >= 32 } info || Stream(root, "EncryptedPackage") is null) return false;
+            var (major, minor) = (BitConverter.ToUInt16(info, 0), BitConverter.ToUInt16(info, 2));
+            if (major == 4 && minor == 4) return true;
+            return major is 3 or 4 && minor == 2 && BitConverter.ToInt32(info, 12 + 8) is 0x660E or 0x660F or 0x6610;
+        }
+        catch (Exception ex) when (ex is IOException or FormatException or ArgumentException or NotSupportedException
+                                       or InvalidDataException or InvalidOperationException)
+        {
+            Diagnostics.Swallow("OfficeCrypto.Opens", ex);
+            return false;
+        }
+    }
 
     /// <summary>The package (the zip) inside, decrypted with <paramref name="password"/>; null when the password does not
     /// open it, or the encryption is not one this reader opens.</summary>

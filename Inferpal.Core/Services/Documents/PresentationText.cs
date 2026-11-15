@@ -22,6 +22,8 @@ internal static class PresentationText
     {
         if (OfficeCrypto.IsCompoundFile(bytes))
         {
+            // An encryption this reader does not open is said unreadable, never a password card no password can pass.
+            if (!OfficeCrypto.Opens(bytes)) return new(string.Empty, 0, 0, DocumentProblem.Unreadable);
             if (password is null || OfficeCrypto.Decrypt(bytes, password, ct) is not { } package)
                 return new(string.Empty, 0, 0, DocumentProblem.Encrypted);
             bytes = package;

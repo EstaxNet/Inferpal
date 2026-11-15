@@ -29,7 +29,7 @@ internal class ReadFileTool : ITool
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
-        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, RTF, Jupyter notebooks, e-mails .eml/.msg). A file too long for one answer comes back in pages of whole " +
+        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg); a notebook, an RTF or an .eml is read as the text file it is. A file too long for one answer comes back in pages of whole " +
         "lines, and the answer says which start_line to pass to read on.";
     public object Parameters => new
     {
@@ -53,7 +53,7 @@ internal class ReadFileTool : ITool
         // ⚠ A PDF or DOCX reads as its extracted text — checked before the binary test, which a PDF whose first bytes hold
         // no NUL passes, and which then decoded it as noise. Paged like any file, at the line numbers search_in_files
         // reports. Not noted as read: write_file must never take a document for a text it may rewrite whole.
-        if (target is Target.File or Target.Binary && Documents.DocumentText.Handles(path))
+        if (target is Target.File or Target.Binary && Documents.DocumentText.ToolsRead(path))
         {
             var name = Path.GetFileName(path);
             var extracted = await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct), ct);
@@ -62,7 +62,7 @@ internal class ReadFileTool : ITool
             if (extracted is null && _approval is { CanAskForInput: true } && Documents.AttachedDocuments.AsksForPassword(path))
             {
                 if (!await _approval.AskForDocumentPasswordAsync(path, attached: false, ct))
-                    return $"'{name}' stays closed: it opens only with a password, and the user left it closed. Go on without "
+                    return $"'{name}' stays closed: it opens only with a password, and it was not opened. Go on without "
                          + "it; do not ask the user for the password.";
                 extracted = await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct), ct);
             }

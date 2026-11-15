@@ -394,8 +394,10 @@ public sealed class DocumentTextTests : IDisposable
         }
         Assert.Equal(DocumentProblem.TooLarge, Timed(ms.ToArray(), ".docx").Problem);
 
+        // A compound file holding no encryption this reader opens is unreadable, never a password card (real protected
+        // files: OfficeDocumentsTests, DocumentPasswordTests).
         byte[] ole = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1, 0, 0, 0, 0];
-        Assert.Equal(DocumentProblem.Encrypted, Timed(ole, ".docx").Problem);
+        Assert.Equal(DocumentProblem.Unreadable, Timed(ole, ".docx").Problem);
 
         var strict = new MemoryStream();
         using (var zip = new ZipArchive(strict, ZipArchiveMode.Create, leaveOpen: true))

@@ -24,6 +24,7 @@ internal static class PdfText
             return new(string.Empty, 0, 0, DocumentProblem.Unreadable);
 
         var doc = new PdfDocument(bytes, ct, password);
+        if (doc.UnsupportedEncryption) return new(string.Empty, 0, 0, DocumentProblem.Unreadable);
         if (doc.Locked) return new(string.Empty, 0, 0, DocumentProblem.Encrypted);
         var root = doc.Dict(doc.Trailer.GetValueOrDefault("Root"));
         if (root is null) return new(string.Empty, 0, 0, DocumentProblem.Unreadable);

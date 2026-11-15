@@ -36,6 +36,41 @@ internal sealed record DocumentExtraction(string Text, int Pages, int PagesWitho
 /// </summary>
 internal static class DocumentText
 {
+    /// <summary>
+    /// <paramref name="read"/> on a thread of its own, waited for at most <see cref="Deadline"/> (and the person's Stop): past
+    /// it the caller goes on, said as too slow, and the thread finishes alone — bounded by <see cref="MaxBytes"/>.
+    /// </summary>
+    private static DocumentExtraction RunWithin(Func<DocumentExtraction> read, CancellationToken ct)
+    {
+        DocumentExtraction? result = null;
+        Exception? failure = null;
+        var worker = new Thread(() =>
+        {
+            try { result = read(); }
+            catch (Exception ex) { failure = ex; }
+        }) { IsBackground = true, Name = "Inferpal document reader" };
+        worker.Start();
+        var until = DateTime.UtcNow + Deadline + TimeSpan.FromMilliseconds(250);
+        while (!worker.Join(50))
+        {
+            ct.ThrowIfCancellationRequested();
+            if (DateTime.UtcNow > until) return new(string.Empty, 0, 0, DocumentProblem.TooSlow);
+        }
+        if (failure is not null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
+        return result!;
+    }
+
+    /// <summary>The bytes as text when they read as one (UTF-8, or a BOM's encoding) with no control characters but line
+    /// breaks and tabs; an HTML table loses its tags. Null for anything else.</summary>
+    private static string? PlainText(byte[] bytes)
+    {
+        string text;
+        try { text = new System.Text.UTF8Encoding(false, throwOnInvalidBytes: true).GetString(bytes.AsSpan().StartsWith(new byte[] { 0xEF, 0xBB, 0xBF }) ? bytes[3..] : bytes); }
+        catch (System.Text.DecoderFallbackException) { return null; }
+        if (text.Any(c => c < ' ' && c is not ('\n' or '\r' or '\t'))) return null;
+        return text.TrimStart().StartsWith('<') ? Tools.FetchUrlTool.HtmlToText(text) : text;
+    }
+
     /// <summary>How long one document may take to read.</summary>
     internal static readonly TimeSpan Deadline = TimeSpan.FromSeconds(2);
 
@@ -49,6 +84,14 @@ internal static class DocumentText
 
     /// <summary>Whether <paramref name="path"/> is a document this reader extracts text from, by its extension.</summary>
     internal static bool Handles(string path) => Extensions.Contains(Path.GetExtension(path).ToLowerInvariant());
+
+    /// <summary>The documents that are text files themselves (a notebook's JSON, RTF, a MIME e-mail): attached, they are read
+    /// as their content; the agent's read_file and search_in_files take them as they are, so an edit quotes what is in the
+    /// file and write_file knows it was read.</summary>
+    internal static bool IsTextFile(string path) => Path.GetExtension(path).ToLowerInvariant() is ".ipynb" or ".rtf" or ".eml";
+
+    /// <summary>Whether the agent's tools read <paramref name="path"/> through this reader rather than as a text file.</summary>
+    internal static bool ToolsRead(string path) => Handles(path) && !IsTextFile(path);
 
     /// <summary>The text of the PDF or DOCX at <paramref name="path"/>.</summary>
     /// <param name="password">The password the person typed for a protected PDF or DOCX.</param>
@@ -67,9 +110,22 @@ internal static class DocumentText
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(Deadline);
+        // ⚠ The content before the extension: WordPad and many exports save RTF as .doc, web apps save an HTML or text table
+        // as .xls. Read by the compound-file readers they were "damaged"; they are read as what they are.
+        var kind = extension.ToLowerInvariant();
+        if (kind is ".doc" or ".xls" && !OfficeCrypto.IsCompoundFile(bytes))
+        {
+            if (bytes.AsSpan().StartsWith("{\\rtf"u8)) kind = ".rtf";
+            else if (PlainText(bytes) is { } plain)
+                return plain.Trim().Length == 0 ? new(string.Empty, 0, 0, DocumentProblem.NoText)
+                     : new(plain.Length > PdfText.MaxChars ? plain[..PdfText.MaxChars] : plain, 0, 0, DocumentProblem.None,
+                           plain.Length > PdfText.MaxChars ? 1 : 0);
+        }
         try
         {
-            return extension.ToLowerInvariant() switch
+            // ⚠ Run apart and waited for at most the deadline: several readers (Word 97, .xls, .msg) cannot be interrupted,
+            // and a search reads documents one after the other — a stalled one would stall it whole.
+            return RunWithin(() => kind switch
             {
                 ".docx" => DocxText.Extract(bytes, deadline.Token, password),
                 ".xlsx" or ".xlsm" or ".xlsb" or ".xls" => SpreadsheetText.Extract(bytes, deadline.Token, password),
@@ -78,9 +134,9 @@ internal static class DocumentText
                 ".odt" or ".ods" or ".odp" => OdfText.Extract(bytes, deadline.Token, password),
                 ".rtf" => RtfText.Extract(bytes, deadline.Token),
                 ".doc" => DocText.Extract(bytes, deadline.Token, password),
-                ".eml" or ".msg" => EmailText.Extract(bytes, extension.ToLowerInvariant(), deadline.Token),
+                ".eml" or ".msg" => EmailText.Extract(bytes, kind, deadline.Token),
                 _       => PdfText.Extract(bytes, deadline.Token, password),
-            };
+            }, ct);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return new(string.Empty, 0, 0, DocumentProblem.TooSlow); }
         catch (DocumentLimitException ex)

@@ -13,6 +13,7 @@ internal static class DocxText
     private const string W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
     /// <summary>The same vocabulary under ISO 29500 Strict, which Word writes when asked to.</summary>
     private const string WStrict = "http://purl.oclc.org/ooxml/wordprocessingml/main";
+    private const string MarkupCompatibility = "http://schemas.openxmlformats.org/markup-compatibility/2006";
     /// <summary>The document part read at most once inflated: a few kilobytes of zip can stand for gigabytes of XML.</summary>
     private const long MaxDocumentXmlBytes = 64L * 1024 * 1024;
 
@@ -24,6 +25,8 @@ internal static class DocxText
         // A DOCX protected by a password is no zip but an encrypted OLE container: locked, unless the password opens it.
         if (OfficeCrypto.IsCompoundFile(bytes))
         {
+            // An encryption this reader does not open is said unreadable, never a password card no password can pass.
+            if (!OfficeCrypto.Opens(bytes)) return new(string.Empty, 0, 0, DocumentProblem.Unreadable);
             if (password is null || OfficeCrypto.Decrypt(bytes, password, ct) is not { } package)
                 return new(string.Empty, 0, 0, DocumentProblem.Encrypted);
             bytes = package;
@@ -50,6 +53,12 @@ internal static class DocxText
             {
                 var run = reader.ReadElementContentAsString();
                 if (deleted == 0) text.Append(run);
+                continue;
+            }
+            // A text box is written twice, in mc:Choice and again in mc:Fallback for older readers: one of them, never both.
+            if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "Fallback" && reader.NamespaceURI == MarkupCompatibility)
+            {
+                reader.Skip();
                 continue;
             }
             if (!IsW(reader)) { reader.Read(); continue; }

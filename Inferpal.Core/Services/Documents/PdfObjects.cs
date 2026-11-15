@@ -279,6 +279,9 @@ internal sealed class PdfDocument
     /// <summary>The file is encrypted and does not open without a password.</summary>
     public bool Locked { get; private set; }
 
+    /// <summary>Encrypted by a handler this reader does not open (no password would): read as unreadable.</summary>
+    public bool UnsupportedEncryption { get; private set; }
+
     /// <param name="password">The password the person typed for a file that asks for one; null tries the empty one only.</param>
     public PdfDocument(byte[] data, CancellationToken ct, string? password = null)
     {
@@ -598,7 +601,8 @@ internal sealed class PdfDocument
         if (Trailer.GetValueOrDefault("Encrypt") is not { } encryptValue) return;
         if (encryptValue is PdfRef er) _encryptObject = er.Number;
         var enc = Dict(encryptValue);
-        if (enc is null || Name(enc.GetValueOrDefault("Filter")) != "Standard") { Locked = true; return; }
+        // A certificate (PubSec) or another handler is no password to type: said unreadable, never a card.
+        if (enc is null || Name(enc.GetValueOrDefault("Filter")) != "Standard") { UnsupportedEncryption = true; Locked = true; return; }
         var v = (int)Num(enc.GetValueOrDefault("V"));
         var r = (int)Num(enc.GetValueOrDefault("R"));
         var o = (Resolve(enc.GetValueOrDefault("O")) as PdfString)?.Bytes ?? [];
