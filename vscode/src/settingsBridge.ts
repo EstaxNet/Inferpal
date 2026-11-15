@@ -17,7 +17,7 @@ export interface SettingsHost {
   modelsListByKind(overrides?: { baseUrl?: string; provider?: string; apiKey?: string }): Promise<ModelsByKind>;
   settingsStrings(): Promise<Record<string, string>>;
   settingsSchema(): Promise<SettingsSchema>;
-  connectionCheck(baseUrl?: string, apiKey?: string): Promise<ConnectionCheckResult>;
+  connectionCheck(baseUrl?: string, apiKey?: string, requestHeaders?: string): Promise<ConnectionCheckResult>;
   mcpCards(): Promise<McpCardsResult>;
   mcpRetry(): Promise<McpCardsResult>;
   mcpAuthorize(name: string): Promise<McpCardsResult>;
@@ -41,7 +41,7 @@ export interface SettingsHost {
   settingsSuggestModels(form: {
     baseUrl?: string; provider?: string; apiKey?: string; vramBudgetGb?: string; current: Record<string, string>;
   }): Promise<ModelSuggestion>;
-  configUpdate(json: string, base?: string): Promise<ConfigUpdateResult>;
+  configUpdate(json: string, base?: string, keepRequestHeaders?: boolean): Promise<ConfigUpdateResult>;
   configReload(): Promise<ConfigReloadResult>;
 }
 
@@ -111,6 +111,10 @@ export interface SettingsInbound {
   pattern?: string;
   /** Echoed back so the webview applies only the answer to its LAST request. */
   requestId?: number;
+  /** testConnection: the proxy headers in the form. */
+  requestHeaders?: string;
+  /** save: the old proxy's credentials go with a new address ("Keep the same ones"). */
+  keepRequestHeaders?: boolean;
   // ⚠ What the FORM holds, not what is saved. The webview was already sending `baseUrl` and the
   // handler never read it: Test answered about the saved URL, so it could report "Connected" about
   // a different one. A field declared and never read is worse than a missing field - it makes you
@@ -216,8 +220,9 @@ export class SettingsBridge {
           // Probe the URL the user is LOOKING AT - the one in the form - and name the backend that
           // answered, exactly like the Visual Studio Test button (which reads BaseUrl from its own
           // form, auto-selects the detected provider, then refreshes models from that URL).
-          const result = await host.connectionCheck(msg.baseUrl, msg.apiKey);
+          const result = await host.connectionCheck(msg.baseUrl, msg.apiKey, msg.requestHeaders);
           this.shell.post({ type: 'testResult', ok: result.ok, provider: result.provider, refused: result.refused ?? null,
+                            hops: result.hops ?? null,
                             answered: result.answered ?? null, server: msg.server });
         } catch (err) {
           // Same reading, one level down: an unreachable backend does not throw — it answers
@@ -402,7 +407,7 @@ export class SettingsBridge {
           const before = SettingsBridge.parseKeys(this.lastConfigJson);
           // The panel sends back the whole object it opened with: the host applies only what differs
           // from it, so a change made elsewhere since then is not reverted.
-          const result = await host.configUpdate(msg.json, this.lastConfigJson);
+          const result = await host.configUpdate(msg.json, this.lastConfigJson, msg.keepRequestHeaders === true);
           this.lastConfigJson = msg.json;
           // The rules field IS saved: it is some of its lines that are inert. Said here, not only
           // in /diagnostics, which nobody opens after writing a rule they believe is in place.

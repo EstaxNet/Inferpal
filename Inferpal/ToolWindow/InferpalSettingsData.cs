@@ -359,6 +359,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         InitEditors(workspaceRoot);
         InitWidgets(live);
         InitAppearance(config);
+        InitProxy();
         InitHistoryStorage(config);
         InitReasoning(config);
         _baseUrl              = config.BaseUrl;
@@ -441,6 +442,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         _listsShown = ListsNow();
         InitRoleServers(config);   // after the chat's server and the models: the roles resolve against them
         ResetKeys();               // the roles' keys are in their boxes only now
+        LoadProxy(config.RequestHeaders);
 
         SaveCommand           = new AsyncCommand(SaveAsync);
         TestConnectionCommand = new AsyncCommand(TestConnectionAsync);
@@ -499,6 +501,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             // A role's server is "the chat's" by its address, and a role whose kind is not set speaks the chat's: moving the
             // chat's server moves what the roles resolve to.
             if (e.PropertyName is nameof(BaseUrl) or nameof(SelectedProvider) or nameof(ApiKey)) UpdateRoleServerState();
+            // The preview names the host, and a new address leaves the old proxy's credentials behind.
+            if (e.PropertyName is nameof(BaseUrl)) UpdateProxyState();
         };
         _ = RefreshModelsAsync(null, CancellationToken.None);
         // The Server page opens first, without SelectPage: its "Loaded now" block reads the server here.
@@ -582,6 +586,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         LabelRunEndSound             = Strings.LabelRunEndSound;
         HintRunEndSound              = Strings.HintRunEndSound;
         ApplyAppearanceLabels();
+        ApplyProxyLabels();
         ApplyHistoryStorageLabels();
         ApplyReasoningLabels();
         LabelSmartFixEnabled         = Strings.LabelSmartFixEnabled;
@@ -1036,6 +1041,10 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         MainKey.Reset();
         CompletionKey.Reset();
         SearchKey.Reset();
+        ProxyPasswordKey.Reset();
+        ProxyTokenKey.Reset();
+        ProxyCfSecretKey.Reset();
+        UpdateProxyState();
     }
 
     /// <summary>The window is closing: a key shown is masked again; one being typed stays.</summary>
@@ -1044,6 +1053,9 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         MainKey.MaskShown();
         CompletionKey.MaskShown();
         SearchKey.MaskShown();
+        ProxyPasswordKey.MaskShown();
+        ProxyTokenKey.MaskShown();
+        ProxyCfSecretKey.MaskShown();
     }
     [DataMember] public string BaseUrl              { get => _baseUrl;              set => SetProperty(ref _baseUrl,              value); }
     [DataMember] public string? SelectedModel       { get => _selectedModel;        set => SetProperty(ref _selectedModel,        value); }
@@ -1233,6 +1245,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 
     private async Task SaveCoreAsync(CancellationToken ct)
     {
+        var keepProxyHeaders = false;
         string url = string.Empty, requestHeaders = string.Empty, customPrompt = string.Empty, repoFamilies = string.Empty, ignoreFiles = string.Empty, pinnedContextFiles = string.Empty, promptTemplates = string.Empty, customTools = string.Empty, permissionRules = string.Empty;
         string apiKey = string.Empty;
         // Dropdowns whose SelectedItem is bound: null when the selection left its list, never a
@@ -1281,6 +1294,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             vramBudgetText       = VramBudgetText.Trim();
             customPrompt         = CustomSystemPrompt;
             requestHeaders       = RequestHeaders ?? string.Empty;
+            keepProxyHeaders     = KeepProxyHeadersOnMove;
             repoFamilies         = RepoInstructionFamilies ?? string.Empty;
             ignoreFiles          = IgnoreFiles ?? string.Empty;
             SyncPinnedTextFromRows();   // rows are the source of truth → refresh the text mirrors
@@ -1479,11 +1493,12 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         _config.ApplyChangesFrom(edited, _opened);
         // The chat moved to another server: the card and the models chosen for the old one start over, and the boxes say
         // so — left showing the old card, the next save would write it back.
-        if (Services.Inference.ServerChange.Follow(before, _config))
+        if (Services.Inference.ServerChange.Follow(before, _config, keepProxyHeaders))
         {
             edited.VramBudgetGb          = _config.VramBudgetGb;
             edited.InlineCompletionModel = _config.InlineCompletionModel;
             edited.RagEmbeddingModel     = _config.RagEmbeddingModel;
+            edited.RequestHeaders        = _config.RequestHeaders;
             await RunOnVMContextAsync(() =>
             {
                 VramBudgetText        = edited.VramBudgetGb > 0 ? edited.VramBudgetGb.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture) : string.Empty;
@@ -1491,6 +1506,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
                 RagEmbeddingModel     = edited.RagEmbeddingModel;
             });
         }
+        // The proxy block shows what was saved, the old proxy's credentials gone or kept.
+        await RunOnVMContextAsync(() => LoadProxy(_config.RequestHeaders));
         // The server saved reaches the chat's client at the turn door: now, or once the turn running ends — a turn keeps
         // the server it started with. Before the save: its listeners measure the context window through that client.
         FollowServerAtTheDoor(_client);
@@ -2286,36 +2303,41 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             apiKey           = ApiKey?.Trim() ?? string.Empty;
             headers          = RequestHeaders ?? string.Empty;
         });
-        // The headers in the FORM, like the key: a server behind a proxy is tested as it will be asked.
+        // The headers in the FORM, like the key: a server behind a proxy is tested as it will be asked, hop by hop — the
+        // address, the proxy, the model server. The saved headers are put back after: a test followed by Cancel must not
+        // leave the form's headers live.
         ServerHeaders.Note(url, headers);
-
-        // Auto-detect the backend from the URL (Ollama / LM Studio / OpenAI-compatible). A successful
-        // probe also confirms reachability, so it replaces the provider-specific connection check.
-        // The saved headers are put back after: a test followed by Cancel must not leave the form's headers live.
-        (string? Provider, string? Refusal) probed;
-        try { probed = await ProviderProbe.DetectWithRefusalAsync(url, apiKey, ct); }
-        finally { ServerHeaders.Note(url, ServerScan.SameAddress(url, _config.BaseUrl) ? _config.RequestHeaders : null); }
-        var (detected, refusal) = probed;
-        var ok           = detected is not null;
-        var detectedName = detected is not null
-            ? ProviderOptions.FirstOrDefault(p => p.Code == detected).Name
-            : null;
-        // A server that refused the probe (a wrong API key: 401) is up — the very thing this button checks. Resolved
-        // here, off the view-model's context: a system proxy's PAC lookup can block.
-        var notReached = ok ? null : Strings.StatusNotReached(url, refusal);
-
-        await RunOnVMContextAsync(() =>
+        try
         {
-            ConnectionStatus = notReached ?? ConnectionStatusPresenter.Answered(detectedName!, null);
-            // Auto-select the detected backend; the user can still change it before saving.
-            if (!string.IsNullOrEmpty(detectedName)) SelectedProvider = detectedName!;
-        });
+            // Auto-detect the backend from the URL (Ollama / LM Studio / OpenAI-compatible), as VS Code's host does; a
+            // successful probe also confirms reachability. The hops explain it when there is a proxy or a failure.
+            var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, apiKey, ct);
+            var report = detected is null || headers.Trim().Length > 0 ? await ProxyCheck.RunAsync(url, apiKey, headers, ct) : null;
+            var ok           = detected is not null;
+            var detectedName = detected is not null
+                ? ProviderOptions.FirstOrDefault(p => p.Code == detected).Name
+                : null;
+            // A server that refused the probe (a wrong API key: 401) is up — the very thing this button checks. Resolved
+            // here, off the view-model's context: a system proxy's PAC lookup can block.
+            var notReached = ok ? null : Strings.StatusNotReached(url, refusal);
 
-        if (!ok) return;
-        // The listing that fills the boxes also counts what the server holds: the line says it once read.
-        var listed = await ListModelsAsync(url, ct);
-        if (listed is not null)
-            await RunOnVMContextAsync(() => ConnectionStatus = ConnectionStatusPresenter.Answered(detectedName!, listed.Listed.Count));
+            await RunOnVMContextAsync(() =>
+            {
+                ConnectionStatus = notReached ?? ConnectionStatusPresenter.Answered(detectedName!, null);
+                // The hops are drawn when there is a proxy to explain, or something to fix.
+                if (report is not null) ShowProxyReport(report);
+                else ProxyHopsVisible = false;
+                // Auto-select the detected backend; the user can still change it before saving.
+                if (!string.IsNullOrEmpty(detectedName)) SelectedProvider = detectedName!;
+            });
+
+            if (!ok) return;
+            // The listing that fills the boxes also counts what the server holds: the line says it once read.
+            var listed = await ListModelsAsync(url, ct);
+            if (listed is not null)
+                await RunOnVMContextAsync(() => ConnectionStatus = ConnectionStatusPresenter.Answered(detectedName!, listed.Listed.Count));
+        }
+        finally { ServerHeaders.Note(url, ServerScan.SameAddress(url, _config.BaseUrl) ? _config.RequestHeaders : null); }
     }
 
     // Called with url=null from constructor (uses saved config URL),

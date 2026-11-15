@@ -2175,4 +2175,87 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="KeptSeeKept" xml:space="preserve"><value>保持しているものを見る</value></data>
   <data name="LabelRequestHeaders" xml:space="preserve"><value>リクエストヘッダー</value></data>
   <data name="HintRequestHeaders" xml:space="preserve"><value>このサーバーへのすべてのリクエストに送信されます。1 行に 1 つ、名前: 値 の形式で — 前段のリバースプロキシが求めるもの (Authorization: Basic …)。受け取るのはこのホストだけで、別の場所へのリダイレクトには送られません。</value></data>
+  <data name="ProxySectionTitle" xml:space="preserve"><value>リバースプロキシ経由のアクセス</value></data>
+  <data name="ProxySectionIntro" xml:space="preserve"><value>モデルサーバーが Caddy、nginx、Traefik、Cloudflare の背後にある場合、プロキシはリクエストを通す前に毎回確認します。プロキシが求めるものを Inferpal に指定してください。Inferpal がサーバーに直接届く場合は「なし」のままにします。</value></data>
+  <data name="ProxyQuestion" xml:space="preserve"><value>プロキシは何を求めていますか?</value></data>
+  <data name="ProxyMethodNone" xml:space="preserve"><value>なし</value></data>
+  <data name="ProxyMethodNoneDesc" xml:space="preserve"><value>Inferpal がサーバーに直接届くか、プロキシが誰でも通します。</value></data>
+  <data name="ProxyMethodBasic" xml:space="preserve"><value>ユーザー名とパスワード</value></data>
+  <data name="ProxyMethodBasicDesc" xml:space="preserve"><value>このアドレスでブラウザーがサインイン画面を表示します。Caddy basic_auth、nginx auth_basic。</value></data>
+  <data name="ProxyMethodBearer" xml:space="preserve"><value>アクセストークン</value></data>
+  <data name="ProxyMethodBearerDesc" xml:space="preserve"><value>Bearer として送るトークンを受け取っています。Open WebUI、トークンゲートウェイ。</value></data>
+  <data name="ProxyMethodCloudflare" xml:space="preserve"><value>Cloudflare Access</value></data>
+  <data name="ProxyMethodCloudflareDesc" xml:space="preserve"><value>サービストークン: Zero Trust ダッシュボードの Client ID と Client Secret。</value></data>
+  <data name="ProxyMethodCustom" xml:space="preserve"><value>その他のヘッダー</value></data>
+  <data name="ProxyMethodCustomDesc" xml:space="preserve"><value>プロキシのドキュメントにあるヘッダーを、1 行に 1 つ 名前: 値 で書きます。</value></data>
+  <data name="ProxyNotSure" xml:space="preserve"><value>わからない場合は、ブラウザーでサーバーのアドレスを開きます。サインイン画面ならユーザー名とパスワード、Cloudflare のページなら Cloudflare Access です。</value></data>
+  <data name="ProxyHowToLink" xml:space="preserve"><value>Caddy、nginx、Cloudflare での設定方法</value></data>
+  <data name="ProxyBasicIntro" xml:space="preserve"><value>{0} でブラウザーが求めるのと同じユーザー名とパスワードです。Inferpal がプロキシの求めるヘッダーに変換します。</value></data>
+  <data name="ProxyUser" xml:space="preserve"><value>ユーザー名</value></data>
+  <data name="ProxyPassword" xml:space="preserve"><value>パスワード</value></data>
+  <data name="ProxyBearerIntro" xml:space="preserve"><value>受け取ったトークンを Bearer なしで入力します。Inferpal が付け加えます。</value></data>
+  <data name="ProxyCfIntro" xml:space="preserve"><value>サーバーに届く前に Cloudflare がサービストークンを確認します。</value></data>
+  <data name="ProxyCfStep1" xml:space="preserve"><value>Zero Trust › Access › Service credentials › Create Service Token。</value></data>
+  <data name="ProxyCfStep2" xml:space="preserve"><value>両方の値を今すぐコピーしてください。シークレットは一度しか表示されません。</value></data>
+  <data name="ProxyCfStep3" xml:space="preserve"><value>アプリケーションのポリシーに、アクション Service Auth でトークンを追加します。</value></data>
+  <data name="ProxyCfId" xml:space="preserve"><value>Client ID</value></data>
+  <data name="ProxyCfIdHint" xml:space="preserve"><value>.access で終わります。CF-Access-Client-Id として送信。</value></data>
+  <data name="ProxyCfSecretLabel" xml:space="preserve"><value>Client Secret</value></data>
+  <data name="ProxyCustomIntro" xml:space="preserve"><value>1 行に 1 つ、名前: 値 の形式で。プロキシのドキュメントにあるものです。</value></data>
+  <data name="ProxySendsTitle" xml:space="preserve"><value>Inferpal が送信するもの</value></data>
+  <data name="ProxySendsWhen" xml:space="preserve"><value>すべてのリクエストで: 質問、モデル一覧、コード補完、テストボタン。</value></data>
+  <data name="ProxySendsWhere" xml:space="preserve"><value>{0} にだけ送ります。別の場所へリダイレクトされたら、たどらずに止めてお知らせします。</value></data>
+  <data name="ProxySendsHttps" xml:space="preserve"><value>HTTPS で暗号化されます。</value></data>
+  <data name="ProxySendsHttp" xml:space="preserve"><value>http:// のアドレスではネットワーク上を平文で流れます。https:// をお勧めします。</value></data>
+  <data name="ProxyLineNotSent" xml:space="preserve"><value>{0} 行目は送信されません: 名前: 値 の形式ではありません。</value></data>
+  <data name="ProxyEditRaw" xml:space="preserve"><value>ヘッダーとして編集</value></data>
+  <data name="ProxyTestTitle" xml:space="preserve"><value>テスト — 各段階で起きたこと</value></data>
+  <data name="ProxyWhatToCheck" xml:space="preserve"><value>確認すること</value></data>
+  <data name="ProxyHopUnreachable" xml:space="preserve"><value>{0} に接続できません</value></data>
+  <data name="ProxyHopNotAnAddress" xml:space="preserve"><value>Web アドレスではありません。http:// または https:// で始まります。</value></data>
+  <data name="ProxyHopCertificate" xml:space="preserve"><value>{0} はこのマシンが信頼しない証明書で応答しました</value></data>
+  <data name="ProxyCheckTrustAuthority" xml:space="preserve"><value>独自の認証局の証明書なら、その認証局をシステムの信頼済み証明書に追加してから再テストしてください。</value></data>
+  <data name="ProxyCheckAddress" xml:space="preserve"><value>アドレスとポート、このマシンから届くか (VPN、ファイアウォール) を確認してください。</value></data>
+  <data name="ProxyHopReached" xml:space="preserve"><value>{0} に到達</value></data>
+  <data name="ProxyHopHttps" xml:space="preserve"><value>HTTPS、このマシンが信頼する証明書。</value></data>
+  <data name="ProxyHopHttp" xml:space="preserve"><value>HTTP: 暗号化なし。</value></data>
+  <data name="ProxyHopSignInPage" xml:space="preserve"><value>プロキシがリクエストをサインインページに送りました</value></data>
+  <data name="ProxyHopSignInSent" xml:space="preserve"><value>Cloudflare Access は送信したサービストークンを受け付けませんでした。</value></data>
+  <data name="ProxyHopSignInNone" xml:space="preserve"><value>このアドレスは Cloudflare Access で保護されています。サービストークンが必要です。</value></data>
+  <data name="ProxyHopRefused" xml:space="preserve"><value>プロキシが資格情報を拒否しました — {0}</value></data>
+  <data name="ProxyHopAsks" xml:space="preserve"><value>プロキシが資格情報を求めています — {0}</value></data>
+  <data name="ProxyHopAsksDetail" xml:space="preserve"><value>何も送信していません。方法が選ばれていません。</value></data>
+  <data name="ProxyCheckPickMethod" xml:space="preserve"><value>上でプロキシが求めるものを選び、もう一度テストしてください。</value></data>
+  <data name="ProxyHopRedirected" xml:space="preserve"><value>{0} へリダイレクト — たどっていません</value></data>
+  <data name="ProxyHopRedirectedDetail" xml:space="preserve"><value>Inferpal は資格情報をこのサーバーにだけ送り、リダイレクト先には送りません。</value></data>
+  <data name="ProxyCheckRedirect" xml:space="preserve"><value>そのアドレスがあなたのサーバーなら、それをサーバーアドレスにしてください。</value></data>
+  <data name="ProxyHopLetThrough" xml:space="preserve"><value>プロキシがリクエストを通しました</value></data>
+  <data name="ProxyHopNoCredentials" xml:space="preserve"><value>資格情報は求められませんでした</value></data>
+  <data name="ProxyHopServer" xml:space="preserve"><value>モデルサーバーが応答しました — {0}</value></data>
+  <data name="ProxyHopNotAServer" xml:space="preserve"><value>何かが応答しますが、モデルサーバーではありません</value></data>
+  <data name="ProxyCheckForward" xml:space="preserve"><value>プロキシがモデルサーバーのポート (Ollama は 11434、LM Studio は 1234) に転送しているか確認してください。</value></data>
+  <data name="ProxyHopProxyNotReached" xml:space="preserve"><value>プロキシ — 未到達</value></data>
+  <data name="ProxyHopServerNotReached" xml:space="preserve"><value>モデルサーバー — 未到達</value></data>
+  <data name="ProxyHopStoppedBefore" xml:space="preserve"><value>リクエストはその手前で止まりました。</value></data>
+  <data name="ProxySentBasic" xml:space="preserve"><value>Inferpal はユーザー名 {0} とパスワードを送信しました。</value></data>
+  <data name="ProxySentBearer" xml:space="preserve"><value>Inferpal はアクセストークンを送信しました。</value></data>
+  <data name="ProxySentCloudflare" xml:space="preserve"><value>Inferpal は Client ID {0} とそのシークレットを送信しました。</value></data>
+  <data name="ProxySentCustom" xml:space="preserve"><value>Inferpal は上に書いたヘッダーを送信しました。</value></data>
+  <data name="ProxyCheckBasicBrowser" xml:space="preserve"><value>ブラウザーで同じユーザー名とパスワードでサインインしてみてください。</value></data>
+  <data name="ProxyCheckBasicHash" xml:space="preserve"><value>Caddy はハッシュ化したパスワードを保存します。この欄にはハッシュではなくパスワードそのものを入れます。</value></data>
+  <data name="ProxyCheckBasicCase" xml:space="preserve"><value>ユーザー名は大文字と小文字を区別します。</value></data>
+  <data name="ProxyCheckBearerWhole" xml:space="preserve"><value>トークン全体を、Bearer という語や前後の空白なしで貼り付けてください。</value></data>
+  <data name="ProxyCheckBearerExpired" xml:space="preserve"><value>トークンには期限があります。発行元で新しいものを取得してください。</value></data>
+  <data name="ProxyCheckCfPolicy" xml:space="preserve"><value>Zero Trust で、アプリケーションのポリシーにこのサービストークンを Service Auth アクションで含める必要があります。</value></data>
+  <data name="ProxyCheckCfSecret" xml:space="preserve"><value>シークレットは作成時に一度だけ表示されます。不明なら新しいトークンを作成してください。</value></data>
+  <data name="ProxyCheckCustom" xml:space="preserve"><value>各ヘッダーの名前と値をプロキシの設定と照らし合わせてください。</value></data>
+  <data name="ProxyMovedTitle" xml:space="preserve"><value>プロキシの資格情報は {0} 用のままです</value></data>
+  <data name="ProxyMovedBody" xml:space="preserve"><value>これらは {0} のプロキシ用に書かれたものです。{1} に送ると、そのマシンにプロキシの鍵を渡すことになります。Inferpal はそこへ送らず、保存時に削除します。</value></data>
+  <data name="ProxyMovedFor" xml:space="preserve"><value>{0} について</value></data>
+  <data name="ProxyMovedNone" xml:space="preserve"><value>プロキシなし — Inferpal が直接届きます。ネットワーク内のほとんどのサーバー。</value></data>
+  <data name="ProxyMovedNew" xml:space="preserve"><value>新しい資格情報 — このサーバーには独自のプロキシがあります。</value></data>
+  <data name="ProxyMovedKeep" xml:space="preserve"><value>同じものを使う — このアドレスがまったく同じプロキシの背後にある場合だけ。</value></data>
+  <data name="ProxyMovedWas" xml:space="preserve"><value>以前は {0}</value></data>
+  <data name="ProxyHopKeyRefused" xml:space="preserve"><value>モデルサーバーが API キーを拒否しました — {0}</value></data>
+  <data name="ProxyCheckApiKey" xml:space="preserve"><value>接続の API キーを確認してください。サーバーが求めるものを完全に。プロキシは関係ありません。</value></data>
 </root>

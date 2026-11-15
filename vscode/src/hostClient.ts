@@ -730,8 +730,8 @@ export class HostClient {
 
   /** Probes `baseUrl` with `apiKey` — the values in the form, not the saved ones — and names the
    *  backend that answered. Omitting either falls back to the saved configuration. */
-  connectionCheck(baseUrl?: string, apiKey?: string): Promise<ConnectionCheckResult> {
-    return this.connection().sendRequest<ConnectionCheckResult>('connection/check', { baseUrl, apiKey });
+  connectionCheck(baseUrl?: string, apiKey?: string, requestHeaders?: string): Promise<ConnectionCheckResult> {
+    return this.connection().sendRequest<ConnectionCheckResult>('connection/check', { baseUrl, apiKey, requestHeaders });
   }
 
   /** Connection badge for the header (reachability + VRAM line). Polled — never throws
@@ -905,8 +905,8 @@ export class HostClient {
   /** Returns what the save could not use. The count is computed BY THE HOST: the permission DSL
    *  lives in the Core, and re-reading it here would be a second implementation of the same rule -
    *  hence a programmed divergence. */
-  configUpdate(json: string, base?: string): Promise<ConfigUpdateResult> {
-    return this.connection().sendRequest<ConfigUpdateResult>('config/update', { json, base });
+  configUpdate(json: string, base?: string, keepRequestHeaders?: boolean): Promise<ConfigUpdateResult> {
+    return this.connection().sendRequest<ConfigUpdateResult>('config/update', { json, base, keepRequestHeaders });
   }
 
   /** The files pinned into every request. */

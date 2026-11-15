@@ -161,6 +161,14 @@ internal sealed partial class HostServer
         "KeptForget", "KeptForgetConfirm", "KeptForgetKeep", "KeptOpenHere", "KeptEmpty",
         "ContextUsageOpenXray", "ContextUsageChangeWindow", "ProjectFilesTitle", "ProjectFileNotYet",
         "RepoInstructionsNone",
+        // The proxy access block of the Server and models page, and the Test said hop by hop
+        "ProxyQuestion", "ProxyMethodNone", "ProxyMethodNoneDesc", "ProxyMethodBasic", "ProxyMethodBasicDesc",
+        "ProxyMethodBearer", "ProxyMethodBearerDesc", "ProxyMethodCloudflare", "ProxyMethodCloudflareDesc",
+        "ProxyMethodCustom", "ProxyMethodCustomDesc", "ProxyNotSure", "ProxyHowToLink", "ProxyBasicIntro", "ProxyUser",
+        "ProxyPassword", "ProxyBearerIntro", "ProxyCfIntro", "ProxyCfStep1", "ProxyCfStep2", "ProxyCfStep3", "ProxyCfId",
+        "ProxyCfIdHint", "ProxyCfSecretLabel", "ProxyCustomIntro", "ProxySendsTitle", "ProxySendsWhen", "ProxySendsWhere",
+        "ProxySendsHttp", "ProxyLineNotSent", "ProxyTestTitle", "ProxyWhatToCheck", "ProxyMovedTitle", "ProxyMovedWas",
+        "ProxyMovedBody", "ProxyMovedFor", "ProxyMovedNone", "ProxyMovedNew", "ProxyMovedKeep",
         // The theme cards of the Appearance page
         "ThemeLight", "ThemeDark", "ThemeHighContrast", "ThemeInUse",
     ];

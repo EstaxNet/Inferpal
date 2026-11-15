@@ -836,7 +836,7 @@ public class SettingsSchemaDriftTests
         // "Test" probes the form's URL WITH the form's key, not the session's. ⚠ The rule required
         // `connectionCheck(msg.baseUrl)` alone — it therefore froze the other half of the defect: a
         // new URL probed with the old key answered "unreachable".
-        Assert.Matches(new Regex(@"connectionCheck\(\s*msg\.baseUrl\s*,\s*msg\.apiKey\s*\)"), panel);
+        Assert.Matches(new Regex(@"connectionCheck\(\s*msg\.baseUrl\s*,\s*msg\.apiKey\s*,\s*msg\.requestHeaders\s*\)"), panel);
 
         // ↻ lists the models of the form's backend — all three values, because a correct URL with
         // the old provider or the old key still queries something else.

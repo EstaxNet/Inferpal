@@ -4,6 +4,7 @@
 // text the user typed, and "Edit as text" is always one click away.
 import { fill } from './l10n';
 import { iconButton, setIcon } from './icons';
+import { proxyAccessEditor } from './settingsProxy';
 import type { ApprovalRuleTable, McpCard, McpCardsResult, PinnedFileSize, SettingsField as Field } from '../protocol';
 
 export interface EditorHost {
@@ -12,6 +13,12 @@ export interface EditorHost {
   post(msg: Record<string, unknown>): void;
   /** Writes `text` into the setting's text box and recounts the unsaved changes. */
   commit(area: HTMLTextAreaElement, text: string): void;
+  /** Another field's value in the form, as typed. */
+  field(key: string): string;
+  /** A field's value as saved. */
+  saved(key: string): string;
+  /** Calls `onChange` when another field of the form is typed in. */
+  watch(key: string, onChange: () => void): void;
 }
 
 export interface StructuredEditor {
@@ -31,6 +38,7 @@ export function createEditor(field: Field, area: HTMLTextAreaElement, host: Edit
     case 'pinnedFiles':   return pinnedFilesEditor(area, host);
     case 'mcpServers':    return mcpServersEditor(area, host);
     case 'approvalRules': return approvalRulesEditor(area, host);
+    case 'proxyAccess':   return proxyAccessEditor(area, host);
     default:              return null;
   }
 }

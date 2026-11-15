@@ -444,7 +444,7 @@ internal partial class InferpalSettingsData
         AskBeforeActions = !c.SecurityAlertsDisabled;
         PackageCheckEnabled = c.PackageCheckEnabled;
         CustomSystemPrompt = c.CustomSystemPrompt;
-        RequestHeaders = c.RequestHeaders;
+        LoadProxy(c.RequestHeaders);
         RepoInstructionFamilies = c.RepoInstructionFamilies;
         IgnoreFiles = c.IgnoreFiles;
         PersonaAutoSwitch = c.PersonaAutoSwitch;

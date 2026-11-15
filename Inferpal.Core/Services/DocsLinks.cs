@@ -18,6 +18,12 @@ internal static class DocsLinks
     /// <summary>How to write a mode (the mode selector's "Write a mode"), for this build.</summary>
     public static string Modes => For("configuration.md#modes", InstalledVersion);
 
+    /// <summary>How to reach a model server behind Caddy, nginx or Cloudflare Access, for this build.</summary>
+    public static string ReverseProxy => For(ReverseProxyPage, InstalledVersion);
+
+    /// <summary>The docs page of <see cref="ReverseProxy"/>, as the VS Code settings ask for it.</summary>
+    public const string ReverseProxyPage = "remote-inference.md#behind-a-reverse-proxy";
+
     /// <summary>The page the model suggestion draws from: which model for which card, and how each was measured.</summary>
     public static string ModelsByCard => For(ModelsByCardPage, InstalledVersion);
 

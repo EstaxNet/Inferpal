@@ -149,6 +149,78 @@ public sealed class VsSettingsWindowTests : IDisposable
         Assert.Contains("src/pinned.cs", OnDisk().PinnedContextFiles, StringComparison.Ordinal);
     }
 
+    private const string DamsPass = "Authorization: Basic ZGFtczpwYXNz";   // dams:pass
+
+    /// <summary>The proxy block opens on the method the saved headers are, and the fields write the header back: the
+    /// person types a username and a password, never a Base64 line.</summary>
+    [Fact]
+    public async Task TheProxyBlock_OpensOnTheSavedMethod_AndItsFieldsWriteTheHeader()
+    {
+        new InferpalConfig { DefaultModel = "m", BaseUrl = "https://llm.home.example", RequestHeaders = DamsPass }.Save();
+        var config = InferpalConfig.Load();
+        await using var mcp = new Services.Mcp.McpToolService(config, new Approve());
+        var form = new InferpalSettingsData(config, new FakeInferenceProvider(), null!, mcp);
+
+        Assert.Equal(("basic", "dams", "pass"), (form.ProxyMethodSelected, form.ProxyUser, form.ProxyPassword));
+        Assert.Equal("Authorization: Basic ••••••••", form.ProxySendsPreview);   // the secret never on screen
+        Assert.False(form.ProxyHttp);
+
+        form.ProxyUser = "ana";
+        Assert.Equal("Authorization: Basic " + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("ana:pass")), form.RequestHeaders);
+        await form.SaveCommand.ExecuteAsync(null, null!, CancellationToken.None);
+        Assert.Equal(form.RequestHeaders, OnDisk().RequestHeaders);
+
+        await form.SetProxyMethodCommand.ExecuteAsync("none", null!, CancellationToken.None);
+        Assert.Equal("", form.RequestHeaders);
+        Assert.False(form.ProxySends);
+    }
+
+    /// <summary>Trying another method never loses what was written by hand, and an address that comes back gives back the
+    /// form's own headers — an edit not saved yet included.</summary>
+    [Fact]
+    public async Task TheProxyBlock_KeepsHandWrittenHeaders_AcrossMethods_AndAcrossAnAddressThatComesBack()
+    {
+        new InferpalConfig { DefaultModel = "m", BaseUrl = "https://llm.home.example", RequestHeaders = "X-Api-Key: abc" }.Save();
+        var config = InferpalConfig.Load();
+        await using var mcp = new Services.Mcp.McpToolService(config, new Approve());
+        var form = new InferpalSettingsData(config, new FakeInferenceProvider(), null!, mcp);
+        Assert.Equal("custom", form.ProxyMethodSelected);
+
+        await form.SetProxyMethodCommand.ExecuteAsync("basic", null!, CancellationToken.None);
+        Assert.Equal("", form.RequestHeaders);   // witness: another method, nothing typed
+        await form.SetProxyMethodCommand.ExecuteAsync("custom", null!, CancellationToken.None);
+        Assert.Equal("X-Api-Key: abc", form.RequestHeaders);
+
+        form.ProxyRaw = "X-Api-Key: new";              // an edit not saved yet
+        form.BaseUrl = "https://llm.home.exampl";      // a keystroke away: another address
+        Assert.True(form.ProxyMovedVisible);
+        form.BaseUrl = "https://llm.home.example";     // back
+        Assert.False(form.ProxyMovedVisible);
+        Assert.Equal("X-Api-Key: new", form.RequestHeaders);
+    }
+
+    /// <summary>Another address: the old proxy's credentials are not carried unless the person says it is the same proxy.</summary>
+    [Theory]
+    [InlineData("none", "")]
+    [InlineData("keep", DamsPass)]
+    public async Task AnotherAddress_LeavesTheOldProxysCredentials_UnlessKept(string choice, string saved)
+    {
+        new InferpalConfig { DefaultModel = "m", BaseUrl = "https://llm.home.example", RequestHeaders = DamsPass }.Save();
+        var config = InferpalConfig.Load();
+        await using var mcp = new Services.Mcp.McpToolService(config, new Approve());
+        var form = new InferpalSettingsData(config, new FakeInferenceProvider(), null!, mcp);
+        Assert.False(form.ProxyMovedVisible);   // witness: the saved address says nothing
+
+        form.BaseUrl = "http://192.168.1.40:11434";
+        Assert.True(form.ProxyMovedVisible);
+        await form.SetProxyMovedCommand.ExecuteAsync(choice, null!, CancellationToken.None);
+        await form.SaveCommand.ExecuteAsync(null, null!, CancellationToken.None);
+
+        Assert.Equal("http://192.168.1.40:11434", OnDisk().BaseUrl);   // witness: the save ran
+        Assert.Equal(saved, OnDisk().RequestHeaders);
+        Assert.False(form.ProxyMovedVisible);   // saved: the block is gone
+    }
+
     private sealed class Approve : Services.Execution.IApprovalService
     {
         public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null,

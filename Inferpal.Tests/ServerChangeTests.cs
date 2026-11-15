@@ -110,7 +110,7 @@ public class ServerChangeTests
         var settings = ConventionCoverageTests.CodeOnly(Path.Combine(folder, "InferpalSettingsData.cs"));
         // Judged on the live settings once the form's changes are laid over them, and the boxes show what started over.
         Assert.Matches(@"var before = Services\.Inference\.ServerChange\.Before\(_config\);\s*_config\.ApplyChangesFrom\(edited, _opened\);"
-                       + @"\s*if \(Services\.Inference\.ServerChange\.Follow\(before, _config\)\)", settings);
+                       + @"\s*if \(Services\.Inference\.ServerChange\.Follow\(before, _config, keepProxyHeaders\)\)", settings);
         Assert.Contains("RagEmbeddingModel     = edited.RagEmbeddingModel;", settings, StringComparison.Ordinal);
         var setup = ConventionCoverageTests.CodeOnly(Path.Combine(folder, "InferpalToolWindowData.Rag.cs"));
         Assert.Matches(@"_config\.BaseUrl  = url = found\.Url;\s*Services\.Inference\.ServerChange\.Follow\(before, _config\);", setup);

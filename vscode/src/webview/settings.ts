@@ -38,7 +38,7 @@ const labelForSentence = (label: string): string => label.replace(/[\s\u00A0\u20
 // `defaultValue`: the property existed host-side and was missing from the local copy. Types are
 // erased at build time, so the import costs the bundle nothing.
 import type {
-  SettingsField as Field, SettingsSchema as Schema, SettingsSection as Section, SettingsTab as Tab,
+  ConnectionHop, SettingsField as Field, SettingsSchema as Schema, SettingsSection as Section, SettingsTab as Tab,
 } from '../protocol';
 
 /** Served by the host at init; empty until then. */
@@ -55,6 +55,59 @@ let embeddingModels: string[] = [];
 const inputs = new Map<string, HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>();
 const fieldsByKey = new Map<string, Field>();
 let statusEl: HTMLElement | null = null;
+/** Where the chat server's Test draws its hops. */
+let hopsEl: HTMLElement | null = null;
+
+/** The Test's hops — passed, failed (with what to check there), not reached — or nothing when the host sent none. */
+function drawHops(hops: ConnectionHop[] | null): void {
+  if (!hopsEl) {
+    return;
+  }
+  hopsEl.textContent = '';
+  hopsEl.hidden = !hops || hops.length === 0;
+  if (!hops) {
+    return;
+  }
+  const list = document.createElement('ol');
+  list.className = 'hoplist';
+  list.setAttribute('aria-label', res('ProxyTestTitle'));
+  for (const hop of hops) {
+    const item = document.createElement('li');
+    item.className = 'hop ' + hop.state;
+    const mark = document.createElement('span');
+    mark.className = 'hopmark';
+    setIcon(mark, hop.state === 'passed' ? 'check' : hop.state === 'failed' ? 'failed' : 'pending', undefined, 14);
+    mark.setAttribute('aria-hidden', 'true');
+    const body = document.createElement('div');
+    const title = document.createElement('b');
+    title.textContent = hop.title;
+    body.append(title);
+    if (hop.detail) {
+      const detail = document.createElement('p');
+      detail.className = 'hint';
+      detail.textContent = hop.detail;
+      body.append(detail);
+    }
+    if (hop.checks.length > 0) {
+      const head = document.createElement('p');
+      head.className = 'hopchecks';
+      head.textContent = res('ProxyWhatToCheck');
+      const checks = document.createElement('ul');
+      for (const c of hop.checks) {
+        const li = document.createElement('li');
+        li.textContent = c;
+        checks.append(li);
+      }
+      body.append(head, checks);
+    }
+    item.append(mark, body);
+    list.append(item);
+  }
+  const titleEl = document.createElement('div');
+  titleEl.className = 'hoptitle';
+  titleEl.textContent = res('ProxyTestTitle');
+  hopsEl.append(titleEl, list);
+}
 let unsavedEl: HTMLElement | null = null;
 let saveBtn: HTMLButtonElement | null = null;
 /** The status line of each Test button, by the role whose server it probes ('' = the chat's). */
@@ -913,7 +966,10 @@ function renderField(field: Field): HTMLElement {
           baseUrl: (inputs.get('baseUrl') as HTMLInputElement).value,
           apiKey:  (inputs.get('apiKey')  as HTMLInputElement | undefined)?.value,
         };
-        vscode.postMessage({ type: 'testConnection', baseUrl: fields.baseUrl, apiKey: fields.apiKey, server: server || undefined });
+        // The chat's server is tested with the proxy headers on screen too; a role's server has none of its own.
+        const requestHeaders = server ? undefined : (inputs.get('requestHeaders') as HTMLTextAreaElement | undefined)?.value;
+        vscode.postMessage({ type: 'testConnection', baseUrl: fields.baseUrl, apiKey: fields.apiKey, requestHeaders,
+                             server: server || undefined });
       });
       if (server) {
         // No address yet: the host would probe the chat's server and name it as this one.
@@ -945,6 +1001,13 @@ function renderField(field: Field): HTMLElement {
       status.className = 'teststatus';
       testStatusEls.set(field.server ?? '', status);
       row.append(status);
+      if (!field.server) {
+        // The Test said hop by hop: the address, the proxy, the model server.
+        hopsEl = document.createElement('div');
+        hopsEl.className = 'testhops';
+        hopsEl.hidden = true;
+        row.append(hopsEl);
+      }
     }
   } else {
     row.append(input);
@@ -979,6 +1042,12 @@ const editorHost = {
   commit: (area: HTMLTextAreaElement, text: string): void => {
     area.value = text;
     refreshForm();
+  },
+  field: (key: string): string => inputs.get(key)?.value ?? '',
+  saved: (key: string): string => String(config[key] ?? ''),
+  watch: (key: string, onChange: () => void): void => {
+    // The field may be drawn after the editor: wait for the page to be built.
+    setTimeout(() => inputs.get(key)?.addEventListener('input', onChange), 0);
   },
 };
 
@@ -1160,7 +1229,9 @@ function onSave(): void {
     }
   }
   lastIgnored = ignored;
-  vscode.postMessage({ type: 'save', json: JSON.stringify(config, null, 2) });
+  // "Keep the same ones" for a new address: the old proxy's credentials go with it (the host clears them otherwise).
+  const keepRequestHeaders = (inputs.get('requestHeaders') as HTMLTextAreaElement | undefined)?.dataset.keepHeaders === '1';
+  vscode.postMessage({ type: 'save', json: JSON.stringify(config, null, 2), keepRequestHeaders });
 }
 
 /** What the status line says after a successful save: what is saved is saved, and what could not
@@ -1194,7 +1265,7 @@ window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as {
     type: string; configJson?: string; models?: string[]; embeddingModels?: string[]; strings?: Record<string, string>;
     schema?: Schema; message?: string; ok?: boolean; rulesIgnored?: number; provider?: string | null;
-    refused?: string | null; answered?: string | null; op?: string; server?: string; page?: string; section?: string;
+    refused?: string | null; answered?: string | null; hops?: ConnectionHop[] | null; op?: string; server?: string; page?: string; section?: string;
   };
   // The live blocks and the structured editors take the answers to their own requests (cards, rules table, index…).
   // Every widget sees a message before an editor may consume it: the agent page's rules card counts the table the
@@ -1283,6 +1354,9 @@ window.addEventListener('message', (event: MessageEvent) => {
         msg.ok ? (msg.answered ?? (named ? `${t('Connected')} — ${named}` : t('Connected')))
                : (msg.refused ?? t('Backend unreachable')),
         msg.ok, server);
+      if (!server) {
+        drawHops(msg.hops ?? null);
+      }
       break;
     }
     case 'saveDone':

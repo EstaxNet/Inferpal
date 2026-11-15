@@ -2175,4 +2175,87 @@
   <data name="KeptSeeKept" xml:space="preserve"><value>查看保留的内容</value></data>
   <data name="LabelRequestHeaders" xml:space="preserve"><value>请求标头</value></data>
   <data name="HintRequestHeaders" xml:space="preserve"><value>随发往此服务器的每个请求发送，每行一个，格式为 名称: 值 — 即其前方反向代理所要求的内容 (Authorization: Basic …)。只有此主机会收到，绝不会随重定向发往别处。</value></data>
+  <data name="ProxySectionTitle" xml:space="preserve"><value>通过反向代理访问</value></data>
+  <data name="ProxySectionIntro" xml:space="preserve"><value>如果模型服务器位于 Caddy、nginx、Traefik 或 Cloudflare 之后，代理会在放行前检查每个请求。请告诉 Inferpal 代理要求什么。如果 Inferpal 能直接连到服务器，请保持“无”。</value></data>
+  <data name="ProxyQuestion" xml:space="preserve"><value>您的代理要求什么？</value></data>
+  <data name="ProxyMethodNone" xml:space="preserve"><value>无</value></data>
+  <data name="ProxyMethodNoneDesc" xml:space="preserve"><value>Inferpal 直接连到服务器，或代理对所有人放行。</value></data>
+  <data name="ProxyMethodBasic" xml:space="preserve"><value>用户名和密码</value></data>
+  <data name="ProxyMethodBasicDesc" xml:space="preserve"><value>浏览器在此地址显示登录框。Caddy basic_auth、nginx auth_basic。</value></data>
+  <data name="ProxyMethodBearer" xml:space="preserve"><value>访问令牌</value></data>
+  <data name="ProxyMethodBearerDesc" xml:space="preserve"><value>您获得了一个以 Bearer 发送的令牌。Open WebUI、令牌网关。</value></data>
+  <data name="ProxyMethodCloudflare" xml:space="preserve"><value>Cloudflare Access</value></data>
+  <data name="ProxyMethodCloudflareDesc" xml:space="preserve"><value>服务令牌：Zero Trust 控制台中的 Client ID 和 Client Secret。</value></data>
+  <data name="ProxyMethodCustom" xml:space="preserve"><value>其他标头</value></data>
+  <data name="ProxyMethodCustomDesc" xml:space="preserve"><value>代理文档会列出要发送的标头：每行一个，格式为 名称: 值。</value></data>
+  <data name="ProxyNotSure" xml:space="preserve"><value>不确定？在浏览器中打开服务器地址：出现登录框即用户名和密码；出现 Cloudflare 页面即 Cloudflare Access。</value></data>
+  <data name="ProxyHowToLink" xml:space="preserve"><value>如何配合 Caddy、nginx 或 Cloudflare 设置</value></data>
+  <data name="ProxyBasicIntro" xml:space="preserve"><value>与浏览器在 {0} 上要求的用户名和密码相同。Inferpal 会把它们转换为代理需要的标头。</value></data>
+  <data name="ProxyUser" xml:space="preserve"><value>用户名</value></data>
+  <data name="ProxyPassword" xml:space="preserve"><value>密码</value></data>
+  <data name="ProxyBearerIntro" xml:space="preserve"><value>填写获得的令牌，不要带 Bearer：Inferpal 会自动加上。</value></data>
+  <data name="ProxyCfIntro" xml:space="preserve"><value>在请求到达服务器之前，Cloudflare 会先检查服务令牌。</value></data>
+  <data name="ProxyCfStep1" xml:space="preserve"><value>Zero Trust › Access › Service credentials › Create Service Token。</value></data>
+  <data name="ProxyCfStep2" xml:space="preserve"><value>现在就复制两个值：Cloudflare 只显示一次密钥。</value></data>
+  <data name="ProxyCfStep3" xml:space="preserve"><value>将令牌加入应用的策略，操作选 Service Auth。</value></data>
+  <data name="ProxyCfId" xml:space="preserve"><value>Client ID</value></data>
+  <data name="ProxyCfIdHint" xml:space="preserve"><value>以 .access 结尾。作为 CF-Access-Client-Id 发送。</value></data>
+  <data name="ProxyCfSecretLabel" xml:space="preserve"><value>Client Secret</value></data>
+  <data name="ProxyCustomIntro" xml:space="preserve"><value>每行一个标头，格式为 名称: 值——即代理文档中列出的标头。</value></data>
+  <data name="ProxySendsTitle" xml:space="preserve"><value>Inferpal 将发送的内容</value></data>
+  <data name="ProxySendsWhen" xml:space="preserve"><value>每个请求都会带上：提问、模型列表、代码补全、测试按钮。</value></data>
+  <data name="ProxySendsWhere" xml:space="preserve"><value>仅发送到 {0}。如果它重定向到别处，Inferpal 会停下并告诉您，而不是跟随。</value></data>
+  <data name="ProxySendsHttps" xml:space="preserve"><value>通过 HTTPS 加密传输。</value></data>
+  <data name="ProxySendsHttp" xml:space="preserve"><value>在 http:// 地址上，这些内容会以明文在网络中传输：建议使用 https://。</value></data>
+  <data name="ProxyLineNotSent" xml:space="preserve"><value>第 {0} 行不会发送：它不是 名称: 值 格式。</value></data>
+  <data name="ProxyEditRaw" xml:space="preserve"><value>按原始标头编辑</value></data>
+  <data name="ProxyTestTitle" xml:space="preserve"><value>测试——逐跳发生了什么</value></data>
+  <data name="ProxyWhatToCheck" xml:space="preserve"><value>需要检查</value></data>
+  <data name="ProxyHopUnreachable" xml:space="preserve"><value>无法连接 {0}</value></data>
+  <data name="ProxyHopNotAnAddress" xml:space="preserve"><value>这不是网址：网址以 http:// 或 https:// 开头。</value></data>
+  <data name="ProxyHopCertificate" xml:space="preserve"><value>{0} 返回了本机不信任的证书</value></data>
+  <data name="ProxyCheckTrustAuthority" xml:space="preserve"><value>如果是您自己的证书颁发机构签发的证书：请将该机构加入系统受信任证书，然后重新测试。</value></data>
+  <data name="ProxyCheckAddress" xml:space="preserve"><value>检查地址和端口，以及本机能否访问（VPN、防火墙）。</value></data>
+  <data name="ProxyHopReached" xml:space="preserve"><value>已连接 {0}</value></data>
+  <data name="ProxyHopHttps" xml:space="preserve"><value>HTTPS，证书受本机信任。</value></data>
+  <data name="ProxyHopHttp" xml:space="preserve"><value>HTTP：未加密。</value></data>
+  <data name="ProxyHopSignInPage" xml:space="preserve"><value>代理把请求转到了登录页面</value></data>
+  <data name="ProxyHopSignInSent" xml:space="preserve"><value>Cloudflare Access 未接受所发送的服务令牌。</value></data>
+  <data name="ProxyHopSignInNone" xml:space="preserve"><value>此地址受 Cloudflare Access 保护：需要服务令牌。</value></data>
+  <data name="ProxyHopRefused" xml:space="preserve"><value>代理拒绝了凭据——{0}</value></data>
+  <data name="ProxyHopAsks" xml:space="preserve"><value>代理要求提供凭据——{0}</value></data>
+  <data name="ProxyHopAsksDetail" xml:space="preserve"><value>未发送任何内容：尚未选择方式。</value></data>
+  <data name="ProxyCheckPickMethod" xml:space="preserve"><value>在上方选择代理要求的内容，然后重新测试。</value></data>
+  <data name="ProxyHopRedirected" xml:space="preserve"><value>重定向到 {0}——未跟随</value></data>
+  <data name="ProxyHopRedirectedDetail" xml:space="preserve"><value>Inferpal 只把凭据发送到此服务器，绝不发往重定向所指的地址。</value></data>
+  <data name="ProxyCheckRedirect" xml:space="preserve"><value>如果该地址就是您的服务器，请将其设为服务器地址。</value></data>
+  <data name="ProxyHopLetThrough" xml:space="preserve"><value>代理已放行请求</value></data>
+  <data name="ProxyHopNoCredentials" xml:space="preserve"><value>未要求凭据</value></data>
+  <data name="ProxyHopServer" xml:space="preserve"><value>模型服务器已响应——{0}</value></data>
+  <data name="ProxyHopNotAServer" xml:space="preserve"><value>有内容响应，但不是模型服务器</value></data>
+  <data name="ProxyCheckForward" xml:space="preserve"><value>确认代理转发到模型服务器的端口（Ollama 为 11434，LM Studio 为 1234）。</value></data>
+  <data name="ProxyHopProxyNotReached" xml:space="preserve"><value>代理——未到达</value></data>
+  <data name="ProxyHopServerNotReached" xml:space="preserve"><value>模型服务器——未到达</value></data>
+  <data name="ProxyHopStoppedBefore" xml:space="preserve"><value>请求在此之前就停止了。</value></data>
+  <data name="ProxySentBasic" xml:space="preserve"><value>Inferpal 发送了用户名 {0} 和密码。</value></data>
+  <data name="ProxySentBearer" xml:space="preserve"><value>Inferpal 发送了访问令牌。</value></data>
+  <data name="ProxySentCloudflare" xml:space="preserve"><value>Inferpal 发送了 Client ID {0} 及其密钥。</value></data>
+  <data name="ProxySentCustom" xml:space="preserve"><value>Inferpal 发送了上面填写的标头。</value></data>
+  <data name="ProxyCheckBasicBrowser" xml:space="preserve"><value>在浏览器中用相同的用户名和密码登录该地址试试。</value></data>
+  <data name="ProxyCheckBasicHash" xml:space="preserve"><value>Caddy 保存的是密码哈希：此处应填写密码本身，而不是哈希。</value></data>
+  <data name="ProxyCheckBasicCase" xml:space="preserve"><value>用户名区分大小写。</value></data>
+  <data name="ProxyCheckBearerWhole" xml:space="preserve"><value>完整粘贴令牌，不要带 Bearer，也不要有前后空格。</value></data>
+  <data name="ProxyCheckBearerExpired" xml:space="preserve"><value>令牌可能已过期：请到签发处重新获取。</value></data>
+  <data name="ProxyCheckCfPolicy" xml:space="preserve"><value>在 Zero Trust 中，应用策略必须包含此服务令牌，操作为 Service Auth。</value></data>
+  <data name="ProxyCheckCfSecret" xml:space="preserve"><value>密钥只在创建时显示一次：如有疑问，请新建令牌。</value></data>
+  <data name="ProxyCheckCustom" xml:space="preserve"><value>将每个标头的名称和值与代理配置逐一比对。</value></data>
+  <data name="ProxyMovedTitle" xml:space="preserve"><value>代理凭据仍归属于 {0}</value></data>
+  <data name="ProxyMovedBody" xml:space="preserve"><value>它们是为 {0} 的代理编写的。如果发送到 {1}，就等于把代理的钥匙交给那台机器。Inferpal 不会发送过去，并会在保存时删除它们。</value></data>
+  <data name="ProxyMovedFor" xml:space="preserve"><value>对于 {0}</value></data>
+  <data name="ProxyMovedNone" xml:space="preserve"><value>无代理——Inferpal 直接连接。网络中的大多数服务器属于此类。</value></data>
+  <data name="ProxyMovedNew" xml:space="preserve"><value>新凭据——此服务器有自己的代理。</value></data>
+  <data name="ProxyMovedKeep" xml:space="preserve"><value>保留原有凭据——仅当此地址位于同一个代理之后。</value></data>
+  <data name="ProxyMovedWas" xml:space="preserve"><value>原为 {0}</value></data>
+  <data name="ProxyHopKeyRefused" xml:space="preserve"><value>模型服务器拒绝了 API 密钥——{0}</value></data>
+  <data name="ProxyCheckApiKey" xml:space="preserve"><value>检查“连接”中的 API 密钥：服务器所需的完整密钥。此处与代理无关。</value></data>
 </root>

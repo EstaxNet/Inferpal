@@ -55,7 +55,7 @@ const host: SettingsHost = {
   modelsListByKind: (overrides) => call('models/listByKind', overrides ?? {}),
   settingsStrings: () => call('settings/strings'),
   settingsSchema: () => call('settings/schema'),
-  connectionCheck: (baseUrl, apiKey) => call('connection/check', { baseUrl, apiKey }),
+  connectionCheck: (baseUrl, apiKey, requestHeaders) => call('connection/check', { baseUrl, apiKey, requestHeaders }),
   mcpCards: () => call('mcp/cards'),
   mcpRetry: () => call('mcp/retry'),
   mcpAuthorize: (name) => call('mcp/authorize', { name }),
@@ -77,7 +77,7 @@ const host: SettingsHost = {
   settingsLoadedModels: () => call('settings/loadedModels'),
   settingsUnloadModels: (names) => call('settings/unloadModels', { names: names ?? null }),
   settingsSuggestModels: (form) => call('settings/suggestModels', form),
-  configUpdate: (json, baseJson) => call('config/update', { json, base: baseJson }),
+  configUpdate: (json, baseJson, keepRequestHeaders) => call('config/update', { json, base: baseJson, keepRequestHeaders }),
 };
 
 const post = (message: unknown): void => window.postMessage(message, '*');

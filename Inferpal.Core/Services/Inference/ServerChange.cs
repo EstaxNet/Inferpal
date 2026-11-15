@@ -25,7 +25,8 @@ internal static class ServerChange
     /// </summary>
     /// <remarks>⚠ "The same gesture did not change it" is read as "the value is the old one": a figure or a model typed
     /// again identical on the new server is taken for the old server's, and starts over too.</remarks>
-    public static bool Follow(InferpalConfig before, InferpalConfig after)
+    /// <param name="keepHeaders">The person said the new address sits behind the same proxy: its headers go with it.</param>
+    public static bool Follow(InferpalConfig before, InferpalConfig after, bool keepHeaders = false)
     {
         if (ServerScan.SameAddress(before.BaseUrl, after.BaseUrl)) return false;
         var changed = false;
@@ -48,7 +49,8 @@ internal static class ServerChange
             changed = true;
         }
         // ⚠ The headers are the old proxy's secret: never sent to the new address unless this gesture wrote them.
-        if (after.RequestHeaders.Length > 0 && string.Equals(after.RequestHeaders, before.RequestHeaders, StringComparison.Ordinal))
+        if (!keepHeaders && after.RequestHeaders.Length > 0
+            && string.Equals(after.RequestHeaders, before.RequestHeaders, StringComparison.Ordinal))
         {
             after.RequestHeaders = string.Empty;
             Diagnostics.Record("ServerChange", "Request headers cleared: they were written for the previous server.");

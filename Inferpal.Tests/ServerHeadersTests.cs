@@ -24,7 +24,7 @@ public class ServerHeadersTests
     private const string Headers = "Authorization: Basic dXNlcjpwYXNz\nX-Proxy-Token: t0k3n";
 
     /// <summary>A raw loopback server: it answers each request from its path and headers, and keeps the headers.</summary>
-    private sealed class Server : IDisposable
+    internal sealed class Server : IDisposable
     {
         private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
         private readonly CancellationTokenSource _cts = new();

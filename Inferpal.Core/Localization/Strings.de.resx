@@ -2175,4 +2175,87 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="KeptSeeKept" xml:space="preserve"><value>Aufbewahrtes ansehen</value></data>
   <data name="LabelRequestHeaders" xml:space="preserve"><value>Anfrage-Header</value></data>
   <data name="HintRequestHeaders" xml:space="preserve"><value>Werden mit jeder Anfrage an diesen Server gesendet, einer pro Zeile als Name: Wert — was ein vorgeschalteter Reverse-Proxy verlangt (Authorization: Basic …). Nur dieser Host erhält sie, nie eine Weiterleitung anderswohin.</value></data>
+  <data name="ProxySectionTitle" xml:space="preserve"><value>Zugriff über einen Reverse-Proxy</value></data>
+  <data name="ProxySectionIntro" xml:space="preserve"><value>Steht Ihr Modellserver hinter Caddy, nginx, Traefik oder Cloudflare, prüft der Proxy jede Anfrage, bevor er sie durchlässt. Sagen Sie Inferpal, was er verlangt. Erreicht Inferpal Ihren Server direkt, lassen Sie Keiner stehen.</value></data>
+  <data name="ProxyQuestion" xml:space="preserve"><value>Was verlangt Ihr Proxy?</value></data>
+  <data name="ProxyMethodNone" xml:space="preserve"><value>Keiner</value></data>
+  <data name="ProxyMethodNoneDesc" xml:space="preserve"><value>Inferpal erreicht den Server direkt, oder der Proxy lässt alle durch.</value></data>
+  <data name="ProxyMethodBasic" xml:space="preserve"><value>Benutzername und Passwort</value></data>
+  <data name="ProxyMethodBasicDesc" xml:space="preserve"><value>Ihr Browser zeigt auf dieser Adresse ein Anmeldefenster. Caddy basic_auth, nginx auth_basic.</value></data>
+  <data name="ProxyMethodBearer" xml:space="preserve"><value>Zugriffstoken</value></data>
+  <data name="ProxyMethodBearerDesc" xml:space="preserve"><value>Sie haben ein Token erhalten, das als Bearer gesendet wird. Open WebUI, ein Token-Gateway.</value></data>
+  <data name="ProxyMethodCloudflare" xml:space="preserve"><value>Cloudflare Access</value></data>
+  <data name="ProxyMethodCloudflareDesc" xml:space="preserve"><value>Ein Service-Token: eine Client ID und ein Client Secret aus dem Zero-Trust-Dashboard.</value></data>
+  <data name="ProxyMethodCustom" xml:space="preserve"><value>Andere Header</value></data>
+  <data name="ProxyMethodCustomDesc" xml:space="preserve"><value>Die Dokumentation Ihres Proxys nennt die Header: einer pro Zeile, als Name: Wert.</value></data>
+  <data name="ProxyNotSure" xml:space="preserve"><value>Unsicher? Öffnen Sie die Serveradresse im Browser: ein Anmeldefenster heißt Benutzername und Passwort, eine Cloudflare-Seite heißt Cloudflare Access.</value></data>
+  <data name="ProxyHowToLink" xml:space="preserve"><value>Einrichtung mit Caddy, nginx oder Cloudflare</value></data>
+  <data name="ProxyBasicIntro" xml:space="preserve"><value>Derselbe Benutzername und dasselbe Passwort, die Ihr Browser auf {0} verlangt. Inferpal macht daraus den Header, den der Proxy erwartet.</value></data>
+  <data name="ProxyUser" xml:space="preserve"><value>Benutzername</value></data>
+  <data name="ProxyPassword" xml:space="preserve"><value>Passwort</value></data>
+  <data name="ProxyBearerIntro" xml:space="preserve"><value>Das erhaltene Token, ohne das Wort Bearer: Inferpal fügt es hinzu.</value></data>
+  <data name="ProxyCfIntro" xml:space="preserve"><value>Cloudflare prüft ein Service-Token, bevor Ihr Server etwas sieht.</value></data>
+  <data name="ProxyCfStep1" xml:space="preserve"><value>Zero Trust › Access › Service credentials › Create Service Token.</value></data>
+  <data name="ProxyCfStep2" xml:space="preserve"><value>Kopieren Sie beide Werte sofort: Cloudflare zeigt das Secret nur einmal.</value></data>
+  <data name="ProxyCfStep3" xml:space="preserve"><value>Fügen Sie das Token der Richtlinie der Anwendung hinzu, mit der Aktion Service Auth.</value></data>
+  <data name="ProxyCfId" xml:space="preserve"><value>Client ID</value></data>
+  <data name="ProxyCfIdHint" xml:space="preserve"><value>Endet auf .access. Gesendet als CF-Access-Client-Id.</value></data>
+  <data name="ProxyCfSecretLabel" xml:space="preserve"><value>Client Secret</value></data>
+  <data name="ProxyCustomIntro" xml:space="preserve"><value>Ein Header pro Zeile, als Name: Wert — die, die Ihre Proxy-Dokumentation nennt.</value></data>
+  <data name="ProxySendsTitle" xml:space="preserve"><value>Was Inferpal senden wird</value></data>
+  <data name="ProxySendsWhen" xml:space="preserve"><value>Bei jeder Anfrage: Fragen, Modelllisten, Code-Vervollständigungen, die Schaltfläche Testen.</value></data>
+  <data name="ProxySendsWhere" xml:space="preserve"><value>Nur an {0}. Leitet es woandershin um, hält Inferpal an und sagt es Ihnen, statt zu folgen.</value></data>
+  <data name="ProxySendsHttps" xml:space="preserve"><value>Über HTTPS, verschlüsselt.</value></data>
+  <data name="ProxySendsHttp" xml:space="preserve"><value>Bei einer http://-Adresse geht das lesbar durchs Netz: besser https://.</value></data>
+  <data name="ProxyLineNotSent" xml:space="preserve"><value>Zeile {0} wird nicht gesendet: sie ist nicht Name: Wert.</value></data>
+  <data name="ProxyEditRaw" xml:space="preserve"><value>Als Roh-Header bearbeiten</value></data>
+  <data name="ProxyTestTitle" xml:space="preserve"><value>Test — was passiert ist, Schritt für Schritt</value></data>
+  <data name="ProxyWhatToCheck" xml:space="preserve"><value>Was zu prüfen ist</value></data>
+  <data name="ProxyHopUnreachable" xml:space="preserve"><value>{0} nicht erreichbar</value></data>
+  <data name="ProxyHopNotAnAddress" xml:space="preserve"><value>Das ist keine Webadresse: sie beginnt mit http:// oder https://.</value></data>
+  <data name="ProxyHopCertificate" xml:space="preserve"><value>{0} antwortete mit einem Zertifikat, dem dieser Rechner nicht vertraut</value></data>
+  <data name="ProxyCheckTrustAuthority" xml:space="preserve"><value>Ein Zertifikat Ihrer eigenen Zertifizierungsstelle: fügen Sie diese den vertrauenswürdigen Zertifikaten des Systems hinzu und testen Sie erneut.</value></data>
+  <data name="ProxyCheckAddress" xml:space="preserve"><value>Prüfen Sie Adresse und Port und ob dieser Rechner sie erreicht (VPN, Firewall).</value></data>
+  <data name="ProxyHopReached" xml:space="preserve"><value>{0} erreicht</value></data>
+  <data name="ProxyHopHttps" xml:space="preserve"><value>HTTPS, Zertifikat von diesem Rechner anerkannt.</value></data>
+  <data name="ProxyHopHttp" xml:space="preserve"><value>HTTP: unverschlüsselt.</value></data>
+  <data name="ProxyHopSignInPage" xml:space="preserve"><value>Der Proxy hat die Anfrage auf eine Anmeldeseite umgeleitet</value></data>
+  <data name="ProxyHopSignInSent" xml:space="preserve"><value>Cloudflare Access hat das gesendete Service-Token nicht akzeptiert.</value></data>
+  <data name="ProxyHopSignInNone" xml:space="preserve"><value>Cloudflare Access schützt diese Adresse: es braucht ein Service-Token.</value></data>
+  <data name="ProxyHopRefused" xml:space="preserve"><value>Der Proxy hat die Zugangsdaten abgelehnt — {0}</value></data>
+  <data name="ProxyHopAsks" xml:space="preserve"><value>Der Proxy verlangt Zugangsdaten — {0}</value></data>
+  <data name="ProxyHopAsksDetail" xml:space="preserve"><value>Nichts wurde gesendet: keine Methode gewählt.</value></data>
+  <data name="ProxyCheckPickMethod" xml:space="preserve"><value>Wählen Sie oben, was Ihr Proxy verlangt, und testen Sie erneut.</value></data>
+  <data name="ProxyHopRedirected" xml:space="preserve"><value>Umgeleitet auf {0} — nicht gefolgt</value></data>
+  <data name="ProxyHopRedirectedDetail" xml:space="preserve"><value>Inferpal sendet Ihre Zugangsdaten nur an diesen Server, nie an die Adresse einer Umleitung.</value></data>
+  <data name="ProxyCheckRedirect" xml:space="preserve"><value>Ist diese Adresse Ihr Server, verwenden Sie sie als Serveradresse.</value></data>
+  <data name="ProxyHopLetThrough" xml:space="preserve"><value>Der Proxy hat die Anfrage durchgelassen</value></data>
+  <data name="ProxyHopNoCredentials" xml:space="preserve"><value>Nichts verlangte Zugangsdaten</value></data>
+  <data name="ProxyHopServer" xml:space="preserve"><value>Der Modellserver hat geantwortet — {0}</value></data>
+  <data name="ProxyHopNotAServer" xml:space="preserve"><value>Etwas antwortet, aber kein Modellserver</value></data>
+  <data name="ProxyCheckForward" xml:space="preserve"><value>Prüfen Sie, ob der Proxy an den Port des Modellservers weiterleitet (11434 für Ollama, 1234 für LM Studio).</value></data>
+  <data name="ProxyHopProxyNotReached" xml:space="preserve"><value>Der Proxy — nicht erreicht</value></data>
+  <data name="ProxyHopServerNotReached" xml:space="preserve"><value>Der Modellserver — nicht erreicht</value></data>
+  <data name="ProxyHopStoppedBefore" xml:space="preserve"><value>Die Anfrage endete davor.</value></data>
+  <data name="ProxySentBasic" xml:space="preserve"><value>Inferpal hat den Benutzernamen {0} und ein Passwort gesendet.</value></data>
+  <data name="ProxySentBearer" xml:space="preserve"><value>Inferpal hat das Zugriffstoken gesendet.</value></data>
+  <data name="ProxySentCloudflare" xml:space="preserve"><value>Inferpal hat die Client ID {0} und ihr Secret gesendet.</value></data>
+  <data name="ProxySentCustom" xml:space="preserve"><value>Inferpal hat die oben geschriebenen Header gesendet.</value></data>
+  <data name="ProxyCheckBasicBrowser" xml:space="preserve"><value>Melden Sie sich im Browser auf der Adresse mit denselben Daten an.</value></data>
+  <data name="ProxyCheckBasicHash" xml:space="preserve"><value>Caddy speichert ein gehashtes Passwort: dieses Feld nimmt das Passwort selbst, nicht den Hash.</value></data>
+  <data name="ProxyCheckBasicCase" xml:space="preserve"><value>Beim Benutzernamen zählt Groß- und Kleinschreibung.</value></data>
+  <data name="ProxyCheckBearerWhole" xml:space="preserve"><value>Fügen Sie das Token vollständig ein, ohne das Wort Bearer und ohne Leerzeichen.</value></data>
+  <data name="ProxyCheckBearerExpired" xml:space="preserve"><value>Ein Token kann ablaufen: fordern Sie dort ein neues an, wo es ausgestellt wurde.</value></data>
+  <data name="ProxyCheckCfPolicy" xml:space="preserve"><value>In Zero Trust muss die Richtlinie der Anwendung dieses Service-Token mit der Aktion Service Auth enthalten.</value></data>
+  <data name="ProxyCheckCfSecret" xml:space="preserve"><value>Das Secret wird nur bei der Erstellung gezeigt: im Zweifel ein neues Token erstellen.</value></data>
+  <data name="ProxyCheckCustom" xml:space="preserve"><value>Vergleichen Sie jeden Header, Name und Wert, mit der Konfiguration Ihres Proxys.</value></data>
+  <data name="ProxyMovedTitle" xml:space="preserve"><value>Ihre Proxy-Zugangsdaten bleiben bei {0}</value></data>
+  <data name="ProxyMovedBody" xml:space="preserve"><value>Sie wurden für den Proxy von {0} geschrieben. An {1} gesendet, gäben sie diesem Rechner den Schlüssel zu Ihrem Proxy. Inferpal sendet sie nicht dorthin und entfernt sie beim Speichern.</value></data>
+  <data name="ProxyMovedFor" xml:space="preserve"><value>Für {0}</value></data>
+  <data name="ProxyMovedNone" xml:space="preserve"><value>Kein Proxy — Inferpal erreicht ihn direkt. Die meisten Server in Ihrem Netz.</value></data>
+  <data name="ProxyMovedNew" xml:space="preserve"><value>Neue Zugangsdaten — dieser Server hat einen eigenen Proxy.</value></data>
+  <data name="ProxyMovedKeep" xml:space="preserve"><value>Dieselben behalten — nur wenn diese Adresse hinter genau demselben Proxy steht.</value></data>
+  <data name="ProxyMovedWas" xml:space="preserve"><value>Vorher {0}</value></data>
+  <data name="ProxyHopKeyRefused" xml:space="preserve"><value>Der Modellserver hat den API-Schlüssel abgelehnt — {0}</value></data>
+  <data name="ProxyCheckApiKey" xml:space="preserve"><value>Prüfen Sie den API-Schlüssel unter Verbindung: den, den Ihr Server erwartet, vollständig. Kein Proxy ist beteiligt.</value></data>
 </root>

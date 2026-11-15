@@ -484,10 +484,17 @@ internal sealed record ModelUseParams(string Model, bool Conversation = false);
 /// </remarks>
 /// <param name="Answered">When a server answered, the line the panel shows, in the user's language: its kind and how
 /// many models it lists (<see cref="ConnectionStatusPresenter.Answered"/>, the Visual Studio window's words).</param>
-internal sealed record ConnectionCheckResult(bool Ok, string? Provider, string? Refused = null, string? Answered = null);
+/// <param name="Hops">The Test said hop by hop (the address, the proxy, the model server), drawn when there is a proxy to
+/// explain or something to fix.</param>
+internal sealed record ConnectionCheckResult(bool Ok, string? Provider, string? Refused = null, string? Answered = null,
+                                             IReadOnlyList<ConnectionHop>? Hops = null);
+
+/// <summary>One hop of the Test: <c>passed</c>, <c>failed</c> or <c>notReached</c>, what happened, what to check.</summary>
+internal sealed record ConnectionHop(string State, string Title, string? Detail, IReadOnlyList<string> Checks);
 
 /// <summary>`connection/check` — the url and API key to probe. Empty = the configured ones.</summary>
-internal sealed record ConnectionCheckParams(string? BaseUrl = null, string? ApiKey = null);
+/// <param name="RequestHeaders">The proxy headers in the FORM, like the key; null keeps the saved ones for the saved address.</param>
+internal sealed record ConnectionCheckParams(string? BaseUrl = null, string? ApiKey = null, string? RequestHeaders = null);
 
 /// <summary>
 /// `models/list` — the settings FORM's values when it has any. Each empty one falls back to the
@@ -606,7 +613,8 @@ internal sealed record SlashCommandResult(
 /// change made elsewhere since — a documentation source, a model picked from the chat — would otherwise
 /// be reverted by a save that never touched it.
 /// </param>
-internal sealed record ConfigUpdateParams(string Json, string? Base = null);
+/// <param name="KeepRequestHeaders">The person said the new address sits behind the same proxy: its headers go with it.</param>
+internal sealed record ConfigUpdateParams(string Json, string? Base = null, bool KeepRequestHeaders = false);
 
 /// <summary>What the save could not use. One thing today, and the type exists so the next one joins
 /// it instead of becoming a second round trip.</summary>

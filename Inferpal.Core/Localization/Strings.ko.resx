@@ -2175,4 +2175,87 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="KeptSeeKept" xml:space="preserve"><value>보관된 것 보기</value></data>
   <data name="LabelRequestHeaders" xml:space="preserve"><value>요청 헤더</value></data>
   <data name="HintRequestHeaders" xml:space="preserve"><value>이 서버로 가는 모든 요청에 전송됩니다. 한 줄에 하나씩 이름: 값 형식으로 — 앞단의 리버스 프록시가 요구하는 것 (Authorization: Basic …). 이 호스트만 받으며, 다른 곳으로의 리디렉션에는 보내지 않습니다.</value></data>
+  <data name="ProxySectionTitle" xml:space="preserve"><value>리버스 프록시를 통한 접근</value></data>
+  <data name="ProxySectionIntro" xml:space="preserve"><value>모델 서버가 Caddy, nginx, Traefik 또는 Cloudflare 뒤에 있으면 프록시가 요청을 통과시키기 전에 매번 확인합니다. 프록시가 요구하는 것을 Inferpal에 알려 주세요. Inferpal이 서버에 직접 닿는다면 '없음'으로 두세요.</value></data>
+  <data name="ProxyQuestion" xml:space="preserve"><value>프록시가 무엇을 요구하나요?</value></data>
+  <data name="ProxyMethodNone" xml:space="preserve"><value>없음</value></data>
+  <data name="ProxyMethodNoneDesc" xml:space="preserve"><value>Inferpal이 서버에 직접 닿거나, 프록시가 모두 통과시킵니다.</value></data>
+  <data name="ProxyMethodBasic" xml:space="preserve"><value>사용자 이름과 비밀번호</value></data>
+  <data name="ProxyMethodBasicDesc" xml:space="preserve"><value>이 주소에서 브라우저가 로그인 창을 띄웁니다. Caddy basic_auth, nginx auth_basic.</value></data>
+  <data name="ProxyMethodBearer" xml:space="preserve"><value>액세스 토큰</value></data>
+  <data name="ProxyMethodBearerDesc" xml:space="preserve"><value>Bearer로 보낼 토큰을 받았습니다. Open WebUI, 토큰 게이트웨이.</value></data>
+  <data name="ProxyMethodCloudflare" xml:space="preserve"><value>Cloudflare Access</value></data>
+  <data name="ProxyMethodCloudflareDesc" xml:space="preserve"><value>서비스 토큰: Zero Trust 대시보드의 Client ID와 Client Secret.</value></data>
+  <data name="ProxyMethodCustom" xml:space="preserve"><value>기타 헤더</value></data>
+  <data name="ProxyMethodCustomDesc" xml:space="preserve"><value>프록시 문서에 나온 헤더를 한 줄에 하나씩 이름: 값 으로 적습니다.</value></data>
+  <data name="ProxyNotSure" xml:space="preserve"><value>잘 모르겠다면 브라우저에서 서버 주소를 열어 보세요. 로그인 창이면 사용자 이름과 비밀번호, Cloudflare 페이지면 Cloudflare Access입니다.</value></data>
+  <data name="ProxyHowToLink" xml:space="preserve"><value>Caddy, nginx, Cloudflare에서 설정하는 방법</value></data>
+  <data name="ProxyBasicIntro" xml:space="preserve"><value>{0}에서 브라우저가 묻는 것과 같은 사용자 이름과 비밀번호입니다. Inferpal이 프록시가 기대하는 헤더로 바꿉니다.</value></data>
+  <data name="ProxyUser" xml:space="preserve"><value>사용자 이름</value></data>
+  <data name="ProxyPassword" xml:space="preserve"><value>비밀번호</value></data>
+  <data name="ProxyBearerIntro" xml:space="preserve"><value>받은 토큰을 Bearer 없이 입력하세요. Inferpal이 붙입니다.</value></data>
+  <data name="ProxyCfIntro" xml:space="preserve"><value>서버에 닿기 전에 Cloudflare가 서비스 토큰을 확인합니다.</value></data>
+  <data name="ProxyCfStep1" xml:space="preserve"><value>Zero Trust › Access › Service credentials › Create Service Token.</value></data>
+  <data name="ProxyCfStep2" xml:space="preserve"><value>두 값을 지금 복사하세요. Cloudflare는 비밀을 한 번만 보여 줍니다.</value></data>
+  <data name="ProxyCfStep3" xml:space="preserve"><value>애플리케이션 정책에 Service Auth 동작으로 토큰을 추가하세요.</value></data>
+  <data name="ProxyCfId" xml:space="preserve"><value>Client ID</value></data>
+  <data name="ProxyCfIdHint" xml:space="preserve"><value>.access로 끝납니다. CF-Access-Client-Id로 보냅니다.</value></data>
+  <data name="ProxyCfSecretLabel" xml:space="preserve"><value>Client Secret</value></data>
+  <data name="ProxyCustomIntro" xml:space="preserve"><value>한 줄에 하나씩 이름: 값 형식으로, 프록시 문서에 나온 헤더를 적으세요.</value></data>
+  <data name="ProxySendsTitle" xml:space="preserve"><value>Inferpal이 보낼 내용</value></data>
+  <data name="ProxySendsWhen" xml:space="preserve"><value>모든 요청에: 질문, 모델 목록, 코드 완성, 테스트 버튼.</value></data>
+  <data name="ProxySendsWhere" xml:space="preserve"><value>{0}에만 보냅니다. 다른 곳으로 리디렉션되면 따라가지 않고 멈춘 뒤 알려 줍니다.</value></data>
+  <data name="ProxySendsHttps" xml:space="preserve"><value>HTTPS로 암호화됩니다.</value></data>
+  <data name="ProxySendsHttp" xml:space="preserve"><value>http:// 주소에서는 네트워크에 그대로 보입니다. https://를 쓰세요.</value></data>
+  <data name="ProxyLineNotSent" xml:space="preserve"><value>{0}번째 줄은 보내지 않습니다: 이름: 값 형식이 아닙니다.</value></data>
+  <data name="ProxyEditRaw" xml:space="preserve"><value>헤더로 직접 편집</value></data>
+  <data name="ProxyTestTitle" xml:space="preserve"><value>테스트 — 단계별로 일어난 일</value></data>
+  <data name="ProxyWhatToCheck" xml:space="preserve"><value>확인할 것</value></data>
+  <data name="ProxyHopUnreachable" xml:space="preserve"><value>{0}에 연결할 수 없습니다</value></data>
+  <data name="ProxyHopNotAnAddress" xml:space="preserve"><value>웹 주소가 아닙니다. http:// 또는 https://로 시작합니다.</value></data>
+  <data name="ProxyHopCertificate" xml:space="preserve"><value>{0}이(가) 이 컴퓨터가 신뢰하지 않는 인증서로 응답했습니다</value></data>
+  <data name="ProxyCheckTrustAuthority" xml:space="preserve"><value>자체 인증 기관의 인증서라면 그 기관을 시스템의 신뢰할 수 있는 인증서에 추가한 뒤 다시 테스트하세요.</value></data>
+  <data name="ProxyCheckAddress" xml:space="preserve"><value>주소와 포트, 이 컴퓨터에서 닿는지(VPN, 방화벽) 확인하세요.</value></data>
+  <data name="ProxyHopReached" xml:space="preserve"><value>{0}에 연결됨</value></data>
+  <data name="ProxyHopHttps" xml:space="preserve"><value>HTTPS, 이 컴퓨터가 신뢰하는 인증서.</value></data>
+  <data name="ProxyHopHttp" xml:space="preserve"><value>HTTP: 암호화되지 않음.</value></data>
+  <data name="ProxyHopSignInPage" xml:space="preserve"><value>프록시가 요청을 로그인 페이지로 보냈습니다</value></data>
+  <data name="ProxyHopSignInSent" xml:space="preserve"><value>Cloudflare Access가 보낸 서비스 토큰을 받아들이지 않았습니다.</value></data>
+  <data name="ProxyHopSignInNone" xml:space="preserve"><value>이 주소는 Cloudflare Access로 보호됩니다. 서비스 토큰이 필요합니다.</value></data>
+  <data name="ProxyHopRefused" xml:space="preserve"><value>프록시가 자격 증명을 거부했습니다 — {0}</value></data>
+  <data name="ProxyHopAsks" xml:space="preserve"><value>프록시가 자격 증명을 요구합니다 — {0}</value></data>
+  <data name="ProxyHopAsksDetail" xml:space="preserve"><value>아무것도 보내지 않았습니다. 방법이 선택되지 않았습니다.</value></data>
+  <data name="ProxyCheckPickMethod" xml:space="preserve"><value>위에서 프록시가 요구하는 것을 고르고 다시 테스트하세요.</value></data>
+  <data name="ProxyHopRedirected" xml:space="preserve"><value>{0}(으)로 리디렉션 — 따라가지 않음</value></data>
+  <data name="ProxyHopRedirectedDetail" xml:space="preserve"><value>Inferpal은 자격 증명을 이 서버에만 보내며, 리디렉션 주소로는 절대 보내지 않습니다.</value></data>
+  <data name="ProxyCheckRedirect" xml:space="preserve"><value>그 주소가 서버라면 서버 주소로 사용하세요.</value></data>
+  <data name="ProxyHopLetThrough" xml:space="preserve"><value>프록시가 요청을 통과시켰습니다</value></data>
+  <data name="ProxyHopNoCredentials" xml:space="preserve"><value>자격 증명을 요구하지 않았습니다</value></data>
+  <data name="ProxyHopServer" xml:space="preserve"><value>모델 서버가 응답했습니다 — {0}</value></data>
+  <data name="ProxyHopNotAServer" xml:space="preserve"><value>무언가 응답하지만 모델 서버가 아닙니다</value></data>
+  <data name="ProxyCheckForward" xml:space="preserve"><value>프록시가 모델 서버 포트(Ollama 11434, LM Studio 1234)로 전달하는지 확인하세요.</value></data>
+  <data name="ProxyHopProxyNotReached" xml:space="preserve"><value>프록시 — 연결되지 않음</value></data>
+  <data name="ProxyHopServerNotReached" xml:space="preserve"><value>모델 서버 — 연결되지 않음</value></data>
+  <data name="ProxyHopStoppedBefore" xml:space="preserve"><value>요청이 그 전에 멈췄습니다.</value></data>
+  <data name="ProxySentBasic" xml:space="preserve"><value>Inferpal이 사용자 이름 {0}과(와) 비밀번호를 보냈습니다.</value></data>
+  <data name="ProxySentBearer" xml:space="preserve"><value>Inferpal이 액세스 토큰을 보냈습니다.</value></data>
+  <data name="ProxySentCloudflare" xml:space="preserve"><value>Inferpal이 Client ID {0}와(과) 비밀을 보냈습니다.</value></data>
+  <data name="ProxySentCustom" xml:space="preserve"><value>Inferpal이 위에 적은 헤더를 보냈습니다.</value></data>
+  <data name="ProxyCheckBasicBrowser" xml:space="preserve"><value>브라우저에서 같은 사용자 이름과 비밀번호로 로그인해 보세요.</value></data>
+  <data name="ProxyCheckBasicHash" xml:space="preserve"><value>Caddy는 해시된 비밀번호를 저장합니다. 이 칸에는 해시가 아니라 비밀번호 자체를 넣습니다.</value></data>
+  <data name="ProxyCheckBasicCase" xml:space="preserve"><value>사용자 이름은 대소문자를 구분합니다.</value></data>
+  <data name="ProxyCheckBearerWhole" xml:space="preserve"><value>토큰 전체를 Bearer라는 단어와 앞뒤 공백 없이 붙여 넣으세요.</value></data>
+  <data name="ProxyCheckBearerExpired" xml:space="preserve"><value>토큰은 만료될 수 있습니다. 발급한 곳에서 새로 받으세요.</value></data>
+  <data name="ProxyCheckCfPolicy" xml:space="preserve"><value>Zero Trust에서 애플리케이션 정책에 이 서비스 토큰이 Service Auth 동작으로 포함되어야 합니다.</value></data>
+  <data name="ProxyCheckCfSecret" xml:space="preserve"><value>비밀은 생성할 때 한 번만 표시됩니다. 확실하지 않으면 새 토큰을 만드세요.</value></data>
+  <data name="ProxyCheckCustom" xml:space="preserve"><value>각 헤더의 이름과 값을 프록시 설정과 비교하세요.</value></data>
+  <data name="ProxyMovedTitle" xml:space="preserve"><value>프록시 자격 증명은 {0}에 남습니다</value></data>
+  <data name="ProxyMovedBody" xml:space="preserve"><value>이것은 {0}의 프록시용으로 작성되었습니다. {1}에 보내면 그 컴퓨터에 프록시 열쇠를 건네게 됩니다. Inferpal은 그곳으로 보내지 않으며 저장할 때 제거합니다.</value></data>
+  <data name="ProxyMovedFor" xml:space="preserve"><value>{0}의 경우</value></data>
+  <data name="ProxyMovedNone" xml:space="preserve"><value>프록시 없음 — Inferpal이 직접 연결합니다. 네트워크 안 서버 대부분.</value></data>
+  <data name="ProxyMovedNew" xml:space="preserve"><value>새 자격 증명 — 이 서버에는 자체 프록시가 있습니다.</value></data>
+  <data name="ProxyMovedKeep" xml:space="preserve"><value>같은 것 유지 — 이 주소가 바로 그 프록시 뒤에 있을 때만.</value></data>
+  <data name="ProxyMovedWas" xml:space="preserve"><value>이전 {0}</value></data>
+  <data name="ProxyHopKeyRefused" xml:space="preserve"><value>모델 서버가 API 키를 거부했습니다 — {0}</value></data>
+  <data name="ProxyCheckApiKey" xml:space="preserve"><value>연결의 API 키를 확인하세요. 서버가 기대하는 키 전체입니다. 프록시와는 관계없습니다.</value></data>
 </root>

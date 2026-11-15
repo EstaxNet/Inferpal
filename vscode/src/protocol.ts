@@ -300,6 +300,16 @@ export interface ConnectionCheckResult {
   refused?: string | null;
   /** A server answered: the line to show, already in the user's language — its kind and how many models it lists. */
   answered?: string | null;
+  /** The Test said hop by hop, when there is a proxy to explain or something to fix. */
+  hops?: ConnectionHop[] | null;
+}
+
+/** One hop of the Test: the address, the proxy, the model server — what happened, and what to check where it failed. */
+export interface ConnectionHop {
+  state: 'passed' | 'failed' | 'notReached';
+  title: string;
+  detail?: string | null;
+  checks: string[];
 }
 
 /** One bubble, flattened for `chat/export`. `name` is the model (assistant) or tool name. */
@@ -917,7 +927,7 @@ export interface SettingsField {
   /** Resource name of the hint shown instead when the selected server is not Ollama. */
   hintNotOllama?: string | null;
   /** The structured editor drawn over a list setting's text. */
-  editor?: 'pinnedFiles' | 'mcpServers' | 'approvalRules' | 'nameValue' | 'cards' | 'segmented' | null;
+  editor?: 'pinnedFiles' | 'mcpServers' | 'approvalRules' | 'nameValue' | 'cards' | 'segmented' | 'proxyAccess' | null;
   /** A numeric box whose 0 means "not set": shown empty, and empty saves 0. */
   zeroIsEmpty?: boolean;
   /** Resource name of what an optional model list shows for its empty value ("Same as chat"). */

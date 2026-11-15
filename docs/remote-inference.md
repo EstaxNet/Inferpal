@@ -274,20 +274,38 @@ VPN / SSH rather than opening the port to the internet.
 
 ### Behind a reverse proxy
 
-When Caddy, nginx, Traefik or Cloudflare Access protects the server, put what the proxy expects
-in **Request headers** (Settings › Server and models, `requestHeaders` in `config.json`), one
-per line:
+A reverse proxy (Caddy, nginx, Traefik, Cloudflare Access) checks every request before letting
+it through to the model server. Tell Inferpal what it asks for in **Settings › Server and
+models › Access through a reverse proxy**. Not sure which one? Open the server address in your
+browser: a sign-in box means a username and a password; a Cloudflare page means Cloudflare Access.
 
-```
-Authorization: Basic dXNlcjpwYXNzd29yZA==
-```
+| Method | What you type | What Inferpal sends |
+|---|---|---|
+| Username and password (Caddy `basic_auth`, nginx `auth_basic`) | the username and the password your browser asks for | `Authorization: Basic …`, built for you |
+| Access token (Open WebUI, a token gateway) | the token, without the word `Bearer` | `Authorization: Bearer …` |
+| Cloudflare Access | a service token's Client ID and Client Secret | `CF-Access-Client-Id` and `CF-Access-Client-Secret` |
+| Other headers | one `Name: value` per line, as your proxy's documentation names them | those lines |
 
-Every backend sends them, Ollama included, and the Test button uses them (in VS Code, once
-saved). Only that host
-receives them: an `http → https` redirect on the same host is followed, a redirect to another
-host is not, and its answer is shown instead. A certificate from your own authority works once
-that authority is trusted by the operating system (Windows certificate store, or the system
-store on Linux and macOS); there is no setting that skips certificate checks. The system proxy
-is used as described in [Troubleshooting](#troubleshooting).
+For Cloudflare Access, create the token in Zero Trust › Access › Service credentials › **Create
+Service Token** (copy both values at once: the secret is shown only once), then add it to the
+application's policy with the action **Service Auth**. Caddy stores a hashed password: Inferpal
+takes the password itself, never the hash.
+
+What you choose is saved as `requestHeaders` in `config.json`, the headers themselves; **Edit as
+text** (VS Code) or **Edit as raw headers** (Visual Studio) shows them. The page shows what will
+be sent, the secrets masked. Every backend sends them, Ollama included, and so does the Test
+button, which says hop by hop where a request stopped: the address (and its certificate), the
+proxy (and what to check there), the model server.
+
+Only that server receives them: an `http → https` redirect on the same host is followed, a
+redirect to another host or port is not, and its answer is shown instead. On an `http://`
+address they travel readable on the network: prefer `https://`. Change the server address to
+another server, and the credentials stay with the proxy they were written for: the page asks
+whether the new address has no proxy, a proxy of its own, or the very same one.
+
+A certificate from your own authority works once that authority is trusted by the operating
+system (Windows certificate store, or the system store on Linux and macOS); there is no setting
+that skips certificate checks. The system proxy is used as described in
+[Troubleshooting](#troubleshooting).
 
 **Next:** [Models](models.md) — which model for which job, what Inferpal does for each, and how to set it up.

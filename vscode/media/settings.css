@@ -1365,3 +1365,192 @@ body.vscode-high-contrast-light .segment:has(input:checked) {
   margin: 0;
 }
 
+/* ── The proxy access block (Server and models): where the proxy sits, the method, its fields, what leaves ── */
+.proxyeditor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.proxyflow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.proxybox {
+  padding: 8px 12px;
+  border: 1px solid var(--vscode-panel-border, var(--vscode-widget-border));
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.proxybox.accent {
+  border-color: var(--vscode-focusBorder);
+}
+
+.proxyarrow {
+  color: var(--vscode-textLink-foreground);
+}
+
+.proxymethods,
+.proxychoices {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px;
+}
+
+.proxymethods legend,
+.proxychoices legend {
+  font-weight: 600;
+  padding: 0 0 6px;
+}
+
+.proxycard,
+.proxychoice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 9px 12px;
+  border: 1px solid var(--vscode-panel-border, var(--vscode-widget-border));
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.proxycard.selected,
+.proxychoice.selected {
+  border-color: var(--vscode-focusBorder);
+  background: var(--vscode-list-inactiveSelectionBackground);
+}
+
+.proxycardtext {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.proxyfields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 640px;
+}
+
+.proxyfields p,
+.proxymoved p {
+  margin: 0;
+}
+
+.proxysteps {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.proxysends {
+  border: 1px solid var(--vscode-panel-border, var(--vscode-widget-border));
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--vscode-textBlockQuote-background);
+}
+
+.proxysends pre {
+  margin: 6px 0;
+  white-space: pre-wrap;
+}
+
+.proxysends p {
+  margin: 2px 0;
+}
+
+.proxysendstitle,
+.proxymovedtitle,
+.hoptitle {
+  font-weight: 600;
+}
+
+.proxywarn {
+  color: var(--vscode-editorWarning-foreground);
+  margin: 0;
+}
+
+.proxywarn:empty {
+  display: none;
+}
+
+.proxymoved {
+  border: 1px solid var(--vscode-editorWarning-foreground);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.proxymovedtitle {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.proxymoved .proxychoices {
+  grid-template-columns: 1fr;
+}
+
+/* The Test, hop by hop */
+.testhops {
+  margin-top: 8px;
+}
+
+.hoplist {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 1px solid var(--vscode-panel-border, var(--vscode-widget-border));
+  border-radius: 6px;
+}
+
+.hop {
+  display: flex;
+  gap: 10px;
+  padding: 9px 12px;
+}
+
+.hop + .hop {
+  border-top: 1px solid var(--vscode-panel-border, var(--vscode-widget-border));
+}
+
+.hop p,
+.hop ul {
+  margin: 2px 0;
+}
+
+.hop.failed {
+  background: var(--vscode-inputValidation-errorBackground);
+}
+
+.hopmark {
+  font-weight: 700;
+  width: 1em;
+}
+
+.hop.passed .hopmark {
+  color: var(--vscode-testing-iconPassed, var(--vscode-charts-green));
+}
+
+.hop.failed .hopmark {
+  color: var(--vscode-errorForeground);
+}
+
+.hop.notReached {
+  color: var(--vscode-descriptionForeground);
+}
+
+.hopchecks {
+  font-weight: 600;
+}
+
+.proxyeditor .linkbtn {
+  align-self: flex-start;
+}

@@ -1307,26 +1307,39 @@ internal sealed partial class HostServer : IDisposable
         // The key in the FORM, like the URL: probing a new server with the saved key answered
         // "unreachable" for a server that only refused that key. Null (not sent) keeps the saved one.
         var key = p.ApiKey ?? SavedKeyFor(s, url);
-        // shortcut: the form does not send its headers yet, so the saved ones are tested; send them when asked for.
-        if (ServerScan.SameAddress(url, s.Config.BaseUrl)) ServerHeaders.Note(url, s.Config.RequestHeaders);
-        var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, key, ct);
-        // The line the panel shows instead of its own "unreachable": a refusal, or the proxy the probe went through.
-        var proxy = detected is null ? Services.NetworkProxy.Through(url) : null;
-        return new ConnectionCheckResult(detected is not null, detected,
-            refusal is null && proxy is null ? null
-            : Strings.StatusNotReached(refusal is null ? Strings.StatusUnreachable : Strings.StatusRefused(refusal), proxy),
-            detected is null ? null
-            : ConnectionStatusPresenter.Answered(InferenceProviderFactory.DisplayName(detected),
-                                                 await ListedCountAsync(detected, url, key, ct)));
+        // The proxy headers in the FORM too; null (not sent) keeps the saved ones, for the saved address only. Put back
+        // after: a Test followed by Cancel must not leave the form's headers live.
+        var headers = p.RequestHeaders ?? (ServerScan.SameAddress(url, s.Config.BaseUrl) ? s.Config.RequestHeaders : null);
+        ServerHeaders.Note(url, headers);
+        try
+        {
+            var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, key, ct);
+            // The line the panel shows instead of its own "unreachable": a refusal, or the proxy the probe went through.
+            var proxy = detected is null ? Services.NetworkProxy.Through(url) : null;
+            // Hop by hop when there is a proxy to explain, or something to fix.
+            var hops = detected is null || !string.IsNullOrWhiteSpace(headers)
+                ? (await ProxyCheck.RunAsync(url, key, headers, ct)).Hops.Select(h => new ConnectionHop(
+                      h.State switch { HopState.Passed => "passed", HopState.Failed => "failed", _ => "notReached" },
+                      h.Title, h.Detail, h.Checks ?? [])).ToList()
+                : null;
+            return new ConnectionCheckResult(detected is not null, detected,
+                refusal is null && proxy is null ? null
+                : Strings.StatusNotReached(refusal is null ? Strings.StatusUnreachable : Strings.StatusRefused(refusal), proxy),
+                detected is null ? null
+                : ConnectionStatusPresenter.Answered(InferenceProviderFactory.DisplayName(detected),
+                                                     await ListedCountAsync(detected, url, key, headers, ct)),
+                hops);
+        }
+        finally { ServerHeaders.Note(url, ServerScan.SameAddress(url, s.Config.BaseUrl) ? s.Config.RequestHeaders : null); }
     }
 
     /// <summary>How many models the server that answered the Test lists, with the form's address and key; <c>null</c>
     /// when the listing fails — the line then names the server only, never a count it did not read.</summary>
-    private static async Task<int?> ListedCountAsync(string provider, string url, string? key, CancellationToken ct)
+    private static async Task<int?> ListedCountAsync(string provider, string url, string? key, string? headers, CancellationToken ct)
     {
         try
         {
-            var client = InferenceProviderFactory.Create(new InferpalConfig { Provider = provider, BaseUrl = url, ApiKey = key ?? string.Empty });
+            var client = InferenceProviderFactory.Create(new InferpalConfig { Provider = provider, BaseUrl = url, ApiKey = key ?? string.Empty, RequestHeaders = headers ?? string.Empty });
             return (await client.ListModelsByKindAsync(ct, url)).Listed.Count;
         }
         catch (OperationCanceledException) { throw; }
@@ -1757,7 +1770,7 @@ internal sealed partial class HostServer : IDisposable
                         prop.SetValue(s.Config, prop.GetValue(incoming));
 
             // The chat moved to another server: the card and the models chosen for the old one start over.
-            serverReset = Services.Inference.ServerChange.Follow(before, s.Config);
+            serverReset = Services.Inference.ServerChange.Follow(before, s.Config, p.KeepRequestHeaders);
 
             // The followed file moves by what this save wrote (the Saved handler), never by the whole merged file: what
             // another editor saved since is still followed at the next question.
