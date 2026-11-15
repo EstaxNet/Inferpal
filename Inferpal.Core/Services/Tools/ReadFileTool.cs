@@ -29,7 +29,7 @@ internal class ReadFileTool : ITool
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
-        "Reads a text file, or the text of a PDF or DOCX. A file too long for one answer comes back in pages of whole " +
+        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, RTF, Jupyter notebooks, e-mails .eml/.msg). A file too long for one answer comes back in pages of whole " +
         "lines, and the answer says which start_line to pass to read on.";
     public object Parameters => new
     {

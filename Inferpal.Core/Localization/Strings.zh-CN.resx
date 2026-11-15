@@ -112,7 +112,7 @@
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} 是二进制文件：没有可读取的文本。</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} 没有可读取的文本：它是扫描件，或只包含图片。</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} 需要密码才能打开：无法读取其文本。</value></data>
-  <data name="AttachDocumentUnreadable" xml:space="preserve"><value>无法将 {0} 作为 PDF 或 Word 文档读取。</value></data>
+  <data name="AttachDocumentUnreadable" xml:space="preserve"><value>无法读取 {0}：文件已损坏，或格式是 Inferpal 无法读取的。</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>读取 {0} 用时过长（超过 {1} 秒）：未附加其文本。</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} 太大，无法读取（超过 {1} MB）。</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>`{0}` 下没有未提交的更改：无需审查。</value></data>

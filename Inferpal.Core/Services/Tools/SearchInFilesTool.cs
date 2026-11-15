@@ -19,7 +19,7 @@ internal class SearchInFilesTool : ITool
     public string Name => "search_in_files";
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
-    public string Description => "Searches for text or a regex pattern in files, PDF and DOCX text included. Returns file:line:content.";
+    public string Description => "Searches for text or a regex pattern in files, the text of documents (PDF, Office, OpenDocument, RTF, notebooks, e-mails) included. Returns file:line:content.";
     public object Parameters => new
     {
         type = "object",

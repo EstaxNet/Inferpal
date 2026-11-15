@@ -43,13 +43,13 @@ limits bites — or a file cannot be read — the attachment ends with a line sa
 file named in the list but absent from the text is never mistaken for a file that is simply empty.
 Attach a subfolder to get the rest.
 
-**A PDF or a Word document (`.docx`) is attached as its text.** Inferpal reads it on your machine — nothing is sent
+**A document is attached as its text**: a PDF; a Word `.docx` or `.doc`; an Excel workbook (`.xlsx`, `.xls`, `.xlsb`: each sheet under its name, a row per line, cells separated by tabs); a PowerPoint `.pptx` (each slide in order, then its notes); an OpenDocument `.odt`, `.ods` or `.odp` (LibreOffice); an RTF; a Jupyter notebook (its cells and their outputs, never its JSON or its images); an e-mail `.eml` or `.msg` (subject, sender, recipients, date, body, and the names of its attachments, which are not read). Inferpal reads it on your machine — nothing is sent
 anywhere to convert it — with `@file`, a chip, Browse, a file pinned to every request, or an ACP attachment, and tells the
 model the text was extracted. Like any attachment it is cut past the size of one, and its chip says so. What has no text
 to read is said instead of attached: a scanned PDF or one made only of images, a file larger than 20 MB, or one that
-takes more than 2 seconds to read. **A PDF or DOCX protected by a password** asks you for it on a card in the chat (Open,
+takes more than 2 seconds to read. **A document protected by a password** (PDF, Word `.docx` and `.doc`, Excel `.xlsx` and `.xls`, PowerPoint, OpenDocument) asks you for it on a card in the chat (Open,
 or Don't attach): the model gets the text, never the password, which is kept in memory for that file until the editor
-closes — never saved, never sent. A DOCX protected by Word 2007 or older stays closed, and an ACP attachment of a
+closes — never saved, never sent. A Word 95 document protected by a password stays closed, and an ACP attachment of a
 protected file is said protected. Pages without text in a PDF that has some are
 counted for the model. Formatting, images and comments are left out. Other binary files (images, archives) are not
 attached, and say so.

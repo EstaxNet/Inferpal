@@ -264,7 +264,9 @@ public sealed class DocumentTextTests : IDisposable
         var code = WebviewRebuildTests.TsCode("chatViewProvider.ts").Replace("\r\n", "\n");
         Assert.Equal(3, System.Text.RegularExpressions.Regex.Matches(code, @"this\.readAttachable\(").Count);
         Assert.Contains("host.attachRead(uri.fsPath)", code, StringComparison.Ordinal);
-        Assert.Contains(@"/\.(pdf|docx)$/i.test(uri.fsPath)", code, StringComparison.Ordinal);
+        // The same list as the Core's: a format the Core reads but VS Code opens as text would attach as noise.
+        var listed = System.Text.RegularExpressions.Regex.Match(code, @"/\\\.\(([a-z|]+)\)\$/i\.test\(uri\.fsPath\)").Groups[1].Value.Split('|');
+        Assert.Equal(DocumentText.Extensions.Select(e => e.TrimStart('.')).Order(), listed.Order());
         // The one remaining openTextDocument of a chosen file is the helper's own.
         var helper = code[code.IndexOf("private async readAttachable(", StringComparison.Ordinal)..];
         helper = helper[..helper.IndexOf("\n  }\n", StringComparison.Ordinal)];

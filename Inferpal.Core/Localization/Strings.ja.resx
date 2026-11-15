@@ -109,7 +109,7 @@
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} はバイナリ ファイルです。読み取るテキストがありません。</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} には読み取れるテキストがありません。スキャンか、画像だけの文書です。</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} はパスワードがないと開けないため、テキストを読み取れません。</value></data>
-  <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} を PDF または Word 文書として読み取れませんでした。</value></data>
+  <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} を読み取れませんでした。破損しているか、Inferpal が読み取れない形式です。</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} の読み取りに時間がかかりすぎました ({1} 秒超)。テキストは添付されません。</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} は大きすぎて読み取れません ({1} MB 超)。</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>`{0}` の下にコミットされていない変更はありません。レビューするものはありません。</value></data>

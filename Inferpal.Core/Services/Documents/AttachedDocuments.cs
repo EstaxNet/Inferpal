@@ -92,6 +92,6 @@ internal static class AttachedDocuments
         DocumentProblem.Encrypted => "it opens only with a password",
         DocumentProblem.TooSlow => "it took too long to read",
         DocumentProblem.TooLarge => string.Create(CultureInfo.InvariantCulture, $"it is larger than {DocumentText.MaxBytes / (1024 * 1024)} MB"),
-        _ => "it could not be read as a PDF or a Word document",
+        _ => "it could not be read: damaged, or in a form Inferpal does not read",
     };
 }

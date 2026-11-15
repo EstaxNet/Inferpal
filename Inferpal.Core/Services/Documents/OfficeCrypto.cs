@@ -5,17 +5,30 @@ using System.Xml;
 namespace Inferpal.Services.Documents;
 
 /// <summary>
-/// A Word document protected by a password to open: an OLE compound file holding <c>EncryptionInfo</c> and
-/// <c>EncryptedPackage</c> (MS-OFFCRYPTO). Opens the agile encryption every Office since 2010 writes — the password hashed
+/// An Office document protected by a password to open: an OLE compound file (read by OpenMcdf) holding <c>EncryptionInfo</c> and
+/// <c>EncryptedPackage</c> (MS-OFFCRYPTO). Opens the agile encryption every Office since 2010 writes, and the standard one of
+/// Office 2007 and LibreOffice (<see cref="Standard"/>) — for agile, the password hashed
 /// with its salt, spun, then the package decrypted in 4 096-byte segments — and gives back the zip inside.
 /// </summary>
-/// <remarks>shortcut: agile encryption only — a file from Office 2007 (standard encryption) stays locked; add algorithm
-/// 2.3.4.7 if such files show up.</remarks>
 internal static class OfficeCrypto
 {
     /// <summary>The compound file's signature (D0 CF 11 E0 A1 B1 1A E1).</summary>
     internal static bool IsCompoundFile(byte[] bytes) =>
         bytes.Length >= 8 && bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 });
+
+    /// <summary>A compound file that holds an encrypted Office package (as opposed to an .xls, a .doc, a .msg).</summary>
+    internal static bool IsEncryptedPackage(byte[] bytes)
+    {
+        try
+        {
+            using var root = OpenMcdf.RootStorage.Open(DocText.Expandable(bytes));
+            return root.EnumerateEntries().Any(e => e.Type == OpenMcdf.EntryType.Stream && e.Name == "EncryptedPackage");
+        }
+        catch (Exception ex) when (ex is IOException or FormatException or ArgumentException or NotSupportedException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>The spin count a file may ask for at most: Office writes 100 000; far more would stall the reader.</summary>
     private const int MaxSpinCount = 10_000_000;
@@ -28,11 +41,13 @@ internal static class OfficeCrypto
     /// open it, or the encryption is not one this reader opens.</summary>
     internal static byte[]? Decrypt(byte[] file, string password, CancellationToken ct)
     {
-        var cfb = new CompoundFile(file);
-        var info = cfb.Stream("EncryptionInfo");
-        var package = cfb.Stream("EncryptedPackage");
+        using var root = OpenMcdf.RootStorage.Open(DocText.Expandable(file));
+        var info = Stream(root, "EncryptionInfo");
+        var package = Stream(root, "EncryptedPackage");
         if (info is null || package is null || info.Length < 8 || package.Length < 8) return null;
-        if (BitConverter.ToUInt16(info, 0) != 4 || BitConverter.ToUInt16(info, 2) != 4) return null;   // agile is version 4.4
+        var (major, minor) = (BitConverter.ToUInt16(info, 0), BitConverter.ToUInt16(info, 2));
+        if (major is 3 or 4 && minor == 2) return Standard(info, package, password, ct);   // Office 2007, and LibreOffice today
+        if (major != 4 || minor != 4) return null;   // agile is version 4.4
         var xml = new XmlDocument { XmlResolver = null };
         using (var reader = XmlReader.Create(new MemoryStream(info, 8, info.Length - 8),
                    new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null }))
@@ -119,109 +134,58 @@ internal static class OfficeCrypto
         return fitted;
     }
 
-    /// <summary>The streams of an OLE compound file (MS-CFB), read by name from the root storage.</summary>
-    private sealed class CompoundFile
+    /// <summary>
+    /// Standard encryption (MS-OFFCRYPTO 2.3.4.5-2.3.4.9): Office 2007 writes it, and LibreOffice when it saves a protected
+    /// .docx, .xlsx or .pptx. AES in ECB mode, its key from SHA-1 spun 50 000 times over the salt and the password.
+    /// </summary>
+    private static byte[]? Standard(byte[] info, byte[] package, string password, CancellationToken ct)
     {
-        private readonly byte[] _data;
-        private readonly int _sector;
-        private readonly int _miniSector;
-        private readonly uint _miniCutoff;
-        private readonly List<uint> _fat = [];
-        private readonly List<uint> _miniFat = [];
-        private readonly List<(string Name, int Type, uint Start, long Size)> _entries = [];
-        private byte[] _miniStream = [];
+        var headerSize = BitConverter.ToInt32(info, 8);
+        if (headerSize < 32 || 12 + headerSize + 4 + 16 + 16 + 4 + 32 > info.Length) return null;
+        var algorithm = BitConverter.ToInt32(info, 12 + 8);
+        var keyBits = BitConverter.ToInt32(info, 12 + 16);
+        if (algorithm is not (0x660E or 0x660F or 0x6610) || keyBits is not (128 or 192 or 256)) return null;   // AES only
+        var verifier = 12 + headerSize;
+        var salt = info.AsSpan(verifier + 4, 16).ToArray();
 
-        private const uint EndOfChain = 0xFFFFFFFE;
-
-        public CompoundFile(byte[] data)
+        var h = SHA1.HashData([.. salt, .. Encoding.Unicode.GetBytes(password)]);
+        var iterator = new byte[4];
+        for (var i = 0; i < 50_000; i++)
         {
-            _data = data;
-            if (data.Length < 512) throw new InvalidDataException("A compound file shorter than its header");
-            _sector = 1 << BitConverter.ToUInt16(data, 0x1E);
-            _miniSector = 1 << BitConverter.ToUInt16(data, 0x20);
-            if (_sector is not (512 or 4096) || _miniSector != 64) throw new InvalidDataException("A compound file of an unknown sector size");
-            _miniCutoff = BitConverter.ToUInt32(data, 0x38);
-            // The FAT's sectors: the first 109 in the header, the rest chained through DIFAT sectors.
-            var fatSectors = new List<uint>();
-            for (var i = 0; i < 109; i++)
-            {
-                var s = BitConverter.ToUInt32(data, 0x4C + 4 * i);
-                if (s < 0xFFFFFFFA) fatSectors.Add(s);
-            }
-            var difat = BitConverter.ToUInt32(data, 0x44);
-            for (var guard = 0; difat < 0xFFFFFFFA && guard < 10_000; guard++)
-            {
-                var at = Offset(difat);
-                for (var i = 0; i < _sector / 4 - 1; i++)
-                {
-                    var s = BitConverter.ToUInt32(data, at + 4 * i);
-                    if (s < 0xFFFFFFFA) fatSectors.Add(s);
-                }
-                difat = BitConverter.ToUInt32(data, at + _sector - 4);
-            }
-            foreach (var s in fatSectors)
-            {
-                var at = Offset(s);
-                for (var i = 0; i < _sector / 4; i++) _fat.Add(BitConverter.ToUInt32(data, at + 4 * i));
-            }
-            var directory = Chain(BitConverter.ToUInt32(data, 0x30), long.MaxValue);
-            for (var at = 0; at + 128 <= directory.Length; at += 128)
-            {
-                var nameLength = Math.Clamp((int)BitConverter.ToUInt16(directory, at + 64), 2, 64);
-                var name = Encoding.Unicode.GetString(directory, at, nameLength - 2);
-                _entries.Add((name, directory[at + 66], BitConverter.ToUInt32(directory, at + 116), (long)BitConverter.ToUInt64(directory, at + 120)));
-            }
-            if (_entries.Count == 0 || _entries[0].Type != 5) throw new InvalidDataException("A compound file without its root");
-            var miniFat = Chain(BitConverter.ToUInt32(data, 0x3C), long.MaxValue);
-            for (var i = 0; i + 4 <= miniFat.Length; i += 4) _miniFat.Add(BitConverter.ToUInt32(miniFat, i));
-            _miniStream = Chain(_entries[0].Start, _entries[0].Size);
+            BitConverter.TryWriteBytes(iterator, i);
+            h = SHA1.HashData([.. iterator, .. h]);
+            if ((i & 0x3FFF) == 0) ct.ThrowIfCancellationRequested();
         }
-
-        private int Offset(uint sector)
+        var final = SHA1.HashData([.. h, 0, 0, 0, 0]);
+        byte[] Mixed(byte pad)
         {
-            var at = (long)(sector + 1) * _sector;
-            if (at + _sector > _data.Length) throw new InvalidDataException("A compound file sector past its end");
-            return (int)at;
+            var buffer = Enumerable.Repeat(pad, 64).ToArray();
+            for (var i = 0; i < final.Length; i++) buffer[i] ^= final[i];
+            return SHA1.HashData(buffer);
         }
+        var key = Mixed(0x36).Concat(Mixed(0x5C)).Take(keyBits / 8).ToArray();
 
-        /// <summary>A chain of regular sectors, at most <paramref name="size"/> bytes.</summary>
-        private byte[] Chain(uint start, long size)
-        {
-            var output = new MemoryStream();
-            for (var (s, guard) = (start, 0); s < 0xFFFFFFFA && output.Length < size; s = s < _fat.Count ? _fat[(int)s] : EndOfChain, guard++)
-            {
-                if (guard > _fat.Count) throw new InvalidDataException("A compound file chain that loops");
-                output.Write(_data, Offset(s), _sector);
-            }
-            var bytes = output.ToArray();
-            return size < bytes.Length ? bytes[..(int)size] : bytes;
-        }
+        using var aes = Aes.Create();
+        aes.Key = key;
+        var checkedVerifier = aes.DecryptEcb(info.AsSpan(verifier + 20, 16), PaddingMode.None);
+        var checkedHash = aes.DecryptEcb(info.AsSpan(verifier + 40, 32), PaddingMode.None);
+        if (!CryptographicOperations.FixedTimeEquals(SHA1.HashData(checkedVerifier), checkedHash.AsSpan(0, 20))) return null;
 
-        /// <summary>A chain of mini sectors in the mini stream.</summary>
-        private byte[] MiniChain(uint start, long size)
-        {
-            var output = new MemoryStream();
-            for (var (s, guard) = (start, 0); s < 0xFFFFFFFA && output.Length < size; s = s < _miniFat.Count ? _miniFat[(int)s] : EndOfChain, guard++)
-            {
-                if (guard > _miniFat.Count) throw new InvalidDataException("A compound file mini chain that loops");
-                var at = (long)s * _miniSector;
-                if (at + _miniSector > _miniStream.Length) throw new InvalidDataException("A mini sector past the mini stream");
-                output.Write(_miniStream, (int)at, _miniSector);
-            }
-            var bytes = output.ToArray();
-            return size < bytes.Length ? bytes[..(int)size] : bytes;
-        }
+        var size = BitConverter.ToInt64(package, 0);
+        var body = package.AsSpan(8);
+        if (size < 0 || size > body.Length) return null;
+        var plain = aes.DecryptEcb(body[..(body.Length - body.Length % 16)], PaddingMode.None);
+        return plain[..(int)size];
+    }
 
-        /// <summary>The stream named <paramref name="name"/>; null when there is none.</summary>
-        public byte[]? Stream(string name)
-        {
-            foreach (var e in _entries)
-            {
-                if (e.Type != 2 || e.Name != name) continue;
-                if (e.Size > _data.Length) throw new InvalidDataException("A compound file stream larger than the file");
-                return e.Size < _miniCutoff ? MiniChain(e.Start, e.Size) : Chain(e.Start, e.Size);
-            }
-            return null;
-        }
+    /// <summary>A stream of the container, whole; null when there is none. Bounded by the document limit.</summary>
+    private static byte[]? Stream(OpenMcdf.RootStorage root, string name)
+    {
+        if (!root.EnumerateEntries().Any(e => e.Type == OpenMcdf.EntryType.Stream && e.Name == name)) return null;
+        using var stream = root.OpenStream(name);
+        if (stream.Length > DocumentText.MaxBytes) throw new DocumentLimitException("An Office container stream past its size limit");
+        var bytes = new byte[stream.Length];
+        stream.ReadExactly(bytes);
+        return bytes;
     }
 }

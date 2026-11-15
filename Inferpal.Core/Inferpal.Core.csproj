@@ -48,6 +48,15 @@
 
   <ItemGroup>
     <PackageReference Include="Markdig" Version="1.2.0" />
+    <!-- Workbooks (.xlsx, .xls, .xlsb), password included: MIT, 180 KB, measured in docs/probes/pari89. -->
+    <PackageReference Include="ExcelDataReader" Version="3.9.0" />
+    <!-- E-mails: .eml by MimeKitLite (MIT, MimeKit without its S/MIME stack), .msg and the other OLE containers by OpenMcdf (MPL-2.0). -->
+    <PackageReference Include="MimeKitLite" Version="4.18.0" />
+    <PackageReference Include="OpenMcdf" Version="3.3.0" />
+    <!-- Word 97-2003 (.doc): b2xtranslator's text extractor, BSD-3-Clause, measured on Apache POI's sample files. -->
+    <PackageReference Include="GHSoftware.WordDocTextExtractor" Version="1.0.4" />
+    <!-- OpenDocument protected by LibreOffice 24.2 and later: its key is derived by Argon2id. MIT. -->
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
     <!-- DPAPI for the MCP OAuth token store (Windows-only at runtime; the call sites
          are already guarded). -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />

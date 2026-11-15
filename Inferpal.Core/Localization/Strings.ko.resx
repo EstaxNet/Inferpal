@@ -109,7 +109,7 @@
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0}은(는) 이진 파일입니다. 읽을 텍스트가 없습니다.</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>{0}에는 읽을 텍스트가 없습니다. 스캔본이거나 이미지만 있습니다.</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0}은(는) 암호가 있어야 열 수 있어 텍스트를 읽을 수 없습니다.</value></data>
-  <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0}을(를) PDF 또는 Word 문서로 읽을 수 없습니다.</value></data>
+  <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0}을(를) 읽을 수 없습니다. 손상되었거나 Inferpal이 읽지 못하는 형식입니다.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0}을(를) 읽는 데 너무 오래 걸렸습니다({1}초 초과). 텍스트가 첨부되지 않습니다.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0}은(는) 너무 커서 읽을 수 없습니다({1}MB 초과).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>`{0}` 아래에 커밋되지 않은 변경이 없습니다. 검토할 것이 없습니다.</value></data>

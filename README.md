@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-8786%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-8816%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
 </p>
@@ -165,6 +165,10 @@ or `/import roo` brings your models, rules, prompts, Roo's modes and MCP servers
   `/commit` and `/pr-description` write the text.
 - **Typed context** — `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url`, `@output` (Visual Studio), `@terminal` (VS Code), and
   **@Docs** to index a documentation site; in Visual Studio, drag a file or folder onto the chat to attach it.
+- **Documents read as text** — a PDF, a Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`) or PowerPoint (`.pptx`) file, an
+  OpenDocument (`.odt`, `.ods`, `.odp`), an RTF, a Jupyter notebook or an e-mail (`.eml`, `.msg`) is attached as its text,
+  extracted on your machine; the agent's `read_file` and `search_in_files` read and search it too. A password-protected
+  file asks you for its password on a card — the model gets the text, never the password.
 - **Your repository's setup, read as it is** — `AGENTS.md`, `CLAUDE.md`, the Copilot, Cursor, Cline, Roo and Continue
   instruction files, and `.aiignore`-style files, honoured by everything that reads for the model.
 - **Modes, yours or your repository's** — beside Chat, Agent and Plan, pick a mode found for the workspace: your own,

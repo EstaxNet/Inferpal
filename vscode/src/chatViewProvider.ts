@@ -3946,7 +3946,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * is not there to read it (said by `hostForGesture`).
    */
   private async readAttachable(uri: vscode.Uri): Promise<{ text: string | null; refusal: string | null; forModel: string | null } | undefined> {
-    if (!/\.(pdf|docx)$/i.test(uri.fsPath)) {
+    if (!/\.(pdf|docx|xlsx|xlsm|xlsb|xls|pptx|ipynb|odt|ods|odp|rtf|eml|msg|doc)$/i.test(uri.fsPath)) {
       try {
         return { text: (await vscode.workspace.openTextDocument(uri)).getText(), refusal: null, forModel: null };
       } catch {
