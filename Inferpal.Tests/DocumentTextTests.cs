@@ -68,6 +68,53 @@ public sealed class DocumentTextTests : IDisposable
         Assert.Equal("Compressed text", Text(Pdf("BT /F1 12 Tf 72 720 Td (Compressed text) Tj ET", flate: true)));
     }
 
+    /// <summary>LZW, the compression of older PDFs (scanned archives): a content stream in it read as its text — before, a
+    /// 1993 scan with its OCR layer gave "no text".</summary>
+    [Fact]
+    public void AnLzwStream_IsDecoded()
+    {
+        var content = Encoding.Latin1.GetBytes("BT /F1 12 Tf 72 720 Td (an old scanned report) Tj ET");
+        var pdf = new MemoryStream();
+        void W(string s) => pdf.Write(Encoding.Latin1.GetBytes(s));
+        var packed = Lzw(content);
+        W("%PDF-1.2\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n");
+        W("3 0 obj << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\n");
+        W($"4 0 obj {Helvetica} endobj\n5 0 obj << /Length {packed.Length} /Filter /LZWDecode >>\nstream\n");
+        pdf.Write(packed);
+        W("\nendstream endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n");
+        Assert.Equal("an old scanned report", Text(pdf.ToArray()));
+    }
+
+    /// <summary>A plain LZW encoder (clear code first, 9 to 12 bits, early change), the inverse of the reader's decoder.</summary>
+    private static byte[] Lzw(byte[] data)
+    {
+        var table = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var i = 0; i < 256; i++) table[((char)i).ToString()] = i;
+        int next = 258, width = 9, buffer = 0, bits = 0;
+        var output = new List<byte>();
+        void Emit(int code)
+        {
+            buffer = (buffer << width) | code;
+            bits += width;
+            while (bits >= 8) { output.Add((byte)(buffer >> (bits - 8))); bits -= 8; buffer &= (1 << bits) - 1; }
+        }
+        Emit(256);
+        var w = string.Empty;
+        foreach (var b in data)
+        {
+            var wc = w + (char)b;
+            if (table.ContainsKey(wc)) { w = wc; continue; }
+            Emit(table[w]);
+            table[wc] = next++;
+            if (next + 1 > 1 << width && width < 12) width++;
+            w = ((char)b).ToString();
+        }
+        if (w.Length > 0) Emit(table[w]);
+        Emit(257);
+        if (bits > 0) output.Add((byte)(buffer << (8 - bits)));
+        return [.. output];
+    }
+
     [Fact]
     public void ACompositeFont_IsReadThroughItsToUnicodeMap_TwoBytesACode()
     {

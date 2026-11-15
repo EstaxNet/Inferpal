@@ -465,11 +465,12 @@ internal sealed class PdfDocument
             bytes = filter switch
             {
                 "FlateDecode" or "Fl" => Inflate(bytes),
+                "LZWDecode" or "LZW" => Unlzw(bytes),
                 "ASCIIHexDecode" or "AHx" => FromHex(bytes),
                 "ASCII85Decode" or "A85" => FromAscii85(bytes),
                 _ => bytes,
             };
-            if (filter is not ("FlateDecode" or "Fl" or "ASCIIHexDecode" or "AHx" or "ASCII85Decode" or "A85")) break;
+            if (filter is not ("FlateDecode" or "Fl" or "LZWDecode" or "LZW" or "ASCIIHexDecode" or "AHx" or "ASCII85Decode" or "A85")) break;
         }
         _decodedBytes += bytes.Length;
         if (_decodedBytes > MaxDecodedBytes) throw new DocumentLimitException("PDF streams decode past the document's budget");
@@ -491,6 +492,45 @@ internal sealed class PdfDocument
             {
                 try { CopyBounded(new DeflateStream(new MemoryStream(bytes, 2, bytes.Length - 2), CompressionMode.Decompress), output); }
                 catch (InvalidDataException raw) { Diagnostics.Swallow("PdfDocument.InflateRaw", raw); }
+            }
+        }
+        return output.ToArray();
+    }
+
+    /// <summary>
+    /// LZW, the compression of older PDFs (scanned archives, early Acrobat): codes of 9 to 12 bits, 256 clears the table,
+    /// 257 ends; the code width grows one code early (EarlyChange 1, the default — the rare 0 is read as 1). Bounded like
+    /// <see cref="Inflate"/>.
+    /// </summary>
+    private byte[] Unlzw(byte[] bytes)
+    {
+        var output = new MemoryStream();
+        var table = new List<byte[]>(4096);
+        void Reset() { table.Clear(); for (var i = 0; i < 256; i++) table.Add([(byte)i]); table.Add([]); table.Add([]); }
+        Reset();
+        int width = 9, bitBuffer = 0, bits = 0;
+        byte[]? previous = null;
+        foreach (var b in bytes)
+        {
+            bitBuffer = (bitBuffer << 8) | b;
+            bits += 8;
+            while (bits >= width)
+            {
+                var code = (bitBuffer >> (bits - width)) & ((1 << width) - 1);
+                bits -= width;
+                bitBuffer &= (1 << bits) - 1;
+                if (code == 256) { Reset(); width = 9; previous = null; continue; }
+                if (code == 257) return output.ToArray();
+                byte[] entry;
+                if (code < table.Count) entry = table[code];
+                else if (code == table.Count && previous is not null) entry = [.. previous, previous[0]];
+                else return output.ToArray();   // a damaged stream: what was read is kept
+                output.Write(entry);
+                if (output.Length > MaxStreamBytes) throw new DocumentLimitException("A PDF stream decodes past its size limit");
+                if (previous is not null && table.Count < 4096) table.Add([.. previous, entry[0]]);
+                previous = entry;
+                if (table.Count + 1 >= 1 << width && width < 12) width++;
+                if ((output.Length & 0xFFFFF) == 0) _ct.ThrowIfCancellationRequested();
             }
         }
         return output.ToArray();
