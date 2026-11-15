@@ -2707,3 +2707,101 @@ kbd {
   outline: 2px dashed var(--vscode-focusBorder);
   outline-offset: 2px;
 }
+
+/* A Mermaid diagram (pari 88): its bar over the drawing, or over its code. */
+.mermaid-block {
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mermaid-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+}
+
+.mermaid-label {
+  font-size: 0.85em;
+  color: var(--ip-muted);
+}
+
+.mermaid-switch {
+  display: flex;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--vscode-input-background);
+}
+
+.mermaid-switch button {
+  height: 22px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  font-size: 0.85em;
+  background: transparent;
+  color: var(--ip-muted);
+}
+
+.mermaid-switch button[aria-pressed="true"] {
+  background: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  font-weight: 600;
+}
+
+.mermaid-icon {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ip-muted);
+}
+
+.mermaid-bar .mermaid-icon:first-of-type {
+  margin-left: auto;
+}
+
+.mermaid-icon:disabled {
+  opacity: 0.4;
+}
+
+.mermaid-canvas {
+  padding: 12px 8px;
+  text-align: center;
+  color: var(--ip-muted);
+  overflow-x: auto;
+}
+
+.mermaid-canvas img {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-block pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.mermaid-broken {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  background: var(--vscode-inputValidation-warningBackground, transparent);
+}
+
+.mermaid-broken-title {
+  font-weight: 600;
+}
+
+.mermaid-broken-why {
+  font-size: 0.9em;
+  color: var(--ip-muted);
+}

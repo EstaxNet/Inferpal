@@ -1,0 +1,2 @@
+# Third-party files ship byte for byte as published (third-party/<name>/README.md says which release).
+third-party/** -text

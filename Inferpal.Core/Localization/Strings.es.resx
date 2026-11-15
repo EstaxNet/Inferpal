@@ -2310,4 +2310,14 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} no se adjunta: sus {1} × {2} píxeles superan lo que Inferpal lee.</value></data>
   <data name="ImageScaledNote" xml:space="preserve"><value>{0} ({1} × {2}) se envía reducida a {3} × {4}: un modelo no lee más de una imagen mayor. El texto pequeño puede volverse ilegible; recorte lo que importa.</value></data>
   <data name="ImageDamaged" xml:space="preserve"><value>{0} no se adjunta: no se pudo leer como imagen (¿dañada?).</value></data>
+  <data name="MermaidDiagram" xml:space="preserve"><value>Diagrama</value></data>
+  <data name="MermaidCode" xml:space="preserve"><value>Código</value></data>
+  <data name="MermaidCopy" xml:space="preserve"><value>Copiar el código</value></data>
+  <data name="MermaidOpen" xml:space="preserve"><value>Abrir en grande</value></data>
+  <data name="MermaidDrawing" xml:space="preserve"><value>Dibujando el diagrama…</value></data>
+  <data name="MermaidBroken" xml:space="preserve"><value>Este diagrama no se puede leer, así que se muestra como código</value></data>
+  <data name="MermaidWhy" xml:space="preserve"><value>Mermaid: {0} Pida al modelo que lo corrija.</value></data>
+  <data name="MermaidUnavailable" xml:space="preserve"><value>Los diagramas los dibuja WebView2, que no pudo iniciarse aquí: se muestra el código.</value></data>
+  <data name="MermaidTooLarge" xml:space="preserve"><value>Este diagrama mide {0} × {1} puntos, más que los {2} que dibuja Inferpal: se muestra el código.</value></data>
+  <data name="MermaidTooSlow" xml:space="preserve"><value>Este diagrama tardó más de {0} s en dibujarse: se muestra el código.</value></data>
 </root>

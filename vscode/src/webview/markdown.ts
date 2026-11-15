@@ -4,6 +4,7 @@
 import MarkdownIt from 'markdown-it';
 import { t } from './l10n';
 import { stripThinkTags } from './reasoning';
+import { decorateMermaid, fenceClosed } from './mermaid';
 
 const md = new MarkdownIt({
   html: false,
@@ -44,6 +45,18 @@ md.inline.ruler.before('escape', 'windowsPath', (state, silent) => {
   return true;
 });
 
+// A closed ```mermaid fence is marked for the diagram; an open one (the answer streaming) stays code.
+const fenceRule = md.renderer.rules.fence!;
+let renderingLines: string[] = [];
+md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+  const html = fenceRule(tokens, idx, options, env, self);
+  const token = tokens[idx];
+  if (token.info.trim().toLowerCase() !== 'mermaid' || !fenceClosed(token.map, renderingLines, token.markup)) {
+    return html;
+  }
+  return html.replace('<pre', '<pre data-mermaid="closed"');
+};
+
 /**
  * A link the model wrote stays clickable only for a web address — as in Visual Studio (`MarkdownParser.WebUrl`).
  * ⚠ markdown-it's own check refuses javascript:, vbscript:, file: and data: only: a `vscode://…` link, `ms-settings:`
@@ -69,6 +82,8 @@ export { stripThinkTags };
 /** Renders markdown into `target` and decorates code blocks with a copy button.
  *  ⚠ Only an ANSWER loses its reasoning: a question may quote the tag, and shown stripped it read cut. */
 export function renderMarkdownInto(target: HTMLElement, text: string, stripReasoning = true): void {
+  // The lines of the text rendered: the fence rule reads whether a ```mermaid fence is closed (fenceClosed).
+  renderingLines = (stripReasoning ? stripThinkTags(text) : text).split('\n');
   target.innerHTML = stripReasoning ? md.render(stripThinkTags(text)) : md.render(text);
   disarmLinks(target);
   for (const pre of target.querySelectorAll('pre')) {
@@ -81,6 +96,12 @@ function decorateCodeBlock(pre: HTMLElement): void {
   wrapper.className = 'codeblock';
   pre.replaceWith(wrapper);
   wrapper.appendChild(pre);
+  // A diagram has its own bar (copy included): no code-block button to build and remove again.
+  if (pre.dataset.mermaid === 'closed') {
+    const code = pre.querySelector('code');
+    decorateMermaid(wrapper, pre, code ? code.textContent ?? '' : pre.textContent ?? '', dispatchCopy);
+    return;
+  }
 
   const copy = document.createElement('button');
   copy.className = 'codeblock-copy';

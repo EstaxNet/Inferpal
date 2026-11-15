@@ -1067,6 +1067,25 @@ depends on the file you are in goes with the question.
 
 </details>
 
+### Documents, images and diagrams
+
+A spec in a PDF, a workbook of test data, a screenshot of an error: attach it and the model reads it. Documents go as
+their text, extracted on your machine — PDF, Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint,
+OpenDocument, RTF, Jupyter notebooks and e-mails (`.eml`, `.msg`) — and a file protected by a password asks for it on a
+card, which the model never sees. Images go as images, to a model that sees them (Qwen3.8, Ornith, Gemma 4); when the
+model that will answer does not, a card offers one of your server that does. The agent reads documents too, with
+`read_file` and `search_in_files`. And a diagram the model writes in a ```` ```mermaid ```` block is drawn in the chat,
+its code one click away. Every rule is in [Mentions & context](mentions.md).
+
+**Try it**
+
+| Do | What happens |
+|---|---|
+| Paste a screenshot of a build error (Ctrl+V), ask *what does this error mean?* | The image goes with the question; a large one is scaled down first, and said |
+| `@file` a PDF or an Excel workbook | A chip; the model gets the text, each sheet under its name |
+| VS Code: drag files from your file manager onto the chat with Shift held | One chip per file |
+| *Draw the states of an order as a Mermaid diagram* | The diagram drawn; **Code** shows what the model wrote, **Open larger** shows it full size |
+
 ## 5. Your setup
 
 Models, editors, language, keys, and what to do when something fails.
@@ -1132,6 +1151,11 @@ Which model for which card: **[Models](models.md#by-graphics-card)**, measured o
   VRAM; a cold model is never loaded for a title or commit message.
 
 </details>
+
+**A server behind a reverse proxy.** Caddy or nginx with a password, an access token, Cloudflare Access: *Settings →
+Server and models → Access through a reverse proxy* asks what the proxy wants, builds the headers and shows what will
+be sent and to whom, and its **Test** says hop by hop where a request stopped — see
+[Remote inference](remote-inference.md#behind-a-reverse-proxy).
 
 ### Two editors, one engine
 

@@ -228,5 +228,14 @@
   "{0} is not attached: it is larger than {1} MB.": "{0}은(는) 첨부되지 않습니다: {1}MB를 넘습니다.",
   "Or drop files from your file manager on the chat while holding Shift.": "또는 Shift 키를 누른 채 파일 관리자에서 채팅으로 파일을 끌어다 놓으세요.",
   "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0}은(는) 폴더입니다: 파일 관리자에서 끌어온 폴더는 첨부할 수 없습니다. @folder 또는 탐색기의 채팅에 첨부를 사용하세요.",
-  "{0} could not be read, and is not attached.": "{0}을(를) 읽을 수 없어 첨부되지 않습니다."
+  "{0} could not be read, and is not attached.": "{0}을(를) 읽을 수 없어 첨부되지 않습니다.",
+  "Show the diagram or its code": "다이어그램 또는 코드 표시",
+  "Diagram": "다이어그램",
+  "Code": "코드",
+  "Copy the code": "코드 복사",
+  "Open larger": "크게 열기",
+  "Drawing the diagram…": "다이어그램을 그리는 중…",
+  "Diagram drawn from the Mermaid code": "Mermaid 코드로 그린 다이어그램",
+  "This diagram does not read, so it is shown as code": "이 다이어그램을 읽을 수 없어 코드로 표시합니다",
+  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} 모델에게 수정을 요청하세요."
 }

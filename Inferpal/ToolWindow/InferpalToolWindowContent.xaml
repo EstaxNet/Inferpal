@@ -1060,6 +1060,10 @@
                                                             <DataTrigger Binding="{Binding Type}" Value="code_block">
                                                                 <Setter Property="Visibility" Value="Visible"/>
                                                             </DataTrigger>
+                                                            <!-- A Mermaid diagram has its own block below -->
+                                                            <DataTrigger Binding="{Binding IsMermaid}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Border.Style>
@@ -1124,6 +1128,167 @@
                                                     </StackPanel>
                                                 </Grid>
                                             </Border>
+
+                                            <!-- Mermaid diagram: a bar (Diagram / Code, copy, open larger) over the
+                                                 drawing, or over the code with the reason it is shown as code. -->
+                                            <!-- Built for a Mermaid block only: every block of every message is realized (the chat does not
+                                                 virtualize), and an ordinary block must not carry the diagram's elements. -->
+                                            <ContentControl Focusable="False" IsTabStop="False">
+                                                <ContentControl.Style>
+                                                    <Style TargetType="ContentControl">
+                                                        <Style.Triggers>
+                                                            <!-- The content too: given to an ordinary block, it would print its type name -->
+                                                            <DataTrigger Binding="{Binding IsMermaid}" Value="True">
+                                                                <Setter Property="Content" Value="{Binding}"/>
+                                                                <Setter Property="ContentTemplate">
+                                                                    <Setter.Value>
+                                                                        <DataTemplate>
+                                                            <Border Margin="0,4,0,2" CornerRadius="4" BorderThickness="1"
+                                                                    BorderBrush="{Binding ThemeCodeBorder}" Background="{Binding ThemeCodeBg}">
+                                                                <StackPanel>
+                                                                    <DockPanel Margin="8,4,6,4">
+                                                                        <TextBlock Text="Mermaid" FontSize="11" VerticalAlignment="Center"
+                                                                                   Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                                            <StackPanel Orientation="Horizontal" Margin="0,0,6,0"
+                                                                                        Visibility="{Binding Diagram.ShowsSwitch, Converter={StaticResource b2v}}">
+                                                                                <Button Command="{Binding Diagram.ShowDiagramCommand}" Content="{Binding Diagram.LabelDiagram}"
+                                                                                        Padding="6,2" FontSize="10" Cursor="Hand"
+                                                                                        AutomationProperties.Name="{Binding Diagram.LabelDiagram}">
+                                                                                    <Button.Template>
+                                                                                        <ControlTemplate TargetType="Button">
+                                                                                            <Border x:Name="bd" CornerRadius="3,0,0,3" BorderThickness="1"
+                                                                                                    BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                                                                    Background="{Binding DataContext.ThemeWindowBg, ElementName=root}"
+                                                                                                    Padding="{TemplateBinding Padding}">
+                                                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                                            </Border>
+                                                                                            <ControlTemplate.Triggers>
+                                                                                                <DataTrigger Binding="{Binding Diagram.DiagramChosen}" Value="True">
+                                                                                                    <Setter TargetName="bd" Property="Background" Value="{Binding DataContext.ThemeHoverBg, ElementName=root}"/>
+                                                                                                </DataTrigger>
+                                                                                            </ControlTemplate.Triggers>
+                                                                                        </ControlTemplate>
+                                                                                    </Button.Template>
+                                                                                    <Button.Foreground>
+                                                                                        <Binding Path="DataContext.ThemeText" ElementName="root"/>
+                                                                                    </Button.Foreground>
+                                                                                </Button>
+                                                                                <Button Command="{Binding Diagram.ShowCodeCommand}" Content="{Binding Diagram.LabelCode}"
+                                                                                        Padding="6,2" FontSize="10" Cursor="Hand"
+                                                                                        AutomationProperties.Name="{Binding Diagram.LabelCode}">
+                                                                                    <Button.Template>
+                                                                                        <ControlTemplate TargetType="Button">
+                                                                                            <Border x:Name="bd" CornerRadius="0,3,3,0" BorderThickness="0,1,1,1"
+                                                                                                    BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                                                                    Background="{Binding DataContext.ThemeHoverBg, ElementName=root}"
+                                                                                                    Padding="{TemplateBinding Padding}">
+                                                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                                            </Border>
+                                                                                            <ControlTemplate.Triggers>
+                                                                                                <DataTrigger Binding="{Binding Diagram.DiagramChosen}" Value="True">
+                                                                                                    <Setter TargetName="bd" Property="Background" Value="{Binding DataContext.ThemeWindowBg, ElementName=root}"/>
+                                                                                                </DataTrigger>
+                                                                                            </ControlTemplate.Triggers>
+                                                                                        </ControlTemplate>
+                                                                                    </Button.Template>
+                                                                                    <Button.Foreground>
+                                                                                        <Binding Path="DataContext.ThemeText" ElementName="root"/>
+                                                                                    </Button.Foreground>
+                                                                                </Button>
+                                                                            </StackPanel>
+                                                                            <!-- Copy the code: Segoe MDL2 Copy -->
+                                                                            <Button Command="{Binding CopyCodeCommand}" Content="&#xE8C8;" FontFamily="Segoe MDL2 Assets"
+                                                                                    Padding="5,3" FontSize="11" Margin="0,0,4,0" Cursor="Hand"
+                                                                                    Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                                                    ToolTip="{Binding Diagram.LabelCopyCode}" AutomationProperties.Name="{Binding Diagram.LabelCopyCode}">
+                                                                                <Button.Template>
+                                                                                    <ControlTemplate TargetType="Button">
+                                                                                        <Border x:Name="bd" CornerRadius="3" BorderThickness="1"
+                                                                                                Background="{Binding DataContext.ThemeWindowBg, ElementName=root}"
+                                                                                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                                                                Padding="{TemplateBinding Padding}">
+                                                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                                        </Border>
+                                                                                        <ControlTemplate.Triggers>
+                                                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                                                <Setter TargetName="bd" Property="Background" Value="{Binding DataContext.ThemeHoverBg, ElementName=root}"/>
+                                                                                            </Trigger>
+                                                                                        </ControlTemplate.Triggers>
+                                                                                    </ControlTemplate>
+                                                                                </Button.Template>
+                                                                            </Button>
+                                                                            <!-- Open larger: Segoe MDL2 OpenInNewWindow -->
+                                                                            <Button Command="{Binding Diagram.OpenCommand}" Content="&#xE8A7;" FontFamily="Segoe MDL2 Assets"
+                                                                                    Padding="5,3" FontSize="11" Cursor="Hand"
+                                                                                    Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                                                    Visibility="{Binding Diagram.CanOpen, Converter={StaticResource b2v}}"
+                                                                                    ToolTip="{Binding Diagram.LabelOpen}" AutomationProperties.Name="{Binding Diagram.LabelOpen}">
+                                                                                <Button.Template>
+                                                                                    <ControlTemplate TargetType="Button">
+                                                                                        <Border x:Name="bd" CornerRadius="3" BorderThickness="1"
+                                                                                                Background="{Binding DataContext.ThemeWindowBg, ElementName=root}"
+                                                                                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                                                                Padding="{TemplateBinding Padding}">
+                                                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                                        </Border>
+                                                                                        <ControlTemplate.Triggers>
+                                                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                                                <Setter TargetName="bd" Property="Background" Value="{Binding DataContext.ThemeHoverBg, ElementName=root}"/>
+                                                                                            </Trigger>
+                                                                                        </ControlTemplate.Triggers>
+                                                                                    </ControlTemplate>
+                                                                                </Button.Template>
+                                                                            </Button>
+                                                                        </StackPanel>
+                                                                    </DockPanel>
+                                                                    <!-- Why it is shown as code: Segoe MDL2 Warning, then Mermaid's reason -->
+                                                                    <StackPanel Margin="10,0,10,6" Visibility="{Binding Diagram.HasNote, Converter={StaticResource b2v}}">
+                                                                        <StackPanel Orientation="Horizontal">
+                                                                            <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="12" Margin="0,1,6,0"
+                                                                                       Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                            <TextBlock Text="{Binding Diagram.Note}" TextWrapping="Wrap" FontWeight="SemiBold"
+                                                                                       Foreground="{Binding ThemeText}"/>
+                                                                        </StackPanel>
+                                                                        <TextBlock Text="{Binding Diagram.Reason}" TextWrapping="Wrap" Margin="18,2,0,0"
+                                                                                   Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                                                   Visibility="{Binding Diagram.HasReason, Converter={StaticResource b2v}}"/>
+                                                                    </StackPanel>
+                                                                    <TextBlock Text="{Binding Diagram.LabelDrawing}" Margin="10,4,10,10"
+                                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                                               Visibility="{Binding Diagram.ShowsDrawing, Converter={StaticResource b2v}}"/>
+                                                                    <!-- The PNG holds twice the pixels: shown at its drawn width, smaller in a narrow chat -->
+                                                                    <Image MaxWidth="{Binding Diagram.Width}"
+                                                                           Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Left"
+                                                                           Margin="10,2,10,10" AutomationProperties.Name="{Binding Diagram.LabelDiagram}">
+                                                                        <Image.Style>
+                                                                            <Style TargetType="Image">
+                                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding Diagram.ShowsDiagram}" Value="True">
+                                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                                        <Setter Property="Source" Value="{Binding Diagram.Path}"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </Image.Style>
+                                                                    </Image>
+                                                                    <TextBox Text="{Binding Text, Mode=OneWay}" IsReadOnly="True"
+                                                                             FontFamily="Consolas, Courier New" FontSize="12"
+                                                                             Foreground="{Binding ThemeCodeText}" Background="Transparent"
+                                                                             BorderThickness="0,1,0,0" BorderBrush="{Binding ThemeCodeBorder}"
+                                                                             Padding="10,8" TextWrapping="Wrap" VerticalScrollBarVisibility="Disabled"
+                                                                             Visibility="{Binding Diagram.ShowsCode, Converter={StaticResource b2v}}"/>
+                                                                </StackPanel>
+                                                            </Border>
+                                                                        </DataTemplate>
+                                                                    </Setter.Value>
+                                                                </Setter>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ContentControl.Style>
+                                            </ContentControl>
 
                                             <!-- Horizontal rule -->
                                             <Border Height="1" Background="{Binding ThemeCodeBorder}" Margin="0,6">

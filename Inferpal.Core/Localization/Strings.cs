@@ -2880,4 +2880,14 @@ internal static class Strings
     public static string ImageTooManyPixels(string name, int w, int h) => Format(Get(nameof(ImageTooManyPixels)), name, w, h);
     public static string ImageScaledNote(string name, int w, int h, int nw, int nh) => Format(Get(nameof(ImageScaledNote)), name, w, h, nw, nh);
     public static string ImageDamaged(string name) => Format(Get(nameof(ImageDamaged)), name);
+    public static string MermaidDiagram => Get(nameof(MermaidDiagram));
+    public static string MermaidCode => Get(nameof(MermaidCode));
+    public static string MermaidCopy => Get(nameof(MermaidCopy));
+    public static string MermaidOpen => Get(nameof(MermaidOpen));
+    public static string MermaidDrawing => Get(nameof(MermaidDrawing));
+    public static string MermaidBroken => Get(nameof(MermaidBroken));
+    public static string MermaidWhy(string reason) => Format(Get(nameof(MermaidWhy)), reason);
+    public static string MermaidUnavailable => Get(nameof(MermaidUnavailable));
+    public static string MermaidTooLarge(int width, int height, int max) => Format(Get(nameof(MermaidTooLarge)), width, height, max);
+    public static string MermaidTooSlow(int seconds) => Format(Get(nameof(MermaidTooSlow)), seconds);
 }

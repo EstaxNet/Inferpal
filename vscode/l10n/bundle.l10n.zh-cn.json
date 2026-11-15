@@ -228,5 +228,14 @@
   "{0} is not attached: it is larger than {1} MB.": "{0} 未附加：超过 {1} MB。",
   "Or drop files from your file manager on the chat while holding Shift.": "或按住 Shift 键，将文件从文件管理器拖放到聊天中。",
   "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0} 是文件夹：从文件管理器拖放的文件夹无法附加。请使用 @folder，或资源管理器中的“附加到聊天”。",
-  "{0} could not be read, and is not attached.": "无法读取 {0}，未附加。"
+  "{0} could not be read, and is not attached.": "无法读取 {0}，未附加。",
+  "Show the diagram or its code": "显示图表或其代码",
+  "Diagram": "图表",
+  "Code": "代码",
+  "Copy the code": "复制代码",
+  "Open larger": "放大打开",
+  "Drawing the diagram…": "正在绘制图表…",
+  "Diagram drawn from the Mermaid code": "根据 Mermaid 代码绘制的图表",
+  "This diagram does not read, so it is shown as code": "无法读取此图表，因此显示为代码",
+  "Mermaid: {0} Ask the model to fix it.": "Mermaid：{0} 请让模型修正它。"
 }

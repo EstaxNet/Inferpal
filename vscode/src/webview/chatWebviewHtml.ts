@@ -55,6 +55,16 @@ export function webviewStrings(): Record<string, string> {
     attachActiveFile: t('Attach the active file'),
     attachSelection: t('Attach the selection'),
     attachBrowse: t('Attach a file from disk'),
+    mermaidLabel: 'Mermaid',
+    mermaidSwitch: t('Show the diagram or its code'),
+    mermaidDiagram: t('Diagram'),
+    mermaidCode: t('Code'),
+    mermaidCopy: t('Copy the code'),
+    mermaidOpen: t('Open larger'),
+    mermaidDrawing: t('Drawing the diagram…'),
+    mermaidAlt: t('Diagram drawn from the Mermaid code'),
+    mermaidBroken: t('This diagram does not read, so it is shown as code'),
+    mermaidWhy: t('Mermaid: {0} Ask the model to fix it.'),
     attachDropHint: t('Or drop files from your file manager on the chat while holding Shift.'),
     pinActiveFile: t('Pin the active file'),
     unpin: t('Unpin'),
@@ -125,6 +135,8 @@ export function webviewStrings(): Record<string, string> {
 export function renderChatHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
   const script = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'chat.js'));
   const style = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'chat.css'));
+  // Mermaid, loaded by the page on its first diagram (third-party/mermaid, copied by the build).
+  const mermaid = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'mermaid', 'mermaid.min.js'));
   const nonce = crypto.randomBytes(16).toString('base64');
   // </script> inside a translation would close the tag early — escape all '<'.
   const l10n = JSON.stringify(webviewStrings()).replace(/</g, '\\u003c');
@@ -139,7 +151,7 @@ export function renderChatHtml(webview: vscode.Webview, extensionUri: vscode.Uri
 <link href="${style}" rel="stylesheet">
 <title>Inferpal</title>
 </head>
-<body>
+<body data-mermaid="${mermaid}">
 <div id="topbar"></div>
 <div id="messages"></div>
 <div id="composer">

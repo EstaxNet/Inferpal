@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.IO;
+using Inferpal.Services.Presentation;
 using Inferpal.Localization;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -53,6 +55,8 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
             cell.ThemeText = text;
             cell.ThemeBg   = cell.IsHeader ? tableHeaderBg : "Transparent";
         }
+        // A diagram is drawn in the theme's colours: on the block just parsed, and again on a switch.
+        Diagram?.Draw(codeBg);
     }
 
     [DataMember] public AsyncCommand CopyCodeCommand    { get; }
@@ -64,6 +68,12 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
         SaveSnippetCommand = new AsyncCommand(SaveSnippetAsync);
     }
 
+    /// <summary>A closed ```mermaid fence: shown as a diagram block instead of a code block.</summary>
+    [DataMember] public bool IsMermaid { get; init; }
+
+    /// <summary>The diagram of a Mermaid block; null for every other block, which carries none of it.</summary>
+    [DataMember] public MermaidDiagram? Diagram { get; init; }
+
     /// <summary>
     /// Maps the editor-agnostic parse result (<see cref="Services.Presentation.MarkdownParser"/>)
     /// to this Remote-UI observable type. Pure mapping — theming is applied afterwards by the
@@ -71,6 +81,8 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
     /// </summary>
     internal static MarkdownBlock FromModel(MarkdownBlockModel model)
     {
+        // One source: a block is a diagram exactly when it holds one.
+        var diagram = IsMermaidFence(model) ? new MermaidDiagram(model.Text) : null;
         var block = new MarkdownBlock
         {
             Type       = model.Type,
@@ -78,6 +90,9 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
             Language   = model.Language,
             Marker     = model.Marker,
             HasInlines = model.HasInlines,
+            // An answer stopped inside the fence leaves it open: that one stays code.
+            IsMermaid  = diagram is not null,
+            Diagram    = diagram,
         };
         // One child per word: the WrapPanel that lays them out only ends a line between two children.
         foreach (var piece in InlineFlow.Pieces(model.Inlines))
@@ -92,6 +107,10 @@ internal sealed class MarkdownBlock : NotifyPropertyChangedObject
             block.Cells.Add(new TableCell { Text = cell.Text, IsHeader = cell.IsHeader });
         return block;
     }
+
+    private static bool IsMermaidFence(MarkdownBlockModel model) =>
+        model.Type == "code_block" && model.IsClosedFence
+        && model.Language.Split(' ', 2)[0].Equals("mermaid", StringComparison.OrdinalIgnoreCase);
 
     private Task CopyCodeAsync(object? _, CancellationToken ct)
     {

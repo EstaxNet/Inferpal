@@ -461,7 +461,9 @@ function Invoke-VsDeployCore([string]$VsPath) {
                 $isFimSidecar   = $name -in @('Inferpal.Fim.exe',
                                               'Inferpal.Fim.runtimeconfig.json',
                                               'Inferpal.Fim.deps.json')
-                if (-not ($isTopLevelDll -or $isRuntimeAsset -or $isFimSidecar)) { continue }
+                # ...plus Mermaid (mermaid/), which draws the chat's diagrams: without it every diagram stays code.
+                $isMermaid      = $name.StartsWith('mermaid/')
+                if (-not ($isTopLevelDll -or $isRuntimeAsset -or $isFimSidecar -or $isMermaid)) { continue }
 
                 $dest    = Join-Path $InstalledDir ($name -replace '/', '\')
                 $destDir = Split-Path $dest -Parent

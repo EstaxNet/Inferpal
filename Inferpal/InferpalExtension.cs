@@ -91,6 +91,10 @@ public class InferpalExtension : Extension
 
             try { this.ServiceProvider?.GetService<ToolRegistry>()?.Dispose(); }
             catch (Exception ex) { Diagnostics.Swallow("InferpalExtension.DisposeTools", ex); }
+
+            // The WebView2 that draws diagrams, and the drawings' folder when it has let go of it.
+            try { Services.VsIntegration.MermaidRenderer.Shared.Dispose(); }
+            catch (Exception ex) { Diagnostics.Swallow("InferpalExtension.DisposeMermaid", ex); }
         }
         base.Dispose(disposing);
     }

@@ -18,6 +18,10 @@ internal sealed class MarkdownBlockModel
     /// <summary>Fence info string for code blocks ("cs", "json", …), empty otherwise.</summary>
     public string Language { get; init; } = "";
 
+    /// <summary>A fenced code block whose closing fence is there: false while an answer still streams it (the parser reads
+    /// an open fence to the end of the text). A Mermaid diagram is drawn only once its fence is closed.</summary>
+    public bool IsClosedFence { get; init; }
+
     /// <summary>
     /// A list item's marker with its nesting indent ("•", "2.", led by non-breaking spaces), empty for any other
     /// block. Kept out of <see cref="Inlines"/>: the view gives it a column of its own, so the item's wrapped lines

@@ -228,5 +228,14 @@
   "{0} is not attached: it is larger than {1} MB.": "{0} は添付されません: {1} MB を超えています。",
   "Or drop files from your file manager on the chat while holding Shift.": "または、Shift キーを押しながらファイル マネージャーからチャットにファイルをドロップします。",
   "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0} はフォルダーです: ファイル マネージャーからドロップしたフォルダーは添付できません。@folder か、エクスプローラーの「チャットに添付」を使ってください。",
-  "{0} could not be read, and is not attached.": "{0} を読み取れなかったため、添付されません。"
+  "{0} could not be read, and is not attached.": "{0} を読み取れなかったため、添付されません。",
+  "Show the diagram or its code": "図またはそのコードを表示",
+  "Diagram": "図",
+  "Code": "コード",
+  "Copy the code": "コードをコピー",
+  "Open larger": "拡大して開く",
+  "Drawing the diagram…": "図を描画しています…",
+  "Diagram drawn from the Mermaid code": "Mermaid コードから描いた図",
+  "This diagram does not read, so it is shown as code": "この図は読み取れないため、コードで表示しています",
+  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} モデルに修正を依頼してください。"
 }

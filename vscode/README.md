@@ -26,6 +26,21 @@ Windows, Linux and Apple Silicon, with the backend bundled (no .NET to install) 
 
 Open the chat from the **Inferpal** icon in the activity bar. Every change waits for your approval.
 
+## Show it what you are looking at
+
+The spec is a PDF, the test data lives in a spreadsheet, the error is on a screenshot. Hand them over as they are.
+
+| You have | Do | The model gets |
+|---|---|---|
+| A PDF, a Word or Excel file, a deck | `@file`, Browse, or drop it on the chat with Shift held | Its text, read on your machine: each sheet under its name, each slide with its notes |
+| A screenshot of an error or a mock-up | paste it in the chat, or drop it on the chat | The image itself, for a model that sees images (Qwen3.8, Ornith, Gemma 4) |
+| A file protected by a password | Attach it as usual | A card asks you for the password; the model gets the text, never the password |
+| A question about a flow or a design | Ask for a diagram | A Mermaid diagram drawn in the chat, its code one click away |
+
+Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks and e-mails (`.eml`, `.msg`) are read too, by you and by the agent's `read_file` and `search_in_files`. Nothing is installed for it and nothing leaves your machine. A scan, or a file too large to read, says so instead of sending noise.
+
+When the model that will answer does not see images, a card offers one of your server that does, or sending without the image. A large image is scaled down to 1920 × 1080 first, and said.
+
 ## A failing test? It reads the debugger, not just the log
 
 `/tdd` runs your tests (dotnet, pytest, npm, cargo, go), patches the code and runs them again, for up to five rounds. On the first red round, a failing .NET test is run again under the debugger, with no `launch.json` needed. The real exception, call stack and local values then go into the fix. We tested this on a fixed set of 12 failing C# tests with a local 27B model. It fixed **12 with the debugger's view and 10 without**.
@@ -57,7 +72,7 @@ Inferpal runs whatever model your server holds, and a bigger model makes it bett
 | 8 GB | Granite 4.2 8B (14/14, fast) | none measured fits |
 | More than 24 GB | not tested | — |
 
-These were measured on one 24 GB card (LM Studio, 32K context), with its free memory cut to stand in for the smaller cards. Each model ran once, so a gap of a task or two means nothing. We could not test larger cards, multi-GPU machines, 70B-class models or a Mac with lots of memory, for lack of budget and infrastructure rather than interest, so we recommend nothing above 24 GB. `/bench` measures the models you have, on your machine. See [every figure](https://github.com/EstaxNet/Inferpal/blob/v1.8.13/docs/models.md).
+These were measured on one 24 GB card (LM Studio, 32K context), with its free memory cut to stand in for the smaller cards. Each model ran once, so a gap of a task or two means nothing. We could not test larger cards, multi-GPU machines, 70B-class models or a Mac with lots of memory, for lack of budget and infrastructure rather than interest, so we recommend nothing above 24 GB. `/bench` measures the models you have, on your machine. See [every figure](https://github.com/EstaxNet/Inferpal/blob/v1.9.0/docs/models.md).
 
 ---
 
@@ -68,22 +83,21 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 3. **Open Inferpal** from its activity-bar icon. The first time, it looks for a model server on this computer and proposes the models that fit your card: **Start with these**. For a server on another machine, type its address on the same card. On Ollama without a chat model, the card downloads one for you. With no server at all on Windows, the card can install Ollama for your account, showing the `winget` command first. `/setup` brings the card back.
 4. **Ask a question, or right-click a failing test.**
 
-**Coming from Continue or Roo Code?** `/import continue` or `/import roo` brings over your model server, models, rules, prompts, Roo's custom modes, MCP servers and documentation sites. A card shows what it will take, and nothing is written until you apply. See [Coming from Continue or Roo Code](https://github.com/EstaxNet/Inferpal/blob/v1.8.13/docs/coming-from-continue.md).
+**Coming from Continue or Roo Code?** `/import continue` or `/import roo` brings over your model server, models, rules, prompts, Roo's custom modes, MCP servers and documentation sites. A card shows what it will take, and nothing is written until you apply. See [Coming from Continue or Roo Code](https://github.com/EstaxNet/Inferpal/blob/v1.9.0/docs/coming-from-continue.md).
 
 ## Also in the box
 
-- **30 built-in tools**: files, text and semantic search, build and tests, shell with background jobs, git, the editor, the debugger, compiler-backed analysis and symbol rename, web search and page fetch. Add any **MCP** server's tools and your own shell commands. See the [reference](https://github.com/EstaxNet/Inferpal/blob/v1.8.13/docs/tools.md).
+- **30 built-in tools**: files, text and semantic search, build and tests, shell with background jobs, git, the editor, the debugger, compiler-backed analysis and symbol rename, web search and page fetch. Add any **MCP** server's tools and your own shell commands. See the [reference](https://github.com/EstaxNet/Inferpal/blob/v1.9.0/docs/tools.md).
 - **Semantic code search** across your workspace, with an embedding model installed (keyword search without one). The most relevant code is added to each question, and suggested as chips while you type.
 - **Reviews and Git text.** `/check` reviews your diff, a branch or a commit, and anchors every finding to a line. `/commit` drafts the commit message, and `/pr-description` writes the pull request description.
 - **Typed mentions**: `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url` `@terminal`, or drop files from your file manager on the chat with Shift held. **@Docs** indexes a documentation site with `/docs add <url>`.
-- **Documents read as text.** PDF, Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`), PowerPoint, OpenDocument, RTF, Jupyter notebooks and e-mails (`.eml`, `.msg`), attached as text, extracted on your machine — and read and searched by the agent's `read_file` and `search_in_files` tools. A protected file asks for its password on a card; the model never sees it.
-- **Images in the question.** Paste a screenshot, drop or attach a PNG, JPEG, WebP, GIF or BMP: it goes to the model with your question, for a model that sees images (Qwen3.8, Ornith, Gemma 4 on LM Studio or Ollama). A large image is scaled down to 1920 × 1080 on your machine, and said. When the model that will answer does not see images, a card offers a model of your server that does, or sending without the image.
+- **A model server behind a reverse proxy.** Caddy or nginx with a password, an access token, Cloudflare Access, or headers of your own: *Settings → Server and models → Access through a reverse proxy* builds the headers, shows what will be sent and to whom, and its **Test** says where a request stopped. Only that server receives them.
 - **Modes, yours or your repository's.** Beside Chat, Agent and Plan, pick a mode found for the workspace: your own, GitHub Copilot's custom agents or Roo Code's custom modes. It brings its instructions, model, tools and effort, and adds no permission.
 - **Your repository's agent setup, read as it is.** It reads `AGENTS.md`, `CLAUDE.md`, the Copilot and Cursor instruction files, and your project rules. It honours `.aiignore`-style files.
 - **Background and debug sessions.** `/task` investigates in the background while you work. `/debug` drives a debug session once you approve it.
 - **Context you can see.** A gauge shows how full the model's window is, and `/xray` shows what fills it.
-- **One engine, every editor.** The same agent runs in [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs), with shared settings and conversations, so you can start in one editor and finish in the other. It is also an [Agent Client Protocol](https://github.com/EstaxNet/Inferpal/blob/v1.8.13/docs/acp.md) agent for Zed, the JetBrains IDEs, Qt Creator, Neovim and Emacs.
-- **50+ slash commands** and an interface in 10 languages. See the [slash commands](https://github.com/EstaxNet/Inferpal/blob/v1.8.13/docs/slash-commands.md).
+- **One engine, every editor.** The same agent runs in [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs), with shared settings and conversations, so you can start in one editor and finish in the other. It is also an [Agent Client Protocol](https://github.com/EstaxNet/Inferpal/blob/v1.9.0/docs/acp.md) agent for Zed, the JetBrains IDEs, Qt Creator, Neovim and Emacs.
+- **50+ slash commands** and an interface in 10 languages. See the [slash commands](https://github.com/EstaxNet/Inferpal/blob/v1.9.0/docs/slash-commands.md).
 
 ---
 
@@ -101,9 +115,9 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 
 **Which server should I use?** Ollama gets every feature, including per-model memory figures, downloads from the chat and unloading idle models. LM Studio runs everything except per-model memory figures, unloading idle models and `/models delete`. Other OpenAI-compatible servers (llama-server, vLLM) run the chat, the agent and the search. They also run inline completions if the server can complete around the cursor.
 
-**Can the model run on another machine?** Yes. Point the server address at it, as described in [Remote inference](https://github.com/EstaxNet/Inferpal/blob/v1.8.13/docs/remote-inference.md).
+**Can the model run on another machine?** Yes. Point the server address at it, as described in [Remote inference](https://github.com/EstaxNet/Inferpal/blob/v1.9.0/docs/remote-inference.md). Behind a reverse proxy that asks for a password or a token, give it its credentials in *Settings → Server and models*.
 
-**Does it work with Remote - WSL, Remote - SSH or Dev Containers?** Yes, when the other side is x64 Linux (there is no build for ARM Linux or Alpine): Inferpal runs on the other side, next to your files. There, `localhost` is WSL, the remote machine or the container — Inferpal says so when a local address does not answer, with the address to use instead ([details](https://github.com/EstaxNet/Inferpal/blob/v1.8.13/docs/remote-inference.md#5-vs-code-connected-to-wsl-ssh-or-a-container)).
+**Does it work with Remote - WSL, Remote - SSH or Dev Containers?** Yes, when the other side is x64 Linux (there is no build for ARM Linux or Alpine): Inferpal runs on the other side, next to your files. There, `localhost` is WSL, the remote machine or the container — Inferpal says so when a local address does not answer, with the address to use instead ([details](https://github.com/EstaxNet/Inferpal/blob/v1.9.0/docs/remote-inference.md#5-vs-code-connected-to-wsl-ssh-or-a-container)).
 
 **Does it work offline?** Yes, with a local server. Only web search and page fetch need the internet.
 

@@ -2310,4 +2310,14 @@
   <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} 未附加：其 {1} × {2} 像素超出 Inferpal 可读取的范围。</value></data>
   <data name="ImageScaledNote" xml:space="preserve"><value>{0}（{1} × {2}）将缩小为 {3} × {4} 发送：图片再大，模型也读不出更多内容。小字可能难以辨认——请裁剪出重要部分。</value></data>
   <data name="ImageDamaged" xml:space="preserve"><value>{0} 未附加：无法作为图片读取（可能已损坏）。</value></data>
+  <data name="MermaidDiagram" xml:space="preserve"><value>图表</value></data>
+  <data name="MermaidCode" xml:space="preserve"><value>代码</value></data>
+  <data name="MermaidCopy" xml:space="preserve"><value>复制代码</value></data>
+  <data name="MermaidOpen" xml:space="preserve"><value>放大打开</value></data>
+  <data name="MermaidDrawing" xml:space="preserve"><value>正在绘制图表…</value></data>
+  <data name="MermaidBroken" xml:space="preserve"><value>无法读取此图表，因此显示为代码</value></data>
+  <data name="MermaidWhy" xml:space="preserve"><value>Mermaid：{0} 请让模型修正它。</value></data>
+  <data name="MermaidUnavailable" xml:space="preserve"><value>图表由 WebView2 绘制，但它无法在此启动：显示代码。</value></data>
+  <data name="MermaidTooLarge" xml:space="preserve"><value>此图表为 {0} × {1} 点，超过 Inferpal 绘制的 {2}：显示代码。</value></data>
+  <data name="MermaidTooSlow" xml:space="preserve"><value>此图表绘制超过 {0} 秒：显示代码。</value></data>
 </root>

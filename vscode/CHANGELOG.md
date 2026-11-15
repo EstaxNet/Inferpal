@@ -3,6 +3,31 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.9.0
+
+Show it what you are looking at: documents, screenshots and diagrams in the chat, and a server behind a proxy that just
+works.
+
+- **Documents read as text**: attach a PDF, a Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`) or PowerPoint
+  file, an OpenDocument file, an RTF, a Jupyter notebook or an e-mail (`.eml`, `.msg`) — with `@file`, the + menu or a
+  drop — and the model gets its text, extracted on your machine. The agent reads and searches them too. A scan, or a file
+  too large to read, says why instead.
+- **Password-protected files open**: a card in the chat asks for the password; three wrong tries leave the file closed.
+  The model gets the text, never the password, which is never written anywhere.
+- **Images in the question**: paste a screenshot, drop or attach a PNG, JPEG, WebP, GIF or BMP, for a model that sees
+  images (Qwen3.8, Ornith, Gemma 4). A large image is scaled down on your machine, and said. When the model that will
+  answer does not see images, a card offers one of your server that does, or sending without the image.
+- **Drop files on the chat**: drag them from your file manager with Shift held. A folder says how to attach it instead.
+- **Mermaid diagrams drawn**: a diagram the model writes is shown drawn, with its code one click away, a copy button and
+  Open larger. One that does not read says why and shows its code. Drawn on your machine; nothing it names is fetched.
+- **A model server behind a reverse proxy**: Settings › Server and models › Access through a reverse proxy asks what
+  Caddy, nginx or Cloudflare Access wants — a password, a token, headers of your own — and shows what will be sent and
+  to whom. Test says hop by hop where a request stopped, and a 401 or 403 points there.
+- **"How these models were measured"**, a link beside Suggest the best models.
+- **Fixed**: the chat's menus (model, "…", attachments) work with the keyboard and screen readers; a filtered test run
+  through the terminal, or a pytest run of one folder, is "part of the suite", not "tests passed"; outside git, "tests
+  passed" no longer hides a tool that ran after the tests.
+
 ## 1.8.13
 
 Long agent runs that leave room for the answer, and a result bar that says what really happened.

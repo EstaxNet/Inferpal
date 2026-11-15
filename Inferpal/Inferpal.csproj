@@ -127,6 +127,18 @@
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- Mermaid (MIT, third-party/mermaid) with its licence: the headless Edge that draws the chat's diagrams loads it
+         from beside this assembly (Services/VsIntegration/MermaidRenderer). -->
+    <Content Include="..\third-party\mermaid\mermaid.min.js">
+      <Link>mermaid\mermaid.min.js</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\third-party\mermaid\LICENSE">
+      <Link>mermaid\LICENSE</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\Inferpal.Fim\bin\$(Configuration)\net8.0\Inferpal.Fim.exe">
       <Link>Inferpal.Fim.exe</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
@@ -363,6 +375,16 @@
 
   <Target Name="PruneFlattenedCoreSatelliteFromVsix"
           BeforeTargets="GenerateTemplatesManifest;GenerateFileManifest">
+    <!-- Of WebView2, the diagrams use the Core assembly and the x64 and ARM64 native loaders only (Visual Studio runs on
+         no other): its WinForms and WPF controls, its IntelliSense files and its x86 loader stay out. -->
+    <ItemGroup>
+      <VSIXSourceItem Remove="@(VSIXSourceItem)"
+        Condition="'%(Filename)%(Extension)' == 'Microsoft.Web.WebView2.WinForms.dll'
+                Or '%(Filename)%(Extension)' == 'Microsoft.Web.WebView2.Wpf.dll'
+                Or ($([System.String]::Copy('%(Filename)').StartsWith('Microsoft.Web.WebView2')) And '%(Extension)' == '.xml')
+                Or ('%(Filename)%(Extension)' == 'WebView2Loader.dll'
+                    And $([System.String]::Copy('%(VSIXSourceItem.FullPath)').Contains('win-x86')))" />
+    </ItemGroup>
     <ItemGroup>
       <VSIXSourceItem Remove="@(VSIXSourceItem)"
         Condition="'%(Filename)%(Extension)' == 'Inferpal.Core.resources.dll'
@@ -649,6 +671,11 @@
          compile/restore-only: like the rest of the SDK, VS provides MessagePack at runtime and
          it is not shipped in the VSIX. -->
     <PackageReference Include="MessagePack" Version="2.5.303" PrivateAssets="all" />
+
+    <!-- WebView2 (BSD-3-Clause), for the chat's Mermaid diagrams (Services/VsIntegration/MermaidRenderer): only its Core
+         assembly and its native loader are used, shipped in the VSIX — the copy under Visual Studio's PrivateAssemblies is
+         not ours to load. The WebView2 runtime itself is Windows', which Visual Studio requires. -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
   </ItemGroup>
 
 </Project>

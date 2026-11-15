@@ -2310,4 +2310,14 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} は添付されません: {1} × {2} ピクセルは Inferpal が読み込める大きさを超えています。</value></data>
   <data name="ImageScaledNote" xml:space="preserve"><value>{0}（{1} × {2}）は {3} × {4} に縮小して送られます。これより大きくてもモデルが読み取れる量は増えません。小さな文字が読めなくなることがあるので、必要な部分を切り抜いてください。</value></data>
   <data name="ImageDamaged" xml:space="preserve"><value>{0} は添付されません: 画像として読み取れませんでした（破損している可能性があります）。</value></data>
+  <data name="MermaidDiagram" xml:space="preserve"><value>図</value></data>
+  <data name="MermaidCode" xml:space="preserve"><value>コード</value></data>
+  <data name="MermaidCopy" xml:space="preserve"><value>コードをコピー</value></data>
+  <data name="MermaidOpen" xml:space="preserve"><value>拡大して開く</value></data>
+  <data name="MermaidDrawing" xml:space="preserve"><value>図を描画しています…</value></data>
+  <data name="MermaidBroken" xml:space="preserve"><value>この図は読み取れないため、コードで表示しています</value></data>
+  <data name="MermaidWhy" xml:space="preserve"><value>Mermaid: {0} モデルに修正を依頼してください。</value></data>
+  <data name="MermaidUnavailable" xml:space="preserve"><value>図は WebView2 で描画しますが、起動できませんでした。コードを表示しています。</value></data>
+  <data name="MermaidTooLarge" xml:space="preserve"><value>この図は {0} × {1} ポイントで、Inferpal が描画する {2} を超えています。コードを表示しています。</value></data>
+  <data name="MermaidTooSlow" xml:space="preserve"><value>この図の描画に {0} 秒以上かかりました。コードを表示しています。</value></data>
 </root>

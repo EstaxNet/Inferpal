@@ -228,5 +228,14 @@
   "{0} is not attached: it is larger than {1} MB.": "{0} non viene allegato: supera {1} MB.",
   "Or drop files from your file manager on the chat while holding Shift.": "Oppure trascina file dal tuo gestore di file nella chat tenendo premuto Maiusc.",
   "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0} è una cartella: una cartella trascinata dal gestore di file non può essere allegata. Usa @folder o Allega alla chat in Esplora risorse.",
-  "{0} could not be read, and is not attached.": "{0} non è stato letto e non viene allegato."
+  "{0} could not be read, and is not attached.": "{0} non è stato letto e non viene allegato.",
+  "Show the diagram or its code": "Mostra il diagramma o il suo codice",
+  "Diagram": "Diagramma",
+  "Code": "Codice",
+  "Copy the code": "Copia il codice",
+  "Open larger": "Apri ingrandito",
+  "Drawing the diagram…": "Disegno del diagramma…",
+  "Diagram drawn from the Mermaid code": "Diagramma disegnato dal codice Mermaid",
+  "This diagram does not read, so it is shown as code": "Questo diagramma non si legge, quindi è mostrato come codice",
+  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} Chiedi al modello di correggerlo."
 }

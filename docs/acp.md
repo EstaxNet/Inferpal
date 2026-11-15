@@ -294,6 +294,9 @@ Once Inferpal is set up, type **`/settings`** in any thread to open the same pag
   prompt of a new thread — except a repository MCP server that asks for a value when it starts: an ACP client gives Inferpal no box to ask it in, so that server is not started — the support bundle
   (`/diagnostics export`) names it, with the reason.
 - **The MCP servers configured in your client** are started for the session, beside Inferpal's own.
+- **Images and documents you attach** in your client go to the model: an image as an image, to a model that sees
+  images (otherwise a notice says it was not seen); a PDF, Word, Excel or other document as its text. A document
+  protected by a password stays closed, and says so — an ACP client gives Inferpal no box to ask for it.
 - **Sessions are saved** after every turn and listed again for the folder they belong to; reopened, they come back
   whole. A session VS Code or Visual Studio saves for the same folder is listed too, branches included (from this
   version on: older ones do not record their folder).

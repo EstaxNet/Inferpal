@@ -334,6 +334,7 @@ export type WebviewToExt =
   /** One file of a run's review undone, redone or kept — or, with `piece` (1-based), one change of it. */
   | { type: 'runFile'; runId: string; path: string; action: 'undo' | 'redo' | 'keep'; piece?: number }
   | { type: 'copyText'; text: string }
+  | { type: 'openDiagram'; svg: string }
   | { type: 'regenerate' }
   /** A cut turn's "Open time limits": the settings panel, on the page that holds them. */
   | { type: 'openSettingsPage'; page: string; section: string }

@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-8816%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-8848%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
 </p>
@@ -95,6 +95,22 @@ flowchart LR
 the first red round a failing .NET test runs again **under the editor's debugger**, and the real exception, call
 stack and local values go into the fix.
 
+## Show it what you are looking at
+
+The spec is a PDF, the test data lives in a spreadsheet, the error is on a screenshot. Hand them over as they are; everything is read on your machine.
+
+| You have | Do | The model gets |
+|---|---|---|
+| A PDF, a Word or Excel file, a deck | `@file`, Browse, or drop it on the chat | Its text: each sheet under its name, each slide with its notes |
+| A screenshot of an error or a mock-up | Paste it (Ctrl+V), or drop it on the chat | The image itself, for a model that sees images (Qwen3.8, Ornith, Gemma 4) |
+| A file protected by a password | Attach it as usual | A card asks you for the password; the model gets the text, never the password |
+| A question about a flow or a design | Ask for a diagram | A Mermaid diagram drawn in the chat, its code one click away |
+
+Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks and e-mails
+(`.eml`, `.msg`) are read too, by you and by the agent's `read_file` and `search_in_files`. When the model that will
+answer does not see images, a card offers one of your server that does. In Visual Studio, VS Code and ACP editors.
+[How each format is read](docs/mentions.md)
+
 ## Measured, not promised
 
 | On a fixed bench, with local models | Result |
@@ -166,13 +182,9 @@ or `/import roo` brings your models, rules, prompts, Roo's modes and MCP servers
 - **Typed context** — `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url`, `@output` (Visual Studio), `@terminal` (VS Code), and
   **@Docs** to index a documentation site; drag a file or folder onto the chat to attach it in Visual Studio, or files
   from your file manager in VS Code (Shift held).
-- **Documents read as text** — a PDF, a Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`) or PowerPoint (`.pptx`) file, an
-  OpenDocument (`.odt`, `.ods`, `.odp`), an RTF, a Jupyter notebook or an e-mail (`.eml`, `.msg`) is attached as its text,
-  extracted on your machine; the agent's `read_file` and `search_in_files` read and search it too. A password-protected
-  file asks you for its password on a card — the model gets the text, never the password.
-- **Images in the question** — paste a screenshot (Ctrl+V), drop or attach a PNG, JPEG, WebP, GIF or BMP: it goes to a
-  model that sees images (Qwen3.8, Ornith, Gemma 4) with your question, scaled down on your machine past 1920 × 1080.
-  When the model that will answer does not see images, a card offers a model of your server that does.
+- **A server behind a reverse proxy** — Caddy, nginx or Cloudflare Access with a password or a token: the settings
+  build the headers, show what is sent and to whom, and the Test says where a request stopped.
+  [Remote inference](docs/remote-inference.md#behind-a-reverse-proxy)
 - **Your repository's setup, read as it is** — `AGENTS.md`, `CLAUDE.md`, the Copilot, Cursor, Cline, Roo and Continue
   instruction files, and `.aiignore`-style files, honoured by everything that reads for the model.
 - **Modes, yours or your repository's** — beside Chat, Agent and Plan, pick a mode found for the workspace: your own,

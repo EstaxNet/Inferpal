@@ -23,6 +23,7 @@ import type {
 } from '../webviewMessages';
 import { t } from './l10n';
 import { renderMarkdownInto, setCopySink, stripThinkTags } from './markdown';
+import { setDiagramOpenSink } from './mermaid';
 import { renderXray, setXraySink } from './xray';
 import { icon, iconButton, setIcon, type IconName } from './icons';
 import { mentionFor } from '../mentionPaths';
@@ -32,6 +33,7 @@ import { DROPPED_FILE_LIMIT } from '../droppedFiles';
 const vscode = window.__vsapi ?? acquireVsCodeApi();
 const post = (msg: WebviewToExt) => vscode.postMessage(msg);
 setCopySink((text) => post({ type: 'copyText', text }));
+setDiagramOpenSink((svg) => post({ type: 'openDiagram', svg }));
 setXraySink((msg) => post(msg));
 
 const topbarEl = document.getElementById('topbar')!;

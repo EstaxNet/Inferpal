@@ -1926,6 +1926,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'rewind':
         await this.rewind(msg.ordinal, msg.question, msg.conversationOnly, msg.expectedRuns);
         return;
+      case 'openDiagram':
+        await this.openDiagram(msg.svg);
+        return;
       case 'copyText':
         try {
           await vscode.env.clipboard.writeText(msg.text);
@@ -4079,6 +4082,39 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const host = this.hostForGesture();
     return host ? await host.attachRead(uri.fsPath) : undefined;
+  }
+
+  /** Whether the diagrams opened larger before today were removed, once per window. */
+  private diagramsPruned = false;
+
+  /**
+   * A drawn diagram opened larger, in VS Code's own image view: its SVG written to the extension's own storage (private
+   * to the account, never a shared temp folder), kept while an editor may reopen it after a reload, removed after a day.
+   */
+  private async openDiagram(svg: string): Promise<void> {
+    try {
+      const dir = path.join(this.context.globalStorageUri.fsPath, 'diagrams');
+      await fs.promises.mkdir(dir, { recursive: true });
+      if (!this.diagramsPruned) {
+        this.diagramsPruned = true;
+        // Each file on its own: one another window removes meanwhile never keeps this diagram from opening.
+        for (const name of await fs.promises.readdir(dir)) {
+          const old = path.join(dir, name);
+          try {
+            if (Date.now() - (await fs.promises.stat(old)).mtimeMs > 24 * 3600 * 1000) {
+              await fs.promises.rm(old, { force: true });
+            }
+          } catch {
+            // gone already, or held: the next window's pass takes it
+          }
+        }
+      }
+      const file = vscode.Uri.file(path.join(dir, `diagram-${Date.now()}.svg`));
+      await vscode.workspace.fs.writeFile(file, Buffer.from(svg, 'utf8'));
+      await vscode.commands.executeCommand('vscode.open', file, { preview: true });
+    } catch (err) {
+      this.gestureFailed('open diagram', err);
+    }
   }
 
   /**

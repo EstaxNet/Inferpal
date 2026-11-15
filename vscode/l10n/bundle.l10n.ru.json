@@ -228,5 +228,14 @@
   "{0} is not attached: it is larger than {1} MB.": "{0} не прикреплён: больше {1} МБ.",
   "Or drop files from your file manager on the chat while holding Shift.": "Или перетащите файлы из файлового менеджера в чат, удерживая Shift.",
   "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0} — это папка: папку, перетащенную из файлового менеджера, прикрепить нельзя. Используйте @folder или «Прикрепить к чату» в проводнике.",
-  "{0} could not be read, and is not attached.": "Не удалось прочитать {0}: файл не прикреплён."
+  "{0} could not be read, and is not attached.": "Не удалось прочитать {0}: файл не прикреплён.",
+  "Show the diagram or its code": "Показать диаграмму или её код",
+  "Diagram": "Диаграмма",
+  "Code": "Код",
+  "Copy the code": "Копировать код",
+  "Open larger": "Открыть крупнее",
+  "Drawing the diagram…": "Рисуем диаграмму…",
+  "Diagram drawn from the Mermaid code": "Диаграмма, нарисованная по коду Mermaid",
+  "This diagram does not read, so it is shown as code": "Эту диаграмму не удалось прочитать, поэтому показан её код",
+  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} Попросите модель исправить его."
 }

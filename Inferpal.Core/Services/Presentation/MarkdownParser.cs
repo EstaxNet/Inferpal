@@ -371,9 +371,10 @@ internal static class MarkdownParser
                 if (!string.IsNullOrEmpty(codeText))
                     result.Add(new MarkdownBlockModel
                     {
-                        Type     = "code_block",
-                        Text     = codeText,
-                        Language = fcb.Info?.Trim() ?? ""
+                        Type          = "code_block",
+                        Text          = codeText,
+                        Language      = fcb.Info?.Trim() ?? "",
+                        IsClosedFence = fcb.ClosingFencedCharCount > 0,
                     });
                 break;
             }

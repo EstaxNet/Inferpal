@@ -43,6 +43,13 @@ const standaloneSettingsOptions = {
 const allOptions = [extensionOptions, chatWebviewOptions, settingsWebviewOptions, standaloneSettingsOptions];
 
 (async () => {
+  // Mermaid (third-party/mermaid, MIT), drawn by the chat page: copied beside it with its licence, watched builds too.
+  const fs = require('fs');
+  const path = require('path');
+  const from = path.join(__dirname, '..', 'third-party', 'mermaid');
+  const to = path.join(__dirname, 'media', 'mermaid');
+  fs.mkdirSync(to, { recursive: true });
+  for (const f of ['mermaid.min.js', 'LICENSE']) fs.copyFileSync(path.join(from, f), path.join(to, f));
   if (watch) {
     const contexts = await Promise.all(allOptions.map((o) => esbuild.context(o)));
     await Promise.all(contexts.map((ctx) => ctx.watch()));
