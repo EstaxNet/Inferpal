@@ -152,6 +152,11 @@ internal static class ChatTurnPolicy
     internal static bool? WroteAFile(string toolName, int? before, int? after) =>
         before is { } b && after is { } a ? a > b : null;
 
+    /// <summary>Whether a call changed what the run could not follow, by the registry's count of such calls around it
+    /// (<see cref="Execution.IToolRegistry.UnseenCallsInRun"/>) — what <see cref="ToolExecution.Unseen"/> carries.</summary>
+    internal static bool? UnseenCall(int? before, int? after) =>
+        before is { } b && after is { } a ? a > b : null;
+
     /// <summary>Whether <paramref name="execution"/> is a call that is no file edit and changed files of the project — what
     /// the watch of the work tree recorded around it (a command, an MCP tool, a custom tool, a test run that writes).</summary>
     internal static bool ToolChangedFiles(ToolExecution execution) => !IsFileEdit(execution.Name) && execution.Wrote == true;
@@ -264,8 +269,8 @@ internal static class ChatTurnPolicy
     /// (<see cref="ToolChangedFiles"/>). None when no check proved anything (<paramref name="at"/> below 0).
     /// </summary>
     /// <remarks>⚠ An edit that carries its own verdict (an edit's Smart Fix) is itself that last check, so it is never
-    /// counted after it. ⚠ What the watch of the work tree does not see is not counted (outside git, past its caps, files
-    /// git ignores): there the bar keeps its verdict.</remarks>
+    /// counted after it. ⚠ What the watch of the work tree does not see is not counted here (outside git, past its caps,
+    /// files git ignores): a call it could not follow is said apart by the bar (<see cref="ToolExecution.Unseen"/>).</remarks>
     internal static IReadOnlyList<ToolExecution> EditsAfter(IReadOnlyList<ToolExecution> executions, int at)
     {
         var edits = new List<ToolExecution>();

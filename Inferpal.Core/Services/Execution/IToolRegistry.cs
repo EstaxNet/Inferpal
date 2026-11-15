@@ -36,6 +36,12 @@ internal interface IToolRegistry
     int? WritesInRun => null;
 
     /// <summary>
+    /// How many calls of the current run changed the work tree where the run could not follow it (outside git, past a
+    /// cap); <c>null</c> when this registry watches nothing or no run is active.
+    /// </summary>
+    int? UnseenCallsInRun => null;
+
+    /// <summary>
     /// The model no longer has <paramref name="path"/> (as a call wrote it) whole in front of it — its read was cut or elided
     /// to leave the answer room: it is no longer "read" for a whole-file rewrite. Nothing when this registry tracks no reads.
     /// </summary>

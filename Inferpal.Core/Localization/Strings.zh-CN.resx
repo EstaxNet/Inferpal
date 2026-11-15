@@ -314,6 +314,7 @@
   4. 检查防火墙或防病毒软件是否阻止了该端口
 
 {1} 启动后，点击标题栏的 ↻ 重试按钮。</value></data>
+  <data name="ReverseProxyRefusalHint" xml:space="preserve"><value>位于要求用户名、密码或令牌的反向代理（Caddy、nginx、Cloudflare Access）之后？请打开 设置 › {0} › {1}，然后点“{2}”：它会指出请求在哪一步停止。</value></data>
   <data name="MsgConnectionRefused" xml:space="preserve"><value>{0} 上的 {1} 以 {2} 响应了连接检查：服务器正在运行，但拒绝了该请求。
 
 如果它需要 API 密钥，请在设置中检查密钥；否则请检查 URL 是否指向 {1} 的 API。
@@ -1438,6 +1439,7 @@
   <data name="RunTestsPassedPart" xml:space="preserve"><value>测试通过（仅部分测试）</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}，之后有 {1:N0} 个文件未经检查即被修改</value></data>
   <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}，之后有工具未经检查修改了文件</value></data>
+  <data name="RunCheckedThenUnseen" xml:space="preserve"><value>{0}，之后运行了一个此处无法跟踪其更改的命令</value></data>
   <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}，之后有 {1:N0} 个文件及工具所做的修改未经检查</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>未验证</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>未打开任何解决方案或文件夹，因此没有可读取的存储库。请打开一个，然后重试。</value></data>

@@ -314,6 +314,7 @@ Kroki rozwiązywania problemów:
   4. Sprawdź, czy port nie jest blokowany przez zaporę sieciową lub program antywirusowy
 
 Kliknij ↻ Ponów próbę w nagłówku po uruchomieniu {1}.</value></data>
+  <data name="ReverseProxyRefusalHint" xml:space="preserve"><value>Za odwrotnym proxy, które prosi o nazwę użytkownika, hasło lub token (Caddy, nginx, Cloudflare Access)? Ustawienia › {0} › {1}, potem {2}: pokaże, gdzie zatrzymuje się żądanie.</value></data>
   <data name="MsgConnectionRefused" xml:space="preserve"><value>{1} pod adresem {0} odpowiedział na sprawdzenie połączenia kodem {2}: serwer działa, ale odrzucił żądanie.
 
 Jeśli wymaga klucza API, sprawdź go w Ustawieniach; w przeciwnym razie sprawdź, czy adres URL wskazuje na API {1}.
@@ -1438,6 +1439,7 @@ Wpisz `/setup`, aby spróbować ponownie.</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>testy zaliczone, tylko część zestawu</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, potem {1:N0} {1:plik zmieniony|pliki zmienione|plików zmienionych} bez sprawdzenia</value></data>
   <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, potem narzędzie zmieniło pliki bez sprawdzenia</value></data>
+  <data name="RunCheckedThenUnseen" xml:space="preserve"><value>{0}, potem polecenie, którego zmiany nie są tu śledzone</value></data>
   <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, potem {1:N0} {1:plik zmieniony|pliki zmienione|plików zmienionych} i zmiany narzędzia bez sprawdzenia</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>nie sprawdzono</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Nie otwarto rozwiązania ani folderu, więc nie ma repozytorium do odczytania. Otwórz je i spróbuj ponownie.</value></data>

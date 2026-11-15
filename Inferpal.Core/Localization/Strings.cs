@@ -145,6 +145,7 @@ internal static class Strings
     public static string RunTestsPassedPart => Get(nameof(RunTestsPassedPart));
     public static string RunCheckedThenEdited(string check, int files) => Format(Get(nameof(RunCheckedThenEdited)), check, files);
     public static string RunCheckedThenToolChanged(string check) => Format(Get(nameof(RunCheckedThenToolChanged)), check);
+    public static string RunCheckedThenUnseen(string check) => Format(Get(nameof(RunCheckedThenUnseen)), check);
     public static string RunCheckedThenEditedAndToolChanged(string check, int files) =>
         Format(Get(nameof(RunCheckedThenEditedAndToolChanged)), check, files);
     public static string RunNotVerified => Get(nameof(RunNotVerified));
@@ -1076,8 +1077,21 @@ internal static class Strings
     internal static string MsgConnectionGuardFailed(string url, string backend) =>
         Format(Get(nameof(MsgConnectionGuardFailed)), url, backend);
 
+    /// <summary>
+    /// A refusal that asks who is calling (401, 403, 407) may come from a reverse proxy in front of the server, not from
+    /// the server's key check: the reverse-proxy block is named, whose Test tells the two apart.
+    /// </summary>
     internal static string MsgConnectionRefused(string url, string backend, string refusal) =>
-        Format(Get(nameof(MsgConnectionRefused)), url, backend, refusal);
+        Format(Get(nameof(MsgConnectionRefused)), url, backend, refusal)
+        + (AsksWhoCalls(refusal) ? "\n\n" + ReverseProxyRefusalHint : string.Empty);
+
+    /// <summary>A refusal's status is one a proxy asking for credentials answers with (<c>"HTTP 401 (…)"</c>).</summary>
+    internal static bool AsksWhoCalls(string refusal) =>
+        refusal.StartsWith("HTTP 401", StringComparison.Ordinal) || refusal.StartsWith("HTTP 403", StringComparison.Ordinal)
+        || refusal.StartsWith("HTTP 407", StringComparison.Ordinal);
+
+    internal static string ReverseProxyRefusalHint =>
+        Format(Get(nameof(ReverseProxyRefusalHint)), SettingsPageServer, ProxySectionTitle, BtnTest);
 
     /// <summary>⚠ Name the CONFIGURED backend, like <see cref="MsgConnectionGuardFailed"/>: "Reconnected to Ollama"
     /// was said to every LM Studio user.</summary>

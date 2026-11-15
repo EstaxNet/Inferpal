@@ -314,6 +314,7 @@ Pasos para solucionar el problema:
   4. Comprueba que el puerto no esté bloqueado por un cortafuegos o antivirus
 
 Haz clic en ↻ Reintentar en el encabezado cuando {1} esté en ejecución.</value></data>
+  <data name="ReverseProxyRefusalHint" xml:space="preserve"><value>¿Detrás de un proxy inverso que pide usuario, contraseña o token (Caddy, nginx, Cloudflare Access)? Configuración › {0} › {1} y luego {2}: indica dónde se detiene la solicitud.</value></data>
   <data name="MsgConnectionRefused" xml:space="preserve"><value>{1} en {0} respondió a la comprobación de conexión con {2}: el servidor está en marcha, pero rechazó la solicitud.
 
 Si requiere una clave de API, compruébela en la Configuración; si no, compruebe que la URL apunta a la API de {1}.
@@ -1438,6 +1439,7 @@ Escribe `/setup` para volver a intentarlo.</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>pruebas superadas, solo parte del conjunto</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, luego {1:N0} {1:archivo cambiado|archivos cambiados} sin comprobar</value></data>
   <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, luego una herramienta cambió archivos sin comprobar</value></data>
+  <data name="RunCheckedThenUnseen" xml:space="preserve"><value>{0}, luego un comando cuyos cambios no se siguen aquí</value></data>
   <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, luego {1:N0} {1:archivo cambiado|archivos cambiados} y los cambios de una herramienta sin comprobar</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>sin verificar</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>No hay ninguna solución ni carpeta abierta, así que no hay repositorio que leer. Abra una y vuelva a intentarlo.</value></data>

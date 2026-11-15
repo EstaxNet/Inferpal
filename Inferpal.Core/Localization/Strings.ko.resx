@@ -314,6 +314,7 @@
   4. 방화벽이나 바이러스 백신 소프트웨어가 포트를 차단하고 있지 않은지 확인하세요
 
 {1}이(가) 실행되면 헤더의 ↻ 다시 시도를 클릭하세요.</value></data>
+  <data name="ReverseProxyRefusalHint" xml:space="preserve"><value>사용자 이름, 비밀번호 또는 토큰을 요구하는 리버스 프록시(Caddy, nginx, Cloudflare Access) 뒤에 있나요? 설정 › {0} › {1}에서 「{2}」를 누르면 요청이 어디서 멈추는지 알려 줍니다.</value></data>
   <data name="MsgConnectionRefused" xml:space="preserve"><value>{0}의 {1}이(가) 연결 확인에 {2}(으)로 응답했습니다. 서버는 실행 중이지만 요청을 거부했습니다.
 
 API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다면 URL이 {1}의 API를 가리키는지 확인하세요.
@@ -1438,6 +1439,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RunTestsPassedPart" xml:space="preserve"><value>테스트 통과(일부 테스트만)</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, 이후 파일 {1:N0}개가 확인 없이 변경됨</value></data>
   <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, 이후 도구가 확인 없이 파일을 변경함</value></data>
+  <data name="RunCheckedThenUnseen" xml:space="preserve"><value>{0}, 이후 여기서 변경을 추적할 수 없는 명령이 실행됨</value></data>
   <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, 이후 파일 {1:N0}개와 도구의 변경이 확인 없이 남음</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>확인되지 않음</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>솔루션이나 폴더가 열려 있지 않아 읽을 저장소가 없습니다. 하나를 연 다음 다시 시도하세요.</value></data>

@@ -1123,6 +1123,13 @@ internal class FileHistoryService
         get { lock (_runLock) return Run?.WriteCount; }
     }
 
+    /// <summary>How many calls of the current run changed what nobody could follow (<see cref="HistoryRun.UnseenCalls"/>);
+    /// <c>null</c> without a run.</summary>
+    internal int? CurrentRunUnseenCalls
+    {
+        get { lock (_runLock) return Run?.UnseenCalls; }
+    }
+
     /// <summary>Appends a tool invocation to the current run's journal (for <c>/replay</c>).
     /// No-op when no run is active (e.g. code actions, tools disabled).</summary>
     internal void RecordToolCall(string tool, string? subject, long durationMs, bool error)
@@ -1178,6 +1185,7 @@ internal class FileHistoryService
         {
             if (Run is not { } run) return;
             run.CountWatchedCall();
+            if (notes.Count > 0 || bracket.Notes.Count > 0) run.CountUnseenCall();
             foreach (var note in notes.Concat(bracket.Notes)) run.NoteUncovered(call, note);
         }
         // ⚠ The bytes are in hand: written without the budget, every change found is recorded. Stopped halfway, the loop
@@ -2173,6 +2181,12 @@ internal sealed class HistoryRun
     public int WatchedCalls { get; private set; }
 
     public void CountWatchedCall() => WatchedCalls++;
+
+    /// <summary>How many watched calls of the run could not have their changes recorded (outside git, past a cap) —
+    /// counted by call, where <see cref="Uncovered"/> names each reason once. Not persisted: it serves the turn's bar.</summary>
+    public int UnseenCalls { get; private set; }
+
+    public void CountUnseenCall() => UnseenCalls++;
 
     /// <summary>The count a run read from disk was written with.</summary>
     public void RestoreWatchedCalls(int count) => WatchedCalls = Math.Max(0, count);

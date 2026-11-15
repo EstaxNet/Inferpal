@@ -53,6 +53,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
 
     /// <inheritdoc/>
     public int? WritesInRun => _fileHistory.CurrentRunWriteCount;
+    public int? UnseenCallsInRun => _fileHistory.CurrentRunUnseenCalls;
 
     /// <inheritdoc/>
     public void ForgetWholeRead(string path)

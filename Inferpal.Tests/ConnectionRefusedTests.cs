@@ -83,6 +83,19 @@ public class ConnectionRefusedTests
         Assert.Equal(Strings.MsgConnectionGuardFailed("u", "b"), Strings.MsgConnectionLost("u", "b", refusal: null));
     }
 
+    /// <summary>A refusal that asks who calls may be a reverse proxy's: the notice names the block whose Test tells.</summary>
+    [Theory]
+    [InlineData("HTTP 401 (Unauthorized)", true)]
+    [InlineData("HTTP 403 (Forbidden)", true)]
+    [InlineData("HTTP 407 (Proxy Authentication Required)", true)]
+    [InlineData("HTTP 404 (Not Found)", false)]   // reference arm: a wrong path is no question of credentials
+    public void ARefusalThatAsksWhoCalls_NamesTheReverseProxyBlock(string refusal, bool named)
+    {
+        var lost = Strings.MsgConnectionLost("https://llm.home.example", "LM Studio", refusal);
+        Assert.Contains(refusal, lost);
+        Assert.Equal(named, lost.Contains(Strings.ProxySectionTitle, StringComparison.Ordinal));
+    }
+
     // ── Every other reader of a failed check: the badge, /models, /bench, /hardware, the support bundle ──────────
 
     private const string Refused = "HTTP 401 (Unauthorized)";

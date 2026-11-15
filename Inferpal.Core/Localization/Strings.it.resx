@@ -314,6 +314,7 @@ Procedura di risoluzione dei problemi:
   4. Verifica che la porta non sia bloccata da un firewall o antivirus
 
 Clicca su ↻ Riprova nell'intestazione una volta avviato {1}.</value></data>
+  <data name="ReverseProxyRefusalHint" xml:space="preserve"><value>Dietro un proxy inverso che chiede nome utente, password o token (Caddy, nginx, Cloudflare Access)? Impostazioni › {0} › {1}, poi {2}: indica dove si ferma la richiesta.</value></data>
   <data name="MsgConnectionRefused" xml:space="preserve"><value>{1} su {0} ha risposto al controllo di connessione con {2}: il server è attivo, ma ha rifiutato la richiesta.
 
 Se richiede una chiave API, controllala nelle Impostazioni; altrimenti verifica che l'URL punti all'API di {1}.
@@ -1438,6 +1439,7 @@ Digita `/setup` per riprovare.</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>test superati, solo parte della suite</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, poi {1:N0} {1:file modificato|file modificati} senza verifica</value></data>
   <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, poi uno strumento ha modificato file senza verifica</value></data>
+  <data name="RunCheckedThenUnseen" xml:space="preserve"><value>{0}, poi un comando le cui modifiche qui non sono tracciate</value></data>
   <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, poi {1:N0} {1:file modificato|file modificati} e le modifiche di uno strumento senza verifica</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>non verificato</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Nessuna soluzione o cartella è aperta, quindi non c'è alcun repository da leggere. Aprine una, poi riprova.</value></data>

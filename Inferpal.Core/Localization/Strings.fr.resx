@@ -314,6 +314,7 @@ Plus grosse part — {4}.</value></data>
   4. Vérifiez que le port n'est pas bloqué par un pare-feu ou un antivirus
 
 Cliquez sur ↻ Réessayer dans l'en-tête une fois {1} démarré.</value></data>
+  <data name="ReverseProxyRefusalHint" xml:space="preserve"><value>Derrière un proxy inverse qui demande un identifiant, un mot de passe ou un jeton (Caddy, nginx, Cloudflare Access) ? Paramètres › {0} › {1}, puis {2} : il dit où la requête s'arrête.</value></data>
   <data name="MsgConnectionRefused" xml:space="preserve"><value>{1} à {0} a répondu à la vérification de connexion par {2} : le serveur tourne, mais il a refusé la requête.
 
 S'il exige une clé d'API, vérifiez-la dans les paramètres ; sinon, vérifiez que l'URL pointe vers l'API de {1}.
@@ -1438,6 +1439,7 @@ Tapez `/setup` pour réessayer.</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>tests réussis, sur une partie de la suite</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, puis {1:N0} {1:fichier modifié|fichiers modifiés} sans contrôle</value></data>
   <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, puis un outil a modifié des fichiers sans contrôle</value></data>
+  <data name="RunCheckedThenUnseen" xml:space="preserve"><value>{0}, puis une commande dont les écritures ne sont pas suivies ici</value></data>
   <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, puis {1:N0} {1:fichier modifié|fichiers modifiés} et les changements d'un outil sans contrôle</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>non vérifié</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Aucune solution ni aucun dossier n'est ouvert : il n'y a pas de dépôt à lire. Ouvrez-en un, puis réessayez.</value></data>

@@ -314,6 +314,7 @@ Fehlerbehebung:
   4. Prüfen, ob der Port durch eine Firewall oder ein Antivirenprogramm blockiert wird
 
 Klicken Sie auf ↻ Wiederholen in der Kopfzeile, wenn {1} läuft.</value></data>
+  <data name="ReverseProxyRefusalHint" xml:space="preserve"><value>Hinter einem Reverse-Proxy, der Benutzername, Passwort oder ein Token verlangt (Caddy, nginx, Cloudflare Access)? Einstellungen › {0} › {1}, dann {2}: Es zeigt, wo die Anfrage stoppt.</value></data>
   <data name="MsgConnectionRefused" xml:space="preserve"><value>{1} unter {0} hat die Verbindungsprüfung mit {2} beantwortet: Der Server läuft, hat die Anfrage aber abgelehnt.
 
 Wenn er einen API-Schlüssel verlangt, prüfen Sie ihn in den Einstellungen; andernfalls prüfen Sie, ob die URL auf die API von {1} zeigt.
@@ -1438,6 +1439,7 @@ Geben Sie `/setup` ein, um es erneut zu versuchen.</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>Tests bestanden, nur ein Teil der Suite</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, danach {1:N0} {1:Datei|Dateien} ohne Prüfung geändert</value></data>
   <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, danach hat ein Werkzeug Dateien ohne Prüfung geändert</value></data>
+  <data name="RunCheckedThenUnseen" xml:space="preserve"><value>{0}, danach ein Befehl, dessen Änderungen hier nicht verfolgt werden</value></data>
   <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, danach {1:N0} {1:Datei|Dateien} und die Änderungen eines Werkzeugs ohne Prüfung</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>nicht geprüft</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Es ist keine Projektmappe und kein Ordner geöffnet, daher gibt es kein Repository zu lesen. Öffnen Sie eines, und versuchen Sie es erneut.</value></data>

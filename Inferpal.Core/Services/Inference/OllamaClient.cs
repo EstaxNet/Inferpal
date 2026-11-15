@@ -972,10 +972,13 @@ internal record AgentResult(
 /// <param name="Wrote">Whether the call wrote a file, by the registry's count of writes around it — an edit's own, or what the
 /// watch of the work tree recorded for a command or another tool; <c>null</c> when the registry does not count (an edit's
 /// result is then the only witness).</param>
+/// <param name="Unseen">The call may have changed files the run could not follow (outside git, past a cap): its writes are
+/// unknown, not none; <c>null</c> when the registry watches nothing.</param>
 internal record ToolExecution(
     string    Name,
     string    Input,
     string    Output,
     bool      HasErrors = false,
     DiffInfo? Diff      = null,
-    bool?     Wrote     = null);
+    bool?     Wrote     = null,
+    bool?     Unseen    = null);

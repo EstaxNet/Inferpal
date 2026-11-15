@@ -387,10 +387,17 @@ public class CommandChangesUndoTests : IDisposable
                     $"the temporary folder {root} is inside a git work tree: this test is UNDECIDED, not red for the product.");
         var tools = Registry(root);
 
+        int? unseenBefore, unseenAfter;
         using (tools.History.BeginRunScope())
+        {
+            unseenBefore = tools.UnseenCallsInRun;
             await Run(tools, "echo hello > out.txt");
+            unseenAfter = tools.UnseenCallsInRun;
+        }
 
         Assert.True(File.Exists(Path.Combine(root, "out.txt")), "the command did not run: UNDECIDED.");
+        // The call is marked unseen, which the turn's bar reads (RunSummary: "then a command whose changes are not tracked").
+        Assert.True(Services.Agent.ChatTurnPolicy.UnseenCall(unseenBefore, unseenAfter));
         var report = await Undo(tools, root);
         Assert.Contains(Strings.UndoRunNotCovered, report);
         Assert.Contains(Strings.NotCoveredNoRepository("run_command `echo hello > out.txt`"), report);

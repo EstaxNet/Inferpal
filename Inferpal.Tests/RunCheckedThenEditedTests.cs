@@ -55,6 +55,24 @@ public sealed class RunCheckedThenEditedTests
         Assert.Equal(RunCheck.TestsPassed, RunSummary.Build([Tests(), Edit(wrote: true, tool: "update_memory")], null)!.Check);
     }
 
+    /// <summary>
+    /// A green, then a command whose changes the run could not follow (outside git): what it wrote is unknown, and the bar
+    /// says so rather than "tests passed" alone. Before the green, or a call the run followed, changes nothing.
+    /// </summary>
+    [Fact]
+    public void AGreenThenACallTheRunCouldNotFollow_SaysItsChangesAreNotTracked()
+    {
+        var unseen = new ToolExecution("run_command", """{"command":"Set-Content note.txt done"}""", "done", Wrote: false, Unseen: true);
+
+        var summary = RunSummary.Build([Tests(), unseen], null)!;
+        Assert.Equal(RunCheck.PassedThenEdited, summary.Check);
+        Assert.Equal(Strings.RunCheckedThenUnseen(Strings.RunTestsPassed), summary.CheckText);
+
+        // Reference arms: the same call before the green, a call the run followed.
+        Assert.Equal(RunCheck.TestsPassed, RunSummary.Build([unseen, Tests()], null)!.Check);
+        Assert.Equal(RunCheck.TestsPassed, RunSummary.Build([Tests(), unseen with { Unseen = false }], null)!.Check);
+    }
+
     /// <summary>The count around a call reads for every tool, not a list: what <c>WorkTreeBracket</c> records is any call's.</summary>
     [Fact]
     public void TheCountAroundACall_SaysWhetherAnyToolWrote()

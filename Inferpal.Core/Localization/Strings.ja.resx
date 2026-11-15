@@ -314,6 +314,7 @@
   4. ポートがファイアウォールやウイルス対策ソフトでブロックされていないか確認してください
 
 {1} が起動したら、ヘッダーの ↻ 再試行 をクリックしてください。</value></data>
+  <data name="ReverseProxyRefusalHint" xml:space="preserve"><value>ユーザー名・パスワード・トークンを求めるリバースプロキシ（Caddy、nginx、Cloudflare Access）の背後にありますか？ 設定 › {0} › {1} で「{2}」を押すと、要求がどこで止まるかを表示します。</value></data>
   <data name="MsgConnectionRefused" xml:space="preserve"><value>{0} の {1} は接続確認に {2} で応答しました。サーバーは動作していますが、リクエストを拒否しました。
 
 API キーが必要な場合は設定でキーを確認してください。そうでなければ、URL が {1} の API を指しているか確認してください。
@@ -1438,6 +1439,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RunTestsPassedPart" xml:space="preserve"><value>テスト成功（スイートの一部のみ）</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}、その後 {1:N0} 個のファイルが未確認のまま変更</value></data>
   <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}、その後ツールがファイルを未確認のまま変更</value></data>
+  <data name="RunCheckedThenUnseen" xml:space="preserve"><value>{0}、その後ここでは変更を追跡できないコマンドを実行</value></data>
   <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}、その後 {1:N0} 個のファイルとツールによる変更が未確認</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>未検証</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>ソリューションもフォルダーも開かれていないため、読み取るリポジトリがありません。開いてから、もう一度お試しください。</value></data>
