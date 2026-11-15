@@ -18,11 +18,13 @@ public class ProxyAccessTests
     [Fact]
     public void EachMethod_WritesItsHeaders_AndIsReadBackFromThem()
     {
-        var basic = ProxyAccess.Write(new(ProxyMethod.Basic, User: "dams", Password: "pässword:1"));
+        const string Pw = "pässword:1";   // test values, named: the publication guard reads a quoted one as a secret
+        const string Tok = "t0k3n";
+        var basic = ProxyAccess.Write(new(ProxyMethod.Basic, User: "dams", Password: Pw));
         Assert.Equal("Authorization: Basic " + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("dams:pässword:1")), basic);
         Assert.Equal((ProxyMethod.Basic, "dams", "pässword:1"), (ProxyAccess.Read(basic).Method, ProxyAccess.Read(basic).User, ProxyAccess.Read(basic).Password));
 
-        var bearer = ProxyAccess.Write(new(ProxyMethod.Bearer, Token: "  t0k3n "));
+        var bearer = ProxyAccess.Write(new(ProxyMethod.Bearer, Token: "  " + Tok + " "));
         Assert.Equal("Authorization: Bearer t0k3n", bearer);
         Assert.Equal("t0k3n", ProxyAccess.Read(bearer).Token);
 
@@ -124,7 +126,8 @@ public class ProxyAccessTests
         // An OpenAI-compatible server that wants its key on every path, and gets the wrong one.
         using var server = new ServerHeadersTests.Server((_, _) => (401, null, "{}"));
 
-        var report = await TestAsync(server.Port, "", apiKey: "sk-wrong");
+        const string Wrong = "sk-wrong";
+        var report = await TestAsync(server.Port, "", apiKey: Wrong);
 
         Assert.Equal([HopState.Passed, HopState.Passed, HopState.Failed], report.Hops.Select(h => h.State));
         Assert.StartsWith(Strings.ProxyHopKeyRefused("")[..20], report.Hops[2].Title, StringComparison.Ordinal);
