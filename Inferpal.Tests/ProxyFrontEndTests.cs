@@ -25,6 +25,9 @@ public sealed class ProxyFrontEndTests
         Assert.Contains("'Authorization: Bearer ' + form.token.trim()", code, StringComparison.Ordinal);
         Assert.Contains("`${CF_ID}: ${form.clientId.trim()}\\n${CF_SECRET}: ${form.clientSecret.trim()}`", code, StringComparison.Ordinal);
         Assert.DoesNotContain("from 'vscode'", code, StringComparison.Ordinal);
+        // The moved block names a move the person can see, as VS's MovedName: host, then host and port, then the origin.
+        Assert.Contains("self.hostname !== them.hostname ? self.hostname : self.host !== them.host ? self.host : self.origin", code, StringComparison.Ordinal);
+        Assert.Contains("const oldHost = movedName(savedUrl, host.field('baseUrl'));", code, StringComparison.Ordinal);
     }
 
     [Fact]

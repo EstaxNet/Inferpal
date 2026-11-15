@@ -249,13 +249,23 @@ internal partial class InferpalSettingsData
         }
         if (moved)
         {
-            var oldHost = Uri.TryCreate(savedUrl, UriKind.Absolute, out var o) ? o.Host : savedUrl;
-            ProxyMovedTitle = Strings.ProxyMovedTitle(oldHost);
-            ProxyMovedBody  = Strings.ProxyMovedBody(oldHost, host);
-            ProxyMovedFor   = Strings.ProxyMovedFor(host);
+            var oldName = Uri.TryCreate(savedUrl, UriKind.Absolute, out var o) ? MovedName(o, u) : savedUrl;
+            var newName = u is not null && o is not null ? MovedName(u, o) : host;
+            ProxyMovedTitle = Strings.ProxyMovedTitle(oldName);
+            ProxyMovedBody  = Strings.ProxyMovedBody(oldName, newName);
+            ProxyMovedFor   = Strings.ProxyMovedFor(newName);
             ProxyMovedWas   = Strings.ProxyMovedWas(savedUrl);
         }
     }
+
+    /// <summary>
+    /// How the moved block names one of two addresses: by host, or by host and port when only the port differs, or by
+    /// scheme too when only that differs — "127.0.0.1 to 127.0.0.1" would name no move at all.
+    /// </summary>
+    internal static string MovedName(Uri self, Uri? other) =>
+        other is null || !string.Equals(self.Host, other.Host, StringComparison.OrdinalIgnoreCase) ? self.Host
+        : !string.Equals(self.Authority, other.Authority, StringComparison.OrdinalIgnoreCase) ? self.Authority
+        : self.GetLeftPart(UriPartial.Authority);
 
     /// <summary>A header's value as the preview shows it: Cloudflare's Client ID is no secret, everything else is.</summary>
     private static string Masked(string name, string value) =>

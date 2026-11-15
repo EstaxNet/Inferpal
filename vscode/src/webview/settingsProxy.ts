@@ -122,6 +122,17 @@ function hostOf(url: string): string {
   }
 }
 
+/** How the moved block names `url` beside `other`: host, then host and port, then the origin — as VS's `MovedName`. */
+function movedName(url: string, other: string): string {
+  try {
+    const self = new URL(url.trim());
+    const them = new URL(other.trim());
+    return self.hostname !== them.hostname ? self.hostname : self.host !== them.host ? self.host : self.origin;
+  } catch {
+    return hostOf(url);
+  }
+}
+
 /** The same address, as the Core's `ServerScan.SameAddress` reads it: this machine under any of its names is one. */
 function sameAddress(a: string, b: string): boolean {
   const loopback = (u: string): string | null => {
@@ -224,8 +235,8 @@ export function proxyAccessEditor(area: HTMLTextAreaElement, host: EditorHost): 
 
   const movedBlock = (): HTMLElement => {
     const savedUrl = host.saved('baseUrl');
-    const oldHost = hostOf(savedUrl);
-    const newHost = hostOf(host.field('baseUrl'));
+    const oldHost = movedName(savedUrl, host.field('baseUrl'));
+    const newHost = movedName(host.field('baseUrl'), savedUrl);
     const block = el('div', 'proxymoved');
     block.setAttribute('role', 'group');
     block.append(el('div', 'proxymovedtitle', fill(host.res('ProxyMovedTitle'), oldHost)));

@@ -221,6 +221,17 @@ public sealed class VsSettingsWindowTests : IDisposable
         Assert.False(form.ProxyMovedVisible);   // saved: the block is gone
     }
 
+    /// <summary>The moved block names a move the person can see: the port when only the port changed, the scheme when only it did.</summary>
+    [Theory]
+    [InlineData("http://127.0.0.1:8099", "http://127.0.0.1:8100", "127.0.0.1:8099", "127.0.0.1:8100")]
+    [InlineData("http://llm.home.example", "https://llm.home.example", "http://llm.home.example", "https://llm.home.example")]
+    [InlineData("https://llm.home.example", "http://192.168.1.40:11434", "llm.home.example", "192.168.1.40")]
+    public void TheMovedBlock_NamesWhatChanged(string saved, string typed, string oldName, string newName)
+    {
+        Assert.Equal(oldName, InferpalSettingsData.MovedName(new Uri(saved), new Uri(typed)));
+        Assert.Equal(newName, InferpalSettingsData.MovedName(new Uri(typed), new Uri(saved)));
+    }
+
     private sealed class Approve : Services.Execution.IApprovalService
     {
         public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null,
