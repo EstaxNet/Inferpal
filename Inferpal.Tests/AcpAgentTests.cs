@@ -348,6 +348,43 @@ public sealed class AcpAgentTests : IDisposable
     }
 
     /// <summary>
+    /// The way a client cancels an agreement it is asked for (ACP: <c>session/cancel</c>, then the pending
+    /// <c>session/request_permission</c> answered <c>cancelled</c>; Zed 1.28 follows it): nothing is written, the turn ends
+    /// "cancelled", and nothing follows the response. A card closed without stopping the turn is a refusal: still nothing
+    /// written, and the turn goes on to its end.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ACancelledAgreement_WritesNothing_AndTheTurnEnds(bool turnCancelled)
+    {
+        var target = Path.Combine(_root, "cancelled.txt");
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = async (_, _, tools, _) =>
+        {
+            await tools.ExecuteAsync("write_file", JsonSerializer.SerializeToElement(new { path = target, content = "written" }),
+                                     CancellationToken.None);
+            return new ChatTurnResult("Done.", null, 0, 0);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        h.Client.Answer = (method, _) =>
+        {
+            if (method != "session/request_permission") return null;
+            if (turnCancelled) h.Client.NotifyAsync("session/cancel", new { sessionId = sid }).GetAwaiter().GetResult();
+            return new { outcome = new { outcome = "cancelled" } };
+        };
+
+        var r = await PromptAsync(h, sid, "write the file");
+        var count = h.Client.Notifications.Count;
+        await Task.Delay(500);
+
+        Assert.Single(h.Client.Requests, q => q.GetProperty("method").GetString() == "session/request_permission");   // WITNESS
+        Assert.False(File.Exists(target), "a cancelled agreement wrote the file.");
+        Assert.Equal(turnCancelled ? "cancelled" : "end_turn", StopReason(r));
+        Assert.Equal(count, h.Client.Notifications.Count);
+    }
+
+    /// <summary>
     /// ⚠ A Stop that comes while the prompt is being built — here, while the host sizes an attached file's excerpt —
     /// finds no turn on the host to stop. The turn was then sent anyway and ran whole, tools included, under a response
     /// that said "cancelled".
