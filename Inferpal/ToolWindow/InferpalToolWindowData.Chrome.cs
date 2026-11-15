@@ -596,7 +596,8 @@ internal partial class InferpalToolWindowData
 
     /// <summary>
     /// An MCP server's form, as a card in the conversation of the running turn (<see cref="VsContextHolder.InlineInput"/>);
-    /// <c>null</c> when no turn runs. The same card id again redraws the card already there, with what to fix.
+    /// <c>null</c> when no turn runs. The same card id again redraws the card already there, with what to fix. A protected
+    /// PDF's card (no server) is also drawn outside a turn: the person attaching the file is at the keyboard.
     /// </summary>
     /// <remarks>⚠ The card never takes the keyboard: a key typed for the composer or the code must not land in a form.</remarks>
     private async Task<InputReply?> AskInputInlineAsync(InputCardModel card, CancellationToken ct)
@@ -604,7 +605,7 @@ internal partial class InferpalToolWindowData
         ChatMessageItem? item = null;
         await RunOnVMContextAsync(() =>
         {
-            if (!IsLoading) return;
+            if (!IsLoading && card.Server.Length > 0) return;
             if (Messages.FirstOrDefault(m => m.Role == InputCard.CardRole && m.InputCardId == card.Id) is { } shown)
             {
                 shown.ShowInput(card);

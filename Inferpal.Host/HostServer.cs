@@ -1544,6 +1544,8 @@ internal sealed partial class HostServer : IDisposable
         if (Services.Governance.ContentExclusions.Of(path) is { } excluded)
             return new AttachReadResult(null, MentionController.FileRefusal(path, root),
                 excluded.ForModel(Services.Governance.ContentExclusions.Shown(path, root)));
+        // A protected PDF asks the person for its password first, on a card in the chat.
+        await MentionController.OpenIfProtectedAsync(path, Session().Approval, ct);
         if (MentionController.BinaryRefusal(path) is { } refused)
             return new AttachReadResult(null, refused,
                 "(not attached: " + (Services.Documents.AttachedDocuments.WhyNoText(path) is { } why && Services.Documents.DocumentText.Handles(path)

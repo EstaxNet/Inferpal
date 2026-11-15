@@ -18,11 +18,16 @@ internal static class DocxText
 
     private static bool IsW(XmlReader reader) => reader.NamespaceURI is W or WStrict;
 
-    internal static DocumentExtraction Extract(byte[] bytes, CancellationToken ct)
+    /// <param name="password">The password the person typed for a DOCX protected to open; null when none was.</param>
+    internal static DocumentExtraction Extract(byte[] bytes, CancellationToken ct, string? password = null)
     {
-        // A DOCX protected by a password is no zip but an encrypted OLE container (D0 CF 11 E0): said as locked.
-        if (bytes.Length >= 4 && bytes[0] == 0xD0 && bytes[1] == 0xCF && bytes[2] == 0x11 && bytes[3] == 0xE0)
-            return new(string.Empty, 0, 0, DocumentProblem.Encrypted);
+        // A DOCX protected by a password is no zip but an encrypted OLE container: locked, unless the password opens it.
+        if (OfficeCrypto.IsCompoundFile(bytes))
+        {
+            if (password is null || OfficeCrypto.Decrypt(bytes, password, ct) is not { } package)
+                return new(string.Empty, 0, 0, DocumentProblem.Encrypted);
+            bytes = package;
+        }
         using var zip = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);
         var entry = zip.GetEntry("word/document.xml");
         if (entry is null) return new(string.Empty, 0, 0, DocumentProblem.Unreadable);

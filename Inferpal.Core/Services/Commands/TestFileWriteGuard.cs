@@ -33,6 +33,9 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
     public Task<Mcp.McpInputAnswer> AskForInputAsync(Mcp.McpInputForm form, CancellationToken ct) =>
         inner.AskForInputAsync(form, ct);
 
+    public Task<bool> AskForDocumentPasswordAsync(string path, bool attached, CancellationToken ct) =>
+        inner.AskForDocumentPasswordAsync(path, attached, ct);
+
     /// <summary>
     /// Heuristic on the approval subject (a path for file writes, possibly several for
     /// <c>apply_edits</c>): any segment or file name carrying "test"/"tests"/"spec" counts.

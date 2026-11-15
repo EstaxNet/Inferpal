@@ -2266,4 +2266,27 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="ProxyMovedWas" xml:space="preserve"><value>Antes {0}</value></data>
   <data name="ProxyHopKeyRefused" xml:space="preserve"><value>El servidor de modelos rechazó la clave API — {0}</value></data>
   <data name="ProxyCheckApiKey" xml:space="preserve"><value>Compruebe la clave API en Conexión: la que espera su servidor, completa. No hay proxy implicado.</value></data>
+  <data name="DocPasswordAgentTitle" xml:space="preserve"><value>El agente quiere leer {0}</value></data>
+  <data name="DocPasswordSubtitle" xml:space="preserve"><value>Está protegido con una contraseña</value></data>
+  <data name="DocPasswordAgentMessage" xml:space="preserve"><value>Solo usted puede abrirlo. Si escribe su contraseña, el agente recibe el texto del documento, no la contraseña, y ni siquiera sabe que la escribió.</value></data>
+  <data name="DocPasswordAgentReminder" xml:space="preserve"><value>Se le pregunta porque está aquí. Una /task en segundo plano, o un agente iniciado desde otro cliente, deja el archivo cerrado e indica que está protegido.</value></data>
+  <data name="DocPasswordLeaveClosed" xml:space="preserve"><value>Dejarlo cerrado</value></data>
+  <data name="DocPasswordLeaveClosedTip" xml:space="preserve"><value>Se informa al agente de que el archivo quedó cerrado, y continúa sin él</value></data>
+  <data name="DocPasswordAttachTitle" xml:space="preserve"><value>{0} está protegido con una contraseña</value></data>
+  <data name="DocPasswordAttachSubtitle" xml:space="preserve"><value>Lo adjuntó usted · se adjunta como texto una vez abierto</value></data>
+  <data name="DocPasswordAttachMessage" xml:space="preserve"><value>Escriba la contraseña con la que se abre el documento. Inferpal lo abre aquí, en este equipo, y adjunta su texto a su próximo mensaje.</value></data>
+  <data name="DocPasswordAttachReminder" xml:space="preserve"><value>La contraseña nunca se envía al modelo ni al servidor, ni se escribe en el disco: solo se envía el texto.</value></data>
+  <data name="DocPasswordDontAttach" xml:space="preserve"><value>No adjuntar</value></data>
+  <data name="DocPasswordDontAttachTip" xml:space="preserve"><value>El archivo no se adjunta</value></data>
+  <data name="DocPasswordLabel" xml:space="preserve"><value>Contraseña de {0}</value></data>
+  <data name="DocPasswordHint" xml:space="preserve"><value>Se guarda en memoria para este archivo hasta que se cierre el editor. Nunca se guarda en disco ni se envía.</value></data>
+  <data name="DocPasswordOpen" xml:space="preserve"><value>Abrir</value></data>
+  <data name="DocPasswordShow" xml:space="preserve"><value>Mostrar</value></data>
+  <data name="DocPasswordWrong" xml:space="preserve"><value>Esa contraseña no abre {0}. Compruebe las mayúsculas y la distribución del teclado. {1} {1:intento restante|intentos restantes}.</value></data>
+  <data name="DocPasswordEmpty" xml:space="preserve"><value>Escriba primero la contraseña.</value></data>
+  <data name="DocPasswordReceiptOpened" xml:space="preserve"><value>{0} abierto con la contraseña que escribió</value></data>
+  <data name="DocPasswordReceiptOpenedDetail" xml:space="preserve"><value>Su texto se leyó aquí; la contraseña no se guarda en esta conversación.</value></data>
+  <data name="DocPasswordReceiptClosed" xml:space="preserve"><value>{0} se dejó cerrado</value></data>
+  <data name="DocPasswordReceiptTooMany" xml:space="preserve"><value>{0} se dejó cerrado tras tres contraseñas incorrectas</value></data>
+  <data name="DocPasswordReceiptClosedDetail" xml:space="preserve"><value>Su texto no se leyó.</value></data>
 </root>

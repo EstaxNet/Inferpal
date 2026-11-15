@@ -12,9 +12,13 @@ internal sealed class InputFieldItem : NotifyPropertyChangedObject
 {
     private string _text;
     private bool   _flag;
+    private bool   _revealed;
 
-    public InputFieldItem(InputFieldModel field, string cardId, Action send)
+    /// <param name="revealLabel">The label of the button that shows a masked field in clear.</param>
+    public InputFieldItem(InputFieldModel field, string cardId, Action send, string revealLabel = "")
     {
+        IsPassword  = field.InputType == "password";
+        RevealLabel = revealLabel;
         Key        = field.Key;
         Kind       = field.Kind;
         Label      = field.Label;
@@ -37,6 +41,7 @@ internal sealed class InputFieldItem : NotifyPropertyChangedObject
         foreach (var o in field.Options)
             Options.Add(new InputOptionItem(o, group));
         SendCommand   = new AsyncCommand((_, _) => { send();   return Task.CompletedTask; });
+        RevealCommand = new AsyncCommand((_, _) => { IsRevealed = true; return Task.CompletedTask; });
     }
 
     /// <summary>The schema's key, sent with the value.</summary>
@@ -52,6 +57,20 @@ internal sealed class InputFieldItem : NotifyPropertyChangedObject
     /// <summary>The field reads like a secret: its hint says a server must not ask for one.</summary>
     [DataMember] public bool   Warns      { get; }
     [DataMember] public bool   IsTextBox  { get; }
+    /// <summary>
+    /// A protected PDF's password: drawn in a <c>PasswordBox</c>, whose text the in-process <c>PasswordBoxRelay</c> copies
+    /// into its bound <c>Tag</c> — Remote UI binds no <c>Password</c>.
+    /// </summary>
+    [DataMember] public bool   IsPassword { get; }
+    /// <summary>Show was pressed: the password is drawn in clear, in the text box, until the card is answered.</summary>
+    [DataMember] public bool   IsRevealed { get => _revealed; private set { if (SetProperty(ref _revealed, value)) { RaiseNotifyPropertyChangedEvent(nameof(ShowsTextBox)); RaiseNotifyPropertyChangedEvent(nameof(ShowsPasswordBox)); } } }
+    /// <summary>The text box is drawn: a text or number field, or a password shown in clear.</summary>
+    [DataMember] public bool   ShowsTextBox => IsTextBox && (!IsPassword || IsRevealed);
+    /// <summary>The masked box is drawn: a password not shown in clear.</summary>
+    [DataMember] public bool   ShowsPasswordBox => IsPassword && !IsRevealed;
+    [DataMember] public string RevealLabel { get; }
+    [DataMember] public bool   HasReveal => IsPassword && RevealLabel.Length > 0;
+    [DataMember] public AsyncCommand RevealCommand { get; }
     [DataMember] public bool   IsBox      { get; }
     /// <summary>One choice among few short ones: buttons side by side, one pressed.</summary>
     [DataMember] public bool   IsSegmented { get; }

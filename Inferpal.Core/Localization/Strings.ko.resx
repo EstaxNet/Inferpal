@@ -2266,4 +2266,27 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ProxyMovedWas" xml:space="preserve"><value>이전 {0}</value></data>
   <data name="ProxyHopKeyRefused" xml:space="preserve"><value>모델 서버가 API 키를 거부했습니다 — {0}</value></data>
   <data name="ProxyCheckApiKey" xml:space="preserve"><value>연결의 API 키를 확인하세요. 서버가 기대하는 키 전체입니다. 프록시와는 관계없습니다.</value></data>
+  <data name="DocPasswordAgentTitle" xml:space="preserve"><value>에이전트가 {0}을(를) 읽으려 합니다</value></data>
+  <data name="DocPasswordSubtitle" xml:space="preserve"><value>비밀번호로 보호되어 있습니다</value></data>
+  <data name="DocPasswordAgentMessage" xml:space="preserve"><value>이 파일은 사용자만 열 수 있습니다. 비밀번호를 입력하면 에이전트는 문서의 텍스트만 받으며, 비밀번호도, 비밀번호를 입력했다는 사실도 알지 못합니다.</value></data>
+  <data name="DocPasswordAgentReminder" xml:space="preserve"><value>사용자가 여기 있으므로 묻습니다. 백그라운드 /task나 다른 클라이언트에서 실행한 에이전트는 파일을 닫힌 채로 두고 보호되어 있다고 알립니다.</value></data>
+  <data name="DocPasswordLeaveClosed" xml:space="preserve"><value>닫힌 채로 두기</value></data>
+  <data name="DocPasswordLeaveClosedTip" xml:space="preserve"><value>파일이 닫힌 채로 남았다는 사실이 에이전트에 전달되고, 에이전트는 파일 없이 계속합니다</value></data>
+  <data name="DocPasswordAttachTitle" xml:space="preserve"><value>{0}은(는) 비밀번호로 보호되어 있습니다</value></data>
+  <data name="DocPasswordAttachSubtitle" xml:space="preserve"><value>사용자가 첨부함 · 열리면 텍스트로 첨부됩니다</value></data>
+  <data name="DocPasswordAttachMessage" xml:space="preserve"><value>문서를 여는 비밀번호를 입력하세요. Inferpal이 이 컴퓨터에서 파일을 열고 다음 메시지에 텍스트를 첨부합니다.</value></data>
+  <data name="DocPasswordAttachReminder" xml:space="preserve"><value>비밀번호는 모델이나 서버로 전송되지 않으며 디스크에도 기록되지 않습니다. 텍스트만 전송됩니다.</value></data>
+  <data name="DocPasswordDontAttach" xml:space="preserve"><value>첨부하지 않기</value></data>
+  <data name="DocPasswordDontAttachTip" xml:space="preserve"><value>파일이 첨부되지 않습니다</value></data>
+  <data name="DocPasswordLabel" xml:space="preserve"><value>{0}의 비밀번호</value></data>
+  <data name="DocPasswordHint" xml:space="preserve"><value>편집기를 닫을 때까지 이 파일용으로 메모리에 보관됩니다. 저장되거나 전송되지 않습니다.</value></data>
+  <data name="DocPasswordOpen" xml:space="preserve"><value>열기</value></data>
+  <data name="DocPasswordShow" xml:space="preserve"><value>표시</value></data>
+  <data name="DocPasswordWrong" xml:space="preserve"><value>이 비밀번호로는 {0}을(를) 열 수 없습니다. 대소문자와 키보드 배열을 확인하세요. {1}번 남았습니다.</value></data>
+  <data name="DocPasswordEmpty" xml:space="preserve"><value>먼저 비밀번호를 입력하세요.</value></data>
+  <data name="DocPasswordReceiptOpened" xml:space="preserve"><value>{0}을(를) 입력한 비밀번호로 열었습니다</value></data>
+  <data name="DocPasswordReceiptOpenedDetail" xml:space="preserve"><value>텍스트는 여기서 읽혔으며, 비밀번호는 이 대화에 보관되지 않습니다.</value></data>
+  <data name="DocPasswordReceiptClosed" xml:space="preserve"><value>{0}은(는) 닫힌 채로 두었습니다</value></data>
+  <data name="DocPasswordReceiptTooMany" xml:space="preserve"><value>비밀번호가 세 번 틀려 {0}을(를) 닫힌 채로 두었습니다</value></data>
+  <data name="DocPasswordReceiptClosedDetail" xml:space="preserve"><value>텍스트는 읽히지 않았습니다.</value></data>
 </root>

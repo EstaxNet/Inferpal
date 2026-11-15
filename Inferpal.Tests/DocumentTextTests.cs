@@ -52,6 +52,108 @@ public sealed class DocumentTextTests : IDisposable
 
     private static string Text(byte[] pdf) => DocumentText.Extract(pdf, ".pdf").Text;
 
+    /// <summary>
+    /// A one-page PDF whose content says <paramref name="text"/>, encrypted with the standard handler: RC4 128 bits
+    /// (revision 3) or AES-256 (revision 6), opening only with <paramref name="password"/>.
+    /// </summary>
+    internal static byte[] EncryptedPdf(string text, string password, bool aes256)
+    {
+        var content = Encoding.Latin1.GetBytes($"BT /F1 12 Tf 72 720 Td ({text}) Tj ET");
+        byte[] body;
+        string encrypt;
+        var id = new byte[16];
+        Random.Shared.NextBytes(id);
+        static string Hex(byte[] b) => "<" + Convert.ToHexString(b) + ">";
+        if (aes256)
+        {
+            var fileKey = new byte[32];
+            Random.Shared.NextBytes(fileKey);
+            var salts = new byte[16];
+            Random.Shared.NextBytes(salts);
+            var pw = Encoding.UTF8.GetBytes(password);
+            var u = PdfDocument.Hash2B(pw, salts[..8], [], 6).Concat(salts).ToArray();
+            using var aes = System.Security.Cryptography.Aes.Create();
+            aes.Key = PdfDocument.Hash2B(pw, salts[8..], [], 6);
+            var ue = aes.EncryptCbc(fileKey, new byte[16], System.Security.Cryptography.PaddingMode.None);
+            var iv = new byte[16];
+            Random.Shared.NextBytes(iv);
+            aes.Key = fileKey;
+            body = [.. iv, .. aes.EncryptCbc(content, iv)];
+            encrypt = $"<< /Filter /Standard /V 5 /R 6 /Length 256 /CF << /StdCF << /CFM /AESV3 /AuthEvent /DocOpen /Length 32 >> >> " +
+                      $"/StmF /StdCF /StrF /StdCF /O {Hex(new byte[48])} /U {Hex(u)} /OE {Hex(new byte[32])} /UE {Hex(ue)} /P -4 /Perms {Hex(new byte[16])} >>";
+        }
+        else
+        {
+            static byte[] Padded(string s) => [.. Encoding.Latin1.GetBytes(s).Take(32), .. PdfDocument.Pad.Take(32 - Math.Min(32, s.Length))];
+            // Algorithm 3: O from an owner password.
+            var ownerKey = System.Security.Cryptography.MD5.HashData(Padded("owner-" + password));
+            for (var i = 0; i < 50; i++) ownerKey = System.Security.Cryptography.MD5.HashData(ownerKey);
+            var o = PdfDocument.Rc4(ownerKey, Padded(password));
+            for (var i = 1; i <= 19; i++) o = PdfDocument.Rc4(ownerKey.Select(k => (byte)(k ^ i)).ToArray(), o);
+            // Algorithm 2: the file key; algorithm 5: U.
+            var key = System.Security.Cryptography.MD5.HashData([.. Padded(password), .. o, .. BitConverter.GetBytes(-4), .. id]);
+            for (var i = 0; i < 50; i++) key = System.Security.Cryptography.MD5.HashData(key);
+            var u = PdfDocument.Rc4(key, System.Security.Cryptography.MD5.HashData([.. PdfDocument.Pad, .. id]));
+            for (var i = 1; i <= 19; i++) u = PdfDocument.Rc4(key.Select(k => (byte)(k ^ i)).ToArray(), u);
+            u = [.. u, .. new byte[16]];
+            var objectKey = System.Security.Cryptography.MD5.HashData([.. key, 5, 0, 0, 0, 0]);
+            body = PdfDocument.Rc4(objectKey, content);
+            encrypt = $"<< /Filter /Standard /V 2 /R 3 /Length 128 /O {Hex(o)} /U {Hex(u)} /P -4 >>";
+        }
+        var pdf = new MemoryStream();
+        void W(string s) => pdf.Write(Encoding.Latin1.GetBytes(s));
+        W("%PDF-1.7\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n");
+        W("3 0 obj << /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\n");
+        W($"4 0 obj {Helvetica} endobj\n5 0 obj << /Length {body.Length} >>\nstream\n");
+        pdf.Write(body);
+        W($"\nendstream endobj\ntrailer << /Size 6 /Root 1 0 R /Encrypt {encrypt} /ID [{Hex(id)} {Hex(id)}] >>\n%%EOF\n");
+        return pdf.ToArray();
+    }
+
+    /// <summary>A PDF that asks for a password to open: locked without one and with a wrong one, read with the right one —
+    /// in both families of the standard handler.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void APasswordProtectedPdf_OpensWithItsPassword_Only(bool aes256)
+    {
+        var pdf = EncryptedPdf("the penalties of article 9", "contrat2026", aes256);
+        Assert.Equal(DocumentProblem.Encrypted, DocumentText.Extract(pdf, ".pdf").Problem);
+        Assert.Equal(DocumentProblem.Encrypted, DocumentText.Extract(pdf, ".pdf", password: "contrat2025").Problem);
+        Assert.Equal("the penalties of article 9", DocumentText.Extract(pdf, ".pdf", password: "contrat2026").Text);
+    }
+
+    /// <summary>A DOCX protected to open (agile encryption, as Office writes it since 2010 — the fixture is made by
+    /// msoffcrypto-tool, docs/probes/pari85/protected_docx.py): locked without its password or with a wrong one, read with it.</summary>
+    [Fact]
+    public void APasswordProtectedDocx_OpensWithItsPassword_Only()
+    {
+        var docx = File.ReadAllBytes(Path.Combine(WebviewRebuildTests.RepoRoot(), "Inferpal.Tests", "Fixtures", "protected.docx"));
+        Assert.Equal(DocumentProblem.Encrypted, DocumentText.Extract(docx, ".docx").Problem);
+        Assert.Equal(DocumentProblem.Encrypted, DocumentText.Extract(docx, ".docx", password: "s3cr3t-DOCX").Problem);
+        var read = DocumentText.Extract(docx, ".docx", password: "s3cr3t-docx");
+        Assert.Equal(DocumentProblem.None, read.Problem);
+        Assert.Contains("Penalty for late delivery: half a percent a day.", read.Text);
+    }
+
+    /// <summary>The password the person typed opens the file and is kept for it, in memory: the next read of that file is
+    /// not asked again, another file is.</summary>
+    [Fact]
+    public void ATypedPassword_IsKeptForThatFile_InMemory()
+    {
+        var path = Path.Combine(_dir, "contrat.pdf");
+        File.WriteAllBytes(path, EncryptedPdf("article nine", "s3cret", aes256: false));
+        var other = Path.Combine(_dir, "other.pdf");
+        File.WriteAllBytes(other, EncryptedPdf("another file", "s3cret", aes256: false));
+        Assert.True(AttachedDocuments.AsksForPassword(path));
+        Assert.False(AttachedDocuments.TryPassword(path, "wrong"));
+        Assert.True(AttachedDocuments.AsksForPassword(path));
+        Assert.True(AttachedDocuments.TryPassword(path, "s3cret"));
+        Assert.False(AttachedDocuments.AsksForPassword(path));
+        Assert.Contains("article nine", AttachedDocuments.ForModel(path));
+        Assert.True(AttachedDocuments.AsksForPassword(other));
+    }
+
     [Fact]
     public void ASimpleFont_GivesItsLines_AndAPenMoveBetweenWords_IsASpace()
     {

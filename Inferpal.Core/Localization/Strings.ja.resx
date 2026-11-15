@@ -2266,4 +2266,27 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ProxyMovedWas" xml:space="preserve"><value>以前は {0}</value></data>
   <data name="ProxyHopKeyRefused" xml:space="preserve"><value>モデルサーバーが API キーを拒否しました — {0}</value></data>
   <data name="ProxyCheckApiKey" xml:space="preserve"><value>接続の API キーを確認してください。サーバーが求めるものを完全に。プロキシは関係ありません。</value></data>
+  <data name="DocPasswordAgentTitle" xml:space="preserve"><value>エージェントが {0} を読もうとしています</value></data>
+  <data name="DocPasswordSubtitle" xml:space="preserve"><value>パスワードで保護されています</value></data>
+  <data name="DocPasswordAgentMessage" xml:space="preserve"><value>開けるのはあなただけです。パスワードを入力すると、エージェントが受け取るのは文書のテキストだけで、パスワードも、入力したという事実も伝わりません。</value></data>
+  <data name="DocPasswordAgentReminder" xml:space="preserve"><value>あなたがここにいるので尋ねています。バックグラウンドの /task や別のクライアントから実行したエージェントは、ファイルを閉じたままにし、保護されていると伝えます。</value></data>
+  <data name="DocPasswordLeaveClosed" xml:space="preserve"><value>閉じたままにする</value></data>
+  <data name="DocPasswordLeaveClosedTip" xml:space="preserve"><value>ファイルが閉じたままであることがエージェントに伝えられ、エージェントはそれなしで続けます</value></data>
+  <data name="DocPasswordAttachTitle" xml:space="preserve"><value>{0} はパスワードで保護されています</value></data>
+  <data name="DocPasswordAttachSubtitle" xml:space="preserve"><value>あなたが添付しました · 開くとテキストとして添付されます</value></data>
+  <data name="DocPasswordAttachMessage" xml:space="preserve"><value>文書を開くパスワードを入力してください。Inferpal はこのマシン上で開き、そのテキストを次のメッセージに添付します。</value></data>
+  <data name="DocPasswordAttachReminder" xml:space="preserve"><value>パスワードはモデルにもサーバーにも送られず、ディスクにも書き込まれません。送られるのはテキストだけです。</value></data>
+  <data name="DocPasswordDontAttach" xml:space="preserve"><value>添付しない</value></data>
+  <data name="DocPasswordDontAttachTip" xml:space="preserve"><value>ファイルは添付されません</value></data>
+  <data name="DocPasswordLabel" xml:space="preserve"><value>{0} のパスワード</value></data>
+  <data name="DocPasswordHint" xml:space="preserve"><value>エディターを閉じるまで、このファイル用にメモリに保持されます。保存も送信もされません。</value></data>
+  <data name="DocPasswordOpen" xml:space="preserve"><value>開く</value></data>
+  <data name="DocPasswordShow" xml:space="preserve"><value>表示</value></data>
+  <data name="DocPasswordWrong" xml:space="preserve"><value>そのパスワードでは {0} を開けません。大文字と小文字、キーボード配列を確認してください。残り {1} 回です。</value></data>
+  <data name="DocPasswordEmpty" xml:space="preserve"><value>先にパスワードを入力してください。</value></data>
+  <data name="DocPasswordReceiptOpened" xml:space="preserve"><value>{0} を入力したパスワードで開きました</value></data>
+  <data name="DocPasswordReceiptOpenedDetail" xml:space="preserve"><value>テキストはここで読み取られました。パスワードはこの会話に保存されません。</value></data>
+  <data name="DocPasswordReceiptClosed" xml:space="preserve"><value>{0} は閉じたままです</value></data>
+  <data name="DocPasswordReceiptTooMany" xml:space="preserve"><value>パスワードを 3 回間違えたため {0} は閉じたままです</value></data>
+  <data name="DocPasswordReceiptClosedDetail" xml:space="preserve"><value>テキストは読み取られていません。</value></data>
 </root>

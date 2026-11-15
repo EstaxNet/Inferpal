@@ -47,17 +47,19 @@ internal static class DocumentText
         Path.GetExtension(path).ToLowerInvariant() is ".pdf" or ".docx";
 
     /// <summary>The text of the PDF or DOCX at <paramref name="path"/>.</summary>
-    internal static DocumentExtraction Extract(string path, CancellationToken ct = default)
+    /// <param name="password">The password the person typed for a protected PDF or DOCX.</param>
+    internal static DocumentExtraction Extract(string path, CancellationToken ct = default, string? password = null)
     {
         byte[] bytes;
         try { bytes = File.ReadAllBytes(path); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return new(string.Empty, 0, 0, DocumentProblem.Unreadable); }
-        return Extract(bytes, Path.GetExtension(path), ct);
+        return Extract(bytes, Path.GetExtension(path), ct, password);
     }
 
     /// <summary>The text of a document held in <paramref name="bytes"/>, by its <paramref name="extension"/>.</summary>
     /// <param name="ct">The person's cancel (Stop): it propagates; the reader's own deadline is said as too slow.</param>
-    internal static DocumentExtraction Extract(byte[] bytes, string extension, CancellationToken ct = default)
+    /// <param name="password">The password the person typed for a protected PDF or DOCX.</param>
+    internal static DocumentExtraction Extract(byte[] bytes, string extension, CancellationToken ct = default, string? password = null)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(Deadline);
@@ -65,8 +67,8 @@ internal static class DocumentText
         {
             return extension.ToLowerInvariant() switch
             {
-                ".docx" => DocxText.Extract(bytes, deadline.Token),
-                _       => PdfText.Extract(bytes, deadline.Token),
+                ".docx" => DocxText.Extract(bytes, deadline.Token, password),
+                _       => PdfText.Extract(bytes, deadline.Token, password),
             };
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return new(string.Empty, 0, 0, DocumentProblem.TooSlow); }

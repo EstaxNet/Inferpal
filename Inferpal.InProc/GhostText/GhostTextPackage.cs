@@ -71,6 +71,8 @@ internal sealed class GhostTextPackage : AsyncPackage
         // Chat auto-scroll: the tool window is Remote UI (XAML lives in devenv's visual
         // tree), so only this in-process side can call BringIntoView/ScrollToEnd on it.
         try { ChatAutoScroller.Initialize(); } catch { /* non-critical */ }
+        // A protected PDF's password, typed on the chat's card: Remote UI binds no PasswordBox, only this side reads one.
+        try { PasswordBoxRelay.Initialize(); } catch { /* non-critical: the card then says to type the password first */ }
         // A file dropped on the chat window: only this side sees the drop, for the same reason.
         try
         {

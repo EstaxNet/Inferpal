@@ -2836,4 +2836,27 @@ internal static class Strings
     public static string ImportSkipNoServersInExport => Get(nameof(ImportSkipNoServersInExport));
     public static string ImportSkipModeUnreadable => Get(nameof(ImportSkipModeUnreadable));
     public static string ImportApplyWhileBusy => Get(nameof(ImportApplyWhileBusy));
+    public static string DocPasswordAgentTitle(string name) => Format(Get(nameof(DocPasswordAgentTitle)), name);
+    public static string DocPasswordSubtitle => Get(nameof(DocPasswordSubtitle));
+    public static string DocPasswordAgentMessage => Get(nameof(DocPasswordAgentMessage));
+    public static string DocPasswordAgentReminder => Get(nameof(DocPasswordAgentReminder));
+    public static string DocPasswordLeaveClosed => Get(nameof(DocPasswordLeaveClosed));
+    public static string DocPasswordLeaveClosedTip => Get(nameof(DocPasswordLeaveClosedTip));
+    public static string DocPasswordAttachTitle(string name) => Format(Get(nameof(DocPasswordAttachTitle)), name);
+    public static string DocPasswordAttachSubtitle => Get(nameof(DocPasswordAttachSubtitle));
+    public static string DocPasswordAttachMessage => Get(nameof(DocPasswordAttachMessage));
+    public static string DocPasswordAttachReminder => Get(nameof(DocPasswordAttachReminder));
+    public static string DocPasswordDontAttach => Get(nameof(DocPasswordDontAttach));
+    public static string DocPasswordDontAttachTip => Get(nameof(DocPasswordDontAttachTip));
+    public static string DocPasswordLabel(string name) => Format(Get(nameof(DocPasswordLabel)), name);
+    public static string DocPasswordHint => Get(nameof(DocPasswordHint));
+    public static string DocPasswordOpen => Get(nameof(DocPasswordOpen));
+    public static string DocPasswordShow => Get(nameof(DocPasswordShow));
+    public static string DocPasswordWrong(string name, int tries) => Format(Get(nameof(DocPasswordWrong)), name, tries);
+    public static string DocPasswordEmpty => Get(nameof(DocPasswordEmpty));
+    public static string DocPasswordReceiptOpened(string name) => Format(Get(nameof(DocPasswordReceiptOpened)), name);
+    public static string DocPasswordReceiptOpenedDetail => Get(nameof(DocPasswordReceiptOpenedDetail));
+    public static string DocPasswordReceiptClosed(string name) => Format(Get(nameof(DocPasswordReceiptClosed)), name);
+    public static string DocPasswordReceiptTooMany(string name) => Format(Get(nameof(DocPasswordReceiptTooMany)), name);
+    public static string DocPasswordReceiptClosedDetail => Get(nameof(DocPasswordReceiptClosedDetail));
 }

@@ -9,14 +9,17 @@ internal class ReadFileTool : ITool
     private readonly Func<string?> _getWorkspaceRoot;
     private readonly Editor.OpenDocumentOverlay? _overlay;
     private readonly FileHistoryService? _history;
+    private readonly IApprovalService? _approval;
 
     /// <param name="overlay">Open-document mirror consulted before disk so unsaved buffer
     /// content wins; null when the editor feeds no overlay (VS in-proc today).</param>
     /// <param name="history">Told which files the model has read in the current run — what lets
     /// write_file replace an existing file (<see cref="FileTarget.UnreadRefusal"/>).</param>
+    /// <param name="approval">Asks the person for a protected PDF's password, when a card can be drawn.</param>
     public ReadFileTool(Func<string?> getWorkspaceRoot, Editor.OpenDocumentOverlay? overlay = null,
-                        FileHistoryService? history = null)
+                        FileHistoryService? history = null, IApprovalService? approval = null)
     {
+        _approval         = approval;
         _getWorkspaceRoot = getWorkspaceRoot;
         _overlay          = overlay;
         _history          = history;
@@ -53,7 +56,17 @@ internal class ReadFileTool : ITool
         if (target is Target.File or Target.Binary && Documents.DocumentText.Handles(path))
         {
             var name = Path.GetFileName(path);
-            if (await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct), ct) is not { } extracted)
+            var extracted = await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct), ct);
+            // A PDF that opens only with a password: the person, if at the keyboard, may open it — the model gets the text,
+            // never the password, and never knows one was typed.
+            if (extracted is null && _approval is { CanAskForInput: true } && Documents.AttachedDocuments.AsksForPassword(path))
+            {
+                if (!await _approval.AskForDocumentPasswordAsync(path, attached: false, ct))
+                    return $"'{name}' stays closed: it opens only with a password, and the user left it closed. Go on without "
+                         + "it; do not ask the user for the password.";
+                extracted = await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct), ct);
+            }
+            if (extracted is null)
                 return $"'{name}' gives no text to read: {Documents.AttachedDocuments.WhyNoText(path)}.";
             _history?.NoteOpened(path);
             var page = PageOf(extracted, name, args.Int("start_line", 0), args.Int("end_line", 0));

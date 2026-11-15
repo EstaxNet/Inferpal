@@ -124,7 +124,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         var smartFix = new SmartFixValidator(config, () => indexService.RootDir, approval, codeConsent);
         var setDiff  = (DiffInfo? d) => { _pendingDiff = d; };
 
-        Register(new ReadFileTool(() => indexService.RootDir, overlay, history));
+        Register(new ReadFileTool(() => indexService.RootDir, overlay, history, approval));
         Register(new WriteFileTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay));
         Register(new ListFilesTool(() => indexService.RootDir));
         Register(new SearchInFilesTool(() => indexService.RootDir, overlay));

@@ -230,7 +230,9 @@ internal partial class InferpalToolWindowData
         try
         {
             // ⚠ The checks of @file, by its reader: an excluded file, a binary (decoded, it was attached as noise), a PDF or
-            // DOCX without text — each said; a document's text extracted.
+            // DOCX without text — each said; a document's text extracted. A protected PDF asks for its password first.
+            if (MentionController.FileRefusal(filePath, _indexService.RootDir) is null)
+                await MentionController.OpenIfProtectedAsync(filePath, _tools.Approval, ct);
             if ((MentionController.FileRefusal(filePath, _indexService.RootDir) ?? MentionController.BinaryRefusal(filePath)) is { } refused)
             {
                 await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(refused)));

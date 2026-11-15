@@ -516,6 +516,10 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public string BtnInputCancel  { get; private set; } = string.Empty;
     [DataMember] public string InputDeclineTip { get; private set; } = string.Empty;
     [DataMember] public string InputCancelTip  { get; private set; } = string.Empty;
+    /// <summary>A Decline button is drawn: a server's form has one, a protected PDF's card does not.</summary>
+    [DataMember] public bool   HasInputDecline { get; private set; }
+    /// <summary>The card asks for a protected PDF's password: a lock, rather than a server's connector.</summary>
+    [DataMember] public bool   IsPasswordCard  { get; private set; }
     [DataMember] public ObservableCollection<InputFieldItem> InputFields { get; } = [];
     [DataMember] public AsyncCommand InputSendCommand    { get; }
     [DataMember] public AsyncCommand InputDeclineCommand { get; }
@@ -536,14 +540,16 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             Content       = card.Message,
             CardTitle     = card.Title,
             InputSubtitle = card.RequiredNote.Length > 0 ? card.Subtitle + " · " + card.RequiredNote : card.Subtitle,
-            // The server's own words, as plain text: never Markdown, never a link.
-            InputMessage  = "“" + card.Message + "”",
+            // The server's own words, as plain text: never Markdown, never a link. A protected PDF's card is Inferpal's own.
+            InputMessage  = card.Server.Length > 0 ? "“" + card.Message + "”" : card.Message,
             InputReminder = card.Reminder,
             BtnInputSend    = card.SendLabel,
             BtnInputDecline = card.DeclineLabel,
             BtnInputCancel  = card.CancelLabel,
             InputDeclineTip = card.DeclineTooltip,
             InputCancelTip  = card.CancelTooltip,
+            HasInputDecline = card.DeclineLabel.Length > 0,
+            IsPasswordCard  = card.Server.Length == 0,
             InputCardId   = card.Id,
         };
         item.ShowInput(card);
@@ -555,7 +561,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     {
         InputFields.Clear();
         foreach (var f in card.Fields)
-            InputFields.Add(new InputFieldItem(f, card.Id, () => AnswerInput(Services.Mcp.McpInputAction.Accept)));
+            InputFields.Add(new InputFieldItem(f, card.Id, () => AnswerInput(Services.Mcp.McpInputAction.Accept), card.RevealLabel));
         InputErrorSummary = card.ErrorSummary;
         HasInputError     = card.ErrorSummary.Length > 0;
         _inputReply       = new TaskCompletionSource<InputReply?>(TaskCreationOptions.RunContinuationsAsynchronously);

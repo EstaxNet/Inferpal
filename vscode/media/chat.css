@@ -1624,6 +1624,17 @@ kbd {
   font: inherit;
 }
 
+/* A masked field and its Show button, side by side. */
+.input-password {
+  display: flex;
+  gap: 8px;
+}
+
+.input-password input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .input-field input:focus,
 .input-field select:focus {
   outline: 1px solid var(--vscode-focusBorder);

@@ -46,8 +46,11 @@ Attach a subfolder to get the rest.
 **A PDF or a Word document (`.docx`) is attached as its text.** Inferpal reads it on your machine — nothing is sent
 anywhere to convert it — with `@file`, a chip, Browse, a file pinned to every request, or an ACP attachment, and tells the
 model the text was extracted. Like any attachment it is cut past the size of one, and its chip says so. What has no text
-to read is said instead of attached: a scanned PDF or one made only of images, a PDF that opens only with a password, a
-file larger than 20 MB, or one that takes more than 2 seconds to read. Pages without text in a PDF that has some are
+to read is said instead of attached: a scanned PDF or one made only of images, a file larger than 20 MB, or one that
+takes more than 2 seconds to read. **A PDF or DOCX protected by a password** asks you for it on a card in the chat (Open,
+or Don't attach): the model gets the text, never the password, which is kept in memory for that file until the editor
+closes — never saved, never sent. A DOCX protected by Word 2007 or older stays closed, and an ACP attachment of a
+protected file is said protected. Pages without text in a PDF that has some are
 counted for the model. Formatting, images and comments are left out. Other binary files (images, archives) are not
 attached, and say so.
 

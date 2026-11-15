@@ -80,6 +80,17 @@ internal interface IApprovalService
     /// </summary>
     Task<Mcp.McpInputAnswer> AskForInputAsync(Mcp.McpInputForm form, CancellationToken ct) =>
         Task.FromResult(new Mcp.McpInputAnswer(Mcp.McpInputAction.NotShown));
+
+    /// <summary>
+    /// Asks the person for the password of the protected PDF at <paramref name="path"/> on a card, three wrong tries at
+    /// most: true when it opened, and the password is kept in memory for that file
+    /// (<see cref="Documents.AttachedDocuments.TryPassword"/>). ⚠ Only the person answers; the password never reaches the
+    /// model, a receipt, a log or a file. False by default, and wherever no card can be drawn (<see cref="CanAskForInput"/>).
+    /// </summary>
+    /// <param name="path">The PDF.</param>
+    /// <param name="attached">The person attached the file, rather than the agent reading it: the card's words change.</param>
+    /// <param name="ct">The person's Stop.</param>
+    Task<bool> AskForDocumentPasswordAsync(string path, bool attached, CancellationToken ct) => Task.FromResult(false);
 }
 
 /// <summary>One file of a multi-file change: its old→new text, and the summary a reviewer reads for it.</summary>

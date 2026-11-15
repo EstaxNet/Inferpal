@@ -13,6 +13,12 @@ internal static class AttachedDocuments
     private static readonly ConcurrentDictionary<string, (DateTime Written, long Length, DocumentExtraction Result)> Known =
         new(PathComparer.Default);
 
+    /// <summary>
+    /// The passwords the person typed, by file, for this process only. ⚠ Never written anywhere — not the settings, the
+    /// conversation, its export, a log or the diagnostics — and never sent: only the text they open leaves this class.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, string> Passwords = new(PathComparer.Default);
+
     /// <summary>The text of the document at <paramref name="path"/>, read again only when the file changed.</summary>
     /// <param name="ct">The person's Stop: it ends the read (and propagates), its deadline aside.</param>
     public static DocumentExtraction Read(string path, CancellationToken ct = default)
@@ -22,13 +28,36 @@ internal static class AttachedDocuments
         if (info.Length > DocumentText.MaxBytes) return new(string.Empty, 0, 0, DocumentProblem.TooLarge);
         if (Known.TryGetValue(path, out var known) && known.Written == info.LastWriteTimeUtc && known.Length == info.Length)
             return known.Result;
-        var result = DocumentText.Extract(path, ct);
+        var result = DocumentText.Extract(path, ct, Passwords.GetValueOrDefault(path));
         // A read that ran out of time on a busy machine is tried again next time, never kept as the file's answer.
         if (result.Problem == DocumentProblem.TooSlow) return result;
         if (Known.Count > 16) Known.Clear();   // a handful of documents in use at once; never a growing cache
         Known[path] = (info.LastWriteTimeUtc, info.Length, result);
         return result;
     }
+
+    /// <summary>A PDF or DOCX that opens only with a password the person has not given yet in this process.</summary>
+    public static bool AsksForPassword(string path) =>
+        DocumentText.Handles(path) && Read(path).Problem == DocumentProblem.Encrypted;
+
+    /// <summary>
+    /// Opens the PDF or DOCX at <paramref name="path"/> with the <paramref name="password"/> the person typed: true when it does,
+    /// and the password is kept in memory for that file until the process ends, so the file is not asked for again.
+    /// </summary>
+    public static bool TryPassword(string path, string password, CancellationToken ct = default)
+    {
+        if (password.Length == 0) return false;
+        var info = new FileInfo(path);
+        if (!info.Exists || info.Length > DocumentText.MaxBytes) return false;
+        var result = DocumentText.Extract(path, ct, password);
+        if (result.Problem == DocumentProblem.Encrypted) return false;
+        Passwords[path] = password;
+        if (result.Problem != DocumentProblem.TooSlow) Known[path] = (info.LastWriteTimeUtc, info.Length, result);
+        return true;
+    }
+
+    /// <summary>The password typed for <paramref name="path"/> is known in this process.</summary>
+    public static bool OpenedWithPassword(string path) => Passwords.ContainsKey(path);
 
     /// <summary>
     /// What the model reads of the document at <paramref name="path"/>: a line that says the text was extracted and what

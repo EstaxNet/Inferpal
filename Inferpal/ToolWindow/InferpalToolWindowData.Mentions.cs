@@ -548,6 +548,9 @@ internal partial class InferpalToolWindowData
         try
         {
             // Excluded by the workspace's ignore files: a notice that names the rule, never a chip; a binary file: no text.
+            // A protected PDF asks for its password first.
+            if (MentionController.FileRefusal(filePath, _indexService.RootDir) is null)
+                await MentionController.OpenIfProtectedAsync(filePath, _tools.Approval, ct);
             if ((MentionController.FileRefusal(filePath, _indexService.RootDir) ?? MentionController.BinaryRefusal(filePath)) is { } refused)
             {
                 await NotifyMentionAsync(refused);

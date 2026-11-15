@@ -827,7 +827,8 @@ export interface InputCardField {
   key: string;
   /** `text`, `number`, `boolean`, `choice` (one) or `choices` (several). */
   kind: 'text' | 'number' | 'boolean' | 'choice' | 'choices';
-  /** For a text or number field: `text`, `email`, `url`, `date`, `datetime` or `number`. */
+  /** For a text or number field: `text`, `email`, `url`, `date`, `datetime`, `number`, or `password` (masked: the one
+   *  field of a protected PDF's card, never of a server's form). */
   inputType: string;
   label: string;
   hint: string;
@@ -863,6 +864,8 @@ export interface InputCard {
   declineTooltip: string;
   cancelLabel: string;
   cancelTooltip: string;
+  /** The label of the button that shows a masked field in clear; empty when no field is masked. */
+  revealLabel?: string;
 }
 
 /** The answer to `input/form`: what the user did, and the fields' values (a string, a boolean, or the choices ticked). */

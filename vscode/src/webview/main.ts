@@ -2196,6 +2196,9 @@ function addInputCard(card: InputCard): void {
   const el = inputCardElement(card);
   if (existing) {
     existing.replaceWith(el);
+  } else if (!busy && !card.server) {
+    // A protected PDF attached outside a turn: the card stands on its own at the end of the conversation.
+    messagesEl.appendChild(el);
   } else {
     if (streamEl) {
       actNarration.push(streamEl);
@@ -2231,14 +2234,15 @@ function inputCardElement(card: InputCard): HTMLFormElement {
   sub.className = 'input-sub';
   sub.textContent = [card.subtitle, card.requiredNote].filter((p) => p).join(' · ');
   titles.append(title, sub);
-  head.append(icon('plug', 16), titles);
+  // A server's form carries its server; a protected PDF's card carries none.
+  head.append(icon(card.server ? 'plug' : 'lock', 16), titles);
 
   const body = document.createElement('div');
   body.className = 'input-body';
   // The server's own words, as plain text: never Markdown, never a link.
   const message = document.createElement('p');
   message.className = 'input-message';
-  message.textContent = '“' + card.message + '”';
+  message.textContent = card.server ? '“' + card.message + '”' : card.message;
   body.appendChild(message);
   if (card.errorSummary) {
     const alert = document.createElement('div');
@@ -2249,7 +2253,7 @@ function inputCardElement(card: InputCard): HTMLFormElement {
   }
   const readers: Array<() => [string, string | boolean | string[]]> = [];
   for (const field of card.fields) {
-    const [row, read] = inputFieldElement(field);
+    const [row, read] = inputFieldElement(field, card.revealLabel ?? '');
     body.appendChild(row);
     readers.push(read);
   }
@@ -2292,7 +2296,8 @@ function inputCardElement(card: InputCard): HTMLFormElement {
   cancel.title = card.cancelTooltip;
   cancel.append(document.createTextNode(card.cancelLabel), kbd('Esc'));
   cancel.addEventListener('click', () => answer('cancel'));
-  actions.append(send, decline, cancel);
+  // A protected PDF's card has Open and Cancel only.
+  actions.append(...(card.declineLabel ? [send, decline, cancel] : [send, cancel]));
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     answer('accept');
@@ -2308,7 +2313,7 @@ function inputCardElement(card: InputCard): HTMLFormElement {
 }
 
 /** One field, and how to read its value when the form is sent. */
-function inputFieldElement(field: InputCardField): [HTMLElement, () => [string, string | boolean | string[]]] {
+function inputFieldElement(field: InputCardField, revealLabel: string): [HTMLElement, () => [string, string | boolean | string[]]] {
   const id = `input-${++inputSeq}`;
   const row = document.createElement('div');
   row.className = 'input-field' + (field.error ? ' invalid' : '');
@@ -2446,13 +2451,30 @@ function inputFieldElement(field: InputCardField): [HTMLElement, () => [string, 
   input.value = field.text;
   // Typed as text and checked by the host, as in Visual Studio: the browser's own boxes would refuse a comma, drop a
   // time zone the server asks for, or show a date in the machine's order under a hint that says YYYY-MM-DD.
-  input.type = field.inputType === 'email' || field.inputType === 'url' ? field.inputType : 'text';
+  input.type = field.inputType === 'email' || field.inputType === 'url' || field.inputType === 'password' ? field.inputType : 'text';
   if (field.kind === 'number') {
     input.inputMode = 'decimal';
   }
   input.autocomplete = 'off';
   input.spellcheck = false;
-  row.appendChild(input);
+  if (field.inputType === 'password' && revealLabel) {
+    // Masked, with a button that shows it in clear and masks it again.
+    const box = document.createElement('div');
+    box.className = 'input-password';
+    const reveal = document.createElement('button');
+    reveal.type = 'button';
+    reveal.textContent = revealLabel;
+    reveal.setAttribute('aria-pressed', 'false');
+    reveal.addEventListener('click', () => {
+      const shown = input.type === 'password';
+      input.type = shown ? 'text' : 'password';
+      reveal.setAttribute('aria-pressed', String(shown));
+    });
+    box.append(input, reveal);
+    row.appendChild(box);
+  } else {
+    row.appendChild(input);
+  }
   note(field.hint, 'input-hint');
   note(field.error, 'input-error');
   input.setAttribute('aria-describedby', described.join(' '));

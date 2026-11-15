@@ -334,6 +334,51 @@ internal abstract class ApprovalServiceBase : IApprovalService
         }
     }
 
+    /// <summary>Wrong passwords a protected PDF's card takes before it leaves the file closed.</summary>
+    internal const int PasswordTries = 3;
+
+    /// <inheritdoc cref="IApprovalService.AskForDocumentPasswordAsync"/>
+    public async Task<bool> AskForDocumentPasswordAsync(string path, bool attached, CancellationToken ct)
+    {
+        var id    = "input-" + Guid.NewGuid().ToString("N");
+        var left  = PasswordTries;
+        var error = string.Empty;
+        while (true)
+        {
+            Services.Presentation.InputReply? reply;
+            try
+            {
+                using (Services.Hardware.GpuScheduler.PauseThisFlow())
+                    reply = await PromptInputAsync(Services.Presentation.InputCard.Password(id, path, attached, error), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                ShowReceipt(Services.Presentation.InputCard.PasswordReceipt(id, path, opened: false, tooManyTries: false));
+                throw;
+            }
+            if (reply is null) return false;
+            if (reply.Action != Mcp.McpInputAction.Accept)
+            {
+                ShowReceipt(Services.Presentation.InputCard.PasswordReceipt(id, path, opened: false, tooManyTries: false));
+                return false;
+            }
+            var typed = reply.Values.TryGetValue(Services.Presentation.InputCard.PasswordKey, out var v) ? v.Text ?? string.Empty : string.Empty;
+            // Nothing typed is no try: Open pressed on an empty box (or a box whose text never reached here) asks again.
+            if (typed.Length == 0) { error = Strings.DocPasswordEmpty; continue; }
+            if (await Task.Run(() => Documents.AttachedDocuments.TryPassword(path, typed, ct), ct))
+            {
+                ShowReceipt(Services.Presentation.InputCard.PasswordReceipt(id, path, opened: true, tooManyTries: false));
+                return true;
+            }
+            if (--left == 0)
+            {
+                ShowReceipt(Services.Presentation.InputCard.PasswordReceipt(id, path, opened: false, tooManyTries: true));
+                return false;
+            }
+            error = Strings.DocPasswordWrong(Path.GetFileName(path), left);
+        }
+    }
+
     private void ShowReceipt(Services.Presentation.InputReceipt receipt)
     {
         try { ShowInputReceipt(receipt); }

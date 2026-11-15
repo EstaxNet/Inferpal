@@ -1945,9 +1945,21 @@
                                         BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
                                     <DockPanel LastChildFill="True">
                                         <!-- A connector: what asks is a server Inferpal is connected to. -->
-                                        <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" Text="&#xE839;" FontSize="14"
+                                        <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                                    Margin="0,2,10,0" VerticalAlignment="Top"
-                                                   Foreground="{Binding DataContext.ThemeAccentText, ElementName=root}"/>
+                                                   Foreground="{Binding DataContext.ThemeAccentText, ElementName=root}">
+                                            <!-- A lock for a protected PDF's card. -->
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="&#xE839;"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsPasswordCard}" Value="True">
+                                                            <Setter Property="Text" Value="&#xE72E;"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
                                         <StackPanel>
                                             <TextBlock Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap"
                                                        Foreground="{Binding ThemeText}"/>
@@ -2009,7 +2021,7 @@
                                                              CaretBrush="{Binding DataContext.ThemeText, ElementName=root}"
                                                              AutomationProperties.Name="{Binding Label}"
                                                              AutomationProperties.HelpText="{Binding Hint}"
-                                                             Visibility="{Binding IsTextBox, Converter={StaticResource b2v}}">
+                                                             Visibility="{Binding ShowsTextBox, Converter={StaticResource b2v}}">
                                                         <TextBox.Style>
                                                             <Style TargetType="TextBox">
                                                                 <Setter Property="BorderThickness" Value="1"/>
@@ -2026,6 +2038,30 @@
                                                             <KeyBinding Key="Return" Command="{Binding SendCommand}"/>
                                                         </TextBox.InputBindings>
                                                     </TextBox>
+                                                    <!-- A protected PDF's password: masked. The in-process PasswordBoxRelay copies what is typed
+                                                         into Tag, bound to Text: Remote UI binds no Password. Its AutomationId is what the relay looks for. -->
+                                                    <DockPanel Visibility="{Binding ShowsPasswordBox, Converter={StaticResource b2v}}">
+                                                        <Button DockPanel.Dock="Right" Style="{StaticResource LineBtn}" Height="30" Padding="10,0" Margin="8,0,0,0"
+                                                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                                Command="{Binding RevealCommand}" AutomationProperties.Name="{Binding RevealLabel}"
+                                                                Visibility="{Binding HasReveal, Converter={StaticResource b2v}}">
+                                                            <TextBlock Text="{Binding RevealLabel}" FontSize="13" VerticalAlignment="Center"
+                                                                       Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                        </Button>
+                                                        <PasswordBox AutomationProperties.AutomationId="InferpalPasswordBox"
+                                                                     Tag="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                     Height="30" Padding="8,0" VerticalContentAlignment="Center" FontSize="13"
+                                                                     Background="Transparent" BorderThickness="1"
+                                                                     BorderBrush="{Binding DataContext.ThemeInputBorder, ElementName=root}"
+                                                                     Foreground="{Binding DataContext.ThemeText, ElementName=root}"
+                                                                     CaretBrush="{Binding DataContext.ThemeText, ElementName=root}"
+                                                                     AutomationProperties.Name="{Binding Label}"
+                                                                     AutomationProperties.HelpText="{Binding Hint}">
+                                                            <PasswordBox.InputBindings>
+                                                                <KeyBinding Key="Return" Command="{Binding SendCommand}"/>
+                                                            </PasswordBox.InputBindings>
+                                                        </PasswordBox>
+                                                    </DockPanel>
                                                     <!-- Yes or no: a box. -->
                                                     <CheckBox IsChecked="{Binding Flag, Mode=TwoWay}" VerticalContentAlignment="Center"
                                                               AutomationProperties.Name="{Binding Label}"
@@ -2162,7 +2198,8 @@
                                             <Button Style="{StaticResource LineBtn}" Height="32" Padding="10,0" Margin="0,0,8,6"
                                                     BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
                                                     Command="{Binding InputDeclineCommand}" ToolTip="{Binding InputDeclineTip}"
-                                                    AutomationProperties.Name="{Binding BtnInputDecline}">
+                                                    AutomationProperties.Name="{Binding BtnInputDecline}"
+                                                    Visibility="{Binding HasInputDecline, Converter={StaticResource b2v}}">
                                                 <TextBlock Text="{Binding BtnInputDecline}" FontSize="13" Foreground="{Binding ThemeText}"
                                                            VerticalAlignment="Center"/>
                                             </Button>

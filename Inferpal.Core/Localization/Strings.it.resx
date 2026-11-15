@@ -2266,4 +2266,27 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="ProxyMovedWas" xml:space="preserve"><value>Prima {0}</value></data>
   <data name="ProxyHopKeyRefused" xml:space="preserve"><value>Il server dei modelli ha rifiutato la chiave API — {0}</value></data>
   <data name="ProxyCheckApiKey" xml:space="preserve"><value>Controlla la chiave API in Connessione: quella che il server si aspetta, intera. Nessun proxy è coinvolto.</value></data>
+  <data name="DocPasswordAgentTitle" xml:space="preserve"><value>L'agente vuole leggere {0}</value></data>
+  <data name="DocPasswordSubtitle" xml:space="preserve"><value>È protetto da una password</value></data>
+  <data name="DocPasswordAgentMessage" xml:space="preserve"><value>Solo lei può aprirlo. Se digita la password, l'agente riceve il testo del documento: non la password, e nemmeno il fatto che ne ha digitata una.</value></data>
+  <data name="DocPasswordAgentReminder" xml:space="preserve"><value>Chiesto perché lei è qui. Un /task in background, o un agente avviato da un altro client, lascia il file chiuso e dice che è protetto.</value></data>
+  <data name="DocPasswordLeaveClosed" xml:space="preserve"><value>Lasciarlo chiuso</value></data>
+  <data name="DocPasswordLeaveClosedTip" xml:space="preserve"><value>L'agente viene informato che il file è rimasto chiuso, e prosegue senza</value></data>
+  <data name="DocPasswordAttachTitle" xml:space="preserve"><value>{0} è protetto da una password</value></data>
+  <data name="DocPasswordAttachSubtitle" xml:space="preserve"><value>L'ha allegato lei · allegato come testo una volta aperto</value></data>
+  <data name="DocPasswordAttachMessage" xml:space="preserve"><value>Digiti la password con cui si apre il documento. Inferpal lo apre qui, su questa macchina, e allega il testo al suo prossimo messaggio.</value></data>
+  <data name="DocPasswordAttachReminder" xml:space="preserve"><value>La password non viene mai inviata al modello né al server, né scritta su disco: viene inviato solo il testo.</value></data>
+  <data name="DocPasswordDontAttach" xml:space="preserve"><value>Non allegare</value></data>
+  <data name="DocPasswordDontAttachTip" xml:space="preserve"><value>Il file non viene allegato</value></data>
+  <data name="DocPasswordLabel" xml:space="preserve"><value>Password di {0}</value></data>
+  <data name="DocPasswordHint" xml:space="preserve"><value>Tenuta in memoria per questo file fino alla chiusura dell'editor. Mai salvata, mai inviata.</value></data>
+  <data name="DocPasswordOpen" xml:space="preserve"><value>Apri</value></data>
+  <data name="DocPasswordShow" xml:space="preserve"><value>Mostra</value></data>
+  <data name="DocPasswordWrong" xml:space="preserve"><value>Questa password non apre {0}. Controlli maiuscole e minuscole e il layout della tastiera. {1} {1:tentativo rimasto|tentativi rimasti}.</value></data>
+  <data name="DocPasswordEmpty" xml:space="preserve"><value>Digiti prima la password.</value></data>
+  <data name="DocPasswordReceiptOpened" xml:space="preserve"><value>{0} aperto con la password digitata</value></data>
+  <data name="DocPasswordReceiptOpenedDetail" xml:space="preserve"><value>Il testo è stato letto qui; la password non viene conservata in questa conversazione.</value></data>
+  <data name="DocPasswordReceiptClosed" xml:space="preserve"><value>{0} lasciato chiuso</value></data>
+  <data name="DocPasswordReceiptTooMany" xml:space="preserve"><value>{0} lasciato chiuso dopo tre password errate</value></data>
+  <data name="DocPasswordReceiptClosedDetail" xml:space="preserve"><value>Il testo non è stato letto.</value></data>
 </root>

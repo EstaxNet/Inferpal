@@ -11,7 +11,8 @@ internal sealed record InputOptionModel(string Value, string Label, bool Selecte
 /// <summary>One field of an input card, in the person's language, with the value it holds and what to fix in it.</summary>
 /// <param name="Kind"><c>text</c>, <c>number</c>, <c>boolean</c>, <c>choice</c> (one) or <c>choices</c> (several).</param>
 /// <param name="InputType">For a <c>text</c> or <c>number</c> field, what the editor's box takes: <c>text</c>,
-/// <c>email</c>, <c>url</c>, <c>date</c>, <c>datetime</c> or <c>number</c>.</param>
+/// <c>email</c>, <c>url</c>, <c>date</c>, <c>datetime</c>, <c>number</c>, or <c>password</c> — masked, the one field of a
+/// protected PDF's card (<see cref="InputCard.Password"/>), never of a server's form.</param>
 /// <param name="Buttons">A <c>choice</c> field with few short choices, drawn as buttons side by side; otherwise a list.</param>
 /// <param name="Warns">The field reads like a secret: <paramref name="Hint"/> says a server must not ask for one.</param>
 /// <param name="Error">What to fix before sending; empty when the field passes or was not checked yet.</param>
@@ -23,10 +24,13 @@ internal sealed record InputFieldModel(
 /// <param name="Id">The same for every showing of one question: a card drawn again with what to fix replaces the first.</param>
 /// <param name="Message">The server's own words: drawn as plain text, never Markdown, never a link.</param>
 /// <param name="ErrorSummary">"2 answers to fix before sending"; empty on a first showing.</param>
+/// <param name="DeclineLabel">Empty: no Decline button (a protected PDF's card has Open and Cancel only).</param>
+/// <param name="RevealLabel">The label of the button that shows a masked field in clear; empty when no field is masked.</param>
 internal sealed record InputCardModel(
     string Id, string Server, string Title, string Subtitle, string Message, IReadOnlyList<InputFieldModel> Fields,
     string ErrorSummary, string RequiredNote, string Reminder,
-    string SendLabel, string DeclineLabel, string DeclineTooltip, string CancelLabel, string CancelTooltip);
+    string SendLabel, string DeclineLabel, string DeclineTooltip, string CancelLabel, string CancelTooltip,
+    string RevealLabel = "");
 
 /// <summary>What the person did on an input card, as the editor sends it back.</summary>
 /// <param name="Values">The fields' values when they sent them; empty otherwise.</param>
@@ -138,6 +142,40 @@ internal static class InputCard
 
     /// <summary>What a receipt shows for a value that reads like a secret.</summary>
     internal const string HiddenValue = "••••••";
+
+    /// <summary>The key of a protected PDF's one field.</summary>
+    public const string PasswordKey = "password";
+
+    /// <summary>
+    /// The card that asks for a protected PDF's password: for the agent's read (<paramref name="attached"/> false) or
+    /// for a file the person attaches. One masked field, Open and Cancel; <paramref name="error"/> says what to fix.
+    /// </summary>
+    /// <remarks>⚠ The field is drawn empty every time: the typed password never travels back to the editor.</remarks>
+    public static InputCardModel Password(string id, string path, bool attached, string error)
+    {
+        var name = Path.GetFileName(path);
+        var field = new InputFieldModel(PasswordKey, "text", "password", Strings.DocPasswordLabel(name), Strings.DocPasswordHint,
+                                        Required: true, Warns: false, Buttons: false, Text: string.Empty, Flag: false,
+                                        Options: [], Error: error, Min: null, Max: null);
+        return attached
+            ? new InputCardModel(id, string.Empty, Strings.DocPasswordAttachTitle(name), Strings.DocPasswordAttachSubtitle,
+                                 Strings.DocPasswordAttachMessage, [field], string.Empty, string.Empty,
+                                 Strings.DocPasswordAttachReminder, Strings.DocPasswordOpen, string.Empty, string.Empty,
+                                 Strings.DocPasswordDontAttach, Strings.DocPasswordDontAttachTip, Strings.DocPasswordShow)
+            : new InputCardModel(id, string.Empty, Strings.DocPasswordAgentTitle(name), Strings.DocPasswordSubtitle,
+                                 Strings.DocPasswordAgentMessage, [field], string.Empty, string.Empty,
+                                 Strings.DocPasswordAgentReminder, Strings.DocPasswordOpen, string.Empty, string.Empty,
+                                 Strings.DocPasswordLeaveClosed, Strings.DocPasswordLeaveClosedTip, Strings.DocPasswordShow);
+    }
+
+    /// <summary>What a protected PDF's card leaves in the conversation: opened, or left closed. ⚠ Never the password.</summary>
+    public static InputReceipt PasswordReceipt(string id, string path, bool opened, bool tooManyTries)
+    {
+        var name = Path.GetFileName(path);
+        if (opened) return new InputReceipt(id, Strings.DocPasswordReceiptOpened(name), Strings.DocPasswordReceiptOpenedDetail, string.Empty);
+        return new InputReceipt(id, tooManyTries ? Strings.DocPasswordReceiptTooMany(name) : Strings.DocPasswordReceiptClosed(name),
+                                Strings.DocPasswordReceiptClosedDetail, string.Empty);
+    }
 
     /// <summary>What a card leaves when the run was stopped while it waited.</summary>
     public static InputReceipt Stopped(McpInputForm form, string id) =>

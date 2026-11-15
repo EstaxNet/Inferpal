@@ -18,12 +18,12 @@ internal static class PdfText
     private const int MaxOperations = 20_000_000;
     private const int MaxFormDepth = 8;
 
-    internal static DocumentExtraction Extract(byte[] bytes, CancellationToken ct)
+    internal static DocumentExtraction Extract(byte[] bytes, CancellationToken ct, string? password = null)
     {
         if (bytes.Length < 8 || bytes.AsSpan(0, Math.Min(1024, bytes.Length)).IndexOf("%PDF"u8) < 0)
             return new(string.Empty, 0, 0, DocumentProblem.Unreadable);
 
-        var doc = new PdfDocument(bytes, ct);
+        var doc = new PdfDocument(bytes, ct, password);
         if (doc.Locked) return new(string.Empty, 0, 0, DocumentProblem.Encrypted);
         var root = doc.Dict(doc.Trailer.GetValueOrDefault("Root"));
         if (root is null) return new(string.Empty, 0, 0, DocumentProblem.Unreadable);

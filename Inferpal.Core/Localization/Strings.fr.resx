@@ -2266,4 +2266,27 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ProxyMovedWas" xml:space="preserve"><value>Était {0}</value></data>
   <data name="ProxyHopKeyRefused" xml:space="preserve"><value>Le serveur de modèles a refusé la clé API — {0}</value></data>
   <data name="ProxyCheckApiKey" xml:space="preserve"><value>Vérifiez la clé API dans Connexion : celle qu'attend votre serveur, entière. Aucun proxy n'est en cause ici.</value></data>
+  <data name="DocPasswordAgentTitle" xml:space="preserve"><value>L'agent veut lire {0}</value></data>
+  <data name="DocPasswordSubtitle" xml:space="preserve"><value>Il est protégé par un mot de passe</value></data>
+  <data name="DocPasswordAgentMessage" xml:space="preserve"><value>Vous seul pouvez l'ouvrir. Si vous tapez son mot de passe, l'agent reçoit le texte du document — pas le mot de passe, ni même le fait que vous en avez tapé un.</value></data>
+  <data name="DocPasswordAgentReminder" xml:space="preserve"><value>Demandé parce que vous êtes là. Une /task en arrière-plan, ou un agent lancé depuis un autre client, laisse le fichier fermé et dit qu'il est protégé.</value></data>
+  <data name="DocPasswordLeaveClosed" xml:space="preserve"><value>Le laisser fermé</value></data>
+  <data name="DocPasswordLeaveClosedTip" xml:space="preserve"><value>L'agent apprend que le fichier est resté fermé, et continue sans lui</value></data>
+  <data name="DocPasswordAttachTitle" xml:space="preserve"><value>{0} est protégé par un mot de passe</value></data>
+  <data name="DocPasswordAttachSubtitle" xml:space="preserve"><value>Vous l'avez joint · joint en texte une fois ouvert</value></data>
+  <data name="DocPasswordAttachMessage" xml:space="preserve"><value>Tapez le mot de passe qui ouvre le document. Inferpal l'ouvre ici, sur cette machine, et joint son texte à votre prochain message.</value></data>
+  <data name="DocPasswordAttachReminder" xml:space="preserve"><value>Le mot de passe n'est jamais envoyé au modèle ni au serveur, ni écrit sur le disque : seul le texte part.</value></data>
+  <data name="DocPasswordDontAttach" xml:space="preserve"><value>Ne pas joindre</value></data>
+  <data name="DocPasswordDontAttachTip" xml:space="preserve"><value>Le fichier n'est pas joint</value></data>
+  <data name="DocPasswordLabel" xml:space="preserve"><value>Mot de passe de {0}</value></data>
+  <data name="DocPasswordHint" xml:space="preserve"><value>Gardé en mémoire pour ce fichier jusqu'à la fermeture de l'éditeur. Jamais enregistré, jamais envoyé.</value></data>
+  <data name="DocPasswordOpen" xml:space="preserve"><value>Ouvrir</value></data>
+  <data name="DocPasswordShow" xml:space="preserve"><value>Afficher</value></data>
+  <data name="DocPasswordWrong" xml:space="preserve"><value>Ce mot de passe n'ouvre pas {0}. Vérifiez les majuscules et la disposition du clavier. {1} {1:essai restant|essais restants}.</value></data>
+  <data name="DocPasswordEmpty" xml:space="preserve"><value>Tapez d'abord le mot de passe.</value></data>
+  <data name="DocPasswordReceiptOpened" xml:space="preserve"><value>{0} ouvert avec le mot de passe que vous avez tapé</value></data>
+  <data name="DocPasswordReceiptOpenedDetail" xml:space="preserve"><value>Son texte a été lu ici ; le mot de passe n'est pas gardé dans cette conversation.</value></data>
+  <data name="DocPasswordReceiptClosed" xml:space="preserve"><value>{0} laissé fermé</value></data>
+  <data name="DocPasswordReceiptTooMany" xml:space="preserve"><value>{0} laissé fermé après trois mots de passe faux</value></data>
+  <data name="DocPasswordReceiptClosedDetail" xml:space="preserve"><value>Son texte n'a pas été lu.</value></data>
 </root>

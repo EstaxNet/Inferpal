@@ -485,6 +485,16 @@ internal static class MentionController
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
     }
 
+    /// <summary>
+    /// A PDF the person attaches that opens only with a password: they are asked for it on a card, where the editor can
+    /// draw one; afterwards <see cref="BinaryRefusal"/> answers for the file as it now opens — read, or still locked.
+    /// </summary>
+    public static async Task OpenIfProtectedAsync(string filePath, IApprovalService approval, CancellationToken ct)
+    {
+        if (Documents.AttachedDocuments.AsksForPassword(filePath))
+            await approval.AskForDocumentPasswordAsync(filePath, attached: true, ct).ConfigureAwait(false);
+    }
+
     /// <summary>Why an attached PDF or DOCX gives no text — a scan, a password, too large —, or <c>null</c> when it gives some.</summary>
     internal static string? DocumentRefusal(string filePath)
     {

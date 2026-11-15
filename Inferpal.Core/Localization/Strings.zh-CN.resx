@@ -2266,4 +2266,27 @@
   <data name="ProxyMovedWas" xml:space="preserve"><value>原为 {0}</value></data>
   <data name="ProxyHopKeyRefused" xml:space="preserve"><value>模型服务器拒绝了 API 密钥——{0}</value></data>
   <data name="ProxyCheckApiKey" xml:space="preserve"><value>检查“连接”中的 API 密钥：服务器所需的完整密钥。此处与代理无关。</value></data>
+  <data name="DocPasswordAgentTitle" xml:space="preserve"><value>代理想要读取 {0}</value></data>
+  <data name="DocPasswordSubtitle" xml:space="preserve"><value>它受密码保护</value></data>
+  <data name="DocPasswordAgentMessage" xml:space="preserve"><value>只有你能打开它。输入密码后，代理只会得到文档的文本——不会得到密码，甚至不知道你输入过密码。</value></data>
+  <data name="DocPasswordAgentReminder" xml:space="preserve"><value>因为你在这里所以才询问。后台 /task 或从其他客户端运行的代理会让文件保持关闭，并说明它受保护。</value></data>
+  <data name="DocPasswordLeaveClosed" xml:space="preserve"><value>保持关闭</value></data>
+  <data name="DocPasswordLeaveClosedTip" xml:space="preserve"><value>代理会得知文件保持关闭，并在没有它的情况下继续</value></data>
+  <data name="DocPasswordAttachTitle" xml:space="preserve"><value>{0} 受密码保护</value></data>
+  <data name="DocPasswordAttachSubtitle" xml:space="preserve"><value>由你附加 · 打开后以文本形式附加</value></data>
+  <data name="DocPasswordAttachMessage" xml:space="preserve"><value>输入打开该文档的密码。Inferpal 会在本机打开它，并把文本附加到你的下一条消息。</value></data>
+  <data name="DocPasswordAttachReminder" xml:space="preserve"><value>密码绝不会发送给模型或服务器，也不会写入磁盘：只发送文本。</value></data>
+  <data name="DocPasswordDontAttach" xml:space="preserve"><value>不附加</value></data>
+  <data name="DocPasswordDontAttachTip" xml:space="preserve"><value>不附加该文件</value></data>
+  <data name="DocPasswordLabel" xml:space="preserve"><value>{0} 的密码</value></data>
+  <data name="DocPasswordHint" xml:space="preserve"><value>在编辑器关闭前为此文件保存在内存中。绝不保存，绝不发送。</value></data>
+  <data name="DocPasswordOpen" xml:space="preserve"><value>打开</value></data>
+  <data name="DocPasswordShow" xml:space="preserve"><value>显示</value></data>
+  <data name="DocPasswordWrong" xml:space="preserve"><value>该密码无法打开 {0}。请检查大小写和键盘布局。还剩 {1} 次。</value></data>
+  <data name="DocPasswordEmpty" xml:space="preserve"><value>请先输入密码。</value></data>
+  <data name="DocPasswordReceiptOpened" xml:space="preserve"><value>已用你输入的密码打开 {0}</value></data>
+  <data name="DocPasswordReceiptOpenedDetail" xml:space="preserve"><value>文本已在本机读取；密码不会保存在此对话中。</value></data>
+  <data name="DocPasswordReceiptClosed" xml:space="preserve"><value>{0} 保持关闭</value></data>
+  <data name="DocPasswordReceiptTooMany" xml:space="preserve"><value>密码错误三次，{0} 保持关闭</value></data>
+  <data name="DocPasswordReceiptClosedDetail" xml:space="preserve"><value>未读取其文本。</value></data>
 </root>

@@ -279,13 +279,14 @@ internal sealed class PdfDocument
     /// <summary>The file is encrypted and does not open without a password.</summary>
     public bool Locked { get; private set; }
 
-    public PdfDocument(byte[] data, CancellationToken ct)
+    /// <param name="password">The password the person typed for a file that asks for one; null tries the empty one only.</param>
+    public PdfDocument(byte[] data, CancellationToken ct, string? password = null)
     {
         _data = data;
         _ct = ct;
         IndexObjects();
         ReadTrailer();
-        Unlock();
+        Unlock(password);
         IndexPackedObjects();
     }
 
@@ -577,9 +578,9 @@ internal sealed class PdfDocument
         }
     }
 
-    // ── Encryption: the standard handler, opened with the empty user password ────────────────────────────────────
+    // ── Encryption: the standard handler, opened with the empty user password or the one the person typed ────────
 
-    private static readonly byte[] Pad =
+    internal static readonly byte[] Pad =
     [
         0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41, 0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08,
         0x2E, 0x2E, 0x00, 0xB6, 0xD0, 0x68, 0x3E, 0x80, 0x2F, 0x0C, 0xA9, 0xFE, 0x64, 0x53, 0x69, 0x7A,
@@ -587,9 +588,12 @@ internal sealed class PdfDocument
 
     /// <summary>
     /// A file encrypted with only an owner password (it opens without one: a form, a report that forbids printing) is read
-    /// with the empty user password, as every viewer does; one that asks for a password to open stays <see cref="Locked"/>.
+    /// with the empty user password, as every viewer does; one that asks for a password to open stays <see cref="Locked"/>
+    /// unless <paramref name="password"/> opens it.
     /// </summary>
-    private void Unlock()
+    /// <remarks>shortcut: the user password only — an owner password typed instead does not open the file; read it through
+    /// algorithm 7 if people type owner passwords.</remarks>
+    private void Unlock(string? password)
     {
         if (Trailer.GetValueOrDefault("Encrypt") is not { } encryptValue) return;
         if (encryptValue is PdfRef er) _encryptObject = er.Number;
@@ -601,7 +605,8 @@ internal sealed class PdfDocument
         var u = (Resolve(enc.GetValueOrDefault("U")) as PdfString)?.Bytes ?? [];
         if (r >= 5)
         {
-            UnlockAes256(enc, r, u);
+            // shortcut: UTF-8 without SASLprep — a password with characters SASLprep maps (rare spaces, ligatures) may not open.
+            UnlockAes256(enc, r, u, password is null ? [] : Encoding.UTF8.GetBytes(password).Take(127).ToArray());
             return;
         }
         var p = (int)(long)Num(enc.GetValueOrDefault("P"));
@@ -616,35 +621,40 @@ internal sealed class PdfDocument
             _aes = Name(std?.GetValueOrDefault("CFM")) == "AESV2";
             length = 16;
         }
-        var md5Input = new List<byte>(Pad);
-        md5Input.AddRange(o.Take(32));
-        md5Input.AddRange(BitConverter.GetBytes(p));
-        md5Input.AddRange(id);
-        if (r >= 4 && enc.GetValueOrDefault("EncryptMetadata") is false) md5Input.AddRange([0xFF, 0xFF, 0xFF, 0xFF]);
-        var key = MD5.HashData([.. md5Input]);
-        if (r >= 3) for (var i = 0; i < 50; i++) key = MD5.HashData(key.AsSpan(0, length));
-        key = key[..length];
-
-        // The empty password opens it when the computed U matches the file's.
-        bool opens;
-        if (r == 2) opens = Rc4(key, Pad).AsSpan().SequenceEqual(u.AsSpan(0, Math.Min(32, u.Length)));
-        else
+        byte[]? Opens(byte[] typed)
         {
+            // Algorithm 2: the password (PDFDocEncoding, read as Latin-1) cut or padded to 32 bytes.
+            var md5Input = new List<byte>(typed.Take(32));
+            md5Input.AddRange(Pad.Take(32 - md5Input.Count));
+            md5Input.AddRange(o.Take(32));
+            md5Input.AddRange(BitConverter.GetBytes(p));
+            md5Input.AddRange(id);
+            if (r >= 4 && enc.GetValueOrDefault("EncryptMetadata") is false) md5Input.AddRange([0xFF, 0xFF, 0xFF, 0xFF]);
+            var key = MD5.HashData([.. md5Input]);
+            if (r >= 3) for (var i = 0; i < 50; i++) key = MD5.HashData(key.AsSpan(0, length));
+            key = key[..length];
+            // The password opens it when the computed U matches the file's.
+            if (r == 2) return Rc4(key, Pad).AsSpan().SequenceEqual(u.AsSpan(0, Math.Min(32, u.Length))) ? key : null;
             var check = Rc4(key, MD5.HashData([.. Pad, .. id]));
             for (var i = 1; i <= 19; i++) check = Rc4(key.Select(k => (byte)(k ^ i)).ToArray(), check);
-            opens = u.Length >= 16 && check.AsSpan(0, 16).SequenceEqual(u.AsSpan(0, 16));
+            return u.Length >= 16 && check.AsSpan(0, 16).SequenceEqual(u.AsSpan(0, 16)) ? key : null;
         }
-        if (opens) _key = key;
-        else Locked = true;
+        _key = Opens([]) ?? (password is null ? null : Opens(Encoding.Latin1.GetBytes(password)));
+        if (_key is null) Locked = true;
     }
 
-    private void UnlockAes256(Dictionary<string, object?> enc, int r, byte[] u)
+    private void UnlockAes256(Dictionary<string, object?> enc, int r, byte[] u, byte[] typed)
     {
         var ue = (Resolve(enc.GetValueOrDefault("UE")) as PdfString)?.Bytes ?? [];
         if (u.Length < 48 || ue.Length < 32) { Locked = true; return; }
-        var hash = Hash2B([], u.AsSpan(32, 8).ToArray(), [], r);
-        if (!hash.AsSpan(0, 32).SequenceEqual(u.AsSpan(0, 32))) { Locked = true; return; }
-        var keyKey = Hash2B([], u.AsSpan(40, 8).ToArray(), [], r);
+        bool Opens(byte[] pw) => Hash2B(pw, u.AsSpan(32, 8).ToArray(), [], r).AsSpan(0, 32).SequenceEqual(u.AsSpan(0, 32));
+        byte[] password = [];
+        if (!Opens(password))
+        {
+            if (typed.Length == 0 || !Opens(typed)) { Locked = true; return; }
+            password = typed;
+        }
+        var keyKey = Hash2B(password, u.AsSpan(40, 8).ToArray(), [], r);
         using var aes = Aes.Create();
         aes.Key = keyKey[..32];
         _key = aes.DecryptCbc(ue.AsSpan(0, 32), new byte[16], PaddingMode.None);
@@ -653,7 +663,7 @@ internal sealed class PdfDocument
     }
 
     /// <summary>The hash of an AES-256 file's password (algorithm 2.B of ISO 32000-2; plain SHA-256 for revision 5).</summary>
-    private static byte[] Hash2B(byte[] password, byte[] salt, byte[] userKey, int r)
+    internal static byte[] Hash2B(byte[] password, byte[] salt, byte[] userKey, int r)
     {
         var k = SHA256.HashData([.. password, .. salt, .. userKey]);
         if (r == 5) return k;
@@ -691,7 +701,7 @@ internal sealed class PdfDocument
         return aes.DecryptCbc(bytes.AsSpan(16), bytes.AsSpan(0, 16), PaddingMode.PKCS7);
     }
 
-    private static byte[] Rc4(byte[] key, byte[] data)
+    internal static byte[] Rc4(byte[] key, byte[] data)
     {
         var s = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
         for (int i = 0, j = 0; i < 256; i++)
