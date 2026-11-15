@@ -1612,7 +1612,8 @@ internal sealed partial class HostServer : IDisposable
         }
         Services.Presentation.ImageNotSeenCardModel? card = null;
         if (sees == false)
-            card = Services.Presentation.ImageCards.NotSeen(model, p.Names, await s.Client.VisionModelsAsync(ct));
+            card = Services.Presentation.ImageCards.NotSeen(model, p.Names, await s.Client.VisionModelsAsync(ct),
+                                                            [s.Config.DefaultModel, s.Config.AgentModel]);
         return new(model, sees, Services.Presentation.ImageCards.GoesTo(model), card, sees == false ? Strings.ImageNotSeenChip(model) : string.Empty);
     }
 

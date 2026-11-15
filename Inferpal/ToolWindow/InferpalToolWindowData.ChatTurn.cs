@@ -251,7 +251,8 @@ internal partial class InferpalToolWindowData
                 if (sees == false)
                 {
                     var card = Services.Presentation.ImageCards.NotSeen(asked, images.Select(a => a.Label).ToList(),
-                                                                        await _client.VisionModelsAsync(localCts!.Token));
+                                                                        await _client.VisionModelsAsync(localCts!.Token),
+                                                                        [_config.DefaultModel, _config.AgentModel]);
                     var choice = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                     ChatMessageItem? cardItem = null;
                     await RunOnVMContextAsync(() =>

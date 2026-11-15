@@ -50,15 +50,27 @@ internal static class ImageCards
     /// <summary>What is said when more than <see cref="ChatImages.MaxPerQuestion"/> images are attached.</summary>
     public static string TooMany => Strings.ImageTooMany(ChatImages.MaxPerQuestion);
 
+    /// <summary>How many of the server's models that see are named on the card; the rest are counted.</summary>
+    private const int NamedVisionModels = 6;
+
     /// <summary>The card for <paramref name="model"/>, which does not see the images named <paramref name="images"/>, on a
-    /// server whose models that see are <paramref name="visionModels"/> (the first is offered).</summary>
-    public static ImageNotSeenCardModel NotSeen(string model, IReadOnlyList<string> images, IReadOnlyList<string> visionModels)
+    /// server whose models that see are <paramref name="visionModels"/>.</summary>
+    /// <param name="preferred">The models the person's settings name (chat, agent…): the first of them that sees is the
+    /// one offered — never the server's first in listing order, a model nobody chose.</param>
+    public static ImageNotSeenCardModel NotSeen(string model, IReadOnlyList<string> images, IReadOnlyList<string> visionModels,
+                                                IReadOnlyList<string>? preferred = null)
     {
-        var other = visionModels.FirstOrDefault(m => !Inference.ModelCatalog.SameModelName(m, model)) ?? string.Empty;
+        var others = visionModels.Where(m => !Inference.ModelCatalog.SameModelName(m, model)).ToList();
+        var other = (preferred ?? []).Select(p => others.FirstOrDefault(m => Inference.ModelCatalog.SameModelName(m, p)))
+                                     .FirstOrDefault(m => m is not null)
+                    ?? others.FirstOrDefault() ?? string.Empty;
+        var named = visionModels.Take(NamedVisionModels).ToList();
+        var list = string.Join(", ", named) + (visionModels.Count > named.Count
+            ? string.Create(CultureInfo.InvariantCulture, $", +{visionModels.Count - named.Count}") : string.Empty);
         return new ImageNotSeenCardModel(
             Strings.ImageNotSeenTitle(model), Strings.ImageNotSeenSubtitle, Strings.ImageNotSeenBody(string.Join(", ", images)),
             other, other.Length > 0 ? Strings.ImageAskOther(other) : string.Empty, other.Length > 0 ? Strings.ImageAskOtherHint : string.Empty,
             Strings.ImageSendWithout,
-            visionModels.Count > 0 ? Strings.ImageVisionModels(string.Join(", ", visionModels)) : Strings.ImageNoVisionModel);
+            visionModels.Count > 0 ? Strings.ImageVisionModels(list) : Strings.ImageNoVisionModel);
     }
 }

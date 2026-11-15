@@ -245,6 +245,13 @@ public sealed class ChatImagesTests
         Assert.Equal(Strings.ImageAskOther("qwen/qwen3.8-27b"), card.AskOtherLabel);
         Assert.Equal(Strings.ImageVisionModels("qwen/qwen3.8-27b, gemma-4-12b-it-qat"), card.VisionModels);
 
+        // The model the person's settings name is offered first, not the server's first in listing order; a long list is
+        // named in part and counted.
+        string[] many = ["ornith-1.5-9b", "a", "b", "c", "d", "e", "qwen/qwen3.8-27b", "f"];
+        var preferred = ImageCards.NotSeen("granite-4.2-8b", ["capture.png"], many, ["granite-4.2-8b", "qwen/qwen3.8-27b"]);
+        Assert.Equal("qwen/qwen3.8-27b", preferred.OtherModel);
+        Assert.Equal(Strings.ImageVisionModels("ornith-1.5-9b, a, b, c, d, e, +2"), preferred.VisionModels);
+
         var none = ImageCards.NotSeen("granite-4.2-8b", ["capture.png"], []);
         Assert.Equal("", none.OtherModel);
         Assert.Equal("", none.AskOtherLabel);
