@@ -1533,6 +1533,27 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>
+    /// The text of a file the person attaches that VS Code cannot open as text — a PDF or DOCX, read here as its extracted
+    /// text; another binary — by the Core's reader of <c>@file</c>: the text, or the sentence that says why there is none.
+    /// </summary>
+    [JsonRpcMethod("attach/read", UseSingleObjectParameterDeserialization = true)]
+    public async Task<AttachReadResult> AttachReadAsync(PinParams p, CancellationToken ct)
+    {
+        var path = p.Path.Trim();
+        var root = Session().RootDir;
+        if (Services.Governance.ContentExclusions.Of(path) is { } excluded)
+            return new AttachReadResult(null, MentionController.FileRefusal(path, root),
+                excluded.ForModel(Services.Governance.ContentExclusions.Shown(path, root)));
+        if (MentionController.BinaryRefusal(path) is { } refused)
+            return new AttachReadResult(null, refused,
+                "(not attached: " + (Services.Documents.AttachedDocuments.WhyNoText(path) is { } why && Services.Documents.DocumentText.Handles(path)
+                    ? why : "a binary file: it has no text") + ")");
+        return await MentionController.FileMentionTextAsync(path, null, ct) is { } text
+            ? new AttachReadResult(text, null, null)
+            : new AttachReadResult(null, Strings.AttachFileTooLarge, "(not attached: larger than the attachment limit)");
+    }
+
+    /// <summary>
     /// Which of the files the adapter is about to send — chips, typed <c>@path</c>s — the workspace's ignore files exclude:
     /// the adapter reads those itself (its unsaved buffers), so it asks the one reader of the rules before sending.
     /// </summary>

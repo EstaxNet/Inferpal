@@ -229,15 +229,19 @@ internal partial class InferpalToolWindowData
 
         try
         {
-            if (new FileInfo(filePath).Length > 512_000)
+            // ⚠ The checks of @file, by its reader: an excluded file, a binary (decoded, it was attached as noise), a PDF or
+            // DOCX without text — each said; a document's text extracted.
+            if ((MentionController.FileRefusal(filePath, _indexService.RootDir) ?? MentionController.BinaryRefusal(filePath)) is { } refused)
+            {
+                await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(refused)));
+                return;
+            }
+            if (await MentionController.FileMentionTextAsync(filePath, _tools.Overlay, ct) is not { } content)
             {
                 await RunOnVMContextAsync(() =>
                     InsertThemed(ChatMessageItem.NoticeMsg(Strings.AttachFileTooLarge)));
                 return;
             }
-
-            // Decoded like the file an edit will rewrite (legacy code pages included): quoted back, it must match.
-            var content = await Services.Tools.TextFileEncoding.ReadTextAsync(filePath, ct);
             var label   = Path.GetFileName(filePath);
             await RunOnVMContextAsync(() => AddAttachment(label, content, sourcePath: filePath));
         }

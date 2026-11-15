@@ -321,9 +321,21 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
                     + "not sent)", Path.GetFileName(pinnedPath), Key: pinnedPath));
                 continue;
             }
+            // ⚠ A pinned PDF or DOCX travels as its extracted text; one without text, or another binary, says why in place of
+            // its content — read as text, it went into every request as noise.
+            if ((Documents.DocumentText.Handles(pinnedPath) ? Documents.AttachedDocuments.WhyNoText(pinnedPath)
+                 : IsBinary(pinnedPath) ? "a binary file: it has no text" : null) is { } noText)
+            {
+                files.Add(new(PromptSectionKind.Pinned, Path.GetFileName(pinnedPath),
+                    "\n\n## Pinned: " + Path.GetFileName(pinnedPath) + "\n\n", $"(not sent: {noText})",
+                    Path.GetFileName(pinnedPath), Key: pinnedPath));
+                continue;
+            }
             try
             {
-                var pinnedContent = Tools.TextFileEncoding.ReadText(pinnedPath).Trim();
+                var pinnedContent = (Documents.DocumentText.Handles(pinnedPath)
+                    ? Documents.AttachedDocuments.ForModel(pinnedPath) ?? string.Empty
+                    : Tools.TextFileEncoding.ReadText(pinnedPath)).Trim();
                 // The read goes through again: a later failure will say so again.
                 Diagnostics.Forget(PinContext, UnreadableKey(pinnedPath));
                 if (!string.IsNullOrEmpty(pinnedContent))
@@ -539,6 +551,13 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// <summary>The path is back: the next time it goes missing will be reported again.</summary>
     private static void ForgetMissingPin(string path) =>
         Diagnostics.Forget(PinContext, MissingKey(path));
+
+    /// <summary>Whether a pinned file is binary; one that cannot be looked at is read, and its failure said by that read.</summary>
+    private static bool IsBinary(string path)
+    {
+        try { return Tools.TextFileEncoding.IsBinaryFile(path); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+    }
 
     /// <summary>
     /// ⚠ <b>A pinned file that is present but unreadable</b> — locked by another editor, permission

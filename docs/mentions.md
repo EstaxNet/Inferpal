@@ -43,6 +43,14 @@ limits bites — or a file cannot be read — the attachment ends with a line sa
 file named in the list but absent from the text is never mistaken for a file that is simply empty.
 Attach a subfolder to get the rest.
 
+**A PDF or a Word document (`.docx`) is attached as its text.** Inferpal reads it on your machine — nothing is sent
+anywhere to convert it — with `@file`, a chip, Browse, a file pinned to every request, or an ACP attachment, and tells the
+model the text was extracted. Like any attachment it is cut past the size of one, and its chip says so. What has no text
+to read is said instead of attached: a scanned PDF or one made only of images, a PDF that opens only with a password, a
+file larger than 20 MB, or one that takes more than 2 seconds to read. Pages without text in a PDF that has some are
+counted for the model. Formatting, images and comments are left out. Other binary files (images, archives) are not
+attached, and say so.
+
 **Visual Studio: drag a file or a folder onto the chat** — from Solution Explorer or Windows Explorer — and it becomes
 the chip `@file` or `@folder` makes, with the same refusals; nothing is sent until you send your message. A project
 node is not attached (it carries no file to attach): a notice says so — drop its files, or attach its folder with

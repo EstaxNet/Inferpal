@@ -63,7 +63,7 @@ public class ChipAttachmentDedupeTests
         // The active file and a picked file carry their path...
         Assert.Contains("editor.document.getText(),\n                     editor.document.uri.fsPath, editor.document.uri.fsPath)",
                         chat.Replace("\r\n", "\n"), StringComparison.Ordinal);
-        Assert.Contains("doc.getText(), picked[0].fsPath,", chat, StringComparison.Ordinal);
+        Assert.Contains("read.text, picked[0].fsPath,", chat, StringComparison.Ordinal);
         // ...a selection does not (reference arm: claiming it would drop chunks the prompt does not hold) — its file is
         // only its origin, which the ignore files are asked about.
         Assert.Contains("this.addChip('✂ ' + vscode.workspace.asRelativePath(editor.document.uri), text, undefined, editor.document.uri.fsPath);",

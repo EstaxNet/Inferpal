@@ -107,6 +107,11 @@
   <data name="CheckRevisionAlsoPath" xml:space="preserve"><value>`{0}` — здесь ещё и файл или папка: `/check ./{0}` проверяет их незафиксированные изменения.</value></data>
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>Проверено: проиндексированные изменения в `{0}` (остальные — когда там ничего не проиндексировано).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} — двоичный файл: в нём нет текста для чтения.</value></data>
+  <data name="AttachDocumentNoText" xml:space="preserve"><value>В {0} нет текста для чтения: это скан или в нём только изображения.</value></data>
+  <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} открывается только с паролем: его текст прочитать нельзя.</value></data>
+  <data name="AttachDocumentUnreadable" xml:space="preserve"><value>Не удалось прочитать {0} как PDF или документ Word.</value></data>
+  <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} читался слишком долго (больше {1} с): его текст не прикреплён.</value></data>
+  <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} слишком велик для чтения (больше {1} МБ).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Нет незафиксированных изменений в `{0}`: проверять нечего.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Проверено: незафиксированные изменения в `{0}`.</value></data>
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Объясни {0}: что он делает, как работает и как вписывается в проект.</value></data>

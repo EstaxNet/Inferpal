@@ -959,7 +959,7 @@ public sealed class ContentExclusionAdapterTests
             "private async expandMentions(prompt: string, host: HostClient): Promise<{ text: string; paths: string[]; labels: string[] }>");
         Assert.Contains("ChatViewProvider.excluded(host, [uri.fsPath])", expand, StringComparison.Ordinal);
         Assert.True(expand.IndexOf("ChatViewProvider.excluded(", StringComparison.Ordinal)
-                    < expand.IndexOf("openTextDocument(uri)", StringComparison.Ordinal), "asked BEFORE the file is read");
+                    < expand.IndexOf("this.readAttachable(uri)", StringComparison.Ordinal), "asked BEFORE the file is read");
         const string IsAFile = "isFile = ((await vscode.workspace.fs.stat(uri)).type & vscode.FileType.File) !== 0;";
         Assert.Contains(IsAFile, expand, StringComparison.Ordinal);
         Assert.True(expand.IndexOf(IsAFile, StringComparison.Ordinal)

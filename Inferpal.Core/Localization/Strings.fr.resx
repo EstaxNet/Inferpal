@@ -110,6 +110,11 @@ Cette action est irréversible.</value></data>
   <data name="CheckRevisionAlsoPath" xml:space="preserve"><value>`{0}` est aussi un fichier ou un dossier ici : `/check ./{0}` relit ses changements non commités.</value></data>
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>Relu : les changements indexés sous `{0}` (les autres le sont quand rien n'y est indexé).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} est un fichier binaire : il n'a pas de texte à lire.</value></data>
+  <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} n'a pas de texte à lire : c'est un scan, ou il ne contient que des images.</value></data>
+  <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} ne s'ouvre qu'avec un mot de passe : son texte ne peut pas être lu.</value></data>
+  <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} n'a pas pu être lu comme un PDF ou un document Word.</value></data>
+  <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} a été trop long à lire (plus de {1} s) : son texte n'est pas joint.</value></data>
+  <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} est trop gros pour être lu (plus de {1} Mo).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Aucun changement non commité sous `{0}` : rien à relire.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Relu : les changements non commités sous `{0}`.</value></data>
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Explique {0} : ce qu'il fait, comment, et sa place dans le projet.</value></data>

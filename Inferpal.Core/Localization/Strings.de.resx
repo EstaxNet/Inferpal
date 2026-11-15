@@ -107,6 +107,11 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="CheckRevisionAlsoPath" xml:space="preserve"><value>`{0}` ist hier auch eine Datei oder ein Ordner: `/check ./{0}` prüft deren nicht committete Änderungen.</value></data>
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>Geprüft: die gestagten Änderungen unter `{0}` (die übrigen, sobald dort nichts gestagt ist).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} ist eine Binärdatei: Sie hat keinen Text zum Lesen.</value></data>
+  <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} enthält keinen lesbaren Text: Es ist ein Scan oder enthält nur Bilder.</value></data>
+  <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} lässt sich nur mit einem Kennwort öffnen: Sein Text kann nicht gelesen werden.</value></data>
+  <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} konnte nicht als PDF- oder Word-Dokument gelesen werden.</value></data>
+  <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} brauchte zu lange zum Lesen (mehr als {1} s): Sein Text wird nicht angehängt.</value></data>
+  <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} ist zu groß zum Lesen (mehr als {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Keine nicht committete Änderung unter `{0}`: nichts zu prüfen.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Geprüft: die nicht committeten Änderungen unter `{0}`.</value></data>
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Erkläre {0}: was es tut, wie es funktioniert und wie es ins Projekt passt.</value></data>

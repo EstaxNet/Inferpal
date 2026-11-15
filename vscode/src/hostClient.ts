@@ -919,6 +919,11 @@ export class HostClient {
     return this.connection().sendRequest('pins/list');
   }
 
+  /** The text of a file VS Code cannot open as text — a PDF or DOCX's extracted text — or why there is none. */
+  attachRead(path: string): Promise<{ text: string | null; refusal: string | null; forModel: string | null }> {
+    return this.connection().sendRequest('attach/read', { path });
+  }
+
   /** Pins a file (same cap and decision as the Visual Studio window); the system prompt follows. */
   pinsAdd(path: string): Promise<{ pins: string[]; notice?: string | null }> {
     return this.connection().sendRequest('pins/add', { path });

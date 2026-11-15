@@ -1524,6 +1524,53 @@ public partial class HostServerTests
         }
     }
 
+    private sealed record AttachRead(string? Text, string? Refusal, string? ForModel);
+
+    /// <summary>
+    /// A PDF VS Code cannot open as text is read by the host (<c>attach/read</c>): its text, or why there is none — to the
+    /// person and to the model; another binary is refused, never decoded. Pinned, a PDF travels as its text and a binary
+    /// says why in place of its content — read as text, it went into every request as noise.
+    /// </summary>
+    [Fact]
+    public async Task APdf_IsReadByTheHost_AttachedOrPinned_AndABinary_SaysWhy()
+    {
+        var root = Directory.CreateTempSubdirectory("inferpal-attach-").FullName;
+        try
+        {
+            var pdf = Path.Combine(root, "spec.pdf");
+            File.WriteAllBytes(pdf, DocumentTextTests.Pdf("BT /F1 12 Tf 72 720 Td (marker-pdf rounding rule) Tj ET"));
+            var scan = Path.Combine(root, "scan.pdf");
+            File.WriteAllBytes(scan, DocumentTextTests.Pdf("q 100 0 0 100 0 0 cm Q"));
+            var image = Path.Combine(root, "logo.png");
+            File.WriteAllBytes(image, [0x89, 0x50, 0x4E, 0x47, 0x00, 0x00, 0x01, 0x02]);
+            using var h = CreateHarness(cfg => cfg.PinnedContextFiles = "");
+            await h.InitializeAsync(rootDir: root);
+            Task<AttachRead> Read(string path) =>
+                h.Client.InvokeWithParameterObjectAsync<AttachRead>("attach/read", new { path }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+
+            var read = await Read(pdf);
+            Assert.Contains("marker-pdf rounding rule", read.Text, StringComparison.Ordinal);
+            Assert.Null(read.Refusal);
+            var none = await Read(scan);
+            Assert.Null(none.Text);
+            Assert.Equal(Strings.AttachDocumentNoText("scan.pdf"), none.Refusal);
+            Assert.Contains("no text", none.ForModel, StringComparison.Ordinal);
+            var binary = await Read(image);
+            Assert.Equal(Strings.AttachBinaryFile("logo.png"), binary.Refusal);
+
+            await h.Client.InvokeWithParameterObjectAsync<PinsNote>("pins/add", new { path = pdf }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            await h.Client.InvokeWithParameterObjectAsync<PinsNote>("pins/add", new { path = image }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            var system = h.Server.CurrentSession!.History[0].Content;
+            Assert.Contains("marker-pdf rounding rule", system, StringComparison.Ordinal);
+            Assert.Contains("(not sent: a binary file", system, StringComparison.Ordinal);
+            Assert.DoesNotContain("PNG", system, StringComparison.Ordinal);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
     /// <summary>
     /// The other folders of a multi-root workspace are named to the model when the root does not hold them, and follow
     /// the workspace while the host runs: a folder added or removed changes the next question's prompt without a

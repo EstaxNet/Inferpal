@@ -638,6 +638,10 @@ internal sealed record ConfigReloadResult(IReadOnlyList<string> Taken, string De
 /// <summary>`pins/add` / `pins/remove` — a file to pin into, or take out of, every request.</summary>
 internal sealed record PinParams(string Path);
 
+/// <summary>What <c>attach/read</c> gives: the text to attach, or why there is none — said to the person
+/// (<paramref name="Refusal"/>, translated) and to the model (<paramref name="ForModel"/>, English).</summary>
+internal sealed record AttachReadResult(string? Text, string? Refusal, string? ForModel);
+
 /// <summary>The pinned files after the call, and what the host had to say (the cap reached, a failed save).</summary>
 internal sealed record PinsResult(List<string> Pins, string? Notice = null);
 

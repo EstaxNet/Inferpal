@@ -86,7 +86,7 @@ public class VsCodeAttachmentCapTests
         var typed = Method(provider, "private async expandMentions(");
         var cut   = typed.IndexOf("if (capped.cut) {", StringComparison.Ordinal);
         var whole = typed.IndexOf("} else {", cut, StringComparison.Ordinal);
-        var path  = typed.IndexOf("paths.push(doc.uri.fsPath);", StringComparison.Ordinal);
+        var path  = typed.IndexOf("paths.push(uri.fsPath);", StringComparison.Ordinal);
         Assert.True(cut > 0 && whole > cut && path > whole, "a file sent in part is still sent as an attached path");
     }
 }

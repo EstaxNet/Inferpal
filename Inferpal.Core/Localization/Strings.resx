@@ -111,6 +111,11 @@ This cannot be undone.</value></data>
   <data name="CheckRevisionAlsoPath" xml:space="preserve"><value>`{0}` is also a file or a folder here: `/check ./{0}` reviews its uncommitted changes.</value></data>
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>Reviewed: the staged changes under `{0}` (the unstaged ones are reviewed once nothing there is staged).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} is a binary file: it has no text to read.</value></data>
+  <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} has no text to read: it is a scan, or holds only images.</value></data>
+  <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} opens only with a password: its text cannot be read.</value></data>
+  <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} could not be read as a PDF or a Word document.</value></data>
+  <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} took too long to read (more than {1} s): its text is not attached.</value></data>
+  <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} is too large to read (more than {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>No uncommitted change under `{0}`: nothing to review.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Reviewed: the uncommitted changes under `{0}`.</value></data>
   <data name="ExplainFileQuestion" xml:space="preserve"><value>Explain {0}: what it does, how it works, and how it fits in the project.</value></data>

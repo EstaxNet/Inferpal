@@ -2075,9 +2075,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         try {
-          const doc = await vscode.workspace.openTextDocument(picked[0]);
-          this.addChip('📄 ' + (picked[0].path.split('/').pop() ?? picked[0].fsPath), doc.getText(), picked[0].fsPath,
-                       picked[0].fsPath);
+          const read = await this.readAttachable(picked[0]);
+          if (read?.text !== undefined && read.text !== null) {
+            this.addChip('📄 ' + (picked[0].path.split('/').pop() ?? picked[0].fsPath), read.text, picked[0].fsPath,
+                         picked[0].fsPath);
+          } else if (read?.refusal) {
+            void vscode.window.showWarningMessage(read.refusal);
+          }
         } catch (err) {
           // A binary or unreadable file: the user picked it, and no chip appearing reads as a broken menu.
           this.log(`[chat] attachBrowse failed: ${String(err)}`);
@@ -2409,8 +2413,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         continue;
       }
       try {
-        const doc = await vscode.workspace.openTextDocument(uri);
-        const capped = capAttachment(doc.getText(), MAX_CHARS);
+        // ⚠ A file VS Code cannot open as text (a PDF, a DOCX, another binary) was left as plain text with nothing said:
+        // the host reads it — a document's text, or why there is none, said to both readers.
+        const read = await this.readAttachable(uri);
+        if (read === undefined) {
+          continue;
+        }
+        if (read.text === null) {
+          attachments += `\n\n## Not attached: ${token}\n${read.forModel ?? ''}`;
+          if (read.refusal) {
+            labels.push(read.refusal);
+          }
+          continue;
+        }
+        const capped = capAttachment(read.text, MAX_CHARS);
         attachments += `\n\n## Attached file: ${token}\n\`\`\`\n${capped.text}\n\`\`\``;
         attached++;
         if (capped.cut) {
@@ -2418,7 +2434,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         } else {
           // The full path: a folder-qualified token resolved under the host's root would name another file. Only a
           // WHOLE file: the host skips an attached file's chunks, and the part past a cut is in the prompt nowhere.
-          paths.push(doc.uri.fsPath);
+          paths.push(uri.fsPath);
         }
       } catch {
         // not a workspace file — leave the token as plain text
@@ -3925,6 +3941,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * The text of a file the person attaches: VS Code's own (its unsaved buffer), or — for a PDF or DOCX, or a file VS Code
+   * cannot open as text — the host's reader (a document's extracted text, or why there is none). Undefined when the host
+   * is not there to read it (said by `hostForGesture`).
+   */
+  private async readAttachable(uri: vscode.Uri): Promise<{ text: string | null; refusal: string | null; forModel: string | null } | undefined> {
+    if (!/\.(pdf|docx)$/i.test(uri.fsPath)) {
+      try {
+        return { text: (await vscode.workspace.openTextDocument(uri)).getText(), refusal: null, forModel: null };
+      } catch {
+        // a binary VS Code will not open as text: the host says why
+      }
+    }
+    const host = this.hostForGesture();
+    return host ? await host.attachRead(uri.fsPath) : undefined;
+  }
+
+  /**
    * The explorer's "Attach to Chat": the chip `@folder` or the attach button makes, in the composer, nothing sent. A
    * folder goes through the host (its refusals); a file is the editor's text, judged against the ignore files when sent.
    */
@@ -3939,8 +3972,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         await this.resolveMention('folder', uri.fsPath);
         return;
       }
-      const doc = await vscode.workspace.openTextDocument(uri);
-      this.addChip('📄 ' + vscode.workspace.asRelativePath(uri), doc.getText(), uri.fsPath, uri.fsPath);
+      const read = await this.readAttachable(uri);
+      if (read?.text !== undefined && read.text !== null) {
+        this.addChip('📄 ' + vscode.workspace.asRelativePath(uri), read.text, uri.fsPath, uri.fsPath);
+      } else if (read?.refusal) {
+        void vscode.window.showWarningMessage(read.refusal);
+      }
     } catch (err) {
       // A binary or unreadable file: the user picked it, and no chip appearing reads as a broken menu.
       this.gestureFailed('attach to chat', err);
