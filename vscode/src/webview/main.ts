@@ -125,7 +125,7 @@ function menuItem(label: string, onPick: () => void, checked = false): HTMLEleme
   const item = document.createElement('div');
   item.className = 'menu-item' + (checked ? ' checked' : '');
   item.setAttribute('role', 'menuitem');
-  item.tabIndex = -1;
+  item.tabIndex = 0;
   const mark = document.createElement('span');
   mark.className = 'menu-mark';
   if (checked) {
@@ -134,12 +134,33 @@ function menuItem(label: string, onPick: () => void, checked = false): HTMLEleme
   const text = document.createElement('span');
   text.textContent = label;
   item.append(mark, text);
-  item.addEventListener('mousedown', (e) => {
-    e.preventDefault();
+  // ⚠ Picked on click, Enter or Space — never on mousedown alone: a screen reader activates an item by a click, and a
+  // keyboard reaches it by Tab or the arrows. The mousedown only keeps the composer's focus.
+  item.addEventListener('mousedown', (e) => e.preventDefault());
+  item.addEventListener('click', () => {
     closeMenus();
     onPick();
   });
+  item.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      closeMenus();
+      onPick();
+    } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const items = [...(item.parentElement?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [])];
+      const next = items[(items.indexOf(item) + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length];
+      next?.focus();
+    }
+  });
   return item;
+}
+
+/** A menu opened from the keyboard (a click with no pointer: detail 0) puts the focus on its first item. */
+function focusFirstFromKeyboard(menu: HTMLElement, e: MouseEvent): void {
+  if (e.detail === 0) {
+    menu.querySelector<HTMLElement>('[role^="menuitem"]')?.focus();
+  }
 }
 
 function closeMenus(): void {
@@ -180,15 +201,16 @@ function openModelMenu(): void {
   post({ type: 'listModels' });
 }
 
-modelBtn.addEventListener('click', () => {
+modelBtn.addEventListener('click', (e) => {
   const open = modelPop.hidden;
   closeMenus();
   if (open) {
     openModelMenu();
+    focusFirstFromKeyboard(modelPop, e);
   }
 });
 
-moreBtn.addEventListener('click', () => {
+moreBtn.addEventListener('click', (e) => {
   const open = moreMenu.hidden;
   closeMenus();
   if (!open) {
@@ -203,6 +225,7 @@ moreBtn.addEventListener('click', () => {
   );
   placeMenu(moreMenu, moreBtn, true);
   moreMenu.hidden = false;
+  focusFirstFromKeyboard(moreMenu, e);
 });
 
 document.addEventListener('mousedown', (e) => {
@@ -278,7 +301,7 @@ plusMenu.id = 'plusmenu';
 plusMenu.className = 'menu';
 plusMenu.hidden = true;
 document.body.appendChild(plusMenu);
-plusBtn.addEventListener('click', () => {
+plusBtn.addEventListener('click', (e) => {
   const open = plusMenu.hidden;
   closeMenus();
   if (!open) {
@@ -298,6 +321,7 @@ plusBtn.addEventListener('click', () => {
   plusMenu.style.top = '';
   plusMenu.style.bottom = `${document.documentElement.clientHeight - r.top + 4}px`;
   plusMenu.hidden = false;
+  focusFirstFromKeyboard(plusMenu, e);
 });
 
 /** Chat, Agent or Plan: one switch for what the turn may do. */
