@@ -94,6 +94,9 @@ public class ConnectionRefusedTests
         var lost = Strings.MsgConnectionLost("https://llm.home.example", "LM Studio", refusal);
         Assert.Contains(refusal, lost);
         Assert.Equal(named, lost.Contains(Strings.ProxySectionTitle, StringComparison.Ordinal));
+        // Its second reader (the models notice, VS's /setup) names it too.
+        Assert.Equal(named, Strings.MsgBackendRefused("https://llm.home.example", refusal)
+                                   .Contains(Strings.ProxySectionTitle, StringComparison.Ordinal));
     }
 
     // ── Every other reader of a failed check: the badge, /models, /bench, /hardware, the support bundle ──────────

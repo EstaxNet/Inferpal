@@ -146,6 +146,10 @@ function menuItem(label: string, onPick: () => void, checked = false): HTMLEleme
       e.preventDefault();
       closeMenus();
       onPick();
+      // Picked from the keyboard: the next key goes to the composer, unless the pick moved the focus itself.
+      if (document.activeElement === document.body || document.activeElement === item) {
+        promptEl.focus();
+      }
     } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       const items = [...(item.parentElement?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [])];
@@ -171,7 +175,16 @@ function closeMenus(): void {
 }
 
 function renderModelMenu(): void {
+  // ⚠ Drawn again while open (the list read anew at each opening): the item that had the focus gets it back, or a menu
+  // opened from the keyboard drops its focus to the page.
+  const focused = [...modelPop.querySelectorAll<HTMLElement>('[role^="menuitem"]')].indexOf(document.activeElement as HTMLElement);
   modelPop.textContent = '';
+  queueMicrotask(() => {
+    if (focused >= 0 && !modelPop.hidden) {
+      const items = modelPop.querySelectorAll<HTMLElement>('[role^="menuitem"]');
+      items[Math.min(focused, items.length - 1)]?.focus();
+    }
+  });
   if (connection && !connection.connected) {
     modelPop.appendChild(menuItem(t('retry'), () => post({ type: 'retryConnection' })));
   }
@@ -236,7 +249,11 @@ document.addEventListener('mousedown', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    // Closed from inside a menu: the focus goes back to the button that opened it, never to the page.
+    const opener = ([[modelPop, modelBtn], [moreMenu, moreBtn], [plusMenu, plusBtn]] as const)
+      .find(([menu]) => !menu.hidden && menu.contains(document.activeElement))?.[1];
     closeMenus();
+    opener?.focus();
   }
 });
 

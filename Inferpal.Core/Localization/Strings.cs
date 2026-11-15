@@ -995,8 +995,11 @@ internal static class Strings
     public static string MsgStreamDropped(string url) => Format(Get(nameof(MsgStreamDropped)), url);
 
     /// <summary>The server answered the check with a refusal (<paramref name="refusal"/>): running, so not "cannot reach".</summary>
+    /// <remarks>The second reader of a refusal (the models notice, VS's <c>/setup</c>): it names the reverse-proxy block
+    /// as <see cref="MsgConnectionRefused"/> does.</remarks>
     public static string MsgBackendRefused(string url, string refusal) =>
-        Format(Get(nameof(MsgBackendRefused)), url, refusal);
+        Format(Get(nameof(MsgBackendRefused)), url, refusal)
+        + (AsksWhoCalls(refusal) ? "\n\n" + ReverseProxyRefusalHint : string.Empty);
 
     public static string MsgServerError(string url, string detail) =>
         Format(Get(nameof(MsgServerError)), url, detail);

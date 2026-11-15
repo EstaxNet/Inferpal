@@ -1962,6 +1962,7 @@ kbd {
   white-space: normal;
 }
 
+.menu-item:focus-visible,
 #modemenu .mode-item:focus-visible {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;

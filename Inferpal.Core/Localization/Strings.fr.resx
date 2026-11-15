@@ -1439,7 +1439,7 @@ Tapez `/setup` pour réessayer.</value></data>
   <data name="RunTestsPassedPart" xml:space="preserve"><value>tests réussis, sur une partie de la suite</value></data>
   <data name="RunCheckedThenEdited" xml:space="preserve"><value>{0}, puis {1:N0} {1:fichier modifié|fichiers modifiés} sans contrôle</value></data>
   <data name="RunCheckedThenToolChanged" xml:space="preserve"><value>{0}, puis un outil a modifié des fichiers sans contrôle</value></data>
-  <data name="RunCheckedThenUnseen" xml:space="preserve"><value>{0}, puis une commande dont les écritures ne sont pas suivies ici</value></data>
+  <data name="RunCheckedThenUnseen" xml:space="preserve"><value>{0}, puis un outil dont les écritures ne sont pas suivies ici</value></data>
   <data name="RunCheckedThenEditedAndToolChanged" xml:space="preserve"><value>{0}, puis {1:N0} {1:fichier modifié|fichiers modifiés} et les changements d'un outil sans contrôle</value></data>
   <data name="RunNotVerified" xml:space="preserve"><value>non vérifié</value></data>
   <data name="GitNeedsAWorkspace" xml:space="preserve"><value>Aucune solution ni aucun dossier n'est ouvert : il n'y a pas de dépôt à lire. Ouvrez-en un, puis réessayez.</value></data>

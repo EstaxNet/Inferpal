@@ -1185,7 +1185,8 @@ internal class FileHistoryService
         {
             if (Run is not { } run) return;
             run.CountWatchedCall();
-            if (notes.Count > 0 || bracket.Notes.Count > 0) run.CountUnseenCall();
+            // A file the person saved during the call is theirs, not the call's: no write of the call went unseen.
+            if (notes.Concat(bracket.Notes).Any(n => n.Reason != UncoveredReason.SavedByEditor)) run.CountUnseenCall();
             foreach (var note in notes.Concat(bracket.Notes)) run.NoteUncovered(call, note);
         }
         // ⚠ The bytes are in hand: written without the budget, every change found is recorded. Stopped halfway, the loop

@@ -314,8 +314,10 @@ internal partial class InferpalToolWindowData
                         && await OfferServerInstallAsync($"**{Strings.SetupNothingTitle}**\n\n" + placesText, once: true)
                             .ConfigureAwait(false);
                 }
+                // "Another one": the configured server answering the scan after failing the first probe is not another.
                 await present(SetupFoundNothing(client.ConnectionRefusal, url, placesText,
-                    Services.Inference.ServerScan.Offered(places, url) is not null)).ConfigureAwait(false);
+                    Services.Inference.ServerScan.Offered(places, url) is { } other
+                    && !Services.Inference.ServerScan.SameAddress(other.Url, url))).ConfigureAwait(false);
                 // Only where the installed server would be used: nothing chosen yet, or Ollama's own address chosen.
                 if (client.ConnectionRefusal is null && Services.Inference.ServerInstall.Offers(places)
                     && (Services.Inference.ServerScan.NothingChosen(_config)

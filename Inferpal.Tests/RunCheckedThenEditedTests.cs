@@ -65,12 +65,12 @@ public sealed class RunCheckedThenEditedTests
         var unseen = new ToolExecution("run_command", """{"command":"Set-Content note.txt done"}""", "done", Wrote: false, Unseen: true);
 
         var summary = RunSummary.Build([Tests(), unseen], null)!;
-        Assert.Equal(RunCheck.PassedThenEdited, summary.Check);
+        Assert.Equal(RunCheck.TestsPassed, summary.Check);   // no change is known: the mark stays, the words say it
         Assert.Equal(Strings.RunCheckedThenUnseen(Strings.RunTestsPassed), summary.CheckText);
 
         // Reference arms: the same call before the green, a call the run followed.
-        Assert.Equal(RunCheck.TestsPassed, RunSummary.Build([unseen, Tests()], null)!.Check);
-        Assert.Equal(RunCheck.TestsPassed, RunSummary.Build([Tests(), unseen with { Unseen = false }], null)!.Check);
+        Assert.Equal(Strings.RunTestsPassed, RunSummary.Build([unseen, Tests()], null)!.CheckText);
+        Assert.Equal(Strings.RunTestsPassed, RunSummary.Build([Tests(), unseen with { Unseen = false }], null)!.CheckText);
     }
 
     /// <summary>The count around a call reads for every tool, not a list: what <c>WorkTreeBracket</c> records is any call's.</summary>

@@ -72,13 +72,13 @@ internal static class RunSummary
             };
             check = RunCheck.PassedThenEdited;
         }
-        // ⚠ A call after the green whose changes the run could not follow (outside git, past a cap) wrote what nobody
-        // knows: the green is not the last word either, and "tests passed" alone would claim it is.
+        // ⚠ A call after the green whose changes the run could not follow (outside git, past a cap) may have written what
+        // nobody knows: said beside the green. The mark stays — no change is known, and a `dir` outside git is such a call
+        // too.
         else if (check is RunCheck.BuildPassed or RunCheck.TestsPassed or RunCheck.TestsPassedPart && at >= 0
                  && executions.Skip(at + 1).Any(e => e.Unseen == true))
         {
             checkText = Strings.RunCheckedThenUnseen(checkText);
-            check = RunCheck.PassedThenEdited;
         }
 
         var parts = new List<string>();
