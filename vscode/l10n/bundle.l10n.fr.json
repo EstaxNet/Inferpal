@@ -224,5 +224,9 @@
   "{0} more @-mentions not looked at (at most {1} per question)": "{0} autres mentions @ non examinées ({1} au plus par question)",
   "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "L'assistant a redémarré et n'a pas pu rétablir /tools off, le mode pas à pas ni les sections X-Ray désactivées.",
   "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "Envoyé avec la question : {0}. La redemander ne relit que ce que ses mots nomment (une @-mention ; /explain lit l'éditeur tel qu'il est maintenant) ; joignez le reste vous-même.",
-  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Rien à redemander : cette question n'était que ce qui l'accompagnait ({0}), qu'une conversation enregistrée ne garde pas. Joignez-le à nouveau pour demander."
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Rien à redemander : cette question n'était que ce qui l'accompagnait ({0}), qu'une conversation enregistrée ne garde pas. Joignez-le à nouveau pour demander.",
+  "{0} is not attached: it is larger than {1} MB.": "{0} n'est pas joint : il dépasse {1} Mo.",
+  "Or drop files from your file manager on the chat while holding Shift.": "Ou déposez des fichiers depuis votre gestionnaire de fichiers sur le chat en maintenant Maj.",
+  "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0} est un dossier : un dossier déposé depuis votre gestionnaire de fichiers ne peut pas être joint. Utilisez @folder, ou Joindre au chat dans l'explorateur.",
+  "{0} could not be read, and is not attached.": "{0} n'a pas pu être lu : il n'est pas joint."
 }

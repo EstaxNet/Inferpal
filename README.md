@@ -164,7 +164,8 @@ or `/import roo` brings your models, rules, prompts, Roo's modes and MCP servers
 - **Reviews and git text** — `/check` reviews your diff, a branch or a commit, every finding anchored to a line;
   `/commit` and `/pr-description` write the text.
 - **Typed context** — `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url`, `@output` (Visual Studio), `@terminal` (VS Code), and
-  **@Docs** to index a documentation site; in Visual Studio, drag a file or folder onto the chat to attach it.
+  **@Docs** to index a documentation site; drag a file or folder onto the chat to attach it in Visual Studio, or files
+  from your file manager in VS Code (Shift held).
 - **Documents read as text** — a PDF, a Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`) or PowerPoint (`.pptx`) file, an
   OpenDocument (`.odt`, `.ods`, `.odp`), an RTF, a Jupyter notebook or an e-mail (`.eml`, `.msg`) is attached as its text,
   extracted on your machine; the agent's `read_file` and `search_in_files` read and search it too. A password-protected

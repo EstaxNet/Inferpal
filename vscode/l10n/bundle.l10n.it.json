@@ -224,5 +224,9 @@
   "{0} more @-mentions not looked at (at most {1} per question)": "Altre {0} menzioni @ non esaminate (al massimo {1} per domanda)",
   "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "L'assistente si è riavviato e non ha potuto ripristinare /tools off, la modalità passo passo né le sezioni X-Ray disattivate.",
   "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "Inviato con la domanda: {0}. Riproporla rilegge solo ciò che le sue parole nominano (una @-menzione; /explain legge l'editor com'è ora); allega tu il resto.",
-  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Niente da richiedere: questa domanda era solo ciò che l'accompagnava ({0}), che una conversazione salvata non conserva. Allegalo di nuovo per chiedere."
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Niente da richiedere: questa domanda era solo ciò che l'accompagnava ({0}), che una conversazione salvata non conserva. Allegalo di nuovo per chiedere.",
+  "{0} is not attached: it is larger than {1} MB.": "{0} non viene allegato: supera {1} MB.",
+  "Or drop files from your file manager on the chat while holding Shift.": "Oppure trascina file dal tuo gestore di file nella chat tenendo premuto Maiusc.",
+  "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0} è una cartella: una cartella trascinata dal gestore di file non può essere allegata. Usa @folder o Allega alla chat in Esplora risorse.",
+  "{0} could not be read, and is not attached.": "{0} non è stato letto e non viene allegato."
 }

@@ -224,5 +224,9 @@
   "{0} more @-mentions not looked at (at most {1} per question)": "Ещё упоминаний @ не проверено: {0} (не более {1} на вопрос)",
   "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "Ассистент перезапустился и не смог восстановить /tools off, пошаговый режим и отключённые разделы X-Ray.",
   "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "Отправлено вместе с вопросом: {0}. При повторном вопросе заново читается только то, что названо в его словах (@-упоминание; /explain читает редактор в его текущем виде); остальное прикрепите сами.",
-  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Нечего спрашивать заново: этот вопрос состоял только из того, что к нему прилагалось ({0}), а сохранённый разговор этого не хранит. Прикрепите это снова, чтобы спросить."
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Нечего спрашивать заново: этот вопрос состоял только из того, что к нему прилагалось ({0}), а сохранённый разговор этого не хранит. Прикрепите это снова, чтобы спросить.",
+  "{0} is not attached: it is larger than {1} MB.": "{0} не прикреплён: больше {1} МБ.",
+  "Or drop files from your file manager on the chat while holding Shift.": "Или перетащите файлы из файлового менеджера в чат, удерживая Shift.",
+  "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0} — это папка: папку, перетащенную из файлового менеджера, прикрепить нельзя. Используйте @folder или «Прикрепить к чату» в проводнике.",
+  "{0} could not be read, and is not attached.": "Не удалось прочитать {0}: файл не прикреплён."
 }

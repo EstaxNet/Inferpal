@@ -55,6 +55,7 @@ export function webviewStrings(): Record<string, string> {
     attachActiveFile: t('Attach the active file'),
     attachSelection: t('Attach the selection'),
     attachBrowse: t('Attach a file from disk'),
+    attachDropHint: t('Or drop files from your file manager on the chat while holding Shift.'),
     pinActiveFile: t('Pin the active file'),
     unpin: t('Unpin'),
     // The redesigned panel: header, mode switch, context ring, turns, approval card, welcome.

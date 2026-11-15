@@ -224,5 +224,9 @@
   "{0} more @-mentions not looked at (at most {1} per question)": "@ 멘션 {0}개는 확인되지 않았습니다 (질문당 최대 {1}개)",
   "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "어시스턴트가 다시 시작되어 /tools off, 단계 모드, 꺼 둔 X-Ray 섹션을 복원하지 못했습니다.",
   "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "질문과 함께 보낸 항목: {0}. 다시 물으면 문장에서 가리키는 것만 다시 읽습니다(@멘션; /explain은 현재 편집기를 읽습니다). 나머지는 직접 첨부하세요.",
-  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "다시 물을 내용이 없습니다: 이 질문은 함께 보낸 항목({0})뿐이었고, 저장된 대화는 그 내용을 보관하지 않습니다. 다시 첨부한 뒤 질문하세요."
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "다시 물을 내용이 없습니다: 이 질문은 함께 보낸 항목({0})뿐이었고, 저장된 대화는 그 내용을 보관하지 않습니다. 다시 첨부한 뒤 질문하세요.",
+  "{0} is not attached: it is larger than {1} MB.": "{0}은(는) 첨부되지 않습니다: {1}MB를 넘습니다.",
+  "Or drop files from your file manager on the chat while holding Shift.": "또는 Shift 키를 누른 채 파일 관리자에서 채팅으로 파일을 끌어다 놓으세요.",
+  "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0}은(는) 폴더입니다: 파일 관리자에서 끌어온 폴더는 첨부할 수 없습니다. @folder 또는 탐색기의 채팅에 첨부를 사용하세요.",
+  "{0} could not be read, and is not attached.": "{0}을(를) 읽을 수 없어 첨부되지 않습니다."
 }

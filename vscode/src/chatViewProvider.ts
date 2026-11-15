@@ -2,6 +2,10 @@
 // (this class) is the source of truth for the transcript — the webview can be destroyed
 // on hide and is re-hydrated on every resolveWebviewView.
 import * as vscode from 'vscode';
+import * as os from 'os';
+import * as fs from 'fs';
+import * as path from 'path';
+import { DROPPED_FILE_LIMIT } from './droppedFiles';
 import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
@@ -173,6 +177,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private statusTimer: NodeJS.Timeout | undefined;
   /** Context chips (slash attachChip effects, @-mentions, "+" menu), consumed by the next turn. */
   private pendingAttachments: PendingAttachment[] = [];
+  /** The files dropped on the chat, attached one after the other. */
+  private drops: Promise<void> = Promise.resolve();
   /** What `image/check` said for the chips' images: the composer's line, and the chips' warning when it does not see. */
   private imageSeen: { goesTo: string; sees: boolean | null; warning: string } | undefined;
   /** The not-seen card on screen, waiting for the person's choice (a Stop answers it "without": the turn then stops). */
@@ -2022,6 +2028,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       case 'attachImage':
         await this.attachImage({ name: msg.name, data: msg.data, pasted: msg.pasted });
+        return;
+      case 'attachDroppedFile':
+        // One drop after the other: images dropped together each count the ones before (the per-question limit).
+        this.drops = this.drops.then(() => this.attachDroppedFile(msg.name, msg.data, msg.mediaType, msg.outcome));
+        await this.drops;
         return;
       case 'imageCardChoice':
         this.imageCardAnswer?.(msg.choice);
@@ -4071,10 +4082,52 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * A file dropped from the system's file manager, which gives the webview its bytes and its name, never its path. An
+   * image — by its extension or the type the system gave it — goes to the image reader; anything else is written to a
+   * copy in a folder of its own (created for this drop, readable by this account only), read as Attach to Chat reads a
+   * file (a document's text, a binary refused), its chip named by the file's name, and the copy removed once read.
+   */
+  private async attachDroppedFile(name: string, data: string, mediaType: string,
+    outcome: 'folder' | 'tooLarge' | 'unreadable' | undefined): Promise<void> {
+    if (outcome === 'folder') {
+      void vscode.window.showWarningMessage(t("{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.", name));
+      return;
+    }
+    if (outcome === 'tooLarge') {
+      void vscode.window.showWarningMessage(t('{0} is not attached: it is larger than {1} MB.', name, DROPPED_FILE_LIMIT / (1024 * 1024)));
+      return;
+    }
+    if (outcome === 'unreadable') {
+      void vscode.window.showWarningMessage(t("{0} could not be read, and is not attached.", name));
+      return;
+    }
+    if (IMAGE_FILE.test(name) || mediaType.startsWith('image/')) {
+      await this.attachImage({ name, data });
+      return;
+    }
+    let dir: string | undefined;
+    try {
+      // ⚠ Never a folder of a fixed name in the shared temp: on a machine several accounts use, the first to create it
+      // owns it. mkdtemp makes one for this drop, private to this account.
+      dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'inferpal-drop-'));
+      const copy = vscode.Uri.file(path.join(dir, name.replace(/[\\/:*?"<>|]/g, '_')));
+      await vscode.workspace.fs.writeFile(copy, Buffer.from(data, 'base64'));
+      await this.attachItem(copy, name);
+    } catch (err) {
+      this.gestureFailed('attach dropped file', err);
+    } finally {
+      if (dir) {
+        await fs.promises.rm(dir, { recursive: true, force: true }).catch(() => undefined);
+      }
+    }
+  }
+
+  /**
    * The explorer's "Attach to Chat": the chip `@folder` or the attach button makes, in the composer, nothing sent. A
    * folder goes through the host (its refusals); a file is the editor's text, judged against the ignore files when sent.
+   * @param label The chip's name when it is not the file's place in the workspace (a dropped file's copy).
    */
-  async attachItem(uri: vscode.Uri): Promise<void> {
+  async attachItem(uri: vscode.Uri, label?: string): Promise<void> {
     try {
       await vscode.commands.executeCommand('inferpal.chat.focus');
     } catch {
@@ -4091,7 +4144,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       const read = await this.readAttachable(uri);
       if (read?.text !== undefined && read.text !== null) {
-        this.addChip('📄 ' + vscode.workspace.asRelativePath(uri), read.text, uri.fsPath, uri.fsPath);
+        this.addChip('📄 ' + (label ?? vscode.workspace.asRelativePath(uri)), read.text, label ? undefined : uri.fsPath, uri.fsPath);
       } else if (read?.refusal) {
         void vscode.window.showWarningMessage(read.refusal);
       }

@@ -90,9 +90,9 @@ public sealed class ExplorerFrontEndTests
                         ConversationPersistenceSilenceTests.TsMethodBody(provider, "explainItem(uri: vscode.Uri)"), StringComparison.Ordinal);
         Assert.Contains("this.runSlashCommand(`/check \"${uri.fsPath}\"`)",
                         ConversationPersistenceSilenceTests.TsMethodBody(provider, "reviewItem(uri: vscode.Uri)"), StringComparison.Ordinal);
-        var attach = ConversationPersistenceSilenceTests.TsMethodBody(provider, "async attachItem(uri: vscode.Uri)");
+        var attach = ConversationPersistenceSilenceTests.TsMethodBody(provider, "async attachItem(uri: vscode.Uri, label?: string)");
         Assert.Matches(@"FileType\.Directory\)\s*\{\s*await this\.resolveMention\('folder', uri\.fsPath\)", attach);
-        Assert.Contains("this.addChip('📄 ' + vscode.workspace.asRelativePath(uri), read.text, uri.fsPath, uri.fsPath)", attach,
+        Assert.Contains("this.addChip('📄 ' + (label ?? vscode.workspace.asRelativePath(uri)), read.text, label ? undefined : uri.fsPath, uri.fsPath)", attach,
                         StringComparison.Ordinal);
         Assert.Contains("this.gestureFailed('attach to chat', err)", attach, StringComparison.Ordinal);
     }

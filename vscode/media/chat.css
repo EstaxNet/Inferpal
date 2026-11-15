@@ -2701,3 +2701,9 @@ kbd {
   gap: 8px;
   margin-top: 8px;
 }
+
+/* A file dragged over the chat: the composer shows where it lands. */
+#composer.drop-target {
+  outline: 2px dashed var(--vscode-focusBorder);
+  outline-offset: 2px;
+}

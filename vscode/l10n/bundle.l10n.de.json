@@ -224,5 +224,9 @@
   "{0} more @-mentions not looked at (at most {1} per question)": "{0} weitere @-Erwähnungen nicht geprüft (höchstens {1} pro Frage)",
   "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "Der Assistent wurde neu gestartet und konnte /tools off, den Schrittmodus und die deaktivierten X-Ray-Abschnitte nicht wiederherstellen.",
   "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "Mit der Frage gesendet: {0}. Wird sie erneut gestellt, wird nur gelesen, was ihre Worte nennen (eine @-Erwähnung; /explain liest den Editor, wie er jetzt ist); hängen Sie den Rest selbst an.",
-  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Nichts erneut zu fragen: Diese Frage bestand nur aus dem, was sie begleitete ({0}), und eine gespeicherte Unterhaltung behält das nicht. Hängen Sie es erneut an, um zu fragen."
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Nichts erneut zu fragen: Diese Frage bestand nur aus dem, was sie begleitete ({0}), und eine gespeicherte Unterhaltung behält das nicht. Hängen Sie es erneut an, um zu fragen.",
+  "{0} is not attached: it is larger than {1} MB.": "{0} wird nicht angehängt: größer als {1} MB.",
+  "Or drop files from your file manager on the chat while holding Shift.": "Oder ziehen Sie Dateien aus Ihrem Dateimanager mit gedrückter Umschalttaste in den Chat.",
+  "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0} ist ein Ordner: Ein aus dem Dateimanager gezogener Ordner kann nicht angehängt werden. Verwenden Sie @folder oder „An Chat anhängen“ im Explorer.",
+  "{0} could not be read, and is not attached.": "{0} konnte nicht gelesen werden und wird nicht angehängt."
 }

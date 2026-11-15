@@ -27,6 +27,7 @@ import { renderXray, setXraySink } from './xray';
 import { icon, iconButton, setIcon, type IconName } from './icons';
 import { mentionFor } from '../mentionPaths';
 import { splitBubbleText } from '../bubbleText';
+import { DROPPED_FILE_LIMIT } from '../droppedFiles';
 
 const vscode = window.__vsapi ?? acquireVsCodeApi();
 const post = (msg: WebviewToExt) => vscode.postMessage(msg);
@@ -331,6 +332,12 @@ plusBtn.addEventListener('click', (e) => {
     menuItem(t('attachBrowse'), () => post({ type: 'attachBrowse' })),
     menuItem(t('pinActiveFile'), () => post({ type: 'pinActive' })),
   );
+  // VS Code hands a webview a dropped file only with Shift held, and never a drag from its own Explorer or tabs (Attach
+  // to Chat, in their context menu, does that): said here, since the chat cannot see a drag it is not given.
+  const dropHint = document.createElement('div');
+  dropHint.className = 'menu-note';
+  dropHint.textContent = t('attachDropHint');
+  plusMenu.append(dropHint);
   // The composer is at the bottom: the menu opens upwards, over the conversation.
   const r = plusBtn.getBoundingClientRect();
   plusMenu.style.left = `${r.left}px`;
@@ -3413,15 +3420,75 @@ promptEl.addEventListener('paste', (e) => {
     e.preventDefault();
   }
 });
-composerEl.addEventListener('dragover', (e) => {
-  if ([...(e.dataTransfer?.items ?? [])].some((i) => i.kind === 'file')) {
-    e.preventDefault();
+// ── Files dropped on the chat: chips, as Attach to Chat makes them ─────────────
+// Only what carries files: a link or a picture dragged inside the page goes on as before. VS Code hands a webview a drop
+// from the system's file manager only with Shift held, and never a drag from its own Explorer or editor tabs (measured):
+// a dropped file gives its bytes and its name, never its path, and the bytes are what is read — a path would name the
+// wrong file when the window works on WSL, SSH or a container.
+function carriesFiles(dt: DataTransfer | null): boolean {
+  return !!dt && dt.types.includes('Files');
+}
+/** A dropped file's bytes as base64, or null when they cannot be read (locked, a cloud placeholder, a folder). */
+function readDropped(file: File): Promise<string | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = String(reader.result ?? '');
+      resolve(url.slice(url.indexOf(',') + 1));
+    };
+    reader.onerror = () => resolve(null);
+    reader.onabort = () => resolve(null);
+    reader.readAsDataURL(file);
+  });
+}
+let dragDepth = 0;
+document.addEventListener('dragenter', (e) => {
+  if (carriesFiles(e.dataTransfer)) {
+    dragDepth++;
+    composerEl.classList.add('drop-target');
   }
 });
-composerEl.addEventListener('drop', (e) => {
-  if (attachImageFiles(e.dataTransfer?.files, false)) {
-    e.preventDefault();
+document.addEventListener('dragleave', () => {
+  if (dragDepth > 0 && --dragDepth === 0) {
+    composerEl.classList.remove('drop-target');
   }
+});
+document.addEventListener('dragover', (e) => {
+  if (carriesFiles(e.dataTransfer)) {
+    e.preventDefault();
+    e.dataTransfer!.dropEffect = 'copy';
+  }
+});
+document.addEventListener('drop', (e) => {
+  dragDepth = 0;
+  composerEl.classList.remove('drop-target');
+  const dt = e.dataTransfer;
+  if (!carriesFiles(dt)) {
+    return;
+  }
+  e.preventDefault();
+  const entries = [...dt!.items].filter((i) => i.kind === 'file').map((i) => i.webkitGetAsEntry());
+  const files = [...dt!.files];
+  // One file read at a time: five large documents are never in the page at once.
+  void (async () => {
+    for (const [n, file] of files.entries()) {
+      const name = file.name;
+      // A folder gives the page no path and no bytes: said, never read.
+      if (entries[n]?.isDirectory) {
+        post({ type: 'attachDroppedFile', name, data: '', mediaType: '', outcome: 'folder' });
+        continue;
+      }
+      // Past the limit, never read into the page: the extension says it is not attached.
+      if (file.size > DROPPED_FILE_LIMIT) {
+        post({ type: 'attachDroppedFile', name, data: '', mediaType: file.type, outcome: 'tooLarge' });
+        continue;
+      }
+      const data = await readDropped(file);
+      post(data === null
+        ? { type: 'attachDroppedFile', name, data: '', mediaType: file.type, outcome: 'unreadable' }
+        : { type: 'attachDroppedFile', name, data, mediaType: file.type });
+    }
+  })();
 });
 
 /** The card before sending, for a model that does not see the images: ask the model of the server that does, or send

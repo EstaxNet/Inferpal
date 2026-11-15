@@ -224,5 +224,9 @@
   "{0} more @-mentions not looked at (at most {1} per question)": "Kolejne wzmianki @ niesprawdzone: {0} (najwyżej {1} na pytanie)",
   "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "Asystent uruchomił się ponownie i nie mógł przywrócić /tools off, trybu krokowego ani wyłączonych sekcji X-Ray.",
   "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "Wysłano z pytaniem: {0}. Ponowne zadanie odczytuje tylko to, co wskazują jego słowa (@-wzmianka; /explain czyta edytor w obecnym stanie); resztę dołącz samodzielnie.",
-  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Nie ma czego zapytać ponownie: to pytanie było tylko tym, co do niego dołączono ({0}), a zapisana rozmowa tego nie przechowuje. Dołącz to ponownie, aby zapytać."
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Nie ma czego zapytać ponownie: to pytanie było tylko tym, co do niego dołączono ({0}), a zapisana rozmowa tego nie przechowuje. Dołącz to ponownie, aby zapytać.",
+  "{0} is not attached: it is larger than {1} MB.": "{0} nie zostanie dołączony: jest większy niż {1} MB.",
+  "Or drop files from your file manager on the chat while holding Shift.": "Lub upuść pliki z menedżera plików na czat, przytrzymując Shift.",
+  "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0} to folder: folderu upuszczonego z menedżera plików nie można dołączyć. Użyj @folder lub „Dołącz do czatu” w Eksploratorze.",
+  "{0} could not be read, and is not attached.": "Nie udało się odczytać {0}: nie zostanie dołączony."
 }

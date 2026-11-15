@@ -72,8 +72,11 @@ the chip `@file` or `@folder` makes, with the same refusals; nothing is sent unt
 node is not attached (it carries no file to attach): a notice says so — drop its files, or attach its folder with
 `@folder`.
 
-**VS Code does not offer it:** it hands a drop from its own Explorer to no extension view, and one from
-outside VS Code only with Shift held and without the file's path.
+**VS Code: drop files from your file manager with Shift held.** VS Code hands a drop from outside it to the chat only
+while Shift is held, and gives the file's bytes and name, not its path: Inferpal reads a copy — a document as its text,
+an image as an image, a text file as text, each with the refusals of any attachment (20 MB at most). A folder dropped this
+way cannot be attached, and a notice says so. VS Code hands no extension view a drag from its own Explorer or editor
+tabs: right-click the file or folder there, then **Attach to Chat**. The **+** menu reminds both.
 
 ## Attach your changes
 

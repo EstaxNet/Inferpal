@@ -224,5 +224,9 @@
   "{0} more @-mentions not looked at (at most {1} per question)": "{0} menciones @ más sin examinar (como máximo {1} por pregunta)",
   "The assistant restarted and could not restore /tools off, step mode or the X-Ray sections turned off.": "El asistente se reinició y no pudo restaurar /tools off, el modo paso a paso ni las secciones de X-Ray desactivadas.",
   "Sent with the question: {0}. Asking it again re-reads only what its words name (an @-mention; /explain reads the editor as it is now); attach the rest yourself.": "Enviado con la pregunta: {0}. Al volver a hacerla, solo se relee lo que nombran sus palabras (una @-mención; /explain lee el editor tal como está ahora); adjunte el resto usted mismo.",
-  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Nada que volver a preguntar: esta pregunta era solo lo que la acompañaba ({0}), que una conversación guardada no conserva. Adjúntelo de nuevo para preguntar."
+  "Nothing to ask again: this question was only what went with it ({0}), which a saved conversation does not keep. Attach it again to ask.": "Nada que volver a preguntar: esta pregunta era solo lo que la acompañaba ({0}), que una conversación guardada no conserva. Adjúntelo de nuevo para preguntar.",
+  "{0} is not attached: it is larger than {1} MB.": "{0} no se adjunta: supera los {1} MB.",
+  "Or drop files from your file manager on the chat while holding Shift.": "O suelte archivos desde su explorador de archivos en el chat manteniendo Mayús.",
+  "{0} is a folder: a folder dropped from your file manager cannot be attached. Use @folder, or Attach to Chat in the Explorer.": "{0} es una carpeta: una carpeta soltada desde su explorador de archivos no se puede adjuntar. Use @folder o Adjuntar al chat en el Explorador.",
+  "{0} could not be read, and is not attached.": "{0} no se pudo leer y no se adjunta."
 }

@@ -348,6 +348,7 @@ export type WebviewToExt =
   | { type: 'resolveMention'; category: string; value?: string }
   | { type: 'removeChip'; index: number }
   | { type: 'attachImage'; name: string; data: string; pasted: boolean }
+  | { type: 'attachDroppedFile'; name: string; data: string; mediaType: string; outcome?: 'folder' | 'tooLarge' | 'unreadable' }
   | { type: 'imageCardChoice'; choice: 'other' | 'without' }
   /** The draft changed: the extension looks for the code it is about once typing pauses. */
   | { type: 'draft'; text: string }
