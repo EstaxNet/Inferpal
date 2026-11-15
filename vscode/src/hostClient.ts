@@ -924,7 +924,7 @@ export class HostClient {
   /** The text of a file VS Code cannot open as text — a PDF or DOCX's extracted text — or why there is none. */
   /** An image to attach — a file, or pasted or dropped bytes — read by the Core: reduced or converted, or refused. */
   imageRead(params: { path?: string; name?: string; data?: string; pasted?: boolean; already?: number }):
-    Promise<{ image: ImageDto | null; detail: string | null; refusal: string | null; note: string | null }> {
+    Promise<{ image: ImageDto | null; detail: string | null; refusal: string | null; note: string | null; thumbnail?: string | null }> {
     return this.connection().sendRequest('image/read', params);
   }
 

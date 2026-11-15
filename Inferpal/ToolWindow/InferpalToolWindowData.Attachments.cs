@@ -304,7 +304,7 @@ internal partial class InferpalToolWindowData
                 await NotifyMentionAsync(read.Refusal ?? string.Empty);
                 return;
             }
-            var model = ModelRouter.Resolve(_config, _config.AgentModeEnabled || _planMode ? ModelRole.Agent : ModelRole.Chat);
+            var model = await ImageModelAsync(null, ct);
             bool? sees = null;
             try { sees = await _client.SeesImagesAsync(model, ct); }
             catch (System.Net.Http.HttpRequestException ex) { Diagnostics.Swallow("ImageChip.Sees", ex); }
@@ -332,6 +332,19 @@ internal partial class InferpalToolWindowData
         {
             await NotifyMentionAsync(Strings.AttachError(ex.Message));
         }
+    }
+
+    /// <summary>
+    /// The model the next question answers with, as the turn resolves it: a one-time model, else the agent's or the chat's
+    /// role, then the held mode's own model when the server has one — what the chip and the not-seen card ask about.
+    /// </summary>
+    private async Task<string> ImageModelAsync(string? oneTimeModel, CancellationToken ct)
+    {
+        if (!string.IsNullOrEmpty(oneTimeModel)) return oneTimeModel;
+        var model = ModelRouter.Resolve(_config, (_config.AgentModeEnabled || _planMode) && _heldMode is null && _toolsEnabled
+                                                 ? ModelRole.Agent : ModelRole.Chat);
+        if (_heldMode is { } mode) model = (await ChatModes.PickModelAsync(_client, mode, model, ct)).Item1 ?? model;
+        return model;
     }
 
     /// <summary>Adds a chip to the question being written: its text capped, said when cut.</summary>

@@ -134,7 +134,7 @@ internal class OllamaClient : InferenceProviderBase
         // history clean (better KV-cache reuse) and guards any model whose template is strict.
         var request = new ChatRequest(
             model,
-            prompted ? PromptedTools.Rewrite(messages, defs!) : CoalesceConsecutiveRoles(Documents.ChatImages.OnlyWithTheirQuestion(messages)),
+            prompted ? PromptedTools.Rewrite(messages, defs!) : CoalesceConsecutiveRoles(messages),
             prompted ? null : defs,
             Stream: true, KeepAlive: ComputeKeepAlive(),
             Options: ComputeOptions(model, prompted ? PromptedTools.ResponseMarkers : null),

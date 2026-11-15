@@ -371,14 +371,21 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             {
                 var prev = result[^1];
                 // Merge adjacent same-role plain turns (user→user, assistant→assistant).
+                // ⚠ The images of both go with the merged turn: a question merged into the one before it kept only the
+                // earlier one's, and the images of the question asked now were dropped without a word.
                 if (prev.Role == m.Role && IsPlain(prev))
                 {
-                    result[^1] = prev with { Content = JoinBodies(prev.Content, m.Content) };
+                    result[^1] = prev with
+                    {
+                        Content = JoinBodies(prev.Content, m.Content),
+                        Images  = prev.Images is null ? m.Images : m.Images is null ? prev.Images : [.. prev.Images, .. m.Images],
+                    };
                     continue;
                 }
                 // Fold a user nudge that follows a tool result into that result (tool→user is illegal
-                // under strict templates; assistant→user is valid alternation and is left untouched).
-                if (m.Role == "user" && prev.Role == "tool")
+                // under strict templates; assistant→user is valid alternation and is left untouched). A message with
+                // images is never folded: a tool result carries no image.
+                if (m.Role == "user" && prev.Role == "tool" && m.Images is not { Count: > 0 })
                 {
                     result[^1] = prev with { Content = JoinBodies(prev.Content, m.Content) };
                     continue;

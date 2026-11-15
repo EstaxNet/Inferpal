@@ -111,7 +111,8 @@ internal sealed record ImageReadParams(string? Name = null, string? Data = null,
 
 /// <summary>What <c>image/read</c> gives: the image to send (reduced or converted when it had to be) and its chip's size
 /// line, or why it is not attached; <paramref name="Note"/> says what was done to it.</summary>
-internal sealed record ImageReadResult(ImageDto? Image, string? Detail, string? Refusal, string? Note);
+/// <param name="Thumbnail">A small PNG of it as a data URL, drawn under the question; <c>null</c> when it cannot be made.</param>
+internal sealed record ImageReadResult(ImageDto? Image, string? Detail, string? Refusal, string? Note, string? Thumbnail = null);
 
 /// <summary><c>image/check</c>: whether the model the next question answers with sees images, for the images named.</summary>
 internal sealed record ImageCheckParams(List<string> Names, string? Model = null, bool? AgentMode = null, bool ModelOverridesRoles = false);

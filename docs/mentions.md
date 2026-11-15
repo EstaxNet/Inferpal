@@ -56,8 +56,8 @@ attached, and say so.
 
 **An image goes with the question as an image**, never as text: paste a screenshot in the prompt (Ctrl+V), drop one on
 the chat, attach it with `@file`, Browse or Attach to Chat — or, from an ACP client, its image blocks. PNG, JPEG, WebP and
-GIF are sent as they are; a BMP is converted to PNG; HEIC, TIFF and SVG are refused, with the advice to save the image as
-a PNG. At most 4 images per question, 10 MB each. An image larger than 1920 × 1080 is scaled down to fit on your machine
+GIF are sent as they are; a BMP is converted to PNG; HEIC and TIFF are refused, with the advice to save the image as
+a PNG; an SVG is text, attached as its markup. A large photo is turned upright by its EXIF orientation before it is scaled down. At most 4 images per question, 10 MB each. An image larger than 1920 × 1080 is scaled down to fit on your machine
 (a model reads no more from a larger one), and said — small text may become hard to read, so crop the part that matters;
 one that declares more than 40 million pixels is refused before anything decodes it. The chip shows the image's size; the
 line under the chips names the model it goes to. **When the model that will answer does not see images** — as your

@@ -88,6 +88,9 @@ internal static class ChatDropTarget
             if (image is null) return false;
             var dir = Path.Combine(Path.GetTempPath(), "Inferpal", "pasted");
             Directory.CreateDirectory(dir);
+            // A paste is attached within seconds: what an earlier day left is removed, never left to pile up.
+            foreach (var old in new DirectoryInfo(dir).GetFiles("image-*.png"))
+                if (old.LastWriteTimeUtc < DateTime.UtcNow.AddDays(-1)) { try { old.Delete(); } catch { } }
             var path = Path.Combine(dir, "image-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture) + ".png");
             var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
             encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(image));

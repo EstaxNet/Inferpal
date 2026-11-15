@@ -244,9 +244,7 @@ internal partial class InferpalToolWindowData
             var images = attachments.Where(a => a.Image is not null).ToList();
             if (images.Count > 0)
             {
-                var asked = ModelRouter.Resolve(_config, (_config.AgentModeEnabled || _planMode) && _heldMode is null
-                                                         && oneTimeModel is null && _toolsEnabled ? ModelRole.Agent : ModelRole.Chat);
-                if (!string.IsNullOrEmpty(oneTimeModel)) asked = oneTimeModel;
+                var asked = await ImageModelAsync(oneTimeModel, localCts!.Token);
                 bool? sees = null;
                 try { sees = await _client.SeesImagesAsync(asked, localCts!.Token); }
                 catch (System.Net.Http.HttpRequestException ex) { Diagnostics.Swallow("ImageCheck", ex); }
@@ -336,7 +334,8 @@ internal partial class InferpalToolWindowData
                 var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(), _history);
                 historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, activeFile);
                 _history.Add(new ChatMessageDto("user", historyText));
-                // The images go with the question, never in its text.
+                // The images go with the question, never in its text; an earlier question's are not sent again.
+                Services.Documents.ChatImages.RetireEarlier(_history, before: _history.Count - 1);
                 if (images.Count > 0) _history[^1] = _history[^1] with { Images = [.. images.Select(a => a.Image!.Base64)] };
                 _questionInHistory = _lastSent?.Question;
                 // ⚠ Sent once the question carrying it is in the history: set when the block was BUILT, a Stop during

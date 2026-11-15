@@ -120,8 +120,11 @@ public sealed class ChatImagesTests
         Assert.Equal(Strings.ImageTooLarge("big.png", 10), big.Refusal);
     }
 
+    /// <summary>A question's images are retired when the NEXT question enters the history — never by guessing, per request,
+    /// which user message is the question: the run's own prompts (the plan's request, the synthesis) are user messages after
+    /// it, and that guess took the images off the question for the whole run.</summary>
     [Fact]
-    public void AnImage_IsSentWithItsQuestionOnly_AndAnEarlierQuestion_SaysItsImagesWereSentThen()
+    public void AnImage_IsRetiredWhenTheNextQuestionArrives_AndEveryRequestOfItsRunCarriesIt()
     {
         var image = Convert.ToBase64String(Png(4, 4));
         List<ChatMessageDto> history =
@@ -129,14 +132,78 @@ public sealed class ChatImagesTests
             new("user", "Pourquoi le build échoue ?", Images: [image]),
             new("assistant", "Il manque un point-virgule."),
             new("user", "Et maintenant ?"),
-            new("user", "[plan]") { IsScaffolding = true },
         ];
-        var sent = ChatImages.OnlyWithTheirQuestion(history);
-        Assert.Null(sent[0].Images);
-        Assert.Contains("1 image(s) were attached to this earlier question", sent[0].Content);
-        // The latest question is the person's last one, not a step the run added: its images stay.
-        List<ChatMessageDto> run = [new("user", "Lis cette capture", Images: [image]), new("user", "[observe]") { IsScaffolding = true }];
-        Assert.Equal([image], ChatImages.OnlyWithTheirQuestion(run)[0].Images);
+        ChatImages.RetireEarlier(history, before: history.Count - 1);
+        Assert.Null(history[0].Images);
+        Assert.Contains("1 image(s) were attached to this earlier question", history[0].Content);
+
+        // The run of a question with an image: its plan request and its synthesis follow it, and the request still carries
+        // the image — nothing per request takes it off.
+        List<ChatMessageDto> run = [new("user", "Lis cette capture", Images: [image]), new("user", "[plan request]")];
+        ChatImages.RetireEarlier(run, before: 0);
+        var sent = InferenceProviderBase.CoalesceConsecutiveRoles(run);
+        Assert.Equal([image], Assert.Single(sent).Images);
+    }
+
+    /// <summary>Two user turns merged into one keep the images of both; a question with images is never folded into a
+    /// tool result, which carries none.</summary>
+    [Fact]
+    public void MergedTurns_KeepTheirImages_AndAQuestionWithImages_IsNotFoldedIntoAToolResult()
+    {
+        var a = Convert.ToBase64String(Png(4, 4));
+        var b = Convert.ToBase64String(Png(6, 6));
+        var merged = InferenceProviderBase.CoalesceConsecutiveRoles([new("user", "one", Images: [a]), new("user", "two", Images: [b])]);
+        Assert.Equal([a, b], Assert.Single(merged).Images);
+        var afterTool = InferenceProviderBase.CoalesceConsecutiveRoles([new("tool", "result"), new("user", "look", Images: [a])]);
+        Assert.Equal(2, afterTool.Count);
+        Assert.Equal([a], afterTool[1].Images);
+    }
+
+    /// <summary>A size read as signed — a BMP's height of int.MinValue, a negative width — is a damaged image, never an
+    /// exception nor a size that passes the pixel cap; an SVG is text, not an image.</summary>
+    [Fact]
+    public void ASignedSizeOutOfRange_IsDamaged_AndAnSvg_IsNoImage()
+    {
+        var bmp = new byte[54];
+        "BM"u8.CopyTo(bmp);
+        BitConverter.GetBytes(4).CopyTo(bmp, 18);
+        BitConverter.GetBytes(int.MinValue).CopyTo(bmp, 22);
+        Assert.Equal(Strings.ImageDamaged("x.bmp"), ChatImages.Read(bmp, "x.bmp").Refusal);
+        var png = Png(1, 1);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(png.AsSpan(16), -1);
+        System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(png.AsSpan(20), 2_000_000_000);
+        Assert.Equal(Strings.ImageDamaged("x.png"), ChatImages.Read(png, "x.png").Refusal);
+        Assert.False(ChatImages.Handles("logo.svg"));
+    }
+
+    /// <summary>EXIF orientation 6 (a phone held upright, pixels stored on their side) turns a 3 × 2 image into a 2 × 3 one,
+    /// its top-left pixel going to the top-right; the orientation is read from the JPEG's Exif block.</summary>
+    [Fact]
+    public void APhotoStoredOnItsSide_IsTurnedUpright()
+    {
+        var src = new byte[3 * 2 * 4];
+        src[0] = 255;   // red at (0, 0)
+        var (pixels, w, h) = ChatImages.Orient(src, 3, 2, 6);
+        Assert.Equal((2, 3), (w, h));
+        Assert.Equal(255, pixels[(0 * 2 + 1) * 4]);   // now at (1, 0)
+
+        // FF D8, APP1 "Exif\0\0", a big-endian TIFF header, one IFD entry: 0x0112 = 6.
+        byte[] jpeg = [0xFF, 0xD8, 0xFF, 0xE1, 0x00, 0x22, (byte)'E', (byte)'x', (byte)'i', (byte)'f', 0, 0,
+                       (byte)'M', (byte)'M', 0x00, 0x2A, 0x00, 0x00, 0x00, 0x08, 0x00, 0x01,
+                       0x01, 0x12, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xDA];
+        Assert.Equal(6, ChatImages.JpegOrientation(jpeg));
+        Assert.Equal(1, ChatImages.JpegOrientation([0xFF, 0xD8, 0xFF, 0xDA, 0x00, 0x02]));
+    }
+
+    /// <summary>The copy drawn under the question is small: a thumbnail, never the image sent.</summary>
+    [Fact]
+    public void TheThumbnail_IsASmallPng()
+    {
+        var image = ChatImages.Read(Png(1600, 900), "capture.png").Image!;
+        var thumb = ChatImages.Thumbnail(image)!;
+        Assert.StartsWith("data:image/png;base64,", thumb);
+        var (_, w, h) = ChatImages.Sniff(Convert.FromBase64String(thumb["data:image/png;base64,".Length..]));
+        Assert.True(w <= 240 && h <= 160, $"{w} x {h}");
     }
 
     [Fact]

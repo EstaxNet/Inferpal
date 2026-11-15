@@ -276,6 +276,7 @@ export type ExtToWebview =
   | { type: 'mentionResults'; category: string; query: string; items: WvMentionItem[] }
   | { type: 'chips'; chips: WvChip[]; imageLine?: string }
   | { type: 'imageCard'; card: import('./protocol').ImageNotSeenCard }
+  | { type: 'imageCardGone' }
   | { type: 'pins'; pins: string[] }
   | { type: 'stepPaused' }
   | { type: 'stepResumed' }

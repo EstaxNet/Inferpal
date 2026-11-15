@@ -3407,8 +3407,9 @@ function attachImageFiles(files: FileList | null | undefined, pasted: boolean): 
   return images.length > 0;
 }
 
+// A clipboard that holds text too (cells of a sheet, a page of a document) pastes the text, as Visual Studio does.
 promptEl.addEventListener('paste', (e) => {
-  if (attachImageFiles(e.clipboardData?.files, true)) {
+  if (!e.clipboardData?.types.includes('text/plain') && attachImageFiles(e.clipboardData?.files, true)) {
     e.preventDefault();
   }
 });
@@ -3975,6 +3976,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'imageCard':
       renderImageCard(msg.card);
+      break;
+    case 'imageCardGone':
+      document.querySelectorAll('.image-card').forEach((c) => c.remove());
       break;
     case 'pins':
       renderPins(msg.pins);

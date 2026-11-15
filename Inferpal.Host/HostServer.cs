@@ -436,7 +436,8 @@ internal sealed partial class HostServer : IDisposable
             var promptText = ChatTurnPolicy.WithInjectedContext(ChatTurnPolicy.WithUserNotes(p.Prompt, p.Notes ?? []),
                                                                 autoCtx, workspace, activeFile);
             s.History.Add(new ChatMessageDto("user", promptText));
-            // The images go with the question, never in its text.
+            // The images go with the question, never in its text; an earlier question's are not sent again.
+            Services.Documents.ChatImages.RetireEarlier(s.History, before: s.History.Count - 1);
             if (p.Images is { Count: > 0 } images)
                 s.History[^1] = s.History[^1] with { Images = [.. images.Take(Services.Documents.ChatImages.MaxPerQuestion).Select(i => i.Data)] };
             questionKept = true;
@@ -1588,7 +1589,7 @@ internal sealed partial class HostServer : IDisposable
         var read = Services.Documents.ChatImages.Read(bytes, name);
         if (read.Image is not { } image) return new(null, null, read.Refusal, null);
         return new(new ImageDto(image.Name, image.MediaType, image.Base64),
-                   Services.Presentation.ImageCards.Chip(image, p.Pasted).Detail, null, read.Note);
+                   Services.Presentation.ImageCards.Chip(image, p.Pasted).Detail, null, read.Note, Services.Documents.ChatImages.Thumbnail(image));
     }
 
     /// <summary>

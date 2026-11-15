@@ -59,7 +59,7 @@ record ChatOptions(
 /// </param>
 /// <param name="Images">Images the person attached to this question, base64 without a data-URL prefix — Ollama's own
 /// field; the OpenAI-compatible client turns them into content parts. Sent with their question only
-/// (<see cref="Services.Documents.ChatImages.OnlyWithTheirQuestion"/>).</param>
+/// (<see cref="Services.Documents.ChatImages.RetireEarlier"/>).</param>
 record ChatMessageDto(
     [property: JsonPropertyName("role")]       string Role,
     [property: JsonPropertyName("content")]    string? Content = null,

@@ -40,7 +40,8 @@ internal static class ChatImages
     internal const long MaxPixels = 40_000_000;
 
     /// <summary>Extensions the attach pickers offer as images.</summary>
-    internal static readonly string[] Extensions = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".heic", ".heif", ".tif", ".tiff", ".svg"];
+    /// <remarks>Not <c>.svg</c>: an SVG is text, and is attached as its markup.</remarks>
+    internal static readonly string[] Extensions = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".heic", ".heif", ".tif", ".tiff"];
 
     /// <summary>Whether <paramref name="path"/> names an image file, by its extension: what decides to read it as an image
     /// rather than as a text or a document.</summary>
@@ -53,12 +54,21 @@ internal static class ChatImages
             return new(null, Strings.ImageTooLarge(name, (int)(MaxBytes / (1024 * 1024))), null);
         var (mediaType, width, height) = Sniff(bytes);
         var bmp = mediaType is null && bytes.Length >= 26 && bytes[0] == (byte)'B' && bytes[1] == (byte)'M';
-        if (bmp) (width, height) = (BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(18)), Math.Abs(BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(22))));
+        if (bmp)
+        {
+            // A BMP's height is signed (negative = drawn top-down); int.MinValue has no positive value.
+            var rawHeight = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(22));
+            width  = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(18));
+            height = rawHeight == int.MinValue ? -1 : Math.Abs(rawHeight);
+        }
         if (mediaType is null && !bmp)
         {
             var extension = Path.GetExtension(name).TrimStart('.').ToUpperInvariant();
             return new(null, Strings.ImageFormatNotSent(name, extension.Length > 0 ? extension : "?"), null);
         }
+        // A header read as signed (PNG, BMP) can declare a negative size, which would pass the pixel cap.
+        if (width < 0 || height < 0 || bmp && (width == 0 || height == 0))
+            return new(null, Strings.ImageDamaged(name), null);
         if ((long)width * height > MaxPixels)
             return new(null, Strings.ImageTooManyPixels(name, width, height), null);
         var large = width > LargeWidth || height > LargeHeight;
@@ -86,19 +96,104 @@ internal static class ChatImages
             Diagnostics.Swallow("ChatImages.Decode", ex);
             return null;
         }
-        var scale = Math.Min(1.0, Math.Min((double)LargeWidth / image.Width, (double)LargeHeight / image.Height));
-        int w = Math.Max(1, (int)(image.Width * scale)), h = Math.Max(1, (int)(image.Height * scale));
-        var pixels = image.Data;
-        if (w != image.Width || h != image.Height)
+        // A JPEG's EXIF orientation (a phone photo stored sideways) is applied: written again, the tag is gone.
+        var (source, sw, sh) = jpeg ? Orient(image.Data, image.Width, image.Height, JpegOrientation(bytes))
+                                    : (image.Data, image.Width, image.Height);
+        return Encode(source, sw, sh, LargeWidth, LargeHeight, jpeg);
+    }
+
+    /// <summary>The pixels (RGBA) fitted into <paramref name="boxW"/> × <paramref name="boxH"/> and written as a JPEG or a PNG.</summary>
+    private static (byte[] Data, string MediaType, int Width, int Height) Encode(byte[] source, int sw, int sh, int boxW, int boxH, bool jpeg)
+    {
+        var scale = Math.Min(1.0, Math.Min((double)boxW / sw, (double)boxH / sh));
+        int w = Math.Max(1, (int)(sw * scale)), h = Math.Max(1, (int)(sh * scale));
+        var pixels = source;
+        if (w != sw || h != sh)
         {
             pixels = new byte[w * h * 4];
-            StbImageResizeSharp.StbImageResize.stbir_resize_uint8(image.Data, image.Width, image.Height, image.Width * 4, pixels, w, h, w * 4, 4);
+            StbImageResizeSharp.StbImageResize.stbir_resize_uint8(source, sw, sh, sw * 4, pixels, w, h, w * 4, 4);
         }
         using var output = new MemoryStream();
         var writer = new StbImageWriteSharp.ImageWriter();
         if (jpeg) writer.WriteJpg(pixels, w, h, StbImageWriteSharp.ColorComponents.RedGreenBlueAlpha, output, 85);
         else writer.WritePng(pixels, w, h, StbImageWriteSharp.ColorComponents.RedGreenBlueAlpha, output);
         return (output.ToArray(), jpeg ? "image/jpeg" : "image/png", w, h);
+    }
+
+    /// <summary>
+    /// A small PNG of the image (240 × 160 at most), as a data URL, to draw under the question — a full image redrawn with
+    /// every refresh of the chat would carry megabytes each time. <c>null</c> when it does not decode here (a WebP).
+    /// </summary>
+    internal static string? Thumbnail(ChatImage image)
+    {
+        try
+        {
+            var decoded = StbImageSharp.ImageResult.FromMemory(Convert.FromBase64String(image.Base64), StbImageSharp.ColorComponents.RedGreenBlueAlpha);
+            var (data, _, _, _) = Encode(decoded.Data, decoded.Width, decoded.Height, 240, 160, jpeg: false);
+            return "data:image/png;base64," + Convert.ToBase64String(data);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or IndexOutOfRangeException or OverflowException or FormatException)
+        {
+            Diagnostics.Swallow("ChatImages.Thumbnail", ex);
+            return null;
+        }
+    }
+
+    /// <summary>A JPEG's EXIF orientation (1 to 8), 1 when it has none or it cannot be read.</summary>
+    internal static int JpegOrientation(byte[] b)
+    {
+        var at = 2;
+        while (at + 4 < b.Length && b[at] == 0xFF)
+        {
+            var marker = b[at + 1];
+            var length = BinaryPrimitives.ReadUInt16BigEndian(b.AsSpan(at + 2));
+            if (length < 2 || marker == 0xDA) return 1;
+            var exif = at + 4;
+            if (marker == 0xE1 && exif + 14 <= b.Length && b[exif] == (byte)'E' && b[exif + 1] == (byte)'x' && b[exif + 2] == (byte)'i' && b[exif + 3] == (byte)'f')
+            {
+                var tiff = exif + 6;
+                var little = b[tiff] == (byte)'I';
+                int U16(int o) => o + 2 <= b.Length ? (little ? BinaryPrimitives.ReadUInt16LittleEndian(b.AsSpan(o)) : BinaryPrimitives.ReadUInt16BigEndian(b.AsSpan(o))) : 0;
+                long U32(int o) => o + 4 <= b.Length ? (little ? BinaryPrimitives.ReadUInt32LittleEndian(b.AsSpan(o)) : BinaryPrimitives.ReadUInt32BigEndian(b.AsSpan(o))) : 0;
+                var ifd = tiff + U32(tiff + 4);
+                if (ifd < tiff || ifd + 2 > b.Length) return 1;
+                var entries = U16((int)ifd);
+                for (var e = 0; e < entries; e++)
+                {
+                    var entry = (int)ifd + 2 + e * 12;
+                    if (entry + 12 > b.Length) return 1;
+                    if (U16(entry) == 0x0112) return U16(entry + 8) is var o and >= 1 and <= 8 ? o : 1;
+                }
+                return 1;
+            }
+            at += 2 + length;
+        }
+        return 1;
+    }
+
+    /// <summary>RGBA pixels turned upright for an EXIF orientation: 2-4 mirror or turn half way, 5-8 swap the sides.</summary>
+    internal static (byte[] Pixels, int Width, int Height) Orient(byte[] src, int w, int h, int orientation)
+    {
+        if (orientation is < 2 or > 8) return (src, w, h);
+        var swap = orientation >= 5;
+        int ow = swap ? h : w, oh = swap ? w : h;
+        var dst = new byte[src.Length];
+        for (var y = 0; y < h; y++)
+            for (var x = 0; x < w; x++)
+            {
+                var (dx, dy) = orientation switch
+                {
+                    2 => (w - 1 - x, y),
+                    3 => (w - 1 - x, h - 1 - y),
+                    4 => (x, h - 1 - y),
+                    5 => (y, x),
+                    6 => (h - 1 - y, x),
+                    7 => (h - 1 - y, w - 1 - x),
+                    _ => (y, w - 1 - x),
+                };
+                Buffer.BlockCopy(src, (y * w + x) * 4, dst, (dy * ow + dx) * 4, 4);
+            }
+        return (dst, ow, oh);
     }
 
     /// <summary>The format and size of an image from its first bytes; a null format for anything the servers do not decode
@@ -170,19 +265,22 @@ internal static class ChatImages
     }
 
     /// <summary>
-    /// The conversation with each question's images kept on that question only while it is the latest one the person
-    /// asked; an earlier question keeps a line saying its images were sent then — a follow-up does not send every
-    /// screenshot again, nor does each step of a run send it twice over (the run's own messages are no questions).
+    /// Retires the images of the questions already in <paramref name="history"/>, before a new question joins it: each keeps
+    /// a line saying its images were sent then. Done when the question ENTERS the history, never guessed per request: the
+    /// run's own messages (the plan's request, an observation, the synthesis) are user messages after the question, and a
+    /// rule that kept images on "the latest user message" took them off the question for the whole run.
     /// </summary>
-    internal static List<ChatMessageDto> OnlyWithTheirQuestion(List<ChatMessageDto> messages)
+    /// <remarks>Every request of the run carries the question's images: a model keeps nothing between requests.</remarks>
+    /// <param name="before">How many messages, from the start, are earlier ones; all of them when not given.</param>
+    internal static void RetireEarlier(List<ChatMessageDto> history, int? before = null)
     {
-        var latest = messages.FindLastIndex(m => m.Role == "user" && !m.IsScaffolding && !m.IsUserNote);
-        if (!messages.Where((m, i) => i != latest && m.Images is { Count: > 0 }).Any()) return messages;
-        return [.. messages.Select((m, i) => i == latest || m.Images is not { Count: > 0 } images ? m : m with
-        {
-            Images = null,
-            Content = (m.Content ?? string.Empty) + string.Create(CultureInfo.InvariantCulture,
-                $"\n[{images.Count} image(s) were attached to this earlier question; they are not sent again.]"),
-        })];
+        for (var i = 0; i < (before ?? history.Count); i++)
+            if (history[i].Images is { Count: > 0 } images)
+                history[i] = history[i] with
+                {
+                    Images = null,
+                    Content = (history[i].Content ?? string.Empty) + string.Create(CultureInfo.InvariantCulture,
+                        $"\n[{images.Count} image(s) were attached to this earlier question; they are not sent again.]"),
+                };
     }
 }

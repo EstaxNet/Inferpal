@@ -58,7 +58,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     // same order as the calls, so ids are correlated positionally via a per-batch queue.
     internal static List<OpenAiRequestMessage> MapMessages(List<ChatMessageDto> messages)
     {
-        messages = CoalesceConsecutiveRoles(Documents.ChatImages.OnlyWithTheirQuestion(messages));
+        messages = CoalesceConsecutiveRoles(messages);
 
         var mapped     = new List<OpenAiRequestMessage>(messages.Count);
         var pendingIds = new Queue<string>();

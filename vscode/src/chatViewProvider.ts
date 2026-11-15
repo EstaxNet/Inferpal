@@ -87,12 +87,12 @@ export function notificationText(markdown: string): string {
 /** `origin`: the file the chip's text comes from, whole or part — what the workspace's ignore files are asked about. */
 type PendingAttachment = {
   name: string; content: string; sourcePath?: string; origin?: string; auto?: boolean;
-  /** An image: what goes to the model, and its chip's size line. */
-  image?: ImageDto; detail?: string;
+  /** An image: what goes to the model, its chip's size line, and the small copy drawn under the question. */
+  image?: ImageDto; detail?: string; thumbnail?: string;
 };
 
 /** The files attached as images (the Core's `ChatImages.Extensions`; the Core says which it refuses). */
-const IMAGE_FILE = /\.(png|jpg|jpeg|webp|gif|bmp|heic|heif|tif|tiff|svg)$/i;
+const IMAGE_FILE = /\.(png|jpg|jpeg|webp|gif|bmp|heic|heif|tif|tiff)$/i;
 /** A regenerated question's turn, as it was sent: the prompt, whether it was a code action, the relevant-code query. */
 type TurnReplay = { prompt: string; codeAction: boolean; query?: string };
 
@@ -1774,7 +1774,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         if (this.busy) {
           this.stopPressed = true;
-          this.imageCardAnswer?.('without');
+          // The card's question is answered by the Stop: it leaves the screen with its buttons.
+          if (this.imageCardAnswer) {
+            this.imageCardAnswer('without');
+            this.post({ type: 'imageCardGone' });
+          }
         }
         try {
           await this.getHost()?.chatCancel();
@@ -2201,12 +2205,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         return;
       }
       this.pendingAttachments.push({ name: read.image.name, content: '', origin: params.path, image: read.image,
-                                     detail: read.detail ?? '' });
+                                     detail: read.detail ?? '', thumbnail: read.thumbnail ?? undefined });
+      this.postChips();
       if (read.note) {
         void vscode.window.showInformationMessage(read.note);
       }
-      await this.refreshImageSeen(host);
-      this.postChips();
+      // What the model makes of it, said on the chip; a check that fails leaves the chip as it is, drawn and removable.
+      try {
+        await this.refreshImageSeen(host);
+        this.postChips();
+      } catch (err) {
+        this.log(`[chat] image/check failed: ${String(err)}`);
+      }
     } catch (err) {
       this.gestureFailed('attach image', err);
     }
@@ -3406,7 +3416,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       const asked = this.lastQuestion();
       if (asked && images.length > 0) {
-        asked.images = images.map((i) => `data:${i.mediaType};base64,${i.data}`);
+        // The small copies only: the transcript is posted whole at every redraw of the view.
+        asked.images = chips.filter((a) => a.image && a.thumbnail && images.includes(a.image)).map((a) => a.thumbnail!);
         if (named.length === 0) {
           this.hydrate();
         }
