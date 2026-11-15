@@ -30,14 +30,19 @@ internal sealed class ConnectDeadline : DelegatingHandler
     private ConnectDeadline(HttpMessageHandler inner, TimeSpan timeout) : base(inner) => _timeout = timeout;
 
     /// <summary>The backend pipeline: a <see cref="SocketsHttpHandler"/> bounded by <paramref name="timeout"/>, its
-    /// expiry reported as a failed connection. <paramref name="connect"/> replaces the socket connection (tests).</summary>
+    /// expiry reported as a failed connection, under the headers a server behind a proxy takes
+    /// (<see cref="ServerHeaders"/>). <paramref name="connect"/> replaces the socket connection (tests).</summary>
     internal static HttpMessageHandler Create(
         TimeSpan timeout,
         Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? connect = null)
     {
-        var sockets = new SocketsHttpHandler { ConnectTimeout = timeout, Proxy = NetworkProxy.Shared };
-        if (connect is not null) sockets.ConnectCallback = connect;
-        return new ConnectDeadline(sockets, timeout);
+        HttpMessageHandler Stage(bool redirects)
+        {
+            var sockets = new SocketsHttpHandler { ConnectTimeout = timeout, Proxy = NetworkProxy.Shared, AllowAutoRedirect = redirects };
+            if (connect is not null) sockets.ConnectCallback = connect;
+            return new ConnectDeadline(sockets, timeout);
+        }
+        return new ServerHeaders.Handler(Stage(redirects: true), Stage(redirects: false));
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)

@@ -2173,4 +2173,6 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="KeptPruned" xml:space="preserve"><value>{0} {0:Suchindex wurde|Suchindizes wurden} 90 Tage nicht geöffnet, {1} sind wieder frei: {2}.</value></data>
   <data name="KeptPrunedDetail" xml:space="preserve"><value>In diesen Repositorys hat sich nichts geändert. Das Öffnen des Ordners erstellt den Index neu.</value></data>
   <data name="KeptSeeKept" xml:space="preserve"><value>Aufbewahrtes ansehen</value></data>
+  <data name="LabelRequestHeaders" xml:space="preserve"><value>Anfrage-Header</value></data>
+  <data name="HintRequestHeaders" xml:space="preserve"><value>Werden mit jeder Anfrage an diesen Server gesendet, einer pro Zeile als Name: Wert — was ein vorgeschalteter Reverse-Proxy verlangt (Authorization: Basic …). Nur dieser Host erhält sie, nie eine Weiterleitung anderswohin.</value></data>
 </root>

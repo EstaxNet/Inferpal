@@ -62,8 +62,28 @@ internal abstract class InferenceProviderBase : IInferenceProvider
 
     protected InferenceProviderBase(InferpalConfig config, ServerRole role = ServerRole.Chat) => (_config, _role) = (config, role);
 
-    /// <summary>The address of this client's server, read live: the chat's, or its role's own.</summary>
-    private protected string ServerUrl => RoleServers.Of(_config, _role).BaseUrl ?? string.Empty;
+    /// <summary>The address of this client's server, read live: the chat's, or its role's own. Reading it tells the
+    /// pipeline the headers that server takes (<see cref="ServerHeaders.Note"/>), so they follow the settings.</summary>
+    private protected string ServerUrl
+    {
+        get
+        {
+            var url = RoleServers.Of(_config, _role).BaseUrl ?? string.Empty;
+            // shortcut: only the chat's server has headers; a role on a server of its own gets a field when one is asked for.
+            // ⚠ A role never notes "none": on the chat's origin under another path, it would wipe the chat's headers.
+            if (RoleServers.OnChatServer(_config, _role)) ServerHeaders.Note(url, _config.RequestHeaders);
+            return url;
+        }
+    }
+
+    /// <summary>The address a call names, or this client's own: a named address on the chat's server takes its headers
+    /// too (a listing or a check that runs before any other request).</summary>
+    private protected string UrlOr(string? url)
+    {
+        if (url is null) return ServerUrl;
+        if (ServerScan.SameAddress(url, _config.BaseUrl)) ServerHeaders.Note(url, _config.RequestHeaders);
+        return url;
+    }
 
     /// <summary>The key of this client's server — ⚠ never another server's.</summary>
     private protected string ServerKey => RoleServers.Of(_config, _role).ApiKey;

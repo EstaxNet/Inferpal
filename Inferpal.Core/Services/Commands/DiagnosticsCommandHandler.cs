@@ -153,6 +153,10 @@ internal static class DiagnosticsCommandHandler
         sb.Append("- **Provider**: ").Append(c.Provider)
           .Append(" — ").Append(RedactEndpoint(c.BaseUrl)).Append('\n');
         sb.Append("- **API key**: ").Append(string.IsNullOrEmpty(c.ApiKey) ? "not set" : "set (redacted)").Append('\n');
+        // Names only: a header's value is the secret a proxy checks.
+        var headers = ServerHeaders.Parse(c.RequestHeaders);
+        if (headers.Count > 0)
+            sb.Append("- **Request headers**: ").Append(string.Join(", ", headers.Select(h => h.Key))).Append(" (values redacted)\n");
         // A role on a server of its own: "ghost text does nothing" is unreadable without knowing it does not run above.
         foreach (var (name, role) in new[] { ("Autocomplete", ServerRole.Completion), ("Code search", ServerRole.Search) })
         {

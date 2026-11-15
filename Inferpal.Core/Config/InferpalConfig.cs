@@ -88,6 +88,14 @@ internal class InferpalConfig
     [JsonPropertyName("apiKey")]
     public string ApiKey { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Headers sent with every request to the chat's server, one <c>Name: value</c> a line — what a reverse proxy in front
+    /// of it asks for (<c>Authorization: Basic …</c>, a proxy token). Every backend sends them, Ollama included; a role on
+    /// a server of its own does not (<see cref="Services.Inference.ServerHeaders"/>). Empty = none.
+    /// </summary>
+    [JsonPropertyName("requestHeaders")]
+    public string RequestHeaders { get; set; } = string.Empty;
+
     /// <summary>Model selected at startup; overridable at runtime with <c>/model &lt;name&gt;</c>.</summary>
     [JsonPropertyName("defaultModel")]
     public string DefaultModel { get; set; } = "llama3.1";

@@ -2173,4 +2173,6 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="KeptPruned" xml:space="preserve"><value>검색 인덱스 {0}개를 90일 동안 열지 않아 {1}가 확보되었습니다: {2}.</value></data>
   <data name="KeptPrunedDetail" xml:space="preserve"><value>해당 저장소는 바뀌지 않았습니다. 폴더를 열면 인덱스가 다시 만들어집니다.</value></data>
   <data name="KeptSeeKept" xml:space="preserve"><value>보관된 것 보기</value></data>
+  <data name="LabelRequestHeaders" xml:space="preserve"><value>요청 헤더</value></data>
+  <data name="HintRequestHeaders" xml:space="preserve"><value>이 서버로 가는 모든 요청에 전송됩니다. 한 줄에 하나씩 이름: 값 형식으로 — 앞단의 리버스 프록시가 요구하는 것 (Authorization: Basic …). 이 호스트만 받으며, 다른 곳으로의 리디렉션에는 보내지 않습니다.</value></data>
 </root>

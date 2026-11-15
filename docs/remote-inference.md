@@ -269,8 +269,25 @@ both sides. Visual Studio has no remote mode for extensions — Inferpal always 
 Binding a backend to `0.0.0.0` exposes an **unauthenticated** inference API to everyone who
 can reach that port — neither Ollama nor LM Studio has built-in auth on the local-network
 server. Only do this on a trusted private network. To expose it beyond the LAN, put it
-behind a reverse proxy that adds TLS and authentication (then use the OpenAI-compatible
-provider with an **API key** if the proxy expects a bearer token), or tunnel it over a
+behind a reverse proxy that adds TLS and authentication (see below), or tunnel it over a
 VPN / SSH rather than opening the port to the internet.
+
+### Behind a reverse proxy
+
+When Caddy, nginx, Traefik or Cloudflare Access protects the server, put what the proxy expects
+in **Request headers** (Settings › Server and models, `requestHeaders` in `config.json`), one
+per line:
+
+```
+Authorization: Basic dXNlcjpwYXNzd29yZA==
+```
+
+Every backend sends them, Ollama included, and the Test button uses them (in VS Code, once
+saved). Only that host
+receives them: an `http → https` redirect on the same host is followed, a redirect to another
+host is not, and its answer is shown instead. A certificate from your own authority works once
+that authority is trusted by the operating system (Windows certificate store, or the system
+store on Linux and macOS); there is no setting that skips certificate checks. The system proxy
+is used as described in [Troubleshooting](#troubleshooting).
 
 **Next:** [Models](models.md) — which model for which job, what Inferpal does for each, and how to set it up.

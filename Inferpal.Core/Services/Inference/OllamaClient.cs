@@ -449,6 +449,7 @@ internal class OllamaClient : InferenceProviderBase
     /// signs the native API — see <see cref="InferenceProviderBase.ConfirmsBackendPayload"/>.</summary>
     public override async Task<bool> CheckConnectionAsync(string url, CancellationToken ct)
     {
+        url = UrlOr(url);
         var endpoint = $"{url.TrimEnd('/')}/api/tags";
         try
         {
@@ -659,7 +660,7 @@ internal class OllamaClient : InferenceProviderBase
             // caller's token fired — if it had one.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
-            var base_  = (url ?? ServerUrl).TrimEnd('/');
+            var base_  = UrlOr(url).TrimEnd('/');
             var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", cts.Token);
             return result?.Models?.Select(m => m.Name).ToList() ?? [];
         }
@@ -683,7 +684,7 @@ internal class OllamaClient : InferenceProviderBase
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(10));
-            var base_  = (url ?? ServerUrl).TrimEnd('/');
+            var base_  = UrlOr(url).TrimEnd('/');
             var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", cts.Token);
             return result?.Models?.Select(m => new InstalledModelInfo(m.Name, m.Size, m.Capabilities)).ToList() ?? [];
         }

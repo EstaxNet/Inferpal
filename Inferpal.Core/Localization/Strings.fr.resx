@@ -2173,4 +2173,6 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="KeptPruned" xml:space="preserve"><value>{0} {0:index de recherche n'a pas été ouvert|index de recherche n'ont pas été ouverts} depuis 90 jours, et {1} sont libérés : {2}.</value></data>
   <data name="KeptPrunedDetail" xml:space="preserve"><value>Rien n'a changé dans ces dépôts. Ouvrir le dossier reconstruit l'index.</value></data>
   <data name="KeptSeeKept" xml:space="preserve"><value>Voir ce qui est gardé</value></data>
+  <data name="LabelRequestHeaders" xml:space="preserve"><value>En-têtes de requête</value></data>
+  <data name="HintRequestHeaders" xml:space="preserve"><value>Envoyés avec chaque requête à ce serveur, un par ligne sous la forme Nom: valeur — ce que demande un proxy inverse placé devant lui (Authorization: Basic …). Seul cet hôte les reçoit, jamais une redirection ailleurs.</value></data>
 </root>

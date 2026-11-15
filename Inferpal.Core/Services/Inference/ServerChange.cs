@@ -47,6 +47,13 @@ internal static class ServerChange
             after.RagEmbeddingModel = string.Empty;
             changed = true;
         }
+        // ⚠ The headers are the old proxy's secret: never sent to the new address unless this gesture wrote them.
+        if (after.RequestHeaders.Length > 0 && string.Equals(after.RequestHeaders, before.RequestHeaders, StringComparison.Ordinal))
+        {
+            after.RequestHeaders = string.Empty;
+            Diagnostics.Record("ServerChange", "Request headers cleared: they were written for the previous server.");
+            changed = true;
+        }
         return changed;
 
         // A role on a server of its own keeps it, at the old chat address or at the new one alike.

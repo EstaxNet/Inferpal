@@ -2173,4 +2173,6 @@
   <data name="KeptPruned" xml:space="preserve"><value>{0} {0:поисковый индекс не открывался|поисковых индекса не открывались|поисковых индексов не открывались} 90 дней, освобождено {1}: {2}.</value></data>
   <data name="KeptPrunedDetail" xml:space="preserve"><value>В этих репозиториях ничего не изменилось. Открытие папки строит индекс заново.</value></data>
   <data name="KeptSeeKept" xml:space="preserve"><value>Посмотреть, что хранится</value></data>
+  <data name="LabelRequestHeaders" xml:space="preserve"><value>Заголовки запроса</value></data>
+  <data name="HintRequestHeaders" xml:space="preserve"><value>Отправляются с каждым запросом к этому серверу, по одному в строке в виде Имя: значение — то, что требует обратный прокси перед ним (Authorization: Basic …). Их получает только этот хост, никогда — перенаправление в другое место.</value></data>
 </root>

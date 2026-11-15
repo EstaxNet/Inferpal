@@ -561,6 +561,8 @@ internal static class Strings
     public static string HintVramBudget              => Get(nameof(HintVramBudget));
     public static string LabelCustomSystemPrompt     => Get(nameof(LabelCustomSystemPrompt));
     public static string HintCustomSystemPrompt      => Get(nameof(HintCustomSystemPrompt));
+    public static string LabelRequestHeaders         => Get(nameof(LabelRequestHeaders));
+    public static string HintRequestHeaders          => Get(nameof(HintRequestHeaders));
     public static string LabelPinnedContextFiles     => Get(nameof(LabelPinnedContextFiles));
     public static string HintPinnedContextFiles      => Get(nameof(HintPinnedContextFiles));
     public static string LabelPromptTemplates        => Get(nameof(LabelPromptTemplates));

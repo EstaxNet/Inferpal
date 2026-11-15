@@ -2177,4 +2177,6 @@ What you save there applies from your next question, in this thread and the othe
   <data name="KeptPruned" xml:space="preserve"><value>{0} search {0:index was|indexes were} not opened for 90 days, and {1} came back: {2}.</value></data>
   <data name="KeptPrunedDetail" xml:space="preserve"><value>Nothing in those repositories changed. Opening the folder builds the index again.</value></data>
   <data name="KeptSeeKept" xml:space="preserve"><value>See what is kept</value></data>
+  <data name="LabelRequestHeaders" xml:space="preserve"><value>Request headers</value></data>
+  <data name="HintRequestHeaders" xml:space="preserve"><value>Sent with every request to this server, one per line as Name: value — what a reverse proxy in front of it asks for (Authorization: Basic …). Only this host receives them, never a redirect elsewhere.</value></data>
 </root>

@@ -16,7 +16,8 @@ namespace Inferpal.Services.Inference;
 /// </remarks>
 internal static class ProviderProbe
 {
-    private static readonly HttpClient _http = new(new HttpClientHandler { Proxy = NetworkProxy.Shared })
+    // The backend pipeline: a server behind a proxy is tested with the headers it takes (ServerHeaders).
+    private static readonly HttpClient _http = new(ConnectDeadline.Create(ConnectDeadline.Timeout))
     {
         Timeout = TimeSpan.FromSeconds(5),
     };

@@ -2173,4 +2173,6 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="KeptPruned" xml:space="preserve"><value>{0} {0:indeks wyszukiwania nie był otwierany|indeksy wyszukiwania nie były otwierane|indeksów wyszukiwania nie było otwieranych} przez 90 dni, zwolniono {1}: {2}.</value></data>
   <data name="KeptPrunedDetail" xml:space="preserve"><value>W tych repozytoriach nic się nie zmieniło. Otwarcie folderu buduje indeks ponownie.</value></data>
   <data name="KeptSeeKept" xml:space="preserve"><value>Zobacz, co jest przechowywane</value></data>
+  <data name="LabelRequestHeaders" xml:space="preserve"><value>Nagłówki żądania</value></data>
+  <data name="HintRequestHeaders" xml:space="preserve"><value>Wysyłane z każdym żądaniem do tego serwera, jeden w wierszu jako Nazwa: wartość — to, czego wymaga stojący przed nim odwrotny serwer proxy (Authorization: Basic …). Otrzymuje je tylko ten host, nigdy przekierowanie gdzie indziej.</value></data>
 </root>

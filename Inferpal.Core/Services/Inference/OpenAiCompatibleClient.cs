@@ -1048,6 +1048,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     /// <inheritdoc/>
     public override async Task<bool> CheckConnectionAsync(string url, CancellationToken ct)
     {
+        url = UrlOr(url);
         // The probe TRAVERSES the cooldown instead of short-circuiting on it: returning false
         // while the breaker was open meant the one call able to notice the server coming back was
         // itself blocked — the connection indicator stayed red for the full 5 minutes after a
@@ -1090,7 +1091,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     {
         try
         {
-            var result = await GetModelsAsync(V1(url ?? ServerUrl), ct);
+            var result = await GetModelsAsync(V1(UrlOr(url)), ct);
             return result?.Data?.Select(m => m.Id).ToList() ?? [];
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
@@ -1106,7 +1107,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         try
         {
             // OpenAI-compatible /v1/models exposes no on-disk size — report 0 (VRAM estimation degrades).
-            var result = await GetModelsAsync(V1(url ?? ServerUrl), ct);
+            var result = await GetModelsAsync(V1(UrlOr(url)), ct);
             return result?.Data?.Select(m => new InstalledModelInfo(m.Id, 0)).ToList() ?? [];
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)

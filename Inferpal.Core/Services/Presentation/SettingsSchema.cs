@@ -324,6 +324,7 @@ internal static class SettingsSchema
             [
                 new("provider", SettingKind.Select,   "LabelProvider", "HintProvider", Options: Providers),
                 new("apiKey",   SettingKind.Password, "LabelApiKey",   "HintApiKey"),
+                new("requestHeaders", SettingKind.TextArea, "LabelRequestHeaders", "HintRequestHeaders"),
                 // A role's own server, beside the chat's: its Test button fills the kind in, the key is its alone.
                 new("inlineCompletionProvider", SettingKind.Select,   "LabelCompletionProvider", "HintRoleProvider", Options: Providers,
                     ShowWhen: "inlineCompletionRunsOn=other", Server: "inlineCompletion"),

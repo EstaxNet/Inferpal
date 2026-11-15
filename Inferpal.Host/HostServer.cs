@@ -1307,6 +1307,8 @@ internal sealed partial class HostServer : IDisposable
         // The key in the FORM, like the URL: probing a new server with the saved key answered
         // "unreachable" for a server that only refused that key. Null (not sent) keeps the saved one.
         var key = p.ApiKey ?? SavedKeyFor(s, url);
+        // shortcut: the form does not send its headers yet, so the saved ones are tested; send them when asked for.
+        if (ServerScan.SameAddress(url, s.Config.BaseUrl)) ServerHeaders.Note(url, s.Config.RequestHeaders);
         var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, key, ct);
         // The line the panel shows instead of its own "unreachable": a refusal, or the proxy the probe went through.
         var proxy = detected is null ? Services.NetworkProxy.Through(url) : null;

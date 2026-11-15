@@ -834,6 +834,13 @@
                             <TextBlock Text="{Binding SearchKey.Hint}" Style="{StaticResource Hint}"/>
                         </StackPanel>
                     </UniformGrid>
+                    <StackPanel Margin="0,0,16,16">
+                        <TextBlock Text="{Binding LabelRequestHeaders}" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding RequestHeaders, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 AcceptsReturn="True" TextWrapping="Wrap" Height="56" VerticalScrollBarVisibility="Auto"
+                                 FontFamily="Cascadia Mono, Consolas" AutomationProperties.Name="{Binding LabelRequestHeaders}"/>
+                        <TextBlock Text="{Binding HintRequestHeaders}" Style="{StaticResource Hint}"/>
+                    </StackPanel>
                 </StackPanel>
             </StackPanel>
 

@@ -2173,4 +2173,6 @@
   <data name="KeptPruned" xml:space="preserve"><value>{0} 个搜索索引已有 90 天未打开，释放了 {1}：{2}。</value></data>
   <data name="KeptPrunedDetail" xml:space="preserve"><value>这些仓库没有任何变化。打开文件夹会重建索引。</value></data>
   <data name="KeptSeeKept" xml:space="preserve"><value>查看保留的内容</value></data>
+  <data name="LabelRequestHeaders" xml:space="preserve"><value>请求标头</value></data>
+  <data name="HintRequestHeaders" xml:space="preserve"><value>随发往此服务器的每个请求发送，每行一个，格式为 名称: 值 — 即其前方反向代理所要求的内容 (Authorization: Basic …)。只有此主机会收到，绝不会随重定向发往别处。</value></data>
 </root>

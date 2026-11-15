@@ -313,7 +313,7 @@ internal partial class InferpalSettingsData
         nameof(InlineEditModel), nameof(UtilityModel), nameof(ModelRouterAuto), nameof(UseRecommendedSampling),
         nameof(ReasoningEffortChat), nameof(ReasoningEffortAgent),
         nameof(VramBudgetText), nameof(ModelAutoUnloadEnabled), nameof(ModelIdleTimeoutText), nameof(AgentModeEnabled),
-        nameof(SmartFixEnabled), nameof(AgentMaxIterationsText), nameof(AskBeforeActions), nameof(PackageCheckEnabled), nameof(CustomSystemPrompt), nameof(RepoInstructionFamilies), nameof(IgnoreFiles),
+        nameof(SmartFixEnabled), nameof(AgentMaxIterationsText), nameof(AskBeforeActions), nameof(PackageCheckEnabled), nameof(CustomSystemPrompt), nameof(RequestHeaders), nameof(RepoInstructionFamilies), nameof(IgnoreFiles),
         nameof(PersonaAutoSwitch), nameof(SkillsAutoMode), nameof(TimeoutHoursText), nameof(TimeoutMinutesText), nameof(TimeoutSecondsText),
         nameof(QuickTimeoutHoursText), nameof(QuickTimeoutMinutesText), nameof(QuickTimeoutSecondsText),
         nameof(NormalTimeoutHoursText), nameof(NormalTimeoutMinutesText), nameof(NormalTimeoutSecondsText),
@@ -379,6 +379,7 @@ internal partial class InferpalSettingsData
             ((!AskBeforeActions).ToString(), saved.SecurityAlertsDisabled.ToString()),
             (PackageCheckEnabled.ToString(), saved.PackageCheckEnabled.ToString()),
             (CustomSystemPrompt ?? string.Empty, saved.CustomSystemPrompt),
+            (RequestHeaders ?? string.Empty, saved.RequestHeaders),
             (RepoInstructionFamilies ?? string.Empty, saved.RepoInstructionFamilies),
             (IgnoreFiles ?? string.Empty, saved.IgnoreFiles),
             (PersonaAutoSwitch.ToString(), saved.PersonaAutoSwitch.ToString()),
@@ -443,6 +444,7 @@ internal partial class InferpalSettingsData
         AskBeforeActions = !c.SecurityAlertsDisabled;
         PackageCheckEnabled = c.PackageCheckEnabled;
         CustomSystemPrompt = c.CustomSystemPrompt;
+        RequestHeaders = c.RequestHeaders;
         RepoInstructionFamilies = c.RepoInstructionFamilies;
         IgnoreFiles = c.IgnoreFiles;
         PersonaAutoSwitch = c.PersonaAutoSwitch;

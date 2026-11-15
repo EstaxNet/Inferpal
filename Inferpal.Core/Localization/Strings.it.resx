@@ -2173,4 +2173,6 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="KeptPruned" xml:space="preserve"><value>{0} {0:indice di ricerca non è stato aperto|indici di ricerca non sono stati aperti} da 90 giorni, e si sono liberati {1}: {2}.</value></data>
   <data name="KeptPrunedDetail" xml:space="preserve"><value>In quei repository non è cambiato nulla. Aprire la cartella ricrea l'indice.</value></data>
   <data name="KeptSeeKept" xml:space="preserve"><value>Vedi cosa è conservato</value></data>
+  <data name="LabelRequestHeaders" xml:space="preserve"><value>Intestazioni della richiesta</value></data>
+  <data name="HintRequestHeaders" xml:space="preserve"><value>Inviate con ogni richiesta a questo server, una per riga come Nome: valore — ciò che chiede un reverse proxy davanti a esso (Authorization: Basic …). Solo questo host le riceve, mai un reindirizzamento altrove.</value></data>
 </root>

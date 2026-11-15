@@ -36,7 +36,7 @@ internal static class SettingsFollow
     /// <summary>The JSON keys that belong to the model server: left aside together with a new kind of server.</summary>
     private static readonly string[] ServerBound =
     [
-        "provider", "baseUrl", "apiKey", "defaultModel", "agentModel", "utilityModel", "codeActionsModel", "inlineEditModel",
+        "provider", "baseUrl", "apiKey", "requestHeaders", "defaultModel", "agentModel", "utilityModel", "codeActionsModel", "inlineEditModel",
         "inlineCompletionModel", "ragEmbeddingModel", "vramBudgetGb",
     ];
 

@@ -48,7 +48,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// </remarks>
     private string HostRootFor(string? url)
     {
-        var b = (url ?? ServerUrl ?? string.Empty).Trim().TrimEnd('/');
+        var b = (UrlOr(url) ?? string.Empty).Trim().TrimEnd('/');
         if (b.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
             b = b[..^3].TrimEnd('/');
         return b;

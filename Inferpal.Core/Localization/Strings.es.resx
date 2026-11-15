@@ -2173,4 +2173,6 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="KeptPruned" xml:space="preserve"><value>{0} {0:índice de búsqueda no se abrió|índices de búsqueda no se abrieron} en 90 días, y se liberaron {1}: {2}.</value></data>
   <data name="KeptPrunedDetail" xml:space="preserve"><value>Nada cambió en esos repositorios. Abrir la carpeta vuelve a crear el índice.</value></data>
   <data name="KeptSeeKept" xml:space="preserve"><value>Ver lo que se guarda</value></data>
+  <data name="LabelRequestHeaders" xml:space="preserve"><value>Encabezados de solicitud</value></data>
+  <data name="HintRequestHeaders" xml:space="preserve"><value>Se envían con cada solicitud a este servidor, uno por línea como Nombre: valor — lo que pide un proxy inverso delante de él (Authorization: Basic …). Solo este host los recibe, nunca una redirección a otro sitio.</value></data>
 </root>

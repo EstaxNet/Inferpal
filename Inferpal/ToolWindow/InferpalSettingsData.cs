@@ -112,6 +112,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _hintVramBudget               = string.Empty;
     private string _hintCustomSystemPrompt       = string.Empty;
     private string _labelCustomSystemPrompt      = string.Empty;
+    private string _hintRequestHeaders           = string.Empty;
+    private string _labelRequestHeaders          = string.Empty;
     private string _labelRepoInstructionFamilies = string.Empty;
     private string _hintRepoInstructionFamilies  = string.Empty;
     private string _labelIgnoreFiles             = string.Empty;
@@ -264,6 +266,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     private string _contextWindowKeepTurnsText;
     private string _vramBudgetText;
     private string _customSystemPrompt;
+    private string _requestHeaders;
     private string _repoInstructionFamilies;
     private string _ignoreFiles;
     private string _pinnedContextFiles;
@@ -393,6 +396,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             ? config.VramBudgetGb.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture)
             : string.Empty;
         _customSystemPrompt          = config.CustomSystemPrompt;
+        _requestHeaders              = config.RequestHeaders;
         _repoInstructionFamilies     = config.RepoInstructionFamilies;
         _ignoreFiles                 = config.IgnoreFiles;
         _pinnedContextFiles          = config.PinnedContextFiles;
@@ -610,6 +614,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         HintVramBudget               = Strings.HintVramBudget;
         LabelCustomSystemPrompt      = Strings.LabelCustomSystemPrompt;
         HintCustomSystemPrompt       = Strings.HintCustomSystemPrompt;
+        LabelRequestHeaders          = Strings.LabelRequestHeaders;
+        HintRequestHeaders           = Strings.HintRequestHeaders;
         LabelRepoInstructionFamilies = Strings.LabelRepoInstructionFamilies;
         HintRepoInstructionFamilies  = Strings.HintRepoInstructionFamilies;
         LabelIgnoreFiles             = Strings.LabelIgnoreFiles;
@@ -870,6 +876,8 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string HintVramBudget               { get => _hintVramBudget;              set => SetProperty(ref _hintVramBudget,              value); }
     [DataMember] public string LabelCustomSystemPrompt  { get => _labelCustomSystemPrompt;  set => SetProperty(ref _labelCustomSystemPrompt,  value); }
     [DataMember] public string HintCustomSystemPrompt   { get => _hintCustomSystemPrompt;   set => SetProperty(ref _hintCustomSystemPrompt,   value); }
+    [DataMember] public string LabelRequestHeaders      { get => _labelRequestHeaders;      set => SetProperty(ref _labelRequestHeaders,      value); }
+    [DataMember] public string HintRequestHeaders       { get => _hintRequestHeaders;       set => SetProperty(ref _hintRequestHeaders,       value); }
     [DataMember] public string LabelRepoInstructionFamilies { get => _labelRepoInstructionFamilies; set => SetProperty(ref _labelRepoInstructionFamilies, value); }
     [DataMember] public string HintRepoInstructionFamilies  { get => _hintRepoInstructionFamilies;  set => SetProperty(ref _hintRepoInstructionFamilies,  value); }
     [DataMember] public string LabelIgnoreFiles             { get => _labelIgnoreFiles;             set => SetProperty(ref _labelIgnoreFiles,             value); }
@@ -1054,6 +1062,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public string ContextWindowKeepTurnsText   { get => _contextWindowKeepTurnsText;   set => SetProperty(ref _contextWindowKeepTurnsText,   value); }
     [DataMember] public string VramBudgetText               { get => _vramBudgetText;               set => SetProperty(ref _vramBudgetText,               value); }
     [DataMember] public string CustomSystemPrompt           { get => _customSystemPrompt;            set => SetProperty(ref _customSystemPrompt,            value); }
+    [DataMember] public string RequestHeaders               { get => _requestHeaders;                set => SetProperty(ref _requestHeaders,                value); }
     [DataMember] public string RepoInstructionFamilies      { get => _repoInstructionFamilies;       set => SetProperty(ref _repoInstructionFamilies,       value); }
     [DataMember] public string IgnoreFiles                  { get => _ignoreFiles;                   set => SetProperty(ref _ignoreFiles,                   value); }
     [DataMember] public string PinnedContextFiles           { get => _pinnedContextFiles;            set => SetProperty(ref _pinnedContextFiles,            value); }
@@ -1224,7 +1233,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 
     private async Task SaveCoreAsync(CancellationToken ct)
     {
-        string url = string.Empty, customPrompt = string.Empty, repoFamilies = string.Empty, ignoreFiles = string.Empty, pinnedContextFiles = string.Empty, promptTemplates = string.Empty, customTools = string.Empty, permissionRules = string.Empty;
+        string url = string.Empty, requestHeaders = string.Empty, customPrompt = string.Empty, repoFamilies = string.Empty, ignoreFiles = string.Empty, pinnedContextFiles = string.Empty, promptTemplates = string.Empty, customTools = string.Empty, permissionRules = string.Empty;
         string apiKey = string.Empty;
         // Dropdowns whose SelectedItem is bound: null when the selection left its list, never a
         // choice (see SettingsFallback.KeepSelection).
@@ -1271,6 +1280,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
             ctxKeepText          = ContextWindowKeepTurnsText.Trim();
             vramBudgetText       = VramBudgetText.Trim();
             customPrompt         = CustomSystemPrompt;
+            requestHeaders       = RequestHeaders ?? string.Empty;
             repoFamilies         = RepoInstructionFamilies ?? string.Empty;
             ignoreFiles          = IgnoreFiles ?? string.Empty;
             SyncPinnedTextFromRows();   // rows are the source of truth → refresh the text mirrors
@@ -1408,6 +1418,7 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
         edited.VramBudgetGb             = vbOk ? Math.Round(vb, 1)
                                                : SettingsFallback.For(vramBudgetText, edited.VramBudgetGb, 0);
         edited.CustomSystemPrompt        = customPrompt;
+        edited.RequestHeaders            = requestHeaders;
         edited.RepoInstructionFamilies   = repoFamilies;
         edited.IgnoreFiles               = ignoreFiles;
         edited.PinnedContextFiles        = PinnedFilesPolicy.MergeEdits(
@@ -2266,18 +2277,25 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
 
     private async Task TestConnectionAsync(object? _, CancellationToken ct)
     {
-        string url = string.Empty, apiKey = string.Empty;
+        string url = string.Empty, apiKey = string.Empty, headers = string.Empty;
         await RunOnVMContextAsync(() =>
         {
             SaveStatus       = string.Empty;
             ConnectionStatus = Strings.StatusConnecting;
             url              = BaseUrl.Trim();
             apiKey           = ApiKey?.Trim() ?? string.Empty;
+            headers          = RequestHeaders ?? string.Empty;
         });
+        // The headers in the FORM, like the key: a server behind a proxy is tested as it will be asked.
+        ServerHeaders.Note(url, headers);
 
         // Auto-detect the backend from the URL (Ollama / LM Studio / OpenAI-compatible). A successful
         // probe also confirms reachability, so it replaces the provider-specific connection check.
-        var (detected, refusal) = await ProviderProbe.DetectWithRefusalAsync(url, apiKey, ct);
+        // The saved headers are put back after: a test followed by Cancel must not leave the form's headers live.
+        (string? Provider, string? Refusal) probed;
+        try { probed = await ProviderProbe.DetectWithRefusalAsync(url, apiKey, ct); }
+        finally { ServerHeaders.Note(url, ServerScan.SameAddress(url, _config.BaseUrl) ? _config.RequestHeaders : null); }
+        var (detected, refusal) = probed;
         var ok           = detected is not null;
         var detectedName = detected is not null
             ? ProviderOptions.FirstOrDefault(p => p.Code == detected).Name

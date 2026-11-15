@@ -2173,4 +2173,6 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="KeptPruned" xml:space="preserve"><value>{0} 個の検索インデックスが 90 日間開かれていなかったため、{1} が空きました: {2}。</value></data>
   <data name="KeptPrunedDetail" xml:space="preserve"><value>それらのリポジトリは何も変わっていません。フォルダーを開くとインデックスが再構築されます。</value></data>
   <data name="KeptSeeKept" xml:space="preserve"><value>保持しているものを見る</value></data>
+  <data name="LabelRequestHeaders" xml:space="preserve"><value>リクエストヘッダー</value></data>
+  <data name="HintRequestHeaders" xml:space="preserve"><value>このサーバーへのすべてのリクエストに送信されます。1 行に 1 つ、名前: 値 の形式で — 前段のリバースプロキシが求めるもの (Authorization: Basic …)。受け取るのはこのホストだけで、別の場所へのリダイレクトには送られません。</value></data>
 </root>

@@ -30,7 +30,10 @@ public sealed class ConfigCompatibilityTests : IDisposable
     /// factory value — and why that keeps what the user had. ⚠ A key added without a line here fails the suite: say what
     /// the configurations already out there get before adding it.
     /// </summary>
-    private static readonly Dictionary<string, (string Json, string Why)> AddedSince = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, (string Json, string Why)> AddedSince = new(StringComparer.Ordinal)
+    {
+        ["requestHeaders"] = ("\"\"", "no headers: a server that needed none still needs none"),
+    };
 
     /// <summary>
     /// The factory values changed since <see cref="Release"/>, each with why. A user who saved once keeps the old value
