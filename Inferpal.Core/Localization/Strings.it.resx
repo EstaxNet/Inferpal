@@ -1921,6 +1921,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="SetupAlsoAnswering" xml:space="preserve"><value>Risponde anche: {0} su {1}, {2:N0} {2:modello|modelli}</value></data>
   <data name="SetupUseInstead" xml:space="preserve"><value>Usa questo invece</value></data>
   <data name="SetupNothingTitle" xml:space="preserve"><value>Nessun server di modelli trovato qui</value></data>
+  <data name="SetupOtherAnswersTitle" xml:space="preserve"><value>Il server scelto non risponde: qui ne risponde un altro</value></data>
   <data name="SetupNothingLead" xml:space="preserve"><value>Cosa ha risposto ogni indirizzo:</value></data>
   <data name="SetupOtherMachine" xml:space="preserve"><value>Server su un'altra macchina</value></data>
   <data name="SetupConnect" xml:space="preserve"><value>Connetti</value></data>

@@ -1921,6 +1921,7 @@
   <data name="SetupAlsoAnswering" xml:space="preserve"><value>同样在响应：{1} 上的 {0}，共 {2:N0} 个模型</value></data>
   <data name="SetupUseInstead" xml:space="preserve"><value>改用此服务器</value></data>
   <data name="SetupNothingTitle" xml:space="preserve"><value>此处未找到模型服务器</value></data>
+  <data name="SetupOtherAnswersTitle" xml:space="preserve"><value>所选服务器没有响应——此处有另一台服务器响应</value></data>
   <data name="SetupNothingLead" xml:space="preserve"><value>各地址的响应：</value></data>
   <data name="SetupOtherMachine" xml:space="preserve"><value>另一台机器上的服务器</value></data>
   <data name="SetupConnect" xml:space="preserve"><value>连接</value></data>

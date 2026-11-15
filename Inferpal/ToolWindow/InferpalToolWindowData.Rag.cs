@@ -314,7 +314,8 @@ internal partial class InferpalToolWindowData
                         && await OfferServerInstallAsync($"**{Strings.SetupNothingTitle}**\n\n" + placesText, once: true)
                             .ConfigureAwait(false);
                 }
-                await present(SetupFoundNothing(client.ConnectionRefusal, url, placesText)).ConfigureAwait(false);
+                await present(SetupFoundNothing(client.ConnectionRefusal, url, placesText,
+                    Services.Inference.ServerScan.Offered(places, url) is not null)).ConfigureAwait(false);
                 // Only where the installed server would be used: nothing chosen yet, or Ollama's own address chosen.
                 if (client.ConnectionRefusal is null && Services.Inference.ServerInstall.Offers(places)
                     && (Services.Inference.ServerScan.NothingChosen(_config)
@@ -421,8 +422,11 @@ internal partial class InferpalToolWindowData
     /// it" is the wrong remedy. Otherwise the search's own result, as VS Code's card says it: a typed <c>/setup</c> is no
     /// first run, and it looked at every address in <paramref name="placesText"/>, not only the configured one.
     /// </summary>
-    internal static string SetupFoundNothing(string? refusal, string url, string placesText) =>
-        (refusal is { } refused ? Strings.MsgBackendRefused(url, refused) : $"**{Strings.SetupNothingTitle}**") + "\n\n" + placesText;
+    /// <param name="otherAnswers">Another place answers: then "none found" would contradict the list under it. It is not
+    /// taken for a server chosen before (<c>ServerScan.ToAdopt</c>): a server down for a minute must not move the chat.</param>
+    internal static string SetupFoundNothing(string? refusal, string url, string placesText, bool otherAnswers = false) =>
+        (refusal is { } refused ? Strings.MsgBackendRefused(url, refused)
+         : $"**{(otherAnswers ? Strings.SetupOtherAnswersTitle : Strings.SetupNothingTitle)}**") + "\n\n" + placesText;
 
     /// <summary>Handles <c>/setup</c>: re-runs the first-run discovery on demand (re-detect backend, re-pick models).</summary>
     private async Task HandleSetupCommandAsync(string[] parts, CancellationToken ct)

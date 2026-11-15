@@ -2631,6 +2631,7 @@ internal static class Strings
     public static string SetupAlsoAnswering(string server, string url, int models) => Format(Get(nameof(SetupAlsoAnswering)), server, url, models);
     public static string SetupUseInstead => Get(nameof(SetupUseInstead));
     public static string SetupNothingTitle => Get(nameof(SetupNothingTitle));
+    public static string SetupOtherAnswersTitle => Get(nameof(SetupOtherAnswersTitle));
     public static string SetupNothingLead => Get(nameof(SetupNothingLead));
     public static string SetupOtherMachine => Get(nameof(SetupOtherMachine));
     public static string SetupConnect => Get(nameof(SetupConnect));

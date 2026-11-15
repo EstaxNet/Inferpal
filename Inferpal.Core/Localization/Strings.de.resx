@@ -1921,6 +1921,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="SetupAlsoAnswering" xml:space="preserve"><value>Antwortet ebenfalls: {0} unter {1}, {2:N0} {2:Modell|Modelle}</value></data>
   <data name="SetupUseInstead" xml:space="preserve"><value>Stattdessen verwenden</value></data>
   <data name="SetupNothingTitle" xml:space="preserve"><value>Hier wurde kein Modellserver gefunden</value></data>
+  <data name="SetupOtherAnswersTitle" xml:space="preserve"><value>Der gewählte Server antwortet nicht – ein anderer antwortet hier</value></data>
   <data name="SetupNothingLead" xml:space="preserve"><value>Was jede Adresse geantwortet hat:</value></data>
   <data name="SetupOtherMachine" xml:space="preserve"><value>Server auf einem anderen Rechner</value></data>
   <data name="SetupConnect" xml:space="preserve"><value>Verbinden</value></data>

@@ -29,6 +29,10 @@ public sealed class VsWindowRunsUnderTestTests
         var nothing = Inferpal.ToolWindow.InferpalToolWindowData.SetupFoundNothing(null, "http://localhost:11434", places);
         Assert.Equal($"**{Strings.SetupNothingTitle}**\n\n{places}", nothing);
 
+        // Another server answers, the chosen one does not: "none found" would contradict the list under it.
+        var other = Inferpal.ToolWindow.InferpalToolWindowData.SetupFoundNothing(null, "http://127.0.0.1:9", places, otherAnswers: true);
+        Assert.Equal($"**{Strings.SetupOtherAnswersTitle}**\n\n{places}", other);
+
         var refused = Inferpal.ToolWindow.InferpalToolWindowData.SetupFoundNothing("401 Unauthorized", "http://localhost:1234", places);
         Assert.StartsWith(Strings.MsgBackendRefused("http://localhost:1234", "401 Unauthorized"), refused);
         Assert.EndsWith(places, refused);

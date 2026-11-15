@@ -1921,6 +1921,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="SetupAlsoAnswering" xml:space="preserve"><value>También responde: {0} en {1}, {2:N0} {2:modelo|modelos}</value></data>
   <data name="SetupUseInstead" xml:space="preserve"><value>Usar este en su lugar</value></data>
   <data name="SetupNothingTitle" xml:space="preserve"><value>No se encontró ningún servidor de modelos aquí</value></data>
+  <data name="SetupOtherAnswersTitle" xml:space="preserve"><value>El servidor elegido no responde; aquí responde otro</value></data>
   <data name="SetupNothingLead" xml:space="preserve"><value>Lo que respondió cada dirección:</value></data>
   <data name="SetupOtherMachine" xml:space="preserve"><value>Servidor en otra máquina</value></data>
   <data name="SetupConnect" xml:space="preserve"><value>Conectar</value></data>

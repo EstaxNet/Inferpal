@@ -1925,6 +1925,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="SetupAlsoAnswering" xml:space="preserve"><value>Also answering: {0} at {1}, {2:N0} {2:model|models}</value></data>
   <data name="SetupUseInstead" xml:space="preserve"><value>Use it instead</value></data>
   <data name="SetupNothingTitle" xml:space="preserve"><value>No model server found here</value></data>
+  <data name="SetupOtherAnswersTitle" xml:space="preserve"><value>The chosen server does not answer — another one answers here</value></data>
   <data name="SetupNothingLead" xml:space="preserve"><value>What each place answered:</value></data>
   <data name="SetupOtherMachine" xml:space="preserve"><value>Server on another machine</value></data>
   <data name="SetupConnect" xml:space="preserve"><value>Connect</value></data>

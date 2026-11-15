@@ -1921,6 +1921,7 @@
   <data name="SetupAlsoAnswering" xml:space="preserve"><value>Также отвечает: {0} по адресу {1}, {2:N0} {2:модель|модели|моделей}</value></data>
   <data name="SetupUseInstead" xml:space="preserve"><value>Использовать его</value></data>
   <data name="SetupNothingTitle" xml:space="preserve"><value>Сервер моделей здесь не найден</value></data>
+  <data name="SetupOtherAnswersTitle" xml:space="preserve"><value>Выбранный сервер не отвечает — здесь отвечает другой</value></data>
   <data name="SetupNothingLead" xml:space="preserve"><value>Что ответил каждый адрес:</value></data>
   <data name="SetupOtherMachine" xml:space="preserve"><value>Сервер на другом компьютере</value></data>
   <data name="SetupConnect" xml:space="preserve"><value>Подключиться</value></data>

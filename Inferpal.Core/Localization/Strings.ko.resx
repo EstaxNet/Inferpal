@@ -1921,6 +1921,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SetupAlsoAnswering" xml:space="preserve"><value>또 응답: {1}의 {0}(모델 {2:N0}개)</value></data>
   <data name="SetupUseInstead" xml:space="preserve"><value>대신 사용</value></data>
   <data name="SetupNothingTitle" xml:space="preserve"><value>여기에서 모델 서버를 찾지 못했습니다</value></data>
+  <data name="SetupOtherAnswersTitle" xml:space="preserve"><value>선택한 서버가 응답하지 않습니다. 여기서는 다른 서버가 응답합니다</value></data>
   <data name="SetupNothingLead" xml:space="preserve"><value>각 주소의 응답:</value></data>
   <data name="SetupOtherMachine" xml:space="preserve"><value>다른 컴퓨터의 서버</value></data>
   <data name="SetupConnect" xml:space="preserve"><value>연결</value></data>

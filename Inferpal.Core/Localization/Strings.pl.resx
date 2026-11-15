@@ -1921,6 +1921,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="SetupAlsoAnswering" xml:space="preserve"><value>Odpowiada też: {0} pod adresem {1}, {2:N0} {2:model|modele|modeli}</value></data>
   <data name="SetupUseInstead" xml:space="preserve"><value>Użyj zamiast tego</value></data>
   <data name="SetupNothingTitle" xml:space="preserve"><value>Nie znaleziono tu serwera modeli</value></data>
+  <data name="SetupOtherAnswersTitle" xml:space="preserve"><value>Wybrany serwer nie odpowiada — odpowiada tu inny</value></data>
   <data name="SetupNothingLead" xml:space="preserve"><value>Co odpowiedział każdy adres:</value></data>
   <data name="SetupOtherMachine" xml:space="preserve"><value>Serwer na innym komputerze</value></data>
   <data name="SetupConnect" xml:space="preserve"><value>Połącz</value></data>

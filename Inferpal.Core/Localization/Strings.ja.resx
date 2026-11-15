@@ -1921,6 +1921,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="SetupAlsoAnswering" xml:space="preserve"><value>ほかにも応答: {1} の {0}（モデル {2:N0} 個）</value></data>
   <data name="SetupUseInstead" xml:space="preserve"><value>こちらを使う</value></data>
   <data name="SetupNothingTitle" xml:space="preserve"><value>ここにはモデルサーバーが見つかりません</value></data>
+  <data name="SetupOtherAnswersTitle" xml:space="preserve"><value>選択したサーバーが応答しません。ここでは別のサーバーが応答しています</value></data>
   <data name="SetupNothingLead" xml:space="preserve"><value>各アドレスの応答：</value></data>
   <data name="SetupOtherMachine" xml:space="preserve"><value>別のマシン上のサーバー</value></data>
   <data name="SetupConnect" xml:space="preserve"><value>接続</value></data>
