@@ -128,6 +128,47 @@ public sealed class DocumentTextTests : IDisposable
         }
     }
 
+    // ── The agent's tools: read_file and search_in_files read a document's text, at the same line numbers ────────────
+
+    private Task<string> ReadTool(string path) =>
+        new Services.Tools.ReadFileTool(() => _dir).ExecuteAsync(System.Text.Json.JsonSerializer.SerializeToElement(new { path }), CancellationToken.None);
+
+    private Task<string> SearchTool(string pattern) =>
+        new Services.Tools.SearchInFilesTool(() => _dir).ExecuteAsync(
+            System.Text.Json.JsonSerializer.SerializeToElement(new { path = _dir, pattern }), CancellationToken.None);
+
+    [Fact]
+    public async Task ReadFile_ReadsADocumentsText_AndSaysWhyAScanHasNone()
+    {
+        var spec = Path.Combine(_dir, "spec.pdf");
+        File.WriteAllBytes(spec, Pdf("BT /F1 12 Tf 72 720 Td (The rounding rule) Tj 0 -14 Td (applies per line) Tj ET"));
+        var read = await ReadTool(spec);
+        Assert.Contains("[Text extracted from spec.pdf", read, StringComparison.Ordinal);
+        Assert.Contains("applies per line", read, StringComparison.Ordinal);
+
+        var scan = Path.Combine(_dir, "scan.pdf");
+        File.WriteAllBytes(scan, Pdf("q 100 0 0 100 0 0 cm Q"));
+        Assert.Equal("'scan.pdf' gives no text to read: it holds no text: a scan, or images.", await ReadTool(scan));
+    }
+
+    /// <summary>A match in a document is reported at the line read_file shows it on; a document without text is counted,
+    /// never passed for one that does not hold the words.</summary>
+    [Fact]
+    public async Task SearchInFiles_FindsWordsInADocument_AtTheLineReadFileShows()
+    {
+        var spec = Path.Combine(_dir, "spec.pdf");
+        File.WriteAllBytes(spec, Pdf("BT /F1 12 Tf 72 720 Td (first line) Tj 0 -14 Td (the zebra rule) Tj ET"));
+        File.WriteAllBytes(Path.Combine(_dir, "scan.pdf"), Pdf("q 100 0 0 100 0 0 cm Q"));
+        File.WriteAllBytes(Path.Combine(_dir, "notes.docx"), Docx("<w:p><w:r><w:t>zebra in a docx</w:t></w:r></w:p>"));
+
+        var found = await SearchTool("zebra");
+        var pdfHit = found.Split('\n').Single(l => l.StartsWith("spec.pdf:", StringComparison.Ordinal));
+        var line = int.Parse(pdfHit.Split(':')[1], System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Contains("the zebra rule", (await ReadTool(spec)).Split('\n')[line - 1], StringComparison.Ordinal);
+        Assert.Contains(found.Split('\n'), l => l.StartsWith("notes.docx:", StringComparison.Ordinal));
+        Assert.Contains("1 PDF/DOCX file(s) give no text to search", found, StringComparison.Ordinal);
+    }
+
     // ── A hostile file ends the read fast and says what it is, never crashes the process nor runs on ─────────────────
 
     private static DocumentExtraction Timed(byte[] bytes, string extension)

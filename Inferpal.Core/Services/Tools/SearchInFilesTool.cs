@@ -19,7 +19,7 @@ internal class SearchInFilesTool : ITool
     public string Name => "search_in_files";
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
-    public string Description => "Searches for text or a regex pattern in files. Returns file:line:content.";
+    public string Description => "Searches for text or a regex pattern in files, PDF and DOCX text included. Returns file:line:content.";
     public object Parameters => new
     {
         type = "object",
@@ -86,6 +86,10 @@ internal class SearchInFilesTool : ITool
         var skippedLarge = 0;
         var unreadable   = 0;
         var seen         = 0;
+        var documentWatch = new System.Diagnostics.Stopwatch();
+        var documentsSearched = 0;
+        var documentsWithoutText = 0;
+        var documentsNotSearched = 0;
         foreach (var file in files)
         {
             if (ct.IsCancellationRequested) break;
@@ -103,6 +107,18 @@ internal class SearchInFilesTool : ITool
                 {
                     lines = [.. buffered.ReplaceLineEndings("\n").Split('\n')];
                     if (lines.Count > 0 && lines[^1].Length == 0) lines.RemoveAt(lines.Count - 1);
+                }
+                else if (Documents.DocumentText.Handles(file))
+                {
+                    // A PDF or DOCX is searched in its extracted text — read_file's, so a line reported here is the line it
+                    // shows. Extraction is bounded per search: past its time, the rest are counted and said, never "no match".
+                    if (documentWatch.Elapsed > DocumentSearchBudget) { documentsNotSearched++; continue; }
+                    documentWatch.Start();
+                    var extracted = Documents.AttachedDocuments.ForModel(file, ct);
+                    documentWatch.Stop();
+                    if (extracted is null) { documentsWithoutText++; continue; }
+                    documentsSearched++;
+                    lines = [.. extracted.Split('\n')];
                 }
                 else
                 {
@@ -167,6 +183,16 @@ internal class SearchInFilesTool : ITool
             notes.Append($"\n({skippedLarge} file(s) larger than {MaxSearchFileBytes / (1024 * 1024)} MB were not searched.)");
         if (unreadable > 0)
             notes.Append($"\n({unreadable} file(s) could not be read and were not searched.)");
+        if (documentsSearched > 0 && results.Count > 0)
+            notes.Append($"\n({documentsSearched} PDF/DOCX file(s) were searched in their extracted text; read_file shows them at "
+                       + "the same line numbers.)");
+        if (documentsWithoutText > 0)
+            notes.Append($"\n({documentsWithoutText} PDF/DOCX file(s) give no text to search (a scan, images, a password, or "
+                       + "too large): read_file on one says which.)");
+        if (documentsNotSearched > 0)
+            notes.Append($"\n({documentsNotSearched} PDF/DOCX file(s) were not searched: reading documents stopped after "
+                       + $"{DocumentSearchBudget.TotalSeconds:0} s — search one by its path, or narrow file_pattern. This is NOT "
+                       + "\"absent from them\".)");
         // ⚠ The last reason, and the only one whose files are never even ENUMERATED: a folder the
         // walk could not list, or one it will not follow because it is a link. No count above can
         // express it — those files are absent from every total — so it names the folder instead.
@@ -177,6 +203,10 @@ internal class SearchInFilesTool : ITool
 
         return Task.FromResult((results.Count == 0 ? Strings.NoResults : string.Join("\n", results.Take(shown))) + notes);
     }
+
+    /// <summary>Time one search spends extracting PDF and DOCX text (each read once per version of the file, then kept):
+    /// a folder of a few hundred documents would otherwise hold the tool for minutes.</summary>
+    internal static readonly TimeSpan DocumentSearchBudget = TimeSpan.FromSeconds(10);
 
     /// <summary>Largest file read line by line — past it the file is skipped and counted.</summary>
     private const long MaxSearchFileBytes = 8 * 1024 * 1024;

@@ -369,9 +369,9 @@ Every tool by what it does, for when you write a rule or a prompt. A `?` marks a
 
 | Tool | Required params | Description |
 |---|---|---|
-| `read_file` | `path`, `start_line?`, `end_line?` | Read a file; a long one comes back in pages of whole lines, each naming the `start_line` to read on. A binary file is named, not shown |
+| `read_file` | `path`, `start_line?`, `end_line?` | Read a file; a long one comes back in pages of whole lines, each naming the `start_line` to read on. A PDF or DOCX reads as its extracted text (a scan or a password-protected file says why it has none); another binary file is named, not shown |
 | `list_files` | `path`, `pattern?` | List files (glob, recursive; at most 300, fewer when their paths would not fit the context — the answer says how many it left out) |
-| `search_in_files` | `path`, `pattern`, `file_pattern?` | Regex/text search (at most 100 matches, fewer when they would not fit the context — the answer names the files of those it left out) |
+| `search_in_files` | `path`, `pattern`, `file_pattern?` | Regex/text search (at most 100 matches, fewer when they would not fit the context — the answer names the files of those it left out). PDF and DOCX files are searched in their extracted text, at the line numbers `read_file` shows; documents that give no text, or that a search had no time left to read, are counted |
 | `get_active_document` | — | Path + content of the file open in the editor; a long one comes back as its first page, naming the `start_line` from which `read_file` reads on |
 | `get_open_editors` | — | All open files, active one marked `[active]` |
 | `get_git_status` | `path?`, `include_diff?`, `diff_path?` | `git status`, last 20 commits, branches (most recent first, the current one always shown), diff summary with its total; long sections keep what fits and count the rest. The full diff is capped, and a cut names the files it left out — `diff_path` reads one of them |

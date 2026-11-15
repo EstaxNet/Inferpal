@@ -26,8 +26,8 @@ internal class ReadFileTool : ITool
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
-        "Reads a text file. A file too long for one answer comes back in pages of whole lines, and the " +
-        "answer says which start_line to pass to read on.";
+        "Reads a text file, or the text of a PDF or DOCX. A file too long for one answer comes back in pages of whole " +
+        "lines, and the answer says which start_line to pass to read on.";
     public object Parameters => new
     {
         type = "object",
@@ -46,8 +46,22 @@ internal class ReadFileTool : ITool
         var path = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
 
+        var target = Classify(path, _overlay);
+        // ⚠ A PDF or DOCX reads as its extracted text — checked before the binary test, which a PDF whose first bytes hold
+        // no NUL passes, and which then decoded it as noise. Paged like any file, at the line numbers search_in_files
+        // reports. Not noted as read: write_file must never take a document for a text it may rewrite whole.
+        if (target is Target.File or Target.Binary && Documents.DocumentText.Handles(path))
+        {
+            var name = Path.GetFileName(path);
+            if (await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct), ct) is not { } extracted)
+                return $"'{name}' gives no text to read: {Documents.AttachedDocuments.WhyNoText(path)}.";
+            _history?.NoteOpened(path);
+            var page = PageOf(extracted, name, args.Int("start_line", 0), args.Int("end_line", 0));
+            return page.Text.Length > MaxChars ? Cap(page.Text, name) : page.Text;
+        }
+
         string content;
-        switch (Classify(path, _overlay))
+        switch (target)
         {
             // ⚠ A directory is not a missing file: "not found" sent the model looking for a path that is correct.
             case Target.Directory:
