@@ -85,6 +85,10 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public string UserText { get => _userText; set => SetProperty(ref _userText, value); }
     [DataMember] public bool   HasChips { get => _hasChips; set => SetProperty(ref _hasChips, value); }
     [DataMember] public ObservableCollection<string> Chips { get; } = [];
+    /// <summary>The images the question carried, by their files, drawn small under it — this session only.</summary>
+    [DataMember] public ObservableCollection<string> ImageFiles { get; } = [];
+    private bool _hasImageFiles;
+    [DataMember] public bool HasImageFiles { get => _hasImageFiles; set => SetProperty(ref _hasImageFiles, value); }
 
     // ── A note typed while the run worked: a user bubble, with the line that says whether the model read it ──
     private string _noteState = string.Empty;
@@ -436,6 +440,36 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         return item;
     }
 
+    // ── The card before sending when the answering model does not see the images (the Core's ImageNotSeenCardModel) ──
+    // Screen only: answered, it is taken off the list.
+    private Action? _onImageOther, _onImageWithout;
+    [DataMember] public string ImageCardSubtitle { get; private set; } = string.Empty;
+    [DataMember] public string ImageCardBody     { get; private set; } = string.Empty;
+    [DataMember] public string ImageCardModels   { get; private set; } = string.Empty;
+    [DataMember] public string BtnImageOther     { get; private set; } = string.Empty;
+    [DataMember] public string ImageOtherHint    { get; private set; } = string.Empty;
+    [DataMember] public bool   HasImageOther     { get; private set; }
+    [DataMember] public string BtnImageWithout   { get; private set; } = string.Empty;
+    [DataMember] public AsyncCommand ImageOtherCommand   { get; }
+    [DataMember] public AsyncCommand ImageWithoutCommand { get; }
+
+    /// <summary>The not-seen card, its two ways on.</summary>
+    internal static ChatMessageItem ImageCardMsg(Services.Presentation.ImageNotSeenCardModel card, Action other, Action without) => new()
+    {
+        Role              = "imagecard",
+        CardTitle         = card.Title,
+        ImageCardSubtitle = card.Subtitle,
+        ImageCardBody     = card.Body,
+        ImageCardModels   = card.VisionModels,
+        BtnImageOther     = card.AskOtherLabel,
+        ImageOtherHint    = card.AskOtherHint,
+        HasImageOther     = card.AskOtherLabel.Length > 0,
+        BtnImageWithout   = card.SendWithoutLabel,
+        Timestamp         = Now(),
+        _onImageOther     = other,
+        _onImageWithout   = without,
+    };
+
     // ── The notice of a start ("away"): what the closing of Visual Studio cut or left unread — the Core's AwayNotice ──
     // Its title is CardTitle. Screen only: dismissed, it is marked said and never shown again.
     private Action? _onAwayReview, _onAwayUndo, _onAwayDismiss, _onAwayKept;
@@ -667,6 +701,8 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
         AwayUndoCommand     = new AsyncCommand((_, _) => { _onAwayUndo?.Invoke(); return Task.CompletedTask; });
         AwayKeptCommand     = new AsyncCommand((_, _) => { _onAwayKept?.Invoke(); return Task.CompletedTask; });
         AwayDismissCommand  = new AsyncCommand((_, _) => { _onAwayDismiss?.Invoke(); return Task.CompletedTask; });
+        ImageOtherCommand   = new AsyncCommand((_, _) => { _onImageOther?.Invoke(); return Task.CompletedTask; });
+        ImageWithoutCommand = new AsyncCommand((_, _) => { _onImageWithout?.Invoke(); return Task.CompletedTask; });
         RewindHereCommand   = new AsyncCommand((_, _) => { if (CanRewind) _onRewindHere?.Invoke(this); return Task.CompletedTask; });
         // One going back at a time: the card is drawn again from the answer (ShowRewind, RewindSays).
         AsyncCommand RewindAction(Func<Action?> act) => new((_, _) =>
@@ -904,7 +940,7 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     }
 
     /// <summary>A question is drawn as its text, with what went with it as chips under it.</summary>
-    private void SplitQuestion()
+    internal void SplitQuestion()
     {
         var (text, names) = Services.Agent.ChatTurnPolicy.SplitBubbleText(Content);
         UserText = text;

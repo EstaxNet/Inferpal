@@ -359,6 +359,9 @@
                         <DataTrigger Binding="{Binding Role}" Value="away">
                             <Setter Property="AutomationProperties.Name" Value="{Binding CardTitle}"/>
                         </DataTrigger>
+                        <DataTrigger Binding="{Binding Role}" Value="imagecard">
+                            <Setter Property="AutomationProperties.Name" Value="{Binding CardTitle}"/>
+                        </DataTrigger>
                         <DataTrigger Binding="{Binding Role}" Value="serverinstall">
                             <Setter Property="AutomationProperties.Name" Value="{Binding CardTitle}"/>
                         </DataTrigger>
@@ -482,6 +485,21 @@
                                                Foreground="{Binding ThemeSubtleText}"/>
                                 </Button>
                             </Grid>
+                            <!-- The images the question carried, small (this session only) -->
+                            <ItemsControl ItemsSource="{Binding ImageFiles}" HorizontalAlignment="Right" Margin="0,6,0,0" Focusable="False"
+                                          Visibility="{Binding HasImageFiles, Converter={StaticResource b2v}}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="6" BorderThickness="1" Margin="6,0,0,0" ClipToBounds="True"
+                                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                                            <Image Source="{Binding}" MaxWidth="160" MaxHeight="100" Stretch="Uniform"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                             <ItemsControl ItemsSource="{Binding Chips}" HorizontalAlignment="Right" Margin="0,6,0,0"
                                           Visibility="{Binding HasChips, Converter={StaticResource b2v}}">
                                 <ItemsControl.ItemsPanel>
@@ -2387,6 +2405,50 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- ── The card before sending: the answering model does not see the images ── -->
+                        <Border CornerRadius="10" BorderThickness="1"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}"
+                                BorderBrush="{Binding DataContext.ThemeWarn, ElementName=root}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="imagecard">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Margin="12,10,12,12">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" FontSize="13" VerticalAlignment="Center"
+                                               Foreground="{Binding DataContext.ThemeWarn, ElementName=root}"/>
+                                    <TextBlock Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold" Margin="8,0,0,0"
+                                               TextWrapping="Wrap" Foreground="{Binding ThemeText}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding ImageCardSubtitle}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeSubtleText}"/>
+                                <TextBlock Text="{Binding ImageCardBody}" FontSize="13" Margin="0,8,0,0" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeText}"/>
+                                <TextBlock Text="{Binding ImageCardModels}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeSubtleText}"/>
+                                <WrapPanel Margin="0,10,0,0" HorizontalAlignment="Right">
+                                    <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" Margin="0,0,8,0" BorderThickness="0" Cursor="Hand"
+                                            Background="{Binding DataContext.ThemeAccent, ElementName=root}"
+                                            Visibility="{Binding HasImageOther, Converter={StaticResource b2v}}"
+                                            ToolTip="{Binding ImageOtherHint}"
+                                            Command="{Binding ImageOtherCommand}" AutomationProperties.Name="{Binding BtnImageOther}">
+                                        <TextBlock Text="{Binding BtnImageOther}" FontSize="13" VerticalAlignment="Center"
+                                                   Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                    </Button>
+                                    <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" BorderThickness="1" Cursor="Hand"
+                                            Background="Transparent" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding ImageWithoutCommand}" AutomationProperties.Name="{Binding BtnImageWithout}">
+                                        <TextBlock Text="{Binding BtnImageWithout}" FontSize="13" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                    </Button>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
                         <!-- ── The notice of a start: the run the closing cut, the background tasks it stopped or left unread ── -->
                         <Border CornerRadius="10" BorderThickness="1"
                                 Background="{Binding DataContext.ThemeSurface, ElementName=root}"
@@ -3465,10 +3527,15 @@
                                     <Border Margin="0,0,6,6" CornerRadius="6" BorderThickness="1" Height="24" Padding="8,0,2,0"
                                             Background="{Binding Background}" BorderBrush="{Binding BorderColor}">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8A5;" FontSize="11" VerticalAlignment="Center"
+                                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="{Binding Glyph}" FontSize="11" VerticalAlignment="Center"
                                                        Foreground="{Binding Foreground}"/>
                                             <TextBlock Text="{Binding Label}" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center"
-                                                       MaxWidth="180" TextTrimming="CharacterEllipsis" Foreground="{Binding Foreground}"/>
+                                                       MaxWidth="180" TextTrimming="CharacterEllipsis" Foreground="{Binding Foreground}"
+                                                       ToolTip="{Binding Detail}"/>
+                                            <!-- An image: its size, and when the model does not see it -->
+                                            <TextBlock Text="{Binding Detail}" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center" Opacity="0.75"
+                                                       MaxWidth="220" TextTrimming="CharacterEllipsis" Foreground="{Binding Foreground}"
+                                                       Visibility="{Binding HasDetail, Converter={StaticResource b2v}}"/>
                                             <!-- Pin: only when the chip has a file behind it -->
                                             <Button Template="{StaticResource Flat5}" Background="Transparent" BorderThickness="0"
                                                     Width="20" Height="20" Margin="4,0,0,0" Cursor="Hand"
@@ -3540,6 +3607,7 @@
                              BorderThickness="0" Background="Transparent" Padding="0"
                              Foreground="{Binding ThemeText}" CaretBrush="{Binding ThemeText}"
                              FontSize="13"
+                             AutomationProperties.AutomationId="InferpalPromptBox"
                              AutomationProperties.Name="{Binding ComposerPlaceholder}">
                         <TextBox.InputBindings>
                             <!-- Plain Enter → send (or, while an approval card waits, Allow once; during a turn, a note for

@@ -193,7 +193,7 @@ public class AgentOrchestratorSynthesisTests
         Assert.False(ToolBlockBoundary.HasOrphanedToolMessage(synth));
         Assert.Contains(synth, m => (m.Content ?? "").Contains("class Foo { void Bar() {} }"));
         Assert.Contains(OpenAiCompatibleClient.MapMessages(synth),
-                        m => (m.Content ?? "").Contains("class Foo { void Bar() {} }"));
+                        m => PromptedTools.TextOf(m.Content).Contains("class Foo { void Bar() {} }"));
     }
 
     [Fact]

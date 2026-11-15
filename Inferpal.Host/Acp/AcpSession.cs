@@ -787,6 +787,25 @@ internal sealed class AcpSession : IAsyncDisposable
     private async Task<string> ChatAsync(string typed, AcpPromptContent content)
     {
         var (promptText, labels, attachedPaths) = await BuildPromptAsync(typed, content);
+        // Images go with the question when the model that answers sees them. An ACP client has no card to ask on: a model
+        // that does not see them is said to the person, and the model reads that they were left out.
+        var images = content.Images ?? [];
+        if (images.Count > 0)
+        {
+            var check = await _link.InvokeWithParameterObjectAsync<ImageCheckResult>("image/check", new
+            {
+                names = images.Select(i => i.Name).ToList(), model = _model, agentMode = _mode == AcpModes.Agent,
+                modelOverridesRoles = _model is not null,
+            }, CancellationToken.None);
+            if (check.Sees == false)
+            {
+                var said = check.Card is { } card ? card.Title + " — " + card.VisionModels : check.ChipWarning;
+                Notice("warning", said, said + "\n\n");
+                promptText += $"\n\n[{images.Count} image(s) were attached ({string.Join(", ", images.Select(i => i.Name))}); {check.Model} does not see images, so they were not sent.]";
+                images = [];
+            }
+            else labels.AddRange(images.Select(i => i.Name));
+        }
         // ⚠ A Stop that comes while the prompt is being built (attachments read, the host asked for each excerpt, a slash
         // command answered) finds no turn on the host to stop: chat/cancel does nothing there, and sent now, the whole
         // turn would run after it — tools and writes included — under a response that says "cancelled".
@@ -809,6 +828,7 @@ internal sealed class AcpSession : IAsyncDisposable
             modelOverridesRoles = _model is not null,
             agentMode     = _mode == AcpModes.Agent,
             attachedPaths = attachedPaths.Count > 0 ? attachedPaths : null,
+            images        = images.Count > 0 ? images : null,
         }, CancellationToken.None);
         await DrainLinkAsync();
         Interlocked.Add(ref _sessionTokens, result.TokensUsed);

@@ -226,6 +226,11 @@ internal partial class InferpalToolWindowData
         IsAttachMenuOpen = false;
         string? filePath = await ShowOpenFileDialogAsync();
         if (filePath is null) return;
+        if (Services.Documents.ChatImages.Handles(filePath))
+        {
+            await AttachImageAsync(filePath, pasted: false, ct);
+            return;
+        }
 
         try
         {
@@ -265,6 +270,69 @@ internal partial class InferpalToolWindowData
             };
             return dlg.ShowDialog() == true ? dlg.FileName : null;
         }, "AttachFileDialog");
+
+    /// <summary>
+    /// An image the person attaches — a file picked, dropped or mentioned, or one pasted (<paramref name="pasted"/>, saved by
+    /// the in-process half) — read by the Core's one reader: format, size, reduced past 1920 × 1080; refusals said. The chip
+    /// says its size, and when the model the question asks does not see images.
+    /// </summary>
+    private async Task AttachImageAsync(string path, bool pasted, CancellationToken ct)
+    {
+        try
+        {
+            if (!pasted && MentionController.FileRefusal(path, _indexService.RootDir) is { } refused)
+            {
+                await NotifyMentionAsync(refused);
+                return;
+            }
+            var count = 0;
+            await RunOnVMContextAsync(() => count = Attachments.Count(a => a.Image is not null));
+            if (count >= Services.Documents.ChatImages.MaxPerQuestion)
+            {
+                await NotifyMentionAsync(Services.Presentation.ImageCards.TooMany);
+                return;
+            }
+            var name = Path.GetFileName(path);
+            if (new FileInfo(path).Length > Services.Documents.ChatImages.MaxBytes)
+            {
+                await NotifyMentionAsync(Strings.ImageTooLarge(name, (int)(Services.Documents.ChatImages.MaxBytes / (1024 * 1024))));
+                return;
+            }
+            var read = Services.Documents.ChatImages.Read(await File.ReadAllBytesAsync(path, ct), name);
+            if (read.Image is not { } image)
+            {
+                await NotifyMentionAsync(read.Refusal ?? string.Empty);
+                return;
+            }
+            var model = ModelRouter.Resolve(_config, _config.AgentModeEnabled || _planMode ? ModelRole.Agent : ModelRole.Chat);
+            bool? sees = null;
+            try { sees = await _client.SeesImagesAsync(model, ct); }
+            catch (System.Net.Http.HttpRequestException ex) { Diagnostics.Swallow("ImageChip.Sees", ex); }
+            var chipModel = Services.Presentation.ImageCards.Chip(image, pasted, sees == false ? model : null);
+            var detail = chipModel.Warning.Length > 0 ? chipModel.Detail + " · " + chipModel.Warning : chipModel.Detail;
+            await RunOnVMContextAsync(() =>
+            {
+                AttachmentItem? item = null;
+                item = new AttachmentItem(image.Name, string.Empty, () => Post(() =>
+                {
+                    Attachments.Remove(item!);
+                    HasAttachments = Attachments.Count > 0;
+                }), origin: pasted ? null : path) { Image = image, ImageFile = path, Detail = detail };
+                var chip         = ThemePalette.For(_isDark, _isHighContrast);
+                item.Background  = chip.AttachChipBg;
+                item.Foreground  = chip.AttachChipText;
+                item.BorderColor = chip.AttachChipBorder;
+                Attachments.Add(item);
+                HasAttachments = true;
+            });
+            if (read.Note is { } note) await NotifyMentionAsync(note);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            await NotifyMentionAsync(Strings.AttachError(ex.Message));
+        }
+    }
 
     /// <summary>Adds a chip to the question being written: its text capped, said when cut.</summary>
     /// <param name="label">What the chip and the question show.</param>

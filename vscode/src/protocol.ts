@@ -106,6 +106,19 @@ export interface ChatSendParams {
   query?: string;
   /** Regenerate: the notes the question's first answer read — asked again, it carries them, as the history kept it. */
   notes?: string[];
+  /** The model is the one this question asks, past every role (the not-seen card's model that sees images). */
+  modelOverridesRoles?: boolean;
+  /** The images the question carries, as `image/read` gave them (the Core's `ChatImages`). */
+  images?: ImageDto[];
+}
+
+/** An image the question carries: its name, its type, its bytes in base64. */
+export interface ImageDto { name: string; mediaType: string; data: string }
+
+/** The card shown before sending when the answering model does not see images (the Core's `ImageNotSeenCardModel`). */
+export interface ImageNotSeenCard {
+  title: string; subtitle: string; body: string; otherModel: string; askOtherLabel: string; askOtherHint: string;
+  sendWithoutLabel: string; visionModels: string;
 }
 
 /** A note typed while a turn runs (`chat/steer`), and — read — after how many tool calls the model read it. */

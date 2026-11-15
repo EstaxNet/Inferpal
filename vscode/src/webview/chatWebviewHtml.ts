@@ -133,7 +133,7 @@ export function renderChatHtml(webview: vscode.Webview, extensionUri: vscode.Uri
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy"
-    content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; img-src ${webview.cspSource};">
+    content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} data:;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="${style}" rel="stylesheet">
 <title>Inferpal</title>

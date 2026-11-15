@@ -36,9 +36,11 @@ record OpenAiStreamOptions(
 
 /// <summary>One outbound message. Shaped for the OpenAI API (ids on tool calls, arguments as string,
 /// <c>tool_call_id</c> on tool results) — built from the internal <see cref="ChatMessageDto"/>.</summary>
+/// <param name="Content">A string, or a list of content parts when the message carries images
+/// (<see cref="Services.Documents.ChatImages.Parts"/>).</param>
 record OpenAiRequestMessage(
     [property: JsonPropertyName("role")]         string Role,
-    [property: JsonPropertyName("content")]      string? Content = null,
+    [property: JsonPropertyName("content")]      object? Content = null,
     [property: JsonPropertyName("tool_calls")]   List<OpenAiToolCall>? ToolCalls = null,
     [property: JsonPropertyName("tool_call_id")] string? ToolCallId = null);
 

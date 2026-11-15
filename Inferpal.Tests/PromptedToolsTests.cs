@@ -47,13 +47,13 @@ public class PromptedToolsTests
         var rewritten = PromptedTools.Rewrite(OpenAiCompatibleClient.MapMessages(history), new Tools().Definitions);
 
         Assert.Equal(["system", "user", "assistant", "user"], rewritten.Select(m => m.Role));
-        Assert.StartsWith("You are Inferpal.", rewritten[0].Content);
-        Assert.Contains("\"name\":\"read_file\"", rewritten[0].Content);           // the tool, declared
-        Assert.Contains("<tool_call>", rewritten[0].Content);                       // how to call it
-        Assert.Contains("<tool_call>\n{\"name\": \"read_file\", \"arguments\": {\"path\":\"a.cs\"}}\n</tool_call>", rewritten[2].Content);
+        Assert.StartsWith("You are Inferpal.", (string?)rewritten[0].Content);
+        Assert.Contains("\"name\":\"read_file\"", (string?)rewritten[0].Content);           // the tool, declared
+        Assert.Contains("<tool_call>", (string?)rewritten[0].Content);                       // how to call it
+        Assert.Contains("<tool_call>\n{\"name\": \"read_file\", \"arguments\": {\"path\":\"a.cs\"}}\n</tool_call>", (string?)rewritten[2].Content);
         // MapMessages already folds the observe note into the tool result; both reach the model, as text.
-        Assert.StartsWith("<tool_response>\nclass A {}", rewritten[3].Content);
-        Assert.Contains("[OBSERVE] Continue.", rewritten[3].Content);
+        Assert.StartsWith("<tool_response>\nclass A {}", (string?)rewritten[3].Content);
+        Assert.Contains("[OBSERVE] Continue.", (string?)rewritten[3].Content);
         Assert.All(rewritten, m => Assert.Null(m.ToolCalls));
         Assert.All(rewritten, m => Assert.Null(m.ToolCallId));
     }

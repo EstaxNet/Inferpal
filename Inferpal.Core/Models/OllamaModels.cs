@@ -57,11 +57,15 @@ record ChatOptions(
 /// <see cref="Content"/>. Declared last so existing positional <c>new ChatMessageDto(role, content,
 /// toolCalls)</c> call sites keep compiling; <c>WhenWritingNull</c> keeps it out of request bodies.
 /// </param>
+/// <param name="Images">Images the person attached to this question, base64 without a data-URL prefix — Ollama's own
+/// field; the OpenAI-compatible client turns them into content parts. Sent with their question only
+/// (<see cref="Services.Documents.ChatImages.OnlyWithTheirQuestion"/>).</param>
 record ChatMessageDto(
     [property: JsonPropertyName("role")]       string Role,
     [property: JsonPropertyName("content")]    string? Content = null,
     [property: JsonPropertyName("tool_calls")] List<ToolCallDto>? ToolCalls = null,
-    [property: JsonPropertyName("thinking")]   string? Thinking = null)
+    [property: JsonPropertyName("thinking")]   string? Thinking = null,
+    [property: JsonPropertyName("images")]     List<string>? Images = null)
 {
     /// <summary>A user message the agent loop injected itself (plan request, execute order, observe
     /// prompt, nudge, summary label) — not a question the user asked. Kept out of every request body;
@@ -164,7 +168,10 @@ record ModelListResponse(
 /// decoupled from the Ollama wire format. Used by the hardware-aware VRAM estimation.</summary>
 /// <param name="Capabilities">What the server publishes the model can do; <c>null</c> when it publishes nothing (LM Studio,
 /// OpenAI-compatible, an older Ollama), and then the name decides.</param>
-record InstalledModelInfo(string Name, long SizeBytes, IReadOnlyList<string>? Capabilities = null);
+/// <param name="SeesImages">The server publishes that the model reads images (LM Studio's <c>capabilities.vision</c>,
+/// Ollama's <c>vision</c>); <c>null</c> when it does not say. ⚠ Kept apart from <paramref name="Capabilities"/>, which
+/// decides the chat and embedding lists: a list holding only "vision" would read as "cannot chat".</param>
+record InstalledModelInfo(string Name, long SizeBytes, IReadOnlyList<string>? Capabilities = null, bool? SeesImages = null);
 
 /// <summary>Response from <c>POST /api/show</c>. <c>model_info</c> is an open dict whose keys are
 /// prefixed by the model architecture (e.g. <c>llama.block_count</c>); see <see cref="ModelArchInfo"/>.</summary>

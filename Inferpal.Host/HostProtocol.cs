@@ -97,7 +97,30 @@ internal sealed record ChatSendParams(
     bool CodeAction = false,
     string? Query = null,
     bool ModelOverridesRoles = false,
-    List<string>? Notes = null);
+    List<string>? Notes = null,
+    List<ImageDto>? Images = null);
+
+/// <summary>An image the question carries, as <c>image/read</c> gave it: its name, its type, its bytes in base64.</summary>
+internal sealed record ImageDto(string Name, string MediaType, string Data);
+
+/// <summary><c>image/read</c>: an image the person attaches — a file (<paramref name="Path"/>) or pasted or dropped bytes
+/// (<paramref name="Data"/>, base64, named <paramref name="Name"/>).</summary>
+/// <param name="Already">The images the question already carries: past <see cref="Services.Documents.ChatImages.MaxPerQuestion"/>,
+/// the next one is refused.</param>
+internal sealed record ImageReadParams(string? Name = null, string? Data = null, string? Path = null, bool Pasted = false, int Already = 0);
+
+/// <summary>What <c>image/read</c> gives: the image to send (reduced or converted when it had to be) and its chip's size
+/// line, or why it is not attached; <paramref name="Note"/> says what was done to it.</summary>
+internal sealed record ImageReadResult(ImageDto? Image, string? Detail, string? Refusal, string? Note);
+
+/// <summary><c>image/check</c>: whether the model the next question answers with sees images, for the images named.</summary>
+internal sealed record ImageCheckParams(List<string> Names, string? Model = null, bool? AgentMode = null, bool ModelOverridesRoles = false);
+
+/// <summary>The answer to <c>image/check</c>: the model, whether it sees (<c>null</c> when the server does not say — the
+/// images go), the line the composer shows, and the card to show before sending when it does not see.</summary>
+/// <param name="ChipWarning">What an image chip says when the model does not see it; empty otherwise.</param>
+internal sealed record ImageCheckResult(string Model, bool? Sees, string GoesTo, Services.Presentation.ImageNotSeenCardModel? Card,
+                                        string ChipWarning = "");
 
 /// <summary><c>chat/steer</c>: a note typed while the turn runs, for its next boundary.</summary>
 /// <param name="Id">The adapter's id for the note, given back by <c>chat/noteApplied</c> and in the turn's result.</param>

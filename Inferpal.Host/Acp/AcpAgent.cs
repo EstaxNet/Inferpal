@@ -174,7 +174,7 @@ internal sealed class AcpAgent : IAsyncDisposable
             agentCapabilities = new
             {
                 loadSession         = true,
-                promptCapabilities  = new { image = false, audio = false, embeddedContext = true },
+                promptCapabilities  = new { image = true, audio = false, embeddedContext = true },
                 mcpCapabilities     = new { http = true, sse = false },
                 sessionCapabilities = new { list = new { }, close = new { }, delete = new { }, resume = new { } },
             },

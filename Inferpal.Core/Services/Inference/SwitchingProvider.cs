@@ -99,6 +99,8 @@ internal sealed class SwitchingProvider : IInferenceProvider
     public Task<IReadOnlyList<InstalledModelInfo>> ListInstalledModelsAsync(CancellationToken ct, string? url = null) =>
         Inner.ListInstalledModelsAsync(ct, url);
     public Task<ModelsByKind> ListModelsByKindAsync(CancellationToken ct, string? url = null) => Inner.ListModelsByKindAsync(ct, url);
+    public Task<bool?> SeesImagesAsync(string model, CancellationToken ct, string? url = null) => Inner.SeesImagesAsync(model, ct, url);
+    public Task<IReadOnlyList<string>> VisionModelsAsync(CancellationToken ct, string? url = null) => Inner.VisionModelsAsync(ct, url);
 
     public Task StreamFimAsync(string prefix, string suffix, int maxTokens, double temperature, Action<string> onToken,
         CancellationToken ct, string? model = null) =>

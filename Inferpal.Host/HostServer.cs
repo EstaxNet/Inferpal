@@ -436,6 +436,9 @@ internal sealed partial class HostServer : IDisposable
             var promptText = ChatTurnPolicy.WithInjectedContext(ChatTurnPolicy.WithUserNotes(p.Prompt, p.Notes ?? []),
                                                                 autoCtx, workspace, activeFile);
             s.History.Add(new ChatMessageDto("user", promptText));
+            // The images go with the question, never in its text.
+            if (p.Images is { Count: > 0 } images)
+                s.History[^1] = s.History[^1] with { Images = [.. images.Take(Services.Documents.ChatImages.MaxPerQuestion).Select(i => i.Data)] };
             questionKept = true;
             // ⚠ Sent once the question carrying it is in the history: set when the block was BUILT, a Stop during the
             // auto-context build that follows dropped the question — block included — and no later question had it.
@@ -1553,6 +1556,63 @@ internal sealed partial class HostServer : IDisposable
         return await MentionController.FileMentionTextAsync(path, null, ct) is { } text
             ? new AttachReadResult(text, null, null)
             : new AttachReadResult(null, Strings.AttachFileTooLarge, "(not attached: larger than the attachment limit)");
+    }
+
+    /// <summary>
+    /// An image the person attaches, read by the Core's one reader (<see cref="Services.Documents.ChatImages.Read"/>): its
+    /// format from its bytes, reduced past 1920 × 1080, a BMP made a PNG — or why it is not attached. A file the
+    /// workspace's ignore files exclude is refused, as any attachment.
+    /// </summary>
+    [JsonRpcMethod("image/read", UseSingleObjectParameterDeserialization = true)]
+    public async Task<ImageReadResult> ImageReadAsync(ImageReadParams p, CancellationToken ct)
+    {
+        if (p.Already >= Services.Documents.ChatImages.MaxPerQuestion)
+            return new(null, null, Services.Presentation.ImageCards.TooMany, null);
+        byte[] bytes;
+        var name = p.Name ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(p.Path))
+        {
+            var path = p.Path.Trim();
+            name = name.Length > 0 ? name : Path.GetFileName(path);
+            if (Services.Governance.ContentExclusions.Of(path) is not null)
+                return new(null, null, MentionController.FileRefusal(path, Session().RootDir), null);
+            if (new FileInfo(path) is { Exists: true, Length: > Services.Documents.ChatImages.MaxBytes })
+                return new(null, null, Strings.ImageTooLarge(name, (int)(Services.Documents.ChatImages.MaxBytes / (1024 * 1024))), null);
+            bytes = await File.ReadAllBytesAsync(path, ct);
+        }
+        else
+        {
+            try { bytes = Convert.FromBase64String(p.Data ?? string.Empty); }
+            catch (FormatException) { return new(null, null, Strings.ImageDamaged(name), null); }
+        }
+        var read = Services.Documents.ChatImages.Read(bytes, name);
+        if (read.Image is not { } image) return new(null, null, read.Refusal, null);
+        return new(new ImageDto(image.Name, image.MediaType, image.Base64),
+                   Services.Presentation.ImageCards.Chip(image, p.Pasted).Detail, null, read.Note);
+    }
+
+    /// <summary>
+    /// Whether the model the next question answers with — the one <c>chat/send</c> resolves — sees images, as its server
+    /// publishes it; when it does not, the card the adapter shows before sending, offering a model of the server that does.
+    /// </summary>
+    [JsonRpcMethod("image/check", UseSingleObjectParameterDeserialization = true)]
+    public async Task<ImageCheckResult> ImageCheckAsync(ImageCheckParams p, CancellationToken ct)
+    {
+        var s = Session();
+        var mode = TurnMode(s);
+        var (model, _) = await AnsweringModelAsync(s, mode, false, mode is null && TurnIsAgent(s, false, p.AgentMode),
+                                                   p.Model, p.ModelOverridesRoles, ct);
+        bool? sees;
+        try { sees = await s.Client.SeesImagesAsync(model, ct); }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
+        {
+            Diagnostics.Swallow("ImageCheck", ex);
+            sees = null;
+        }
+        Services.Presentation.ImageNotSeenCardModel? card = null;
+        if (sees == false)
+            card = Services.Presentation.ImageCards.NotSeen(model, p.Names, await s.Client.VisionModelsAsync(ct));
+        return new(model, sees, Services.Presentation.ImageCards.GoesTo(model), card, sees == false ? Strings.ImageNotSeenChip(model) : string.Empty);
     }
 
     /// <summary>

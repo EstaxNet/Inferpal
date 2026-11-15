@@ -2289,4 +2289,25 @@
   <data name="DocPasswordReceiptClosed" xml:space="preserve"><value>{0} оставлен закрытым</value></data>
   <data name="DocPasswordReceiptTooMany" xml:space="preserve"><value>{0} оставлен закрытым после трёх неверных паролей</value></data>
   <data name="DocPasswordReceiptClosedDetail" xml:space="preserve"><value>Текст не прочитан.</value></data>
+  <data name="ImageTooLarge" xml:space="preserve"><value>{0} не прикреплён: больше {1} МБ.</value></data>
+  <data name="ImageFormatNotSent" xml:space="preserve"><value>{0} не прикреплён: изображения {1} не отправляются модели. Сохраните его как PNG или JPEG и прикрепите снова.</value></data>
+  <data name="ImageLargeNote" xml:space="preserve"><value>{0} ({1} × {2}) большое: сервер уменьшит его до того, что читает модель, и мелкий текст может стать нечитаемым — обрежьте до важного.</value></data>
+  <data name="ImageTooMany" xml:space="preserve"><value>К вопросу можно приложить не более {0} изображений: остальные не прикреплены.</value></data>
+  <data name="ImageNotSeenTitle" xml:space="preserve"><value>{0} не видит изображения</value></data>
+  <data name="ImageNotSeenSubtitle" xml:space="preserve"><value>Ваш сервер не указывает его как модель зрения</value></data>
+  <data name="ImageNotSeenBody" xml:space="preserve"><value>Если отправить так, {0} будет пропущено, и модель ответит без него. Два пути:</value></data>
+  <data name="ImageAskOther" xml:space="preserve"><value>Задать этот вопрос {0}</value></data>
+  <data name="ImageAskOtherHint" xml:space="preserve"><value>видит изображения · на вашем сервере</value></data>
+  <data name="ImageSendWithout" xml:space="preserve"><value>Отправить без изображения</value></data>
+  <data name="ImageVisionModels" xml:space="preserve"><value>Модели на вашем сервере, которые видят изображения: {0}.</value></data>
+  <data name="ImageNoVisionModel" xml:space="preserve"><value>Ни одна модель на вашем сервере не видит изображения.</value></data>
+  <data name="ImageSeesBadge" xml:space="preserve"><value>видит изображения</value></data>
+  <data name="ImageNoBadge" xml:space="preserve"><value>без изображений</value></data>
+  <data name="ImageGoesTo" xml:space="preserve"><value>Изображение уходит {0} на вашем сервере и никуда больше.</value></data>
+  <data name="ImageFormatsHint" xml:space="preserve"><value>PNG, JPEG, WebP или GIF (первый кадр), до 4 изображений на вопрос</value></data>
+  <data name="ImageNotSeenChip" xml:space="preserve"><value>{0} не видит</value></data>
+  <data name="ImagePasted" xml:space="preserve"><value>вставлено</value></data>
+  <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} не прикреплён: его {1} × {2} пикселей больше, чем читает Inferpal.</value></data>
+  <data name="ImageScaledNote" xml:space="preserve"><value>{0} ({1} × {2}) отправляется уменьшенным до {3} × {4}: из большего изображения модель не прочитает больше. Мелкий текст может стать нечитаемым — обрежьте до важного.</value></data>
+  <data name="ImageDamaged" xml:space="preserve"><value>{0} не прикреплён: его не удалось прочитать как изображение (повреждено?).</value></data>
 </root>

@@ -134,7 +134,7 @@ internal class OllamaClient : InferenceProviderBase
         // history clean (better KV-cache reuse) and guards any model whose template is strict.
         var request = new ChatRequest(
             model,
-            prompted ? PromptedTools.Rewrite(messages, defs!) : CoalesceConsecutiveRoles(messages),
+            prompted ? PromptedTools.Rewrite(messages, defs!) : CoalesceConsecutiveRoles(Documents.ChatImages.OnlyWithTheirQuestion(messages)),
             prompted ? null : defs,
             Stream: true, KeepAlive: ComputeKeepAlive(),
             Options: ComputeOptions(model, prompted ? PromptedTools.ResponseMarkers : null),
@@ -686,7 +686,8 @@ internal class OllamaClient : InferenceProviderBase
             cts.CancelAfter(TimeSpan.FromSeconds(10));
             var base_  = UrlOr(url).TrimEnd('/');
             var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", cts.Token);
-            return result?.Models?.Select(m => new InstalledModelInfo(m.Name, m.Size, m.Capabilities)).ToList() ?? [];
+            return result?.Models?.Select(m => new InstalledModelInfo(m.Name, m.Size, m.Capabilities,
+                m.Capabilities is { Count: > 0 } published ? published.Contains("vision", StringComparer.OrdinalIgnoreCase) : null)).ToList() ?? [];
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {

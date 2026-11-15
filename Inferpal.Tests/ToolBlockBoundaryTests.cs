@@ -224,8 +224,8 @@ public class ToolBlockBoundaryTests
         Assert.Contains(flat, m => m.Role == "assistant" && m.Content == "answer");
         // And what comes out of it goes through the OpenAI mapping without losing anything either.
         var mapped = OpenAiCompatibleClient.MapMessages(flat);
-        Assert.Contains(mapped, m => (m.Content ?? "").Contains("r0"));
-        Assert.Contains(mapped, m => (m.Content ?? "").Contains("r1"));
+        Assert.Contains(mapped, m => Services.Inference.PromptedTools.TextOf(m.Content).Contains("r0"));
+        Assert.Contains(mapped, m => Services.Inference.PromptedTools.TextOf(m.Content).Contains("r1"));
     }
 
     [Fact]

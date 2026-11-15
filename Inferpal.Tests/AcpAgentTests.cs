@@ -2204,7 +2204,18 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Equal(2, content.Attachments.Count);
         Assert.Equal(Path.GetFullPath(file), content.Attachments[0].Path);
         Assert.Equal("embedded body", content.Attachments[1].Text);
-        Assert.Single(content.Notes);
+        // Bytes that are no image: not sent, and the model reads why.
+        Assert.StartsWith("[An image was attached (image.png) and not sent: ", Assert.Single(content.Notes));
+        Assert.Empty(content.Images!);
+
+        // A real image goes with the question, read by the Core's reader.
+        var png = AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(new object[]
+        {
+            new { type = "text", text = "What does it say?" },
+            new { type = "image", data = Convert.ToBase64String(ChatImagesTests.Png(64, 32)), mimeType = "image/png" },
+        }));
+        Assert.Equal(("image.png", "image/png"), (Assert.Single(png.Images!).Name, png.Images![0].MediaType));
+        Assert.Empty(png.Notes);
 
         Assert.Throws<ArgumentException>(() => AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(new[] { new { type = "video" } })));
         Assert.Throws<ArgumentException>(() => AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(Array.Empty<object>())));

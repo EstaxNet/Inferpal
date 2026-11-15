@@ -51,6 +51,50 @@ internal static class ChatDropTarget
         EventManager.RegisterClassHandler(typeof(Grid), UIElement.PreviewDragOverEvent,  new DragEventHandler(OnOver),  handledEventsToo: true);
         EventManager.RegisterClassHandler(typeof(Grid), UIElement.PreviewDragLeaveEvent, new DragEventHandler(OnLeave), handledEventsToo: true);
         EventManager.RegisterClassHandler(typeof(Grid), UIElement.PreviewDropEvent,      new DragEventHandler(OnDrop),  handledEventsToo: true);
+        // An image pasted in the prompt: Paste as a command (Edit.Paste routed to the box) and as the keys themselves.
+        EventManager.RegisterClassHandler(typeof(TextBox), System.Windows.Input.CommandManager.PreviewExecutedEvent,
+            new System.Windows.Input.ExecutedRoutedEventHandler(OnPreviewExecuted), handledEventsToo: true);
+        EventManager.RegisterClassHandler(typeof(TextBox), UIElement.PreviewKeyDownEvent,
+            new System.Windows.Input.KeyEventHandler(OnPreviewKeyDown), handledEventsToo: true);
+    }
+
+    /// <summary>Must match the <c>AutomationId</c> of the chat's prompt box in <c>InferpalToolWindowContent.xaml</c>.</summary>
+    internal const string PromptId = "InferpalPromptBox";
+
+    private static void OnPreviewExecuted(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+        if (e.Command == System.Windows.Input.ApplicationCommands.Paste && PasteImage(sender)) e.Handled = true;
+    }
+
+    private static void OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        var mods = System.Windows.Input.Keyboard.Modifiers;
+        var paste = e.Key == System.Windows.Input.Key.V && mods == System.Windows.Input.ModifierKeys.Control
+                 || e.Key == System.Windows.Input.Key.Insert && mods == System.Windows.Input.ModifierKeys.Shift;
+        if (paste && PasteImage(sender)) e.Handled = true;
+    }
+
+    /// <summary>
+    /// On the chat's prompt, a clipboard that holds an image and no text (a screenshot): the image saved as a PNG of its
+    /// own and handed to the window as a pasted drop. A clipboard with text pastes the text, as before.
+    /// </summary>
+    private static bool PasteImage(object sender)
+    {
+        if (sender is not TextBox box || System.Windows.Automation.AutomationProperties.GetAutomationId(box) != PromptId) return false;
+        try
+        {
+            if (!Clipboard.ContainsImage() || Clipboard.ContainsText()) return false;
+            var image = Clipboard.GetImage();
+            if (image is null) return false;
+            var dir = Path.Combine(Path.GetTempPath(), "Inferpal", "pasted");
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, "image-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture) + ".png");
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(image));
+            using (var file = File.Create(path)) encoder.Save(file);
+            return ChatDropSignal.Write(new[] { path }, Array.Empty<string>(), pasted: true);
+        }
+        catch (Exception ex) { Diagnostics.Swallow("ChatDrop.Paste", ex); return false; }
     }
 
     private static bool IsChatRoot(object sender) => sender is Grid grid && Equals(grid.Tag, RootTag);

@@ -51,8 +51,21 @@ takes more than 2 seconds to read. **A document protected by a password** (PDF, 
 or Don't attach): the model gets the text, never the password, which is kept in memory for that file until the editor
 closes — never saved, never sent. A Word 95 document protected by a password stays closed, and an ACP attachment of a
 protected file is said protected. Pages without text in a PDF that has some are
-counted for the model. Formatting, images and comments are left out. Other binary files (images, archives) are not
+counted for the model. Formatting, images and comments are left out. Other binary files (archives, executables) are not
 attached, and say so.
+
+**An image goes with the question as an image**, never as text: paste a screenshot in the prompt (Ctrl+V), drop one on
+the chat, attach it with `@file`, Browse or Attach to Chat — or, from an ACP client, its image blocks. PNG, JPEG, WebP and
+GIF are sent as they are; a BMP is converted to PNG; HEIC, TIFF and SVG are refused, with the advice to save the image as
+a PNG. At most 4 images per question, 10 MB each. An image larger than 1920 × 1080 is scaled down to fit on your machine
+(a model reads no more from a larger one), and said — small text may become hard to read, so crop the part that matters;
+one that declares more than 40 million pixels is refused before anything decodes it. The chip shows the image's size; the
+line under the chips names the model it goes to. **When the model that will answer does not see images** — as your
+server publishes it: LM Studio's `vision`, Ollama's `vision` capability — a card asks before sending: ask a model of your
+server that does see images, for this question only, or send without the image. A server that does not say (another
+OpenAI-compatible server) gets the image. An ACP client has no card: the person is told, and the model reads that the
+images were left out. An image is sent with its question only: a later question does not send it again, and a saved
+conversation names it under the question without keeping it.
 
 **Visual Studio: drag a file or a folder onto the chat** — from Solution Explorer or Windows Explorer — and it becomes
 the chip `@file` or `@folder` makes, with the same refusals; nothing is sent until you send your message. A project

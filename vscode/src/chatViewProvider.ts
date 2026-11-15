@@ -24,7 +24,7 @@ import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
   ApprovalCard, AwayNotice, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
   ModelsByKind, SavedMessage, SessionLoadResult, SessionSwitches, hasSwitches, noSwitches, SlashEffect, TestsGenerateResult, TurnNote, WindowNoticeResult,
-  ConfigReloadResult,
+  ConfigReloadResult, ImageDto, ImageNotSeenCard,
 } from './protocol';
 import {
   WebviewToExt,
@@ -34,6 +34,7 @@ import {
   WvPlan,
   WvSlashCommand,
   WvTranscriptItem,
+  WvChip,
 } from './webviewMessages';
 
 /**
@@ -84,7 +85,14 @@ export function notificationText(markdown: string): string {
 
 /** A context chip waiting for the next question: its label, its content, and the file it came from. */
 /** `origin`: the file the chip's text comes from, whole or part — what the workspace's ignore files are asked about. */
-type PendingAttachment = { name: string; content: string; sourcePath?: string; origin?: string; auto?: boolean };
+type PendingAttachment = {
+  name: string; content: string; sourcePath?: string; origin?: string; auto?: boolean;
+  /** An image: what goes to the model, and its chip's size line. */
+  image?: ImageDto; detail?: string;
+};
+
+/** The files attached as images (the Core's `ChatImages.Extensions`; the Core says which it refuses). */
+const IMAGE_FILE = /\.(png|jpg|jpeg|webp|gif|bmp|heic|heif|tif|tiff|svg)$/i;
 /** A regenerated question's turn, as it was sent: the prompt, whether it was a code action, the relevant-code query. */
 type TurnReplay = { prompt: string; codeAction: boolean; query?: string };
 
@@ -165,6 +173,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private statusTimer: NodeJS.Timeout | undefined;
   /** Context chips (slash attachChip effects, @-mentions, "+" menu), consumed by the next turn. */
   private pendingAttachments: PendingAttachment[] = [];
+  /** What `image/check` said for the chips' images: the composer's line, and the chips' warning when it does not see. */
+  private imageSeen: { goesTo: string; sees: boolean | null; warning: string } | undefined;
+  /** The not-seen card on screen, waiting for the person's choice (a Stop answers it "without": the turn then stops). */
+  private imageCardAnswer: ((choice: 'other' | 'without') => void) | undefined;
   /** What the last question was sent WITH — its words before the "📎 Attached" line, and its chips —, tied to its
    *  bubble: Regenerate resends that, as the Visual Studio window resends `_lastSent`. A reloaded bubble has its words. */
   private lastSent: {
@@ -1762,6 +1774,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         if (this.busy) {
           this.stopPressed = true;
+          this.imageCardAnswer?.('without');
         }
         try {
           await this.getHost()?.chatCancel();
@@ -2003,6 +2016,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.lastDraft = msg.text;
         this.draftChanged(msg.text);
         return;
+      case 'attachImage':
+        await this.attachImage({ name: msg.name, data: msg.data, pasted: msg.pasted });
+        return;
+      case 'imageCardChoice':
+        this.imageCardAnswer?.(msg.choice);
+        return;
       case 'removeChip':
         if (msg.index >= 0 && msg.index < this.pendingAttachments.length) {
           const [removed] = this.pendingAttachments.splice(msg.index, 1);
@@ -2072,6 +2091,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'attachBrowse': {
         const picked = await vscode.window.showOpenDialog({ canSelectMany: false });
         if (!picked || picked.length === 0) {
+          return;
+        }
+        if (IMAGE_FILE.test(picked[0].fsPath)) {
+          await this.attachImage({ path: picked[0].fsPath });
           return;
         }
         try {
@@ -2149,12 +2172,62 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private postChips(): void {
-    this.post({ type: 'chips', chips: this.chipsShown() });
+    const images = this.pendingAttachments.some((a) => a.image);
+    this.post({ type: 'chips', chips: this.chipsShown(), imageLine: images ? this.imageSeen?.goesTo : undefined });
   }
 
   /** The chips as the composer draws them — a redraw too, or it showed the found-while-typing ones as plain ones. */
-  private chipsShown(): { name: string; auto: boolean }[] {
-    return this.pendingAttachments.map((a) => ({ name: a.name, auto: a.auto === true }));
+  private chipsShown(): WvChip[] {
+    return this.pendingAttachments.map((a) => ({
+      name: a.name, auto: a.auto === true,
+      image: a.image ? { detail: a.detail ?? '', warning: this.imageSeen?.sees === false ? this.imageSeen.warning : '' } : undefined,
+    }));
+  }
+
+  /**
+   * An image the person attaches — a file, or bytes pasted or dropped in the composer — read by the host (the Core's
+   * one reader: format, size, reduced past 1920 × 1080), as a chip; what was done to it, or why it is not attached, said.
+   */
+  private async attachImage(params: { path?: string; name?: string; data?: string; pasted?: boolean }): Promise<void> {
+    const host = this.hostForGesture();
+    if (!host) {
+      return;
+    }
+    try {
+      const already = this.pendingAttachments.filter((a) => a.image).length;
+      const read = await host.imageRead({ ...params, already });
+      if (!read.image) {
+        void vscode.window.showWarningMessage(read.refusal ?? '');
+        return;
+      }
+      this.pendingAttachments.push({ name: read.image.name, content: '', origin: params.path, image: read.image,
+                                     detail: read.detail ?? '' });
+      if (read.note) {
+        void vscode.window.showInformationMessage(read.note);
+      }
+      await this.refreshImageSeen(host);
+      this.postChips();
+    } catch (err) {
+      this.gestureFailed('attach image', err);
+    }
+  }
+
+  /** Whether the model the next question answers with sees images — the chips' warning and the composer's line. */
+  private async refreshImageSeen(host: HostClient): Promise<void> {
+    const names = this.pendingAttachments.filter((a) => a.image).map((a) => a.name);
+    const check = await host.imageCheck({ names, model: this.model || undefined, agentMode: this.windowAgentMode() });
+    this.imageSeen = { goesTo: check.goesTo, sees: check.sees, warning: check.chipWarning };
+  }
+
+  /** The not-seen card of the question being sent, answered by the person: ask the model that sees, or send without. */
+  private askImageCard(card: ImageNotSeenCard): Promise<'other' | 'without'> {
+    this.post({ type: 'imageCard', card });
+    return new Promise((resolve) => {
+      this.imageCardAnswer = (choice) => {
+        this.imageCardAnswer = undefined;
+        resolve(choice);
+      };
+    });
   }
 
   /**
@@ -3287,11 +3360,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // Under the question: the chips, and any typed @file that was cut or not sent.
       const named = [...mentions.labels];
       const chips = this.regenerating ? this.resendAttachments ?? [] : this.continuing ? [] : this.pendingAttachments;
+      let images: ImageDto[] = [];
+      let model = this.model || undefined;
+      let modelOverridesRoles: boolean | undefined;
       if (chips.length > 0) {
         // A chip of a file the workspace's ignore files exclude is not sent: asked once, for every chip with a file.
         const excluded = await ChatViewProvider.excluded(host, chips.map((a) => a.origin ?? ''));
         for (const [i, a] of chips.entries()) {
           const why = excluded[i];
+          if (a.image && !why) {
+            images.push(a.image);
+            continue;
+          }
           if (why) {
             expanded += `\n\n## Not attached: ${a.name}\n${why.forModel}`;
             named.push(why.notice);
@@ -3310,7 +3390,27 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           this.postChips();
         }
       }
+      // A model that does not see images: the card asks first — the model of the server that sees, or without them.
+      if (images.length > 0) {
+        const check = await host.imageCheck({ names: images.map((i) => i.name), model, agentMode });
+        if (check.card) {
+          if (await this.askImageCard(check.card) === 'other' && check.card.otherModel) {
+            model = check.card.otherModel;
+            modelOverridesRoles = true;
+          } else {
+            const sent = new Set(images.map((i) => i.name));
+            images = [];
+            named.splice(0, named.length, ...named.filter((n) => !sent.has(n)));
+          }
+        }
+      }
       const asked = this.lastQuestion();
+      if (asked && images.length > 0) {
+        asked.images = images.map((i) => `data:${i.mediaType};base64,${i.data}`);
+        if (named.length === 0) {
+          this.hydrate();
+        }
+      }
       if (asked) {
         this.lastSent = { question: asked, text: prompt, codeAction, query, shown: asked.text, attachments: [...chips] };
       }
@@ -3340,9 +3440,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       const result = await host.chatSend({
         prompt: expanded,
-        model: this.model || undefined,
+        model,
+        modelOverridesRoles,
         agentMode,
         attachedPaths: attachedPaths.length > 0 ? attachedPaths : undefined,
+        images: images.length > 0 ? images : undefined,
         codeAction: codeAction || undefined,
         // The question, not the expanded prompt: searched with the attachments' bodies, the auto-context followed the
         // attached file instead of the question (Visual Studio searches the typed text).
@@ -3970,6 +4072,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       if ((await vscode.workspace.fs.stat(uri)).type & vscode.FileType.Directory) {
         await this.resolveMention('folder', uri.fsPath);
+        return;
+      }
+      if (IMAGE_FILE.test(uri.fsPath)) {
+        await this.attachImage({ path: uri.fsPath });
         return;
       }
       const read = await this.readAttachable(uri);

@@ -137,7 +137,7 @@ public sealed class TypingChipsTests : IDisposable
         Assert.Matches(@"function setPrompt\(text: string\): void \{\s*promptEl\.value = text;\s*post\(\{ type: 'draft', text \}\);", webview);
         Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(webview, @"promptEl\.value = '';").Count);
         Assert.Equal(3, System.Text.RegularExpressions.Regex.Matches(webview, @"promptEl\.value = ").Count);
-        Assert.Contains("el.className = chip.auto ? 'chip auto' : 'chip';", webview);
+        Assert.Contains("el.className = chip.auto ? 'chip auto' : chip.image?.warning ? 'chip image warn' : 'chip';", webview);
         Assert.Contains("note.textContent = t('chipsFoundWhileTyping');", webview);
 
         var provider = Ts("chatViewProvider.ts");

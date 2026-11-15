@@ -194,8 +194,10 @@ internal sealed record AcpAttachment(string Name, string? Path, string? Text);
 
 /// <summary>The user's message read from ACP content blocks.</summary>
 /// <param name="Text">What the user wrote, links to non-files kept as Markdown links.</param>
-/// <param name="Notes">What the message carried that Inferpal does not read (an image), said to the model.</param>
-internal sealed record AcpPromptContent(string Text, IReadOnlyList<AcpAttachment> Attachments, IReadOnlyList<string> Notes);
+/// <param name="Notes">What the message carried that Inferpal does not read (an audio clip), said to the model.</param>
+/// <param name="Images">The images it carried, read by the Core's reader (reduced, converted); their refusals are notes.</param>
+internal sealed record AcpPromptContent(string Text, IReadOnlyList<AcpAttachment> Attachments, IReadOnlyList<string> Notes,
+                                        IReadOnlyList<ImageDto>? Images = null);
 
 /// <summary>Reads <c>session/prompt</c>'s content blocks.</summary>
 internal static class AcpPromptBlocks
@@ -209,6 +211,7 @@ internal static class AcpPromptBlocks
         var text = new StringBuilder();
         var attachments = new List<AcpAttachment>();
         var notes = new List<string>();
+        var images = new List<ImageDto>();
         foreach (var block in prompt.EnumerateArray())
         {
             if (block.ValueKind != JsonValueKind.Object || !block.TryGetProperty("type", out var typeEl)
@@ -240,8 +243,23 @@ internal static class AcpPromptBlocks
                     break;
                 }
                 case "image":
-                    notes.Add("[An image was attached; this agent cannot see images.]");
+                {
+                    var data = Str(block, "data") ?? throw new ArgumentException("An 'image' block needs a string 'data'.");
+                    var name = Str(block, "uri") is { } link ? NameOf(link)
+                             : "image" + (Str(block, "mimeType") is { } mime && mime.StartsWith("image/", StringComparison.Ordinal) ? "." + mime[6..] : string.Empty);
+                    byte[] bytes;
+                    try { bytes = Convert.FromBase64String(data); }
+                    catch (FormatException) { throw new ArgumentException("An 'image' block's 'data' must be base64."); }
+                    if (images.Count >= Services.Documents.ChatImages.MaxPerQuestion)
+                    {
+                        notes.Add($"[An image was attached ({name}) past the {Services.Documents.ChatImages.MaxPerQuestion} a question carries; it was not sent.]");
+                        break;
+                    }
+                    var read = Services.Documents.ChatImages.Read(bytes, name);
+                    if (read.Image is { } image) images.Add(new ImageDto(image.Name, image.MediaType, image.Base64));
+                    else notes.Add($"[An image was attached ({name}) and not sent: {read.Refusal}]");
                     break;
+                }
                 case "audio":
                     notes.Add("[An audio clip was attached; this agent cannot hear audio.]");
                     break;
@@ -249,7 +267,7 @@ internal static class AcpPromptBlocks
                     throw new ArgumentException($"Unknown content block type '{typeEl.GetString()}'.");
             }
         }
-        return new AcpPromptContent(text.ToString(), attachments, notes);
+        return new AcpPromptContent(text.ToString(), attachments, notes, images);
     }
 
     private static string? Str(JsonElement o, string name) =>

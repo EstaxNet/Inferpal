@@ -25,7 +25,17 @@ internal sealed class AttachmentItem : NotifyPropertyChangedObject
     /// promoted to a pinned file. False for selection snippets and synthetic chips.</summary>
     [DataMember] public bool CanPin { get; }
 
+    /// <summary>An image's size line (and, for a model that does not see images, its warning); empty for text.</summary>
+    [DataMember] public string Detail { get; init; } = string.Empty;
+    [DataMember] public bool   HasDetail => Detail.Length > 0;
+    /// <summary>The chip's glyph (Segoe MDL2): a page, or a picture for an image.</summary>
+    [DataMember] public string Glyph => Image is null ? "\uE8A5" : "\uE8B9";
+
     // Not [DataMember] — stays in the extension process only
+    /// <summary>The image the chip sends with the question, read by the Core's reader; <c>null</c> for text.</summary>
+    public Services.Documents.ChatImage? Image { get; init; }
+    /// <summary>The file the image was read from (a pasted one's own), drawn small under the question.</summary>
+    public string? ImageFile { get; init; }
     public string  Content      { get; }
     public bool    IsAutoAttach { get; }
     public string? SourcePath   { get; }

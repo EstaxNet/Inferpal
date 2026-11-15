@@ -173,6 +173,8 @@ internal partial class InferpalToolWindowData
         // The mode the person picked for the conversation: its tools, model and effort — never with a code action, and it
         // excludes Agent and Plan (one selector).
         ChatMode?                turnMode     = null;
+        // The model of the server that sees images, picked on the not-seen card for this question only.
+        string?                  imageModel   = null;
 
         try
         {
@@ -224,6 +226,9 @@ internal partial class InferpalToolWindowData
                 var userItem  = ChatMessageItem.UserMsg(Services.Agent.ChatTurnPolicy.BuildBubbleText(
                     userText, attachments.Select(a => a.Label).ToList()));
                 ApplyItemTheme(userItem);
+                // The images it carries, drawn small under it (this session only: a saved conversation names them).
+                foreach (var image in attachments.Where(a => a.ImageFile is not null)) userItem.ImageFiles.Add(image.ImageFile!);
+                userItem.HasImageFiles = userItem.ImageFiles.Count > 0;
                 Messages.Insert(Messages.Count - 2, userItem);
                 _lastSent = (userItem, userText, oneTimeModel, attachments.ToList());
                 foreach (var note in notes ?? [])
@@ -234,12 +239,57 @@ internal partial class InferpalToolWindowData
             // it, and the question vanished with the run that changed the files. Reloaded, it gets its no-answer mark.
             _ = AutoSaveAsync();
 
+            // A model that does not see images: the card asks first — the model of the server that sees, for this question
+            // only, or without them. Stop answers it: the turn then stops before the history, as any Stop of the build.
+            var images = attachments.Where(a => a.Image is not null).ToList();
+            if (images.Count > 0)
+            {
+                var asked = ModelRouter.Resolve(_config, (_config.AgentModeEnabled || _planMode) && _heldMode is null
+                                                         && oneTimeModel is null && _toolsEnabled ? ModelRole.Agent : ModelRole.Chat);
+                if (!string.IsNullOrEmpty(oneTimeModel)) asked = oneTimeModel;
+                bool? sees = null;
+                try { sees = await _client.SeesImagesAsync(asked, localCts!.Token); }
+                catch (System.Net.Http.HttpRequestException ex) { Diagnostics.Swallow("ImageCheck", ex); }
+                if (sees == false)
+                {
+                    var card = Services.Presentation.ImageCards.NotSeen(asked, images.Select(a => a.Label).ToList(),
+                                                                        await _client.VisionModelsAsync(localCts!.Token));
+                    var choice = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    ChatMessageItem? cardItem = null;
+                    await RunOnVMContextAsync(() =>
+                    {
+                        cardItem = ChatMessageItem.ImageCardMsg(card, () => choice.TrySetResult(true), () => choice.TrySetResult(false));
+                        InsertThemed(cardItem);
+                        ScrollToBottom();
+                    });
+                    bool other;
+                    using (localCts!.Token.Register(() => choice.TrySetResult(false)))
+                        other = await choice.Task;
+                    await RunOnVMContextAsync(() => Messages.Remove(cardItem!));
+                    if (other && card.OtherModel.Length > 0) imageModel = card.OtherModel;
+                    else
+                    {
+                        // Sent without them: the question names only what went with it.
+                        foreach (var image in images) attachments.Remove(image);
+                        images.Clear();
+                        await RunOnVMContextAsync(() =>
+                        {
+                            if (_lastSent?.Question is not { } question) return;
+                            question.Content = Services.Agent.ChatTurnPolicy.BuildBubbleText(userText, attachments.Select(a => a.Label).ToList());
+                            question.SplitQuestion();
+                            question.ImageFiles.Clear();
+                            question.HasImageFiles = false;
+                        });
+                    }
+                }
+            }
+
             // Build context-enriched history message (not shown in chat bubble).
             // The observable attachment chips are projected to the neutral (label, content)
             // pairs the pure policy works with.
             historyText = Services.Agent.ChatTurnPolicy.WithUserNotes(Services.Agent.ChatTurnPolicy.BuildHistoryText(
                 userText,
-                attachments.Select(a => new Services.Agent.AttachmentContent(a.Label, a.Content)).ToList()), notes ?? []);
+                attachments.Where(a => a.Image is null).Select(a => new Services.Agent.AttachmentContent(a.Label, a.Content)).ToList()), notes ?? []);
 
             // First-turn workspace context: silently prepend solution + open editors
             string? workspaceCtx = null;
@@ -286,6 +336,8 @@ internal partial class InferpalToolWindowData
                 var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(), _history);
                 historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, activeFile);
                 _history.Add(new ChatMessageDto("user", historyText));
+                // The images go with the question, never in its text.
+                if (images.Count > 0) _history[^1] = _history[^1] with { Images = [.. images.Select(a => a.Image!.Base64)] };
                 _questionInHistory = _lastSent?.Question;
                 // ⚠ Sent once the question carrying it is in the history: set when the block was BUILT, a Stop during
                 // the auto-context build that follows dropped the question — block included — and no later one had it.
@@ -421,10 +473,10 @@ internal partial class InferpalToolWindowData
             var effectiveModel =
                 !string.IsNullOrEmpty(oneTimeModel)
                     ? oneTimeModel
-                    : ModelRouter.Resolve(_config, useOrchestrator ? ModelRole.Agent : ModelRole.Chat);
+                    : imageModel ?? ModelRouter.Resolve(_config, useOrchestrator ? ModelRole.Agent : ModelRole.Chat);
             // The held mode answers with its own model when the server has one of them; when it has none, the turn goes on
             // with the chat's, said once for the conversation.
-            if (turnMode is not null)
+            if (turnMode is not null && imageModel is null)
             {
                 var (modeModel, modeNotice) = await ChatModes.PickModelAsync(_client, turnMode, effectiveModel, localCts!.Token);
                 effectiveModel = modeModel ?? effectiveModel;

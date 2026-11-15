@@ -7,10 +7,13 @@ namespace Inferpal.Services.Signals;
 /// <param name="Paths">The files and folders, by their full path (the drop's <c>FileDrop</c>).</param>
 /// <param name="Projects">The names of the Solution Explorer projects dropped: a project carries no path to attach.</param>
 /// <param name="Ts">When, in Unix milliseconds.</param>
+/// <param name="Pasted">An image pasted in the prompt (Ctrl+V), saved by the in-process half to a file of its own: the chip
+/// says "pasted", and it has no file of the person's.</param>
 internal sealed record ChatDrop(
     [property: JsonPropertyName("paths")]    string[] Paths,
     [property: JsonPropertyName("projects")] string[] Projects,
-    [property: JsonPropertyName("ts")]       long     Ts);
+    [property: JsonPropertyName("ts")]       long     Ts,
+    [property: JsonPropertyName("pasted")]   bool     Pasted = false);
 
 /// <summary>
 /// File channel from the in-process half, the only one that sees a drop on the chat window (its XAML lives in devenv), to
@@ -27,9 +30,9 @@ internal static class ChatDropSignal
 
     // ── In process (the drop) ───────────────────────────────────────────────────
 
-    internal static bool Write(string[] paths, string[] projects) =>
+    internal static bool Write(string[] paths, string[] projects, bool pasted = false) =>
         SignalFile.Write(FilePath,
-            new ChatDrop(paths, projects, SignalFile.Now.ToUnixTimeMilliseconds()),
+            new ChatDrop(paths, projects, SignalFile.Now.ToUnixTimeMilliseconds(), pasted),
             "ChatDrop.Write");
 
     // ── Out of process (the window) ─────────────────────────────────────────────

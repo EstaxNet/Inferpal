@@ -96,6 +96,8 @@ import {
   SelectionDto,
   SessionSwitches,
   TypingChip,
+  ImageDto,
+  ImageNotSeenCard,
 } from './protocol';
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
@@ -920,6 +922,18 @@ export class HostClient {
   }
 
   /** The text of a file VS Code cannot open as text — a PDF or DOCX's extracted text — or why there is none. */
+  /** An image to attach — a file, or pasted or dropped bytes — read by the Core: reduced or converted, or refused. */
+  imageRead(params: { path?: string; name?: string; data?: string; pasted?: boolean; already?: number }):
+    Promise<{ image: ImageDto | null; detail: string | null; refusal: string | null; note: string | null }> {
+    return this.connection().sendRequest('image/read', params);
+  }
+
+  /** Whether the model the next question answers with sees images, and the card to show when it does not. */
+  imageCheck(params: { names: string[]; model?: string; agentMode?: boolean }):
+    Promise<{ model: string; sees: boolean | null; goesTo: string; card: ImageNotSeenCard | null; chipWarning: string }> {
+    return this.connection().sendRequest('image/check', params);
+  }
+
   attachRead(path: string): Promise<{ text: string | null; refusal: string | null; forModel: string | null }> {
     return this.connection().sendRequest('attach/read', { path });
   }

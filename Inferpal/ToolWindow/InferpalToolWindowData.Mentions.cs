@@ -533,6 +533,11 @@ internal partial class InferpalToolWindowData
     /// refusals, in the order dropped — nothing sent. A Solution Explorer project is said after them, never attached.</summary>
     private async Task AttachDroppedAsync(ChatDrop drop)
     {
+        if (drop.Pasted)
+        {
+            foreach (var path in drop.Paths) await AttachImageAsync(path, pasted: true, CancellationToken.None);
+            return;
+        }
         foreach (var path in drop.Paths)
             await (Directory.Exists(path)
                 ? SelectFolderMentionAsync(path, CancellationToken.None, typed: false)
@@ -545,6 +550,13 @@ internal partial class InferpalToolWindowData
     /// to take off.</param>
     private async Task SelectFileMentionAsync(string filePath, CancellationToken ct, bool typed = true)
     {
+        // An image is sent as one, never as its bytes in text.
+        if (Services.Documents.ChatImages.Handles(filePath))
+        {
+            if (typed) await RunOnVMContextAsync(StripMentionToken);
+            await AttachImageAsync(filePath, pasted: false, ct);
+            return;
+        }
         try
         {
             // Excluded by the workspace's ignore files: a notice that names the rule, never a chip; a binary file: no text.

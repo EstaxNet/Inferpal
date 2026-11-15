@@ -169,6 +169,9 @@ or `/import roo` brings your models, rules, prompts, Roo's modes and MCP servers
   OpenDocument (`.odt`, `.ods`, `.odp`), an RTF, a Jupyter notebook or an e-mail (`.eml`, `.msg`) is attached as its text,
   extracted on your machine; the agent's `read_file` and `search_in_files` read and search it too. A password-protected
   file asks you for its password on a card — the model gets the text, never the password.
+- **Images in the question** — paste a screenshot (Ctrl+V), drop or attach a PNG, JPEG, WebP, GIF or BMP: it goes to a
+  model that sees images (Qwen3.8, Ornith, Gemma 4) with your question, scaled down on your machine past 1920 × 1080.
+  When the model that will answer does not see images, a card offers a model of your server that does.
 - **Your repository's setup, read as it is** — `AGENTS.md`, `CLAUDE.md`, the Copilot, Cursor, Cline, Roo and Continue
   instruction files, and `.aiignore`-style files, honoured by everything that reads for the model.
 - **Modes, yours or your repository's** — beside Chat, Agent and Plan, pick a mode found for the workspace: your own,

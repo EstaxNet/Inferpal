@@ -4,7 +4,7 @@
 // No literal user-visible English here — strings go through t() (window.__l10n).
 import type {
   ApprovalCard, AwayNotice, CutCard, InputCard, InputCardField, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunReviewLine,
-  RunSummary, SetupPlace, SetupPlan,
+  RunSummary, SetupPlace, SetupPlan, ImageNotSeenCard,
 } from '../protocol';
 import type {
   ExtToWebview,
@@ -900,6 +900,18 @@ function addUser(item: WvTranscriptItem): void {
     back.addEventListener('click', () => post({ type: 'rewindPlan', ordinal: questionOrdinal(row), question: item.text }));
     row.dataset.question = item.text;
     row.appendChild(back);
+  }
+  // The images it carried, this session only (a saved conversation names them, under it).
+  if (item.images && item.images.length > 0) {
+    const thumbs = document.createElement('div');
+    thumbs.className = 'user-images';
+    for (const src of item.images) {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = '';
+      thumbs.appendChild(img);
+    }
+    row.appendChild(thumbs);
   }
   if (names.length > 0) {
     const chips = document.createElement('div');
@@ -3341,14 +3353,22 @@ function renderPins(pins: string[]): void {
   }
 }
 
-function renderChips(chips: WvChip[]): void {
+function renderChips(chips: WvChip[], imageLine?: string): void {
   chipsEl.textContent = '';
   chipsEl.hidden = chips.length === 0;
   chips.forEach((chip, i) => {
     const el = document.createElement('span');
-    el.className = chip.auto ? 'chip auto' : 'chip';
+    el.className = chip.auto ? 'chip auto' : chip.image?.warning ? 'chip image warn' : 'chip';
     const name = document.createElement('span');
-    setIcon(name, 'file', chip.name, 12);
+    setIcon(name, chip.image ? 'image' : 'file', chip.name, 12);
+    if (chip.image) {
+      // Its size, and — for a model that does not see images — the warning, read by the hover and the screen reader.
+      el.title = [chip.image.detail, chip.image.warning].filter((s) => s.length > 0).join(' — ');
+      const detail = document.createElement('span');
+      detail.className = 'chip-detail';
+      detail.textContent = chip.image.detail;
+      name.appendChild(detail);
+    }
     const close = document.createElement('button');
     setIcon(close, 'close', undefined, 11);
     close.title = t('chipRemove');
@@ -3357,6 +3377,13 @@ function renderChips(chips: WvChip[]): void {
     el.append(name, close);
     chipsEl.appendChild(el);
   });
+  // Where the images go: the model the question will ask.
+  if (imageLine) {
+    const note = document.createElement('div');
+    note.className = 'chips-note';
+    note.textContent = imageLine;
+    chipsEl.appendChild(note);
+  }
   // Chips the search found while the person typed: what they are, and that they can go.
   if (chips.some((c) => c.auto)) {
     const note = document.createElement('div');
@@ -3364,6 +3391,76 @@ function renderChips(chips: WvChip[]): void {
     note.textContent = t('chipsFoundWhileTyping');
     chipsEl.appendChild(note);
   }
+}
+
+/** The images pasted or dropped in the composer, read as base64 and sent to the extension (the host reads them). */
+function attachImageFiles(files: FileList | null | undefined, pasted: boolean): boolean {
+  const images = [...(files ?? [])].filter((f) => f.type.startsWith('image/'));
+  for (const file of images) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = String(reader.result ?? '');
+      post({ type: 'attachImage', name: file.name || 'image.png', data: url.slice(url.indexOf(',') + 1), pasted });
+    };
+    reader.readAsDataURL(file);
+  }
+  return images.length > 0;
+}
+
+promptEl.addEventListener('paste', (e) => {
+  if (attachImageFiles(e.clipboardData?.files, true)) {
+    e.preventDefault();
+  }
+});
+composerEl.addEventListener('dragover', (e) => {
+  if ([...(e.dataTransfer?.items ?? [])].some((i) => i.kind === 'file')) {
+    e.preventDefault();
+  }
+});
+composerEl.addEventListener('drop', (e) => {
+  if (attachImageFiles(e.dataTransfer?.files, false)) {
+    e.preventDefault();
+  }
+});
+
+/** The card before sending, for a model that does not see the images: ask the model of the server that does, or send
+ *  without them. Answered once, then gone. */
+function renderImageCard(card: ImageNotSeenCard): void {
+  hideWelcome();
+  const el = document.createElement('div');
+  el.className = 'image-card';
+  el.setAttribute('role', 'group');
+  el.setAttribute('aria-label', card.title);
+  const title = document.createElement('div');
+  title.className = 'image-card-title';
+  setIcon(title, 'warning', card.title, 14);
+  const lines = [card.subtitle, card.body, card.visionModels].filter((s) => s.length > 0).map((s) => {
+    const p = document.createElement('p');
+    p.textContent = s;
+    return p;
+  });
+  const row = document.createElement('div');
+  row.className = 'image-card-row';
+  const choose = (choice: 'other' | 'without') => {
+    post({ type: 'imageCardChoice', choice });
+    el.remove();
+  };
+  if (card.askOtherLabel) {
+    const other = document.createElement('button');
+    other.className = 'primary';
+    other.textContent = card.askOtherLabel;
+    other.title = card.askOtherHint;
+    other.addEventListener('click', () => choose('other'));
+    row.appendChild(other);
+  }
+  const without = document.createElement('button');
+  without.textContent = card.sendWithoutLabel;
+  without.addEventListener('click', () => choose('without'));
+  row.appendChild(without);
+  el.append(title, ...lines, row);
+  messagesEl.appendChild(el);
+  (row.firstElementChild as HTMLElement | null)?.focus();
+  scrollToBottom();
 }
 
 const slash = makePopup('slash');
@@ -3874,7 +3971,10 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       }
       break;
     case 'chips':
-      renderChips(msg.chips);
+      renderChips(msg.chips, msg.imageLine);
+      break;
+    case 'imageCard':
+      renderImageCard(msg.card);
       break;
     case 'pins':
       renderPins(msg.pins);

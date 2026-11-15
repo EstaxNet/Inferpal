@@ -450,6 +450,10 @@ to set it up. A section opens on the model and how it did; its fold holds the fi
 - **Measured.** 12B (7.2 GB): 12 tasks in 14 — on the default path (Ollama, the 8K window a 12 GB card keeps, two runs
   per mode) 10 to 14, and in 6 tasks of 72 it left a build or a test failing, which Inferpal's end notice said (among
   them a Razor directive written twice); 26B A4B: 10 in 14. The 31B is not measured yet.
+- **Images.** Gemma 4 sees images. On eight screenshots of errors and windows it found 83 % of the facts the same
+  screenshots give as text, misread small print once into an error that was not there, and saw 1 overlap of 3 in a
+  window's layout; Qwen3.8 27B and Ornith 1.5 35B found them all, and all 3 overlaps. For a screenshot that matters,
+  prefer them on 24 GB.
 
 <details>
 <summary><b>In detail: tool calls, settings, known issues, sources</b></summary>

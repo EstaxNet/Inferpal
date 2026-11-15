@@ -91,7 +91,8 @@ internal static class PromptedTools
     internal static List<OpenAiRequestMessage> Rewrite(List<OpenAiRequestMessage> mapped, IReadOnlyList<ToolDefinition> tools)
     {
         var block = Instructions(tools);
-        var text  = new List<(string Role, string Content)>(mapped.Count + 1);
+        // A content is a string, or the parts of a question with images (ChatImages.Parts): its images are kept.
+        var text  = new List<(string Role, object Content)>(mapped.Count + 1);
 
         if (mapped.Count == 0 || mapped[0].Role != "system")
             text.Add(("system", block));
@@ -99,10 +100,10 @@ internal static class PromptedTools
         foreach (var m in mapped)
         {
             if (m.Role == "system" && text.Count == 0)
-                text.Add(("system", string.IsNullOrWhiteSpace(m.Content) ? block : m.Content + "\n\n" + block));
+                text.Add(("system", string.IsNullOrWhiteSpace(TextOf(m.Content)) ? block : TextOf(m.Content) + "\n\n" + block));
             else if (m.Role == "assistant" && m.ToolCalls is { Count: > 0 } calls)
             {
-                var sb = new StringBuilder(m.Content ?? string.Empty);
+                var sb = new StringBuilder(TextOf(m.Content));
                 foreach (var call in calls)
                 {
                     if (sb.Length > 0) sb.Append('\n');
@@ -112,7 +113,7 @@ internal static class PromptedTools
                 text.Add(("assistant", sb.ToString()));
             }
             else if (m.Role == "tool")
-                text.Add(("user", "<tool_response>\n" + (m.Content ?? string.Empty) + "\n</tool_response>"));
+                text.Add(("user", "<tool_response>\n" + TextOf(m.Content) + "\n</tool_response>"));
             else
                 text.Add((m.Role, m.Content ?? string.Empty));
         }
@@ -121,7 +122,7 @@ internal static class PromptedTools
         foreach (var (role, content) in text)
         {
             if (merged.Count > 0 && merged[^1].Role == role)
-                merged[^1] = merged[^1] with { Content = merged[^1].Content + "\n\n" + content };
+                merged[^1] = merged[^1] with { Content = Join(merged[^1].Content, content) };
             else
                 merged.Add(new OpenAiRequestMessage(role, content));
         }
@@ -131,8 +132,38 @@ internal static class PromptedTools
     /// <summary>The same rewrite in Ollama's native message shape: only roles and text are left.</summary>
     internal static List<ChatMessageDto> Rewrite(List<ChatMessageDto> messages, IReadOnlyList<ToolDefinition> tools) =>
         Rewrite(OpenAiCompatibleClient.MapMessages(messages), tools)
-            .Select(m => new ChatMessageDto(m.Role, m.Content))
+            .Select(m => new ChatMessageDto(m.Role, TextOf(m.Content), Images: ImagesOf(m.Content)))
             .ToList();
+
+    /// <summary>The text of a content: the string, or the text parts of a question with images.</summary>
+    internal static string TextOf(object? content) => content switch
+    {
+        null => string.Empty,
+        string s => s,
+        IEnumerable<object> parts => string.Join("\n\n", parts.Select(p => JsonSerializer.SerializeToElement(p))
+            .Where(p => p.TryGetProperty("type", out var t) && t.GetString() == "text")
+            .Select(p => p.GetProperty("text").GetString())),
+        _ => content.ToString() ?? string.Empty,
+    };
+
+    /// <summary>The images of a question's content parts, back to base64; null when it has none.</summary>
+    private static List<string>? ImagesOf(object? content)
+    {
+        if (content is not IEnumerable<object> parts) return null;
+        var images = parts.Select(p => JsonSerializer.SerializeToElement(p))
+            .Where(p => p.TryGetProperty("type", out var t) && t.GetString() == "image_url")
+            .Select(p => p.GetProperty("image_url").GetProperty("url").GetString()!)
+            .Select(url => url[(url.IndexOf(',') + 1)..]).ToList();
+        return images.Count > 0 ? images : null;
+    }
+
+    /// <summary>Two contents of one role, one after the other: strings joined; with images, one list of parts.</summary>
+    private static object Join(object? first, object second)
+    {
+        if (first is string a && second is string b) return a + "\n\n" + b;
+        static IEnumerable<object> Parts(object? c) => c as IEnumerable<object> ?? [new { type = "text", text = TextOf(c) }];
+        return Parts(first).Concat(Parts(second)).ToList();
+    }
 
     /// <summary>The call's arguments as a JSON object; the raw text quoted when it is not one.</summary>
     private static string ArgumentsObject(string arguments)

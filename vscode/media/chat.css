@@ -2648,3 +2648,56 @@ kbd {
   padding: 0 12px;
   border-radius: 6px;
 }
+
+.chip.image.warn {
+  border-color: var(--vscode-editorWarning-foreground);
+}
+
+.chip-detail {
+  margin-left: 6px;
+  color: var(--ip-muted);
+  font-size: 0.85em;
+}
+
+.user-images {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.user-images img {
+  max-width: 160px;
+  max-height: 100px;
+  border-radius: 6px;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+}
+
+.image-card {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--vscode-editorWarning-foreground);
+  border-radius: 8px;
+  background: var(--vscode-editorWidget-background);
+}
+
+.image-card-title {
+  font-weight: 600;
+}
+
+.image-card p {
+  margin: 6px 0;
+}
+
+.image-card-row button:not(.primary) {
+  background: var(--vscode-button-secondaryBackground, transparent);
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+}
+
+.image-card-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}

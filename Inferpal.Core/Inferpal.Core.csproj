@@ -57,6 +57,10 @@
     <PackageReference Include="GHSoftware.WordDocTextExtractor" Version="1.0.4" />
     <!-- OpenDocument protected by LibreOffice 24.2 and later: its key is derived by Argon2id. MIT. -->
     <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
+    <!-- Images attached to a question, reduced and converted: C# ports of the stb headers, public domain or MIT, no native code. -->
+    <PackageReference Include="StbImageSharp" Version="2.30.16" />
+    <PackageReference Include="StbImageResizeSharp" Version="0.97.1" />
+    <PackageReference Include="StbImageWriteSharp" Version="1.16.7" />
     <!-- DPAPI for the MCP OAuth token store (Windows-only at runtime; the call sites
          are already guarded). -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />

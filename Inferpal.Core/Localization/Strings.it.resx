@@ -2289,4 +2289,25 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="DocPasswordReceiptClosed" xml:space="preserve"><value>{0} lasciato chiuso</value></data>
   <data name="DocPasswordReceiptTooMany" xml:space="preserve"><value>{0} lasciato chiuso dopo tre password errate</value></data>
   <data name="DocPasswordReceiptClosedDetail" xml:space="preserve"><value>Il testo non è stato letto.</value></data>
+  <data name="ImageTooLarge" xml:space="preserve"><value>{0} non viene allegato: supera {1} MB.</value></data>
+  <data name="ImageFormatNotSent" xml:space="preserve"><value>{0} non viene allegato: le immagini {1} non vengono inviate al modello. Salvala come PNG o JPEG e allegala di nuovo.</value></data>
+  <data name="ImageLargeNote" xml:space="preserve"><value>{0} ({1} × {2}) è grande: il server la riduce a ciò che il modello legge e il testo piccolo può diventare illeggibile — ritagli la parte che conta.</value></data>
+  <data name="ImageTooMany" xml:space="preserve"><value>Una domanda porta al massimo {0} immagini: le altre non vengono allegate.</value></data>
+  <data name="ImageNotSeenTitle" xml:space="preserve"><value>{0} non vede le immagini</value></data>
+  <data name="ImageNotSeenSubtitle" xml:space="preserve"><value>Il tuo server non lo dichiara come modello di visione</value></data>
+  <data name="ImageNotSeenBody" xml:space="preserve"><value>Inviato così, {0} verrebbe escluso e il modello risponderebbe senza. Due modi per proseguire:</value></data>
+  <data name="ImageAskOther" xml:space="preserve"><value>Fare questa domanda a {0}</value></data>
+  <data name="ImageAskOtherHint" xml:space="preserve"><value>vede le immagini · sul tuo server</value></data>
+  <data name="ImageSendWithout" xml:space="preserve"><value>Invia senza l'immagine</value></data>
+  <data name="ImageVisionModels" xml:space="preserve"><value>Modelli sul tuo server che vedono le immagini: {0}.</value></data>
+  <data name="ImageNoVisionModel" xml:space="preserve"><value>Nessun modello sul tuo server vede le immagini.</value></data>
+  <data name="ImageSeesBadge" xml:space="preserve"><value>vede le immagini</value></data>
+  <data name="ImageNoBadge" xml:space="preserve"><value>niente immagini</value></data>
+  <data name="ImageGoesTo" xml:space="preserve"><value>L'immagine va a {0} sul tuo server, da nessun'altra parte.</value></data>
+  <data name="ImageFormatsHint" xml:space="preserve"><value>PNG, JPEG, WebP o GIF (primo fotogramma), fino a 4 immagini per domanda</value></data>
+  <data name="ImageNotSeenChip" xml:space="preserve"><value>non vista da {0}</value></data>
+  <data name="ImagePasted" xml:space="preserve"><value>incollata</value></data>
+  <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} non viene allegato: i suoi {1} × {2} pixel superano ciò che Inferpal legge.</value></data>
+  <data name="ImageScaledNote" xml:space="preserve"><value>{0} ({1} × {2}) viene inviata ridotta a {3} × {4}: un modello non legge di più da un'immagine più grande. Il testo piccolo può diventare illeggibile — ritaglia la parte che conta.</value></data>
+  <data name="ImageDamaged" xml:space="preserve"><value>{0} non viene allegato: non è stato letto come immagine (danneggiato?).</value></data>
 </root>

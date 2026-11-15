@@ -69,7 +69,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// not say.</summary>
     private readonly record struct NativeModel(
         string Id, bool Loaded, int? LoadedContextLength, int? MaxContextLength, long SizeBytes,
-        IReadOnlyList<string>? ReasoningOptions = null, bool? TrainedForToolUse = null);
+        IReadOnlyList<string>? ReasoningOptions = null, bool? TrainedForToolUse = null, bool? Vision = null);
 
     // Queries the native models endpoint, tolerating both LM Studio shapes: the 0.4.0+ v1 payload
     // ({"models":[{"key",...}]}) first, then the legacy v0 payload ({"data":[{"id",...}]}). Whichever
@@ -95,7 +95,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
                         .Select(m => new NativeModel(
                             m.Key!, m.LoadedInstances is { Count: > 0 },
                             LoadedContextFromInstances(m.LoadedInstances), m.MaxContextLength, m.SizeBytes ?? 0,
-                            ReasoningOptionsOf(m.Capabilities), TrainedForToolUseOf(m.Capabilities)))
+                            ReasoningOptionsOf(m.Capabilities), TrainedForToolUseOf(m.Capabilities), VisionOf(m.Capabilities)))
                         .ToList();
             }
         }
@@ -129,6 +129,14 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             return null;
         return [.. options.EnumerateArray().Where(o => o.ValueKind == JsonValueKind.String).Select(o => o.GetString()!)];
     }
+
+    /// <summary>Whether a v1 entry publishes the model as reading images (<c>capabilities.vision</c>), <c>null</c> when it does
+    /// not say.</summary>
+    internal static bool? VisionOf(JsonElement? capabilities) =>
+        capabilities is { ValueKind: JsonValueKind.Object } c && c.TryGetProperty("vision", out var flag)
+        && flag.ValueKind is JsonValueKind.True or JsonValueKind.False
+            ? flag.GetBoolean()
+            : null;
 
     /// <summary>Whether a v1 entry publishes the model as trained for tool use (<c>capabilities.trained_for_tool_use</c>),
     /// or <c>null</c> when it publishes nothing.</summary>
@@ -404,7 +412,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         try
         {
             // v1 reports on-disk size_bytes (improves VRAM estimation); v0 has none → 0.
-            var native = (await GetNativeModelsAsync(ct, url: url)).Select(m => new InstalledModelInfo(m.Id, m.SizeBytes)).ToList();
+            var native = (await GetNativeModelsAsync(ct, url: url)).Select(m => new InstalledModelInfo(m.Id, m.SizeBytes, SeesImages: m.Vision)).ToList();
             if (native.Count > 0) return native;
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)

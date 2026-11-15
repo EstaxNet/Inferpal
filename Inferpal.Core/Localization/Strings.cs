@@ -2859,4 +2859,25 @@ internal static class Strings
     public static string DocPasswordReceiptClosed(string name) => Format(Get(nameof(DocPasswordReceiptClosed)), name);
     public static string DocPasswordReceiptTooMany(string name) => Format(Get(nameof(DocPasswordReceiptTooMany)), name);
     public static string DocPasswordReceiptClosedDetail => Get(nameof(DocPasswordReceiptClosedDetail));
+    public static string ImageTooLarge(string name, int mb) => Format(Get(nameof(ImageTooLarge)), name, mb);
+    public static string ImageFormatNotSent(string name, string ext) => Format(Get(nameof(ImageFormatNotSent)), name, ext);
+    public static string ImageLargeNote(string name, int w, int h) => Format(Get(nameof(ImageLargeNote)), name, w, h);
+    public static string ImageTooMany(int max) => Format(Get(nameof(ImageTooMany)), max);
+    public static string ImageNotSeenTitle(string name) => Format(Get(nameof(ImageNotSeenTitle)), name);
+    public static string ImageNotSeenSubtitle => Get(nameof(ImageNotSeenSubtitle));
+    public static string ImageNotSeenBody(string name) => Format(Get(nameof(ImageNotSeenBody)), name);
+    public static string ImageAskOther(string name) => Format(Get(nameof(ImageAskOther)), name);
+    public static string ImageAskOtherHint => Get(nameof(ImageAskOtherHint));
+    public static string ImageSendWithout => Get(nameof(ImageSendWithout));
+    public static string ImageVisionModels(string list) => Format(Get(nameof(ImageVisionModels)), list);
+    public static string ImageNoVisionModel => Get(nameof(ImageNoVisionModel));
+    public static string ImageSeesBadge => Get(nameof(ImageSeesBadge));
+    public static string ImageNoBadge => Get(nameof(ImageNoBadge));
+    public static string ImageGoesTo(string name) => Format(Get(nameof(ImageGoesTo)), name);
+    public static string ImageFormatsHint => Get(nameof(ImageFormatsHint));
+    public static string ImageNotSeenChip(string name) => Format(Get(nameof(ImageNotSeenChip)), name);
+    public static string ImagePasted => Get(nameof(ImagePasted));
+    public static string ImageTooManyPixels(string name, int w, int h) => Format(Get(nameof(ImageTooManyPixels)), name, w, h);
+    public static string ImageScaledNote(string name, int w, int h, int nw, int nh) => Format(Get(nameof(ImageScaledNote)), name, w, h, nw, nh);
+    public static string ImageDamaged(string name) => Format(Get(nameof(ImageDamaged)), name);
 }

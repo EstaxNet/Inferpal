@@ -61,6 +61,8 @@ export type WvSetupAction =
 /** One rendered transcript entry (the extension host owns the list). */
 export interface WvTranscriptItem {
   role: 'user' | 'assistant' | 'status' | 'tool' | 'error' | 'input';
+  /** Screen only, never saved: the images a question carried, as data URLs, drawn under it. */
+  images?: string[];
   /** Message text; for 'tool' entries this is the tool name; for 'input' entries, the receipt an answered input card
    *  left (`InputReceipt.Saved` in the Core: its title, its detail, then what was sent). */
   text: string;
@@ -160,6 +162,8 @@ export interface WvBuildBanner {
 /** One context chip in the composer (attachment pending for the next turn). */
 export interface WvChip {
   name: string;
+  /** An image: its size line, and what is wrong with it for the model that will answer (empty when nothing is). */
+  image?: { detail: string; warning: string };
   /** Found by the search while the person types, not attached by them: drawn apart, said to be excerpts. */
   auto?: boolean;
 }
@@ -270,7 +274,8 @@ export type ExtToWebview =
   | { type: 'rewindCard'; ordinal: number; card?: RewindCard | null; message?: string }
   /** `category` and `query` name the request answered: only the latest one is shown. */
   | { type: 'mentionResults'; category: string; query: string; items: WvMentionItem[] }
-  | { type: 'chips'; chips: WvChip[] }
+  | { type: 'chips'; chips: WvChip[]; imageLine?: string }
+  | { type: 'imageCard'; card: import('./protocol').ImageNotSeenCard }
   | { type: 'pins'; pins: string[] }
   | { type: 'stepPaused' }
   | { type: 'stepResumed' }
@@ -341,6 +346,8 @@ export type WebviewToExt =
   | { type: 'mentionSearch'; category: string; query: string }
   | { type: 'resolveMention'; category: string; value?: string }
   | { type: 'removeChip'; index: number }
+  | { type: 'attachImage'; name: string; data: string; pasted: boolean }
+  | { type: 'imageCardChoice'; choice: 'other' | 'without' }
   /** The draft changed: the extension looks for the code it is about once typing pauses. */
   | { type: 'draft'; text: string }
   | { type: 'pinActive' }

@@ -2293,4 +2293,25 @@ What you save there applies from your next question, in this thread and the othe
   <data name="DocPasswordReceiptClosed" xml:space="preserve"><value>{0} left closed</value></data>
   <data name="DocPasswordReceiptTooMany" xml:space="preserve"><value>{0} left closed after three wrong passwords</value></data>
   <data name="DocPasswordReceiptClosedDetail" xml:space="preserve"><value>Its text was not read.</value></data>
+  <data name="ImageTooLarge" xml:space="preserve"><value>{0} is not attached: it is larger than {1} MB.</value></data>
+  <data name="ImageFormatNotSent" xml:space="preserve"><value>{0} is not attached: {1} images are not sent to the model. Save it as PNG or JPEG and attach it again.</value></data>
+  <data name="ImageLargeNote" xml:space="preserve"><value>{0} ({1} × {2}) is large: the server reduces it to what the model reads, and small text may become hard to read — crop the part that matters.</value></data>
+  <data name="ImageTooMany" xml:space="preserve"><value>A question carries {0} images at most: the others are not attached.</value></data>
+  <data name="ImageNotSeenTitle" xml:space="preserve"><value>{0} does not see images</value></data>
+  <data name="ImageNotSeenSubtitle" xml:space="preserve"><value>Your server does not list it as a vision model</value></data>
+  <data name="ImageNotSeenBody" xml:space="preserve"><value>Sent as it is, {0} would be left out and the model would answer without it. Two ways on:</value></data>
+  <data name="ImageAskOther" xml:space="preserve"><value>Ask {0} for this question</value></data>
+  <data name="ImageAskOtherHint" xml:space="preserve"><value>sees images · on your server</value></data>
+  <data name="ImageSendWithout" xml:space="preserve"><value>Send without the image</value></data>
+  <data name="ImageVisionModels" xml:space="preserve"><value>Models on your server that see images: {0}.</value></data>
+  <data name="ImageNoVisionModel" xml:space="preserve"><value>No model on your server sees images.</value></data>
+  <data name="ImageSeesBadge" xml:space="preserve"><value>sees images</value></data>
+  <data name="ImageNoBadge" xml:space="preserve"><value>no images</value></data>
+  <data name="ImageGoesTo" xml:space="preserve"><value>The image goes to {0} on your server, nowhere else.</value></data>
+  <data name="ImageFormatsHint" xml:space="preserve"><value>PNG, JPEG, WebP or GIF (first frame), up to 4 images a question</value></data>
+  <data name="ImageNotSeenChip" xml:space="preserve"><value>not seen by {0}</value></data>
+  <data name="ImagePasted" xml:space="preserve"><value>pasted</value></data>
+  <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} is not attached: its {1} × {2} pixels are more than Inferpal reads.</value></data>
+  <data name="ImageScaledNote" xml:space="preserve"><value>{0} ({1} × {2}) is sent scaled down to {3} × {4}: a model reads no more from a larger image. Small text may become hard to read — crop the part that matters.</value></data>
+  <data name="ImageDamaged" xml:space="preserve"><value>{0} is not attached: it could not be read as an image (damaged?).</value></data>
 </root>

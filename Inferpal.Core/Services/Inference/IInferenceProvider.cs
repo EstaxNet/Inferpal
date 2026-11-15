@@ -88,6 +88,22 @@ internal interface IInferenceProvider : IChatTurnClient
     async Task<ModelsByKind> ListModelsByKindAsync(CancellationToken ct, string? url = null) =>
         ModelsByKind.ByName(await ListModelsAsync(ct, url));
 
+    /// <summary>
+    /// Whether <paramref name="model"/> reads images, as the server publishes it: <c>true</c>, <c>false</c>, or <c>null</c>
+    /// when the server does not say (an OpenAI-compatible server, an older Ollama) — then an image is sent, never refused
+    /// on a guess.
+    /// </summary>
+    async Task<bool?> SeesImagesAsync(string model, CancellationToken ct, string? url = null)
+    {
+        foreach (var m in await ListInstalledModelsAsync(ct, url))
+            if (ModelCatalog.SameModelName(m.Name, model)) return m.SeesImages;
+        return null;
+    }
+
+    /// <summary>The chat models of the server that it publishes as reading images — what the not-seen card offers.</summary>
+    async Task<IReadOnlyList<string>> VisionModelsAsync(CancellationToken ct, string? url = null) =>
+        [.. (await ListInstalledModelsAsync(ct, url)).Where(m => m.SeesImages == true && ModelCatalog.IsChatModel(m.Name)).Select(m => m.Name)];
+
     /// <inheritdoc cref="OllamaClient.StreamFimAsync"/>
     Task StreamFimAsync(
         string prefix,

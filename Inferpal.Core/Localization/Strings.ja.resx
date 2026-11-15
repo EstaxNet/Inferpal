@@ -2289,4 +2289,25 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="DocPasswordReceiptClosed" xml:space="preserve"><value>{0} は閉じたままです</value></data>
   <data name="DocPasswordReceiptTooMany" xml:space="preserve"><value>パスワードを 3 回間違えたため {0} は閉じたままです</value></data>
   <data name="DocPasswordReceiptClosedDetail" xml:space="preserve"><value>テキストは読み取られていません。</value></data>
+  <data name="ImageTooLarge" xml:space="preserve"><value>{0} は添付されません: {1} MB を超えています。</value></data>
+  <data name="ImageFormatNotSent" xml:space="preserve"><value>{0} は添付されません: {1} 画像はモデルに送られません。PNG または JPEG で保存して、もう一度添付してください。</value></data>
+  <data name="ImageLargeNote" xml:space="preserve"><value>{0}（{1} × {2}）は大きいため、サーバーがモデルの読む大きさに縮小し、小さな文字が読めなくなることがあります。必要な部分を切り抜いてください。</value></data>
+  <data name="ImageTooMany" xml:space="preserve"><value>1 つの質問に添付できる画像は {0} 枚までです。残りは添付されません。</value></data>
+  <data name="ImageNotSeenTitle" xml:space="preserve"><value>{0} は画像を見られません</value></data>
+  <data name="ImageNotSeenSubtitle" xml:space="preserve"><value>サーバーはこのモデルをビジョンモデルとして公開していません</value></data>
+  <data name="ImageNotSeenBody" xml:space="preserve"><value>このまま送ると {0} は省かれ、モデルはそれなしで答えます。次の 2 つから選べます:</value></data>
+  <data name="ImageAskOther" xml:space="preserve"><value>この質問を {0} に尋ねる</value></data>
+  <data name="ImageAskOtherHint" xml:space="preserve"><value>画像を見られます · あなたのサーバー上</value></data>
+  <data name="ImageSendWithout" xml:space="preserve"><value>画像なしで送信</value></data>
+  <data name="ImageVisionModels" xml:space="preserve"><value>サーバー上で画像を見られるモデル: {0}。</value></data>
+  <data name="ImageNoVisionModel" xml:space="preserve"><value>サーバー上に画像を見られるモデルはありません。</value></data>
+  <data name="ImageSeesBadge" xml:space="preserve"><value>画像を見られます</value></data>
+  <data name="ImageNoBadge" xml:space="preserve"><value>画像なし</value></data>
+  <data name="ImageGoesTo" xml:space="preserve"><value>画像はあなたのサーバー上の {0} にだけ送られます。</value></data>
+  <data name="ImageFormatsHint" xml:space="preserve"><value>PNG、JPEG、WebP、GIF（最初のフレーム）、1 つの質問に 4 枚まで</value></data>
+  <data name="ImageNotSeenChip" xml:space="preserve"><value>{0} には見えません</value></data>
+  <data name="ImagePasted" xml:space="preserve"><value>貼り付け</value></data>
+  <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} は添付されません: {1} × {2} ピクセルは Inferpal が読み込める大きさを超えています。</value></data>
+  <data name="ImageScaledNote" xml:space="preserve"><value>{0}（{1} × {2}）は {3} × {4} に縮小して送られます。これより大きくてもモデルが読み取れる量は増えません。小さな文字が読めなくなることがあるので、必要な部分を切り抜いてください。</value></data>
+  <data name="ImageDamaged" xml:space="preserve"><value>{0} は添付されません: 画像として読み取れませんでした（破損している可能性があります）。</value></data>
 </root>
