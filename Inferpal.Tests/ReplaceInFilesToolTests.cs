@@ -136,6 +136,72 @@ public sealed class ReplaceInFilesToolTests : IDisposable
     }
 
     [Fact]
+    public async Task ALinkedFileLeadingOutside_IsLeftAsItIs_AndSaid()
+    {
+        var outsideDir = Directory.CreateTempSubdirectory("inferpal-replace-outside-").FullName;
+        try
+        {
+            var target = Path.Combine(outsideDir, "profile.txt");
+            File.WriteAllText(target, "old value\n");
+            try { File.CreateSymbolicLink(Path.Combine(_root, "notes.txt"), target); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return;   // undecided here: this machine cannot create links without a privilege
+            }
+            Write("own.txt", "old value\n");
+
+            var (said, _, _) = await RunAsync(new { find = "old", replace = "new" });
+
+            Assert.Equal("old value\n", File.ReadAllText(target));
+            Assert.Equal("new value\n", File.ReadAllText(Path.Combine(_root, "own.txt")));
+            Assert.Contains("1 linked file(s) leading outside the workspace", said);
+        }
+        finally { try { Directory.Delete(outsideDir, recursive: true); } catch { } }
+    }
+
+    [Fact]
+    public async Task AMultiLineText_FindsACrlfFile_AndKeepsItsLineBreaks()
+    {
+        var f = Path.Combine(_root, "win.cs");
+        File.WriteAllText(f, "int a;\r\nint b;\r\nint c;\r\n");
+
+        await RunAsync(new { find = "int a;\nint b;", replace = "int a;\nint b2;\nint b3;" });
+
+        Assert.Equal("int a;\r\nint b2;\r\nint b3;\r\nint c;\r\n", File.ReadAllText(f));
+    }
+
+    [Theory]
+    [InlineData("$_")]
+    [InlineData("x$`")]
+    [InlineData("$'")]
+    [InlineData("$+")]
+    public async Task ARegexReplacementThatWouldCopyTheFile_IsRefused(string replacement)
+    {
+        var f = Write("a.txt", "abc\n");
+        var (said, spy, _) = await RunAsync(new { find = "b", replace = replacement, regex = true });
+        Assert.StartsWith("Error: the replacement holds", said);
+        Assert.Equal(0, spy.Asked);
+        Assert.Equal("abc\n", File.ReadAllText(f));
+    }
+
+    [Fact]
+    public async Task ARegexReplacement_KeepsACrlfFilesLineBreaks()
+    {
+        var f = Path.Combine(_root, "win.cs");
+        File.WriteAllText(f, "foo\r\nend\r\n");
+        await RunAsync(new { find = "foo\\r?$", replace = "foo\nbar", regex = true });
+        Assert.Equal("foo\r\nbar\r\nend\r\n", File.ReadAllText(f));
+    }
+
+    [Fact]
+    public async Task ADoubledDollar_IsALiteralDollar_InARegexReplacement()
+    {
+        var f = Write("a.txt", "price\n");
+        await RunAsync(new { find = "price", replace = "$$_price", regex = true });
+        Assert.Equal("$_price\n", File.ReadAllText(f));
+    }
+
+    [Fact]
     public async Task APathOutsideTheWorkspace_IsRefused()
     {
         await Assert.ThrowsAnyAsync<Exception>(() => RunAsync(new { find = "a", replace = "b", path = "../.." }));

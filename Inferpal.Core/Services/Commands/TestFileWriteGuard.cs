@@ -36,7 +36,10 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
     public Task<bool> AskForDocumentPasswordAsync(string path, bool attached, CancellationToken ct) =>
         inner.AskForDocumentPasswordAsync(path, attached, ct);
 
-    public Task<string?> AskQuestionAsync(string question, IReadOnlyList<string> options, CancellationToken ct) =>
+    public Task<bool> AskForArchivePasswordAsync(string archive, string entry, CancellationToken ct) =>
+        inner.AskForArchivePasswordAsync(archive, entry, ct);
+
+    public Task<QuestionAnswer> AskQuestionAsync(string question, IReadOnlyList<string> options, CancellationToken ct) =>
         inner.AskQuestionAsync(question, options, ct);
 
     /// <summary>

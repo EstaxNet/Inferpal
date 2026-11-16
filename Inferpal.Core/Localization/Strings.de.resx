@@ -2332,4 +2332,9 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="AskCardEmpty" xml:space="preserve"><value>Wählen Sie eine Antwort oder geben Sie eine ein.</value></data>
   <data name="AskReceiptAnswered" xml:space="preserve"><value>Sie haben dem Agenten geantwortet</value></data>
   <data name="AskReceiptSkipped" xml:space="preserve"><value>Sie haben den Agenten entscheiden lassen</value></data>
+  <data name="ArchivePasswordMessage" xml:space="preserve"><value>Nur Sie können es öffnen. Wenn Sie das Passwort eingeben, erhält der Agent den Text dieses Eintrags — nicht das Passwort und nicht einmal, dass Sie eines eingegeben haben.</value></data>
+  <data name="ArchivePasswordReminder" xml:space="preserve"><value>Gefragt, weil Sie da sind. Ein /task im Hintergrund oder ein Agent aus einem anderen Client lässt das Archiv geschlossen und sagt, dass es geschützt ist.</value></data>
+  <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>Der Agent erfährt, dass das Archiv geschlossen blieb, und macht ohne es weiter</value></data>
+  <data name="AskReceiptNote" xml:space="preserve"><value>Sie haben dem Agenten statt einer Antwort eine Notiz geschrieben</value></data>
+  <data name="AskReceiptStopped" xml:space="preserve"><value>Der Lauf wurde vor Ihrer Antwort beendet</value></data>
 </root>

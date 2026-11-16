@@ -119,6 +119,55 @@ public sealed class AskQuestionToolTests
     }
 
     [Fact]
+    public async Task ANoteTypedWhileTheCardWaits_IsNoLetDecide()
+    {
+        var approval = new CardDrawer(new InputReply(McpInputAction.SetAside, new Dictionary<string, McpInputValue>()));
+
+        var said = await Ask(approval, new { question = "Which form?", options = new[] { "A", "B" } });
+
+        Assert.Contains("wrote you a note", said);
+        Assert.DoesNotContain("let you decide", said);
+        Assert.Equal(Strings.AskReceiptNote, Assert.Single(approval.Receipts).Title);
+    }
+
+    private sealed class Stopping : ApprovalServiceBase
+    {
+        public Stopping() : base(new Inferpal.Config.InferpalConfig(), () => null) { }
+        public List<InputReceipt> Receipts { get; } = [];
+        public override bool CanAskForInput => true;
+        protected override Task<ApprovalDecision> PromptUserAsync(string message, Services.CodeActions.DiffInfo? diff, CancellationToken ct) =>
+            Task.FromResult(ApprovalDecision.Deny);
+        protected override Task<InputReply?> PromptInputAsync(InputCardModel card, CancellationToken ct) =>
+            throw new OperationCanceledException();
+        protected override void ShowInputReceipt(InputReceipt receipt) => Receipts.Add(receipt);
+    }
+
+    [Fact]
+    public async Task AStopWhileTheCardWaits_EndsTheRun_AndSaysStopped()
+    {
+        var approval = new Stopping();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            new AskQuestionTool(approval).ExecuteAsync(JsonSerializer.SerializeToElement(new { question = "Which?" }), default));
+        Assert.Equal(Strings.AskReceiptStopped, Assert.Single(approval.Receipts).Title);
+    }
+
+    [Fact]
+    public async Task WhereNoCardCanBeDrawn_NoCardIsDrawn_EvenForACallMadeAnyway()
+    {
+        var approval = new CardDrawer { Draws = false };
+        var said = await Ask(approval, new { question = "Which?" });
+        Assert.Contains("could not be shown", said);
+        Assert.Empty(approval.Shown);
+    }
+
+    [Fact]
+    public void ABackgroundTask_NeverGetsTheTool()
+    {
+        Assert.False(ToolCeilings.AllowedInBackgroundTask("ask_question"));
+        Assert.True(ToolCeilings.AllowedInBackgroundTask("read_file"));   // witness
+    }
+
+    [Fact]
     public async Task MoreThanFourProposals_KeepsFour_AndSaysSo()
     {
         var approval = new CardDrawer(Answer(picked: "a"));

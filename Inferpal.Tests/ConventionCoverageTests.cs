@@ -265,7 +265,15 @@ public class ConventionCoverageTests
             "EditorWriteGate.cs",   // the gate: it is the one calling RequestApprovalAsync
             "RestoreFileTool.cs",   // guarded, but the call lives in the body — checked by hand below
             "SyntaxGuard.cs",       // writes only its checkers' copy, under the temporary folder — checked below
+            "QueryDataTool.cs",     // copies a database into a folder of its own and deletes that folder — checked below
         ];
+
+        // query_data reads a database through a private copy: its one copy and its one delete are that folder's.
+        var query = CodeOnly(ToolsSources().Single(f => Path.GetFileName(f) == "QueryDataTool.cs"));
+        Assert.Matches(@"temp\s*=\s*Directory\.CreateTempSubdirectory\(""inferpal-query-""\)\.FullName", query);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(query, @"Directory\.Delete\("));
+        Assert.Contains("Directory.Delete(temp, recursive: true)", query, StringComparison.Ordinal);
+        Assert.DoesNotMatch(@"File\.(Write|Delete|Move)\w*\(", query);
 
         // The exemption is the rule's, not the property's: the guard writes nothing but its copy for the checkers, in a
         // folder of its own under the temporary folder, before any approval.

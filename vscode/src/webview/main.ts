@@ -2256,7 +2256,8 @@ function inputCardElement(card: InputCard): HTMLFormElement {
   sub.textContent = [card.subtitle, card.requiredNote].filter((p) => p).join(' · ');
   titles.append(title, sub);
   // A server's form carries its server; a protected PDF's card carries none.
-  head.append(icon(card.server ? 'plug' : 'lock', 16), titles);
+  // A server's form: a plug; a password (a protected PDF or archive): a lock; the agent's question: a question mark.
+  head.append(icon(card.server ? 'plug' : card.fields.some((f) => f.inputType === 'password') ? 'lock' : 'help', 16), titles);
 
   const body = document.createElement('div');
   body.className = 'input-body';

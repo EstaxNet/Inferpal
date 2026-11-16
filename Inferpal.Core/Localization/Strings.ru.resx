@@ -2332,4 +2332,9 @@
   <data name="AskCardEmpty" xml:space="preserve"><value>Выберите ответ или введите свой.</value></data>
   <data name="AskReceiptAnswered" xml:space="preserve"><value>Вы ответили агенту</value></data>
   <data name="AskReceiptSkipped" xml:space="preserve"><value>Вы оставили решение агенту</value></data>
+  <data name="ArchivePasswordMessage" xml:space="preserve"><value>Открыть его можете только вы. Если вы введёте пароль, агент получит текст этой записи — не пароль и даже не то, что вы его вводили.</value></data>
+  <data name="ArchivePasswordReminder" xml:space="preserve"><value>Спрашиваем, потому что вы здесь. /task в фоне или агент из другого клиента оставляет архив закрытым и сообщает, что он защищён.</value></data>
+  <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>Агент узнаёт, что архив остался закрытым, и продолжает без него</value></data>
+  <data name="AskReceiptNote" xml:space="preserve"><value>Вместо ответа вы написали агенту заметку</value></data>
+  <data name="AskReceiptStopped" xml:space="preserve"><value>Выполнение остановлено до вашего ответа</value></data>
 </root>

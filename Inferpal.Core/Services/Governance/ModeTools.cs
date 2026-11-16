@@ -32,7 +32,7 @@ internal sealed class ModeTools
             // Asking the person changes nothing: a mode that reads may ask.
             "ask_question",
         ],
-        ["search"]  = ["search_in_files", "search_codebase", "search_docs", "list_files"],
+        ["search"]  = ["search_in_files", "search_codebase", "search_docs", "list_files", "query_data"],
         ["edit"]    =
         [
             "write_file", "apply_diff", "apply_edits", "delete_file", "rename_symbol", "replace_in_files", "insert_at_cursor", "replace_selection",

@@ -33,8 +33,11 @@ internal sealed class ReplaceInFilesTool : ITool
         _overlay  = overlay;
     }
 
-    /// <summary>The most files one call changes.</summary>
-    internal const int MaxFiles = 200;
+    private static readonly Regex LoneLineFeed = new(@"(?<!\r)\n", RegexOptions.CultureInvariant, RegexBudget.Default);
+
+    /// <summary>The most files one call changes — within what the approval judges path by path, other names included
+    /// (<c>ApprovalServiceBase.PathForms</c>).</summary>
+    internal const int MaxFiles = 64;
 
     /// <summary>Files the approval card shows a diff of; the rest are counted.</summary>
     private const int MaxFilesInPrompt = 8;
@@ -51,8 +54,9 @@ internal sealed class ReplaceInFilesTool : ITool
 
     public string Description =>
         "Replaces a text in every file of a folder that contains it, in one call and one approval — instead of one edit per " +
-        "file. Exact, case-sensitive text by default; regex=true for a regular expression ($1 in the replacement). " +
-        "All or nothing; dry_run=true lists the files and counts without writing.";
+        "file. Exact, case-sensitive text by default (line breaks follow each file's own); regex=true for a regular " +
+        "expression ($1 in the replacement, $$ for a literal $; $ and \\n mean a line end in every file). Not syntax-checked: build or test " +
+        "after it. All or nothing; dry_run=true lists the files and counts without writing.";
 
     public object Parameters => new
     {
@@ -87,6 +91,9 @@ internal sealed class ReplaceInFilesTool : ITool
         var dryRun   = args.Bool("dry_run", false);
 
         Regex? regex = null;
+        if (useRegex && System.Text.RegularExpressions.Regex.IsMatch(replace, @"(?<!\$)(?:\$\$)*\$[_`'+]", RegexOptions.None, RegexBudget.Default))
+            return "Error: the replacement holds $_, $`, $' or $+ — in a regular expression's replacement these insert the whole " +
+                   "file or its edges. Write $$ for a literal $, or pass regex=false.";
         if (useRegex)
         {
             try { regex = new Regex(find, RegexOptions.CultureInvariant | RegexOptions.Multiline, RegexBudget.Default); }
@@ -101,7 +108,7 @@ internal sealed class ReplaceInFilesTool : ITool
             return $"Could not walk '{path}' (permissions, or a path the file system refused): nothing was replaced.";
 
         var hits = new List<Hit>();
-        int scanned = 0, skippedLarge = 0, unreadable = 0, skippedBinary = 0, generated = 0;
+        int scanned = 0, skippedLarge = 0, unreadable = 0, skippedBinary = 0, generated = 0, outside = 0, matching = 0;
         foreach (var file in walk.OrderBy(f => f, StringComparer.Ordinal))
         {
             ct.ThrowIfCancellationRequested();
@@ -119,17 +126,32 @@ internal sealed class ReplaceInFilesTool : ITool
                 string changed;
                 if (regex is not null)
                 {
-                    count = regex.Matches(old).Count;
-                    changed = count > 0 ? regex.Replace(old, replace) : old;
+                    // A file all in CRLF is matched as the model reads it, in LF ($ before the break, \n for a break), and
+                    // written back in CRLF. A file with mixed breaks is matched as it is: converting it would touch lines the
+                    // replacement does not.
+                    var crlf = old.Contains("\r\n", StringComparison.Ordinal) && !LoneLineFeed.IsMatch(old);
+                    var text = crlf ? old.Replace("\r\n", "\n", StringComparison.Ordinal) : old;
+                    count = regex.Matches(text).Count;
+                    var result = count > 0 ? regex.Replace(text, replace.Replace("\r\n", "\n", StringComparison.Ordinal)) : text;
+                    changed = crlf ? result.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal) : result;
                 }
                 else
                 {
-                    count = Occurrences(old, find);
-                    changed = count > 0 ? old.Replace(find, replace, StringComparison.Ordinal) : old;
+                    // A model writes \n: in a CRLF file the text it means has \r\n, and what it writes keeps the file's breaks.
+                    var eol = LineEndings.Dominant(old);
+                    var findHere = LineEndings.ToEol(find, eol);
+                    count = Occurrences(old, findHere);
+                    changed = count > 0 ? old.Replace(findHere, LineEndings.ToEol(replace, eol), StringComparison.Ordinal) : old;
                 }
                 if (count == 0 || string.Equals(changed, old, StringComparison.Ordinal)) continue;
                 // A generated file is rewritten by its generator: the tools that edit by hand leave it, and say so.
                 if (GeneratedFiles.Of(file, old) is not null) { generated++; continue; }
+                // ⚠ The walk lists a linked FILE (it only stops at linked folders): written through, it would change a file
+                // outside the workspace — ~/.bashrc behind docs/notes.md. Checked on the files that would change only.
+                try { PathSanitizer.AssertUnderRoot(file, workspace); }
+                catch (ArgumentException) { outside++; continue; }
+                // Past the cap, counted only: the call is refused, and holding every text to say so is no use.
+                if (++matching > MaxFiles) continue;
                 hits.Add(new Hit(file, count, old, changed));
             }
             catch (RegexMatchTimeoutException)
@@ -139,12 +161,13 @@ internal sealed class ReplaceInFilesTool : ITool
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { unreadable++; }
         }
 
-        var gaps = Gaps(skippedLarge, unreadable, skippedBinary, generated);
+        var gaps = Gaps(skippedLarge, unreadable, skippedBinary, generated, outside)
+                 + (singleFile ? string.Empty : WorkspaceScan.FirstWalkGap(path, workspace) is { } gap ? "; " + gap.Sentence() : string.Empty);
         if (hits.Count == 0)
             return $"No file under '{Shown(path, workspace)}' contains {(useRegex ? "a match of" : "the text")} '{find}' "
                  + $"({scanned} file(s) read){gaps}. Nothing was changed.";
-        if (hits.Count > MaxFiles)
-            return $"Error: {hits.Count} files would change, more than {MaxFiles} in one call. Nothing was changed: narrow path "
+        if (matching > MaxFiles)
+            return $"Error: {matching} files would change, more than {MaxFiles} in one call. Nothing was changed: narrow path "
                  + "or file_pattern and call again.";
 
         var total = hits.Sum(h => h.Count);
@@ -154,12 +177,16 @@ internal sealed class ReplaceInFilesTool : ITool
 
         foreach (var h in hits)
         {
-            if (FileTarget.UnsavedRefusal(_overlay, h.Path) is { } unsaved) return unsaved;
+            if (FileTarget.UnsavedRefusal(_overlay, h.Path) is { } unsaved)
+            {
+                if (dryRun) { sb.AppendLine($"(Not appliable yet: {unsaved})"); break; }
+                return unsaved;
+            }
             if (FileTarget.EncodingRefusal(h.Path, h.New) is { } cannotHold) return cannotHold;
         }
         if (dryRun) return sb.Append("Dry run — no file was changed. Call again without dry_run to apply.").ToString();
 
-        var details = new StringBuilder(Strings.ReplaceConfirm(find, replace, hits.Count, total));
+        var details = new StringBuilder(Strings.ReplaceConfirm(OnCard(find), OnCard(replace), hits.Count, total));
         foreach (var h in hits.Take(MaxFilesInPrompt))
         {
             details.Append("\n\n### ").Append(Shown(h.Path, workspace));
@@ -193,9 +220,17 @@ internal sealed class ReplaceInFilesTool : ITool
         return count;
     }
 
-    private static string Gaps(int large, int unreadable, int binary, int generated)
+    /// <summary>A text as the card shows it between backticks: one line, bounded, its own backticks made harmless.</summary>
+    private static string OnCard(string text)
+    {
+        var line = text.Replace("\r", "").Replace('\n', '⏎').Replace('`', '\'');
+        return line.Length > 80 ? line[..79] + "…" : line;
+    }
+
+    private static string Gaps(int large, int unreadable, int binary, int generated, int outside)
     {
         var parts = new List<string>();
+        if (outside > 0) parts.Add($"{outside} linked file(s) leading outside the workspace left as they are");
         if (large > 0) parts.Add($"{large} over {MaxFileBytes / (1024 * 1024)} MB not read");
         if (unreadable > 0) parts.Add($"{unreadable} unreadable");
         if (binary > 0) parts.Add($"{binary} binary, image or document file(s) not searched");

@@ -147,6 +147,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new GetOpenEditorsTool(editor));
         Register(new GetGitStatusTool(editor, () => indexService.RootDir));
         Register(new GitHistoryTool(() => indexService.RootDir));
+        Register(new QueryDataTool(() => indexService.RootDir));
         Register(new RunTestsTool(() => indexService.RootDir, codeConsent));
         Register(new InsertAtCursorTool(editor, approval, _fileHistory));
         Register(new ReplaceSelectionTool(editor, approval, _fileHistory));
@@ -822,7 +823,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private static readonly HashSet<string> TextArguments = new(StringComparer.Ordinal)
     {
         "pattern", "query", "old_content", "new_content", "content", "text", "command", "old_name", "new_name", "expression",
-        "snapshot",
+        "snapshot", "sql", "find", "replace", "question", "options",
     };
 
     /// <summary>

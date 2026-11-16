@@ -337,10 +337,12 @@ internal abstract class ApprovalServiceBase : IApprovalService
     /// <summary>Wrong passwords a protected PDF's card takes before it leaves the file closed.</summary>
     internal const int PasswordTries = 3;
 
-    /// <inheritdoc cref="IApprovalService.AskForDocumentPasswordAsync"/>
     /// <inheritdoc cref="IApprovalService.AskQuestionAsync"/>
-    public async Task<string?> AskQuestionAsync(string question, IReadOnlyList<string> options, CancellationToken ct)
+    public async Task<QuestionAnswer> AskQuestionAsync(string question, IReadOnlyList<string> options, CancellationToken ct)
     {
+        // Checked at the call, not only when the tool is offered: a call written as text, or a background task sharing the
+        // chat's registry, would otherwise draw a card nobody is waiting on.
+        if (!CanAskForInput) return new(QuestionOutcome.NotShown);
         var id    = "input-" + Guid.NewGuid().ToString("N");
         var error = string.Empty;
         while (true)
@@ -354,25 +356,42 @@ internal abstract class ApprovalServiceBase : IApprovalService
             }
             catch (OperationCanceledException)
             {
-                ShowReceipt(Services.Presentation.InputCard.QuestionReceipt(id, question, answer: null));
+                ShowReceipt(Services.Presentation.InputCard.QuestionReceipt(id, question, QuestionOutcome.Stopped));
                 throw;
             }
-            if (reply is null) return null;
+            if (reply is null) return new(QuestionOutcome.NotShown);
             if (reply.Action != Mcp.McpInputAction.Accept)
             {
-                ShowReceipt(Services.Presentation.InputCard.QuestionReceipt(id, question, answer: null));
-                return string.Empty;
+                // A note typed while the card waited is not "decide": it is often the answer itself, read by the model next.
+                var outcome = reply.Action == Mcp.McpInputAction.SetAside ? QuestionOutcome.Note : QuestionOutcome.LetDecide;
+                ShowReceipt(Services.Presentation.InputCard.QuestionReceipt(id, question, outcome));
+                return new(outcome);
             }
             string Value(string key) => reply.Values.TryGetValue(key, out var v) ? (v.Text ?? string.Empty).Trim() : string.Empty;
             // Their own words win over a proposal: they typed them on purpose.
             var answer = Value(Services.Presentation.InputCard.OtherKey) is { Length: > 0 } own ? own : Value(Services.Presentation.InputCard.AnswerKey);
             if (answer.Length == 0) { error = Strings.AskCardEmpty; continue; }
-            ShowReceipt(Services.Presentation.InputCard.QuestionReceipt(id, question, answer));
-            return answer;
+            ShowReceipt(Services.Presentation.InputCard.QuestionReceipt(id, question, QuestionOutcome.Answered, answer));
+            return new(QuestionOutcome.Answered, answer);
         }
     }
 
-    public async Task<bool> AskForDocumentPasswordAsync(string path, bool attached, CancellationToken ct)
+    /// <inheritdoc cref="IApprovalService.AskForDocumentPasswordAsync"/>
+    public Task<bool> AskForDocumentPasswordAsync(string path, bool attached, CancellationToken ct) =>
+        AskForPasswordAsync((id, error) => Services.Presentation.InputCard.Password(id, path, attached, error),
+                            typed => Documents.AttachedDocuments.TryPassword(path, typed, ct) ? true : false, Path.GetFileName(path), ct);
+
+    /// <inheritdoc cref="IApprovalService.AskForArchivePasswordAsync"/>
+    public Task<bool> AskForArchivePasswordAsync(string archive, string entry, CancellationToken ct) =>
+        AskForPasswordAsync((id, error) => Services.Presentation.InputCard.ArchivePassword(id, archive, entry, error),
+                            typed => Documents.Archives.TryPassword(archive, entry, typed, ct), $"{Path.GetFileName(archive)}!/{entry}", ct);
+
+    /// <summary>The password card's loop, for a document or an archive: <see cref="PasswordTries"/> wrong passwords at most,
+    /// the receipt left whatever the outcome. ⚠ Never the password in a receipt, a log or the conversation.</summary>
+    /// <param name="tryPassword"><c>true</c>: opened; <c>false</c>: wrong (a try spent); <c>null</c>: the password is not the
+    /// problem — the card ends, and the reader says why.</param>
+    private async Task<bool> AskForPasswordAsync(Func<string, string, Services.Presentation.InputCardModel> card, Func<string, bool?> tryPassword,
+                                                 string shown, CancellationToken ct)
     {
         var id    = "input-" + Guid.NewGuid().ToString("N");
         var left  = PasswordTries;
@@ -383,33 +402,39 @@ internal abstract class ApprovalServiceBase : IApprovalService
             try
             {
                 using (Services.Hardware.GpuScheduler.PauseThisFlow())
-                    reply = await PromptInputAsync(Services.Presentation.InputCard.Password(id, path, attached, error), ct);
+                    reply = await PromptInputAsync(card(id, error), ct);
             }
             catch (OperationCanceledException)
             {
-                ShowReceipt(Services.Presentation.InputCard.PasswordReceipt(id, path, opened: false, tooManyTries: false));
+                ShowReceipt(Services.Presentation.InputCard.PasswordReceiptFor(id, shown, opened: false, tooManyTries: false));
                 throw;
             }
             if (reply is null) return false;
             if (reply.Action != Mcp.McpInputAction.Accept)
             {
-                ShowReceipt(Services.Presentation.InputCard.PasswordReceipt(id, path, opened: false, tooManyTries: false));
+                ShowReceipt(Services.Presentation.InputCard.PasswordReceiptFor(id, shown, opened: false, tooManyTries: false));
                 return false;
             }
             var typed = reply.Values.TryGetValue(Services.Presentation.InputCard.PasswordKey, out var v) ? v.Text ?? string.Empty : string.Empty;
             // Nothing typed is no try: Open pressed on an empty box (or a box whose text never reached here) asks again.
             if (typed.Length == 0) { error = Strings.DocPasswordEmpty; continue; }
-            if (await Task.Run(() => Documents.AttachedDocuments.TryPassword(path, typed, ct), ct))
+            var tried = await Task.Run(() => tryPassword(typed), ct);
+            if (tried == true)
             {
-                ShowReceipt(Services.Presentation.InputCard.PasswordReceipt(id, path, opened: true, tooManyTries: false));
+                ShowReceipt(Services.Presentation.InputCard.PasswordReceiptFor(id, shown, opened: true, tooManyTries: false));
                 return true;
+            }
+            if (tried is null)
+            {
+                ShowReceipt(Services.Presentation.InputCard.PasswordReceiptFor(id, shown, opened: false, tooManyTries: false));
+                return false;
             }
             if (--left == 0)
             {
-                ShowReceipt(Services.Presentation.InputCard.PasswordReceipt(id, path, opened: false, tooManyTries: true));
+                ShowReceipt(Services.Presentation.InputCard.PasswordReceiptFor(id, shown, opened: false, tooManyTries: true));
                 return false;
             }
-            error = Strings.DocPasswordWrong(Path.GetFileName(path), left);
+            error = Strings.DocPasswordWrong(shown, left);
         }
     }
 

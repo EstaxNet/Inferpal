@@ -51,10 +51,17 @@ internal class ReadFileTool : ITool
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var root = _getWorkspaceRoot();
+        // A real file whose name holds '!' is that file: the archive reading is for a path that names no file.
+        if (Documents.Archives.TrySplit(args.Str("path"), out var archivePart, out var inner)
+            && !File.Exists(PathSanitizer.Sanitize(args.Str("path"), root)))
+            return await ReadArchiveEntryAsync(archivePart, inner, root, args, ct);
         var path = PathSanitizer.Sanitize(args.Str("path"), root);
         PathSanitizer.AssertUnderRoot(path, root);
 
         var target = Classify(path, _overlay);
+        if (target is Target.File or Target.Binary && Documents.Archives.Handles(path))
+            return $"'{Path.GetFileName(path)}' is an archive: list what it holds with list_files (path='{Path.GetFileName(path)}'), "
+                 + $"and read an entry with read_file (path='{Path.GetFileName(path)}!/folder/file.txt').";
         // An image is seen, not read as text: the loop puts it in front of the model after the batch (ToolImages), or says
         // the model does not read images. Checked by its size before a byte is loaded; then by the attachments' one reader.
         if (target is Target.File or Target.Binary && _images is not null && Documents.ChatImages.Handles(path))
@@ -127,6 +134,62 @@ internal class ReadFileTool : ITool
         _history?.NoteReadLines(path, shown.First, shown.Last, shown.Total);
         return shown.Text;
     }
+
+    /// <summary>
+    /// An entry of an archive (<c>logs.zip!/app/log.txt</c>), read out in memory — never extracted —, paged like a file.
+    /// </summary>
+    /// <remarks>⚠ The ignore files judge the archive and each entry as if the archive were a folder: <c>.env</c> inside
+    /// <c>backup.zip</c> is excluded where <c>.env</c> is. The registry's own check does not see this path (no such file on
+    /// disk), so it is made here.</remarks>
+    private async Task<string> ReadArchiveEntryAsync(string archivePart, string inner, string? root, JsonElement args, CancellationToken ct)
+    {
+        var archive = PathSanitizer.Sanitize(archivePart, root);
+        PathSanitizer.AssertUnderRoot(archive, root);
+        var name = Path.GetFileName(archive);
+        if (Governance.ContentExclusions.Of(archive) is { } excluded)
+            return excluded.ForModel(Governance.ContentExclusions.Shown(archive, root));
+        if (inner.Length == 0 || inner.Split('/').Contains(".."))
+            return $"Name an entry of '{name}': read_file path='{name}!/folder/file.txt'; list them with list_files path='{name}'.";
+        var shown = $"{name}!/{inner}";
+        if (Documents.Archives.Safe(inner) is null)
+            return $"'{shown}' is not read: its name is not one an archive entry may have.";
+        if (Documents.Archives.EntryExclusion(archive, inner) is { Excluded: true } entryExcluded)
+            return entryExcluded.Why?.ForModel(shown) ?? $"'{shown}' is not read: it could not be judged against the workspace's ignore files.";
+        if (Documents.Archives.Handles(inner))
+            return $"'{shown}' is an archive inside an archive: it is not opened.";
+        var (bytes, problem, locked) = await Task.Run(() => Documents.Archives.Read(archive, inner, ct), ct);
+        // A protected entry: the person, if at the keyboard, may open it — the model gets the text, never the password.
+        if (locked && _approval is { CanAskForInput: true })
+        {
+            // One card per archive at a time: two entries read in one batch would draw two cards for one password.
+            var gate = ArchiveCards.GetOrAdd(archive, _ => new SemaphoreSlim(1, 1));
+            await gate.WaitAsync(ct);
+            try
+            {
+                (bytes, problem, locked) = await Task.Run(() => Documents.Archives.Read(archive, inner, ct), ct);   // the other card may have opened it
+                if (locked)
+                {
+                    if (!await _approval.AskForArchivePasswordAsync(archive, inner, ct))
+                        return Documents.Archives.UnreadableAfterPassword.TryRemove((archive, inner), out var why)
+                            ? $"'{shown}' cannot be read: {why}."
+                            : $"'{shown}' stays closed: the archive opens only with a password, and it was not opened. Go on without "
+                              + "it; do not ask the user for the password.";
+                    (bytes, problem, locked) = await Task.Run(() => Documents.Archives.Read(archive, inner, ct), ct);
+                }
+            }
+            finally { gate.Release(); }
+        }
+        if (locked) return $"'{shown}' is protected by a password: it was not opened (no one here to type it). Go on without it.";
+        if (bytes is null) return $"'{shown}' cannot be read: {problem}.";
+        if (TextFileEncoding.IsBinary(bytes))
+            return $"'{shown}' is a binary file ({bytes.Length} bytes): its content is not shown as text.";
+        var text = TextFileEncoding.Decode(bytes);
+        if (text.Length == 0) return $"[{shown} is empty: 0 characters]";
+        var page = PageOf(text, shown, args.Int("start_line", 0), args.Int("end_line", 0));
+        return page.Text.Length > MaxChars ? Cap(page.Text, shown) : page.Text;
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> ArchiveCards = new(PathComparer.Default);
 
     /// <summary>What a path holds, as this tool reads it.</summary>
     internal enum Target { File, Unsaved, Directory, Missing, Binary }

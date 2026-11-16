@@ -21,8 +21,9 @@ internal static class ToolCeilings
     /// ask whether a call left the files alone (the work-tree watch, the project map, the cut card, the loop policy), never
     /// by plan mode. ⚠ A build that rewrites a tracked file (a restore's lock file, a generator writing into the tree) is
     /// therefore not caught by the watch.</param>
+    /// <param name="AsksThePerson">Waits for the person on a card: never in a background task, which nobody watches.</param>
     private sealed record Fact(ToolEffect Ceiling, bool ConcurrentSafe = false, bool ReadsLiveState = false,
-                               bool ReportsThroughABuild = false);
+                               bool ReportsThroughABuild = false, bool AsksThePerson = false);
 
     private const ToolEffect R = ToolEffect.Reads, W = ToolEffect.Writes, X = ToolEffect.Runs, N = ToolEffect.Network;
 
@@ -36,6 +37,7 @@ internal static class ToolCeilings
         ["get_solution_info"]    = new(R),
         ["get_git_status"]       = new(R),
         ["git_history"]          = new(R, ConcurrentSafe: true),
+        ["query_data"]           = new(R),
         ["generate_project_map"] = new(R),
         ["analyze_code"]         = new(R),
         ["read_skill_file"]      = new(R),
@@ -55,7 +57,7 @@ internal static class ToolCeilings
         ["rename_symbol"]        = new(W),
         ["replace_in_files"]     = new(W),
         // It asks the person and waits: nothing outside the conversation, never in a parallel batch.
-        ["ask_question"]         = new(ToolEffect.None),
+        ["ask_question"]         = new(ToolEffect.None, AsksThePerson: true),
         ["get_diagnostics"]      = new(X, ReportsThroughABuild: true),
         ["run_tests"]            = new(X),
         ["run_command"]          = new(R | X),
@@ -79,7 +81,7 @@ internal static class ToolCeilings
 
     /// <summary>A background task: reads only, and never the state the person has in front of them while it runs.</summary>
     public static bool AllowedInBackgroundTask(string name) =>
-        Within(name, ToolEffect.Reads) && !(Facts.TryGetValue(name, out var f) && f.ReadsLiveState);
+        Within(name, ToolEffect.Reads) && !(Facts.TryGetValue(name, out var f) && (f.ReadsLiveState || f.AsksThePerson));
 
     /// <summary>May run beside other calls of the same batch.</summary>
     public static bool ConcurrentSafe(string name) =>

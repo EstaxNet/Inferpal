@@ -1316,6 +1316,11 @@ internal static class Strings
     public static string AskCardEmpty       => Get(nameof(AskCardEmpty));
     public static string AskReceiptAnswered => Get(nameof(AskReceiptAnswered));
     public static string AskReceiptSkipped  => Get(nameof(AskReceiptSkipped));
+    public static string AskReceiptNote     => Get(nameof(AskReceiptNote));
+    public static string AskReceiptStopped  => Get(nameof(AskReceiptStopped));
+    public static string ArchivePasswordMessage        => Get(nameof(ArchivePasswordMessage));
+    public static string ArchivePasswordReminder       => Get(nameof(ArchivePasswordReminder));
+    public static string ArchivePasswordLeaveClosedTip => Get(nameof(ArchivePasswordLeaveClosedTip));
     public static string RenameMarkupByName(int positions) => Format(Get(nameof(RenameMarkupByName)), positions);
     public static string RenameLeftAsTheyAre(int occurrences, string oldName) => Format(Get(nameof(RenameLeftAsTheyAre)), occurrences, oldName);
     public static string RenameMoreLeft(int occurrences) => Format(Get(nameof(RenameMoreLeft)), occurrences);

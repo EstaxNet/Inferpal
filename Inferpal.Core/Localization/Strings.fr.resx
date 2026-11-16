@@ -2332,4 +2332,9 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="AskCardEmpty" xml:space="preserve"><value>Choisissez une réponse ou écrivez-en une.</value></data>
   <data name="AskReceiptAnswered" xml:space="preserve"><value>Vous avez répondu à l'agent</value></data>
   <data name="AskReceiptSkipped" xml:space="preserve"><value>Vous avez laissé l'agent décider</value></data>
+  <data name="ArchivePasswordMessage" xml:space="preserve"><value>Vous seul pouvez l'ouvrir. Si vous tapez son mot de passe, l'agent reçoit le texte de cette entrée — pas le mot de passe, ni même le fait que vous en avez tapé un.</value></data>
+  <data name="ArchivePasswordReminder" xml:space="preserve"><value>Demandé parce que vous êtes là. Une /task en arrière-plan, ou un agent lancé depuis un autre client, laisse l'archive fermée et dit qu'elle est protégée.</value></data>
+  <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>L'agent apprend que l'archive est restée fermée, et continue sans elle</value></data>
+  <data name="AskReceiptNote" xml:space="preserve"><value>Vous avez écrit une note à l'agent au lieu de répondre</value></data>
+  <data name="AskReceiptStopped" xml:space="preserve"><value>Le run s'est arrêté avant votre réponse</value></data>
 </root>

@@ -2332,4 +2332,9 @@
   <data name="AskCardEmpty" xml:space="preserve"><value>请选择一个回答或输入一个。</value></data>
   <data name="AskReceiptAnswered" xml:space="preserve"><value>你已回答智能体</value></data>
   <data name="AskReceiptSkipped" xml:space="preserve"><value>你让智能体决定</value></data>
+  <data name="ArchivePasswordMessage" xml:space="preserve"><value>只有你能打开它。如果你输入密码，智能体会得到此条目的文本——不会得到密码，甚至不会知道你输入过密码。</value></data>
+  <data name="ArchivePasswordReminder" xml:space="preserve"><value>因为你在这里所以询问。后台 /task 或从其他客户端运行的智能体会保持归档关闭，并说明它受保护。</value></data>
+  <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>智能体会得知归档保持关闭，并在没有它的情况下继续</value></data>
+  <data name="AskReceiptNote" xml:space="preserve"><value>你给智能体写了一条备注，而不是回答</value></data>
+  <data name="AskReceiptStopped" xml:space="preserve"><value>运行在你回答前已停止</value></data>
 </root>

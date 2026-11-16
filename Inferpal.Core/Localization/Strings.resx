@@ -2336,4 +2336,9 @@ What you save there applies from your next question, in this thread and the othe
   <data name="AskCardEmpty" xml:space="preserve"><value>Pick an answer or type one.</value></data>
   <data name="AskReceiptAnswered" xml:space="preserve"><value>You answered the agent</value></data>
   <data name="AskReceiptSkipped" xml:space="preserve"><value>You let the agent decide</value></data>
+  <data name="ArchivePasswordMessage" xml:space="preserve"><value>Only you can open it. If you type its password, the agent gets this entry's text — not the password, and not even that you typed one.</value></data>
+  <data name="ArchivePasswordReminder" xml:space="preserve"><value>Asked because you are here. A background /task, or an agent run from another client, leaves the archive closed and says it is protected.</value></data>
+  <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>The agent is told the archive stayed closed, and goes on without it</value></data>
+  <data name="AskReceiptNote" xml:space="preserve"><value>You wrote the agent a note instead of answering</value></data>
+  <data name="AskReceiptStopped" xml:space="preserve"><value>The run stopped before you answered</value></data>
 </root>

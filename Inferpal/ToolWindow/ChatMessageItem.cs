@@ -554,6 +554,8 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public bool   HasInputDecline { get; private set; }
     /// <summary>The card asks for a protected PDF's password: a lock, rather than a server's connector.</summary>
     [DataMember] public bool   IsPasswordCard  { get; private set; }
+    /// <summary>The agent's own question (<c>ask_question</c>): no server asks, and no password is asked.</summary>
+    [DataMember] public bool   IsQuestionCard  { get; private set; }
     [DataMember] public ObservableCollection<InputFieldItem> InputFields { get; } = [];
     [DataMember] public AsyncCommand InputSendCommand    { get; }
     [DataMember] public AsyncCommand InputDeclineCommand { get; }
@@ -583,7 +585,8 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             InputDeclineTip = card.DeclineTooltip,
             InputCancelTip  = card.CancelTooltip,
             HasInputDecline = card.DeclineLabel.Length > 0,
-            IsPasswordCard  = card.Server.Length == 0,
+            IsPasswordCard  = card.Fields.Any(f => f.InputType == "password"),
+            IsQuestionCard  = card.Server.Length == 0 && !card.Fields.Any(f => f.InputType == "password"),
             InputCardId   = card.Id,
         };
         item.ShowInput(card);

@@ -94,12 +94,28 @@ internal interface IApprovalService
 
     /// <summary>
     /// Asks the person the agent's <paramref name="question"/> on a card, with the answers it proposes: what they answered,
-    /// <c>""</c> when they let the agent decide, <c>null</c> when no card could be drawn (<see cref="CanAskForInput"/>).
-    /// ⚠ Only the person answers — no rule, no grant, no setting.
+    /// that they let the agent decide, that they typed a note instead, or that no card could be drawn
+    /// (<see cref="CanAskForInput"/>). ⚠ Only the person answers — no rule, no grant, no setting.
     /// </summary>
-    Task<string?> AskQuestionAsync(string question, IReadOnlyList<string> options, CancellationToken ct) =>
-        Task.FromResult<string?>(null);
+    Task<QuestionAnswer> AskQuestionAsync(string question, IReadOnlyList<string> options, CancellationToken ct) =>
+        Task.FromResult(new QuestionAnswer(QuestionOutcome.NotShown));
+
+    /// <summary>
+    /// Asks the person for the password of the protected zip at <paramref name="archive"/>, to read <paramref name="entry"/>:
+    /// the PDF card's three tries; true when it opened, the password kept in memory for that archive
+    /// (<see cref="Documents.Archives.TryPassword"/>). ⚠ Only the person answers; the password never reaches the model, a
+    /// receipt, a log or a file. False by default, and wherever no card can be drawn.
+    /// </summary>
+    Task<bool> AskForArchivePasswordAsync(string archive, string entry, CancellationToken ct) => Task.FromResult(false);
 }
 
 /// <summary>One file of a multi-file change: its old→new text, and the summary a reviewer reads for it.</summary>
 internal sealed record FileChange(Services.CodeActions.DiffInfo Diff, string Details);
+
+/// <summary>What the person did with the agent's question.</summary>
+/// <remarks><see cref="Stopped"/> only names a receipt: a Stop ends the run, it is never an answer.</remarks>
+internal enum QuestionOutcome { Answered, LetDecide, Note, NotShown, Stopped }
+
+/// <summary>The person's answer to the agent's question (<see cref="IApprovalService.AskQuestionAsync"/>).</summary>
+/// <param name="Text">What they answered; empty for any other outcome.</param>
+internal sealed record QuestionAnswer(QuestionOutcome Outcome, string Text = "");

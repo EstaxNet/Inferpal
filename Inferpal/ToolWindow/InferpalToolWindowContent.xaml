@@ -2139,6 +2139,10 @@
                                                         <DataTrigger Binding="{Binding IsPasswordCard}" Value="True">
                                                             <Setter Property="Text" Value="&#xE72E;"/>
                                                         </DataTrigger>
+                                                        <!-- A question mark for the agent's own question. -->
+                                                        <DataTrigger Binding="{Binding IsQuestionCard}" Value="True">
+                                                            <Setter Property="Text" Value="&#xE897;"/>
+                                                        </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </TextBlock.Style>

@@ -2332,4 +2332,9 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="AskCardEmpty" xml:space="preserve"><value>回答を選ぶか入力してください。</value></data>
   <data name="AskReceiptAnswered" xml:space="preserve"><value>エージェントに回答しました</value></data>
   <data name="AskReceiptSkipped" xml:space="preserve"><value>エージェントに任せました</value></data>
+  <data name="ArchivePasswordMessage" xml:space="preserve"><value>開けるのはあなただけです。パスワードを入力すると、エージェントはこのエントリのテキストを受け取ります。パスワードも、入力したという事実も渡りません。</value></data>
+  <data name="ArchivePasswordReminder" xml:space="preserve"><value>あなたがいるので尋ねています。バックグラウンドの /task や別のクライアントから起動したエージェントは、アーカイブを閉じたままにし、保護されていると伝えます。</value></data>
+  <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>エージェントはアーカイブが閉じたままであることを知り、それなしで続行します</value></data>
+  <data name="AskReceiptNote" xml:space="preserve"><value>回答の代わりにエージェントへメモを書きました</value></data>
+  <data name="AskReceiptStopped" xml:space="preserve"><value>回答の前に実行が停止しました</value></data>
 </root>

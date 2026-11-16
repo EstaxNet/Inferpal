@@ -168,10 +168,29 @@ internal static class InputCard
                                  Strings.DocPasswordLeaveClosed, Strings.DocPasswordLeaveClosedTip, Strings.DocPasswordShow);
     }
 
-    /// <summary>What a protected PDF's card leaves in the conversation: opened, or left closed. ⚠ Never the password.</summary>
-    public static InputReceipt PasswordReceipt(string id, string path, bool opened, bool tooManyTries)
+    /// <summary>
+    /// The card that asks for a protected archive's password, for the entry the agent wants to read
+    /// (<c>backup.zip!/logs/app.log</c>): the PDF card's field and buttons, with the archive's words.
+    /// </summary>
+    public static InputCardModel ArchivePassword(string id, string archive, string entry, string error)
     {
-        var name = Path.GetFileName(path);
+        var name = Path.GetFileName(archive);
+        var field = new InputFieldModel(PasswordKey, "text", "password", Strings.DocPasswordLabel(name), Strings.DocPasswordHint,
+                                        Required: true, Warns: false, Buttons: false, Text: string.Empty, Flag: false,
+                                        Options: [], Error: error, Min: null, Max: null);
+        return new InputCardModel(id, string.Empty, Strings.DocPasswordAgentTitle($"{name}!/{entry}"), Strings.DocPasswordSubtitle,
+                                  Strings.ArchivePasswordMessage, [field], string.Empty, string.Empty,
+                                  Strings.ArchivePasswordReminder, Strings.DocPasswordOpen, string.Empty, string.Empty,
+                                  Strings.DocPasswordLeaveClosed, Strings.ArchivePasswordLeaveClosedTip, Strings.DocPasswordShow);
+    }
+
+    /// <summary>What a protected PDF's card leaves in the conversation: opened, or left closed. ⚠ Never the password.</summary>
+    public static InputReceipt PasswordReceipt(string id, string path, bool opened, bool tooManyTries) =>
+        PasswordReceiptFor(id, Path.GetFileName(path), opened, tooManyTries);
+
+    /// <summary><see cref="PasswordReceipt"/> for what the card named (a file, or an entry of an archive).</summary>
+    public static InputReceipt PasswordReceiptFor(string id, string name, bool opened, bool tooManyTries)
+    {
         if (opened) return new InputReceipt(id, Strings.DocPasswordReceiptOpened(name), Strings.DocPasswordReceiptOpenedDetail, string.Empty);
         return new InputReceipt(id, tooManyTries ? Strings.DocPasswordReceiptTooMany(name) : Strings.DocPasswordReceiptClosed(name),
                                 Strings.DocPasswordReceiptClosedDetail, string.Empty);
@@ -203,12 +222,15 @@ internal static class InputCard
                                   Strings.AskCardSkip, Strings.AskCardSkipTip);
     }
 
-    /// <summary>What the agent's question card leaves in the conversation: the question, and the answer or the choice
-    /// to let the agent decide.</summary>
-    public static InputReceipt QuestionReceipt(string id, string question, string? answer) =>
-        string.IsNullOrEmpty(answer)
-            ? new InputReceipt(id, Strings.AskReceiptSkipped, question, string.Empty)
-            : new InputReceipt(id, Strings.AskReceiptAnswered, question, answer);
+    /// <summary>What the agent's question card leaves in the conversation: the question, and the answer, the choice to
+    /// let the agent decide, the note typed instead, or the Stop.</summary>
+    public static InputReceipt QuestionReceipt(string id, string question, Execution.QuestionOutcome outcome, string answer = "") => outcome switch
+    {
+        Execution.QuestionOutcome.Answered => new InputReceipt(id, Strings.AskReceiptAnswered, question, answer),
+        Execution.QuestionOutcome.Note     => new InputReceipt(id, Strings.AskReceiptNote, question, string.Empty),
+        Execution.QuestionOutcome.Stopped  => new InputReceipt(id, Strings.AskReceiptStopped, question, string.Empty),
+        _                                  => new InputReceipt(id, Strings.AskReceiptSkipped, question, string.Empty),
+    };
 
     /// <summary>What a card leaves when the run was stopped while it waited.</summary>
     public static InputReceipt Stopped(McpInputForm form, string id) =>

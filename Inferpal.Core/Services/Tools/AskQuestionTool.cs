@@ -55,11 +55,12 @@ internal sealed class AskQuestionTool(IApprovalService approval) : ITool
 
         var answer = await approval.AskQuestionAsync(question, options, ct);
         var note = dropped > 0 ? $"(Only the first {MaxOptions} of your answers were shown.) " : string.Empty;
-        return answer switch
+        return answer.Outcome switch
         {
-            null => note + "The question could not be shown here. Decide yourself, and say in your answer what you assumed.",
-            ""   => note + "The user let you decide. Go on, and say in your answer what you assumed.",
-            _    => note + $"The user answered: {answer}",
+            QuestionOutcome.Answered => note + $"The user answered: {answer.Text}",
+            QuestionOutcome.LetDecide => note + "The user let you decide. Go on, and say in your answer what you assumed.",
+            QuestionOutcome.Note => note + "The user did not pick an answer: they wrote you a note instead. Read it before going on.",
+            _ => note + "The question could not be shown here. Decide yourself, and say in your answer what you assumed.",
         };
     }
 }
