@@ -37,8 +37,12 @@ internal static class ToolFailure
     /// registry or the tool), or the person's refusal of the card. The one reader of that question; an edit that wrote
     /// nothing is judged from what happened, by whoever counts the writes.
     /// </summary>
+    /// <remarks>⚠ <c>run_command</c>, the editor's write gate and <c>update_memory</c> answer a refusal with the
+    /// translated <see cref="Localization.Strings.RunCancelled"/>: without it here, a refused command counts as one
+    /// that ran.</remarks>
     internal static bool IsFailure(string result) =>
-        result.StartsWith("Error:", StringComparison.Ordinal) || result == CancelledByUser;
+        result.StartsWith("Error:", StringComparison.Ordinal) || result == CancelledByUser
+        || string.Equals(result.Trim(), Localization.Strings.RunCancelled.Trim(), StringComparison.Ordinal);
 
     /// <summary>
     /// A tool's failure in the form <see cref="IsFailure"/> reads: <paramref name="text"/> (often translated) behind the

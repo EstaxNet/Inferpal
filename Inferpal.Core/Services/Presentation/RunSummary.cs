@@ -49,8 +49,9 @@ internal static class RunSummary
         if (executions.Count == 0) return null;
 
         var reads    = run is not null ? run.FilesOpened : FilesNamed(executions, "read_file");
-        var searches = executions.Count(e => Searches.Contains(e.Name));
-        var commands = executions.Count(e => e.Name == "run_command");
+        // A refused or failed call did nothing: never "1 command run" under a command the person refused.
+        var searches = executions.Count(e => Searches.Contains(e.Name) && !ToolFailure.IsFailure(e.Output));
+        var commands = executions.Count(e => e.Name == "run_command" && !ToolFailure.IsFailure(e.Output));
         var files    = run is null ? [] : Files(run);
         var (verdict, at) = ChatTurnPolicy.LastCheckAt(executions);
         var check     = CheckOf(verdict);

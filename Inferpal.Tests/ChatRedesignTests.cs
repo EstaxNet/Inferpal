@@ -138,6 +138,21 @@ public sealed class ChatRedesignTests : IDisposable
     public void NoToolCall_IsNoRun() => Assert.Null(RunSummary.Build([], null));
 
     [Fact]
+    public void ARefusedCommandOrSearch_IsNotCountedAsRun()
+    {
+        var summary = RunSummary.Build(
+        [
+            new ToolExecution("run_command", "{\"command\":\"dir\"}", Strings.RunCancelled),
+            new ToolExecution("web_search", "{\"query\":\"x\"}", Inferpal.Services.Execution.ToolFailure.CancelledByUser),
+            new ToolExecution("run_command", "{\"command\":\"dir\"}", "a.cs"),
+        ], null)!;
+
+        // Witness: the command that ran is still counted.
+        Assert.Equal(Strings.RunCommands(1), summary.Detail);
+        Assert.Equal(3, summary.Steps);
+    }
+
+    [Fact]
     public void AFileTheRunCreated_CountsEveryLineAsAdded()
     {
         var file = Path.Combine(_dir, "New.cs");

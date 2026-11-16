@@ -168,7 +168,6 @@ internal static class CheckCommand
     {
         output = Shell.ShellSession.WithoutNotes(output);
         if (Execution.ToolFailure.IsFailure(output)
-            || string.Equals(output.Trim(), Localization.Strings.RunCancelled.Trim(), StringComparison.Ordinal)
             || output.Contains("Started background job '", StringComparison.Ordinal)
             || output.Contains("[exit code -1: Select-Object -First", StringComparison.Ordinal))
             return null;
