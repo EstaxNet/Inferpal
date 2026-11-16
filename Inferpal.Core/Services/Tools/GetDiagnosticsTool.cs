@@ -353,6 +353,9 @@ internal class GetDiagnosticsTool : ITool
             StandardOutputEncoding = System.Text.Encoding.UTF8,
             StandardErrorEncoding  = System.Text.Encoding.UTF8,
         };
+        // In English, as for run_tests: NuGet Audit's lines are read by their words (VulnerablePackages).
+        psi.EnvironmentVariables["DOTNET_CLI_UI_LANGUAGE"] = "en";
+        psi.EnvironmentVariables["VSLANG"]                 = "1033";
 
         // 90 s, after which the build tree is killed: abandoned instead, MSBuild node processes
         // outlive the turn that started them.
@@ -462,9 +465,52 @@ internal class GetDiagnosticsTool : ITool
             }
         }
 
+        // ⚠ BELOW the report: its first line is the verdict (ReadVerdict, StoppedBeforeTheCompiler) — a section above it
+        // read a green build "not built" and a restore stop as errors.
+        if (VulnerablePackages(run.Combined) is { } vulnerable) body = body + "\n\n" + vulnerable;
         return run.TimedOut
             ? (Strings.DiagBuildStopped(budgetSeconds) + "\n\n" + body).Trim()
             : body;
+    }
+
+    // NuGet Audit's warnings, as `dotnet build` writes them in English (the build runs with DOTNET_CLI_UI_LANGUAGE=en);
+    // `error NU1903` under WarningsAsErrors is the same line, and is a real build failure:
+    // `X.csproj : warning NU1903: Package 'Newtonsoft.Json' 12.0.1 has a known high severity vulnerability, https://…`.
+    private static readonly Regex AuditLine = new(
+        @"\b(?<code>NU190[0-4])\b(?::\s*Package '(?<package>[^']+)' (?<version>\S+)[^,\n]*,\s*(?<url>https?://\S+))?",
+        RegexOptions.CultureInvariant, RegexBudget.Default);
+
+    /// <summary>
+    /// The packages NuGet Audit flags in a build's output (<c>NU1901</c> to <c>NU1904</c>, low to critical), with the way to
+    /// fix them; <c>null</c> when it flags none.
+    /// </summary>
+    /// <remarks>Listed among the warnings, they read as one more warning to leave: grouped above the report, with the command
+    /// that fixes them. <c>NU1900</c>: the audit could not reach its source.</remarks>
+    internal static string? VulnerablePackages(string output)
+    {
+        // One line per package: its worst severity and every advisory (NuGet writes one warning per advisory).
+        var found = new SortedDictionary<string, (char Worst, SortedSet<string> Advisories)>(StringComparer.Ordinal);
+        var unreachable = false;
+        foreach (Match m in AuditLine.Matches(output))
+        {
+            var code = m.Groups["code"].Value;
+            if (code == "NU1900") { unreachable = true; continue; }
+            var key = m.Groups["package"].Success ? $"{m.Groups["package"].Value} {m.Groups["version"].Value}" : code;
+            if (!found.TryGetValue(key, out var entry)) found[key] = entry = (code[^1], new SortedSet<string>(StringComparer.Ordinal));
+            else if (code[^1] > entry.Worst) found[key] = entry = (code[^1], entry.Advisories);
+            if (m.Groups["url"].Success) entry.Advisories.Add(m.Groups["url"].Value.TrimEnd('.', ']'));
+        }
+        const string Unreachable = "NuGet Audit could not reach the vulnerability data of a package source (NU1900): " +
+                                   "packages from it were not checked.";
+        if (found.Count == 0) return unreachable ? Unreachable : null;
+        var lines = found.Select(f =>
+            $"- {f.Key} — {f.Value.Worst switch { '1' => "low", '2' => "moderate", '3' => "high", _ => "critical" }}" +
+            (f.Value.Advisories.Count > 0 ? " — " + string.Join(", ", f.Value.Advisories) : string.Empty));
+        return "Vulnerable packages (NuGet Audit):\n" + string.Join("\n", lines) +
+               "\nFix: `dotnet package update --vulnerable` raises each one to the lowest version without a known " +
+               "vulnerability (a .NET 10 SDK or later; a global.json that pins an older SDK runs that one, and the command " +
+               "does not exist there) — otherwise set the patched version the advisory names. Then build and run the tests." +
+               (unreachable ? "\n" + Unreachable : string.Empty);
     }
 
     /// <summary>Where the search for a project starts — the one reader, so the gap reported to the
