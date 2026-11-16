@@ -177,6 +177,39 @@ internal static class InputCard
                                 Strings.DocPasswordReceiptClosedDetail, string.Empty);
     }
 
+    /// <summary>The key of the chosen answer on the agent's question card.</summary>
+    public const string AnswerKey = "answer";
+
+    /// <summary>The key of the answer typed in the person's own words.</summary>
+    public const string OtherKey = "other";
+
+    /// <summary>
+    /// The card that puts the agent's question to the person: the answers it proposes (a choice), and a box for their own
+    /// words; without proposals, the box alone. Answer, or let the agent decide.
+    /// </summary>
+    public static InputCardModel Question(string id, string question, IReadOnlyList<string> options, string error)
+    {
+        var fields = new List<InputFieldModel>();
+        if (options.Count > 0)
+            fields.Add(new InputFieldModel(AnswerKey, "choice", "text", Strings.AskCardAnswerLabel, string.Empty, Required: false,
+                Warns: false, Buttons: options.Count <= ButtonChoices && options.All(o => o.Length <= ShortChoice), Text: string.Empty,
+                Flag: false, Options: [.. options.Select(o => new InputOptionModel(o, o, false))], Error: error, Min: null, Max: null));
+        fields.Add(new InputFieldModel(options.Count > 0 ? OtherKey : AnswerKey, "text", "text",
+            options.Count > 0 ? Strings.AskCardOtherLabel : Strings.AskCardAnswerLabel, string.Empty, Required: options.Count == 0,
+            Warns: false, Buttons: false, Text: string.Empty, Flag: false, Options: [], Error: options.Count == 0 ? error : string.Empty,
+            Min: null, Max: null));
+        return new InputCardModel(id, string.Empty, Strings.AskCardTitle, string.Empty, question, fields, string.Empty,
+                                  string.Empty, Strings.AskCardReminder, Strings.AskCardSend, string.Empty, string.Empty,
+                                  Strings.AskCardSkip, Strings.AskCardSkipTip);
+    }
+
+    /// <summary>What the agent's question card leaves in the conversation: the question, and the answer or the choice
+    /// to let the agent decide.</summary>
+    public static InputReceipt QuestionReceipt(string id, string question, string? answer) =>
+        string.IsNullOrEmpty(answer)
+            ? new InputReceipt(id, Strings.AskReceiptSkipped, question, string.Empty)
+            : new InputReceipt(id, Strings.AskReceiptAnswered, question, answer);
+
     /// <summary>What a card leaves when the run was stopped while it waited.</summary>
     public static InputReceipt Stopped(McpInputForm form, string id) =>
         new(id, Strings.InputReceiptStopped(form.Server), Strings.InputReceiptUnanswered, string.Empty);

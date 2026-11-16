@@ -91,6 +91,14 @@ internal interface IApprovalService
     /// <param name="attached">The person attached the file, rather than the agent reading it: the card's words change.</param>
     /// <param name="ct">The person's Stop.</param>
     Task<bool> AskForDocumentPasswordAsync(string path, bool attached, CancellationToken ct) => Task.FromResult(false);
+
+    /// <summary>
+    /// Asks the person the agent's <paramref name="question"/> on a card, with the answers it proposes: what they answered,
+    /// <c>""</c> when they let the agent decide, <c>null</c> when no card could be drawn (<see cref="CanAskForInput"/>).
+    /// ⚠ Only the person answers — no rule, no grant, no setting.
+    /// </summary>
+    Task<string?> AskQuestionAsync(string question, IReadOnlyList<string> options, CancellationToken ct) =>
+        Task.FromResult<string?>(null);
 }
 
 /// <summary>One file of a multi-file change: its old→new text, and the summary a reviewer reads for it.</summary>

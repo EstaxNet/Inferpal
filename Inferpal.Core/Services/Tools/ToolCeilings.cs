@@ -35,6 +35,7 @@ internal static class ToolCeilings
         ["search_docs"]          = new(R),
         ["get_solution_info"]    = new(R),
         ["get_git_status"]       = new(R),
+        ["git_history"]          = new(R, ConcurrentSafe: true),
         ["generate_project_map"] = new(R),
         ["analyze_code"]         = new(R),
         ["read_skill_file"]      = new(R),
@@ -52,6 +53,9 @@ internal static class ToolCeilings
         ["replace_selection"]    = new(W),
         ["update_memory"]        = new(W),
         ["rename_symbol"]        = new(W),
+        ["replace_in_files"]     = new(W),
+        // It asks the person and waits: nothing outside the conversation, never in a parallel batch.
+        ["ask_question"]         = new(ToolEffect.None),
         ["get_diagnostics"]      = new(X, ReportsThroughABuild: true),
         ["run_tests"]            = new(X),
         ["run_command"]          = new(R | X),

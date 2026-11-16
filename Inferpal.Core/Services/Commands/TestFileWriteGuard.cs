@@ -36,6 +36,9 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
     public Task<bool> AskForDocumentPasswordAsync(string path, bool attached, CancellationToken ct) =>
         inner.AskForDocumentPasswordAsync(path, attached, ct);
 
+    public Task<string?> AskQuestionAsync(string question, IReadOnlyList<string> options, CancellationToken ct) =>
+        inner.AskQuestionAsync(question, options, ct);
+
     /// <summary>
     /// Heuristic on the approval subject (a path for file writes, possibly several for
     /// <c>apply_edits</c>): any segment or file name carrying "test"/"tests"/"spec" counts.

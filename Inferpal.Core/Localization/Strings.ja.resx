@@ -372,6 +372,8 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="RenameConfirm" xml:space="preserve"><value>`{0}` → `{1}` に名前を変更（{2} 個のファイル、{3} 箇所）</value></data>
   <data name="RenameTextBased" xml:space="preserve"><value>⚠ テキストベースの名前変更: コンパイラーが `{0}` を解決できなかったため、同じ綴りの識別子はすべて名前が変更されます（無関係なシンボルも含む）。変更を確認してください。</value></data>
   <data name="RenameMoreFiles" xml:space="preserve"><value>… ほか {0} 個のファイルも同様に名前を変更します。</value></data>
+  <data name="ReplaceConfirm" xml:space="preserve"><value>`{0}` を `{1}` に置換（{2} 個のファイル、{3} 箇所）</value></data>
+  <data name="ReplaceMoreFiles" xml:space="preserve"><value>… ほか {0} 個のファイルも同様に変更します。</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 バックアップ：{0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>{1} から {0} を復元しました。</value></data>
@@ -2320,4 +2322,14 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="MermaidUnavailable" xml:space="preserve"><value>図は WebView2 で描画しますが、起動できませんでした。コードを表示しています。</value></data>
   <data name="MermaidTooLarge" xml:space="preserve"><value>この図は {0} × {1} ポイントで、Inferpal が描画する {2} を超えています。コードを表示しています。</value></data>
   <data name="MermaidTooSlow" xml:space="preserve"><value>この図の描画に {0} 秒以上かかりました。コードを表示しています。</value></data>
+  <data name="AskCardTitle" xml:space="preserve"><value>エージェントからの質問</value></data>
+  <data name="AskCardReminder" xml:space="preserve"><value>回答はこの会話でモデルに送られます。</value></data>
+  <data name="AskCardAnswerLabel" xml:space="preserve"><value>回答</value></data>
+  <data name="AskCardOtherLabel" xml:space="preserve"><value>または自分の言葉で回答</value></data>
+  <data name="AskCardSend" xml:space="preserve"><value>回答する</value></data>
+  <data name="AskCardSkip" xml:space="preserve"><value>エージェントに任せる</value></data>
+  <data name="AskCardSkipTip" xml:space="preserve"><value>エージェントは回答なしで続行し、何を想定したかを伝えます。</value></data>
+  <data name="AskCardEmpty" xml:space="preserve"><value>回答を選ぶか入力してください。</value></data>
+  <data name="AskReceiptAnswered" xml:space="preserve"><value>エージェントに回答しました</value></data>
+  <data name="AskReceiptSkipped" xml:space="preserve"><value>エージェントに任せました</value></data>
 </root>

@@ -372,6 +372,8 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="RenameConfirm" xml:space="preserve"><value>`{0}` → `{1}` 이름 변경 (파일 {2}개, {3}곳)</value></data>
   <data name="RenameTextBased" xml:space="preserve"><value>⚠ 텍스트 기반 이름 변경: 컴파일러가 `{0}`을(를) 확인하지 못해 같은 철자의 모든 식별자가 변경됩니다(관련 없는 심볼 포함). 변경 내용을 확인하세요.</value></data>
   <data name="RenameMoreFiles" xml:space="preserve"><value>… 외 파일 {0}개도 같은 방식으로 이름이 변경됩니다.</value></data>
+  <data name="ReplaceConfirm" xml:space="preserve"><value>`{0}`을(를) `{1}`(으)로 바꾸기 (파일 {2}개, {3}곳)</value></data>
+  <data name="ReplaceMoreFiles" xml:space="preserve"><value>… 외 파일 {0}개도 같은 방식으로 변경됩니다.</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 백업: {0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>{1}에서 {0}을 복원했습니다.</value></data>
@@ -2320,4 +2322,14 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="MermaidUnavailable" xml:space="preserve"><value>다이어그램은 WebView2로 그리는데 시작할 수 없었습니다. 코드를 표시합니다.</value></data>
   <data name="MermaidTooLarge" xml:space="preserve"><value>이 다이어그램은 {0} × {1}포인트로 Inferpal이 그리는 {2}보다 큽니다. 코드를 표시합니다.</value></data>
   <data name="MermaidTooSlow" xml:space="preserve"><value>이 다이어그램을 그리는 데 {0}초 넘게 걸렸습니다. 코드를 표시합니다.</value></data>
+  <data name="AskCardTitle" xml:space="preserve"><value>에이전트가 질문합니다</value></data>
+  <data name="AskCardReminder" xml:space="preserve"><value>답변은 이 대화에서 모델에게 전달됩니다.</value></data>
+  <data name="AskCardAnswerLabel" xml:space="preserve"><value>답변</value></data>
+  <data name="AskCardOtherLabel" xml:space="preserve"><value>또는 직접 답변 입력</value></data>
+  <data name="AskCardSend" xml:space="preserve"><value>답변하기</value></data>
+  <data name="AskCardSkip" xml:space="preserve"><value>에이전트에게 맡기기</value></data>
+  <data name="AskCardSkipTip" xml:space="preserve"><value>에이전트는 답변 없이 계속하고 무엇을 가정했는지 알려 줍니다.</value></data>
+  <data name="AskCardEmpty" xml:space="preserve"><value>답변을 선택하거나 입력하세요.</value></data>
+  <data name="AskReceiptAnswered" xml:space="preserve"><value>에이전트에게 답변했습니다</value></data>
+  <data name="AskReceiptSkipped" xml:space="preserve"><value>에이전트에게 맡겼습니다</value></data>
 </root>

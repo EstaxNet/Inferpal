@@ -58,7 +58,7 @@ internal static class ApprovalCard
     /// of it. A tool missing here shows its change uncoloured, never altered.</remarks>
     private static readonly HashSet<string> RenderTheirChange = new(StringComparer.Ordinal)
     {
-        "apply_edits", "rename_symbol",
+        "apply_edits", "rename_symbol", "replace_in_files",
     };
 
     public static ApprovalCardModel Build(ApprovalPrompt prompt, string? root, bool keepsGrantsAcrossSolutions = false)

@@ -50,6 +50,13 @@ internal interface IToolRegistry
     void ForgetWholeRead(string path) { }
 
     /// <summary>
+    /// The images the calls since the last time read (<c>read_file</c> on a picture), for the loop to put in front of the model
+    /// after the batch (<see cref="Documents.ToolImages.AppendAsync"/>); empty when this registry reads none.
+    /// </summary>
+    /// <remarks>⚠ A decorator forwards it: answered by default, an image the tool said it read never reaches the model.</remarks>
+    IReadOnlyList<Documents.ChatImage> TakeReadImages() => [];
+
+    /// <summary>
     /// The names a call may carry: the declared ones, and the ones a request does not declare but the model can read and
     /// call (MCP tools waiting on demand). The only names a call written as text is recognized by.
     /// </summary>

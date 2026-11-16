@@ -32,6 +32,7 @@ internal sealed class ModeToolRegistry(IToolRegistry inner, ChatMode mode, strin
     public int? WritesInRun => inner.WritesInRun;
     public int? UnseenCallsInRun => inner.UnseenCallsInRun;
     public void ForgetWholeRead(string path) => inner.ForgetWholeRead(path);
+    public IReadOnlyList<Documents.ChatImage> TakeReadImages() => inner.TakeReadImages();
 
     // A tool the mode refuses gets the mode's refusal, never "turn it back on": turned on, the mode still refuses it.
     public string? TurnedOffRefusal(string name) => _tools.Allows(name) ? inner.TurnedOffRefusal(name) : null;

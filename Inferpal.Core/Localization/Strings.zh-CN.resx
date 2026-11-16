@@ -372,6 +372,8 @@
   <data name="RenameConfirm" xml:space="preserve"><value>将 `{0}` 重命名为 `{1}`（{2} 个文件，{3} 处）</value></data>
   <data name="RenameTextBased" xml:space="preserve"><value>⚠ 基于文本的重命名：编译器无法解析 `{0}`，因此所有这样拼写的标识符都会被重命名——包括无关的符号。请检查更改。</value></data>
   <data name="RenameMoreFiles" xml:space="preserve"><value>… 以及另外 {0} 个文件，以同样方式重命名。</value></data>
+  <data name="ReplaceConfirm" xml:space="preserve"><value>将 `{0}` 替换为 `{1}`（{2} 个文件，{3} 处）</value></data>
+  <data name="ReplaceMoreFiles" xml:space="preserve"><value>… 以及另外 {0} 个文件，以同样方式修改。</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 已备份：{0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>已从 {1} 还原 {0}。</value></data>
@@ -2320,4 +2322,14 @@
   <data name="MermaidUnavailable" xml:space="preserve"><value>图表由 WebView2 绘制，但它无法在此启动：显示代码。</value></data>
   <data name="MermaidTooLarge" xml:space="preserve"><value>此图表为 {0} × {1} 点，超过 Inferpal 绘制的 {2}：显示代码。</value></data>
   <data name="MermaidTooSlow" xml:space="preserve"><value>此图表绘制超过 {0} 秒：显示代码。</value></data>
+  <data name="AskCardTitle" xml:space="preserve"><value>智能体向你提了一个问题</value></data>
+  <data name="AskCardReminder" xml:space="preserve"><value>你的回答会在此对话中发送给模型。</value></data>
+  <data name="AskCardAnswerLabel" xml:space="preserve"><value>你的回答</value></data>
+  <data name="AskCardOtherLabel" xml:space="preserve"><value>或用你自己的话回答</value></data>
+  <data name="AskCardSend" xml:space="preserve"><value>回答</value></data>
+  <data name="AskCardSkip" xml:space="preserve"><value>让智能体决定</value></data>
+  <data name="AskCardSkipTip" xml:space="preserve"><value>智能体将在没有你回答的情况下继续，并说明它做了什么假设。</value></data>
+  <data name="AskCardEmpty" xml:space="preserve"><value>请选择一个回答或输入一个。</value></data>
+  <data name="AskReceiptAnswered" xml:space="preserve"><value>你已回答智能体</value></data>
+  <data name="AskReceiptSkipped" xml:space="preserve"><value>你让智能体决定</value></data>
 </root>

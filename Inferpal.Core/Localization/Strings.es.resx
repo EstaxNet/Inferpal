@@ -372,6 +372,8 @@ Haga clic en ↻ Reintentar en la cabecera una vez corregido.</value></data>
   <data name="RenameConfirm" xml:space="preserve"><value>Renombrar `{0}` → `{1}` en {2} {2:archivo|archivos} ({3} {3:aparición|apariciones})</value></data>
   <data name="RenameTextBased" xml:space="preserve"><value>⚠ Renombrado por texto: el compilador no pudo resolver `{0}`, así que se renombra CADA identificador escrito así, incluidos símbolos sin relación. Revise los cambios.</value></data>
   <data name="RenameMoreFiles" xml:space="preserve"><value>… y {0} {0:archivo más|archivos más}, renombrados de la misma forma.</value></data>
+  <data name="ReplaceConfirm" xml:space="preserve"><value>Reemplazar `{0}` por `{1}` en {2} {2:archivo|archivos} ({3} {3:aparición|apariciones})</value></data>
+  <data name="ReplaceMoreFiles" xml:space="preserve"><value>… y {0} {0:archivo más|archivos más}, cambiados de la misma forma.</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 Copia de seguridad: {0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>{0} restaurado desde {1}.</value></data>
@@ -2320,4 +2322,14 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="MermaidUnavailable" xml:space="preserve"><value>Los diagramas los dibuja WebView2, que no pudo iniciarse aquí: se muestra el código.</value></data>
   <data name="MermaidTooLarge" xml:space="preserve"><value>Este diagrama mide {0} × {1} puntos, más que los {2} que dibuja Inferpal: se muestra el código.</value></data>
   <data name="MermaidTooSlow" xml:space="preserve"><value>Este diagrama tardó más de {0} s en dibujarse: se muestra el código.</value></data>
+  <data name="AskCardTitle" xml:space="preserve"><value>El agente le hace una pregunta</value></data>
+  <data name="AskCardReminder" xml:space="preserve"><value>Su respuesta va al modelo, en esta conversación.</value></data>
+  <data name="AskCardAnswerLabel" xml:space="preserve"><value>Su respuesta</value></data>
+  <data name="AskCardOtherLabel" xml:space="preserve"><value>O responda con sus palabras</value></data>
+  <data name="AskCardSend" xml:space="preserve"><value>Responder</value></data>
+  <data name="AskCardSkip" xml:space="preserve"><value>Dejar que el agente decida</value></data>
+  <data name="AskCardSkipTip" xml:space="preserve"><value>El agente sigue sin su respuesta y dice lo que ha supuesto.</value></data>
+  <data name="AskCardEmpty" xml:space="preserve"><value>Elija una respuesta o escriba una.</value></data>
+  <data name="AskReceiptAnswered" xml:space="preserve"><value>Ha respondido al agente</value></data>
+  <data name="AskReceiptSkipped" xml:space="preserve"><value>Ha dejado que el agente decida</value></data>
 </root>

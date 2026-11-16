@@ -433,7 +433,7 @@ internal static class GitProcess
     /// The encoding of the working-tree file a path of git's output names — the paths are relative to the repository's
     /// top level, found from <paramref name="workDir"/>; <c>null</c> when there is no repository or no such file.
     /// </summary>
-    private static Func<string, Encoding?>? WorkingTreeEncoding(string? workDir)
+    internal static Func<string, Encoding?>? WorkingTreeEncoding(string? workDir)
     {
         try
         {

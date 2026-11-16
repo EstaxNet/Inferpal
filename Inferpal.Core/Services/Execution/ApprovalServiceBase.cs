@@ -338,6 +338,40 @@ internal abstract class ApprovalServiceBase : IApprovalService
     internal const int PasswordTries = 3;
 
     /// <inheritdoc cref="IApprovalService.AskForDocumentPasswordAsync"/>
+    /// <inheritdoc cref="IApprovalService.AskQuestionAsync"/>
+    public async Task<string?> AskQuestionAsync(string question, IReadOnlyList<string> options, CancellationToken ct)
+    {
+        var id    = "input-" + Guid.NewGuid().ToString("N");
+        var error = string.Empty;
+        while (true)
+        {
+            Services.Presentation.InputReply? reply;
+            try
+            {
+                // As for an approval card: nothing is in flight while the person thinks.
+                using (Services.Hardware.GpuScheduler.PauseThisFlow())
+                    reply = await PromptInputAsync(Services.Presentation.InputCard.Question(id, question, options, error), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                ShowReceipt(Services.Presentation.InputCard.QuestionReceipt(id, question, answer: null));
+                throw;
+            }
+            if (reply is null) return null;
+            if (reply.Action != Mcp.McpInputAction.Accept)
+            {
+                ShowReceipt(Services.Presentation.InputCard.QuestionReceipt(id, question, answer: null));
+                return string.Empty;
+            }
+            string Value(string key) => reply.Values.TryGetValue(key, out var v) ? (v.Text ?? string.Empty).Trim() : string.Empty;
+            // Their own words win over a proposal: they typed them on purpose.
+            var answer = Value(Services.Presentation.InputCard.OtherKey) is { Length: > 0 } own ? own : Value(Services.Presentation.InputCard.AnswerKey);
+            if (answer.Length == 0) { error = Strings.AskCardEmpty; continue; }
+            ShowReceipt(Services.Presentation.InputCard.QuestionReceipt(id, question, answer));
+            return answer;
+        }
+    }
+
     public async Task<bool> AskForDocumentPasswordAsync(string path, bool attached, CancellationToken ct)
     {
         var id    = "input-" + Guid.NewGuid().ToString("N");

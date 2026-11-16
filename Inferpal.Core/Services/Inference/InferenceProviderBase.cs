@@ -685,6 +685,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
 
         // The caller's history (system prompt + conversation + the user's task) is the
         // anchored head — intra-run elision never touches it (see CompactRunContext).
+        // Images an earlier run read and never sent (stopped, failed, or wrapped by a registry that did not take them) are
+        // not this run's: left in the inbox they would reach this model labelled as the files it asked to read.
+        _ = tools.TakeReadImages();
         var anchorCount = messages.Count;
         // The server's count of the last request against its estimate (AgentOrchestrator.ServerScale).
         var scale = 1.0;
@@ -793,6 +796,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                     // Size-capped copy for the model context; the UI bubble keeps the full output.
                     messages.Add(new ChatMessageDto("tool", AgentOrchestrator.CapForContext(result)));
                 }
+                // After every result of the batch: a user message between two tool results would break the call/result pairing.
+                await Documents.ToolImages.AppendAsync(messages, tools.TakeReadImages(), model,
+                                                       c => ((IInferenceProvider)this).SeesImagesAsync(model, c), ct);
                 AgentLoopPolicy.Forgive(sigCounts, calls, executions.Skip(batchStart).Select(e => e.Output));
             }
             else

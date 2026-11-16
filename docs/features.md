@@ -206,7 +206,7 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
 - **Three modes** — **Chat** (tools, no plan), **Agent** (plan, act, observe) and **Plan** (`/plan`: read-only, it
   proposes and changes nothing). `/plan save` turns a plan into a committable `.inferpal/plans/` file. Beside them,
   the modes found for the workspace: [Modes](configuration.md#modes).
-- **30 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
+- **33 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
   Independent read-only calls run in parallel; `/tools off <tool>` takes one away from the model.
 - **Step by step** — `/agent-step` pauses before each tool call; **▶ Resume** goes on.
 - **Long runs you can leave** — the machine stays awake while the model works, a card left unanswered flashes the

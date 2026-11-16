@@ -1303,6 +1303,19 @@ internal static class Strings
         Format(Get(nameof(RenameConfirm)), oldName, newName, files, occurrences);
     public static string RenameTextBased(string oldName) => Format(Get(nameof(RenameTextBased)), oldName);
     public static string RenameMoreFiles(int files) => Format(Get(nameof(RenameMoreFiles)), files);
+    public static string ReplaceConfirm(string find, string replace, int files, int occurrences) =>
+        Format(Get(nameof(ReplaceConfirm)), find, replace, files, occurrences);
+    public static string ReplaceMoreFiles(int files) => Format(Get(nameof(ReplaceMoreFiles)), files);
+    public static string AskCardTitle       => Get(nameof(AskCardTitle));
+    public static string AskCardReminder    => Get(nameof(AskCardReminder));
+    public static string AskCardAnswerLabel => Get(nameof(AskCardAnswerLabel));
+    public static string AskCardOtherLabel  => Get(nameof(AskCardOtherLabel));
+    public static string AskCardSend        => Get(nameof(AskCardSend));
+    public static string AskCardSkip        => Get(nameof(AskCardSkip));
+    public static string AskCardSkipTip     => Get(nameof(AskCardSkipTip));
+    public static string AskCardEmpty       => Get(nameof(AskCardEmpty));
+    public static string AskReceiptAnswered => Get(nameof(AskReceiptAnswered));
+    public static string AskReceiptSkipped  => Get(nameof(AskReceiptSkipped));
     public static string RenameMarkupByName(int positions) => Format(Get(nameof(RenameMarkupByName)), positions);
     public static string RenameLeftAsTheyAre(int occurrences, string oldName) => Format(Get(nameof(RenameLeftAsTheyAre)), occurrences, oldName);
     public static string RenameMoreLeft(int occurrences) => Format(Get(nameof(RenameMoreLeft)), occurrences);

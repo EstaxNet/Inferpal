@@ -264,6 +264,30 @@ internal static class ChatImages
         return parts;
     }
 
+    /// <summary>The most tokens an image sent is counted for: one per 1 024 pixels of the largest box an image is reduced to
+    /// fit.</summary>
+    /// <remarks>Read off the servers' own counts (docs/probes/pari84 runs, prompt tokens of the image arm): Qwen3.8 and Ornith
+    /// spend about a token per thousand pixels, Gemma 4 half of that — the larger is kept, so a request is never
+    /// under-counted.</remarks>
+    internal const int TokensPerImageCeiling = LargeWidth * LargeHeight / 1024;
+
+    /// <summary>The tokens an image weighs in a request, from the size its header declares; the ceiling when the header does
+    /// not say (WebP, a JPEG whose frame comes late) or cannot be read.</summary>
+    internal static int EstimatedTokens(string base64)
+    {
+        try
+        {
+            // The head only: a header is in the first bytes, and the whole image is never decoded to be counted.
+            var take = Math.Min(base64.Length, 4 * (64 * 1024 / 3)) & ~3;
+            var (_, width, height) = Sniff(Convert.FromBase64String(base64[..take]));
+            if (width > 0 && height > 0)
+                return (int)Math.Min(TokensPerImageCeiling, (long)width * height / 1024 + 16);
+        }
+        catch (FormatException) { }
+        catch (Exception ex) when (ex is ArgumentException or IndexOutOfRangeException) { }
+        return TokensPerImageCeiling;
+    }
+
     /// <summary>
     /// Retires the images of the questions already in <paramref name="history"/>, before a new question joins it: each keeps
     /// a line saying its images were sent then. Done when the question ENTERS the history, never guessed per request: the

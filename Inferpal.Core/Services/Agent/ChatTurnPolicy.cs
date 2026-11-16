@@ -121,7 +121,7 @@ internal static class ChatTurnPolicy
     /// <c>rename_symbol</c>, whose default dry run writes nothing — and a model answered "renamed everywhere" with no
     /// notice under it.</remarks>
     private static readonly HashSet<string> FileEditTools = new(StringComparer.Ordinal)
-        { "write_file", "apply_diff", "apply_edits", "rename_symbol", "delete_file", "restore_file", "update_memory" };
+        { "write_file", "apply_diff", "apply_edits", "rename_symbol", "replace_in_files", "delete_file", "restore_file", "update_memory" };
 
     /// <summary>Whether <paramref name="toolName"/> is one that writes a file.</summary>
     internal static bool IsFileEdit(string toolName) => FileEditTools.Contains(toolName);

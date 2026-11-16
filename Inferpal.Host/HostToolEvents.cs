@@ -36,6 +36,7 @@ internal sealed class ToolEventRegistry(
     public int? WritesInRun => inner.WritesInRun;
     public int? UnseenCallsInRun => inner.UnseenCallsInRun;
     public void ForgetWholeRead(string path) => inner.ForgetWholeRead(path);
+    public IReadOnlyList<Services.Documents.ChatImage> TakeReadImages() => inner.TakeReadImages();
     public IEnumerable<string> CallableNames => inner.CallableNames;
     public string? TurnedOffRefusal(string name) => inner.TurnedOffRefusal(name);
     public bool Knows(string name) => inner.Knows(name);

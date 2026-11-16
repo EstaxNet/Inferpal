@@ -372,6 +372,8 @@ Kontynuować?</value></data>
   <data name="RenameConfirm" xml:space="preserve"><value>Zmień nazwę `{0}` → `{1}` w {2} {2:pliku|plikach|plikach} ({3} {3:wystąpienie|wystąpienia|wystąpień})</value></data>
   <data name="RenameTextBased" xml:space="preserve"><value>⚠ Zmiana nazwy na podstawie tekstu: kompilator nie rozpoznał `{0}`, więc zmieniona zostanie nazwa KAŻDEGO identyfikatora zapisanego w ten sposób — także niezwiązanych symboli. Sprawdź zmiany.</value></data>
   <data name="RenameMoreFiles" xml:space="preserve"><value>… i {0} {0:inny plik|inne pliki|innych plików}, ze zmienioną nazwą w ten sam sposób.</value></data>
+  <data name="ReplaceConfirm" xml:space="preserve"><value>Zamień `{0}` na `{1}` w {2} {2:pliku|plikach|plikach} ({3} {3:wystąpienie|wystąpienia|wystąpień})</value></data>
+  <data name="ReplaceMoreFiles" xml:space="preserve"><value>… i {0} {0:inny plik|inne pliki|innych plików}, zmienione w ten sam sposób.</value></data>
   <data name="HistoryNote" xml:space="preserve"><value>
 Kopia zapasowa: {0}</value></data>
   <data name="RestoreOk" xml:space="preserve"><value>Przywrócono {0} z {1}.</value></data>
@@ -2320,4 +2322,14 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="MermaidUnavailable" xml:space="preserve"><value>Diagramy rysuje WebView2, którego nie udało się tu uruchomić: pokazano kod.</value></data>
   <data name="MermaidTooLarge" xml:space="preserve"><value>Ten diagram ma {0} × {1} punktów, więcej niż {2}, które rysuje Inferpal: pokazano kod.</value></data>
   <data name="MermaidTooSlow" xml:space="preserve"><value>Rysowanie tego diagramu trwało dłużej niż {0} s: pokazano kod.</value></data>
+  <data name="AskCardTitle" xml:space="preserve"><value>Agent zadaje Ci pytanie</value></data>
+  <data name="AskCardReminder" xml:space="preserve"><value>Twoja odpowiedź trafia do modelu, w tej rozmowie.</value></data>
+  <data name="AskCardAnswerLabel" xml:space="preserve"><value>Twoja odpowiedź</value></data>
+  <data name="AskCardOtherLabel" xml:space="preserve"><value>Albo odpowiedz własnymi słowami</value></data>
+  <data name="AskCardSend" xml:space="preserve"><value>Odpowiedz</value></data>
+  <data name="AskCardSkip" xml:space="preserve"><value>Niech agent zdecyduje</value></data>
+  <data name="AskCardSkipTip" xml:space="preserve"><value>Agent kontynuuje bez Twojej odpowiedzi i mówi, co założył.</value></data>
+  <data name="AskCardEmpty" xml:space="preserve"><value>Wybierz odpowiedź lub ją wpisz.</value></data>
+  <data name="AskReceiptAnswered" xml:space="preserve"><value>Odpowiedziałeś agentowi</value></data>
+  <data name="AskReceiptSkipped" xml:space="preserve"><value>Pozwoliłeś agentowi zdecydować</value></data>
 </root>

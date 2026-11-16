@@ -30,14 +30,16 @@ internal static class ToolArgs
     /// the WHOLE suite instead of the tests asked for.
     /// </remarks>
     public static string? Str(this JsonElement args, string name) =>
-        args.ValueKind == JsonValueKind.Object && args.TryGetProperty(name, out var v)
-            ? v.ValueKind switch
-            {
-                JsonValueKind.String                                              => v.GetString(),
-                JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => v.GetRawText(),
-                _                                                                 => null,
-            }
-            : null;
+        args.ValueKind == JsonValueKind.Object && args.TryGetProperty(name, out var v) ? v.AsText() : null;
+
+    /// <summary>A value as text, read like <see cref="Str"/> reads an argument — an element of an array the model wrote
+    /// (a number written bare included); <c>null</c> for null, an object or an array.</summary>
+    public static string? AsText(this JsonElement v) => v.ValueKind switch
+    {
+        JsonValueKind.String                                              => v.GetString(),
+        JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => v.GetRawText(),
+        _                                                                 => null,
+    };
 
     /// <summary>A trimmed string argument, or <c>null</c> when absent or blank.</summary>
     public static string? Trimmed(this JsonElement args, string name) =>

@@ -30,6 +30,7 @@ internal sealed class PlanModeToolRegistry(IToolRegistry inner) : IToolRegistry
         inner.Definitions.Where(d => IsAllowed(d.Function.Name)).ToList();
 
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
+    public IReadOnlyList<Services.Documents.ChatImage> TakeReadImages() => inner.TakeReadImages();
 
     // A tool the mode refuses gets the mode's refusal, never "turn it back on": turned on, the mode still refuses it.
     public string? TurnedOffRefusal(string name) => IsAllowed(name) ? inner.TurnedOffRefusal(name) : null;

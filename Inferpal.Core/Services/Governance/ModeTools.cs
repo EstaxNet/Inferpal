@@ -28,12 +28,14 @@ internal sealed class ModeTools
             "read_file", "list_files", "get_active_document", "get_open_editors", "get_solution_info", "generate_project_map",
             // ⚠ get_diagnostics builds (ToolCeilings: Runs), yet stays here: modes already imported with "read" — and Copilot's
             // own "read/problems" — count on it, and narrowing them without a word would break a configuration that works.
-            "analyze_code", "read_skill_file", "get_diagnostics", "get_git_status", "get_debugger_state",
+            "analyze_code", "read_skill_file", "get_diagnostics", "get_git_status", "get_debugger_state", "git_history",
+            // Asking the person changes nothing: a mode that reads may ask.
+            "ask_question",
         ],
         ["search"]  = ["search_in_files", "search_codebase", "search_docs", "list_files"],
         ["edit"]    =
         [
-            "write_file", "apply_diff", "apply_edits", "delete_file", "rename_symbol", "insert_at_cursor", "replace_selection",
+            "write_file", "apply_diff", "apply_edits", "delete_file", "rename_symbol", "replace_in_files", "insert_at_cursor", "replace_selection",
             "restore_file", "update_memory",
         ],
         ["execute"] = ["run_command", "run_tests", "debug_control", "debug_inspect"],

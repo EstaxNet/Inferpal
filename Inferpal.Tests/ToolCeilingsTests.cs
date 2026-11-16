@@ -112,13 +112,13 @@ public sealed class ToolCeilingsTests : IDisposable
         "read_file", "list_files", "search_in_files", "search_codebase", "search_docs",
         "get_diagnostics", "get_active_document", "get_open_editors", "get_solution_info",
         "get_git_status", "get_debugger_state", "generate_project_map", "analyze_code",
-        "web_search", "fetch_url", "read_skill_file",
+        "web_search", "fetch_url", "read_skill_file", "git_history", "ask_question",
     ];
 
     private static readonly string[] OldTaskList =
     [
         "read_file", "list_files", "search_in_files", "search_codebase", "search_docs",
-        "get_git_status", "get_solution_info", "generate_project_map", "analyze_code", "read_skill_file",
+        "get_git_status", "get_solution_info", "generate_project_map", "analyze_code", "read_skill_file", "git_history", "ask_question",
     ];
 
     /// <summary>
@@ -134,7 +134,7 @@ public sealed class ToolCeilingsTests : IDisposable
         {
             Assert.Equal(OldPlanList.Contains(name), ToolCeilings.LeavesTrackedFilesAlone(name));
             Assert.Equal(OldTaskList.Contains(name), BackgroundTaskToolRegistry.IsAllowed(name));
-            Assert.Equal(name is "read_file" or "list_files" or "search_in_files", ToolCeilings.ConcurrentSafe(name));
+            Assert.Equal(name is "read_file" or "list_files" or "search_in_files" or "git_history", ToolCeilings.ConcurrentSafe(name));
             Assert.Equal(OldPlanList.Contains(name) && name != "get_diagnostics", PlanModeToolRegistry.IsAllowed(name));
         }
     }

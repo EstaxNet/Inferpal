@@ -55,6 +55,12 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     public int? WritesInRun => _fileHistory.CurrentRunWriteCount;
     public int? UnseenCallsInRun => _fileHistory.CurrentRunUnseenCalls;
 
+    /// <summary>The images <c>read_file</c> read since the loop last took them.</summary>
+    private readonly Documents.ToolImageInbox _readImages = new();
+
+    /// <inheritdoc/>
+    public IReadOnlyList<Documents.ChatImage> TakeReadImages() => _readImages.Take();
+
     /// <inheritdoc/>
     public void ForgetWholeRead(string path)
     {
@@ -124,7 +130,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         var smartFix = new SmartFixValidator(config, () => indexService.RootDir, approval, codeConsent);
         var setDiff  = (DiffInfo? d) => { _pendingDiff = d; };
 
-        Register(new ReadFileTool(() => indexService.RootDir, overlay, history, approval));
+        Register(new ReadFileTool(() => indexService.RootDir, overlay, history, approval, _readImages));
         Register(new WriteFileTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay));
         Register(new ListFilesTool(() => indexService.RootDir));
         Register(new SearchInFilesTool(() => indexService.RootDir, overlay));
@@ -140,6 +146,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new GetSolutionInfoTool(editor, () => indexService.RootDir));
         Register(new GetOpenEditorsTool(editor));
         Register(new GetGitStatusTool(editor, () => indexService.RootDir));
+        Register(new GitHistoryTool(() => indexService.RootDir));
         Register(new RunTestsTool(() => indexService.RootDir, codeConsent));
         Register(new InsertAtCursorTool(editor, approval, _fileHistory));
         Register(new ReplaceSelectionTool(editor, approval, _fileHistory));
@@ -148,6 +155,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // facade to keep the per-request tool list small (the three strategies live inside it).
         Register(new AnalyzeCodeTool(() => indexService.RootDir));
         Register(new RenameSymbolTool(approval, history, () => indexService.RootDir, overlay));
+        Register(new ReplaceInFilesTool(approval, history, () => indexService.RootDir, overlay));
+        Register(new AskQuestionTool(approval));
         // A query is embedded by the server its index was: the embedding server's, when code search runs elsewhere.
         Register(new SemanticSearchTool(indexService, () => indexService.SearchClient, config));
         Register(new SearchDocsTool(docsIndex, () => docsIndex.SearchClient, config));

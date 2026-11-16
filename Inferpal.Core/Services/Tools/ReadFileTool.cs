@@ -10,15 +10,20 @@ internal class ReadFileTool : ITool
     private readonly Editor.OpenDocumentOverlay? _overlay;
     private readonly FileHistoryService? _history;
     private readonly IApprovalService? _approval;
+    private readonly Documents.ToolImageInbox? _images;
 
     /// <param name="overlay">Open-document mirror consulted before disk so unsaved buffer
     /// content wins; null when the editor feeds no overlay (VS in-proc today).</param>
     /// <param name="history">Told which files the model has read in the current run — what lets
     /// write_file replace an existing file (<see cref="FileTarget.UnreadRefusal"/>).</param>
     /// <param name="approval">Asks the person for a protected PDF's password, when a card can be drawn.</param>
+    /// <param name="images">Where an image read is left for the loop to show the model; <c>null</c>: images are named, not
+    /// read.</param>
     public ReadFileTool(Func<string?> getWorkspaceRoot, Editor.OpenDocumentOverlay? overlay = null,
-                        FileHistoryService? history = null, IApprovalService? approval = null)
+                        FileHistoryService? history = null, IApprovalService? approval = null,
+                        Documents.ToolImageInbox? images = null)
     {
+        _images           = images;
         _approval         = approval;
         _getWorkspaceRoot = getWorkspaceRoot;
         _overlay          = overlay;
@@ -29,7 +34,7 @@ internal class ReadFileTool : ITool
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
-        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg); a notebook, an RTF or an .eml is read as the text file it is. A file too long for one answer comes back in pages of whole " +
+        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
         "lines, and the answer says which start_line to pass to read on.";
     public object Parameters => new
     {
@@ -50,6 +55,19 @@ internal class ReadFileTool : ITool
         PathSanitizer.AssertUnderRoot(path, root);
 
         var target = Classify(path, _overlay);
+        // An image is seen, not read as text: the loop puts it in front of the model after the batch (ToolImages), or says
+        // the model does not read images. Checked by its size before a byte is loaded; then by the attachments' one reader.
+        if (target is Target.File or Target.Binary && _images is not null && Documents.ChatImages.Handles(path))
+        {
+            var name = Path.GetFileName(path);
+            if (new FileInfo(path).Length > Documents.ChatImages.MaxBytes)
+                return $"'{name}' is an image larger than {Documents.ChatImages.MaxBytes / (1024 * 1024)} MB: it is not shown.";
+            var read = Documents.ChatImages.Read(await File.ReadAllBytesAsync(path, ct), name);
+            if (read.Image is not { } image) return $"'{name}' is an image that is not shown: {read.Refusal}";
+            _images.Put(image);
+            var size = image.Width > 0 ? $", {image.Width}×{image.Height}" : string.Empty;
+            return $"'{name}' is an image ({image.MediaType}{size}); it follows this result." + (read.Note is { } n ? $" {n}" : string.Empty);
+        }
         // ⚠ A PDF or DOCX reads as its extracted text — checked before the binary test, which a PDF whose first bytes hold
         // no NUL passes, and which then decoded it as noise. Paged like any file, at the line numbers search_in_files
         // reports. Not noted as read: write_file must never take a document for a text it may rewrite whole.

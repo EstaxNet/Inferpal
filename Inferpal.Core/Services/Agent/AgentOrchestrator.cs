@@ -363,6 +363,9 @@ internal sealed class AgentOrchestrator
         foreach (var m in messages)
         {
             chars += m.Content?.Length ?? 0;
+            // An image weighs what its pixels do, not its base64: four characters a token, like the text around it.
+            if (m.Images is { Count: > 0 } images)
+                foreach (var image in images) chars += Documents.ChatImages.EstimatedTokens(image) * 4;
             if (m.ToolCalls is { Count: > 0 } calls)
                 foreach (var c in calls)
                     chars += c.Function.Name.Length + c.Function.Arguments.GetRawText().Length;
@@ -399,6 +402,17 @@ internal sealed class AgentOrchestrator
         // up to the last batch. ⚠ A tail kept whole whatever its size left the answer nothing: two 8 000-character reads
         // in it put every request of a run past an 8K window, and at 16K the model answered in a few hundred tokens.
         var lastBatch = LastBatchStart(messages, anchorCount);
+        // An image a tool read weighs up to two thousand tokens: taken out first, oldest first, before any text result —
+        // eliding text around it would leave the run over the window and the image still there.
+        for (int i = anchorCount; i < lastBatch; i++)
+        {
+            if (Weighed() <= target) return shrunk;
+            var m = messages[i];
+            if (!m.IsScaffolding || m.Images is not { Count: > 0 } images) continue;
+            const string Gone = "\n[The image(s) above were shown earlier and taken out to stay within the context window: read the file again to see it.]";
+            chars -= images.Sum(image => Documents.ChatImages.EstimatedTokens(image) * 4) - Gone.Length;
+            messages[i] = m with { Images = null, Content = m.Content + Gone };
+        }
         for (int i = anchorCount; i < lastBatch; i++)
         {
             if (Weighed() <= target) return shrunk;
@@ -1112,6 +1126,9 @@ internal sealed class AgentOrchestrator
         // never touches messages below this index, so the model keeps its task framing and plan even
         // when the accumulating tool results would otherwise push the request past num_ctx and make
         // Ollama silently truncate from the front.
+        // Images an earlier run read and never sent (stopped, failed, or wrapped by a registry that did not take them) are
+        // not this run's: left in the inbox they would reach this model labelled as the files it asked to read.
+        _ = tools.TakeReadImages();
         var anchorCount = messages.Count;
 
         // ── Phase 2: Act-Observe loop ────────────────────────────────────────
@@ -1308,6 +1325,10 @@ internal sealed class AgentOrchestrator
                         : result;
                     messages.Add(new ChatMessageDto("tool", CapForContext(forContext)));
                 }
+
+                // After every result of the batch: a user message between two tool results would break the call/result pairing.
+                await Documents.ToolImages.AppendAsync(messages, tools.TakeReadImages(), model,
+                    c => _client is IInferenceProvider provider ? provider.SeesImagesAsync(model, c) : Task.FromResult<bool?>(null), ct);
 
                 AgentLoopPolicy.Forgive(sigCounts, calls, iterExecs.Select(e => e.Output));
 

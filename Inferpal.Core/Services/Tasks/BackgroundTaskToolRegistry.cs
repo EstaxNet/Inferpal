@@ -97,6 +97,7 @@ internal sealed class BackgroundTaskToolRegistry(
         inner.Definitions.Where(d => Permits(d.Function.Name)).ToList();
 
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
+    public IReadOnlyList<Services.Documents.ChatImage> TakeReadImages() => inner.TakeReadImages();
 
     // A tool a task may not call gets the task's refusal, never "turn it back on": turned on, it is still refused.
     public string? TurnedOffRefusal(string name) => Permits(name) ? inner.TurnedOffRefusal(name) : null;

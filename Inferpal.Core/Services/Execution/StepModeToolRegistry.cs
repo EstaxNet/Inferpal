@@ -27,6 +27,7 @@ internal sealed class StepModeToolRegistry(IToolRegistry inner, Func<Cancellatio
     public int? WritesInRun => inner.WritesInRun;
     public int? UnseenCallsInRun => inner.UnseenCallsInRun;
     public void ForgetWholeRead(string path) => inner.ForgetWholeRead(path);
+    public IReadOnlyList<Documents.ChatImage> TakeReadImages() => inner.TakeReadImages();
 
     public IEnumerable<string> CallableNames => inner.CallableNames;
 
