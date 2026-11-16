@@ -1553,7 +1553,9 @@ public partial class HostServerTests
             Assert.Null(read.Refusal);
             var none = await Read(scan);
             Assert.Null(none.Text);
-            Assert.Equal(Strings.AttachDocumentNoText("scan.pdf"), none.Refusal);
+            // The OCR of this system ran (pari 96): it found nothing in it, or this machine has none (Linux without tesseract).
+            Assert.True(none.Refusal == Strings.AttachDocumentNoText("scan.pdf") || none.Refusal!.StartsWith("scan.pdf", StringComparison.Ordinal),
+                        $"refusal: {none.Refusal}");
             Assert.Contains("no text", none.ForModel, StringComparison.Ordinal);
             var binary = await Read(image);
             Assert.Equal(Strings.AttachBinaryFile("logo.png"), binary.Refusal);

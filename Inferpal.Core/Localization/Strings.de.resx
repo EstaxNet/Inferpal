@@ -108,6 +108,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>Geprüft: die gestagten Änderungen unter `{0}` (die übrigen, sobald dort nichts gestagt ist).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} ist eine Binärdatei: Sie hat keinen Text zum Lesen.</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} enthält keinen lesbaren Text: Es ist ein Scan oder enthält nur Bilder.</value></data>
+  <data name="AttachScanNotRead" xml:space="preserve"><value>{0} ist ein Scan und konnte auf diesem Rechner nicht gelesen werden: {1}.</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} lässt sich nur mit einem Kennwort öffnen: Sein Text kann nicht gelesen werden.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} konnte nicht gelesen werden: Die Datei ist beschädigt oder in einer Form, die Inferpal nicht liest.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} brauchte zu lange zum Lesen (mehr als {1} s): Sein Text wird nicht angehängt.</value></data>

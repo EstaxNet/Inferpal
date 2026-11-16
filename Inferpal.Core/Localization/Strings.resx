@@ -112,6 +112,7 @@ This cannot be undone.</value></data>
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>Reviewed: the staged changes under `{0}` (the unstaged ones are reviewed once nothing there is staged).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} is a binary file: it has no text to read.</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} has no text to read: it is a scan, or holds only images.</value></data>
+  <data name="AttachScanNotRead" xml:space="preserve"><value>{0} is a scan, and it could not be read on this machine: {1}.</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} opens only with a password: its text cannot be read.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} could not be read: it is damaged, or in a form Inferpal does not read.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} took too long to read (more than {1} s): its text is not attached.</value></data>

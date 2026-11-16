@@ -299,7 +299,9 @@ public sealed class DocumentTextTests : IDisposable
 
         var scan = Path.Combine(_dir, "scan.pdf");
         File.WriteAllBytes(scan, Pdf("q 100 0 0 100 0 0 cm Q"));
-        Assert.Equal("'scan.pdf' gives no text to read: it holds no text: a scan, or images.", await ReadTool(scan));
+        // Every system reads a scan by its OCR (pari 96): here one that finds nothing, the same on every system.
+        Inferpal.Services.Documents.PdfOcr.ForTests.Value = _ => new(Inferpal.Services.Documents.OcrStatus.Empty, "", "OCR", 1, 1);
+        Assert.Equal("'scan.pdf' is a scan, and the OCR (OCR) found no text in it: a photo, a drawing or a blank page.", await ReadTool(scan));
     }
 
     /// <summary>A match in a document is reported at the line read_file shows it on; a document without text is counted,
@@ -440,7 +442,12 @@ public sealed class DocumentTextTests : IDisposable
 
         var scan = Path.Combine(_dir, "scan.pdf");
         File.WriteAllBytes(scan, Pdf("q 100 0 0 100 0 0 cm Q"));
-        Assert.Equal(Strings.AttachDocumentNoText("scan.pdf"), MentionController.BinaryRefusal(scan));
+        // A scan goes to the OCR (every system); one in which it finds nothing is refused as textless — attaching checks
+        // through BinaryRefusalAsync, which runs it.
+        Inferpal.Services.Documents.PdfOcr.ForTests.Value = _ => new(Inferpal.Services.Documents.OcrStatus.Empty, "", "OCR", 1, 1);
+        Assert.Null(MentionController.BinaryRefusal(scan));   // not run yet: the synchronous check leaves it to the OCR
+        Assert.Equal(Strings.AttachDocumentNoText("scan.pdf"), await MentionController.BinaryRefusalAsync(scan, CancellationToken.None));
+        Assert.Equal(Strings.AttachDocumentNoText("scan.pdf"), MentionController.BinaryRefusal(scan));   // known now
 
         var image = Path.Combine(_dir, "logo.png");
         File.WriteAllBytes(image, [0x89, 0x50, 0x4E, 0x47, 0x00, 0x00, 0x01]);

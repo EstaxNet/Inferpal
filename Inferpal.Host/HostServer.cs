@@ -1550,7 +1550,7 @@ internal sealed partial class HostServer : IDisposable
                 excluded.ForModel(Services.Governance.ContentExclusions.Shown(path, root)));
         // A protected PDF asks the person for its password first, on a card in the chat.
         await MentionController.OpenIfProtectedAsync(path, Session().Approval, ct);
-        if (MentionController.BinaryRefusal(path) is { } refused)
+        if (await MentionController.BinaryRefusalAsync(path, ct) is { } refused)
             return new AttachReadResult(null, refused,
                 "(not attached: " + (Services.Documents.DocumentText.Handles(path) && Services.Documents.AttachedDocuments.WhyNoText(path) is { } why
                     ? why : "a binary file: it has no text") + ")");

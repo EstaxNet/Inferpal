@@ -495,6 +495,26 @@ internal static class MentionController
             await approval.AskForDocumentPasswordAsync(filePath, attached: true, ct).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// <see cref="BinaryRefusal"/>, and for a scan, the OCR run — off the editor's thread — and its answer: attached when it
+    /// read text, refused otherwise, with why (no OCR on this machine, and how to get one; nothing found in it).
+    /// </summary>
+    /// <remarks>⚠ Every attachment path goes through here, never <see cref="BinaryRefusal"/> alone: a scan the OCR could not
+    /// read would be attached as nothing, a chip over an empty attachment.</remarks>
+    public static async Task<string?> BinaryRefusalAsync(string filePath, CancellationToken ct)
+    {
+        if (BinaryRefusal(filePath) is { } refused) return refused;
+        if (!Documents.DocumentText.Handles(filePath) || !Documents.AttachedDocuments.IsScan(filePath)) return null;
+        var reading = await Task.Run(() => Documents.AttachedDocuments.Scan(filePath, ct), ct).ConfigureAwait(false);
+        var name = Path.GetFileName(filePath);
+        return reading.Status switch
+        {
+            Documents.OcrStatus.Read  => null,
+            Documents.OcrStatus.Empty => Strings.AttachDocumentNoText(name),
+            _                         => Strings.AttachScanNotRead(name, reading.Why ?? string.Empty),
+        };
+    }
+
     /// <summary>Why an attached PDF or DOCX gives no text — a scan, a password, too large —, or <c>null</c> when it gives some.</summary>
     internal static string? DocumentRefusal(string filePath)
     {
@@ -502,7 +522,10 @@ internal static class MentionController
         return Documents.AttachedDocuments.Read(filePath).Problem switch
         {
             Documents.DocumentProblem.None      => null,
-            Documents.DocumentProblem.NoText    => Strings.AttachDocumentNoText(name),
+            // A scan is for the OCR (BinaryRefusalAsync), unless it already found nothing in it.
+            Documents.DocumentProblem.NoText    => filePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
+                                                   && Documents.AttachedDocuments.ScanKnown(filePath) is not { Status: Documents.OcrStatus.Empty }
+                                                       ? null : Strings.AttachDocumentNoText(name),
             Documents.DocumentProblem.Encrypted => Strings.AttachDocumentLocked(name),
             Documents.DocumentProblem.TooSlow   => Strings.AttachDocumentTooSlow(name, (int)Documents.DocumentText.Deadline.TotalSeconds),
             Documents.DocumentProblem.TooLarge  => Strings.AttachDocumentTooLarge(name, (int)(Documents.DocumentText.MaxBytes / (1024 * 1024))),
@@ -531,7 +554,7 @@ internal static class MentionController
     /// sized by <see cref="Documents.DocumentText.MaxBytes"/>, not by the text limit.</remarks>
     public static async Task<string?> FileMentionTextAsync(string path, Editor.OpenDocumentOverlay? overlay, CancellationToken ct)
     {
-        if (Documents.DocumentText.Handles(path)) return await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct), ct).ConfigureAwait(false);
+        if (Documents.DocumentText.Handles(path)) return await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct, ocr: true), ct).ConfigureAwait(false);
         if (overlay is not null && overlay.TryGetUnsaved(path, out var buffered))
             return buffered.Length > MaxAttachedFileSize ? null : buffered;
         if (new FileInfo(path).Length > MaxAttachedFileSize) return null;

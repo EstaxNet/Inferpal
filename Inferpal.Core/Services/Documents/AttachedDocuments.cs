@@ -62,6 +62,9 @@ internal static class AttachedDocuments
         return true;
     }
 
+    /// <summary>The password the person typed for <paramref name="path"/> in this process, for a reader of the same file.</summary>
+    internal static string? PasswordFor(string path) => Passwords.GetValueOrDefault(path);
+
     /// <summary>The password typed for <paramref name="path"/> is known in this process.</summary>
     public static bool OpenedWithPassword(string path) => Passwords.ContainsKey(path);
 
@@ -70,11 +73,15 @@ internal static class AttachedDocuments
     /// it lacks — pages that hold only images are not "empty" to the person who sees them —, then the text; null when it
     /// gives none (<see cref="WhyNoText"/> says why).
     /// </summary>
-    public static string? ForModel(string path, CancellationToken ct = default)
+    /// <param name="ocr">A PDF that holds no text (a scan) is read by this machine's OCR (<see cref="PdfOcr"/>) — asked by the
+    /// reads of ONE document (read_file, an attachment), never by a search or the system prompt, which read many and often.
+    /// A scan no OCR read gives <c>null</c>: <see cref="Scan"/> says why.</param>
+    public static string? ForModel(string path, CancellationToken ct = default, bool ocr = false)
     {
         var result = Read(path, ct);
-        if (result.Problem != DocumentProblem.None) return null;
         var name = Path.GetFileName(path);
+        if (ocr && IsScan(path, result)) return Scan(path, ct) is { Status: OcrStatus.Read } reading ? ScanText(name, reading) : null;
+        if (result.Problem != DocumentProblem.None) return null;
         var pages = result.Pages == 1 ? "1 page" : string.Create(CultureInfo.InvariantCulture, $"{result.Pages} pages");
         var header = result.Pages == 0
             ? $"[Text extracted from {name}: formatting, images and comments are not here.]"
@@ -90,11 +97,63 @@ internal static class AttachedDocuments
         return header + "\n\n" + result.Text;
     }
 
+    /// <summary>A PDF that holds no text: a scan, for an OCR to read (on every system: <see cref="PdfOcr"/>).</summary>
+    public static bool IsScan(string path) => IsScan(path, Read(path));
+
+    private static bool IsScan(string path, DocumentExtraction result) =>
+        result.Problem == DocumentProblem.NoText && path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>What the OCR read of a scan, already: <c>null</c> when it has not run on the file as it is now (or its last run
+    /// failed, or found no OCR: those are tried again).</summary>
+    public static OcrReading? ScanKnown(string path)
+    {
+        var info = new FileInfo(path);
+        return info.Exists && OcrKnown.TryGetValue(path, out var known) && known.Written == info.LastWriteTimeUtc && known.Length == info.Length
+            ? known.Reading : null;
+    }
+
+    // What the OCR read of a file — text, or none at all — kept until the file changes: a few seconds a page, never paid
+    // twice. A failure or a missing OCR is never kept: the next read tries again (the person may install one).
+    private static readonly ConcurrentDictionary<string, (DateTime Written, long Length, OcrReading Reading)> OcrKnown = new(PathComparer.Default);
+    private static readonly ConcurrentDictionary<string, (DateTime Written, long Length, string Why)> OcrNotRead = new(PathComparer.Default);
+
+    /// <summary>The scan at <paramref name="path"/> read by this machine's OCR, or what was read of it already. ⚠ Seconds a
+    /// page: from a worker, never an editor's thread.</summary>
+    public static OcrReading Scan(string path, CancellationToken ct)
+    {
+        if (ScanKnown(path) is { } known) return known;
+        // The file's stamp before the OCR: a file saved while it is read keeps the old stamp, so its new text is read again.
+        var info = new FileInfo(path);
+        var (written, length) = (info.LastWriteTimeUtc, info.Length);
+        var reading = PdfOcr.Read(path, Passwords.GetValueOrDefault(path), ct);
+        if (OcrKnown.Count > 16 || OcrNotRead.Count > 16) { OcrKnown.Clear(); OcrNotRead.Clear(); }
+        // Why it was not read, for the model's line about it (WhyNoText), under the same stamp.
+        if (reading.Why is { } why) OcrNotRead[path] = (written, length, why);
+        else OcrNotRead.TryRemove(path, out _);
+        if (reading.Status is OcrStatus.Read or OcrStatus.Empty || reading.Lasting) OcrKnown[path] = (written, length, reading);
+        return reading;
+    }
+
+    /// <summary>The scan's text as the model reads it: which OCR read it, that it can be wrong, and how far it went.</summary>
+    public static string ScanText(string name, OcrReading reading)
+    {
+        var header = string.Create(CultureInfo.InvariantCulture,
+            $"[Text read by OCR ({reading.Engine}) from {name}, a scan: words and figures can be misread — check what matters against the document; tables are rebuilt row by row, cells between \"|\".]");
+        if (reading.PagesRead < reading.Pages)
+            header += string.Create(CultureInfo.InvariantCulture, $"\n[Pages 1 to {reading.PagesRead} of {reading.Pages} read: the rest is not here.]");
+        if (reading.Skipped is { } skipped)
+            header += $"\n[Not read, their text is not here — {skipped}.]";
+        return header + "\n\n" + reading.Text;
+    }
+
     /// <summary>Why the document gives no text, in English, for the model; null when it gives some.</summary>
     public static string? WhyNoText(string path) => Read(path).Problem switch
     {
         DocumentProblem.None => null,
-        DocumentProblem.NoText => "it holds no text: a scan, or images",
+        DocumentProblem.NoText => ScanKnown(path) is { Status: OcrStatus.Empty } ? "it holds no text: a scan in which the OCR found none"
+                                  : OcrNotRead.TryGetValue(path, out var why) && File.GetLastWriteTimeUtc(path) == why.Written
+                                      ? $"it holds no text: a scan the OCR could not read ({why.Why})"
+                                  : "it holds no text: a scan, or images",
         DocumentProblem.Encrypted => "it opens only with a password",
         DocumentProblem.TooSlow => "it took too long to read",
         DocumentProblem.TooLarge => string.Create(CultureInfo.InvariantCulture, $"it is larger than {DocumentText.MaxBytes / (1024 * 1024)} MB"),

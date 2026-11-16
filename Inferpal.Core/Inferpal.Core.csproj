@@ -61,6 +61,9 @@
     <PackageReference Include="StbImageSharp" Version="2.30.16" />
     <PackageReference Include="StbImageResizeSharp" Version="0.97.1" />
     <PackageReference Include="StbImageWriteSharp" Version="1.16.7" />
+    <!-- OCR of a scanned PDF on every system (pari 96): PP-OCRv6 in pure C#, its tiny model embedded (6 MB), Apache-2.0. -->
+    <PackageReference Include="Sdcb.SimdPaddleOCR" Version="2.0.0" />
+    <PackageReference Include="Sdcb.SimdPaddleOCR.Models.ChineseV6Tiny" Version="1.0.0" />
     <!-- DPAPI for the MCP OAuth token store (Windows-only at runtime; the call sites
          are already guarded). -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />

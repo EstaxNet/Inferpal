@@ -928,7 +928,7 @@ internal sealed class AcpSession : IAsyncDisposable
                     // A document (PDF, DOCX…) is read under the documents' own limit, not the text one, and its refusal
                     // tells the model why it gave no text (a scan, a password) rather than "a binary file".
                     var document = Services.Documents.DocumentText.Handles(path!);
-                    if (MentionController.BinaryRefusal(path!) is { } binary)
+                    if (await MentionController.BinaryRefusalAsync(path!, CancellationToken.None) is { } binary)
                         (notAttached, reason) = (binary, document && Services.Documents.AttachedDocuments.WhyNoText(path!) is { } noText ? noText : "a binary file");
                     else if ((body = !document && new FileInfo(path!).Length > MentionController.MaxAttachedFileSize ? null
                                  : await EditorBuffer(new PathNote(path), CancellationToken.None) is { } buffered

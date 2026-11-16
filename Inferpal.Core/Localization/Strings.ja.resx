@@ -108,6 +108,7 @@
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>レビュー対象: `{0}` の下のステージ済みの変更 (そこに何もステージされていなければ、それ以外の変更)。</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} はバイナリ ファイルです。読み取るテキストがありません。</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} には読み取れるテキストがありません。スキャンか、画像だけの文書です。</value></data>
+  <data name="AttachScanNotRead" xml:space="preserve"><value>{0} はスキャンで、このマシンでは読み取れませんでした: {1}。</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} はパスワードがないと開けないため、テキストを読み取れません。</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} を読み取れませんでした。破損しているか、Inferpal が読み取れない形式です。</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} の読み取りに時間がかかりすぎました ({1} 秒超)。テキストは添付されません。</value></data>

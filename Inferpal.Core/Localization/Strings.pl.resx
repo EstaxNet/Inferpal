@@ -108,6 +108,7 @@ Tej operacji nie można cofnąć.</value></data>
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>Przejrzano: zmiany w poczekalni w `{0}` (pozostałe, gdy nic tam nie jest w poczekalni).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} jest plikiem binarnym: nie ma tekstu do odczytania.</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} nie zawiera tekstu do odczytania: to skan albo same obrazy.</value></data>
+  <data name="AttachScanNotRead" xml:space="preserve"><value>{0} to skan i nie udało się go odczytać na tym komputerze: {1}.</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} otwiera się tylko z hasłem: nie można odczytać jego tekstu.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>Nie udało się odczytać {0}: plik jest uszkodzony lub w formacie, którego Inferpal nie czyta.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>Odczyt {0} trwał zbyt długo (ponad {1} s): jego tekst nie został dołączony.</value></data>

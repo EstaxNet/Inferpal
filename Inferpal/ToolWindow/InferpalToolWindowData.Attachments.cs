@@ -238,7 +238,7 @@ internal partial class InferpalToolWindowData
             // DOCX without text — each said; a document's text extracted. A protected PDF asks for its password first.
             if (MentionController.FileRefusal(filePath, _indexService.RootDir) is null)
                 await MentionController.OpenIfProtectedAsync(filePath, _tools.Approval, ct);
-            if ((MentionController.FileRefusal(filePath, _indexService.RootDir) ?? MentionController.BinaryRefusal(filePath)) is { } refused)
+            if ((MentionController.FileRefusal(filePath, _indexService.RootDir) ?? await MentionController.BinaryRefusalAsync(filePath, ct)) is { } refused)
             {
                 await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(refused)));
                 return;

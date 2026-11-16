@@ -91,6 +91,16 @@ internal class ReadFileTool : ITool
                          + "it; do not ask the user for the password.";
                 extracted = await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct), ct);
             }
+            // A scan: this machine's OCR (every system, PdfOcr) — run once; when none can read it, the pages' pictures go to
+            // a model that sees (pari 90), and a model that does not is told why and how to get an OCR.
+            if (extracted is null && Documents.AttachedDocuments.IsScan(path))
+            {
+                var reading = await Task.Run(() => Documents.AttachedDocuments.Scan(path, ct), ct);
+                if (reading.Status == Documents.OcrStatus.Read) extracted = Documents.AttachedDocuments.ScanText(name, reading);
+                else if (reading.Status == Documents.OcrStatus.Empty)
+                    return $"'{name}' is a scan, and the OCR ({reading.Engine}) found no text in it: a photo, a drawing or a blank page.";
+                else return await ScanPicturesAsync(path, name, reading, ct);
+            }
             if (extracted is null)
                 return $"'{name}' gives no text to read: {Documents.AttachedDocuments.WhyNoText(path)}.";
             _history?.NoteOpened(path);
@@ -190,6 +200,31 @@ internal class ReadFileTool : ITool
     }
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> ArchiveCards = new(PathComparer.Default);
+
+    /// <summary>Pages of a scan shown when no OCR read it.</summary>
+    internal const int MaxScanPictures = 5;
+
+    /// <summary>
+    /// A scan no OCR of this machine could read: its first pages' pictures (taken from the PDF, no renderer) go to a model
+    /// that sees, after this result; the answer says why there is no OCR and how to get one.
+    /// </summary>
+    private async Task<string> ScanPicturesAsync(string path, string name, Documents.OcrReading reading, CancellationToken ct)
+    {
+        var why = $"'{name}' is a scan, and the OCR could not read it: {reading.Why ?? "the reading failed"}.";
+        if (_images is null) return why;
+        var extracted = await Task.Run(() => Documents.PdfPageImages.Extract(File.ReadAllBytes(path), MaxScanPictures, ct,
+                                                                            Documents.AttachedDocuments.PasswordFor(path)), ct);
+        var sent = 0;
+        foreach (var picture in extracted.Images)
+            if (Documents.ChatImages.Read(picture.Bytes, $"{name} page {picture.Page}{picture.Extension}").Image is { } image)
+            {
+                _images.Put(image);
+                sent++;
+            }
+        if (sent == 0)
+            return why;
+        return why + $" The pictures of its first {sent} page(s){(extracted.Pages > sent ? $" of {extracted.Pages}" : "")} follow this result, to read them as images.";
+    }
 
     /// <summary>What a path holds, as this tool reads it.</summary>
     internal enum Target { File, Unsaved, Directory, Missing, Binary }

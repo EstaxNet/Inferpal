@@ -39,7 +39,7 @@ internal static class ExplorerExplain
 
             // Excluded by the workspace's ignore files: the notice @file gives, never the content.
             if (MentionController.FileRefusal(path, rootDir) is { } excluded) return Refused(excluded);
-            if (MentionController.BinaryRefusal(path) is { } binary) return Refused(binary);
+            if (await MentionController.BinaryRefusalAsync(path, ct) is { } binary) return Refused(binary);
             if (overlay is not null) await overlay.RefreshAsync(ct, [path]);
             if (await MentionController.FileMentionTextAsync(path, overlay, ct) is not { } text) return Refused(Strings.AttachFileTooLarge);
             var fileName = Path.GetFileName(path);
