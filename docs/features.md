@@ -9,6 +9,12 @@ screens, the diagrams behind it, and something to try in each section. Everythin
   <br><sub>A real run on a local model, sped up.</sub>
 </p>
 
+> [!NOTE]
+> **New in 1.9** — attach a PDF, a Word, Excel or PowerPoint file and the model reads its text; paste a screenshot
+> and a model that sees images reads it; ask for a diagram and it is drawn in the chat. And a model server behind a
+> reverse proxy is set up from the settings. [See them](#documents-images-and-diagrams) ·
+> [Reverse proxy](remote-inference.md#behind-a-reverse-proxy)
+
 Read it in order the first time: each part builds on the one before. After that, jump straight to what you need.
 
 - **[1. Start here](#1-start-here)** — connect a model, talk to it, hand it a task

@@ -26,7 +26,7 @@ Windows, Linux and Apple Silicon, with the backend bundled (no .NET to install) 
 
 Open the chat from the **Inferpal** icon in the activity bar. Every change waits for your approval.
 
-## Show it what you are looking at
+## New in 1.9: show it what you are looking at
 
 The spec is a PDF, the test data lives in a spreadsheet, the error is on a screenshot. Hand them over as they are.
 

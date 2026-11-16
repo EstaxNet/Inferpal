@@ -41,6 +41,43 @@
 
 ---
 
+## New in 1.9: show it what you are looking at
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/documents-dark.png">
+        <img src="docs/assets/features/documents-light.png" alt="A question with a PDF spec and an Excel workbook attached: the answer quotes page 7 of the spec and two rows of the workbook, in a table" width="400">
+      </picture>
+      <br><sub>A PDF and a workbook, read as text on your machine.</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/diagram-vscode-dark.png">
+        <img src="docs/assets/features/diagram-vscode-light.png" alt="A state diagram of an order drawn in the chat, under a bar with Diagram, Code, copy and Open larger" width="400">
+      </picture>
+      <br><sub>A Mermaid diagram drawn in the chat, its code one click away.</sub>
+    </td>
+  </tr>
+</table>
+
+The spec is a PDF, the test data lives in a spreadsheet, the error is on a screenshot. Hand them over as they are; everything is read on your machine.
+
+| You have | Do | The model gets |
+|---|---|---|
+| A PDF, a Word or Excel file, a deck | `@file`, Browse, or drop it on the chat | Its text: each sheet under its name, each slide with its notes |
+| A screenshot of an error or a mock-up | Paste it (Ctrl+V), or drop it on the chat | The image itself, for a model that sees images (Qwen3.8, Ornith, Gemma 4) |
+| A file protected by a password | Attach it as usual | A card asks you for the password; the model gets the text, never the password |
+| A question about a flow or a design | Ask for a diagram | A Mermaid diagram drawn in the chat, its code one click away |
+
+Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks and e-mails
+(`.eml`, `.msg`) are read too, by you and by the agent's `read_file` and `search_in_files`. When the model that will
+answer does not see images, a card offers one of your server that does. In Visual Studio, VS Code and ACP editors.
+[How each format is read](docs/mentions.md)
+
+Also new: a model server behind a reverse proxy (Caddy, nginx, Cloudflare Access) is set up from the settings, which show what is sent and to whom. [What's in 1.9.0](https://github.com/EstaxNet/Inferpal/releases/tag/v1.9.0) · [See them in the feature tour](docs/features.md#documents-images-and-diagrams)
+
 ## One turn, from question to green build
 
 Ask in plain words, for example *"add argument validation to this method and cover it with tests"*. The agent plans,
@@ -94,22 +131,6 @@ flowchart LR
 `/tdd` runs your tests (dotnet, pytest, npm, cargo, go), patches the code and runs them again, up to five rounds. On
 the first red round a failing .NET test runs again **under the editor's debugger**, and the real exception, call
 stack and local values go into the fix.
-
-## Show it what you are looking at
-
-The spec is a PDF, the test data lives in a spreadsheet, the error is on a screenshot. Hand them over as they are; everything is read on your machine.
-
-| You have | Do | The model gets |
-|---|---|---|
-| A PDF, a Word or Excel file, a deck | `@file`, Browse, or drop it on the chat | Its text: each sheet under its name, each slide with its notes |
-| A screenshot of an error or a mock-up | Paste it (Ctrl+V), or drop it on the chat | The image itself, for a model that sees images (Qwen3.8, Ornith, Gemma 4) |
-| A file protected by a password | Attach it as usual | A card asks you for the password; the model gets the text, never the password |
-| A question about a flow or a design | Ask for a diagram | A Mermaid diagram drawn in the chat, its code one click away |
-
-Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks and e-mails
-(`.eml`, `.msg`) are read too, by you and by the agent's `read_file` and `search_in_files`. When the model that will
-answer does not see images, a card offers one of your server that does. In Visual Studio, VS Code and ACP editors.
-[How each format is read](docs/mentions.md)
 
 ## Measured, not promised
 
