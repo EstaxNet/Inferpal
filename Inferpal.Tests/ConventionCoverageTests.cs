@@ -266,7 +266,15 @@ public class ConventionCoverageTests
             "RestoreFileTool.cs",   // guarded, but the call lives in the body — checked by hand below
             "SyntaxGuard.cs",       // writes only its checkers' copy, under the temporary folder — checked below
             "QueryDataTool.cs",     // copies a database into a folder of its own and deletes that folder — checked below
+            "MsbuildPropertyTool.cs", // its evaluation log goes to a folder of its own, deleted after — checked below
         ];
+
+        // msbuild_property writes nothing but MSBuild's log, in a folder of its own under the temporary folder.
+        var msbuild = CodeOnly(ToolsSources().Single(f => Path.GetFileName(f) == "MsbuildPropertyTool.cs"));
+        Assert.Matches(@"dir\s*=\s*Directory\.CreateTempSubdirectory\(""inferpal-msbuild-""\)\.FullName", msbuild);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(msbuild, @"Directory\.Delete\("));
+        Assert.Contains("Directory.Delete(dir, recursive: true)", msbuild, StringComparison.Ordinal);
+        Assert.DoesNotMatch(@"File\.(Write|Delete|Move)\w*\(", msbuild);
 
         // query_data reads a database through a private copy: its one copy and its one delete are that folder's.
         var query = CodeOnly(ToolsSources().Single(f => Path.GetFileName(f) == "QueryDataTool.cs"));

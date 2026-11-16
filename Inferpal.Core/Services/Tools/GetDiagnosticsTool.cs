@@ -468,9 +468,40 @@ internal class GetDiagnosticsTool : ITool
         // ⚠ BELOW the report: its first line is the verdict (ReadVerdict, StoppedBeforeTheCompiler) — a section above it
         // read a green build "not built" and a restore stop as errors.
         if (VulnerablePackages(run.Combined) is { } vulnerable) body = body + "\n\n" + vulnerable;
+        // Not under a restore stop: its own remedy (restore first) is the one to follow.
+        if (!body.StartsWith(NotRestored, StringComparison.Ordinal) && SettingDecides(run.Combined) is { } setting) body = body + "\n\n" + setting;
         return run.TimedOut
             ? (Strings.DiagBuildStopped(budgetSeconds) + "\n\n" + body).Trim()
             : body;
+    }
+
+    // Errors a build SETTING decides, not the code: the language version (CS8370, CS8630, CS1617, CS8652), the output type
+    // (CS5001), the target framework (NETSDK1045, NU1202), a nullability WARNING turned into an error — named one by one: the
+    // CS86xx range also holds ordinary syntax errors (CS8641).
+    private static readonly Regex SettingError = new(
+        @"\berror (?<code>CS8370|CS8630|CS1617|CS8652|CS5001|NETSDK1045|NU1202|" +
+        @"CS86(?:0[0-4]|0[7-9]|1\d|2[0-5]|29|3[1-4]|4[3-5]|55|67|70)|CS8714|CS87(?:6[2-9]|7[0-7])|CS8819|CS882[45]|CS8847)\b",
+        RegexOptions.CultureInvariant, RegexBudget.Default);
+
+    /// <summary>
+    /// The pointer to <c>msbuild_property</c> under an error a build setting decides; <c>null</c> under any other.
+    /// </summary>
+    /// <remarks>⚠ The message names the symptom and the project file does not set the value: the model, left to it, adds a
+    /// setting to the project or rewrites the code (measured, pari 99). Below the report, whose first line is the verdict.</remarks>
+    internal static string? SettingDecides(string output)
+    {
+        var codes = SettingError.Matches(output).Select(m => m.Groups["code"].Value).Distinct().Take(4).ToList();
+        if (codes.Count == 0) return null;
+        var properties = codes.Select(c => c switch
+        {
+            "CS8370" or "CS8630" or "CS1617" or "CS8652" => "LangVersion",
+            "CS5001" => "OutputType",
+            "NETSDK1045" or "NU1202" => "TargetFramework and TargetFrameworks",
+            _ => "TreatWarningsAsErrors and WarningsAsErrors",
+        }).Distinct();
+        return $"A build setting decides {string.Join(", ", codes)}, not the code: before changing the project or the code, call " +
+               $"msbuild_property (when it is offered) for {string.Join("; ", properties)} — it names the file that sets the " +
+               "value (a Directory.Build.props, an import, or a NuGet package outside the repository).";
     }
 
     // NuGet Audit's warnings, as `dotnet build` writes them in English (the build runs with DOTNET_CLI_UI_LANGUAGE=en);

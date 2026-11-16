@@ -61,6 +61,8 @@ internal static class ToolCeilings
         // It asks the person and waits: nothing outside the conversation, never in a parallel batch.
         ["ask_question"]         = new(ToolEffect.None, AsksThePerson: true),
         ["get_diagnostics"]      = new(X, ReportsThroughABuild: true),
+        // An evaluation, nothing built or written — but the repository's InitialTargets run: asked like a build.
+        ["msbuild_property"]     = new(X, ReportsThroughABuild: true),
         ["run_tests"]            = new(X),
         ["run_command"]          = new(R | X),
         ["debug_inspect"]        = new(R | X),

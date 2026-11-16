@@ -112,7 +112,7 @@ public sealed class ToolCeilingsTests : IDisposable
         "read_file", "list_files", "search_in_files", "search_codebase", "search_docs",
         "get_diagnostics", "get_active_document", "get_open_editors", "get_solution_info",
         "get_git_status", "get_debugger_state", "generate_project_map", "analyze_code",
-        "web_search", "fetch_url", "read_skill_file", "git_history", "ask_question", "query_data",
+        "web_search", "fetch_url", "read_skill_file", "git_history", "ask_question", "query_data", "msbuild_property",
     ];
 
     private static readonly string[] OldTaskList =
@@ -135,7 +135,7 @@ public sealed class ToolCeilingsTests : IDisposable
             Assert.Equal(OldPlanList.Contains(name), ToolCeilings.LeavesTrackedFilesAlone(name));
             Assert.Equal(OldTaskList.Contains(name), BackgroundTaskToolRegistry.IsAllowed(name));
             Assert.Equal(name is "read_file" or "list_files" or "search_in_files" or "git_history", ToolCeilings.ConcurrentSafe(name));
-            Assert.Equal(OldPlanList.Contains(name) && name != "get_diagnostics", PlanModeToolRegistry.IsAllowed(name));
+            Assert.Equal(OldPlanList.Contains(name) && name is not ("get_diagnostics" or "msbuild_property"), PlanModeToolRegistry.IsAllowed(name));
         }
     }
 
@@ -163,7 +163,7 @@ public sealed class ToolCeilingsTests : IDisposable
     [Fact]
     public void AnImportedModesReadFamily_HoldsReadsOnly_ButTheOneNamedException()
     {
-        foreach (var name in Inferpal.Services.Governance.ModeTools.Families["read"].Where(n => n != "get_diagnostics"))
+        foreach (var name in Inferpal.Services.Governance.ModeTools.Families["read"].Where(n => n is not ("get_diagnostics" or "msbuild_property")))
             Assert.True((ToolCeilings.Of(name) & ~ToolEffect.Reads) == 0, $"{name} is in the read family but can {ToolCeilings.Of(name)}.");
     }
 }

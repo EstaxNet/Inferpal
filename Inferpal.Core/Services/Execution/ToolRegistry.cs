@@ -141,6 +141,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new DeleteFileTool(approval, history, () => indexService.RootDir, overlay));
         Register(new GetDiagnosticsTool(editor, () => indexService.RootDir, codeConsent));
         Register(new GetActiveDocumentTool(editor));
+        Register(new MsbuildPropertyTool(codeConsent, () => indexService.RootDir));
         Register(new FetchUrlTool(approval));
         Register(new HttpRequestTool(approval));
         Register(new WebSearchTool(approval));
