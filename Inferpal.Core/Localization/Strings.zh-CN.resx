@@ -738,6 +738,16 @@
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>允许一次</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>本次会话始终允许</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>拒绝</value></data>
+  <data name="NotebookChangeCell" xml:space="preserve"><value>更改 {1} 的单元格 {0}</value></data>
+  <data name="NotebookAddCellAfter" xml:space="preserve"><value>在 {1} 的单元格 {0} 之后添加单元格</value></data>
+  <data name="NotebookAddCellBefore" xml:space="preserve"><value>在 {1} 的单元格 {0} 之前添加单元格</value></data>
+  <data name="NotebookDeleteCell" xml:space="preserve"><value>删除 {1} 的单元格 {0}</value></data>
+  <data name="NotebookCodeCell" xml:space="preserve"><value>代码单元格</value></data>
+  <data name="NotebookMarkdownCell" xml:space="preserve"><value>Markdown 单元格</value></data>
+  <data name="NotebookRawCell" xml:space="preserve"><value>原始单元格</value></data>
+  <data name="NotebookCardNote" xml:space="preserve"><value>其他单元格、它们的输出以及笔记本的设置保持不变。</value></data>
+  <data name="NotebookLayoutRewritten" xml:space="preserve"><value>此笔记本的格式不是 Jupyter 写入的格式：此更改会以 Jupyter 的格式重写文件的每一行（其他单元格的内容不变）。</value></data>
+  <data name="NotebookOutputCleared" xml:space="preserve"><value>此单元格的旧输出已清除：它不再反映新代码。</value></data>
   <data name="ApprovalCallApp" xml:space="preserve"><value>代理想要调用你的应用</value></data>
   <data name="ApprovalCallAppWhere" xml:space="preserve"><value>{0} — 在本机</value></data>
   <data name="ApprovalAlwaysFor" xml:space="preserve"><value>始终允许 {0}</value></data>

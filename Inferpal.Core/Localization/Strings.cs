@@ -1114,6 +1114,16 @@ internal static class Strings
         Format(Get(nameof(ApprovalMessage)), toolName, details);
 
     public static string ApprovalAllowOnce   => Get(nameof(ApprovalAllowOnce));
+    public static string NotebookChangeCell(int cell, string file) => Format(Get(nameof(NotebookChangeCell)), cell, file);
+    public static string NotebookAddCellAfter(int cell, string file) => Format(Get(nameof(NotebookAddCellAfter)), cell, file);
+    public static string NotebookAddCellBefore(int cell, string file) => Format(Get(nameof(NotebookAddCellBefore)), cell, file);
+    public static string NotebookDeleteCell(int cell, string file) => Format(Get(nameof(NotebookDeleteCell)), cell, file);
+    public static string NotebookCodeCell => Get(nameof(NotebookCodeCell));
+    public static string NotebookMarkdownCell => Get(nameof(NotebookMarkdownCell));
+    public static string NotebookRawCell => Get(nameof(NotebookRawCell));
+    public static string NotebookCardNote => Get(nameof(NotebookCardNote));
+    public static string NotebookLayoutRewritten => Get(nameof(NotebookLayoutRewritten));
+    public static string NotebookOutputCleared => Get(nameof(NotebookOutputCleared));
     public static string ApprovalCallApp => Get(nameof(ApprovalCallApp));
     public static string ApprovalCallAppWhere(string where) => Format(Get(nameof(ApprovalCallAppWhere)), where);
     public static string ApprovalAlwaysFor(string where) => Format(Get(nameof(ApprovalAlwaysFor)), where);

@@ -60,7 +60,7 @@ internal static class NotebookText
 
     /// <summary>What an output shows as text: a stream, a result's plain text, an error's name and message; an image is
     /// named, never its bytes.</summary>
-    private static string Output(JsonElement output)
+    internal static string Output(JsonElement output)
     {
         var kind = output.TryGetProperty("output_type", out var k) ? k.GetString() : null;
         string shown;

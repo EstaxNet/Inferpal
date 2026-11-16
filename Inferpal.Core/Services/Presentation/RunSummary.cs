@@ -219,8 +219,17 @@ internal static class RunSummary
 
     /// <summary>The status of an HTTP answer a step got (<c>http_request</c>), as its line shows it: the code, and whether it
     /// is an error (4xx, 5xx); <c>null</c> for any other step.</summary>
-    public static (string Code, bool Failed)? HttpStatus(string toolName, string? output)
+    public static (string Code, bool Failed)? StepStatus(string toolName, string? output)
     {
+        if (toolName == "run_notebook" && output is not null)
+        {
+            var nb = System.Text.RegularExpressions.Regex.Match(output, @"^(?:Note: [^\n]*\n\n)*[^\n]*?: (\d+)/(\d+) code cells ran(?:; cell (\d+) failed)?",
+                System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+            if (!nb.Success) return null;
+            // No words on the chip (it is the person's, in any language): the cell's number, or how many ran.
+            return nb.Groups[3].Success ? ($"#{nb.Groups[3].Value}", true)
+                 : ($"{nb.Groups[1].Value}/{nb.Groups[2].Value}", nb.Groups[1].Value != nb.Groups[2].Value);
+        }
         if (toolName != "http_request" || output is null) return null;
         var m = System.Text.RegularExpressions.Regex.Match(output, @"^(?:Note: [^\n]*\n\n)*HTTP (\d{3}) ",
             System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));

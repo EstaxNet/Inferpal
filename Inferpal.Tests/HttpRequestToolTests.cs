@@ -222,13 +222,13 @@ public sealed class HttpRequestToolTests : IDisposable
     [InlineData("HTTP 500 Internal Server Error\nContent-Type: text/plain", "500", true)]
     [InlineData("Note: 'timeout_seconds' was 999; this tool accepts 1-120, so the report below uses timeout_seconds=120.\n\nHTTP 201 Created\n", "201", false)]
     public void TheStepLine_ShowsTheStatus(string output, string code, bool failed) =>
-        Assert.Equal((code, failed), Inferpal.Services.Presentation.RunSummary.HttpStatus("http_request", output));
+        Assert.Equal((code, failed), Inferpal.Services.Presentation.RunSummary.StepStatus("http_request", output));
 
     [Fact]
     public void TheStepLine_ShowsTheStatus_UnderTwoNotes()
     {
         const string twoNotes = "Note: 'timeout_seconds' was 999.\n\nNote: 'wait_seconds' was 999.\n\nHTTP 404 Not Found\n";
-        Assert.Equal(("404", true), Inferpal.Services.Presentation.RunSummary.HttpStatus("http_request", twoNotes));
+        Assert.Equal(("404", true), Inferpal.Services.Presentation.RunSummary.StepStatus("http_request", twoNotes));
     }
 
     /// <summary>An Agent Client Protocol client puts its default first: for data leaving the machine, that is Deny; and the

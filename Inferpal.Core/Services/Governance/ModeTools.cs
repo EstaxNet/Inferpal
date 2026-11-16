@@ -37,10 +37,10 @@ internal sealed class ModeTools
         ["search"]  = ["search_in_files", "search_codebase", "search_docs", "list_files", "query_data"],
         ["edit"]    =
         [
-            "write_file", "apply_diff", "apply_edits", "delete_file", "rename_symbol", "replace_in_files", "insert_at_cursor", "replace_selection",
+            "write_file", "apply_diff", "apply_edits", "delete_file", "rename_symbol", "replace_in_files", "edit_notebook", "insert_at_cursor", "replace_selection",
             "restore_file", "update_memory",
         ],
-        ["execute"] = ["run_command", "run_tests", "debug_control", "debug_inspect"],
+        ["execute"] = ["run_command", "run_tests", "debug_control", "debug_inspect", "run_notebook"],
         ["web"]     = ["fetch_url", "web_search", "http_request"],
     };
 

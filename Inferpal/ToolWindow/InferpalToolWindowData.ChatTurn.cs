@@ -598,7 +598,7 @@ internal partial class InferpalToolWindowData
                 var toolItem = ChatMessageItem.ToolMsg(exec.Name, Strings.MsgToolOutput(exec.Input, preview),
                                                        _config.ToolBubblesExpanded || exec.HasErrors);
                 toolItem.StepSubject = Services.Presentation.RunSummary.Subject(exec.Input);
-                if (Services.Presentation.RunSummary.HttpStatus(exec.Name, exec.Output) is { } status)
+                if (Services.Presentation.RunSummary.StepStatus(exec.Name, exec.Output) is { } status)
                     (toolItem.StepStatus, toolItem.StepStatusFailed) = status;
                 toolItem.HasErrors   = exec.HasErrors;
                 if (exec.Diff is not null)

@@ -1261,8 +1261,13 @@ function toolTitle(name: string): string {
        : name;
 }
 
-/** The status of an HTTP answer a step got (http_request), as RunSummary.HttpStatus in the Core. */
-function httpStatus(name: string, output: string | undefined): { code: string; failed: boolean } | undefined {
+/** A step's status: an HTTP answer's code (http_request), or how far a notebook ran (run_notebook) — as
+ *  RunSummary.StepStatus in the Core. */
+function stepStatus(name: string, output: string | undefined): { code: string; failed: boolean } | undefined {
+  if (name === 'run_notebook' && output) {
+    const nb = /^(?:Note: [^\n]*\n\n)*[^\n]*?: (\d+)\/(\d+) code cells ran(?:; cell (\d+) failed)?/.exec(output);
+    return !nb ? undefined : nb[3] ? { code: `#${nb[3]}`, failed: true } : { code: `${nb[1]}/${nb[2]}`, failed: nb[1] !== nb[2] };
+  }
   if (name !== 'http_request' || !output) {
     return undefined;
   }
@@ -1373,7 +1378,7 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
   subject.className = 'step-subject';
   subject.textContent = stepSubject(item.toolInput);
   line.append(icon(item.hasErrors ? 'failed' : 'check', 13), name, subject);
-  const status = httpStatus(item.text, item.toolOutput);
+  const status = stepStatus(item.text, item.toolOutput);
   if (status) {
     const chip = document.createElement('span');
     chip.className = 'http-status' + (status.failed ? ' failed' : '');

@@ -168,7 +168,7 @@ internal static class ApprovalCard
 
         if (prompt.ToolName == "http_request" && HttpCard(prompt, preview) is { } http) return http;
 
-        return new ApprovalCardModel(title, subject, meta, preview, more > 0 ? Strings.ApprovalMoreLines(more) : string.Empty,
+        var card = new ApprovalCardModel(title, subject, meta, preview, more > 0 ? Strings.ApprovalMoreLines(more) : string.Empty,
                                      // What "Always" lasts: across solutions in one Visual Studio; until the host restarts elsewhere.
                                      keepsGrantsAcrossSolutions ? Strings.ApprovalAlwaysTooltip(prompt.ToolName)
                                                                 : Strings.ApprovalAlwaysTooltipUntilRestart(prompt.ToolName),
@@ -176,6 +176,11 @@ internal static class ApprovalCard
                                      prompt.Rule is { } rule ? Strings.ApprovalAlwaysRule(rule.Describe) : string.Empty,
                                      prompt.Rule is { } spelled ? Strings.ApprovalRuleTooltip(string.Join("\n", spelled.Lines)) : string.Empty,
                                      OffersAlways: !prompt.Forced);
+        // edit_notebook: titled by the cell ("Change cell 3 of analysis.ipynb"), its kind beside the count, its note under the
+        // answers — sent as the details' three lines (EditNotebookTool); the preview is the CELL's change.
+        if (prompt.ToolName == "edit_notebook" && prompt.Details.Split('\n') is [var cellTitle, var cellKind, var cellNote, ..])
+            return card with { Title = cellTitle, Subject = cellKind, Note = cellNote };
+        return card;
     }
 
     /// <summary>

@@ -738,6 +738,16 @@ Geben Sie `/setup` ein, um es erneut zu versuchen.</value></data>
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>Einmal zulassen</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Immer, für diese Sitzung</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>Ablehnen</value></data>
+  <data name="NotebookChangeCell" xml:space="preserve"><value>Zelle {0} von {1} ändern</value></data>
+  <data name="NotebookAddCellAfter" xml:space="preserve"><value>Zelle nach Zelle {0} von {1} einfügen</value></data>
+  <data name="NotebookAddCellBefore" xml:space="preserve"><value>Zelle vor Zelle {0} von {1} einfügen</value></data>
+  <data name="NotebookDeleteCell" xml:space="preserve"><value>Zelle {0} von {1} löschen</value></data>
+  <data name="NotebookCodeCell" xml:space="preserve"><value>Code-Zelle</value></data>
+  <data name="NotebookMarkdownCell" xml:space="preserve"><value>Markdown-Zelle</value></data>
+  <data name="NotebookRawCell" xml:space="preserve"><value>Rohzelle</value></data>
+  <data name="NotebookCardNote" xml:space="preserve"><value>Die anderen Zellen, ihre Ausgaben und die Einstellungen des Notebooks bleiben, wie sie sind.</value></data>
+  <data name="NotebookLayoutRewritten" xml:space="preserve"><value>Dieses Notebook ist nicht so formatiert, wie Jupyter es schreibt: Die Änderung schreibt jede Zeile der Datei im Jupyter-Format neu (der Inhalt der anderen Zellen bleibt gleich).</value></data>
+  <data name="NotebookOutputCleared" xml:space="preserve"><value>Die alte Ausgabe dieser Zelle wird gelöscht: Sie sagt nichts mehr über den neuen Code.</value></data>
   <data name="ApprovalCallApp" xml:space="preserve"><value>Der Agent möchte Ihre App aufrufen</value></data>
   <data name="ApprovalCallAppWhere" xml:space="preserve"><value>{0} — auf diesem Rechner</value></data>
   <data name="ApprovalAlwaysFor" xml:space="preserve"><value>Immer für {0}</value></data>

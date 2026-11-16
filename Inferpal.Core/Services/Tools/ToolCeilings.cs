@@ -58,6 +58,9 @@ internal static class ToolCeilings
         ["update_memory"]        = new(W),
         ["rename_symbol"]        = new(W),
         ["replace_in_files"]     = new(W),
+        ["edit_notebook"]        = new(W),
+        // A notebook's cells run the repository's code, which may write anything.
+        ["run_notebook"]         = new(X),
         // It asks the person and waits: nothing outside the conversation, never in a parallel batch.
         ["ask_question"]         = new(ToolEffect.None, AsksThePerson: true),
         ["get_diagnostics"]      = new(X, ReportsThroughABuild: true),

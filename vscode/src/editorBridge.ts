@@ -295,6 +295,15 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
           }, CHANGE_DEBOUNCE_MS),
         );
       }),
+      // A notebook open in the notebook editor is no text document: its unsaved state reaches the host here, with the
+      // file's text on disk, so edit_notebook and run_notebook refuse until it is saved (their tools work on the disk).
+      vscode.workspace.onDidChangeNotebookDocument((e) => this.mirrorNotebook(e.notebook)),
+      vscode.workspace.onDidSaveNotebookDocument((nb) => this.mirrorNotebook(nb)),
+      vscode.workspace.onDidCloseNotebookDocument((nb) => {
+        if (nb.uri.scheme === 'file' && this.mirrored.delete(nb.uri.fsPath)) {
+          this.host?.didClose(nb.uri.fsPath);
+        }
+      }),
       vscode.workspace.onDidCloseTextDocument((doc) => {
         if (doc.uri.scheme === 'file') {
           const key = doc.uri.fsPath;
@@ -308,6 +317,23 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
           this.host?.didClose(key);
         }
       }),
+    );
+  }
+
+  /** A notebook's unsaved state, as the host's overlay knows a text document's: the disk text, dirty or not. */
+  private mirrorNotebook(nb: vscode.NotebookDocument): void {
+    if (nb.uri.scheme !== 'file' || (!nb.isDirty && !this.mirrored.has(nb.uri.fsPath))) {
+      return;
+    }
+    void vscode.workspace.fs.readFile(nb.uri).then(
+      (bytes) => {
+        if (bytes.byteLength > MAX_MIRRORED_BYTES) {
+          return;
+        }
+        this.host?.didChange({ path: nb.uri.fsPath, text: Buffer.from(bytes).toString('utf8'), dirty: nb.isDirty });
+        this.mirrored.add(nb.uri.fsPath);
+      },
+      () => undefined,
     );
   }
 

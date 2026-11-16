@@ -267,7 +267,15 @@ public class ConventionCoverageTests
             "SyntaxGuard.cs",       // writes only its checkers' copy, under the temporary folder — checked below
             "QueryDataTool.cs",     // copies a database into a folder of its own and deletes that folder — checked below
             "MsbuildPropertyTool.cs", // its evaluation log goes to a folder of its own, deleted after — checked below
+            "RunNotebookTool.cs",   // nbconvert writes the executed copy to a folder of its own, deleted after — checked below
         ];
+
+        // run_notebook never writes the person's notebook: the executed copy goes to a folder of its own.
+        var notebook = CodeOnly(ToolsSources().Single(f => Path.GetFileName(f) == "RunNotebookTool.cs"));
+        Assert.Matches(@"dir\s*=\s*Directory\.CreateTempSubdirectory\(""inferpal-notebook-""\)\.FullName", notebook);
+        Assert.Contains("\"--output-dir\", dir", notebook, StringComparison.Ordinal);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(notebook, @"Directory\.Delete\("));
+        Assert.DoesNotMatch(@"File\.(Write|Delete|Move)\w*\(", notebook);
 
         // msbuild_property writes nothing but MSBuild's log, in a folder of its own under the temporary folder.
         var msbuild = CodeOnly(ToolsSources().Single(f => Path.GetFileName(f) == "MsbuildPropertyTool.cs"));

@@ -736,6 +736,16 @@
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>Разрешить один раз</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Всегда в этой сессии</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>Отклонить</value></data>
+  <data name="NotebookChangeCell" xml:space="preserve"><value>Изменить ячейку {0} в {1}</value></data>
+  <data name="NotebookAddCellAfter" xml:space="preserve"><value>Добавить ячейку после ячейки {0} в {1}</value></data>
+  <data name="NotebookAddCellBefore" xml:space="preserve"><value>Добавить ячейку перед ячейкой {0} в {1}</value></data>
+  <data name="NotebookDeleteCell" xml:space="preserve"><value>Удалить ячейку {0} в {1}</value></data>
+  <data name="NotebookCodeCell" xml:space="preserve"><value>ячейка кода</value></data>
+  <data name="NotebookMarkdownCell" xml:space="preserve"><value>ячейка Markdown</value></data>
+  <data name="NotebookRawCell" xml:space="preserve"><value>необработанная ячейка</value></data>
+  <data name="NotebookCardNote" xml:space="preserve"><value>Остальные ячейки, их вывод и настройки блокнота остаются как есть.</value></data>
+  <data name="NotebookLayoutRewritten" xml:space="preserve"><value>Этот блокнот оформлен не так, как его пишет Jupyter: изменение перепишет каждую строку файла в формате Jupyter (содержимое остальных ячеек не изменится).</value></data>
+  <data name="NotebookOutputCleared" xml:space="preserve"><value>Прежний вывод этой ячейки удаляется: он больше ничего не говорит о новом коде.</value></data>
   <data name="ApprovalCallApp" xml:space="preserve"><value>Агент хочет обратиться к вашему приложению</value></data>
   <data name="ApprovalCallAppWhere" xml:space="preserve"><value>{0} — на этом компьютере</value></data>
   <data name="ApprovalAlwaysFor" xml:space="preserve"><value>Всегда для {0}</value></data>

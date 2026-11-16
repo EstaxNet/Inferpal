@@ -738,6 +738,16 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>한 번 허용</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>이 세션 동안 항상</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>거부</value></data>
+  <data name="NotebookChangeCell" xml:space="preserve"><value>{1}의 셀 {0} 변경</value></data>
+  <data name="NotebookAddCellAfter" xml:space="preserve"><value>{1}의 셀 {0} 뒤에 셀 추가</value></data>
+  <data name="NotebookAddCellBefore" xml:space="preserve"><value>{1}의 셀 {0} 앞에 셀 추가</value></data>
+  <data name="NotebookDeleteCell" xml:space="preserve"><value>{1}의 셀 {0} 삭제</value></data>
+  <data name="NotebookCodeCell" xml:space="preserve"><value>코드 셀</value></data>
+  <data name="NotebookMarkdownCell" xml:space="preserve"><value>Markdown 셀</value></data>
+  <data name="NotebookRawCell" xml:space="preserve"><value>원시 셀</value></data>
+  <data name="NotebookCardNote" xml:space="preserve"><value>다른 셀, 그 출력, 노트북 설정은 그대로 유지됩니다.</value></data>
+  <data name="NotebookLayoutRewritten" xml:space="preserve"><value>이 노트북은 Jupyter가 쓰는 형식이 아닙니다. 변경하면 파일의 모든 줄이 Jupyter 형식으로 다시 쓰입니다(다른 셀의 내용은 그대로입니다).</value></data>
+  <data name="NotebookOutputCleared" xml:space="preserve"><value>이 셀의 이전 출력은 지워집니다. 새 코드에 대해 더 이상 아무것도 알려 주지 않기 때문입니다.</value></data>
   <data name="ApprovalCallApp" xml:space="preserve"><value>에이전트가 앱을 호출하려고 합니다</value></data>
   <data name="ApprovalCallAppWhere" xml:space="preserve"><value>{0} — 이 컴퓨터</value></data>
   <data name="ApprovalAlwaysFor" xml:space="preserve"><value>{0}에 항상 허용</value></data>

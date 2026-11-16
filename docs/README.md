@@ -39,7 +39,7 @@ further down.
 ```mermaid
 flowchart LR
     user([You]) -->|prompt| chat[Inferpal chat]
-    chat -->|tool calls| tools[36 built-in tools<br/>+ MCP + custom]
+    chat -->|tool calls| tools[38 built-in tools<br/>+ MCP + custom]
     chat <-->|HTTP| provider[Model server<br/>Ollama / LM Studio / OpenAI-compatible]
     tools --> ws[(Your workspace)]
     editor([VS editor]) -->|ghost text| chat
@@ -56,7 +56,7 @@ flowchart LR
 | [Configuration](configuration.md) | Every setting and config key, with defaults |
 | [Features](features.md) | Functional tour of everything Inferpal does |
 | [Slash Commands](slash-commands.md) | The full `/command` reference |
-| [Tools](tools.md) | The 36 built-in agent tools, custom shell tools, permission rules, and the approval model |
+| [Tools](tools.md) | The 38 built-in agent tools, custom shell tools, permission rules, and the approval model |
 | [Mentions](mentions.md) | The `@` typed-context picker |
 | [Search & Indexing](search-and-indexing.md) | Semantic codebase search (RAG) and `@Docs` external documentation |
 | [MCP](mcp.md) | Connecting Model Context Protocol servers |
@@ -81,6 +81,6 @@ flowchart LR
 | VS Code | the same engine ([what is Visual Studio-only for now](features.md#two-editors-one-engine)) — VSIX for **Windows x64, Linux x64 and Apple Silicon** since 1.5.0, each with a bundled self-contained backend (`Inferpal.Host`) |
 | Runtime | .NET 8 (`net8.0-windows`; core engine is plain `net8.0`), declared for .NET 8 and 10 — Visual Studio runs it on its .NET 10 extension host when it ships one (2026, and 2022 17.14 builds that carry it) · the VS Code and ACP host: .NET 10 (`net10.0`), carried by its package |
 | Extension model | VS: hybrid VSIX — `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x out-of-process, plus `Inferpal.InProc` (**net472**) for everything `devenv.exe` hosts and its `Inferpal.Fim` sidecar · VS Code: TypeScript + JSON-RPC host |
-| Built-in tools | 36 built-in tools (+ MCP servers + user shell tools) |
+| Built-in tools | 38 built-in tools (+ MCP servers + user shell tools) |
 | Languages (UI) | 10 |
 | Tests | the `tests-N passing` badge at the top of the [main README](../README.md), locked against the assembly by `DocCountersTests` |
