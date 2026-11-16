@@ -585,6 +585,16 @@ export interface ApprovalCard {
   ruleTooltip?: string;
   /** False on a forced card: "Always this session" is not offered, it would grant nothing. Absent from an older host. */
   offersAlways?: boolean;
+  /** The allowing button's words when not "Allow once" ("Send once"); empty or absent for the usual ones. */
+  allowLabel?: string;
+  /** The "Always" button's words when it opens less than the tool ("Always for localhost:5000"). */
+  alwaysLabel?: string;
+  /** A warning above the answers (what leaves the machine). */
+  warning?: string;
+  /** A line under the answers saying what they mean here. */
+  note?: string;
+  /** Data may leave the machine: drawn as a warning, Deny the default answer. */
+  outbound?: boolean;
 }
 
 /** One file a run changed. */

@@ -141,14 +141,17 @@ internal class VsApprovalService : ApprovalServiceBase
         // Three choices: "Allow once" (default, preserves the old Enter=approve behaviour),
         // "Always allow this tool" (remembers for the session), and "Cancel" — and the narrow rule when the card offers one.
         var choices = new ChoiceResultCollection<ApprovalDecision>();
-        choices.Add(Strings.ApprovalAllowOnce,   ApprovalDecision.Once);
+        choices.Add(card is { AllowLabel.Length: > 0 } ? card.AllowLabel : Strings.ApprovalAllowOnce, ApprovalDecision.Once);
         // Never on a forced card: it would grant nothing (ApprovalCardModel.OffersAlways).
-        if (card?.OffersAlways != false) choices.Add(Strings.ApprovalAlwaysAllow, ApprovalDecision.Always);
+        if (card?.OffersAlways != false)
+            choices.Add(card is { AlwaysLabel.Length: > 0 } ? card.AlwaysLabel : Strings.ApprovalAlwaysAllow, ApprovalDecision.Always);
         if (card is { RuleLabel.Length: > 0 }) choices.Add(card.RuleLabel, ApprovalDecision.Rule);
         choices.Add(Strings.ApprovalDeny,        ApprovalDecision.Deny);
 
-        // Default = "Allow once"; dismissing the prompt (Esc/close) denies.
-        var options = new PromptOptions<ApprovalDecision>(choices, defaultChoiceIndex: 0, dismissedReturns: ApprovalDecision.Deny);
+        // Default = "Allow once" — or Deny, last of the choices, on a card for data leaving the machine (Enter must not
+        // send it); dismissing the prompt (Esc/close) denies.
+        var options = new PromptOptions<ApprovalDecision>(choices, defaultChoiceIndex: card?.Outbound == true ? choices.Count - 1 : 0,
+                                                          dismissedReturns: ApprovalDecision.Deny);
 
         return await _vs.Shell().ShowPromptAsync(message, options, ct);
     }

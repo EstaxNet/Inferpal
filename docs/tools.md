@@ -3,7 +3,7 @@
 This page shows what the agent can do on your machine and what it must ask you first. In short: reading never asks; a
 write, a command or a web call waits for your answer on a card, unless a rule of yours already decides.
 
-The agent completes tasks by calling tools. There are **34 built-in tools**, plus any
+The agent completes tasks by calling tools. There are **35 built-in tools**, plus any
 **user-defined shell tools** and any tools exposed by connected **[MCP](mcp.md) servers**.
 
 ## What the agent can do, and what asks first
@@ -15,6 +15,7 @@ The agent completes tasks by calling tools. There are **34 built-in tools**, plu
 | Run a command | `run_command` | Yes |
 | Build and test | `get_diagnostics`, `run_tests` | The first time in a workspace |
 | Go online | `fetch_url`, `web_search` | Yes |
+| Call an app or API it runs | `http_request` | Yes; for a local address, once per address if you answer *Always* |
 | Use the debugger | `get_debugger_state`, `debug_control`, `debug_inspect` | To start your program, and to evaluate an expression |
 | Use tools you added | [Custom shell tools](#custom-shell-tools), [MCP tools](#mcp-tools) | Yes |
 
@@ -52,13 +53,20 @@ card:
 
 - Gated tools: `write_file`, `apply_diff`, `apply_edits`, `delete_file`, `run_command`,
   `rename_symbol`, `restore_file`, `update_memory`, `insert_at_cursor`, `replace_selection`,
-  `fetch_url`, `web_search`, `debug_control` `start`, `debug_inspect` `evaluate`, custom shell
+  `fetch_url`, `web_search`, `http_request`, `debug_control` `start`, `debug_inspect` `evaluate`, custom shell
   tools, and every MCP tool call.
 
 `fetch_url` and `web_search` are gated because they are the outbound channel of the *lethal
 trifecta*; `fetch_url` additionally passes a hardened SSRF guard (IPv4-mapped IPv6, `0.0.0.0/8`,
 loopback/private ranges, the resolved address checked too — best-effort against DNS rebinding, the approval card
 being the boundary — with a ReDoS-safe timeout).
+
+`http_request` asks on every call. For a local address (`localhost`, `127.0.0.1`, `::1`) *Always* opens that address
+and port only — another local port is asked again — and the connection itself is held to this machine. Any other
+address, your local network included, is asked call by call with no *Always*, unless one of your own rules names it in
+full: `allow http_request ^GET https://staging\.example\.com:443$` (the rule reads `METHOD scheme://host:port`, and
+must match all of it). No redirect is followed, and headers that would reroute the request (`Host`, `Upgrade`,
+`Proxy-*`…) are refused.
 
 </details>
 
@@ -405,7 +413,7 @@ Every tool by what it does, for when you write a rule or a prompt. A `?` marks a
 
 | Tool | Required params | Description |
 |---|---|---|
-| `run_command` | `command?`, `working_directory?`, `background?`, `action?`, `id?` | Run a shell command — PowerShell on Windows, and on Linux/macOS when `pwsh` is on the PATH; bash otherwise (`sh` on a host without bash) ; cwd and `env` overrides persist across calls. **Approval**, configurable timeout. `background=true` starts a detached job and returns its `id`; `action` `poll` / `stop` / `list` reads, ends or lists jobs (`command` is required otherwise) |
+| `run_command` | `command?`, `working_directory?`, `background?`, `action?`, `id?`, `until?`, `timeout_seconds?` | Run a shell command — PowerShell on Windows, and on Linux/macOS when `pwsh` is on the PATH; bash otherwise (`sh` on a host without bash) ; cwd and `env` overrides persist across calls. **Approval**, configurable timeout. `background=true` starts a detached job and returns its `id`; `action` `poll` / `wait` / `stop` / `list` reads, waits on, ends or lists jobs (`command` is required otherwise); `wait` returns at the first line holding `until`, at the job's end, or after `timeout_seconds` (1-300, default 60) |
 | `get_diagnostics` | `path?` | `dotnet build` → MSBuild errors/warnings (90 s timeout). In VS Code, without `path`, the Problems panel's errors when it has any. A build runs the project's own targets: the first one the assistant starts in a workspace asks you once |
 | `run_tests` | `path?`, `filter?`, `runner?`, `timeout_seconds?` | Runs the project's own code — the first run the assistant starts in a workspace asks you once (a `/build` or `/tdd` you run does not). `dotnet test` / `pytest` (under the project's `.venv` or `venv` when there is one; a test file runs alone, from its project's root) / `npm test` / `cargo test` / `go test` (auto-detected; a `path` that does not exist is refused; a folder with no single .NET solution or project in it runs the one `get_diagnostics` would build, said above the report). `runner` also takes `jest`, `vitest`, `mocha`, `node` (run through npm); an unknown one is refused by name. `timeout_seconds` 1–1800 (0 or less = the maximum: there is no unlimited run), the clamp said |
 
@@ -421,6 +429,7 @@ Every tool by what it does, for when you write a rule or a prompt. A `?` marks a
 
 | Tool | Required params | Description |
 |---|---|---|
+| `http_request` | `url`, `method?`, `headers?`, `body?`, `wait_seconds?`, `timeout_seconds?` | Send one HTTP request — any method — and read the status, headers and body (1 MB read at most, the cut said): to call the app you just started and read its 500. **Approval** on every call; *Always* for one local address and port; any other address asked each time unless a rule of yours names it. No redirect followed; `wait_seconds` (local only) keeps trying while the server starts |
 | `fetch_url` | `url`, `max_chars?`, `start_char?` | Fetch a page as text; a long one comes back in windows, each naming the `start_char` to read on. **Approval**, SSRF-guarded |
 | `web_search` | `query`, `max_results?` | DuckDuckGo search. **Approval** |
 

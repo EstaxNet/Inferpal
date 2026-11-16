@@ -378,13 +378,15 @@ export class EditorBridge implements EditorDelegate, vscode.Disposable {
     // Modal fallback so an agent mid-run can never be silently ignored; Esc/close = deny.
     // A native modal cannot be closed programmatically: on cancellation the wait ends (deny) —
     // the dialog lingers until the user closes it, cosmetic only, its answer is ignored.
-    const once = t('Allow once');
-    const always = t('Always this session');
+    // The host's own words when the card has them ("Send once", "Always for localhost:5000"), already translated.
+    const once = note.card?.allowLabel || t('Allow once');
+    const always = note.card?.alwaysLabel || t('Always this session');
     // The narrow rule the card offers, offered here too: the label is the host's, already in the user's language.
     const rule = note.card?.ruleLabel || undefined;
     // Never "Always" on a forced card: it would grant nothing.
     const offered = note.card?.offersAlways === false ? [once] : [once, always];
-    const choices = rule ? [...offered, rule] : offered;
+    // ⚠ Data leaving the machine: the modal's first button is its default (Enter), so Deny comes first there.
+    const choices = note.card?.outbound === true ? [t('Deny'), ...offered] : rule ? [...offered, rule] : offered;
     let cancelSub: { dispose(): void } | undefined;
     try {
       const cancelled = new Promise<undefined>((resolve) => {

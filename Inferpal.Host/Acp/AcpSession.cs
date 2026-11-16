@@ -1551,7 +1551,8 @@ internal sealed class AcpSession : IAsyncDisposable
                     status     = "pending",
                     content,
                 },
-                options = Options(note.Card?.RuleLabel, note.Card?.OffersAlways != false),
+                options = Options(note.Card?.RuleLabel, note.Card?.OffersAlways != false, note.Card?.AllowLabel, note.Card?.AlwaysLabel,
+                                  note.Card?.Outbound == true),
             });
             var decision = answer?.Outcome is { Outcome: "selected" } o ? o.OptionId switch
             {
@@ -1576,17 +1577,20 @@ internal sealed class AcpSession : IAsyncDisposable
     /// "always" — written to the machine's rules, where "always" lasts the session.
     /// </summary>
     /// <remarks>A forced card offers no "always" (<paramref name="offersAlways"/> false): it would grant nothing.</remarks>
-    internal static object[] Options(string? ruleLabel, bool offersAlways = true)
+    /// <param name="outbound">Data may leave the machine: Deny is offered first, where a client puts its default.</param>
+    internal static object[] Options(string? ruleLabel, bool offersAlways = true, string? allowLabel = null, string? alwaysLabel = null,
+                                     bool outbound = false)
     {
         var options = new List<object>
         {
-            new { optionId = "allow_once",   name = Strings.ApprovalAllowOnce,   kind = "allow_once" },
+            new { optionId = "allow_once",   name = string.IsNullOrEmpty(allowLabel) ? Strings.ApprovalAllowOnce : allowLabel, kind = "allow_once" },
         };
         if (offersAlways)
-            options.Add(new { optionId = "allow_always", name = Strings.ApprovalAlwaysAllow, kind = "allow_always" });
+            options.Add(new { optionId = "allow_always", name = string.IsNullOrEmpty(alwaysLabel) ? Strings.ApprovalAlwaysAllow : alwaysLabel, kind = "allow_always" });
         if (!string.IsNullOrEmpty(ruleLabel))
             options.Add(new { optionId = "allow_rule", name = ruleLabel, kind = "allow_always" });
-        options.Add(new { optionId = "reject_once", name = Strings.ApprovalDeny, kind = "reject_once" });
+        var deny = new { optionId = "reject_once", name = Strings.ApprovalDeny, kind = "reject_once" };
+        if (outbound) options.Insert(0, deny); else options.Add(deny);
         return [.. options];
     }
 
@@ -1631,7 +1635,8 @@ internal sealed class AcpSession : IAsyncDisposable
     public sealed record ToolEndNote(string CallId, string? Output, bool Failed = false);
     public sealed record WaitNote(ModelWaitDto? Wait);
     public sealed record PathNote(string? Path);
-    public sealed record CardNote(string? Title, string? Subject, string? RuleLabel = null, bool OffersAlways = true);
+    public sealed record CardNote(string? Title, string? Subject, string? RuleLabel = null, bool OffersAlways = true,
+                                  string? AllowLabel = null, string? AlwaysLabel = null, bool Outbound = false);
     public sealed record DiffNote(string? Path, string? OldText, string? NewText);
     public sealed record ApprovalNote(string Message, CardNote? Card, string? CallId, string? Tool, string? Details, List<DiffNote>? Diffs);
     public sealed record PermissionOutcome(string? Outcome, string? OptionId);

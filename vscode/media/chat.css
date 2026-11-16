@@ -2805,3 +2805,45 @@ kbd {
   font-size: 0.9em;
   color: var(--ip-muted);
 }
+
+/* A request leaving the machine (http_request elsewhere): a warning card, Deny its default answer. */
+.approval.outbound {
+  border-color: var(--vscode-inputValidation-warningBorder, #e0a33a);
+}
+
+.approval.outbound .approval-actions button.deny.primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: 0;
+}
+
+.approval-warning {
+  margin: 0 12px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: var(--vscode-inputValidation-warningBackground, transparent);
+  border: 1px solid var(--vscode-inputValidation-warningBorder, transparent);
+  font-size: 12px;
+}
+
+.approval-note {
+  padding: 0 12px 10px;
+  font-size: 11.5px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* The status of an HTTP answer on its step line: an error code in the error colour. */
+.http-status {
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11.5px;
+  color: var(--vscode-testing-iconPassed, #4ec94e);
+  border: 1px solid currentColor;
+  flex: none;
+}
+
+.http-status.failed {
+  color: var(--vscode-errorForeground, #f48771);
+}

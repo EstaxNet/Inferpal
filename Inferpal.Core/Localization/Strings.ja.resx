@@ -738,6 +738,16 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>1回だけ許可</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>このセッション中は常に</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>拒否</value></data>
+  <data name="ApprovalCallApp" xml:space="preserve"><value>エージェントがあなたのアプリを呼び出そうとしています</value></data>
+  <data name="ApprovalCallAppWhere" xml:space="preserve"><value>{0} — このマシン上</value></data>
+  <data name="ApprovalAlwaysFor" xml:space="preserve"><value>{0} を常に許可</value></data>
+  <data name="ApprovalAlwaysForTooltip" xml:space="preserve"><value>{0} への呼び出しは、エディターを閉じるまでカードなしで行われます。別のポートや別のマシンは引き続き確認します。</value></data>
+  <data name="ApprovalCallAppNote" xml:space="preserve"><value>「常に許可」はこのアドレスとポートだけを、エディターを閉じるまで開きます。このマシンの別のポート（データベース、Docker、プロキシ）は再度確認します。</value></data>
+  <data name="ApprovalSendElsewhere" xml:space="preserve"><value>エージェントが別のマシンにリクエストを送ろうとしています</value></data>
+  <data name="ApprovalSendElsewhereWhere" xml:space="preserve"><value>{0} — 毎回確認</value></data>
+  <data name="ApprovalSendElsewhereWarning" xml:space="preserve"><value>このリクエストは、上に表示された内容（ヘッダーを含む）とともにこのマシンを離れます。送りたい内容と送り先で間違いないか確認してください。</value></data>
+  <data name="ApprovalSendOnce" xml:space="preserve"><value>1 回だけ送信</value></data>
+  <data name="ApprovalSendElsewhereNote" xml:space="preserve"><value>別のマシンには「常に許可」はありません。エージェントが書いたリクエストは、読んだ内容を何でも含み得るためです。使用するサーバーを信頼するには、設定に承認ルールを追加してください: {0} — メソッドとアドレス全体を指定する必要があります。</value></data>
   <data name="ApprovalDialogTitle" xml:space="preserve"><value>承認が必要です</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>権限ルール（deny）によりブロックされました：{0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>組み込みの安全拒否リスト（破壊的コマンド）によりブロックされました：{0}</value></data>

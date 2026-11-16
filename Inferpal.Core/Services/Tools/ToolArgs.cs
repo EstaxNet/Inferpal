@@ -113,6 +113,24 @@ internal static class ToolArgs
         return true;
     }
 
+    /// <summary>
+    /// An OBJECT argument: <c>true</c> when the property is a JSON object, or a string that holds one (a small model
+    /// double-encodes it).
+    /// </summary>
+    public static bool Object(this JsonElement args, string name, out JsonElement value)
+    {
+        value = default;
+        if (!args.Has(name) || !args.TryGetProperty(name, out var v)) return false;
+        if (v.ValueKind == JsonValueKind.String && v.GetString() is { } text && text.TrimStart().StartsWith('{'))
+        {
+            try { v = JsonDocument.Parse(text).RootElement.Clone(); }
+            catch (JsonException) { return false; }
+        }
+        if (v.ValueKind != JsonValueKind.Object) return false;
+        value = v;
+        return true;
+    }
+
     /// <summary>A boolean argument, tolerating <c>"true"</c>/<c>"false"</c> as strings.</summary>
     public static bool Bool(this JsonElement args, string name, bool fallback)
     {

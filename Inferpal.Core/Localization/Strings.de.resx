@@ -738,6 +738,16 @@ Geben Sie `/setup` ein, um es erneut zu versuchen.</value></data>
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>Einmal zulassen</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Immer, für diese Sitzung</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>Ablehnen</value></data>
+  <data name="ApprovalCallApp" xml:space="preserve"><value>Der Agent möchte Ihre App aufrufen</value></data>
+  <data name="ApprovalCallAppWhere" xml:space="preserve"><value>{0} — auf diesem Rechner</value></data>
+  <data name="ApprovalAlwaysFor" xml:space="preserve"><value>Immer für {0}</value></data>
+  <data name="ApprovalAlwaysForTooltip" xml:space="preserve"><value>Aufrufe an {0} laufen ohne Karte, bis der Editor geschlossen wird. Ein anderer Port oder ein anderer Rechner fragt weiterhin.</value></data>
+  <data name="ApprovalCallAppNote" xml:space="preserve"><value>„Immer“ öffnet nur diese Adresse und diesen Port, bis der Editor geschlossen wird. Ein anderer Port dieses Rechners — eine Datenbank, Docker, ein Proxy — fragt erneut.</value></data>
+  <data name="ApprovalSendElsewhere" xml:space="preserve"><value>Der Agent möchte eine Anfrage an einen anderen Rechner senden</value></data>
+  <data name="ApprovalSendElsewhereWhere" xml:space="preserve"><value>{0} — wird jedes Mal gefragt</value></data>
+  <data name="ApprovalSendElsewhereWarning" xml:space="preserve"><value>Diese Anfrage verlässt Ihren Rechner mit dem, was Sie oben sehen, einschließlich der Header. Prüfen Sie, ob Sie genau das senden wollen, und wohin.</value></data>
+  <data name="ApprovalSendOnce" xml:space="preserve"><value>Einmal senden</value></data>
+  <data name="ApprovalSendElsewhereNote" xml:space="preserve"><value>Kein „Immer“ für einen anderen Rechner: Eine vom Agenten geschriebene Anfrage könnte alles enthalten, was er gelesen hat. Um einem Server zu vertrauen, den Sie nutzen, fügen Sie in den Einstellungen eine Freigaberegel hinzu: {0} — sie muss die Methode und die ganze Adresse nennen.</value></data>
   <data name="ApprovalDialogTitle" xml:space="preserve"><value>Genehmigung erforderlich</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>Durch eine Berechtigungsregel (deny) blockiert: {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>Durch die integrierte Sicherheits-Sperrliste (katastrophaler Befehl) blockiert: {0}</value></data>

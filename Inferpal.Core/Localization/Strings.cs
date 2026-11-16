@@ -1114,6 +1114,16 @@ internal static class Strings
         Format(Get(nameof(ApprovalMessage)), toolName, details);
 
     public static string ApprovalAllowOnce   => Get(nameof(ApprovalAllowOnce));
+    public static string ApprovalCallApp => Get(nameof(ApprovalCallApp));
+    public static string ApprovalCallAppWhere(string where) => Format(Get(nameof(ApprovalCallAppWhere)), where);
+    public static string ApprovalAlwaysFor(string where) => Format(Get(nameof(ApprovalAlwaysFor)), where);
+    public static string ApprovalAlwaysForTooltip(string origin) => Format(Get(nameof(ApprovalAlwaysForTooltip)), origin);
+    public static string ApprovalCallAppNote => Get(nameof(ApprovalCallAppNote));
+    public static string ApprovalSendElsewhere => Get(nameof(ApprovalSendElsewhere));
+    public static string ApprovalSendElsewhereWhere(string where) => Format(Get(nameof(ApprovalSendElsewhereWhere)), where);
+    public static string ApprovalSendElsewhereWarning => Get(nameof(ApprovalSendElsewhereWarning));
+    public static string ApprovalSendOnce => Get(nameof(ApprovalSendOnce));
+    public static string ApprovalSendElsewhereNote(string rule) => Format(Get(nameof(ApprovalSendElsewhereNote)), rule);
     public static string ApprovalAlwaysAllow => Get(nameof(ApprovalAlwaysAllow));
     public static string ApprovalDeny        => Get(nameof(ApprovalDeny));
 

@@ -110,12 +110,18 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     // ── A run line ("run") and its steps ("tool"): folded together, the line says what the steps did ──
     private string _runDetail     = string.Empty;
     private string _stepSubject   = string.Empty;
+    private string _stepStatus    = string.Empty;
+    private bool   _stepStatusFailed;
     private string _runGlyph      = Glyphs.Tool;
     private bool   _runFailed;
     private bool   _hasErrors;
     private bool   _isFolded;
     [DataMember] public string RunDetail   { get => _runDetail;   set => SetProperty(ref _runDetail,   value); }
     [DataMember] public string StepSubject { get => _stepSubject; set => SetProperty(ref _stepSubject, value); }
+    /// <summary>The status of the HTTP answer a step got ("500"); empty for any other step.</summary>
+    [DataMember] public string StepStatus  { get => _stepStatus;  set => SetProperty(ref _stepStatus,  value); }
+    /// <summary>That status is an error (4xx, 5xx): drawn in the error colour.</summary>
+    [DataMember] public bool   StepStatusFailed { get => _stepStatusFailed; set => SetProperty(ref _stepStatusFailed, value); }
     /// <summary>The run line's glyph: a tool while it runs, a check once it ended, a cross when its check failed.</summary>
     [DataMember] public string RunGlyph    { get => _runGlyph;    set => SetProperty(ref _runGlyph,    value); }
     [DataMember] public bool   RunFailed   { get => _runFailed;   set => SetProperty(ref _runFailed,   value); }
@@ -292,6 +298,12 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public bool   HasRule        { get; private set; }
     /// <summary>"Always this session" is offered: never on a forced card, where it would grant nothing.</summary>
     [DataMember] public bool   OffersAlways   { get; private set; } = true;
+    /// <summary>A warning above the answers (what leaves the machine); empty for none.</summary>
+    [DataMember] public string CardWarning    { get; private set; } = string.Empty;
+    /// <summary>A line under the answers saying what they mean here; empty for none.</summary>
+    [DataMember] public string CardNote       { get; private set; } = string.Empty;
+    /// <summary>Data may leave the machine: drawn as a warning, Deny its default answer (Enter included).</summary>
+    [DataMember] public bool   IsOutbound     { get; private set; }
     [DataMember] public ObservableCollection<DiffLine> CardLines { get; } = [];
     /// <summary>Answered (or retired with its run): the buttons stop answering.</summary>
     [DataMember] public bool   IsAnswered     { get => _isAnswered; set => SetProperty(ref _isAnswered, value); }
@@ -1047,8 +1059,11 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
             CardSubject    = string.Join(" · ", new[] { card.Subject, card.Meta }.Where(p => p.Length > 0)),
             CardMore       = card.More,
             CardAlwaysTip  = card.AlwaysTooltip,
-            BtnAllowOnce   = Strings.ApprovalAllowOnce,
-            BtnAlwaysAllow = Strings.ApprovalAlwaysAllow,
+            BtnAllowOnce   = card.AllowLabel.Length > 0 ? card.AllowLabel : Strings.ApprovalAllowOnce,
+            BtnAlwaysAllow = card.AlwaysLabel.Length > 0 ? card.AlwaysLabel : Strings.ApprovalAlwaysAllow,
+            CardWarning    = card.Warning,
+            CardNote       = card.Note,
+            IsOutbound     = card.Outbound,
             BtnDeny        = Strings.ApprovalDeny,
             BtnOpenDiff    = Strings.ApprovalOpenDiff,
             BtnAlwaysRule  = card.RuleLabel,

@@ -1261,6 +1261,15 @@ function toolTitle(name: string): string {
        : name;
 }
 
+/** The status of an HTTP answer a step got (http_request), as RunSummary.HttpStatus in the Core. */
+function httpStatus(name: string, output: string | undefined): { code: string; failed: boolean } | undefined {
+  if (name !== 'http_request' || !output) {
+    return undefined;
+  }
+  const m = /^(?:Note: [^\n]*\n\n)*HTTP (\d{3}) /.exec(output);
+  return m ? { code: m[1], failed: m[1][0] === '4' || m[1][0] === '5' } : undefined;
+}
+
 /** What a step acted on: the path, command, query or address its arguments name. */
 function stepSubject(input: string | undefined): string {
   if (!input) {
@@ -1269,9 +1278,13 @@ function stepSubject(input: string | undefined): string {
   try {
     const args = JSON.parse(input) as Record<string, unknown>;
     for (const key of ['path', 'file_path', 'command', 'query', 'url', 'symbol', 'pattern']) {
-      const value = args[key];
+      let value = args[key];
       if (typeof value === 'string' && value) {
-        return value.length > 80 ? value.slice(0, 80) + '…' : value;
+        // A request names its method before its address (http_request), as RunSummary.Subject in the Core.
+        if (key === 'url' && typeof args.method === 'string' && args.method) {
+          value = args.method.toUpperCase() + ' ' + value;
+        }
+        return (value as string).length > 80 ? (value as string).slice(0, 80) + '…' : (value as string);
       }
     }
   } catch {
@@ -1360,6 +1373,13 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
   subject.className = 'step-subject';
   subject.textContent = stepSubject(item.toolInput);
   line.append(icon(item.hasErrors ? 'failed' : 'check', 13), name, subject);
+  const status = httpStatus(item.text, item.toolOutput);
+  if (status) {
+    const chip = document.createElement('span');
+    chip.className = 'http-status' + (status.failed ? ' failed' : '');
+    chip.textContent = status.code;
+    line.appendChild(chip);
+  }
   // A change too large to show comes as one line that says so: no count, no button that would open only that line.
   const changed = item.toolDiff !== undefined && item.toolDiff.split('\n').some((l) => diffLineKind(l) !== 'other');
   if (changed) {
@@ -2126,17 +2146,25 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
       turn.when.textContent = t('turnWorking', turn.steps + 1);
     }
   };
+  const outbound = card?.outbound === true;
+  if (outbound) {
+    el.classList.add('outbound');
+  }
   const allow = document.createElement('button');
-  allow.className = 'primary';
-  allow.append(document.createTextNode(t('allowOnce')), kbd('Enter'));
+  // ⚠ Data leaving the machine: Deny is the card's default answer (Enter), "Send once" a deliberate click.
+  allow.className = outbound ? 'send' : 'primary';
+  allow.append(document.createTextNode(card?.allowLabel || t('allowOnce')));
+  if (!outbound) {
+    allow.appendChild(kbd('Enter'));
+  }
   allow.addEventListener('click', () => answer(1, allow));
   const always = document.createElement('button');
-  always.textContent = t('allowAlways');
+  always.textContent = card?.alwaysLabel || t('allowAlways');
   always.title = card?.alwaysTooltip ?? '';
   always.addEventListener('click', () => answer(2, always));
   const deny = document.createElement('button');
-  deny.className = 'deny';
-  deny.append(document.createTextNode(t('deny')), kbd('Esc'));
+  deny.className = outbound ? 'deny primary' : 'deny';
+  deny.append(document.createTextNode(t('deny')), kbd(outbound ? 'Enter' : 'Esc'));
   deny.addEventListener('click', () => answer(0, deny));
   // Never on a forced card: "Always" would grant nothing, the next identical call asks again.
   actions.append(allow);
@@ -2161,7 +2189,21 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
     }
   });
 
-  el.append(card ? head : document.createElement('span'), preview, actions);
+  el.append(card ? head : document.createElement('span'), preview);
+  if (card?.warning) {
+    const warning = document.createElement('div');
+    warning.className = 'approval-warning';
+    warning.setAttribute('role', 'note');
+    warning.textContent = card.warning;
+    el.appendChild(warning);
+  }
+  el.appendChild(actions);
+  if (card?.note) {
+    const note = document.createElement('div');
+    note.className = 'approval-note';
+    note.textContent = card.note;
+    el.appendChild(note);
+  }
   // In the answer flow, in arrival order: the turn's body exists from its start, so a card put after it would
   // stand BELOW the answer that follows it — the answer then reads above the approvals it depends on, out of view.
   target.body.appendChild(el);

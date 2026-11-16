@@ -38,6 +38,22 @@ internal interface IApprovalService
     Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false);
 
     /// <summary>
+    /// <see cref="RequestApprovalAsync"/>, whose "Always" opens <paramref name="grantKey"/> only — one origin of
+    /// <c>http_request</c>, never the whole tool.
+    /// </summary>
+    /// <remarks>An implementation that cannot keep such a grant asks every time (forced): never a grant wider than asked.</remarks>
+    Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct) =>
+        RequestApprovalAsync(toolName, details, ct, subject: subject, forcePrompt: true);
+
+    /// <summary>
+    /// Whether one of the person's own <c>allow</c> rules, naming <paramref name="toolName"/>, matches the WHOLE of
+    /// <paramref name="subject"/> — and no deny applies. For a call that is otherwise forced to a card each time.
+    /// </summary>
+    /// <remarks>Whole, not found inside: an unanchored <c>staging\.example\.com</c> would cover
+    /// <c>staging.example.com.evil.net</c>.</remarks>
+    bool Allows(string toolName, string subject) => false;
+
+    /// <summary>
     /// One approval for a change that spans several files (<c>apply_edits</c>): one prompt for the whole batch, with the
     /// batch's combined <paramref name="details"/>.
     /// </summary>

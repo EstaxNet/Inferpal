@@ -148,7 +148,24 @@ internal abstract class ApprovalServiceBase : IApprovalService
         }
     }
 
-    public async Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false)
+    public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false) =>
+        ApproveAsync(toolName, details, ct, subject, diff, forcePrompt, grantKey: toolName);
+
+    /// <inheritdoc/>
+    public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct) =>
+        ApproveAsync(toolName, details, ct, subject, diff: null, forcePrompt: false, grantKey);
+
+    /// <inheritdoc/>
+    public bool Allows(string toolName, string subject)
+    {
+        var (policy, overlayUnread) = GetPolicy();
+        return !overlayUnread && Decide(toolName, subject, out var unreadableDeny, out _) == PermissionDecision.Allow
+               && !unreadableDeny && policy.AllowsWhole(toolName, subject);
+    }
+
+    /// <param name="grantKey">What an "Always" opens: the tool's name, or a narrower key (<see cref="RequestScopedApprovalAsync"/>).</param>
+    private async Task<bool> ApproveAsync(string toolName, string details, CancellationToken ct, string? subject,
+                                          Services.CodeActions.DiffInfo? diff, bool forcePrompt, string grantKey)
     {
         // The value the rules match against: the explicit subject (raw path for file tools) when
         // provided, otherwise the details (already the raw command/url/query for the other tools).
@@ -194,7 +211,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
                      || unreadableDeny;
         if (opaque && (decision == PermissionDecision.Allow
                        || alertsOff
-                       || Granted(toolName)))
+                       || Granted(grantKey)))
             Diagnostics.Record("Permission",
                 $"Force-prompt ({(forcePrompt ? "the call asks for it"
                                  : instructions ? "agent instructions"
@@ -207,7 +224,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
 
             // decision == Prompt — fall through to the global YOLO switch, then the session grant.
             if (alertsOff)                             return true;
-            if (Granted(toolName))                     return true;
+            if (Granted(grantKey))                     return true;
         }
 
         var message = Strings.ApprovalMessage(toolName, details);
@@ -237,7 +254,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // ⚠ A forced card grants nothing beyond this call: the next identical call is asked again anyway, and a grant would
         // open the tool without a card on everything else. "Always" there is a Yes — from any front-end, an old one included.
         if (promptDecision == ApprovalDecision.Always && !opaque)
-            Grant(toolName, cardRoot);
+            Grant(grantKey, cardRoot);
         if (promptDecision == ApprovalDecision.Rule)
         {
             // ⚠ Offered by this card only: a Rule answer to a card that offered none comes from a peer that answers what

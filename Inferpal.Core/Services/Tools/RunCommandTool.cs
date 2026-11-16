@@ -60,7 +60,7 @@ internal sealed class RunCommandTool : ITool, IDisposable
     /// <inheritdoc/>
     /// <remarks>Reading a background job's output or the list of jobs runs nothing; a command, or stopping a job, does.</remarks>
     public ToolEffect EffectOf(JsonElement args) =>
-        args.Keyword("action") is "poll" or "list" ? ToolEffect.Reads : ToolEffect.Runs;
+        args.Keyword("action") is "poll" or "list" or "wait" ? ToolEffect.Reads : ToolEffect.Runs;
 
     /// <summary>
     /// How this machine's shell is named to the model, and how it sets an environment variable.
@@ -89,7 +89,8 @@ internal sealed class RunCommandTool : ITool, IDisposable
             return $"Runs a {shell} command in a persistent session (working directory and environment "
                  + $"variables set by 'cd' or `{setEnv}` persist to later calls). Set background=true for "
                  + "long-running commands (builds, servers, watchers): it returns a job id immediately. Use "
-                 + "action='poll' with that id to read new output, and action='stop' to terminate it.";
+                 + "action='poll' with that id to read new output, action='wait' with 'until' to wait for a line (a server's "
+                 + "\"listening\" line) instead of polling again and again, and action='stop' to terminate it.";
         }
     }
 
@@ -101,8 +102,10 @@ internal sealed class RunCommandTool : ITool, IDisposable
             command           = new { type = "string", description = $"{Speak().Shell} command to execute. Required unless using action=poll/stop/list." },
             working_directory = new { type = "string", description = "Working directory for this command (optional; otherwise the session's current directory)." },
             background        = new { type = "boolean", description = "Run detached and return a job id immediately instead of waiting (for long-running commands)." },
-            action            = new { type = "string", description = "Manage a background job instead of running a command: 'poll' (read new output), 'stop' (terminate), or 'list'." },
-            id                = new { type = "string", description = "The background job id (returned when background=true). Required for action='poll'/'stop'." }
+            action            = new { type = "string", description = "Manage a background job instead of running a command: 'poll' (read new output), 'wait' (until a line holds 'until', the job ends, or timeout_seconds), 'stop' (terminate), or 'list'." },
+            id                = new { type = "string", description = "The background job id (returned when background=true). Required for action='poll'/'wait'/'stop'." },
+            until             = new { type = "string", description = "For action='wait': the text a line of the job's output must contain (plain text, not a pattern)." },
+            timeout_seconds   = new { type = "integer", description = $"For action='wait': the longest to wait, {MinWaitSeconds}-{MaxWaitSeconds} seconds (default {DefaultWaitSeconds})." }
         },
         required = Array.Empty<string>()
     };
@@ -110,7 +113,7 @@ internal sealed class RunCommandTool : ITool, IDisposable
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         if (args.Keyword("action") is { } action)
-            return HandleAction(action, args);
+            return action == "wait" ? await WaitAsync(args, ct) : HandleAction(action, args);
 
         if (args.Str("command") is not { Length: > 0 } command)
             return "Error: 'command' is required (or use action='poll'/'stop'/'list').";
@@ -196,7 +199,69 @@ internal sealed class RunCommandTool : ITool, IDisposable
                 return sb.ToString().TrimEnd();
             }
             default:
-                return $"Error: unknown action '{action}' (expected 'poll', 'stop', or 'list').";
+                return $"Error: unknown action '{action}' (expected 'poll', 'wait', 'stop', or 'list').";
+        }
+    }
+
+    internal const int MinWaitSeconds = 1, MaxWaitSeconds = 300, DefaultWaitSeconds = 60;
+
+    /// <summary>The most output a wait keeps (its newest), whatever the job prints meanwhile.</summary>
+    internal const int MaxWaitKept = 200_000;
+
+    /// <summary>
+    /// <c>action='wait'</c>: the job's new output up to the first line that holds <c>until</c>, or up to its end, or to the
+    /// deadline — said as such, never as a failure: a server slower than the wait is still starting.
+    /// </summary>
+    /// <remarks>Reads like <c>poll</c> (the offset moves), so nothing read here is read again by the next poll.</remarks>
+    private async Task<string> WaitAsync(JsonElement args, CancellationToken ct)
+    {
+        var id = GetId(args);
+        if (id is null) return "Error: action='wait' requires 'id'.";
+        var until = args.Str("until");
+        if (string.IsNullOrEmpty(until)) return "Error: action='wait' requires 'until' (the text a line must contain).";
+        var (seconds, notice) = ClampedArgument.Read(args, "timeout_seconds", DefaultWaitSeconds, MinWaitSeconds, MaxWaitSeconds);
+        var deadline = DateTime.UtcNow.AddSeconds(seconds);
+        var seen = new StringBuilder();
+        var scanned = 0;   // what was already searched: each read is searched once, never the whole output again
+        var dropped = 0;
+        // Waiting on a job computes nothing: completion and indexing of the whole account may use the GPU meanwhile.
+        using var paused = Hardware.GpuScheduler.PauseThisFlow();
+        string Kept() => (dropped > 0 ? $"(the first {dropped} characters of its output were let go)\n" : string.Empty) + seen.ToString().TrimEnd();
+        while (true)
+        {
+            var r = _background.Poll(id);
+            if (!r.Found)
+                return ClampedArgument.Above(notice, seen.Length == 0 ? $"Error: no background job '{id}'."
+                    : seen.ToString().Contains(until, StringComparison.Ordinal) ? $"[job '{id}' — '{until}' appeared; the job is no longer kept]\n{Kept()}"
+                    : $"[job '{id}' — no longer kept]\n{Kept()}");
+            seen.Append(r.NewOutput);
+            // Whole lines only: a line still being written could hold half of the text.
+            var text = seen.ToString();
+            var complete = r.Running ? text.LastIndexOf('\n') + 1 : text.Length;
+            var from = Math.Max(0, scanned - until.Length);
+            var at = complete > from ? text.IndexOf(until, from, complete - from, StringComparison.Ordinal) : -1;
+            scanned = Math.Max(scanned, complete);
+            // ⚠ Everything read is returned: poll moved past it, and what followed the line (an exception after "listening")
+            // would be lost to the model.
+            if (at >= 0)
+                return ClampedArgument.Above(notice, $"[job '{id}' — '{until}' appeared; still {(r.Running ? "running" : "finished")}]\n" + Kept());
+            // A chatty job waited on for minutes keeps its newest output, the drop said.
+            if (seen.Length > MaxWaitKept)
+            {
+                var cut = seen.Length - MaxWaitKept;
+                seen.Remove(0, cut);
+                dropped += cut;
+                scanned = Math.Max(0, scanned - cut);
+            }
+            if (!r.Running)
+                return ClampedArgument.Above(notice,
+                    $"[job '{id}' — finished (exit code {r.ExitCode?.ToString() ?? "unknown"}) before '{until}' appeared]\n"
+                    + (seen.Length == 0 ? "(no new output)" : Kept()));
+            if (DateTime.UtcNow >= deadline)
+                return ClampedArgument.Above(notice,
+                    $"[job '{id}' — still running; '{until}' has not appeared after {seconds} s (it may still be starting: wait again, "
+                    + "or poll to read it)]\n" + (seen.Length == 0 ? "(no new output)" : Kept()));
+            await Task.Delay(250, ct);
         }
     }
 

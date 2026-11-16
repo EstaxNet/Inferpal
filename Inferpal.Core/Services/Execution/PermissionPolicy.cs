@@ -368,6 +368,33 @@ internal sealed class PermissionPolicy
         return parts;
     }
 
+    /// <summary>Whether an <c>allow</c> rule naming <paramref name="toolName"/> itself (never <c>*</c>) matches the whole of
+    /// <paramref name="subject"/>. Read beside <see cref="Evaluate(string, string?, out bool)"/>, which keeps the denies.</summary>
+    /// <remarks>⚠ In the order of evaluation: the first rule that matches at all decides, as everywhere else — a looser
+    /// allow before it, or a deny, is never stepped over to find a whole match further down.</remarks>
+    internal bool AllowsWhole(string toolName, string subject)
+    {
+        if (IsHardDenied(subject)) return false;
+        foreach (var rule in _rules)
+        {
+            if (!rule.Matches(toolName, subject, out var unreadable))
+            {
+                if (unreadable && rule.Decision == PermissionDecision.Deny) return false;
+                continue;
+            }
+            if (rule.Decision != PermissionDecision.Allow || !string.Equals(rule.Tool, toolName, StringComparison.OrdinalIgnoreCase))
+                return false;
+            try
+            {
+                for (var m = rule.Pattern.Match(subject); m.Success; m = m.NextMatch())
+                    if (m.Index == 0 && m.Length == subject.Length) return true;
+            }
+            catch (RegexMatchTimeoutException) { /* a rule that cannot be read does not allow */ }
+            return false;
+        }
+        return false;
+    }
+
     private PermissionDecision EvaluateSingle(string toolName, string subject, ref bool unreadableDeny)
     {
         if (IsHardDenied(subject)) return PermissionDecision.Deny;

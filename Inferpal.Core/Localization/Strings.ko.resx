@@ -738,6 +738,16 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>한 번 허용</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>이 세션 동안 항상</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>거부</value></data>
+  <data name="ApprovalCallApp" xml:space="preserve"><value>에이전트가 앱을 호출하려고 합니다</value></data>
+  <data name="ApprovalCallAppWhere" xml:space="preserve"><value>{0} — 이 컴퓨터</value></data>
+  <data name="ApprovalAlwaysFor" xml:space="preserve"><value>{0}에 항상 허용</value></data>
+  <data name="ApprovalAlwaysForTooltip" xml:space="preserve"><value>{0}에 대한 호출은 편집기를 닫을 때까지 카드 없이 진행됩니다. 다른 포트나 다른 컴퓨터는 계속 묻습니다.</value></data>
+  <data name="ApprovalCallAppNote" xml:space="preserve"><value>‘항상’은 편집기를 닫을 때까지 이 주소와 포트만 엽니다. 이 컴퓨터의 다른 포트(데이터베이스, Docker, 프록시)는 다시 묻습니다.</value></data>
+  <data name="ApprovalSendElsewhere" xml:space="preserve"><value>에이전트가 다른 컴퓨터로 요청을 보내려고 합니다</value></data>
+  <data name="ApprovalSendElsewhereWhere" xml:space="preserve"><value>{0} — 매번 묻습니다</value></data>
+  <data name="ApprovalSendElsewhereWarning" xml:space="preserve"><value>이 요청은 위에 보이는 내용(헤더 포함)과 함께 이 컴퓨터를 떠납니다. 보내려는 내용과 대상이 맞는지 확인하세요.</value></data>
+  <data name="ApprovalSendOnce" xml:space="preserve"><value>한 번 보내기</value></data>
+  <data name="ApprovalSendElsewhereNote" xml:space="preserve"><value>다른 컴퓨터에는 ‘항상’이 없습니다. 에이전트가 작성한 요청은 읽은 내용을 무엇이든 담을 수 있기 때문입니다. 사용하는 서버를 신뢰하려면 설정에 승인 규칙을 추가하세요: {0} — 메서드와 전체 주소를 지정해야 합니다.</value></data>
   <data name="ApprovalDialogTitle" xml:space="preserve"><value>승인 필요</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>권한 규칙(deny)에 의해 차단됨: {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>내장 보안 차단 목록(치명적 명령)에 의해 차단됨: {0}</value></data>

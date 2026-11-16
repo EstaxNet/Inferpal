@@ -25,9 +25,16 @@ internal sealed record ApprovalPreviewLine(string Kind, string Text);
 /// <param name="RuleTooltip">What that button writes, the rule spelled out; empty when none.</param>
 /// <param name="OffersAlways">Whether the card offers "Always this session": never on a forced card, where it would grant
 /// nothing (<see cref="ApprovalPrompt.Forced"/>).</param>
+/// <param name="AllowLabel">The allowing button's words when not "Allow once" ("Send once"); empty for the usual ones.</param>
+/// <param name="AlwaysLabel">The "Always" button's words when it opens less than the tool ("Always for localhost:5000");
+/// empty for "Always this session".</param>
+/// <param name="Warning">A warning above the answers (what leaves the machine); empty for none.</param>
+/// <param name="Note">A line under the answers saying what they mean here; empty for none.</param>
+/// <param name="Outbound">Data may leave the machine: the card is drawn as a warning, and Deny is its default answer.</param>
 internal sealed record ApprovalCardModel(
     string Title, string Subject, string Meta, IReadOnlyList<ApprovalPreviewLine> Preview, string More,
-    string AlwaysTooltip, string Message, string RuleLabel = "", string RuleTooltip = "", bool OffersAlways = true);
+    string AlwaysTooltip, string Message, string RuleLabel = "", string RuleTooltip = "", bool OffersAlways = true,
+    string AllowLabel = "", string AlwaysLabel = "", string Warning = "", string Note = "", bool Outbound = false);
 
 /// <summary>Builds <see cref="ApprovalCardModel"/> — the same card in both editors.</summary>
 internal static class ApprovalCard
@@ -60,6 +67,33 @@ internal static class ApprovalCard
     {
         "apply_edits", "rename_symbol", "replace_in_files",
     };
+
+    /// <summary>
+    /// <c>http_request</c>'s card, read from its subject (<c>METHOD scheme://host:port</c>): on this machine, "Always" for
+    /// that address only; anywhere else, a warning card whose default answer is Deny, with no "Always" at all.
+    /// </summary>
+    private static ApprovalCardModel? HttpCard(ApprovalPrompt prompt, List<ApprovalPreviewLine> preview)
+    {
+        var space = prompt.Subject?.IndexOf(' ') ?? -1;
+        if (space < 0 || !Uri.TryCreate(prompt.Subject![(space + 1)..], UriKind.Absolute, out var origin)) return null;
+        var method = prompt.Subject[..space];
+        var hostPort = origin.Authority.ToLowerInvariant();
+        if (preview.Count == 0) preview.AddRange(prompt.Details.Replace("\r\n", "\n").Split('\n').Select(l => new ApprovalPreviewLine("ctx", l)));
+        if (Tools.HttpRequestTool.IsLoopback(origin))
+        {
+            var where = $"{origin.Host.ToLowerInvariant()}:{origin.Port}";
+            return new ApprovalCardModel(Strings.ApprovalCallApp, Strings.ApprovalCallAppWhere(where), string.Empty, preview,
+                                         string.Empty, Strings.ApprovalAlwaysForTooltip(prompt.Subject[(space + 1)..]), prompt.Message,
+                                         OffersAlways: !prompt.Forced, AlwaysLabel: Strings.ApprovalAlwaysFor(where),
+                                         Note: prompt.Forced ? string.Empty : Strings.ApprovalCallAppNote);
+        }
+        // The rule that would trust this server, spelled whole: method, scheme, host, port — nothing less covers it.
+        var rule = $"allow http_request ^{method} {System.Text.RegularExpressions.Regex.Escape(prompt.Subject[(space + 1)..])}$";
+        return new ApprovalCardModel(Strings.ApprovalSendElsewhere, Strings.ApprovalSendElsewhereWhere(hostPort), string.Empty, preview,
+                                     string.Empty, string.Empty, prompt.Message, OffersAlways: false,
+                                     AllowLabel: Strings.ApprovalSendOnce, Warning: Strings.ApprovalSendElsewhereWarning,
+                                     Note: Strings.ApprovalSendElsewhereNote(rule), Outbound: true);
+    }
 
     public static ApprovalCardModel Build(ApprovalPrompt prompt, string? root, bool keepsGrantsAcrossSolutions = false)
     {
@@ -131,6 +165,8 @@ internal static class ApprovalCard
                 if (!pathSubject) subject = string.Empty;
             }
         }
+
+        if (prompt.ToolName == "http_request" && HttpCard(prompt, preview) is { } http) return http;
 
         return new ApprovalCardModel(title, subject, meta, preview, more > 0 ? Strings.ApprovalMoreLines(more) : string.Empty,
                                      // What "Always" lasts: across solutions in one Visual Studio; until the host restarts elsewhere.

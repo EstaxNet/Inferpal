@@ -736,6 +736,16 @@
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>Разрешить один раз</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Всегда в этой сессии</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>Отклонить</value></data>
+  <data name="ApprovalCallApp" xml:space="preserve"><value>Агент хочет обратиться к вашему приложению</value></data>
+  <data name="ApprovalCallAppWhere" xml:space="preserve"><value>{0} — на этом компьютере</value></data>
+  <data name="ApprovalAlwaysFor" xml:space="preserve"><value>Всегда для {0}</value></data>
+  <data name="ApprovalAlwaysForTooltip" xml:space="preserve"><value>Обращения к {0} проходят без карточки до закрытия редактора. Другой порт или другой компьютер по-прежнему запрашивают разрешение.</value></data>
+  <data name="ApprovalCallAppNote" xml:space="preserve"><value>«Всегда» открывает только этот адрес и порт, до закрытия редактора. Другой порт этого компьютера — база данных, Docker, прокси — снова запросит разрешение.</value></data>
+  <data name="ApprovalSendElsewhere" xml:space="preserve"><value>Агент хочет отправить запрос на другой компьютер</value></data>
+  <data name="ApprovalSendElsewhereWhere" xml:space="preserve"><value>{0} — запрашивается каждый раз</value></data>
+  <data name="ApprovalSendElsewhereWarning" xml:space="preserve"><value>Этот запрос покидает ваш компьютер с тем, что вы видите выше, включая заголовки. Убедитесь, что именно это вы хотите отправить и куда.</value></data>
+  <data name="ApprovalSendOnce" xml:space="preserve"><value>Отправить один раз</value></data>
+  <data name="ApprovalSendElsewhereNote" xml:space="preserve"><value>Для другого компьютера «Всегда» нет: запрос, написанный агентом, может унести всё, что он прочитал. Чтобы доверять используемому серверу, добавьте правило одобрения в настройках: {0} — оно должно указывать метод и полный адрес.</value></data>
   <data name="ApprovalDialogTitle" xml:space="preserve"><value>Требуется подтверждение</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>Заблокировано правилом разрешений (deny): {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>Заблокировано встроенным защитным чёрным списком (катастрофическая команда): {0}</value></data>

@@ -217,6 +217,16 @@ internal static class RunSummary
         return (added, left.Values.Sum());
     }
 
+    /// <summary>The status of an HTTP answer a step got (<c>http_request</c>), as its line shows it: the code, and whether it
+    /// is an error (4xx, 5xx); <c>null</c> for any other step.</summary>
+    public static (string Code, bool Failed)? HttpStatus(string toolName, string? output)
+    {
+        if (toolName != "http_request" || output is null) return null;
+        var m = System.Text.RegularExpressions.Regex.Match(output, @"^(?:Note: [^\n]*\n\n)*HTTP (\d{3}) ",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+        return m.Success ? (m.Groups[1].Value, m.Groups[1].Value[0] is '4' or '5') : null;
+    }
+
     /// <summary>The argument names a step acts on, in the order a step line looks for them.</summary>
     private static readonly string[] SubjectKeys = ["path", "file_path", "command", "query", "url", "symbol", "pattern"];
 
@@ -238,6 +248,10 @@ internal static class RunSummary
                     && value.GetString() is { Length: > 0 } text)
                 {
                     text = text.ReplaceLineEndings(" ");
+                    // A request names its method before its address (http_request): "POST http://localhost:5000/api/orders".
+                    if (key == "url" && doc.RootElement.TryGetProperty("method", out var method)
+                        && method.ValueKind == System.Text.Json.JsonValueKind.String && method.GetString() is { Length: > 0 } verb)
+                        text = verb.ToUpperInvariant() + " " + text;
                     return text.Length > 80 ? text[..80] + "…" : text;
                 }
             }

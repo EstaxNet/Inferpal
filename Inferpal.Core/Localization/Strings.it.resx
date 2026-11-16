@@ -738,6 +738,16 @@ Digita `/setup` per riprovare.</value></data>
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>Consenti una volta</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Sempre, per questa sessione</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>Nega</value></data>
+  <data name="ApprovalCallApp" xml:space="preserve"><value>L’agente vuole chiamare la tua app</value></data>
+  <data name="ApprovalCallAppWhere" xml:space="preserve"><value>{0} — su questa macchina</value></data>
+  <data name="ApprovalAlwaysFor" xml:space="preserve"><value>Sempre per {0}</value></data>
+  <data name="ApprovalAlwaysForTooltip" xml:space="preserve"><value>Le chiamate a {0} passano senza scheda finché l’editor non viene chiuso. Un’altra porta, o un’altra macchina, chiede ancora.</value></data>
+  <data name="ApprovalCallAppNote" xml:space="preserve"><value>«Sempre» apre solo questo indirizzo e questa porta, finché l’editor non viene chiuso. Un’altra porta di questa macchina — un database, Docker, un proxy — chiede di nuovo.</value></data>
+  <data name="ApprovalSendElsewhere" xml:space="preserve"><value>L’agente vuole inviare una richiesta a un’altra macchina</value></data>
+  <data name="ApprovalSendElsewhereWhere" xml:space="preserve"><value>{0} — chiesto ogni volta</value></data>
+  <data name="ApprovalSendElsewhereWarning" xml:space="preserve"><value>Questa richiesta lascia la tua macchina con ciò che vedi sopra, intestazioni comprese. Verifica che sia ciò che vuoi inviare, e dove.</value></data>
+  <data name="ApprovalSendOnce" xml:space="preserve"><value>Invia una volta</value></data>
+  <data name="ApprovalSendElsewhereNote" xml:space="preserve"><value>Nessun «Sempre» per un’altra macchina: una richiesta scritta dall’agente potrebbe contenere qualsiasi cosa abbia letto. Per fidarti di un server che usi, aggiungi una regola di approvazione nelle impostazioni: {0} — deve indicare il metodo e l’indirizzo completo.</value></data>
   <data name="ApprovalDialogTitle" xml:space="preserve"><value>Approvazione richiesta</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>Bloccato da una regola di autorizzazione (deny): {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>Bloccato dalla denylist di sicurezza integrata (comando catastrofico): {0}</value></data>

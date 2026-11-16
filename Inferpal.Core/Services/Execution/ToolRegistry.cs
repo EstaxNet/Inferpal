@@ -142,6 +142,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new GetDiagnosticsTool(editor, () => indexService.RootDir, codeConsent));
         Register(new GetActiveDocumentTool(editor));
         Register(new FetchUrlTool(approval));
+        Register(new HttpRequestTool(approval));
         Register(new WebSearchTool(approval));
         Register(new GetSolutionInfoTool(editor, () => indexService.RootDir));
         Register(new GetOpenEditorsTool(editor));
@@ -823,7 +824,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private static readonly HashSet<string> TextArguments = new(StringComparer.Ordinal)
     {
         "pattern", "query", "old_content", "new_content", "content", "text", "command", "old_name", "new_name", "expression",
-        "snapshot", "sql", "find", "replace", "question", "options",
+        "snapshot", "sql", "find", "replace", "question", "options", "body",
     };
 
     /// <summary>

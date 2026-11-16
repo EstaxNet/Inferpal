@@ -28,6 +28,11 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
     // package check sends a name for a call a deny rule refuses.
     public bool Refuses(string toolName, string subject) => inner.Refuses(toolName, subject);
 
+    public bool Allows(string toolName, string subject) => inner.Allows(toolName, subject);
+
+    public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct) =>
+        inner.RequestScopedApprovalAsync(toolName, details, subject, grantKey, ct);
+
     public bool RulesUnreadable => inner.RulesUnreadable;
 
     public Task<Mcp.McpInputAnswer> AskForInputAsync(Mcp.McpInputForm form, CancellationToken ct) =>

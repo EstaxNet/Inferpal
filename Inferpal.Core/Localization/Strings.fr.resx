@@ -738,6 +738,16 @@ Tapez `/setup` pour réessayer.</value></data>
   <data name="ApprovalAllowOnce" xml:space="preserve"><value>Autoriser une fois</value></data>
   <data name="ApprovalAlwaysAllow" xml:space="preserve"><value>Toujours, pour cette session</value></data>
   <data name="ApprovalDeny" xml:space="preserve"><value>Refuser</value></data>
+  <data name="ApprovalCallApp" xml:space="preserve"><value>L’agent veut appeler votre application</value></data>
+  <data name="ApprovalCallAppWhere" xml:space="preserve"><value>{0} — sur cette machine</value></data>
+  <data name="ApprovalAlwaysFor" xml:space="preserve"><value>Toujours pour {0}</value></data>
+  <data name="ApprovalAlwaysForTooltip" xml:space="preserve"><value>Les appels à {0} passent sans carte jusqu’à la fermeture de l’éditeur. Un autre port, ou une autre machine, redemande.</value></data>
+  <data name="ApprovalCallAppNote" xml:space="preserve"><value>« Toujours » n’ouvre que cette adresse et ce port, jusqu’à la fermeture de l’éditeur. Un autre port de cette machine — une base, Docker, un proxy — redemande.</value></data>
+  <data name="ApprovalSendElsewhere" xml:space="preserve"><value>L’agent veut envoyer une requête à une autre machine</value></data>
+  <data name="ApprovalSendElsewhereWhere" xml:space="preserve"><value>{0} — demandé à chaque fois</value></data>
+  <data name="ApprovalSendElsewhereWarning" xml:space="preserve"><value>Cette requête quitte votre machine avec ce que vous voyez ci-dessus, en-têtes compris. Vérifiez que c’est bien ce que vous voulez envoyer, et où.</value></data>
+  <data name="ApprovalSendOnce" xml:space="preserve"><value>Envoyer une fois</value></data>
+  <data name="ApprovalSendElsewhereNote" xml:space="preserve"><value>Pas de « Toujours » pour une autre machine : une requête écrite par l’agent pourrait emporter tout ce qu’il a lu. Pour faire confiance à un serveur que vous utilisez, ajoutez une règle d’approbation dans les réglages : {0} — elle doit nommer la méthode et l’adresse entière.</value></data>
   <data name="ApprovalDialogTitle" xml:space="preserve"><value>Approbation requise</value></data>
   <data name="PermissionBlockedRule" xml:space="preserve"><value>Bloqué par une règle de permission (deny) : {0}</value></data>
   <data name="PermissionBlockedHard" xml:space="preserve"><value>Bloqué par la liste de blocage de sécurité intégrée (commande catastrophique) : {0}</value></data>

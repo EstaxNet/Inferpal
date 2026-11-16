@@ -39,7 +39,8 @@ public class SteeringFrontEndTests
 
         // "Allow once" only with nothing typed.
         var once = WebviewRebuildTests.Body(busy, "if (_pendingApproval is { IsAnswered: false } card && text.Length == 0)");
-        Assert.Contains("card.Answer(ApprovalDecision.Once);", once, StringComparison.Ordinal);
+        // "Allow once" — or Deny, on a card for data leaving the machine, whose default answer it is.
+        Assert.Contains("card.Answer(card.IsOutbound ? ApprovalDecision.Deny : ApprovalDecision.Once);", once, StringComparison.Ordinal);
         Assert.Single(Regex.Matches(busy, @"ApprovalDecision\.Once"));
         // Refused only after the text became a note the run will read — queued, it leaves the card waiting.
         var steered = busy.IndexOf("if (!Steer(text)) return;", StringComparison.Ordinal);

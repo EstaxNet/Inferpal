@@ -46,6 +46,8 @@ internal static class ToolCeilings
         ["get_debugger_state"]   = new(R, ReadsLiveState: true),
         ["fetch_url"]            = new(N),
         ["web_search"]           = new(N),
+        // The app it calls may write anything (a database in the repository): never plan mode, and the work-tree watch reads it.
+        ["http_request"]         = new(N | X),
         ["write_file"]           = new(W),
         ["apply_diff"]           = new(W),
         ["apply_edits"]          = new(W),

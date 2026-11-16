@@ -1,0 +1,289 @@
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
+
+namespace Inferpal.Services.Tools;
+
+/// <summary>
+/// <c>http_request</c>: one HTTP request, any method — above all to the app the agent just started on the loopback.
+/// </summary>
+/// <remarks>
+/// ⚠ An outbound request the model writes is an exfiltration channel. Every call goes through a card: on the loopback an
+/// "Always" opens that ORIGIN only (a dev proxy, Docker in tcp or a debugging port on another port stay asked); anywhere else
+/// the card is forced each time, unless one of the person's <c>allow http_request</c> rules matches the whole subject
+/// (<see cref="Subject"/>). No redirect is followed: the next request is judged again.
+/// </remarks>
+internal sealed class HttpRequestTool(IApprovalService approval) : ITool
+{
+    // A page in a legacy code page (windows-1252, shift_jis) is read as it says, never as UTF-8.
+    static HttpRequestTool() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+    internal const int MaxBodyBytes = 1024 * 1024, MaxHeaders = 40, MaxHeaderChars = 300;
+    internal const int DefaultTimeout = 30, MaxTimeout = 120, MaxWait = 120;
+
+    public string Name => "http_request";
+
+    /// <inheritdoc/>
+    /// <remarks>The server it calls acts on its own: what it changes is beyond the request (<see cref="ToolEffect.Runs"/>).</remarks>
+    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Network | ToolEffect.Runs;
+
+    public string Description =>
+        "Sends one HTTP request (any method) and returns the status, headers and body — to call the app or API you are " +
+        "running locally (http://localhost:5000/api/orders) and read its answer, a 500's stack trace included. The person " +
+        "approves the first call to each local address; any other address is approved call by call. Redirects are not " +
+        "followed. For a server still starting, set wait_seconds, or wait on its job: run_command action='wait'.";
+
+    public object Parameters => new
+    {
+        type = "object",
+        properties = new
+        {
+            url             = new { type = "string",  description = "Full URL (http or https), e.g. http://localhost:5000/api/orders." },
+            method          = new { type = "string",  description = "GET (default), POST, PUT, PATCH, DELETE, HEAD or OPTIONS." },
+            headers         = new { type = "object",  description = "Request headers, name → value (e.g. {\"Content-Type\": \"application/json\"})." },
+            body            = new { type = "string",  description = "Request body (text, up to 1 MB). JSON when it starts with { or [ and no Content-Type is given." },
+            wait_seconds    = new { type = "integer", description = $"Local addresses only: keep trying while nothing listens yet, up to this many seconds (0-{MaxWait})." },
+            timeout_seconds = new { type = "integer", description = $"The longest the request may take, 1-{MaxTimeout} seconds (default {DefaultTimeout})." },
+        },
+        required = new[] { "url" },
+    };
+
+    private static readonly HashSet<string> Methods = new(StringComparer.Ordinal) { "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS" };
+
+    // Headers that would change WHERE or HOW the request goes, not what it says: Host reroutes through local forward proxies
+    // and virtual hosts, Upgrade opens a websocket (a debugger's port), the framing ones are the client's to write.
+    private static readonly HashSet<string> RefusedHeaders = new(StringComparer.OrdinalIgnoreCase)
+        { "Host", "Connection", "Upgrade", "Transfer-Encoding", "Content-Length", "Expect", "TE", "Keep-Alive", "Trailer" };
+
+    public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
+    {
+        var url = args.Str("url") ?? throw new ArgumentException("url is required.");
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            return $"Error: '{url}' is not an http or https URL.";
+        var method = (args.Str("method") ?? "GET").Trim().ToUpperInvariant();
+        if (!Methods.Contains(method)) return $"Error: unknown method '{method}' (expected {string.Join(", ", Methods)}).";
+
+        if (IsUnspecified(uri))
+            return $"Error: '{uri.Host}' is no address to call — the server listens on every interface; call it at 127.0.0.1.";
+        var local = IsLoopback(uri);
+
+        var headers = new List<KeyValuePair<string, string>>();
+        if (args.Has("headers") && !args.Object("headers", out _))
+            return "Error: 'headers' must be an object, name → value (e.g. {\"Content-Type\": \"application/json\"}).";
+        if (args.Object("headers", out var h))
+            foreach (var p in h.EnumerateObject())
+            {
+                if (RefusedHeaders.Contains(p.Name) || p.Name.StartsWith("Proxy-", StringComparison.OrdinalIgnoreCase))
+                    return $"Error: the header '{p.Name}' is not one a request may set here (it changes where or how the request goes).";
+                headers.Add(new(p.Name, p.Value.AsText() ?? p.Value.GetRawText()));
+            }
+        var body = args.Str("body");
+        if (body is not null && Encoding.UTF8.GetByteCount(body) > MaxBodyBytes)
+            return $"Error: the body is larger than {MaxBodyBytes / (1024 * 1024)} MB.";
+
+        // ⚠ What leaves the machine is shown whole on its card: a body longer than a card can show is not sent.
+        if (!local && body is not null && body.Length > MaxCardBody)
+            return $"Error: a request to another machine carries at most {MaxCardBody} characters of body, so that the card shows all of it.";
+
+        var (timeout, timeoutNote) = ClampedArgument.Read(args, "timeout_seconds", DefaultTimeout, 1, MaxTimeout);
+        var (wait, waitNote) = ClampedArgument.Read(args, "wait_seconds", 0, 0, MaxWait);
+        if (wait > 0 && !local) return "Error: wait_seconds is for a local address only.";
+
+        var subject = Subject(method, uri);
+        var details = Details(method, uri, headers, body, local);
+        var approved = local
+            ? await approval.RequestScopedApprovalAsync(Name, details, subject, grantKey: $"{Name} {Origin(uri)}", ct)
+            // Anywhere else: a card every time, unless the person's own rule names this whole subject — and even then nothing
+            // a card could answer is filed under the tool's name (a rule changed between the two reads draws a card whose
+            // grant, if any, names this origin, which no other call reads).
+            : approval.Allows(Name, subject)
+                ? await approval.RequestScopedApprovalAsync(Name, details, subject, grantKey: $"{Name} elsewhere {Origin(uri)}", ct)
+                : await approval.RequestApprovalAsync(Name, details, ct, subject: subject, forcePrompt: true);
+        if (!approved) return Execution.ToolFailure.CancelledByUser;
+
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(TimeSpan.FromSeconds(timeout + wait));
+        var notes = string.Join("\n\n", new[] { timeoutNote, waitNote }.Where(n => n is not null));
+        try
+        {
+            var report = await SendAsync(uri, method, headers, body, local, wait, deadline.Token);
+            return notes.Length == 0 ? report : notes + "\n\n" + report;
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return $"The request to {Origin(uri)} did not finish within {timeout + wait} s: it was stopped.";
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is SocketException { SocketErrorCode: SocketError.ConnectionRefused })
+        {
+            return $"Nothing listens on {Origin(uri)} (connection refused). If the server is starting, call again with " +
+                   "wait_seconds, or wait for its \"listening\" line: run_command action='wait'.";
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"The request to {Origin(uri)} failed: {Diagnostics.RootMessage(ex)}";
+        }
+    }
+
+    private static async Task<string> SendAsync(Uri uri, string method, List<KeyValuePair<string, string>> headers, string? body,
+                                                bool local, int wait, CancellationToken ct)
+    {
+        var waitUntil = DateTime.UtcNow.AddSeconds(wait);
+        while (true)
+        {
+            // A handler per call: a pooled connection would skip the connect check below.
+            using var handler = new SocketsHttpHandler
+            {
+                AllowAutoRedirect      = false,
+                UseCookies             = false,
+                Credentials            = null,
+                AutomaticDecompression = DecompressionMethods.All,
+                // ⚠ No proxy on the loopback: through one, the check below would judge the proxy, not the target.
+                UseProxy               = !local,
+                Proxy                  = NetworkProxy.Shared,
+                PooledConnectionLifetime = TimeSpan.Zero,
+            };
+            if (local) handler.ConnectCallback = (c, token) => ConnectLoopbackAsync(c.DnsEndPoint.Host, c.DnsEndPoint.Port, token);
+            using var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
+            using var request = new HttpRequestMessage(new HttpMethod(method), uri);
+            if (body is not null)
+            {
+                request.Content = new StringContent(body, Encoding.UTF8);
+                request.Content.Headers.ContentType = new MediaTypeHeaderValue(body.TrimStart().StartsWith('{') || body.TrimStart().StartsWith('[')
+                    ? "application/json" : "text/plain") { CharSet = "utf-8" };
+            }
+            foreach (var (name, value) in headers)
+            {
+                try
+                {
+                    // Validating adds: a CR or LF in a value is refused, never a second header smuggled in.
+                    if (request.Content is not null && name.StartsWith("Content-", StringComparison.OrdinalIgnoreCase))
+                    {
+                        request.Content.Headers.Remove(name);
+                        request.Content.Headers.Add(name, value);
+                    }
+                    else request.Headers.Add(name, value);
+                }
+                catch (Exception ex) when (ex is FormatException or InvalidOperationException)
+                {
+                    return $"Error: the header '{name}' could not be set ({ex.Message}).";
+                }
+            }
+
+            try
+            {
+                using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+                return await ReportAsync(response, ct);
+            }
+            catch (HttpRequestException ex) when (ex.InnerException is SocketException { SocketErrorCode: SocketError.ConnectionRefused }
+                                                  && DateTime.UtcNow < waitUntil)
+            {
+                await Task.Delay(500, ct);
+            }
+        }
+    }
+
+    /// <summary>Connects only to a loopback address the name resolves to: a name rewritten elsewhere (hosts file, DNS) is
+    /// never reached as "local".</summary>
+    internal static async ValueTask<Stream> ConnectLoopbackAsync(string name, int port, CancellationToken ct)
+    {
+        var host = name.Trim('[', ']');
+        var addresses = IPAddress.TryParse(host, out var literal) ? [literal] : await Dns.GetHostAddressesAsync(host, ct);
+        var loopback = addresses.Select(a => a.IsIPv4MappedToIPv6 ? a.MapToIPv4() : a).Where(IPAddress.IsLoopback).ToList();
+        if (loopback.Count == 0)
+            throw new HttpRequestException($"'{host}' does not lead to this machine's loopback address: not called as a local address.");
+        SocketException? last = null;
+        foreach (var address in loopback)
+        {
+            var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            try
+            {
+                await socket.ConnectAsync(new IPEndPoint(address, port), ct);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch (SocketException ex) { socket.Dispose(); last = ex; }
+            catch { socket.Dispose(); throw; }
+        }
+        // The socket error itself: the client wraps it, and "connection refused" is read on it (wait_seconds, the message).
+        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(last!);
+        throw last;
+    }
+
+    private static async Task<string> ReportAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        var sb = new StringBuilder($"HTTP {(int)response.StatusCode} {response.ReasonPhrase}\n");
+        var all = response.Headers.Concat(response.Content.Headers).ToList();
+        foreach (var (name, values) in all.Take(MaxHeaders))
+        {
+            var value = string.Join(", ", values);
+            sb.Append(name).Append(": ").Append(value.Length > MaxHeaderChars ? value[..MaxHeaderChars] + "…" : value).Append('\n');
+        }
+        if (all.Count > MaxHeaders) sb.Append($"({all.Count - MaxHeaders} more headers not shown)\n");
+        if ((int)response.StatusCode is >= 300 and < 400)
+            sb.Append("(Redirect not followed: request the Location above if it is the one wanted.)\n");
+
+        // Bounded by the bytes READ, after decompression: a Content-Length that lies, or a compressed bomb, stops at the cap.
+        await using var stream = await response.Content.ReadAsStreamAsync(ct);
+        var buffer = new byte[MaxBodyBytes + 1];
+        var read = 0;
+        while (read < buffer.Length && await stream.ReadAsync(buffer.AsMemory(read), ct) is var n and > 0) read += n;
+        var cut = read > MaxBodyBytes;
+        var bytes = buffer.AsSpan(0, Math.Min(read, MaxBodyBytes));
+        sb.Append('\n');
+        if (bytes.Length == 0) return sb.Append("(empty body)").ToString();
+        var charset = response.Content.Headers.ContentType?.CharSet?.Trim('"');
+        if (!(charset?.StartsWith("utf-16", StringComparison.OrdinalIgnoreCase) == true
+              || charset?.StartsWith("utf-32", StringComparison.OrdinalIgnoreCase) == true) && TextFileEncoding.IsBinary(bytes))
+            return sb.Append($"(binary body: {(cut ? "more than " : "")}{bytes.Length} bytes, {response.Content.Headers.ContentType?.MediaType ?? "no content type"})").ToString();
+
+        Encoding encoding;
+        try { encoding = charset is { Length: > 0 } ? Encoding.GetEncoding(charset) : Encoding.UTF8; }
+        catch (ArgumentException) { encoding = Encoding.UTF8; }
+        var text = encoding.GetString(bytes);
+        var max = Agent.AgentOrchestrator.MaxToolResultCharsInContext - sb.Length - 200;
+        if (text.Length > max)
+            return sb.Append(text.AsSpan(0, Math.Max(0, max))).Append($"\n\n[body cut: {max} of {text.Length} characters shown{(cut ? $", and only the first {MaxBodyBytes / (1024 * 1024)} MB were read" : "")} — ask the API for less (a filter, a page)]").ToString();
+        return sb.Append(text).Append(cut ? $"\n\n[body cut: only the first {MaxBodyBytes / (1024 * 1024)} MB were read]" : "").ToString();
+    }
+
+    /// <summary>A loopback address as written: <c>localhost</c>, <c>*.localhost</c>, 127.0.0.0/8, <c>::1</c>. The connection
+    /// itself is held to the loopback (<see cref="ConnectLoopbackAsync"/>), whatever the name resolves to.</summary>
+    internal static bool IsLoopback(Uri uri)
+    {
+        var host = Host(uri);
+        if (host == "localhost" || host.EndsWith(".localhost", StringComparison.Ordinal)) return true;
+        return IPAddress.TryParse(host.Trim('[', ']'), out var ip) && IPAddress.IsLoopback(ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip);
+    }
+
+    // 0.0.0.0 and :: reach the loopback on Linux and macOS while reading as another address.
+    private static bool IsUnspecified(Uri uri) =>
+        IPAddress.TryParse(Host(uri).Trim('[', ']'), out var ip)
+        && ((ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip) is var a && (a.Equals(IPAddress.Any) || a.Equals(IPAddress.IPv6Any)
+            || (a.AddressFamily == AddressFamily.InterNetwork && a.GetAddressBytes()[0] == 0)));
+
+    private static string Host(Uri uri) =>
+        (uri.HostNameType == UriHostNameType.IPv6 ? uri.Host : uri.IdnHost).TrimEnd('.').ToLowerInvariant();
+
+    /// <summary><c>scheme://host:port</c>, port explicit, host canonical: what an "Always" opens.</summary>
+    internal static string Origin(Uri uri) => $"{uri.Scheme}://{Host(uri)}:{uri.Port}";
+
+    /// <summary>What the permission rules read: <c>METHOD scheme://host:port</c> — no path, query, header or body, so a rule
+    /// is about where and how, and nothing the model writes into the request can make it match.</summary>
+    internal static string Subject(string method, Uri uri) => $"{method} {Origin(uri)}";
+
+    /// <summary>The most body a request to another machine carries: all of it is on its card.</summary>
+    internal const int MaxCardBody = 16_000;
+
+    /// <remarks>A local body is cut on its card past 4 000 characters (an "Always" for that origin shows none of the next
+    /// ones anyway); a body leaving the machine never is (<see cref="MaxCardBody"/>).</remarks>
+    private static string Details(string method, Uri uri, List<KeyValuePair<string, string>> headers, string? body, bool local)
+    {
+        var sb = new StringBuilder($"{method} {uri.AbsoluteUri}");
+        foreach (var (name, value) in headers) sb.Append('\n').Append(name).Append(": ").Append(value);
+        if (body is not null)
+            sb.Append("\n\n").Append(local && body.Length > 4000 ? body[..4000] + $"\n… ({body.Length - 4000} more characters)" : body);
+        return sb.ToString();
+    }
+}

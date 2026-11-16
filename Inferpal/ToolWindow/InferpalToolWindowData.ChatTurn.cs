@@ -38,10 +38,11 @@ internal partial class InferpalToolWindowData
             await RunOnVMContextAsync(() =>
             {
                 var text = Prompt.Trim();
-                // An approval card waiting with an empty prompt takes Enter as "Allow once", the key the card names.
+                // An approval card waiting with an empty prompt takes Enter as its default answer, the key the card names:
+                // "Allow once" — or Deny, on a card for data leaving the machine.
                 if (_pendingApproval is { IsAnswered: false } card && text.Length == 0)
                 {
-                    card.Answer(ApprovalDecision.Once);
+                    card.Answer(card.IsOutbound ? ApprovalDecision.Deny : ApprovalDecision.Once);
                     return;
                 }
                 // A step pause takes /resume, the remedy its notice names.
@@ -597,6 +598,8 @@ internal partial class InferpalToolWindowData
                 var toolItem = ChatMessageItem.ToolMsg(exec.Name, Strings.MsgToolOutput(exec.Input, preview),
                                                        _config.ToolBubblesExpanded || exec.HasErrors);
                 toolItem.StepSubject = Services.Presentation.RunSummary.Subject(exec.Input);
+                if (Services.Presentation.RunSummary.HttpStatus(exec.Name, exec.Output) is { } status)
+                    (toolItem.StepStatus, toolItem.StepStatusFailed) = status;
                 toolItem.HasErrors   = exec.HasErrors;
                 if (exec.Diff is not null)
                     toolItem.InitDiff(exec.Diff);

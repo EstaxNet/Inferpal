@@ -673,6 +673,35 @@
                                     </TextBlock>
                                     <TextBlock DockPanel.Dock="Left" Text="{Binding ToolTitle}" FontFamily="Cascadia Mono, Consolas"
                                                FontSize="12" Foreground="{Binding ThemeText}" VerticalAlignment="Center"/>
+                                    <!-- The status of an HTTP answer (http_request): an error code in the error colour. -->
+                                    <Border DockPanel.Dock="Right" CornerRadius="4" BorderThickness="1" Padding="6,0" Margin="8,0,0,0"
+                                            VerticalAlignment="Center">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeOk, ElementName=root}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding StepStatus}" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding StepStatusFailed}" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeErrorText, ElementName=root}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding StepStatus}" FontSize="11.5" FontWeight="SemiBold">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{Binding DataContext.ThemeOk, ElementName=root}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding StepStatusFailed}" Value="True">
+                                                            <Setter Property="Foreground" Value="{Binding DataContext.ThemeErrorText, ElementName=root}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
                                     <TextBlock Text="{Binding StepSubject}" FontSize="12" Foreground="{Binding ThemeSubtleText}"
                                                Margin="8,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                 </DockPanel>
@@ -1910,6 +1939,9 @@
                                         <DataTrigger Binding="{Binding Role}" Value="approval">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsOutbound}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeWarn, ElementName=root}"/>
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding IsAnswered}" Value="True">
                                             <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeBorder, ElementName=root}"/>
                                         </DataTrigger>
@@ -1968,6 +2000,20 @@
                                         </TextBlock>
                                     </StackPanel>
                                 </Border>
+                                <!-- What leaves the machine (a request to another machine): said above the answers. -->
+                                <Border Margin="12,10,12,0" Padding="8,6" CornerRadius="6" BorderThickness="1"
+                                        BorderBrush="{Binding DataContext.ThemeWarn, ElementName=root}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CardWarning}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding CardWarning}" FontSize="12" TextWrapping="Wrap" Foreground="{Binding ThemeText}"/>
+                                </Border>
                                 <Grid Margin="12,10">
                                     <Grid.Style>
                                         <Style TargetType="Grid">
@@ -1980,53 +2026,125 @@
                                         </Style>
                                     </Grid.Style>
                                     <DockPanel LastChildFill="True">
-                                        <Button DockPanel.Dock="Right" Style="{StaticResource LineBtn}" Height="32" Padding="10,0" Margin="0" VerticalAlignment="Top"
+                                        <!-- Deny: the default answer (accent, Enter) on a card for data leaving the machine. -->
+                                        <Button DockPanel.Dock="Right" Height="32" Padding="10,0" Margin="0" VerticalAlignment="Top"
                                                 BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
                                                 Command="{Binding DenyCommand}" AutomationProperties.Name="{Binding BtnDeny}">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource LineBtn}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsOutbound}" Value="True">
+                                                            <Setter Property="Background" Value="{Binding DataContext.ThemeAccent, ElementName=root}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="11" Foreground="{Binding ThemeText}"
+                                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="11"
                                                            VerticalAlignment="Center" Margin="0,0,6,0">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
                                                             <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Setter Property="Foreground" Value="{Binding ThemeText}"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding ChosenAnswer}" Value="deny">
                                                                     <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsOutbound}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </TextBlock.Style>
                                                 </TextBlock>
-                                                <TextBlock Text="{Binding BtnDeny}" FontSize="13" Foreground="{Binding ThemeText}"
-                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding BtnDeny}" FontSize="13" VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{Binding ThemeText}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsOutbound}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
                                                 <Border Style="{StaticResource Kbd}" BorderBrush="{Binding ThemeText}" Margin="8,0,0,0">
-                                                    <TextBlock Text="Esc" FontFamily="Cascadia Mono, Consolas" FontSize="10" Foreground="{Binding ThemeText}"/>
+                                                    <TextBlock FontFamily="Cascadia Mono, Consolas" FontSize="10">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="Esc"/>
+                                                                <Setter Property="Foreground" Value="{Binding ThemeText}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsOutbound}" Value="True">
+                                                                        <Setter Property="Text" Value="Enter"/>
+                                                                        <Setter Property="Foreground" Value="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
                                                 </Border>
                                             </StackPanel>
                                         </Button>
                                         <!-- The two that allow wrap under each other when the panel is narrow: each keeps a gap below,
                                              taken back by the panel's own margin so one row has none. -->
                                         <WrapPanel Margin="0,0,0,-6">
-                                            <Button Template="{StaticResource Flat6}" Height="32" Padding="12,0" Margin="0,0,8,6" BorderThickness="0"
-                                                    Background="{Binding DataContext.ThemeAccent, ElementName=root}" Cursor="Hand"
+                                            <Button Template="{StaticResource Flat6}" Height="32" Padding="12,0" Margin="0,0,8,6" Cursor="Hand"
+                                                    BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
                                                     Command="{Binding AllowOnceCommand}" AutomationProperties.Name="{Binding BtnAllowOnce}">
+                                                <Button.Style>
+                                                    <Style TargetType="Button">
+                                                        <Setter Property="Background" Value="{Binding DataContext.ThemeAccent, ElementName=root}"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsOutbound}" Value="True">
+                                                                <Setter Property="Background" Value="{Binding DataContext.ThemeSurface, ElementName=root}"/>
+                                                                <Setter Property="BorderThickness" Value="1"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="11" Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="11"
                                                                VerticalAlignment="Center" Margin="0,0,6,0">
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Setter Property="Foreground" Value="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
                                                                 <Style.Triggers>
                                                                     <DataTrigger Binding="{Binding ChosenAnswer}" Value="once">
                                                                         <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsOutbound}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{Binding ThemeText}"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>
                                                         </TextBlock.Style>
                                                     </TextBlock>
-                                                    <TextBlock Text="{Binding BtnAllowOnce}" FontSize="13" FontWeight="SemiBold" Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"
-                                                               VerticalAlignment="Center"/>
-                                                    <Border Style="{StaticResource Kbd}" BorderBrush="{Binding DataContext.ThemeOnAccent, ElementName=root}" Margin="8,0,0,0">
+                                                    <TextBlock Text="{Binding BtnAllowOnce}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsOutbound}" Value="True">
+                                                                        <Setter Property="Foreground" Value="{Binding ThemeText}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <Border BorderBrush="{Binding DataContext.ThemeOnAccent, ElementName=root}" Margin="8,0,0,0">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border" BasedOn="{StaticResource Kbd}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsOutbound}" Value="True">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
                                                         <TextBlock Text="Enter" FontFamily="Cascadia Mono, Consolas" FontSize="10" Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
                                                     </Border>
                                                 </StackPanel>
@@ -2097,6 +2215,18 @@
                                         </WrapPanel>
                                     </DockPanel>
                                 </Grid>
+                                <TextBlock Text="{Binding CardNote}" FontSize="11.5" TextWrapping="Wrap" Margin="12,0,12,10"
+                                           Foreground="{Binding ThemeSubtleText}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CardNote}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </Border>
 
