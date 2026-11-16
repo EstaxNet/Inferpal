@@ -27,6 +27,7 @@ further down.
 |---|---|---|
 | **Try it now** | [Getting Started](getting-started.md): from nothing to a first answer | [Features](features.md#1-start-here): talk to it, then hand it a task |
 | **Use it every day** | [Features](features.md): what it does, with something to try in each section | [Slash Commands](slash-commands.md) and [Mentions](mentions.md) for what you type, [Tools](tools.md) for what the agent can do |
+| **Show it a document, a screenshot or a diagram** | [Features](features.md#documents-images-and-diagrams): PDF, Office files, images, Mermaid diagrams drawn | [Mentions](mentions.md): every rule of what is attached, and how |
 | **Choose a server or a model** | [Providers](providers.md): which server, and what each can do | [Models](models.md): which model for which job |
 | **Set it up for a team** | [Remote Inference](remote-inference.md): a model server on another machine | [Rules & AI Checks](rules-and-checks.md) for what travels with the repository, [Configuration](configuration.md) for every setting, [MCP](mcp.md) for tool servers |
 | **Connect another editor** | [Zed, JetBrains, Qt Creator, Neovim (ACP)](acp.md): the same agent over the Agent Client Protocol | [ACP across machines](acp-security.md): who drives the agent |

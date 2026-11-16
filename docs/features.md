@@ -27,6 +27,7 @@ Read it in order the first time: each part builds on the one before. After that,
 - **[4. Give it the right context](#4-give-it-the-right-context)** — what it can find, and exactly what it reads
   - [Search & knowledge](#search--knowledge) — meaning + keywords, `@`-mentions, `@Docs`, MCP
   - [What the model reads](#what-the-model-reads) — your repository's `AGENTS.md`, `CLAUDE.md`, rules — and you can see it all
+  - [Documents, images and diagrams](#documents-images-and-diagrams) — PDF, Office files, screenshots; Mermaid diagrams drawn in the chat
 - **[5. Your setup](#5-your-setup)** — models, editors, language, keys, and what to do when something fails
   - [Models & hardware](#models--hardware) — a model per task, `/bench`, `/arena`, what sits in your VRAM
   - [Two editors, one engine](#two-editors-one-engine) — the same agent in Visual Studio, VS Code, Zed, JetBrains, Neovim…
@@ -1069,22 +1070,72 @@ depends on the file you are in goes with the question.
 
 ### Documents, images and diagrams
 
-A spec in a PDF, a workbook of test data, a screenshot of an error: attach it and the model reads it. Documents go as
-their text, extracted on your machine — PDF, Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint,
-OpenDocument, RTF, Jupyter notebooks and e-mails (`.eml`, `.msg`) — and a file protected by a password asks for it on a
-card, which the model never sees. Images go as images, to a model that sees them (Qwen3.8, Ornith, Gemma 4); when the
-model that will answer does not, a card offers one of your server that does. The agent reads documents too, with
-`read_file` and `search_in_files`. And a diagram the model writes in a ```` ```mermaid ```` block is drawn in the chat,
-its code one click away. Every rule is in [Mentions & context](mentions.md).
+The spec is a PDF, the test data lives in a spreadsheet, the error is on a screenshot: hand them over as they are.
+Everything is read on your machine, with nothing installed and nothing sent anywhere else.
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/documents-dark.png">
+        <img src="assets/features/documents-light.png" alt="A question with a PDF spec and an Excel workbook attached: the answer quotes section 4.2 on page 7 of the spec and rows 14 and 15 of the workbook's Edge cases sheet, in a table; the next question carries a Word checklist and a C# file as chips" width="400">
+      </picture>
+      <br><sub>A PDF and a workbook, read as text: the answer quotes the page and the rows.</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/images-card-dark.png">
+        <img src="assets/features/images-card-light.png" alt="A question that carried a screenshot of a build error, its thumbnail under it, and the answer reading the error code; then a pasted image chip for a model that does not see images, and the card before sending: Ask qwen3.8-27b for this question, or Send without the image" width="400">
+      </picture>
+      <br><sub>A screenshot goes with the question. A model that can't see it is said before anything is sent.</sub>
+    </td>
+  </tr>
+</table>
+
+**Documents go as their text.** PDF, Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`: each sheet under its
+name, a row per line), PowerPoint (each slide in order, its notes after it), OpenDocument, RTF, Jupyter notebooks
+(cells and outputs, not the JSON) and e-mails (`.eml`, `.msg`: headers, body, attachments named). The agent reads them
+too: `read_file` returns a document's text page by page, and `search_in_files` searches it at the same line numbers. A
+scan, or a file too large to read in time, says so instead of sending noise. A file protected by a password asks for it
+on a card in the chat; the model gets the text, never the password, and three wrong tries leave the file closed.
+
+**Images go as images**, to a model that sees them (Qwen3.8, Ornith, Gemma 4, on LM Studio or Ollama). A large one is
+scaled down to 1920 × 1080 first, and said. When the model that will answer does not see images, a card offers one of
+your server that does, or sending without the image.
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/diagram-vscode-dark.png">
+        <img src="assets/features/diagram-vscode-light.png" alt="VS Code: a state diagram of an order drawn in the chat, Cart, Paid, Shipped, Refunded and Delivered, under a bar with Mermaid, Diagram and Code, copy and Open larger" width="400">
+      </picture>
+      <br><sub>VS Code: the diagram drawn, its code one click away.</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/diagram-vs-dark.png">
+        <img src="assets/features/diagram-vs-light.png" alt="Visual Studio: a checkout flowchart drawn in the chat, then a second diagram that does not read, shown as code under the note This diagram does not read, so it is shown as code, with Mermaid's reason: Parse error on line 3" width="400">
+      </picture>
+      <br><sub>Visual Studio: one drawn, one that does not read, said with Mermaid's reason.</sub>
+    </td>
+  </tr>
+</table>
+
+**Diagrams are drawn.** A diagram the model writes in a ```` ```mermaid ```` block is shown drawn, in Visual Studio and
+VS Code, with Diagram / Code, a copy button and Open larger. One that does not read says why and shows its code, so you
+can ask the model to fix it. Mermaid (MIT) ships with the extension, and nothing a diagram names is fetched.
 
 **Try it**
 
 | Do | What happens |
 |---|---|
-| Paste a screenshot of a build error (Ctrl+V), ask *what does this error mean?* | The image goes with the question; a large one is scaled down first, and said |
+| Paste a screenshot of a build error (Ctrl+V), ask *what does this error mean?* | The image goes with the question |
 | `@file` a PDF or an Excel workbook | A chip; the model gets the text, each sheet under its name |
 | VS Code: drag files from your file manager onto the chat with Shift held | One chip per file |
-| *Draw the states of an order as a Mermaid diagram* | The diagram drawn; **Code** shows what the model wrote, **Open larger** shows it full size |
+| *Draw the states of an order as a Mermaid diagram* | The diagram drawn; **Code** shows what the model wrote |
+
+Every rule of what is attached, and how: [Mentions & context](mentions.md).
 
 ## 5. Your setup
 
