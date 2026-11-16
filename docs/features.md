@@ -1083,17 +1083,17 @@ Everything is read on your machine, with nothing installed and nothing sent anyw
   <tr>
     <td align="center" valign="top" width="50%">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="assets/features/documents-dark.png">
-        <img src="assets/features/documents-light.png" alt="A question with a PDF spec and an Excel workbook attached: the answer quotes section 4.2 on page 7 of the spec and rows 14 and 15 of the workbook's Edge cases sheet, in a table; the next question carries a Word checklist and a C# file as chips" width="400">
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/documents-vs-dark.png">
+        <img src="assets/features/documents-vs-light.png" alt="Visual Studio: a question with a PDF spec and an Excel workbook attached: the answer quotes section 4.2 on page 7 of the spec and rows 14 and 15 of the workbook's Edge cases sheet, in a table; the next question carries a Word checklist and a C# file as chips" width="400">
       </picture>
-      <br><sub>A PDF and a workbook, read as text: the answer quotes the page and the rows.</sub>
+      <br><sub>Visual Studio: a PDF and a workbook, read as text; the answer quotes the page and the rows.</sub>
     </td>
     <td align="center" valign="top" width="50%">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="assets/features/images-card-dark.png">
-        <img src="assets/features/images-card-light.png" alt="A question that carried a screenshot of a build error, its thumbnail under it, and the answer reading the error code; then a pasted image chip for a model that does not see images, and the card before sending: Ask qwen3.8-27b for this question, or Send without the image" width="400">
+        <source media="(prefers-color-scheme: dark)" srcset="assets/features/images-card-vs-dark.png">
+        <img src="assets/features/images-card-vs-light.png" alt="Visual Studio: a question that carried a screenshot of a build error, its thumbnail under it, and the answer reading the error code; then the card before sending a pasted image to a model that does not see images: Ask qwen3.8-27b for this question, or Send without the image" width="400">
       </picture>
-      <br><sub>A screenshot goes with the question. A model that can't see it is said before anything is sent.</sub>
+      <br><sub>Visual Studio: a screenshot goes with the question; a model that can't see it is said before anything is sent.</sub>
     </td>
   </tr>
 </table>

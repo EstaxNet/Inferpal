@@ -47,17 +47,17 @@
   <tr>
     <td align="center" valign="top" width="50%">
       <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/documents-dark.png">
-        <img src="docs/assets/features/documents-light.png" alt="A question with a PDF spec and an Excel workbook attached: the answer quotes page 7 of the spec and two rows of the workbook, in a table" width="400">
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/documents-vs-dark.png">
+        <img src="docs/assets/features/documents-vs-light.png" alt="Visual Studio: a question with a PDF spec and an Excel workbook attached: the answer quotes page 7 of the spec and two rows of the workbook, in a table" width="400">
       </picture>
-      <br><sub>A PDF and a workbook, read as text on your machine.</sub>
+      <br><sub>Visual Studio: a PDF and a workbook, read as text on your machine.</sub>
     </td>
     <td align="center" valign="top" width="50%">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/diagram-vscode-dark.png">
-        <img src="docs/assets/features/diagram-vscode-light.png" alt="A state diagram of an order drawn in the chat, under a bar with Diagram, Code, copy and Open larger" width="400">
+        <img src="docs/assets/features/diagram-vscode-light.png" alt="VS Code: a state diagram of an order drawn in the chat, under a bar with Diagram, Code, copy and Open larger" width="400">
       </picture>
-      <br><sub>A Mermaid diagram drawn in the chat, its code one click away.</sub>
+      <br><sub>VS Code: a Mermaid diagram drawn in the chat, its code one click away.</sub>
     </td>
   </tr>
 </table>
