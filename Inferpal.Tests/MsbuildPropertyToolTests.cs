@@ -104,8 +104,9 @@ public sealed class MsbuildPropertyToolTests : IDisposable
     {
         string[] log =
         [
-            $@"  {_root}\Directory.Build.props(9,5): message : Property initial value: $(LangVersion)=""latest"" Source: {_root}\Directory.Build.props (9,5)",
-            $@"  x : Property reassignment: $(LangVersion)=""7.3"" (previous value: ""latest"") at {_root}\build\legacy.props (3,5)",
+            // The paths as this system writes them: a hand-written "\" is no separator on Linux and macOS.
+            $@"  {Path.Combine(_root, "Directory.Build.props")}(9,5): message : Property initial value: $(LangVersion)=""latest"" Source: {Path.Combine(_root, "Directory.Build.props")} (9,5)",
+            $@"  x : Property reassignment: $(LangVersion)=""7.3"" (previous value: ""latest"") at {Path.Combine(_root, "build", "legacy.props")} (3,5)",
         ];
 
         var report = MsbuildPropertyTool.Report("LangVersion", "Shop.csproj", log, _root);

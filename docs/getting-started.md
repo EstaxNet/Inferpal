@@ -8,7 +8,7 @@ server and helps you pick a model; with no server at all, it says what each plac
 
 | Requirement | Details |
 |---|---|
-| Editor | **Visual Studio 2026**, or **Visual Studio 2022 from 17.14** — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or Apple Silicon on macOS 12 or later). |
+| Editor | **Visual Studio 2026**, or **Visual Studio 2022 from 17.14** — Community, Professional or Enterprise — or **VS Code** (Windows x64, Linux x64, or macOS 12 or later — Apple Silicon or Intel). |
 | .NET SDK | .NET 10 (building from source only) |
 | Model server | [Ollama](https://ollama.com) (default — full hardware-aware features), [LM Studio](https://lmstudio.ai), or any **OpenAI-compatible** server (llama.cpp, vLLM, …) |
 
@@ -79,7 +79,7 @@ To install by hand instead, take the VSIX for your platform from
 **[the latest release](https://github.com/EstaxNet/Inferpal/releases/latest)** —
 `inferpal-vscode-win32-x64-<version>.vsix` (Windows x64),
 `inferpal-vscode-linux-x64-<version>.vsix` (Linux x64) or
-`inferpal-vscode-darwin-arm64-<version>.vsix` (Apple Silicon) —
+`inferpal-vscode-darwin-arm64-<version>.vsix` (Apple Silicon), `inferpal-vscode-darwin-x64-<version>.vsix` (Intel Mac) —
 `code --install-extension inferpal-vscode-<platform>-<version>.vsix`
 (or Extensions view → `…` → *Install from VSIX…*).
 

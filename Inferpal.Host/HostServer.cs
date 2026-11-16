@@ -136,14 +136,18 @@ internal sealed partial class HostServer : IDisposable
         // Completions and code search on a server of their own when the settings say so; the chat's client otherwise.
         var roles    = new RoleClients(client, config, _roleProviderFactory);
         var index    = new ProjectIndexService(client, config, lsp, () => roles.For(ServerRole.Search));
-        // Off Windows the default DPAPI protection is unavailable, so the token store fails loud
-        // by design and MCP OAuth is unusable; route it through the editor's own secret store
-        // (VS Code SecretStorage → OS keychain) instead. Windows keeps DPAPI: no round-trip, and
-        // the file stays shared with the Visual Studio extension. An adapter with no secret store says so.
+        // Off Windows the default DPAPI protection is unavailable: the token store goes through the editor's own secret
+        // store (VS Code SecretStorage → OS keychain), or, for an adapter with none (an ACP client), through the system's
+        // keychain directly. Windows keeps DPAPI: no round-trip, and the file stays shared with the Visual Studio
+        // extension. No keychain at all → the store cannot protect, and signing in is refused before the browser.
         var secrets  = OperatingSystem.IsWindows() || !p.Secrets ? null : new RpcSecretStore(rpc);
-        var tokens   = secrets is null
-            ? new McpTokenStore(McpTokenStore.DefaultPath)
-            : new McpTokenStore(McpTokenStore.DefaultPath, secrets.Protect, secrets.Unprotect);
+        var keychain = OperatingSystem.IsWindows() || secrets is not null ? null : Services.Mcp.OAuth.SystemKeychain.ForThisSystem();
+        var tokens   = secrets is not null ? new McpTokenStore(McpTokenStore.DefaultPath, secrets.Protect, secrets.Unprotect)
+                     // A file of its own: the editor's store writes another format into DefaultPath, and each would set
+                     // the other's aside as unreadable — two editors erasing each other's sign-ins.
+                     : keychain is not null ? new McpTokenStore(Path.ChangeExtension(McpTokenStore.DefaultPath, ".keychain.dat"),
+                                                                keychain.Protect, keychain.Unprotect)
+                     : new McpTokenStore(McpTokenStore.DefaultPath);
         // The repository's MCP servers start in its root, once the user agrees; the values they ask for are asked in
         // the editor (input/request).
         var mcp      = new McpToolService(config, approval, clientFactory: null, tokenStore: tokens,

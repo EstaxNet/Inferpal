@@ -30,6 +30,7 @@ $platforms = [ordered]@{
     'windows-x86_64' = @("inferpal-acp-win32-x64-$Version.zip",       './Inferpal.Host.exe')
     'linux-x86_64'   = @("inferpal-acp-linux-x64-$Version.tar.gz",    './Inferpal.Host')
     'darwin-aarch64' = @("inferpal-acp-darwin-arm64-$Version.tar.gz", './Inferpal.Host')
+    'darwin-x86_64'  = @("inferpal-acp-darwin-x64-$Version.tar.gz",   './Inferpal.Host')
 }
 $binary = [ordered]@{}
 foreach ($p in $platforms.Keys) {

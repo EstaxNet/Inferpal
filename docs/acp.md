@@ -27,6 +27,7 @@ flowchart LR
    | Windows x64 | `inferpal-acp-win32-x64-<version>.zip` | `Inferpal.Host.exe` |
    | Linux x64 | `inferpal-acp-linux-x64-<version>.tar.gz` | `Inferpal.Host` |
    | macOS (Apple Silicon) | `inferpal-acp-darwin-arm64-<version>.tar.gz` | `Inferpal.Host` |
+   | macOS (Intel) | `inferpal-acp-darwin-x64-<version>.tar.gz` | `Inferpal.Host` |
 
    Check it against `SHA256SUMS.txt` from the same release, then extract it anywhere, keeping its files together:
    the executable, which carries its own .NET 10 runtime (macOS 12 or later, or a Linux with glibc 2.27 or later),

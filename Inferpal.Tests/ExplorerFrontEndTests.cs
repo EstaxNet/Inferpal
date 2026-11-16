@@ -60,7 +60,7 @@ public sealed class ExplorerFrontEndTests
                        + @"[\s\S]*?SelectFileMentionAsync\(path, CancellationToken\.None, typed: false\)", mentions);
         Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(mentions, @"if \(typed\) StripMentionToken\(\);").Count);
         // A binary file: no text — refused, never its bytes as a chip.
-        Assert.Contains("MentionController.FileRefusal(filePath, _indexService.RootDir) ?? MentionController.BinaryRefusal(filePath)",
+        Assert.Contains("MentionController.FileRefusal(filePath, _indexService.RootDir) ?? await MentionController.BinaryRefusalAsync(filePath, ct)",
                         mentions, StringComparison.Ordinal);
         // Asked before the window existed, or while it is open.
         Assert.Matches(@"PendingAttachAvailable \+= \(_, _\) => ConsumePendingAttach\(\);\s*ConsumePendingAttach\(\);", construction);

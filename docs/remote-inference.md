@@ -164,7 +164,7 @@ for example.
 Neither backend reports the GPU's **total** VRAM over the network. Ollama exposes how much
 VRAM each *loaded* model currently uses (`/api/ps`) but has no total-VRAM endpoint; LM
 Studio reports loaded-state but not a per-model GB figure either. On a **local** host
-Inferpal auto-detects the total via `nvidia-smi`; on a **remote** host that probe can't
+Inferpal auto-detects the total on this machine (`nvidia-smi`, a Mac's unified memory, an AMD card's driver); on a **remote** host that probe can't
 run, so the total is unknown unless you tell it — regardless of provider.
 
 The VRAM budget powers three things:

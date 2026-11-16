@@ -388,7 +388,7 @@ Every persisted setting, its type, and default value.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `vramBudgetGb` | double | `0` | Total VRAM budget (GB) of the server at `baseUrl`. 0 = unknown → fit-checks stay silent. Auto-seeded from `nvidia-smi` for a server on this machine; for one elsewhere, chosen on VS Code's first-run card (or `/hardware <gb>`). Setting up another server replaces it |
+| `vramBudgetGb` | double | `0` | Total VRAM budget (GB) of the server at `baseUrl`. 0 = unknown → fit-checks stay silent. Auto-seeded for a server on this machine (`nvidia-smi`, an Apple Silicon Mac's unified memory, an AMD card's driver on Linux); for one elsewhere, chosen on VS Code's first-run card (or `/hardware <gb>`). Setting up another server replaces it |
 | `modelAutoUnloadEnabled` | bool | `true` | Per-request `keep_alive` + auto-unload idle models |
 | `modelIdleTimeoutMinutes` | int | `10` | Idle minutes before unloading from VRAM (min 1) |
 

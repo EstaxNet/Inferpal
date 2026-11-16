@@ -770,7 +770,7 @@ internal sealed class McpToolService : IAsyncDisposable
     {
         // Refuse before opening the browser: without a platform secret store the refresh token
         // cannot be persisted, and failing at the end would waste the whole interactive flow.
-        if (!_tokenStore.CanProtect)
+        if (!_tokenStore.TryProtect())
             throw new InvalidOperationException(Strings.McpOAuthUnsupportedPlatform);
 
         var cfg = SignInTarget(serverName)

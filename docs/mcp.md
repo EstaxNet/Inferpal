@@ -98,7 +98,7 @@ environment does not set.
 - In VS Code the page opens through VS Code — on your machine, with the redirect forwarded, also when the
   window is connected to a remote machine (SSH, WSL, a container). If no browser can be opened, the sign-in says so at
   once instead of waiting for a redirect that cannot come.
-- Tokens are stored **encrypted** (Windows DPAPI per user, or the editor's secret store elsewhere) in `%AppData%/Inferpal/mcp-oauth.dat`
+- Tokens are stored **encrypted** (Windows DPAPI per user; on Linux and macOS the editor's secret store, or — for an ACP client — the system keychain: the macOS keychain, or the Secret Service through `secret-tool` on Linux) in `%AppData%/Inferpal/mcp-oauth.dat`
   — never in the config JSON. Access tokens are refreshed automatically; you only re-authorize when
   the refresh token is rejected.
 - A provider that cannot answer at that moment (down, busy, unreachable) does not reject

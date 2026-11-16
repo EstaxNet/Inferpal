@@ -62,6 +62,23 @@ internal sealed class McpTokenStore
     /// </summary>
     public bool CanProtect { get; }
 
+    /// <summary>
+    /// True when protecting actually works now — a keychain locked, absent or refusing answers false, and why is traced.
+    /// Tried before a sign-in opens the browser: a token that cannot be kept would be lost at the end of the flow.
+    /// </summary>
+    public bool TryProtect()
+    {
+        if (!CanProtect) return false;
+        try { _protect([]); return true; }
+        catch (Exception ex) when (ex is System.Security.Cryptography.CryptographicException or PlatformNotSupportedException
+                                       or TimeoutException or InvalidOperationException or IOException
+                                       or System.ComponentModel.Win32Exception)
+        {
+            Diagnostics.Swallow("McpTokenStore.TryProtect", ex);
+            return false;
+        }
+    }
+
     public McpTokenStore(string path, Func<byte[], byte[]>? protect = null, Func<byte[], byte[]>? unprotect = null)
     {
         _path      = path;

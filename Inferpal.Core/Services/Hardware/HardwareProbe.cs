@@ -8,8 +8,10 @@ namespace Inferpal.Services.Hardware;
 /// <remarks>
 /// Ollama does not expose total VRAM through its API, and the server is frequently remote.
 /// So VRAM is normally set manually (<c>/hardware &lt;gb&gt;</c>). This probe only fires when
-/// Ollama runs on loopback, and currently covers NVIDIA cards via <c>nvidia-smi</c> only —
-/// AMD/Intel and all remote setups fall back to the manual value. It must never throw.
+/// Ollama runs on loopback, on every system: NVIDIA cards through <c>nvidia-smi</c>; an Apple
+/// Silicon Mac's unified memory (the share macOS lets the GPU wire); an AMD card on Linux through
+/// the driver's own figure in <c>/sys/class/drm</c>. Other cards and all remote setups fall back to
+/// the manual value. It must never throw.
 /// </remarks>
 internal static class HardwareProbe
 {
@@ -50,7 +52,57 @@ internal static class HardwareProbe
     public static async Task<long?> TryDetectLocalVramBytesAsync(string? baseUrl, CancellationToken ct)
     {
         if (!IsLoopback(baseUrl)) return null;
+        if (await NvidiaAsync(ct).ConfigureAwait(false) is { } nvidia) return nvidia;
+        try
+        {
+            if (OperatingSystem.IsMacOS() && System.Runtime.InteropServices.RuntimeInformation.OSArchitecture
+                    == System.Runtime.InteropServices.Architecture.Arm64)
+            {
+                // The limit the person set (iogpu.wired_limit_mb) first, else the share macOS wires by default.
+                var limit = await ChildProcess.RunAsync(new ProcessStartInfo("/usr/sbin/sysctl", ["-n", "iogpu.wired_limit_mb"]),
+                                                        TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
+                if (!limit.TimedOut && long.TryParse(limit.Stdout.Trim(), out var mb) && mb > 0) return mb * 1024 * 1024;
+                var run = await ChildProcess.RunAsync(new ProcessStartInfo("/usr/sbin/sysctl", ["-n", "hw.memsize"]),
+                                                      TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
+                return !run.TimedOut && long.TryParse(run.Stdout.Trim(), out var memory) ? AppleGpuShare(memory) : null;
+            }
+            if (OperatingSystem.IsLinux()) return AmdSysfsVram("/sys/class/drm");
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("HardwareProbe", ex); }
+        return null;
+    }
 
+    /// <summary>
+    /// What an Apple Silicon Mac lets its GPU use of the unified memory: macOS wires about two thirds of it up to
+    /// 36 GB, three quarters above — the working set Ollama's Metal back end is held to.
+    /// </summary>
+    internal static long? AppleGpuShare(long memoryBytes) =>
+        memoryBytes <= 0 ? null : memoryBytes >= 36L * 1024 * 1024 * 1024 ? memoryBytes / 4 * 3 : memoryBytes / 3 * 2;
+
+    /// <summary>Under this, an AMD figure is an integrated GPU's carve-out, not a card's memory.</summary>
+    internal const long MinDedicatedVram = 4L * 1024 * 1024 * 1024;
+
+    /// <summary>
+    /// The largest AMD card's VRAM on Linux, as its driver (amdgpu) publishes it, in bytes: <c>mem_info_vram_total</c>
+    /// under each <c>card*/device</c> of <paramref name="drm"/>; <c>null</c> when no card publishes one, or only an
+    /// integrated GPU's carve-out (under <see cref="MinDedicatedVram"/>).
+    /// </summary>
+    internal static long? AmdSysfsVram(string drm)
+    {
+        if (!Directory.Exists(drm)) return null;
+        long best = 0;
+        foreach (var card in Directory.EnumerateDirectories(drm, "card*"))
+        {
+            var file = Path.Combine(card, "device", "mem_info_vram_total");
+            if (File.Exists(file) && long.TryParse(File.ReadAllText(file).Trim(), out var bytes) && bytes > best) best = bytes;
+        }
+        // An integrated GPU (an APU) publishes only the memory the firmware set aside for it, a few hundred MB to 2 GB:
+        // saved as the budget, it would size every advice for a card that does not exist. Unknown instead.
+        return best >= MinDedicatedVram ? best : null;
+    }
+
+    private static async Task<long?> NvidiaAsync(CancellationToken ct)
+    {
         try
         {
             var psi = new ProcessStartInfo

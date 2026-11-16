@@ -108,8 +108,8 @@ would ask it.
 ## Set the VRAM budget
 
 The hardware-aware features (first-run fit-check, `/hardware`, recommended `num_ctx`) need
-to know the GPU's **total** VRAM. For a server on this machine with an NVIDIA card, this is
-auto-detected via `nvidia-smi`; otherwise set it manually:
+to know the GPU's **total** VRAM. For a server on this machine it is auto-detected — an NVIDIA card via
+`nvidia-smi`, an Apple Silicon Mac from its unified memory, an AMD card on Linux from its driver; otherwise set it manually:
 
 - **Settings → Server and models → *Show advanced settings* → Graphics memory** (in GB), or
 - `/hardware <gb>` in the chat (e.g. `/hardware 24`).

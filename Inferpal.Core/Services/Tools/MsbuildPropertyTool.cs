@@ -144,7 +144,8 @@ internal sealed class MsbuildPropertyTool(Execution.WorkspaceCodeConsent? consen
             if (framework is not null) psi.ArgumentList.Add($"-p:TargetFramework={framework}");
             psi.EnvironmentVariables["DOTNET_CLI_UI_LANGUAGE"] = "en";
             psi.EnvironmentVariables["VSLANG"] = "1033";
-            psi.EnvironmentVariables["MSBUILDLOGPROPERTYTRACKING"] = "15";
+            // The exact name MSBuild reads (Traits.cs): Linux and macOS match an environment variable's name case-sensitively.
+            psi.EnvironmentVariables["MsBuildLogPropertyTracking"] = "15";
             var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(BudgetSeconds), ct);
             return (run, File.Exists(log) ? [.. File.ReadLines(log)] : []);
         }

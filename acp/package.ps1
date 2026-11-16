@@ -1,6 +1,6 @@
 ﻿# Builds the archive an Agent Client Protocol client runs Inferpal from: the self-contained Inferpal.Host for one
 # platform, started with `--acp` (Zed, the JetBrains IDEs, Neovim, Emacs).
-# Usage: pwsh ./acp/package.ps1 -Target win32-x64|linux-x64|darwin-arm64 [-OutDir <folder>]
+# Usage: pwsh ./acp/package.ps1 -Target win32-x64|linux-x64|darwin-arm64|darwin-x64 [-OutDir <folder>]
 # Output: inferpal-acp-<target>-<version>.zip (Windows) or .tar.gz (Linux, macOS), at the archive's root: the executable,
 # SQLite's native library, README.txt (acp/README.txt) and LICENSE.txt (the GPL, verbatim: conveying the program needs it).
 #
@@ -14,7 +14,7 @@
 #   the archive then fails to start ./Inferpal.Host ("permission denied") — the VS Code extension re-asserts the bit
 #   at activation, an ACP client does not.
 param(
-    [Parameter(Mandatory)][ValidateSet('win32-x64', 'linux-x64', 'darwin-arm64')][string]$Target,
+    [Parameter(Mandatory)][ValidateSet('win32-x64', 'linux-x64', 'darwin-arm64', 'darwin-x64')][string]$Target,
     [string]$OutDir
 )
 $ErrorActionPreference = 'Stop'
@@ -29,7 +29,7 @@ $version = ([xml](Get-Content (Join-Path $root 'Directory.Build.props') -Raw)).P
     ForEach-Object { $_.Version } | Where-Object { $_ } | Select-Object -First 1
 if (-not $version) { throw 'No <Version> in Directory.Build.props.' }
 
-$rid = @{ 'win32-x64' = 'win-x64'; 'linux-x64' = 'linux-x64'; 'darwin-arm64' = 'osx-arm64' }[$Target]
+$rid = @{ 'win32-x64' = 'win-x64'; 'linux-x64' = 'linux-x64'; 'darwin-arm64' = 'osx-arm64'; 'darwin-x64' = 'osx-x64' }[$Target]
 $stage = Join-Path ([IO.Path]::GetTempPath()) "inferpal-acp-$Target-$([guid]::NewGuid().ToString('N').Substring(0, 8))"
 
 try {
@@ -53,7 +53,7 @@ try {
         -p:PublishSingleFile=true -p:DebugType=none -o $stage -v minimal -nologo
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed for $rid" }
     $executable = if ($Target -eq 'win32-x64') { 'Inferpal.Host.exe' } else { 'Inferpal.Host' }
-    $sqlite = @{ 'win32-x64' = 'e_sqlite3.dll'; 'linux-x64' = 'libe_sqlite3.so'; 'darwin-arm64' = 'libe_sqlite3.dylib' }[$Target]
+    $sqlite = @{ 'win32-x64' = 'e_sqlite3.dll'; 'linux-x64' = 'libe_sqlite3.so'; 'darwin-arm64' = 'libe_sqlite3.dylib'; 'darwin-x64' = 'libe_sqlite3.dylib' }[$Target]
     $published = (@(Get-ChildItem $stage -Recurse -File | ForEach-Object { [IO.Path]::GetRelativePath($stage, $_.FullName) }) | Sort-Object) -join '|'
     $expected  = (@($executable, $sqlite) | Sort-Object) -join '|'
     if ($published -ne $expected) {

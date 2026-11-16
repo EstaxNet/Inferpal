@@ -4,7 +4,7 @@
 
 **No account · No telemetry · No API key · Works offline · Free and open source (GPL v3)**
 
-Windows, Linux and Apple Silicon, with the backend bundled (no .NET to install) · [Ollama](https://ollama.com), [LM Studio](https://lmstudio.ai), llama.cpp, vLLM or any OpenAI-compatible server, on this computer or a GPU machine you own · also for [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs)
+Windows, Linux and macOS (Apple Silicon and Intel), with the backend bundled (no .NET to install) · [Ollama](https://ollama.com), [LM Studio](https://lmstudio.ai), llama.cpp, vLLM or any OpenAI-compatible server, on this computer or a GPU machine you own · also for [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs)
 
 ![/tdd in VS Code on a local Qwen3.8 27B: the failing test is run again under the debugger, the fix is shown as a diff and approved, and the suite turns green after two rounds](https://raw.githubusercontent.com/EstaxNet/Inferpal/ad9e01d25a5446bc151a78ded21da12f72d6f0a4/docs/assets/demo-tdd-vscode.gif)
 
@@ -126,7 +126,7 @@ These were measured on one 24 GB card (LM Studio, 32K context), with its free me
 | | |
 |---|---|
 | VS Code | 1.100 or later, with a folder open in a trusted workspace |
-| Platforms | Windows x64, Linux x64 and Apple Silicon (macOS 12 or later). Each build ships its own backend, and all are on the [GitHub releases](https://github.com/EstaxNet/Inferpal/releases) page. |
+| Platforms | Windows x64, Linux x64 and macOS 12 or later (Apple Silicon and Intel). Each build ships its own backend, and all are on the [GitHub releases](https://github.com/EstaxNet/Inferpal/releases) page. |
 | Model server | Ollama, LM Studio or any OpenAI-compatible server, local or on another machine, with a model that calls tools |
 
 ## Official sources

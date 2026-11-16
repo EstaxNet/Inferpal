@@ -62,7 +62,7 @@ jobs:
         working-directory: dist
         run: |
           # Every target listed and matching: a package missing from the release would publish the listing short.
-          for target in win32-x64 linux-x64 darwin-arm64; do
+          for target in win32-x64 linux-x64 darwin-arm64 darwin-x64; do
             file="inferpal-vscode-$target-$VERSION.vsix"
             grep -q "  $file\$" SHA256SUMS.txt || { echo "::error::$file is not in SHA256SUMS.txt"; exit 1; }
           done
@@ -82,12 +82,13 @@ jobs:
           npx --yes @vscode/vsce@4.1.0 publish --oidc --skip-duplicate --packagePath \
             "inferpal-vscode-win32-x64-$VERSION.vsix" \
             "inferpal-vscode-linux-x64-$VERSION.vsix" \
-            "inferpal-vscode-darwin-arm64-$VERSION.vsix"
+            "inferpal-vscode-darwin-arm64-$VERSION.vsix" \
+            "inferpal-vscode-darwin-x64-$VERSION.vsix"
 
       - name: Publish to Open VSX
         shell: bash
         working-directory: dist
         run: |
-          for target in win32-x64 linux-x64 darwin-arm64; do
+          for target in win32-x64 linux-x64 darwin-arm64 darwin-x64; do
             npx --yes ovsx@1.2.0 publish --trusted-publishing --skip-duplicate --packagePath "inferpal-vscode-$target-$VERSION.vsix"
           done
