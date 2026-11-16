@@ -43,6 +43,8 @@ internal class InferpalSettingsToolWindow : VsToolWindow
     public override ToolWindowConfiguration ToolWindowConfiguration => new()
     {
         Placement = ToolWindowPlacement.Floating,
+        // Restored from the layout, it would race the extension's host like the chat (see InferpalToolWindow).
+        AllowAutoCreation = false,
     };
 
     public override Task<IRemoteUserControl> GetContentAsync(CancellationToken ct)

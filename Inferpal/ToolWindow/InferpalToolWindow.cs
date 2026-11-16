@@ -48,9 +48,13 @@ internal class InferpalToolWindow : VsToolWindow
         Title            = "Inferpal";
     }
 
+    /// <remarks>⚠ Never created by Visual Studio from its saved layout: restored that way, the panel is built before the
+    /// extension's host has registered it and shows "tool window not found" until the next start. The in-process package
+    /// reopens it when it was open at the last close (<c>ChatWindowRestore</c>, which names this type).</remarks>
     public override ToolWindowConfiguration ToolWindowConfiguration => new()
     {
-        Placement = ToolWindowPlacement.DocumentWell,
+        Placement         = ToolWindowPlacement.DocumentWell,
+        AllowAutoCreation = false,
     };
 
     // Singleton data: created once so the PendingPromptAvailable subscription is never

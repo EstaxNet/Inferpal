@@ -84,6 +84,9 @@ internal sealed class GhostTextPackage : AsyncPackage
         }
         catch (Exception ex) { Diagnostics.Swallow("ChatDrop.Init", ex); }
 
+        // The chat, open at the last close, is reopened from here: Visual Studio no longer recreates it from its layout.
+        JoinableTaskFactory.RunAsync(() => ChatWindowRestore.ReopenAsync(this, DisposalToken)).FileAndForget("Inferpal/ChatRestore");
+
         // The Error List's "Fix with Inferpal" asks this side for the lines chosen in the list.
         ErrorListSelectionWatcher.Start();
         // @output asks this side for the text of the Output window.
@@ -140,6 +143,14 @@ internal sealed class GhostTextPackage : AsyncPackage
             Services.Diagnostics.Swallow("GhostText.DebugDriver", ex);
             Services.Signals.InProcAliveSignal.RecordDebuggerUnavailable($"driver failed to start: {ex.GetType().Name}");
         }
+    }
+
+    /// <summary>Visual Studio is closing, its windows still there: whether the chat is open is recorded now.</summary>
+    protected override int QueryClose(out bool canClose)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();   // IVsPackage.QueryClose: always called on the UI thread
+        ChatWindowRestore.RecordAtClose(this);
+        return base.QueryClose(out canClose);
     }
 
     protected override void Dispose(bool disposing)
