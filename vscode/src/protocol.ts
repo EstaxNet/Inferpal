@@ -115,6 +115,16 @@ export interface ChatSendParams {
 /** An image the question carries: its name, its type, its bytes in base64. */
 export interface ImageDto { name: string; mediaType: string; data: string }
 
+/** An image whose text goes instead of it, for a model that does not see (pari 108): its place among the images sent
+ * (two pasted images share a name), its chip's line, its label in the question, and what the model reads. */
+export interface ImageText {
+  index: number;
+  name: string;
+  chip: string;
+  label: string;
+  forModel: string;
+}
+
 /** The card shown before sending when the answering model does not see images (the Core's `ImageNotSeenCardModel`). */
 export interface ImageNotSeenCard {
   title: string; subtitle: string; body: string; otherModel: string; askOtherLabel: string; askOtherHint: string;

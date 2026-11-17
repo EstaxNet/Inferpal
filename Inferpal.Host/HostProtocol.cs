@@ -115,13 +115,22 @@ internal sealed record ImageReadParams(string? Name = null, string? Data = null,
 internal sealed record ImageReadResult(ImageDto? Image, string? Detail, string? Refusal, string? Note, string? Thumbnail = null);
 
 /// <summary><c>image/check</c>: whether the model the next question answers with sees images, for the images named.</summary>
-internal sealed record ImageCheckParams(List<string> Names, string? Model = null, bool? AgentMode = null, bool ModelOverridesRoles = false);
+/// <param name="Images">The images themselves, for their text to be read when the model does not see them (pari 108);
+/// <c>null</c> from an adapter that sends only names (no text read, the card for all).</param>
+internal sealed record ImageCheckParams(List<string> Names, string? Model = null, bool? AgentMode = null, bool ModelOverridesRoles = false,
+                                        List<ImageDto>? Images = null);
+
+/// <summary>An image whose text goes instead of it: its place in <see cref="ImageCheckParams.Images"/> (two pasted images
+/// share a name), its chip's line, its label in the question, and what the model reads.</summary>
+internal sealed record ImageTextDto(int Index, string Name, string Chip, string Label, string ForModel);
 
 /// <summary>The answer to <c>image/check</c>: the model, whether it sees (<c>null</c> when the server does not say — the
 /// images go), the line the composer shows, and the card to show before sending when it does not see.</summary>
 /// <param name="ChipWarning">What an image chip says when the model does not see it; empty otherwise.</param>
+/// <param name="Texts">The images whose text goes instead of them (the model does not see; the OCR found text); the card,
+/// when there is one, names only the others.</param>
 internal sealed record ImageCheckResult(string Model, bool? Sees, string GoesTo, Services.Presentation.ImageNotSeenCardModel? Card,
-                                        string ChipWarning = "");
+                                        string ChipWarning = "", List<ImageTextDto>? Texts = null);
 
 /// <summary><c>chat/steer</c>: a note typed while the turn runs, for its next boundary.</summary>
 /// <param name="Id">The adapter's id for the note, given back by <c>chat/noteApplied</c> and in the turn's result.</param>

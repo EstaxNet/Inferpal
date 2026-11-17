@@ -97,7 +97,7 @@ import {
   SessionSwitches,
   TypingChip,
   ImageDto,
-  ImageNotSeenCard,
+  ImageNotSeenCard, ImageText,
 } from './protocol';
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
@@ -929,9 +929,10 @@ export class HostClient {
   }
 
   /** Whether the model the next question answers with sees images, and the card to show when it does not. */
-  imageCheck(params: { names: string[]; model?: string; agentMode?: boolean }):
-    Promise<{ model: string; sees: boolean | null; goesTo: string; card: ImageNotSeenCard | null; chipWarning: string }> {
-    return this.connection().sendRequest('image/check', params);
+  imageCheck(params: { names: string[]; model?: string; agentMode?: boolean; images?: ImageDto[] }, token?: CancellationToken):
+    Promise<{ model: string; sees: boolean | null; goesTo: string; card: ImageNotSeenCard | null; chipWarning: string;
+              texts: ImageText[] | null }> {
+    return this.connection().sendRequest('image/check', ...HostClient.withToken(params, token));
   }
 
   attachRead(path: string): Promise<{ text: string | null; refusal: string | null; forModel: string | null }> {

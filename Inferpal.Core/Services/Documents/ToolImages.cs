@@ -70,6 +70,24 @@ internal static class ToolImages
         var why = reads == false
             ? $"the model answering, {model}, does not read images"
             : $"the server does not say whether the model answering, {model}, reads images";
+        // A model that does not see: the words written in each image, read by OCR, go instead (pari 108); an image with no
+        // text it finds keeps the note below.
+        var read = new List<string>();
+        var unread = new List<string>();
+        foreach (var image in images)
+        {
+            if (await Task.Run(() => ImageText.Read(image, ct), ct) is { } text) read.Add(ImageText.ForModel(image.Name, text));
+            else unread.Add(image.Name);
+        }
+        if (read.Count > 0)
+        {
+            messages.Add(new ChatMessageDto("user",
+                $"[read_file read the image(s) {names}; they were not sent as pictures: {why}. Their text follows instead.]\n\n"
+              + string.Join("\n\n", read)
+              + (unread.Count > 0 ? $"\n\n[No text was found in {string.Join(", ", unread)}: do not guess what it shows.]" : string.Empty))
+            { IsScaffolding = true });
+            return;
+        }
         messages.Add(new ChatMessageDto("user",
             $"[read_file read the image(s) {names}, but they were not sent: {why}. Do not guess what they show. Tell the user: "
           + "they can describe the image, or choose a model that reads images. To read the words written in it (an error, a value), "

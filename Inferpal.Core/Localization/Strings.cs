@@ -2920,6 +2920,9 @@ internal static class Strings
     public static string ImageTooManyPixels(string name, int w, int h) => Format(Get(nameof(ImageTooManyPixels)), name, w, h);
     public static string ImageScaledNote(string name, int w, int h, int nw, int nh) => Format(Get(nameof(ImageScaledNote)), name, w, h, nw, nh);
     public static string ImageDamaged(string name) => Format(Get(nameof(ImageDamaged)), name);
+    public static string ImageOcrChip(int lines) => Format(Get(nameof(ImageOcrChip)), lines);
+    public static string ImageOcrGoesTo(string model, string images) => Format(Get(nameof(ImageOcrGoesTo)), model, images);
+    public static string ImageOcrLabel(string image) => Format(Get(nameof(ImageOcrLabel)), image);
     public static string MermaidDiagram => Get(nameof(MermaidDiagram));
     public static string MermaidCode => Get(nameof(MermaidCode));
     public static string MermaidCopy => Get(nameof(MermaidCopy));

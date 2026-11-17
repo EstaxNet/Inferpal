@@ -1615,10 +1615,22 @@ internal sealed partial class HostServer : IDisposable
             sees = null;
         }
         Services.Presentation.ImageNotSeenCardModel? card = null;
-        if (sees == false)
-            card = Services.Presentation.ImageCards.NotSeen(model, p.Names, await s.Client.VisionModelsAsync(ct),
+        List<ImageTextDto>? texts = null;
+        var goesTo = Services.Presentation.ImageCards.GoesTo(model);
+        var unseen = p.Names;
+        if (sees == false && p.Images is { Count: > 0 } given)
+        {
+            // Their text goes instead, read on this computer (pari 108); the card is for the images with none.
+            var images = given.Select(i => new Services.Documents.ChatImage(i.Name, i.Data, i.MediaType, 0, 0, 0)).ToList();
+            var (read, none) = await Task.Run(() => Services.Presentation.ImageCards.Texts(images, ct), ct);
+            texts = [.. read.Select(r => new ImageTextDto(r.Index, r.Name, r.Chip, r.Label, r.ForModel))];
+            if (read.Count > 0) goesTo = Services.Presentation.ImageCards.TextGoesTo(model, read);
+            unseen = [.. none.Select(i => i.Name)];
+        }
+        if (sees == false && unseen.Count > 0)
+            card = Services.Presentation.ImageCards.NotSeen(model, unseen, await s.Client.VisionModelsAsync(ct),
                                                             [s.Config.DefaultModel, s.Config.AgentModel]);
-        return new(model, sees, Services.Presentation.ImageCards.GoesTo(model), card, sees == false ? Strings.ImageNotSeenChip(model) : string.Empty);
+        return new(model, sees, goesTo, card, sees == false ? Strings.ImageNotSeenChip(model) : string.Empty, texts);
     }
 
     /// <summary>

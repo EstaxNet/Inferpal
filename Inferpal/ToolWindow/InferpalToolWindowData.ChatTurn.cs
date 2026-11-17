@@ -251,31 +251,53 @@ internal partial class InferpalToolWindowData
                 catch (System.Net.Http.HttpRequestException ex) { Diagnostics.Swallow("ImageCheck", ex); }
                 if (sees == false)
                 {
-                    var card = Services.Presentation.ImageCards.NotSeen(asked, images.Select(a => a.Label).ToList(),
-                                                                        await _client.VisionModelsAsync(localCts!.Token),
-                                                                        [_config.DefaultModel, _config.AgentModel]);
-                    var choice = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    ChatMessageItem? cardItem = null;
-                    await RunOnVMContextAsync(() =>
+                    // Their text, read on this computer, goes instead of the images the model does not see (pari 108); the
+                    // card asks only for the images with none. Matched by place, never by name: two pasted images share one.
+                    var token = localCts!.Token;
+                    var all = images.ToList();
+                    var (read, _) = await Task.Run(() => Services.Presentation.ImageCards.Texts(all.Select(a => a.Image!).ToList(), token), token);
+                    var unread = all.Where((_, i) => read.All(r => r.Index != i)).ToList();
+                    var toOther = false;
+                    if (unread.Count > 0)
                     {
-                        cardItem = ChatMessageItem.ImageCardMsg(card, () => choice.TrySetResult(true), () => choice.TrySetResult(false));
-                        InsertThemed(cardItem);
-                        ScrollToBottom();
-                    });
-                    bool other;
-                    using (localCts!.Token.Register(() => choice.TrySetResult(false)))
-                        other = await choice.Task;
-                    await RunOnVMContextAsync(() => Messages.Remove(cardItem!));
-                    if (other && card.OtherModel.Length > 0) imageModel = card.OtherModel;
-                    else
+                        var card = Services.Presentation.ImageCards.NotSeen(asked, unread.Select(a => a.Label).ToList(),
+                                                                            await _client.VisionModelsAsync(token),
+                                                                            [_config.DefaultModel, _config.AgentModel]);
+                        var choice = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        ChatMessageItem? cardItem = null;
+                        await RunOnVMContextAsync(() =>
+                        {
+                            cardItem = ChatMessageItem.ImageCardMsg(card, () => choice.TrySetResult(true), () => choice.TrySetResult(false));
+                            InsertThemed(cardItem);
+                            ScrollToBottom();
+                        });
+                        bool other;
+                        using (token.Register(() => choice.TrySetResult(false)))
+                            other = await choice.Task;
+                        await RunOnVMContextAsync(() => Messages.Remove(cardItem!));
+                        // The model that sees gets every image as a picture, the ones with text too.
+                        if (other && card.OtherModel.Length > 0) (imageModel, toOther) = (card.OtherModel, true);
+                    }
+                    if (!toOther)
                     {
-                        // Sent without them: the question names only what went with it.
-                        foreach (var image in images) attachments.Remove(image);
+                        // Each image with text becomes its text (the model reads its file name; the question shows the
+                        // label); one with none goes without.
+                        var shown = new Dictionary<AttachmentItem, string>();
+                        foreach (var text in read)
+                        {
+                            var image = all[text.Index];
+                            var at = attachments.IndexOf(image);
+                            var item = new AttachmentItem(text.Name, text.ForModel, () => { });
+                            if (at >= 0) attachments[at] = item;
+                            shown[item] = text.Label;
+                        }
+                        foreach (var image in unread) attachments.Remove(image);
                         images.Clear();
                         await RunOnVMContextAsync(() =>
                         {
                             if (_lastSent?.Question is not { } question) return;
-                            question.Content = Services.Agent.ChatTurnPolicy.BuildBubbleText(userText, attachments.Select(a => a.Label).ToList());
+                            question.Content = Services.Agent.ChatTurnPolicy.BuildBubbleText(
+                                userText, attachments.Select(a => shown.TryGetValue(a, out var label) ? label : a.Label).ToList());
                             question.SplitQuestion();
                             question.ImageFiles.Clear();
                             question.HasImageFiles = false;

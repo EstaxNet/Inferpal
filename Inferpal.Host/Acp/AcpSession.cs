@@ -93,6 +93,8 @@ internal sealed class AcpSession : IAsyncDisposable
     private int _waitSaid;
     private bool _turnOpen;
     private bool _cancelRequested;
+    /// <summary>Stops the image check of the prompt being built: its OCR takes seconds an image (pari 108).</summary>
+    private CancellationTokenSource? _imageCheckStop;
     /// <summary>The calls drawn by <c>chat/toolStart</c> that ended in this turn, whose report from the loop has not come
     /// yet: tool name and <see cref="AcpToolCalls.CallKey"/>. Under <see cref="_gate"/>.</summary>
     private readonly List<(string Name, string Key)> _ended = [];
@@ -651,6 +653,7 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             if (!_turnOpen) return;
             _cancelRequested = true;
+            _imageCheckStop?.Cancel();
         }
         try { await _link.InvokeWithCancellationAsync("chat/cancel"); }
         catch (Exception ex) { Diagnostics.Swallow("AcpSession.Cancel", ex); }
@@ -792,12 +795,40 @@ internal sealed class AcpSession : IAsyncDisposable
         var images = content.Images ?? [];
         if (images.Count > 0)
         {
-            var check = await _link.InvokeWithParameterObjectAsync<ImageCheckResult>("image/check", new
+            ImageCheckResult check;
+            var stop = new CancellationTokenSource();
+            lock (_gate) _imageCheckStop = stop;
+            try
             {
-                names = images.Select(i => i.Name).ToList(), model = _model, agentMode = _mode == AcpModes.Agent,
-                modelOverridesRoles = _model is not null,
-            }, CancellationToken.None);
-            if (check.Sees == false)
+                check = await _link.InvokeWithParameterObjectAsync<ImageCheckResult>("image/check", new
+                {
+                    names = images.Select(i => i.Name).ToList(), model = _model, agentMode = _mode == AcpModes.Agent,
+                    modelOverridesRoles = _model is not null, images = images.ToList(),
+                }, stop.Token);
+            }
+            catch (OperationCanceledException) when (CancelRequested)
+            {
+                // Stopped while the images were read: nothing goes to the host.
+                StoppedBeforeTheHost(ChatTurnPolicy.BuildBubbleText(typed, labels));
+                return "cancelled";
+            }
+            finally
+            {
+                lock (_gate) _imageCheckStop = null;
+                stop.Dispose();
+            }
+            // Their text, read on this computer, goes instead of the images the model does not see (pari 108): matched by
+            // place (two images share a name); the model reads the file's name, the person the label.
+            var texts = check.Texts ?? [];
+            foreach (var text in texts)
+            {
+                promptText += $"\n\n## Attached: {text.Name}\n{text.ForModel}";
+                labels.Add(text.Label);
+            }
+            images = [.. images.Where((_, i) => texts.All(t => t.Index != i))];
+            if (check.Sees == false && (check.Texts?.Count ?? 0) > 0)
+                Notice("info", check.GoesTo, check.GoesTo + "\n\n");
+            if (check.Sees == false && images.Count > 0)
             {
                 var said = check.Card is { } card ? card.Title + " — " + card.VisionModels : check.ChipWarning;
                 Notice("warning", said, said + "\n\n");

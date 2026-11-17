@@ -2334,6 +2334,9 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} は添付されません: {1} × {2} ピクセルは Inferpal が読み込める大きさを超えています。</value></data>
   <data name="ImageScaledNote" xml:space="preserve"><value>{0}（{1} × {2}）は {3} × {4} に縮小して送られます。これより大きくてもモデルが読み取れる量は増えません。小さな文字が読めなくなることがあるので、必要な部分を切り抜いてください。</value></data>
   <data name="ImageDamaged" xml:space="preserve"><value>{0} は添付されません: 画像として読み取れませんでした（破損している可能性があります）。</value></data>
+  <data name="ImageOcrChip" xml:space="preserve"><value>OCR で読み取ったテキスト · {0} 行</value></data>
+  <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} は画像を見られません。代わりに {1} のテキストを送ります。このコンピューター上で Inferpal の OCR が読み取ったもので、語や数字の読み誤りがあり得ます。</value></data>
+  <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — OCR で読み取ったテキスト(画像の代わりに送信)</value></data>
   <data name="MermaidDiagram" xml:space="preserve"><value>図</value></data>
   <data name="MermaidCode" xml:space="preserve"><value>コード</value></data>
   <data name="MermaidCopy" xml:space="preserve"><value>コードをコピー</value></data>

@@ -310,6 +310,10 @@ internal partial class InferpalToolWindowData
             catch (System.Net.Http.HttpRequestException ex) { Diagnostics.Swallow("ImageChip.Sees", ex); }
             var chipModel = Services.Presentation.ImageCards.Chip(image, pasted, sees == false ? model : null);
             var detail = chipModel.Warning.Length > 0 ? chipModel.Detail + " · " + chipModel.Warning : chipModel.Detail;
+            // A model that does not see: its text goes instead (pari 108) — the chip says so from the moment it is attached.
+            if (sees == false
+                && (await Task.Run(() => Services.Presentation.ImageCards.Texts([image], ct), ct)).Read is [var text])
+                detail = text.Chip;
             await RunOnVMContextAsync(() =>
             {
                 AttachmentItem? item = null;

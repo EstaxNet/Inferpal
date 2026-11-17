@@ -103,6 +103,25 @@ public sealed class ToolReadImageTests : IDisposable
         Assert.Contains("granite", added.Content);
     }
 
+    /// <summary>A model that does not see gets the words written in a screenshot, read by OCR, said as such (pari 108).</summary>
+    [Fact]
+    public async Task AModelThatDoesNotSee_GetsTheTextOfAScreenshot_ReadByOcr()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md"))) dir = dir.Parent;
+        var bytes = File.ReadAllBytes(Path.Combine(dir!.FullName, "Inferpal.Tests", "Fixtures", "scans", "error-screenshot.png"));
+        var shot = ChatImages.Read(bytes, "error.png").Image!;
+        var messages = new List<ChatMessageDto> { new("tool", "'error.png' is an image") };
+
+        await ToolImages.AppendAsync(messages, [shot], "granite", _ => Task.FromResult<bool?>(false), default);
+
+        var added = messages[^1];
+        Assert.Null(added.Images);
+        Assert.Contains("Their text follows instead", added.Content);
+        Assert.Contains("read by OCR", added.Content);
+        Assert.Contains("CS0246", added.Content);
+    }
+
     [Fact]
     public async Task NoImageRead_AddsNothing()
     {

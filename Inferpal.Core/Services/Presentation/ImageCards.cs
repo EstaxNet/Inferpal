@@ -17,9 +17,37 @@ internal sealed record ImageNotSeenCardModel(
     string Title, string Subtitle, string Body, string OtherModel, string AskOtherLabel, string AskOtherHint,
     string SendWithoutLabel, string VisionModels);
 
+/// <summary>An attached image whose text goes to a model that does not see it (pari 108): its place among the images (two
+/// pasted images share a name), its chip's line, its label in the question, and what the model reads in its place.</summary>
+internal sealed record ImageTextModel(int Index, string Name, string Chip, string Label, string ForModel);
+
 /// <summary>Builds what both editors draw for images: the chip, the composer's line, the badge, the not-seen card.</summary>
 internal static class ImageCards
 {
+    /// <summary>
+    /// The text of each of <paramref name="images"/> for a model that does not see them — read by the OCR
+    /// on this computer — and the images none was found in (they keep the not-seen card). ⚠ Seconds: from a worker.
+    /// </summary>
+    public static (IReadOnlyList<ImageTextModel> Read, IReadOnlyList<ChatImage> NoText) Texts(IReadOnlyList<ChatImage> images, CancellationToken ct)
+    {
+        var read = new List<ImageTextModel>();
+        var none = new List<ChatImage>();
+        for (var i = 0; i < images.Count; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var image = images[i];
+            if (ImageText.Read(image, ct) is { } text)
+                read.Add(new(i, image.Name, Strings.ImageOcrChip(ImageText.Lines(text)), Strings.ImageOcrLabel(image.Name),
+                             ImageText.ForModel(image.Name, text)));
+            else none.Add(image);
+        }
+        return (read, none);
+    }
+
+    /// <summary>The composer's line when the text of <paramref name="read"/> goes instead of the images.</summary>
+    public static string TextGoesTo(string model, IReadOnlyList<ImageTextModel> read) =>
+        Strings.ImageOcrGoesTo(model, string.Join(", ", read.Select(r => r.Name)));
+
     /// <summary>The chip of an image read by <see cref="ChatImages.Read"/>; <paramref name="pasted"/> for one pasted from
     /// the clipboard (it has no file).</summary>
     /// <param name="seenBy">The model that will answer, when it does not see images: the chip says so.</param>

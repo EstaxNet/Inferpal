@@ -61,8 +61,10 @@ a PNG; an SVG is text, attached as its markup. A large photo is turned upright b
 (a model reads no more from a larger one), and said — small text may become hard to read, so crop the part that matters;
 one that declares more than 40 million pixels is refused before anything decodes it. The chip shows the image's size; the
 line under the chips names the model it goes to. **When the model that will answer does not see images** — as your
-server publishes it: LM Studio's `vision`, Ollama's `vision` capability — a card asks before sending: ask a model of your
-server that does see images, for this question only, or send without the image. A server that does not say (another
+server publishes it: LM Studio's `vision`, Ollama's `vision` capability — the text written in the image goes instead, read
+on your computer by Inferpal's OCR and said as such on the chip and under the question; an image with no text (a photo)
+gets a card before sending: ask a model of your server that does see images, for this question only, or send without
+the image. A server that does not say (another
 OpenAI-compatible server) gets the image. An ACP client has no card: the person is told, and the model reads that the
 images were left out. An image is sent with its question only: a later question does not send it again, and a saved
 conversation names it under the question without keeping it.

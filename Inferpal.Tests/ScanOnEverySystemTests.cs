@@ -74,7 +74,7 @@ public sealed class ScanOnEverySystemTests : IDisposable
     {
         var reading = PdfOcr.Paddle(Scan(), null, default);
 
-        Assert.Equal(OcrStatus.Read, reading.Status);
+        Assert.True(reading.Status == OcrStatus.Read, $"{reading.Status}: {reading.Why} {reading.Skipped}");
         Assert.Equal((1, 1), (reading.PagesRead, reading.Pages));
         Assert.Contains("Item | Quantity | Unit price | Amount", reading.Text);   // a row, never the column of headers
         Assert.Contains("Sencha green tea 100 g | 4 | 12.50 | 50.00", reading.Text);
@@ -101,7 +101,7 @@ public sealed class ScanOnEverySystemTests : IDisposable
     {
         var reading = PdfOcr.Paddle(Scan(fixture), null, default);
 
-        Assert.Equal(OcrStatus.Read, reading.Status);
+        Assert.True(reading.Status == OcrStatus.Read, $"{reading.Status}: {reading.Why} {reading.Skipped}");
         Assert.Contains(words, reading.Text);
         Assert.Equal($"PaddleOCR with its {alphabet} recognizer", reading.Engine);
     }
@@ -146,7 +146,7 @@ public sealed class ScanOnEverySystemTests : IDisposable
 
         var reading = PdfOcr.Paddle(path, null, default);
 
-        Assert.Equal(OcrStatus.Read, reading.Status);
+        Assert.True(reading.Status == OcrStatus.Read, $"{reading.Status}: {reading.Why} {reading.Skipped}");
         Assert.Contains("--- page 1 ---", reading.Text);
         Assert.Contains("Payment within thirty days", reading.Text);
         Assert.Equal("page 2: " + "its text is in an alphabet this OCR does not read (it reads Latin, Chinese, Cyrillic, Japanese and Korean)"

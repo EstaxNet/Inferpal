@@ -2334,6 +2334,9 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} no se adjunta: sus {1} × {2} píxeles superan lo que Inferpal lee.</value></data>
   <data name="ImageScaledNote" xml:space="preserve"><value>{0} ({1} × {2}) se envía reducida a {3} × {4}: un modelo no lee más de una imagen mayor. El texto pequeño puede volverse ilegible; recorte lo que importa.</value></data>
   <data name="ImageDamaged" xml:space="preserve"><value>{0} no se adjunta: no se pudo leer como imagen (¿dañada?).</value></data>
+  <data name="ImageOcrChip" xml:space="preserve"><value>texto leído por OCR · {0} {0:línea|líneas}</value></data>
+  <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} no ve imágenes: en su lugar va el texto de {1}, leído en este equipo por el OCR de Inferpal — palabras y cifras pueden leerse mal.</value></data>
+  <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — texto leído por OCR, enviado en lugar de la imagen</value></data>
   <data name="MermaidDiagram" xml:space="preserve"><value>Diagrama</value></data>
   <data name="MermaidCode" xml:space="preserve"><value>Código</value></data>
   <data name="MermaidCopy" xml:space="preserve"><value>Copiar el código</value></data>

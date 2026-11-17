@@ -2334,6 +2334,9 @@
   <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} не прикреплён: его {1} × {2} пикселей больше, чем читает Inferpal.</value></data>
   <data name="ImageScaledNote" xml:space="preserve"><value>{0} ({1} × {2}) отправляется уменьшенным до {3} × {4}: из большего изображения модель не прочитает больше. Мелкий текст может стать нечитаемым — обрежьте до важного.</value></data>
   <data name="ImageDamaged" xml:space="preserve"><value>{0} не прикреплён: его не удалось прочитать как изображение (повреждено?).</value></data>
+  <data name="ImageOcrChip" xml:space="preserve"><value>текст прочитан OCR · {0} {0:строка|строки|строк}</value></data>
+  <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} не видит изображения: вместо них отправляется текст {1}, прочитанный на этом компьютере OCR Inferpal — слова и цифры могут быть прочитаны неверно.</value></data>
+  <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — текст, прочитанный OCR, отправлен вместо изображения</value></data>
   <data name="MermaidDiagram" xml:space="preserve"><value>Диаграмма</value></data>
   <data name="MermaidCode" xml:space="preserve"><value>Код</value></data>
   <data name="MermaidCopy" xml:space="preserve"><value>Копировать код</value></data>

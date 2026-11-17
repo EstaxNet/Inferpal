@@ -123,16 +123,29 @@ internal static class PdfOcr
         public Scripts(PaddleOcrModelSet shared)
         {
             // Width fixed as the models were converted (1×3×48×960); the orientation classifier off: it turned lines over.
-            var options = new PaddleOcrOptions
-            {
-                UseDirectionClassification = false,
-                Recognizer = new PaddleOcrRecognizerOptions { AdaptiveWidth = false, TargetWidth = 960 },
-            };
+            var recognizer = new PaddleOcrRecognizerOptions();
+            Set(recognizer, nameof(PaddleOcrRecognizerOptions.AdaptiveWidth), false);
+            Set(recognizer, nameof(PaddleOcrRecognizerOptions.TargetWidth), 960);
+            var options = new PaddleOcrOptions();
+            Set(options, nameof(PaddleOcrOptions.UseDirectionClassification), false);
+            // One line a batch: the models were converted with a fixed input of one line (1×3×48×960).
+            Set(options, nameof(PaddleOcrOptions.RecBatchLines), 1);
+            Set(options, nameof(PaddleOcrOptions.Recognizer), recognizer);
             foreach (var (name, file, own) in Known)
                 _engines.Add((name, new PaddleOcrAll(shared.DetectionModel, shared.ClassificationModel,
                                                      Sdcb.SimdPaddleOCR.OnnxSharp.Model.LoadOnnx(Resource(file + ".onnx")),
                                                      Resource(file + ".txt"), options), own));
         }
+
+        /// <summary>
+        /// Sets an option by reflection. ⚠ The library ships one build per framework: this assembly compiles against its .NET
+        /// Standard build, where the options have setters, and runs on .NET 10 (the VS Code and ACP host, Visual Studio's) with
+        /// its .NET 10 build, where they are init-only — a compiled setter call is then a MissingMethodException.
+        /// <see cref="System.Reflection.PropertyInfo.SetValue(object, object)"/> sets both.
+        /// </summary>
+        private static void Set(object options, string property, object value) =>
+            (options.GetType().GetProperty(property) ?? throw new InvalidOperationException($"No option {property} in this OCR build."))
+                .SetValue(options, value);
 
         private static byte[] Resource(string name)
         {

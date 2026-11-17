@@ -1,3 +1,4 @@
+using System.IO;
 using Inferpal.Host;
 using Inferpal.Localization;
 using Inferpal.Models;
@@ -58,5 +59,35 @@ public partial class HostServerTests
             Assert.Equal([read.Image.Data], question.Images);
             Assert.DoesNotContain(read.Image.Data, question.Content);
         }
+    }
+}
+
+/// <summary>
+/// A model that does not see: the text of an image goes instead of it (pari 108) — <c>image/check</c> reads it with the OCR on
+/// this computer, the chip and the composer's line say so, and the card is left for the images with no text.
+/// </summary>
+public partial class HostServerTests
+{
+    [Fact]
+    public async Task AScreenshot_GivesItsText_ToAModelThatDoesNotSee_AndOnlyAPictureWithoutTextKeepsTheCard()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        h.Fake.Installed = [new("granite-4.2-8b", 1, SeesImages: false), new("qwen3.8-27b", 1, SeesImages: true)];
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md"))) dir = dir.Parent;
+        var shot = Convert.ToBase64String(File.ReadAllBytes(Path.Combine(dir!.FullName, "Inferpal.Tests", "Fixtures", "scans", "error-screenshot.png")));
+        var blank = Convert.ToBase64String(ChatImagesTests.Png(64, 64));
+
+        // Two pasted images share a name (VS Code names each "image.png"): matched by place, never by name.
+        var check = await h.Server.ImageCheckAsync(new ImageCheckParams(["image.png", "image.png"], "granite-4.2-8b", AgentMode: false,
+            Images: [new("image.png", "image/png", blank), new("image.png", "image/png", shot)]), CancellationToken.None);
+
+        var text = Assert.Single(check.Texts!);
+        Assert.Equal(1, text.Index);                              // the screenshot, second
+        Assert.Contains("CS0246", text.ForModel);
+        Assert.Equal(Strings.ImageOcrLabel("image.png"), text.Label);
+        Assert.StartsWith(Strings.ImageOcrGoesTo("granite-4.2-8b", "image.png"), check.GoesTo);
+        Assert.NotNull(check.Card);                               // the blank one, with no text, keeps the card
     }
 }

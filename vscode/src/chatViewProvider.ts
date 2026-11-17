@@ -28,7 +28,7 @@ import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
   ApprovalCard, AwayNotice, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
   ModelsByKind, SavedMessage, SessionLoadResult, SessionSwitches, hasSwitches, noSwitches, SlashEffect, TestsGenerateResult, TurnNote, WindowNoticeResult,
-  ConfigReloadResult, ImageDto, ImageNotSeenCard,
+  ConfigReloadResult, ImageDto, ImageNotSeenCard, ImageText,
 } from './protocol';
 import {
   WebviewToExt,
@@ -118,6 +118,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Stop was pressed during this turn. Before `chat/send` leaves — the excerpt being sized, a mention resolved, a
    *  template expanded — the host has no turn for `chat/cancel` to stop: read before the turn is sent, or it went anyway. */
   private stopPressed = false;
+  /** Stops the image check of the question being sent: its OCR takes seconds an image (pari 108). */
+  private imageCheckStop: vscode.CancellationTokenSource | undefined;
 
   /** Channels that have already said why they are degraded, so a per-keystroke path says it once. */
   private readonly saidOnce = new Set<string>();
@@ -180,7 +182,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** The files dropped on the chat, attached one after the other. */
   private drops: Promise<void> = Promise.resolve();
   /** What `image/check` said for the chips' images: the composer's line, and the chips' warning when it does not see. */
-  private imageSeen: { goesTo: string; sees: boolean | null; warning: string } | undefined;
+  private imageSeen: { goesTo: string; sees: boolean | null; warning: string; texts: ImageText[] } | undefined;
   /** The not-seen card on screen, waiting for the person's choice (a Stop answers it "without": the turn then stops). */
   private imageCardAnswer: ((choice: 'other' | 'without') => void) | undefined;
   /** What the last question was sent WITH — its words before the "📎 Attached" line, and its chips —, tied to its
@@ -1780,6 +1782,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         if (this.busy) {
           this.stopPressed = true;
+          this.imageCheckStop?.cancel();
           // The card's question is answered by the Stop: it leaves the screen with its buttons.
           if (this.imageCardAnswer) {
             this.imageCardAnswer('without');
@@ -2196,9 +2199,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /** The chips as the composer draws them — a redraw too, or it showed the found-while-typing ones as plain ones. */
   private chipsShown(): WvChip[] {
+    let image = 0;
     return this.pendingAttachments.map((a) => ({
       name: a.name, auto: a.auto === true,
-      image: a.image ? { detail: a.detail ?? '', warning: this.imageSeen?.sees === false ? this.imageSeen.warning : '' } : undefined,
+      image: a.image ? this.imageChip(image++, a.detail ?? '') : undefined,
     }));
   }
 
@@ -2236,11 +2240,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  /** An image chip's lines: its text read by OCR for a model that does not see it, else its size and the warning. */
+  private imageChip(index: number, detail: string): { detail: string; warning: string } {
+    const text = this.imageSeen?.texts.find((x) => x.index === index);
+    if (text) {
+      return { detail: text.chip, warning: '' };
+    }
+    return { detail, warning: this.imageSeen?.sees === false ? this.imageSeen.warning : '' };
+  }
+
   /** Whether the model the next question answers with sees images — the chips' warning and the composer's line. */
   private async refreshImageSeen(host: HostClient): Promise<void> {
-    const names = this.pendingAttachments.filter((a) => a.image).map((a) => a.name);
-    const check = await host.imageCheck({ names, model: this.model || undefined, agentMode: this.windowAgentMode() });
-    this.imageSeen = { goesTo: check.goesTo, sees: check.sees, warning: check.chipWarning };
+    const images = this.pendingAttachments.filter((a) => a.image);
+    // The images themselves: a model that does not see gets their text, read on this computer (pari 108).
+    const check = await host.imageCheck({ names: images.map((a) => a.name), model: this.model || undefined,
+                                          agentMode: this.windowAgentMode(), images: images.map((a) => a.image!) });
+    this.imageSeen = { goesTo: check.goesTo, sees: check.sees, warning: check.chipWarning, texts: check.texts ?? [] };
   }
 
   /** The not-seen card of the question being sent, answered by the person: ask the model that sees, or send without. */
@@ -3416,16 +3431,54 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       // A model that does not see images: the card asks first — the model of the server that sees, or without them.
       if (images.length > 0) {
-        const check = await host.imageCheck({ names: images.map((i) => i.name), model, agentMode });
-        if (check.card) {
-          if (await this.askImageCard(check.card) === 'other' && check.card.otherModel) {
-            model = check.card.otherModel;
-            modelOverridesRoles = true;
-          } else {
-            const sent = new Set(images.map((i) => i.name));
-            images = [];
-            named.splice(0, named.length, ...named.filter((n) => !sent.has(n)));
+        this.imageCheckStop = new vscode.CancellationTokenSource();
+        let check;
+        try {
+          check = await host.imageCheck({ names: images.map((i) => i.name), model, agentMode, images }, this.imageCheckStop.token);
+        } catch (checkFailed) {
+          // Stopped while the images were read: the request was cancelled, nothing was sent.
+          if (this.stopPressed) {
+            this.endStoppedBeforeTheHost();
+            return;
           }
+          throw checkFailed;
+        } finally {
+          this.imageCheckStop.dispose();
+          this.imageCheckStop = undefined;
+        }
+        if (this.stopPressed) {
+          this.endStoppedBeforeTheHost();
+          return;
+        }
+        const texts = check.texts ?? [];
+        // The card asks only for the images with no text; answered "the model that sees", every image goes as a picture.
+        const toOther = check.card ? await this.askImageCard(check.card) === 'other' && !!check.card.otherModel : false;
+        if (toOther && check.card) {
+          model = check.card.otherModel;
+          modelOverridesRoles = true;
+        } else if (check.sees === false) {
+          // Their text, read on this computer, goes instead (pari 108): matched by place — two pasted images share a name.
+          // The model reads the file's name; the question shows the label.
+          for (const text of texts) {
+            expanded += `\n\n## Attached: ${text.name}\n${text.forModel}`;
+            const at = named.indexOf(text.name);
+            if (at >= 0) {
+              named[at] = text.label;
+            } else {
+              named.push(text.label);
+            }
+          }
+          const unread = images.filter((_, i) => !texts.some((x) => x.index === i));
+          if (check.card) {
+            // Sent without the images with no text: the question names only what went with it.
+            for (const image of unread) {
+              const at = named.indexOf(image.name);
+              if (at >= 0) {
+                named.splice(at, 1);
+              }
+            }
+          }
+          images = [];
         }
       }
       const asked = this.lastQuestion();
