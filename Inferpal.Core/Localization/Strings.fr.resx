@@ -353,6 +353,7 @@ Continuer ?</value></data>
   <data name="DeleteCancelled" xml:space="preserve"><value>Suppression annulée par l'utilisateur.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} supprimé</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Commande annulée par l'utilisateur.</value></data>
+  <data name="MeasureRunsOnCard" xml:space="preserve"><value>[exécutée {0} fois, pour la mesurer]</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Démarrer une session de débogage pour : {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Session de débogage non démarrée (refusée par l'utilisateur).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Évaluer dans le programme en pause — cela peut exécuter son code : {0}</value></data>

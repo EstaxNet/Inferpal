@@ -353,6 +353,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="DeleteCancelled" xml:space="preserve"><value>ユーザーによって削除がキャンセルされました。</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} を削除しました</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>ユーザーによってコマンドがキャンセルされました。</value></data>
+  <data name="MeasureRunsOnCard" xml:space="preserve"><value>[計測のため {0} 回実行]</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>デバッグ セッションを開始しますか: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>デバッグ セッションは開始されませんでした (ユーザーが拒否)。</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>一時停止中のプログラムで評価します（プログラムのコードが実行される場合があります）: {0}</value></data>

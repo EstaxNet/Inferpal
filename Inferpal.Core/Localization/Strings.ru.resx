@@ -353,6 +353,7 @@
   <data name="DeleteCancelled" xml:space="preserve"><value>Удаление отменено пользователем.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} удалён</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Команда отменена пользователем.</value></data>
+  <data name="MeasureRunsOnCard" xml:space="preserve"><value>[будет запущена {0} раз, чтобы её измерить]</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Запустить сеанс отладки для: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Сеанс отладки не запущен (отклонено пользователем).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Вычислить в приостановленной программе — это может выполнить её код: {0}</value></data>

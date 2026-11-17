@@ -353,6 +353,7 @@ Fortfahren?</value></data>
   <data name="DeleteCancelled" xml:space="preserve"><value>Löschen vom Benutzer abgebrochen.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} gelöscht</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Befehl vom Benutzer abgebrochen.</value></data>
+  <data name="MeasureRunsOnCard" xml:space="preserve"><value>[{0}-mal ausgeführt, um sie zu messen]</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Debugsitzung starten für: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Debugsitzung nicht gestartet (vom Benutzer abgelehnt).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Im angehaltenen Programm auswerten – dabei kann sein Code ausgeführt werden: {0}</value></data>

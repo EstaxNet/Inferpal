@@ -354,6 +354,7 @@ Continue?</value></data>
   <data name="DeleteCancelled" xml:space="preserve"><value>Delete cancelled by user.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} deleted</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Command cancelled by user.</value></data>
+  <data name="MeasureRunsOnCard" xml:space="preserve"><value>[run {0} times, to measure it]</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Start a debugging session for: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Debugging session not started (declined by user).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Evaluate in the paused program — this can run the program's code: {0}</value></data>

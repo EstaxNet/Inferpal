@@ -134,7 +134,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new WriteFileTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay));
         Register(new ListFilesTool(() => indexService.RootDir));
         Register(new SearchInFilesTool(() => indexService.RootDir, overlay));
-        Register(new RunCommandTool(approval, config, () => indexService.RootDir));
+        var runCommand = new RunCommandTool(approval, config, () => indexService.RootDir);
+        Register(runCommand);
+        Register(new ViewWindowTool(runCommand.Background, _readImages));
         Register(new ApplyDiffTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay) { RenameOffered = RenameOffered });
         Register(new ApplyEditsTool(approval, history, () => indexService.RootDir, smartFix, overlay) { RenameOffered = RenameOffered });
         Register(new RestoreFileTool(approval, history, () => indexService.RootDir, overlay));

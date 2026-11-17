@@ -193,6 +193,17 @@ internal sealed class BackgroundShellRegistry : IDisposable
         return true;
     }
 
+    /// <summary>The process a running job started (the shell; the app it launched is under it), or <c>null</c> for a job
+    /// that is unknown or has ended.</summary>
+    public int? ProcessIdOf(string id)
+    {
+        lock (_lock)
+            if (!_jobs.TryGetValue(id, out var job) || job.Exited) return null;
+            else
+                try { return job.Process.Id; }
+                catch (InvalidOperationException) { return null; }
+    }
+
     /// <summary>Snapshot of the currently tracked job ids and their running state (for diagnostics).</summary>
     public IReadOnlyList<(string Id, string Command, bool Running)> List()
     {

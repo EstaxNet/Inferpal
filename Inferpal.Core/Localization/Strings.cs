@@ -1156,6 +1156,8 @@ internal static class Strings
     public static string WriteCancelled    => Get(nameof(WriteCancelled));
     public static string DeleteCancelled   => Get(nameof(DeleteCancelled));
     public static string RunCancelled      => Get(nameof(RunCancelled));
+    /// <summary>The line a measure adds to run_command's card: how many times the command will run.</summary>
+    public static string MeasureRunsOnCard(int times) => Format(Get(nameof(MeasureRunsOnCard)), times);
     public static string DebugStartCancelled => Get(nameof(DebugStartCancelled));
     public static string DebugEvaluateCancelled => Get(nameof(DebugEvaluateCancelled));
     public static string DiagNoProject     => Get(nameof(DiagNoProject));

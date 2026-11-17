@@ -105,7 +105,9 @@ internal sealed class RunCommandTool : ITool, IDisposable
             action            = new { type = "string", description = "Manage a background job instead of running a command: 'poll' (read new output), 'wait' (until a line holds 'until', the job ends, or timeout_seconds), 'stop' (terminate), or 'list'." },
             id                = new { type = "string", description = "The background job id (returned when background=true). Required for action='poll'/'wait'/'stop'." },
             until             = new { type = "string", description = "For action='wait': the text a line of the job's output must contain (plain text, not a pattern)." },
-            timeout_seconds   = new { type = "integer", description = $"For action='wait': the longest to wait, {MinWaitSeconds}-{MaxWaitSeconds} seconds (default {DefaultWaitSeconds})." }
+            timeout_seconds   = new { type = "integer", description = $"For action='wait': the longest to wait, {MinWaitSeconds}-{MaxWaitSeconds} seconds (default {DefaultWaitSeconds})." },
+            // ⚠ Short on purpose: this definition goes with every request.
+            repeat            = new { type = "integer", description = $"To measure: run it {RepeatedRun.MinRepeat}-{RepeatedRun.MaxRepeat} times after a warm-up; gives the median, the spread, and whether it changed beyond the noise since its last measure." }
         },
         required = Array.Empty<string>()
     };
@@ -132,8 +134,15 @@ internal sealed class RunCommandTool : ITool, IDisposable
         // The folder is on the prompt whenever the command does not run at the workspace root — asked for, or where an
         // earlier `cd` left the session: approving "git clean -fdx" with no folder named reads as the root.
         // Permission rules keep matching the raw command (the documented subject for run_command).
+        var repeat  = args.Has("repeat") ? ClampedArgument.Read(args, "repeat", RepeatedRun.DefaultRepeat, RepeatedRun.MinRepeat, RepeatedRun.MaxRepeat) : ((int, string?)?)null;
+        if (repeat is not null && args.Int("repeat", int.MinValue) == int.MinValue)
+            return $"Error: 'repeat' is a number of runs ({RepeatedRun.MinRepeat}-{RepeatedRun.MaxRepeat}), not '{args.Str("repeat")}' — nothing ran.";
+        if (repeat is not null && args.Bool("background", false))
+            return "Error: 'repeat' measures a command that ends; a background job does not — nothing ran.";
         var runIn   = _session.StartDirectory(workDir).Directory;
         var details = ShellSession.SameFolder(runIn, _session.WorkspaceRoot) ? command : $"{command}\n[cwd: {runIn}]";
+        // One card for every run of a measure: it says how many.
+        if (repeat is { } times) details += "\n" + Strings.MeasureRunsOnCard(times.Item1 + 1);
         // ⚠ A rule judges the command line, never the folder: `allow run_command ^dotnet test` would run another
         // repository's build outside the workspace without a card. Outside it, the card is always asked.
         var outside = !PathSanitizer.IsUnderRoot(runIn, _session.WorkspaceRoot);
@@ -163,8 +172,64 @@ internal sealed class RunCommandTool : ITool, IDisposable
                  + $"Started background job '{id}'. Use action='poll' id='{id}' to read its output, action='stop' id='{id}' to terminate it.";
         }
 
+        if (repeat is { } measure) return await MeasureAsync(command, runIn, measure.Item1, measure.Item2, ct);
         return await _session.RunAsync(command, workDir, ct);
     }
+
+    /// <summary>The last measure of each command in this session — by folder (the shared rule for paths), then by command
+    /// line: what the next one compares to.</summary>
+    private readonly Dictionary<string, Dictionary<string, TimingSummary>> _measures = new(PathComparer.Default);
+
+    /// <summary>How much of a run's output a measure gives: its END, where a build or a test run says its verdict.</summary>
+    private const int MeasureOutputChars = 2000;
+
+    /// <summary>
+    /// A command run <paramref name="times"/> times after a warm-up, timed (pari 103): <see cref="RepeatedRun"/> says the
+    /// median, the spread, and against this command's previous measure whether a difference is beyond the noise.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Every run starts in <paramref name="runIn"/>, the folder the card showed: a <c>cd</c> in the command would otherwise move
+    /// each next run, out of the workspace with no card.
+    /// ⚠ The answer is read by the readers of a command's verdict (<see cref="Agent.CheckCommand.ExitCode"/>, an answer that
+    /// starts with "Error:"): a run that did not finish makes the whole answer an error, and the output given is a failed run's
+    /// when one failed, its END kept — a measured test run that failed is never read as passed.
+    /// </remarks>
+    private async Task<string> MeasureAsync(string command, string runIn, int times, string? clampNote, CancellationToken ct)
+    {
+        var head = clampNote is null ? "" : clampNote + "\n";
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var output = await _session.RunAsync(command, runIn, ct);
+        var warmUp = watch.Elapsed.TotalSeconds;
+        if (Execution.ToolFailure.IsFailure(output))
+            return "Error: the warm-up run of the measure did not finish, so nothing was measured.\n" + head + output;
+        if (Agent.CheckCommand.ExitCode(output) is not 0)
+            return head + "The warm-up run failed, so nothing was measured — fix the command first.\n[output of the warm-up run]\n"
+                 + End(output);
+        var runs = new List<RunTiming>();
+        string? failed = null;
+        var failedRun = 0;
+        for (var i = 1; i <= times; i++)
+        {
+            watch.Restart();
+            output = await _session.RunAsync(command, runIn, ct);
+            if (Execution.ToolFailure.IsFailure(output))
+                return $"Error: run {i} of {times} of the measure did not finish, so the measure stopped there.\n" + head
+                     + RepeatedRun.Report(runs, warmUp, null) + "\n[output of run " + i + "]\n" + End(output);
+            var code = Agent.CheckCommand.ExitCode(output);
+            runs.Add(new(watch.Elapsed.TotalSeconds, code));
+            if (code is not 0 && failed is null) (failed, failedRun) = (output, i);
+        }
+        if (!_measures.TryGetValue(runIn, out var byCommand)) _measures[runIn] = byCommand = new(StringComparer.Ordinal);
+        byCommand.TryGetValue(command, out var previous);
+        if (RepeatedRun.Summarize(runs) is { } now) byCommand[command] = now;
+        var shown = failed is null ? $"[output of the last run]\n{End(output)}" : $"[output of run {failedRun}, the first that failed]\n{End(failed)}";
+        return head + RepeatedRun.Report(runs, warmUp, previous) + "\n" + shown;
+    }
+
+    /// <summary>The end of a run's output, the cut said: a command says its verdict last.</summary>
+    private static string End(string output) =>
+        output.Length <= MeasureOutputChars ? output
+        : $"[… the first {output.Length - MeasureOutputChars} characters of the output are not shown]\n" + output[^MeasureOutputChars..];
 
     private string HandleAction(string action, JsonElement args)
     {
@@ -267,7 +332,11 @@ internal sealed class RunCommandTool : ITool, IDisposable
 
     private static string? GetId(JsonElement args) =>
         args.Str("id") is { Length: > 0 } id ? id : null;
+    /// <summary>The jobs this tool started with <c>background: true</c> — what <c>view_window</c> looks at.</summary>
+    internal BackgroundShellRegistry Background => _background;
+
     /// <summary>Kills the background jobs this tool started — they outlive the editor otherwise.</summary>
+
     public void Dispose() => _background.Dispose();
 
 }

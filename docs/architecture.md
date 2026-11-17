@@ -97,7 +97,7 @@ The Extensibility host holds the view-model side:
 
 - `InferpalToolWindowData`, the ViewModel
 - The `IInferenceProvider` clients: Ollama / LM Studio / OpenAI
-- `ToolRegistry`: the 40 built-in tools + MCP
+- `ToolRegistry`: the 41 built-in tools + MCP
 - `MarkdownParser` → `MarkdownBlock` + `InlineRun`
 - `ProjectIndexService`: hybrid RAG, cosine + BM25/RRF
 

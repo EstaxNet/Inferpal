@@ -353,6 +353,7 @@ Haga clic en ↻ Reintentar en la cabecera una vez corregido.</value></data>
   <data name="DeleteCancelled" xml:space="preserve"><value>Eliminación cancelada por el usuario.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} eliminado</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Comando cancelado por el usuario.</value></data>
+  <data name="MeasureRunsOnCard" xml:space="preserve"><value>[se ejecuta {0} veces, para medirla]</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Iniciar una sesión de depuración para: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Sesión de depuración no iniciada (rechazada por el usuario).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Evaluar en el programa en pausa: puede ejecutar su código: {0}</value></data>

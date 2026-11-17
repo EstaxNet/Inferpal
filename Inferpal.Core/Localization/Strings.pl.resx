@@ -353,6 +353,7 @@ Kontynuować?</value></data>
   <data name="DeleteCancelled" xml:space="preserve"><value>Usunięcie anulowane przez użytkownika.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} usunięto</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>Polecenie anulowane przez użytkownika.</value></data>
+  <data name="MeasureRunsOnCard" xml:space="preserve"><value>[uruchomione {0} razy, aby je zmierzyć]</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>Rozpocząć sesję debugowania dla: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Sesja debugowania nie została uruchomiona (odrzucona przez użytkownika).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Oblicz w wstrzymanym programie — może to uruchomić jego kod: {0}</value></data>

@@ -353,6 +353,7 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="DeleteCancelled" xml:space="preserve"><value>사용자가 삭제를 취소했습니다.</value></data>
   <data name="DeleteOk" xml:space="preserve"><value>OK — {0} 삭제됨</value></data>
   <data name="RunCancelled" xml:space="preserve"><value>사용자가 명령을 취소했습니다.</value></data>
+  <data name="MeasureRunsOnCard" xml:space="preserve"><value>[측정을 위해 {0}회 실행]</value></data>
   <data name="DebugStartConfirm" xml:space="preserve"><value>다음에 대한 디버깅 세션을 시작할까요: {0}</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>디버깅 세션이 시작되지 않았습니다(사용자가 거부함).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>일시 중지된 프로그램에서 평가합니다(프로그램 코드가 실행될 수 있음): {0}</value></data>
