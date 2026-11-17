@@ -293,37 +293,42 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
 <details>
 <summary><b>In detail: it looks, it measures, it checks</b></summary>
 
-A local model guesses where a developer would go and look; these tools let it look instead.
+A model that only reads source code has to imagine what the program does. These tools let the agent check instead:
+look at what the code produces, measure it, and read the files developers deal with every day.
 
-- **The page it builds** — `view_page` captures a page your app serves on this machine, or an HTML file, at a
-  laptop's width and a phone's, in a browser cut off from the network: a button that cannot be seen, a layout that
-  overflows on a phone. It asks first, like a request to your app.
-- **The desktop app it launched** — `view_window` shows the window of the app the agent started in the background and
-  every control's role, name, value, state and place: a button left greyed out, a field a binding leaves empty. A model
-  that does not see images gets the controls too. Windows, macOS (it says which permission to allow) and Linux.
-- **The app it is building, called for real** — it starts your API in the background, waits for its "listening" line,
-  then sends requests with `http_request` and reads the answer, a 500's stack trace included, to fix and call again.
+- **The web page it builds** — `view_page` opens a page of your web app, served on this machine or an HTML file, at
+  desktop and phone widths in a browser with no network access. Layout and styling problems the source does not show
+  — an element that cannot be seen, a layout that breaks on a small screen — are seen rather than guessed. It asks
+  first, like a request to your app.
+- **The desktop app it started** — `view_window` shows the window of an app the agent launched in the background, and
+  every control's type, text, value, state and position: enough to notice a control left disabled or a field that
+  stays empty. A model that does not see images gets the controls too. Windows, macOS (it says which permission to
+  allow) and Linux.
+- **Your web service, called for real** — the agent starts the service in the background, waits until it is ready,
+  sends requests with `http_request` and reads the answers, error pages and stack traces included; it then fixes the
+  code and calls again to confirm.
 - **A measure, not one lucky run** — `run_command` with `repeat` runs a command several times after a warm-up and
-  gives the median and the spread, and whether a change is faster beyond the noise.
+  gives the median, the spread, and whether a change is faster beyond the normal variation between runs.
 - **The text of an image** — `ocr` reads a screenshot, a photo of a page or a scanned PDF in Inferpal's ten languages,
   nothing to install; a model that does not see images gets that text instead of the picture.
 - **Long logs, data files, archives** — `read_file` filters a log by level and time (`level`, `since`, `until`), each
-  entry with its stack trace; `query_data` answers one read-only SQL query on a CSV, TSV or SQLite file; an archive
-  (`logs.zip!/app/log.txt`) is read in place, never extracted.
+  entry with its stack trace; `query_data` answers one read-only SQL query on a CSV, TSV or SQLite file too large to
+  read; a zip, NuGet or tar archive is listed and read in place, never extracted.
 - **Notebooks** — `edit_notebook` changes one cell, `run_notebook` runs the notebook on a copy and reads the traceback.
 - **Where a setting comes from, and why a line is there** — `msbuild_property` finds the file that sets a build
-  property (the "C# 7.3" nobody asked for); `git_history` reads the commits, the blame and a commit's change.
+  property, so a build error that comes from a setting is fixed where the setting is defined; `git_history` reads the
+  commits, the blame and a commit's change, so the agent understands code before changing it.
 - **A question instead of a guess** *(Visual Studio and VS Code, not ACP editors nor `/task`)* — when a request could
   mean several things, `ask_question` asks you on a card, with up to four answers to pick from.
 - **One approval for many files** — `replace_in_files` changes a text across the project, all or nothing, every file
   backed up first.
 
-| You ask | It uses |
+| When you ask it to | It can |
 |---|---|
-| *The Pay button doesn't show on a phone* | `view_page` |
-| *Fix the 500 on POST /orders* | `run_command` (`background`), then `http_request` |
-| *Make the report faster* | `run_command` with `repeat` |
-| *How many orders failed, per day?* on a large CSV | `query_data` |
+| Fix how a page looks | Look at the page as a browser draws it (`view_page`) |
+| Fix an error your web service returns | Start the service and call it, before and after the fix (`run_command` in the background, `http_request`) |
+| Make something faster | Measure it over several runs, before and after the change (`run_command` with `repeat`) |
+| Answer a question about a large data file | Query it with SQL instead of reading it (`query_data`) |
 
 Every tool and its parameters: [tools.md](tools.md); every format they read: [File formats](file-formats.md).
 
