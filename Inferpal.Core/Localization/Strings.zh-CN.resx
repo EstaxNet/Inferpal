@@ -2337,6 +2337,10 @@
   <data name="ImageOcrChip" xml:space="preserve"><value>OCR 读取的文本 · {0} 行</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} 看不到图片：改为发送 {1} 的文本，由 Inferpal 的 OCR 在本机读取——词语和数字可能读错。</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — OCR 读取的文本，代替图片发送</value></data>
+  <data name="ImageOcrSeeText" xml:space="preserve"><value>查看读取的文本</value></data>
+  <data name="ImageOcrAskOther" xml:space="preserve"><value>改为询问 {0}</value></data>
+  <data name="ImageOcrSeesHint" xml:space="preserve"><value>能看到图片</value></data>
+  <data name="ImageOcrOtherChosen" xml:space="preserve"><value>{0} 将看到这些图片。</value></data>
   <data name="MermaidDiagram" xml:space="preserve"><value>图表</value></data>
   <data name="MermaidCode" xml:space="preserve"><value>代码</value></data>
   <data name="MermaidCopy" xml:space="preserve"><value>复制代码</value></data>

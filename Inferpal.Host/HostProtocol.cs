@@ -129,8 +129,10 @@ internal sealed record ImageTextDto(int Index, string Name, string Chip, string 
 /// <param name="ChipWarning">What an image chip says when the model does not see it; empty otherwise.</param>
 /// <param name="Texts">The images whose text goes instead of them (the model does not see; the OCR found text); the card,
 /// when there is one, names only the others.</param>
+/// <param name="Banner">Over the composer when some text goes instead: the line, "see the text read", "ask a model that sees".</param>
 internal sealed record ImageCheckResult(string Model, bool? Sees, string GoesTo, Services.Presentation.ImageNotSeenCardModel? Card,
-                                        string ChipWarning = "", List<ImageTextDto>? Texts = null);
+                                        string ChipWarning = "", List<ImageTextDto>? Texts = null,
+                                        Services.Presentation.ImageTextBannerModel? Banner = null);
 
 /// <summary><c>chat/steer</c>: a note typed while the turn runs, for its next boundary.</summary>
 /// <param name="Id">The adapter's id for the note, given back by <c>chat/noteApplied</c> and in the turn's result.</param>

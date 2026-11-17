@@ -2337,6 +2337,10 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="ImageOcrChip" xml:space="preserve"><value>tekst odczytany przez OCR · {0} {0:wiersz|wiersze|wierszy}</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} nie widzi obrazów: zamiast nich idzie tekst z {1}, odczytany na tym komputerze przez OCR Inferpala — słowa i liczby mogą być źle odczytane.</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — tekst odczytany przez OCR, wysłany zamiast obrazu</value></data>
+  <data name="ImageOcrSeeText" xml:space="preserve"><value>Pokaż odczytany tekst</value></data>
+  <data name="ImageOcrAskOther" xml:space="preserve"><value>Zapytaj zamiast tego {0}</value></data>
+  <data name="ImageOcrSeesHint" xml:space="preserve"><value>widzi obraz</value></data>
+  <data name="ImageOcrOtherChosen" xml:space="preserve"><value>{0} zobaczy obrazy.</value></data>
   <data name="MermaidDiagram" xml:space="preserve"><value>Diagram</value></data>
   <data name="MermaidCode" xml:space="preserve"><value>Kod</value></data>
   <data name="MermaidCopy" xml:space="preserve"><value>Kopiuj kod</value></data>

@@ -125,6 +125,16 @@ export interface ImageText {
   forModel: string;
 }
 
+/** Over the composer when the text of the images goes instead of them (the Core's `ImageTextBannerModel`, pari 108). */
+export interface ImageTextBanner {
+  line: string;
+  seeLabel: string;
+  otherModel: string;
+  askOtherLabel: string;
+  askOtherHint: string;
+  otherChosen: string;
+}
+
 /** The card shown before sending when the answering model does not see images (the Core's `ImageNotSeenCardModel`). */
 export interface ImageNotSeenCard {
   title: string; subtitle: string; body: string; otherModel: string; askOtherLabel: string; askOtherHint: string;

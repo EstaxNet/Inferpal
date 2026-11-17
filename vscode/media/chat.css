@@ -439,6 +439,44 @@ div.with-icon {
   font-size: 0.78em;
 }
 
+.user-image-text {
+  margin-top: 6px;
+  border: 1px solid var(--ip-border, var(--vscode-panel-border));
+  border-radius: 8px;
+  font-size: 0.85em;
+}
+
+.user-image-text summary {
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--ip-muted);
+}
+
+.user-image-text pre {
+  margin: 0;
+  padding: 6px 8px;
+  border-top: 1px solid var(--ip-border, var(--vscode-panel-border));
+  white-space: pre-wrap;
+  max-height: 16em;
+  overflow: auto;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.chips-actions {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chips-actions button {
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: var(--vscode-button-secondaryBackground, transparent);
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+}
+
 .chip span {
   overflow: hidden;
   text-overflow: ellipsis;

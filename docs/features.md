@@ -1109,8 +1109,10 @@ on a card in the chat; the model gets the text, never the password, and three wr
 **Images go as images**, to a model that sees them (Qwen3.8, Ornith, Gemma 4, on LM Studio or Ollama). A large one is
 scaled down to 1920 × 1080 first, and said. When the model that will answer does not see images, the text written in the
 image — read on your computer by Inferpal's OCR, in its ten languages — goes instead, and the chip says so ("text read by
-OCR · 4 lines"); only an image with no text (a photo) gets the card that offers a model of your server that does, or
-sending without the image.
+OCR · 4 lines"). Over the composer, **See the text read** opens it beside the chat, and **Ask … instead** hands the
+question to a model of your server that sees, with the image; once sent, the text the model got unfolds under your
+question. Only an image with no text (a photo) gets the card that offers a model of your server that does, or sending
+without the image.
 
 <table>
   <tr>

@@ -89,6 +89,11 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public ObservableCollection<string> ImageFiles { get; } = [];
     private bool _hasImageFiles;
     [DataMember] public bool HasImageFiles { get => _hasImageFiles; set => SetProperty(ref _hasImageFiles, value); }
+    /// <summary>The text read by OCR that went instead of an image (a model that does not see, pari 108), each under its
+    /// label, folded open under the question — this session only.</summary>
+    [DataMember] public ObservableCollection<ImageTextItem> ImageTexts { get; } = [];
+    private bool _hasImageTexts;
+    [DataMember] public bool HasImageTexts { get => _hasImageTexts; set => SetProperty(ref _hasImageTexts, value); }
 
     // ── A note typed while the run worked: a user bubble, with the line that says whether the model read it ──
     private string _noteState = string.Empty;

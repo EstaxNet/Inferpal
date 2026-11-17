@@ -67,6 +67,7 @@ internal partial class InferpalToolWindowData
         SendCommand               = new AsyncCommand(SendAsync);
         CancelCommand             = new AsyncCommand(CancelAsync);
         InitSteering();
+        InitImageText();
         ClearCommand              = new AsyncCommand(ClearAsync);
         LoadSessionCommand        = new AsyncCommand(LoadSessionAsync);
         DeleteSessionCommand      = new AsyncCommand(DeleteSessionAsync) { CanExecute = false };

@@ -53,8 +53,9 @@ jobs:
     #   budget 30 min → 1979 s (+179)   |   budget 15 min → 1200 s (+300, = GitHub's grace)
     #   budget 30 min → 1851 s (+51)    |   budget 15 min →  900 s (+0)
     #
-    # A healthy run of this leg is 148–188 s, so fifteen minutes is five times one.
-    timeout-minutes: 15
+    # A healthy run of this leg's test step is 9–12 minutes (the suite grew; it crossed a 12-minute step budget), so the
+    # job gets the step's sixteen plus restore, build and the host check.
+    timeout-minutes: 22
 
     steps:
       - uses: actions/checkout@v7
@@ -78,10 +79,10 @@ jobs:
       # ⚠ SETTLED, do not reinstate an in-shell watchdog a third time. Three independent timers
       # inside this job cannot end a hung step here: `--blame-hang` at 5 min (silent — so the hang
       # is not inside a test), an in-shell watchdog at 10 min killing the host by name, and the
-      # step's own `timeout-minutes` at 12. Measured at 18 and at 25 minutes elapsed, all three past
+      # step's own `timeout-minutes` (then 12). Measured at 18 and at 25 minutes elapsed, all three past
       # due. What does end the job is the JOB budget above.
       - name: Test (net10.0 editor-agnostic slice)
-        timeout-minutes: 12
+        timeout-minutes: 16
         run: |
           set +e
           dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \

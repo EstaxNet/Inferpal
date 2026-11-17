@@ -2337,6 +2337,10 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ImageOcrChip" xml:space="preserve"><value>OCR로 읽은 텍스트 · {0}줄</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0}은(는) 이미지를 보지 못합니다. 대신 {1}의 텍스트를 보냅니다. 이 컴퓨터에서 Inferpal의 OCR이 읽은 것으로, 단어와 숫자를 잘못 읽었을 수 있습니다.</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — OCR로 읽은 텍스트, 이미지 대신 전송</value></data>
+  <data name="ImageOcrSeeText" xml:space="preserve"><value>읽은 텍스트 보기</value></data>
+  <data name="ImageOcrAskOther" xml:space="preserve"><value>대신 {0}에게 묻기</value></data>
+  <data name="ImageOcrSeesHint" xml:space="preserve"><value>이미지를 봅니다</value></data>
+  <data name="ImageOcrOtherChosen" xml:space="preserve"><value>{0}이(가) 이미지를 봅니다.</value></data>
   <data name="MermaidDiagram" xml:space="preserve"><value>다이어그램</value></data>
   <data name="MermaidCode" xml:space="preserve"><value>코드</value></data>
   <data name="MermaidCopy" xml:space="preserve"><value>코드 복사</value></data>

@@ -21,6 +21,11 @@ internal sealed record ImageNotSeenCardModel(
 /// pasted images share a name), its chip's line, its label in the question, and what the model reads in its place.</summary>
 internal sealed record ImageTextModel(int Index, string Name, string Chip, string Label, string ForModel);
 
+/// <summary>The banner over the composer when the text of the images goes instead of them (pari 108): what happens, the
+/// button that shows the text read, and the one that asks a model of the server that sees instead (empty when none does).</summary>
+internal sealed record ImageTextBannerModel(string Line, string SeeLabel, string OtherModel, string AskOtherLabel, string AskOtherHint,
+                                           string OtherChosen);
+
 /// <summary>Builds what both editors draw for images: the chip, the composer's line, the badge, the not-seen card.</summary>
 internal static class ImageCards
 {
@@ -47,6 +52,26 @@ internal static class ImageCards
     /// <summary>The composer's line when the text of <paramref name="read"/> goes instead of the images.</summary>
     public static string TextGoesTo(string model, IReadOnlyList<ImageTextModel> read) =>
         Strings.ImageOcrGoesTo(model, string.Join(", ", read.Select(r => r.Name)));
+
+    /// <summary>The banner when the text of <paramref name="read"/> goes to <paramref name="model"/> instead of the images.</summary>
+    public static ImageTextBannerModel TextBanner(string model, IReadOnlyList<ImageTextModel> read, IReadOnlyList<string> visionModels,
+                                                  IReadOnlyList<string>? preferred = null)
+    {
+        var other = OtherThatSees(model, visionModels, preferred);
+        return new(TextGoesTo(model, read), Strings.ImageOcrSeeText, other,
+                   other.Length > 0 ? Strings.ImageOcrAskOther(other) : string.Empty, other.Length > 0 ? Strings.ImageOcrSeesHint : string.Empty,
+                   other.Length > 0 ? Strings.ImageOcrOtherChosen(other) : string.Empty);
+    }
+
+    /// <summary>The model of the server that sees images to offer instead of <paramref name="model"/>: the first of the person's
+    /// own (<paramref name="preferred"/>) that sees, else the server's first; empty when none sees.</summary>
+    private static string OtherThatSees(string model, IReadOnlyList<string> visionModels, IReadOnlyList<string>? preferred)
+    {
+        var others = visionModels.Where(m => !Inference.ModelCatalog.SameModelName(m, model)).ToList();
+        return (preferred ?? []).Select(p => others.FirstOrDefault(m => Inference.ModelCatalog.SameModelName(m, p)))
+                                .FirstOrDefault(m => m is not null)
+               ?? others.FirstOrDefault() ?? string.Empty;
+    }
 
     /// <summary>The chip of an image read by <see cref="ChatImages.Read"/>; <paramref name="pasted"/> for one pasted from
     /// the clipboard (it has no file).</summary>
@@ -88,10 +113,7 @@ internal static class ImageCards
     public static ImageNotSeenCardModel NotSeen(string model, IReadOnlyList<string> images, IReadOnlyList<string> visionModels,
                                                 IReadOnlyList<string>? preferred = null)
     {
-        var others = visionModels.Where(m => !Inference.ModelCatalog.SameModelName(m, model)).ToList();
-        var other = (preferred ?? []).Select(p => others.FirstOrDefault(m => Inference.ModelCatalog.SameModelName(m, p)))
-                                     .FirstOrDefault(m => m is not null)
-                    ?? others.FirstOrDefault() ?? string.Empty;
+        var other = OtherThatSees(model, visionModels, preferred);
         var named = visionModels.Take(NamedVisionModels).ToList();
         var list = string.Join(", ", named) + (visionModels.Count > named.Count
             ? string.Create(CultureInfo.InvariantCulture, $", +{visionModels.Count - named.Count}") : string.Empty);

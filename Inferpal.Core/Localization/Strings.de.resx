@@ -2337,6 +2337,10 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ImageOcrChip" xml:space="preserve"><value>Text per OCR gelesen · {0} {0:Zeile|Zeilen}</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} sieht keine Bilder: Stattdessen geht der Text von {1}, auf diesem Computer von Inferpals OCR gelesen — Wörter und Zahlen können falsch gelesen sein.</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — per OCR gelesener Text, statt des Bildes gesendet</value></data>
+  <data name="ImageOcrSeeText" xml:space="preserve"><value>Gelesenen Text anzeigen</value></data>
+  <data name="ImageOcrAskOther" xml:space="preserve"><value>Stattdessen {0} fragen</value></data>
+  <data name="ImageOcrSeesHint" xml:space="preserve"><value>sieht das Bild</value></data>
+  <data name="ImageOcrOtherChosen" xml:space="preserve"><value>{0} sieht die Bilder.</value></data>
   <data name="MermaidDiagram" xml:space="preserve"><value>Diagramm</value></data>
   <data name="MermaidCode" xml:space="preserve"><value>Code</value></data>
   <data name="MermaidCopy" xml:space="preserve"><value>Code kopieren</value></data>

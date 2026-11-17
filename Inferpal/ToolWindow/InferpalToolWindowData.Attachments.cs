@@ -310,10 +310,17 @@ internal partial class InferpalToolWindowData
             catch (System.Net.Http.HttpRequestException ex) { Diagnostics.Swallow("ImageChip.Sees", ex); }
             var chipModel = Services.Presentation.ImageCards.Chip(image, pasted, sees == false ? model : null);
             var detail = chipModel.Warning.Length > 0 ? chipModel.Detail + " · " + chipModel.Warning : chipModel.Detail;
-            // A model that does not see: its text goes instead (pari 108) — the chip says so from the moment it is attached.
+            // A model that does not see: its text goes instead (pari 108) — the chip says so from the moment it is attached,
+            // and the banner over the composer offers to see it or to ask a model that sees.
+            Services.Presentation.ImageTextModel? ocrText = null;
+            IReadOnlyList<string> vision = [];
             if (sees == false
                 && (await Task.Run(() => Services.Presentation.ImageCards.Texts([image], ct), ct)).Read is [var text])
-                detail = text.Chip;
+            {
+                (ocrText, detail) = (text, text.Chip);
+                try { vision = await _client.VisionModelsAsync(ct); }
+                catch (System.Net.Http.HttpRequestException ex) { Diagnostics.Swallow("ImageChip.Vision", ex); }
+            }
             await RunOnVMContextAsync(() =>
             {
                 AttachmentItem? item = null;
@@ -321,7 +328,9 @@ internal partial class InferpalToolWindowData
                 {
                     Attachments.Remove(item!);
                     HasAttachments = Attachments.Count > 0;
+                    RemoveImageText(item!);
                 }), origin: pasted ? null : path) { Image = image, ImageFile = path, Detail = detail };
+                if (ocrText is not null) AddImageText(item, ocrText, model, vision);
                 var chip         = ThemePalette.For(_isDark, _isHighContrast);
                 item.Background  = chip.AttachChipBg;
                 item.Foreground  = chip.AttachChipText;

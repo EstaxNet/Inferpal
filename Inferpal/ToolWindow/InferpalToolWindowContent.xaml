@@ -500,6 +500,27 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <!-- The text read by OCR that went instead of an image (a model that does not see), folded open -->
+                            <ItemsControl ItemsSource="{Binding ImageTexts}" Margin="0,6,0,0" Focusable="False"
+                                          Visibility="{Binding HasImageTexts, Converter={StaticResource b2v}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="8" BorderThickness="1" Margin="0,0,0,4" Padding="8,4"
+                                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                                            <Expander IsExpanded="True" Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}">
+                                                <Expander.Header>
+                                                    <TextBlock Text="{Binding Label}" FontSize="12" TextWrapping="Wrap"
+                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                </Expander.Header>
+                                                <TextBox Text="{Binding Text, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" Background="Transparent"
+                                                         TextWrapping="Wrap" FontFamily="Cascadia Mono, Consolas" FontSize="11.5" MaxHeight="220"
+                                                         VerticalScrollBarVisibility="Auto" Margin="0,4,0,0"
+                                                         Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                            </Expander>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                             <ItemsControl ItemsSource="{Binding Chips}" HorizontalAlignment="Right" Margin="0,6,0,0"
                                           Visibility="{Binding HasChips, Converter={StaticResource b2v}}">
                                 <ItemsControl.ItemsPanel>
@@ -3855,6 +3876,24 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </WrapPanel>
+                    <!-- Their text goes instead of the images (a model that does not see, pari 108): see it, or ask a model that sees -->
+                    <StackPanel Visibility="{Binding HasImageTextBanner, Converter={StaticResource b2v}}" Margin="0,0,0,6">
+                        <TextBlock Text="{Binding ImageTextLine}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,4"
+                                   Foreground="{Binding ThemeSubtleText}"/>
+                        <WrapPanel>
+                            <Button Template="{StaticResource Flat6}" Height="26" Padding="10,0" Margin="0,0,8,0" BorderThickness="1" Cursor="Hand"
+                                    Background="Transparent" BorderBrush="{Binding ThemeBorder}"
+                                    Command="{Binding ImageSeeTextCommand}" AutomationProperties.Name="{Binding ImageSeeTextLabel}">
+                                <TextBlock Text="{Binding ImageSeeTextLabel}" FontSize="12" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                            </Button>
+                            <Button Template="{StaticResource Flat6}" Height="26" Padding="10,0" BorderThickness="1" Cursor="Hand"
+                                    Background="Transparent" BorderBrush="{Binding ThemeBorder}"
+                                    Visibility="{Binding HasImageAskOther, Converter={StaticResource b2v}}"
+                                    Command="{Binding ImageAskOtherCommand}" AutomationProperties.Name="{Binding ImageAskOtherLabel}">
+                                <TextBlock Text="{Binding ImageAskOtherLabel}" FontSize="12" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
                     <!-- The messages sent after the turn (Ctrl+Enter, or a note no step can read), in order, each removable -->
                     <StackPanel Visibility="{Binding HasQueuedMessages, Converter={StaticResource b2v}}" Margin="0,0,0,4">
                         <TextBlock Text="{Binding QueueTitle}" FontSize="11" Foreground="{Binding ThemeSubtleText}" Margin="0,0,0,2"/>

@@ -2337,6 +2337,10 @@
   <data name="ImageOcrChip" xml:space="preserve"><value>текст прочитан OCR · {0} {0:строка|строки|строк}</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} не видит изображения: вместо них отправляется текст {1}, прочитанный на этом компьютере OCR Inferpal — слова и цифры могут быть прочитаны неверно.</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — текст, прочитанный OCR, отправлен вместо изображения</value></data>
+  <data name="ImageOcrSeeText" xml:space="preserve"><value>Показать прочитанный текст</value></data>
+  <data name="ImageOcrAskOther" xml:space="preserve"><value>Спросить {0}</value></data>
+  <data name="ImageOcrSeesHint" xml:space="preserve"><value>видит изображение</value></data>
+  <data name="ImageOcrOtherChosen" xml:space="preserve"><value>{0} увидит изображения.</value></data>
   <data name="MermaidDiagram" xml:space="preserve"><value>Диаграмма</value></data>
   <data name="MermaidCode" xml:space="preserve"><value>Код</value></data>
   <data name="MermaidCopy" xml:space="preserve"><value>Копировать код</value></data>

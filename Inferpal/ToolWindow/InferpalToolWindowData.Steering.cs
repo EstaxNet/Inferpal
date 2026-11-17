@@ -64,6 +64,7 @@ internal partial class InferpalToolWindowData
             Prompt = string.Empty;
             Attachments.Clear();
             HasAttachments = false;
+            ClearImageTexts();
             Enqueue(new QueuedMessage(text, null, attachments));
         });
         if (sendNow) await SendAsync(null, ct);

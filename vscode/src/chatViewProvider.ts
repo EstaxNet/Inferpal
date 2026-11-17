@@ -28,7 +28,7 @@ import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
   ApprovalCard, AwayNotice, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
   ModelsByKind, SavedMessage, SessionLoadResult, SessionSwitches, hasSwitches, noSwitches, SlashEffect, TestsGenerateResult, TurnNote, WindowNoticeResult,
-  ConfigReloadResult, ImageDto, ImageNotSeenCard, ImageText,
+  ConfigReloadResult, ImageDto, ImageNotSeenCard, ImageText, ImageTextBanner,
 } from './protocol';
 import {
   WebviewToExt,
@@ -182,7 +182,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** The files dropped on the chat, attached one after the other. */
   private drops: Promise<void> = Promise.resolve();
   /** What `image/check` said for the chips' images: the composer's line, and the chips' warning when it does not see. */
-  private imageSeen: { goesTo: string; sees: boolean | null; warning: string; texts: ImageText[] } | undefined;
+  private imageSeen: { goesTo: string; sees: boolean | null; warning: string; texts: ImageText[]; banner: ImageTextBanner | null } | undefined;
+  /** The model of the server that sees, chosen on the banner for the next question (pari 108): the images go to it —
+   *  while the window's model and mode are still the ones the banner was offered for. */
+  private imageAskOther: { model: string; forModel: string; agent: boolean } | undefined;
   /** The not-seen card on screen, waiting for the person's choice (a Stop answers it "without": the turn then stops). */
   private imageCardAnswer: ((choice: 'other' | 'without') => void) | undefined;
   /** What the last question was sent WITH — its words before the "📎 Attached" line, and its chips —, tied to its
@@ -2043,12 +2046,24 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       case 'imageCardChoice':
         this.imageCardAnswer?.(msg.choice);
         return;
+      case 'imageSeeText':
+        void this.showImageTexts();
+        return;
+      case 'imageAskOther':
+        this.imageAskOther = this.imageSeen?.banner?.otherModel
+          ? { model: this.imageSeen.banner.otherModel, forModel: this.model, agent: this.windowAgentMode() } : undefined;
+        this.postChips();
+        return;
       case 'removeChip':
         if (msg.index >= 0 && msg.index < this.pendingAttachments.length) {
           const [removed] = this.pendingAttachments.splice(msg.index, 1);
           // A chip found while typing that the person removed is not found again for this draft.
           if (removed.auto && removed.origin) {
             this.removedAutoChips.push(removed.origin);
+          }
+          // The last image gone, the choice made on the banner goes too: an image attached next is judged afresh.
+          if (!this.pendingAttachments.some((a) => a.image)) {
+            this.imageAskOther = undefined;
           }
           this.postChips();
         }
@@ -2194,7 +2209,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   private postChips(): void {
     const images = this.pendingAttachments.some((a) => a.image);
-    this.post({ type: 'chips', chips: this.chipsShown(), imageLine: images ? this.imageSeen?.goesTo : undefined });
+    const banner = images ? this.imageSeen?.banner : undefined;
+    // The model that sees chosen on the banner: the line says so, the buttons go.
+    const line = banner && this.imageAskOther ? banner.otherChosen : images ? this.imageSeen?.goesTo : undefined;
+    this.post({ type: 'chips', chips: this.chipsShown(), imageLine: line,
+                imageBanner: banner && !this.imageAskOther
+                  ? { see: banner.seeLabel, askOther: banner.askOtherLabel, askOtherHint: banner.askOtherHint } : undefined });
   }
 
   /** The chips as the composer draws them — a redraw too, or it showed the found-while-typing ones as plain ones. */
@@ -2240,6 +2260,17 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  /** The text read in the chips' images, opened beside the chat as a document to read (nothing saved). */
+  private async showImageTexts(): Promise<void> {
+    const texts = this.imageSeen?.texts ?? [];
+    if (texts.length === 0) {
+      return;
+    }
+    const content = texts.map((x) => `${x.label}\n\n${x.forModel}`).join('\n\n---\n\n');
+    const document = await vscode.workspace.openTextDocument({ content, language: 'plaintext' });
+    await vscode.window.showTextDocument(document, { preview: true, viewColumn: vscode.ViewColumn.Beside });
+  }
+
   /** An image chip's lines: its text read by OCR for a model that does not see it, else its size and the warning. */
   private imageChip(index: number, detail: string): { detail: string; warning: string } {
     const text = this.imageSeen?.texts.find((x) => x.index === index);
@@ -2255,7 +2286,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // The images themselves: a model that does not see gets their text, read on this computer (pari 108).
     const check = await host.imageCheck({ names: images.map((a) => a.name), model: this.model || undefined,
                                           agentMode: this.windowAgentMode(), images: images.map((a) => a.image!) });
-    this.imageSeen = { goesTo: check.goesTo, sees: check.sees, warning: check.chipWarning, texts: check.texts ?? [] };
+    this.imageSeen = { goesTo: check.goesTo, sees: check.sees, warning: check.chipWarning, texts: check.texts ?? [],
+                       banner: check.banner ?? null };
   }
 
   /** The not-seen card of the question being sent, answered by the person: ask the model that sees, or send without. */
@@ -3400,6 +3432,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       const named = [...mentions.labels];
       const chips = this.regenerating ? this.resendAttachments ?? [] : this.continuing ? [] : this.pendingAttachments;
       let images: ImageDto[] = [];
+      const imageTexts: { label: string; text: string }[] = [];
       let model = this.model || undefined;
       let modelOverridesRoles: boolean | undefined;
       if (chips.length > 0) {
@@ -3430,6 +3463,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
       }
       // A model that does not see images: the card asks first — the model of the server that sees, or without them.
+      // Chosen on the banner, it goes with the composer's chips (Regenerate leaves them) — unless the window's model or
+      // mode changed since the banner offered it.
+      const askOther = this.regenerating ? undefined : this.imageAskOther;
+      if (!this.regenerating) {
+        this.imageAskOther = undefined;
+      }
+      if (images.length > 0 && askOther && askOther.forModel === this.model && askOther.agent === this.windowAgentMode()) {
+        model = askOther.model;
+        modelOverridesRoles = true;
+      }
       if (images.length > 0) {
         this.imageCheckStop = new vscode.CancellationTokenSource();
         let check;
@@ -3460,6 +3503,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           // Their text, read on this computer, goes instead (pari 108): matched by place — two pasted images share a name.
           // The model reads the file's name; the question shows the label.
           for (const text of texts) {
+            imageTexts.push({ label: text.label, text: text.forModel });
             expanded += `\n\n## Attached: ${text.name}\n${text.forModel}`;
             const at = named.indexOf(text.name);
             if (at >= 0) {
@@ -3482,6 +3526,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
       }
       const asked = this.lastQuestion();
+      if (asked && imageTexts.length > 0) {
+        // What went instead of the images, under the question (pari 108): the text read, as the model got it.
+        asked.imageTexts = imageTexts;
+        this.hydrate();
+      }
       if (asked && images.length > 0) {
         // The small copies only: the transcript is posted whole at every redraw of the view.
         asked.images = chips.filter((a) => a.image && a.thumbnail && images.includes(a.image)).map((a) => a.thumbnail!);

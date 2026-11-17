@@ -2923,6 +2923,10 @@ internal static class Strings
     public static string ImageOcrChip(int lines) => Format(Get(nameof(ImageOcrChip)), lines);
     public static string ImageOcrGoesTo(string model, string images) => Format(Get(nameof(ImageOcrGoesTo)), model, images);
     public static string ImageOcrLabel(string image) => Format(Get(nameof(ImageOcrLabel)), image);
+    public static string ImageOcrSeeText => Get(nameof(ImageOcrSeeText));
+    public static string ImageOcrAskOther(string model) => Format(Get(nameof(ImageOcrAskOther)), model);
+    public static string ImageOcrSeesHint => Get(nameof(ImageOcrSeesHint));
+    public static string ImageOcrOtherChosen(string model) => Format(Get(nameof(ImageOcrOtherChosen)), model);
     public static string MermaidDiagram => Get(nameof(MermaidDiagram));
     public static string MermaidCode => Get(nameof(MermaidCode));
     public static string MermaidCopy => Get(nameof(MermaidCopy));

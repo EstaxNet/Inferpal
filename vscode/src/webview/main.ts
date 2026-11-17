@@ -922,6 +922,18 @@ function addUser(item: WvTranscriptItem): void {
     }
     row.appendChild(thumbs);
   }
+  // The text read by OCR that went instead of an image (a model that does not see, pari 108): a fold, open.
+  for (const read of item.imageTexts ?? []) {
+    const fold = document.createElement('details');
+    fold.className = 'user-image-text';
+    fold.open = true;
+    const summary = document.createElement('summary');
+    setIcon(summary, 'image', read.label, 11);
+    const text = document.createElement('pre');
+    text.textContent = read.text;
+    fold.append(summary, text);
+    row.appendChild(fold);
+  }
   if (names.length > 0) {
     const chips = document.createElement('div');
     chips.className = 'user-chips';
@@ -3410,7 +3422,8 @@ function renderPins(pins: string[]): void {
   }
 }
 
-function renderChips(chips: WvChip[], imageLine?: string): void {
+function renderChips(chips: WvChip[], imageLine?: string,
+                     imageBanner?: { see: string; askOther: string; askOtherHint: string }): void {
   chipsEl.textContent = '';
   chipsEl.hidden = chips.length === 0;
   chips.forEach((chip, i) => {
@@ -3440,6 +3453,25 @@ function renderChips(chips: WvChip[], imageLine?: string): void {
     note.className = 'chips-note';
     note.textContent = imageLine;
     chipsEl.appendChild(note);
+  }
+  // Their text goes instead (a model that does not see, pari 108): see it, or ask a model of the server that sees.
+  if (imageBanner) {
+    const actions = document.createElement('div');
+    actions.className = 'chips-actions';
+    const see = document.createElement('button');
+    see.className = 'secondary';
+    see.textContent = imageBanner.see;
+    see.addEventListener('click', () => post({ type: 'imageSeeText' }));
+    actions.appendChild(see);
+    if (imageBanner.askOther) {
+      const other = document.createElement('button');
+      other.className = 'secondary';
+      other.textContent = imageBanner.askOther;
+      other.title = imageBanner.askOtherHint;
+      other.addEventListener('click', () => post({ type: 'imageAskOther' }));
+      actions.appendChild(other);
+    }
+    chipsEl.appendChild(actions);
   }
   // Chips the search found while the person typed: what they are, and that they can go.
   if (chips.some((c) => c.auto)) {
@@ -4089,7 +4121,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       }
       break;
     case 'chips':
-      renderChips(msg.chips, msg.imageLine);
+      renderChips(msg.chips, msg.imageLine, msg.imageBanner);
       break;
     case 'imageCard':
       renderImageCard(msg.card);

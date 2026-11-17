@@ -63,6 +63,9 @@ export interface WvTranscriptItem {
   role: 'user' | 'assistant' | 'status' | 'tool' | 'error' | 'input';
   /** Screen only, never saved: the images a question carried, as data URLs, drawn under it. */
   images?: string[];
+  /** Screen only, never saved: the text read by OCR that went instead of an image (pari 108), each under its label,
+   *  drawn under the question as a fold. */
+  imageTexts?: { label: string; text: string }[];
   /** Message text; for 'tool' entries this is the tool name; for 'input' entries, the receipt an answered input card
    *  left (`InputReceipt.Saved` in the Core: its title, its detail, then what was sent). */
   text: string;
@@ -274,7 +277,7 @@ export type ExtToWebview =
   | { type: 'rewindCard'; ordinal: number; card?: RewindCard | null; message?: string }
   /** `category` and `query` name the request answered: only the latest one is shown. */
   | { type: 'mentionResults'; category: string; query: string; items: WvMentionItem[] }
-  | { type: 'chips'; chips: WvChip[]; imageLine?: string }
+  | { type: 'chips'; chips: WvChip[]; imageLine?: string; imageBanner?: { see: string; askOther: string; askOtherHint: string } }
   | { type: 'imageCard'; card: import('./protocol').ImageNotSeenCard }
   | { type: 'imageCardGone' }
   | { type: 'pins'; pins: string[] }
@@ -351,6 +354,8 @@ export type WebviewToExt =
   | { type: 'attachImage'; name: string; data: string; pasted: boolean }
   | { type: 'attachDroppedFile'; name: string; data: string; mediaType: string; outcome?: 'folder' | 'tooLarge' | 'unreadable' }
   | { type: 'imageCardChoice'; choice: 'other' | 'without' }
+  | { type: 'imageSeeText' }
+  | { type: 'imageAskOther' }
   /** The draft changed: the extension looks for the code it is about once typing pauses. */
   | { type: 'draft'; text: string }
   | { type: 'pinActive' }

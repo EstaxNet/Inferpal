@@ -187,6 +187,7 @@ internal partial class InferpalToolWindowData
             // backend leaves the UI looking frozen for that whole window and invites a second
             // Enter. From this point IsLoading is the single re-entrancy guard, so the startup
             // claim (_sendStarting) is handed off / released.
+            (string Model, string For)? askOther = null;
             await RunOnVMContextAsync(() =>
             {
                 // ⚠ No configuration save here: every setting the window changes saves itself, and a save per question
@@ -195,6 +196,10 @@ internal partial class InferpalToolWindowData
                 if (typed) PromptHistoryFile.Append(_promptHistoryStore, _promptHistory, userText);   // also resets navigation state
                 if (clearPrompt)
                 {
+                    // The model that sees, chosen on the banner (pari 108), goes with the composer's chips — only a send
+                    // that takes them takes it (a queued message, Regenerate or Continue leave both in the composer).
+                    if (_imageAskOther is { } other && _imageTextFor is { } chosenFor) askOther = (other, chosenFor.Model);
+                    ClearImageTexts();
                     // ⚠ A send that clears the chips SENDS them: a template, /explain, /review and /debug come here with
                     // their own attachments only, and the chips waiting in the composer vanished unsent and unnamed
                     // (VS Code sends them). The ordinary send passes them already: not added twice.
@@ -243,7 +248,12 @@ internal partial class InferpalToolWindowData
             // A model that does not see images: the card asks first — the model of the server that sees, for this question
             // only, or without them. Stop answers it: the turn then stops before the history, as any Stop of the build.
             var images = attachments.Where(a => a.Image is not null).ToList();
-            if (images.Count > 0)
+            // Chosen on the banner: the model that sees takes the question, with the images — unless the chat's model
+            // changed since the banner offered it, or a code action brings its own model.
+            if (images.Count > 0 && askOther is { } chosen && oneTimeModel is null
+                && Services.Inference.ModelCatalog.SameModelName(chosen.For, await ImageModelAsync(null, localCts!.Token)))
+                imageModel = chosen.Model;
+            else if (images.Count > 0)
             {
                 var asked = await ImageModelAsync(oneTimeModel, localCts!.Token);
                 bool? sees = null;
@@ -301,6 +311,8 @@ internal partial class InferpalToolWindowData
                             question.SplitQuestion();
                             question.ImageFiles.Clear();
                             question.HasImageFiles = false;
+                            foreach (var text in read) question.ImageTexts.Add(new ImageTextItem(text.Label, text.ForModel));
+                            question.HasImageTexts = question.ImageTexts.Count > 0;
                         });
                     }
                 }
