@@ -173,10 +173,13 @@ public sealed class ViewPageToolTests : IDisposable
             return;
         }
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) Assert.Equal(CaptureEngine.WebKit, browsers[0].Engine);
-        foreach (var browser in browsers) await CapturesAsExpected(browser);
+        // The system's own browser (the first) must capture; another one that does not even start here — Edge on a Linux
+        // whose sandbox helper is not set up — is the machine's, and the product hands over to the next. Whatever captures
+        // must capture right.
+        for (var i = 0; i < browsers.Count; i++) await CapturesAsExpected(browsers[i], mustStart: i == 0);
     }
 
-    private async Task CapturesAsExpected(CaptureBrowser browser)
+    private async Task CapturesAsExpected(CaptureBrowser browser, bool mustStart)
     {
         // Another service of this machine, which the page must not reach: it counts what it is asked.
         var other = new System.Net.HttpListener();
@@ -197,7 +200,7 @@ public sealed class ViewPageToolTests : IDisposable
             File.WriteAllText(Path.Combine(_root, "shop.html"), Page.Replace("OTHER", otherPort.ToString()));
             using var pages = WorkspacePages.Start(_root);
             var url = pages.UrlOf("shop.html");
-            await CapturesAsExpected(browser, url);
+            await CapturesAsExpected(browser, url, mustStart);
             Assert.Equal(0, Volatile.Read(ref asked));                 // the other port was never reached
         }
         finally
@@ -215,10 +218,11 @@ public sealed class ViewPageToolTests : IDisposable
         return port;
     }
 
-    private static async Task CapturesAsExpected(CaptureBrowser browser, string url)
+    private static async Task CapturesAsExpected(CaptureBrowser browser, string url, bool mustStart)
     {
         var (wide, whyWide) = await PageCapture.CaptureAsync(browser, url, 1280, default);
         var (narrow, whyNarrow) = await PageCapture.CaptureAsync(browser, url, 390, default);
+        if (!mustStart && wide is null && narrow is null) return;
         Assert.True(wide is not null, $"{browser.Name} at 1280: {whyWide}");
         Assert.True(narrow is not null, $"{browser.Name} at 390: {whyNarrow}");
         var w = StbImageSharp.ImageResult.FromMemory(wide, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
