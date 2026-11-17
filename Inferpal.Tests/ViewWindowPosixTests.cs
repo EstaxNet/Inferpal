@@ -68,8 +68,9 @@ public sealed class ViewWindowPosixTests(ITestOutputHelper output) : IDisposable
                 if (pixels[i] < 60 && pixels[i + 1] > 180 && pixels[i + 2] < 60) green++;
             Assert.True(green > pixels.Length / 3 / 4, $"only {green} green pixels: the window is not on the picture.\n{said}");
         }
-        // The tree, or the sentence that says the system keeps it.
-        Assert.True(said.Contains("Pay now") || said.Contains("Accessibility"), said);
+        // The tree, or the sentence that says why there is none — never a window with no tree and no word.
+        Assert.True(said.Contains("Pay now") || said.Contains("Accessibility") || said.Contains("Automation")
+                    || said.Contains("could not be read"), said);
         if (said.Contains("Pay now")) Assert.Matches(@"""Pay now"".* disabled", said);
     }
 

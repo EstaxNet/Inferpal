@@ -530,7 +530,7 @@ internal static class WindowCapture
             windows = proc.windows();
           } catch (e) { return refused(e); }
           let win = windows.find(w => { try { return flat(w.name()) === title; } catch (e) { return false; } }) || windows[0];
-          if (!win) return '';
+          if (!win) return 'TREE_ERROR System Events lists no window for this process (an app that does not publish its controls)';
           let origin = [0, 0];
           try { origin = win.position(); } catch (e) {}
           function walk(el, depth) {
