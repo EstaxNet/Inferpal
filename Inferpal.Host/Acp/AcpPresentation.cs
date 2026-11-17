@@ -286,9 +286,18 @@ internal static class AcpPromptBlocks
         return System.IO.Path.IsPathRooted(uri) ? System.IO.Path.GetFullPath(uri) : null;
     }
 
-    private static string NameOf(string uri)
+    /// <summary>What a link names: a file's name; for any other link, the name it carries (Zed pastes an image as
+    /// <c>zed:///agent/pasted-image?name=Image</c>), else its last segment, else the link itself.</summary>
+    internal static string NameOf(string uri)
     {
         var path = FilePath(uri);
-        return path is null ? uri : System.IO.Path.GetFileName(path);
+        if (path is not null) return System.IO.Path.GetFileName(path);
+        if (!Uri.TryCreate(uri, UriKind.Absolute, out var link)) return uri;
+        foreach (var pair in link.Query.TrimStart('?').Split('&'))
+            if (pair.StartsWith("name=", StringComparison.Ordinal) && Uri.UnescapeDataString(pair[5..].Replace('+', ' ')) is { Length: > 0 } named)
+                return named;
+        var last = link.AbsolutePath.TrimEnd('/');
+        last = Uri.UnescapeDataString(last[(last.LastIndexOf('/') + 1)..]);
+        return last.Length > 0 ? last : uri;
     }
 }

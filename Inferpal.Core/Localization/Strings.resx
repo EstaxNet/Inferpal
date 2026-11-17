@@ -1487,6 +1487,8 @@ Type `/setup` to try again.</value></data>
   <data name="ApprovalReadPage" xml:space="preserve"><value>Read a web page</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Search the web</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>Use {0}</value></data>
+  <data name="ViewPageCardServed" xml:space="preserve"><value>Open {0} in a browser cut off from the network (view_page), and capture it. Its scripts run.</value></data>
+  <data name="ViewPageCardFile" xml:space="preserve"><value>Open {0} in a browser cut off from the network, and capture it. Its scripts run.</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:line|lines}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} more {0:line|lines}</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Allows {0} without asking in this workspace until a restart — kept when you come back from another solution.</value></data>

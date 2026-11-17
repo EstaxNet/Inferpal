@@ -95,7 +95,7 @@ internal sealed class ViewPageTool : ITool
             subject = HttpRequestTool.Subject("GET", uri);
             grantKey = $"http_request {HttpRequestTool.Origin(uri)}";
             askedAs = "http_request";
-            details = $"Open {target} in a browser cut off from the network (view_page), and capture it. Its scripts run.";
+            details = Localization.Strings.ViewPageCardServed(target);
         }
         else
         {
@@ -112,7 +112,7 @@ internal sealed class ViewPageTool : ITool
             subject = file;
             grantKey = $"{Name} workspace files";
             askedAs = Name;
-            details = $"Open {shown} in a browser cut off from the network, and capture it. Its scripts run.";
+            details = Localization.Strings.ViewPageCardFile(shown);
         }
 
         var widths = new List<int>();

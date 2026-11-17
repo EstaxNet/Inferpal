@@ -1085,6 +1085,34 @@ public sealed class AcpAgentTests : IDisposable
 
     // ── Tools and approvals ────────────────────────────────────────────────────
 
+    /// <summary>
+    /// ⚠ A card without diffs shows the command as it runs: in a code block. Read as Markdown, Zed drew
+    /// <c>dotnet run -c Release -- orders.csv</c> with a dash in place of <c>--</c> on the card the person decides on.
+    /// </summary>
+    [Fact]
+    public async Task ACommandsPermission_ShowsTheCommandAsItRuns_InACodeBlock()
+    {
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = async (_, _, tools, _) =>
+        {
+            await tools.ExecuteAsync("run_command", JsonSerializer.SerializeToElement(new { command = "echo a -- b" }), CancellationToken.None);
+            return new ChatTurnResult("Ran.", null, 0, 0);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        h.Client.Answer = (method, _) => method == "session/request_permission"
+            ? new { outcome = new { outcome = "selected", optionId = "reject_once" } }
+            : null;
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "run it")));
+
+        var permission = Assert.Single(h.Client.Requests, r => r.GetProperty("method").GetString() == "session/request_permission");
+        var text = Assert.Single(permission.GetProperty("params").GetProperty("toolCall").GetProperty("content").EnumerateArray())
+            .GetProperty("content").GetProperty("text").GetString()!;
+        Assert.Contains("echo a -- b", text, StringComparison.Ordinal);
+        Assert.StartsWith("```", text, StringComparison.Ordinal);
+        Assert.EndsWith("```", text.TrimEnd(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task AToolCall_IsDrawnBeforeItsPermission_WhichShowsTheRealDiff()
     {
@@ -2216,6 +2244,17 @@ public sealed class AcpAgentTests : IDisposable
         }));
         Assert.Equal(("image.png", "image/png"), (Assert.Single(png.Images!).Name, png.Images![0].MediaType));
         Assert.Empty(png.Notes);
+
+        // ⚠ An image Zed pastes carries a link of its own, not a file: named by the name it carries, never by the link
+        // (the notice read "the text of zed:///agent/pasted-image?name=Image goes instead").
+        var pasted = AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(new object[]
+        {
+            new { type = "image", data = Convert.ToBase64String(ChatImagesTests.Png(64, 32)), mimeType = "image/png",
+                  uri = "zed:///agent/pasted-image?name=Image" },
+        }));
+        var named = Assert.Single(pasted.Images!).Name;
+        Assert.StartsWith("Image", named, StringComparison.Ordinal);
+        Assert.DoesNotContain("zed:", named, StringComparison.Ordinal);
 
         Assert.Throws<ArgumentException>(() => AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(new[] { new { type = "video" } })));
         Assert.Throws<ArgumentException>(() => AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(Array.Empty<object>())));

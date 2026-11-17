@@ -1559,8 +1559,10 @@ internal sealed class AcpSession : IAsyncDisposable
         // The changes themselves when there are some (the client draws them), else the question as the card words it —
         // the command, the URL, the summary of a rename: what the human reads before answering.
         // ⚠ A deletion's diff reads as a file emptied: the question that says the file goes comes first.
-        List<object> content = diffs.Count == 0 ? [TextContent(note.Message)]
-                             : note.Tool == "delete_file" ? [TextContent(note.Message), .. diffs]
+        // ⚠ In a code block (AcpToolCalls.Block): read as Markdown, the command the person decides on shows otherwise than
+        // it runs — "--" becomes a dash, a backslash before a dot disappears.
+        List<object> content = diffs.Count == 0 ? [TextContent(AcpToolCalls.Block(note.Message))]
+                             : note.Tool == "delete_file" ? [TextContent(AcpToolCalls.Block(note.Message)), .. diffs]
                              : diffs;
         // ⚠ The card the client already draws for the call gets the diffs first (same queue: on screen before the
         // question). Qt Creator keeps that card and ignores what the request carries: without this update the user

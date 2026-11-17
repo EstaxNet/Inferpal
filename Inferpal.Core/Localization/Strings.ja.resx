@@ -1483,6 +1483,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ApprovalReadPage" xml:space="preserve"><value>Web ページを読む</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Web を検索</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>{0} を使用</value></data>
+  <data name="ViewPageCardServed" xml:space="preserve"><value>{0} をネットワークから切り離したブラウザー (view_page) で開いてキャプチャします。スクリプトは実行されます。</value></data>
+  <data name="ViewPageCardFile" xml:space="preserve"><value>{0} をネットワークから切り離したブラウザーで開いてキャプチャします。スクリプトは実行されます。</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} 行</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… ほか {0} 行</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>このワークスペースで、再起動するまで確認せずに {0} を許可します。別のソリューションから戻っても維持されます。</value></data>

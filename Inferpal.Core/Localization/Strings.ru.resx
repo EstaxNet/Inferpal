@@ -1483,6 +1483,8 @@
   <data name="ApprovalReadPage" xml:space="preserve"><value>Прочитать веб-страницу</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Искать в интернете</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>Использовать {0}</value></data>
+  <data name="ViewPageCardServed" xml:space="preserve"><value>Открыть {0} в браузере, отключённом от сети (view_page), и сделать снимок. Его скрипты выполняются.</value></data>
+  <data name="ViewPageCardFile" xml:space="preserve"><value>Открыть {0} в браузере, отключённом от сети, и сделать снимок. Его скрипты выполняются.</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>строк: {0}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… ещё строк: {0}</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Разрешает {0} без запроса в этой рабочей области до перезапуска — сохраняется, когда вы возвращаетесь из другого решения.</value></data>

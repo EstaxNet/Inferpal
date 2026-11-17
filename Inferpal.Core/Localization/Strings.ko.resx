@@ -1483,6 +1483,8 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ApprovalReadPage" xml:space="preserve"><value>웹 페이지 읽기</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>웹 검색</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>{0} 사용</value></data>
+  <data name="ViewPageCardServed" xml:space="preserve"><value>네트워크에서 차단된 브라우저(view_page)에서 {0}을(를) 열고 캡처합니다. 스크립트가 실행됩니다.</value></data>
+  <data name="ViewPageCardFile" xml:space="preserve"><value>네트워크에서 차단된 브라우저에서 {0}을(를) 열고 캡처합니다. 스크립트가 실행됩니다.</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0}줄</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0}줄 더</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>이 작업 영역에서 다시 시작할 때까지 묻지 않고 {0}을(를) 허용합니다. 다른 솔루션에서 돌아와도 유지됩니다.</value></data>

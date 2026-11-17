@@ -1483,6 +1483,8 @@ Digita `/setup` per riprovare.</value></data>
   <data name="ApprovalReadPage" xml:space="preserve"><value>Leggere una pagina web</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Cercare sul web</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>Usare {0}</value></data>
+  <data name="ViewPageCardServed" xml:space="preserve"><value>Aprire {0} in un browser isolato dalla rete (view_page) e catturarlo. I suoi script vengono eseguiti.</value></data>
+  <data name="ViewPageCardFile" xml:space="preserve"><value>Aprire {0} in un browser isolato dalla rete e catturarlo. I suoi script vengono eseguiti.</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:riga|righe}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:riga in più|righe in più}</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Consente {0} senza chiedere in questa area di lavoro fino a un riavvio — resta valido quando torni da un’altra soluzione.</value></data>

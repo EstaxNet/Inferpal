@@ -16,6 +16,8 @@ namespace Inferpal.Tests;
 /// the fiche's gate C, played on each system the CI runs — a real capture: the width asked, a component wider than a phone
 /// off a phone's screen, and nothing loaded from the Internet.
 /// </summary>
+// Switches Strings.OverrideCulture (process-wide) in one test: serialized collection.
+[Collection(CultureSerialCollection.Name)]
 public sealed class ViewPageToolTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("inferpal-viewpage").FullName;
@@ -79,6 +81,22 @@ public sealed class ViewPageToolTests : IDisposable
         var said = await Call(new { url = "http://localhost:5173/" }, card, browsers: () => []);
         Assert.Contains("install Firefox or Google Chrome", said);
         Assert.Empty(card.Shown);
+    }
+
+    /// <summary>The card is read by the person: in their language, like every other card (it was English in all three editors).</summary>
+    [Fact]
+    public async Task APagesCard_IsWrittenInThePersonsLanguage()
+    {
+        File.WriteAllText(Path.Combine(_root, "page.html"), "<p>x</p>");
+        var previous = Inferpal.Localization.Strings.OverrideCulture?.Name;
+        try
+        {
+            Inferpal.Localization.Strings.ApplyLanguage("fr");
+            var card = new Card(ApprovalDecision.Deny);
+            await Call(new { path = "page.html" }, card);
+            Assert.Contains("navigateur coupé du réseau", Assert.Single(card.Shown).Details);
+        }
+        finally { Inferpal.Localization.Strings.ApplyLanguage(previous); }
     }
 
     [Fact]
