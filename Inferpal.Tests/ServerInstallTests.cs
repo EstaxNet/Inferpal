@@ -41,6 +41,32 @@ public sealed class ServerInstallTests
         Assert.True(InstallOffer().Runs);
     }
 
+    /// <summary>An installed Ollama is started on every system, never installed again: on a Mac its application is opened on
+    /// the person's click, as on Windows; its server alone (Homebrew, the Linux script's service) is started by a command
+    /// shown, never one that installs.</summary>
+    [Fact]
+    public void AnInstalledOllama_IsStarted_OnEverySystem()
+    {
+        var app = ServerInstall.OfferFor(null, ServerInstall.HostOs.MacOs, null, "/Applications/Ollama.app");
+        Assert.Equal((ServerInstallKind.Start, "/usr/bin/open", "-a|/Applications/Ollama.app"),
+                     (app.Kind, app.Program, string.Join('|', app.Arguments)));
+        Assert.True(app.Runs);
+
+        var brew = ServerInstall.OfferFor(null, ServerInstall.HostOs.MacOs, null, "/opt/homebrew/bin/ollama");
+        var service = ServerInstall.OfferFor(null, ServerInstall.HostOs.Linux, null, ServerInstall.LinuxService);
+        Assert.Equal(("'/opt/homebrew/bin/ollama' serve", "sudo systemctl start ollama"), (brew.Command, service.Command));
+        Assert.Equal("'/home/o'\\''brien/bin/ollama' serve",
+                     ServerInstall.OfferFor(null, ServerInstall.HostOs.Linux, null, "/home/o'brien/bin/ollama").Command);   // read literally
+        Assert.All(new[] { brew, service }, o => Assert.True(!o.Runs && ServerInstall.Starts(o)));
+        Assert.Equal(Strings.SetupCommandLeadStart, ServerInstallCard.For(service, null).Lead);
+        Assert.Equal(Strings.AcpSetupStartLead, ServerInstallCard.TerminalLines(brew)[0]);
+
+        // Not installed, or the editor connected to another machine: the install command, as before.
+        Assert.False(ServerInstall.Starts(ServerInstall.OfferFor(null, ServerInstall.HostOs.Linux, null, null)));
+        Assert.Equal(ServerInstall.LinuxCommand, ServerInstall.OfferFor("ssh-remote", ServerInstall.HostOs.Linux, null, ServerInstall.LinuxService).Command);
+        Assert.False(ServerInstall.Starts(InstallOffer()));
+    }
+
     /// <summary>The command the consent card shows is the one that runs: one source, the program and its arguments.</summary>
     [Fact]
     public void TheCommandShown_IsTheCommandRun()

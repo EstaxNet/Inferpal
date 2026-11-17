@@ -28,7 +28,7 @@ internal sealed class ModeTools
             "read_file", "list_files", "get_active_document", "get_open_editors", "get_solution_info", "generate_project_map",
             // ⚠ get_diagnostics builds (ToolCeilings: Runs), yet stays here: modes already imported with "read" — and Copilot's
             // own "read/problems" — count on it, and narrowing them without a word would break a configuration that works.
-            "analyze_code", "read_skill_file", "get_diagnostics", "get_git_status", "get_debugger_state", "git_history",
+            "analyze_code", "read_skill_file", "get_diagnostics", "get_git_status", "get_debugger_state", "git_history", "ocr",
             // Where get_diagnostics is, its pointer's tool is: an evaluation to report, like get_diagnostics' build.
             "msbuild_property",
             // Asking the person changes nothing: a mode that reads may ask.
@@ -54,7 +54,7 @@ internal sealed class ModeTools
         ["codebase"]      = ["search_codebase"],
         ["editFiles"]     = Families["edit"],
         ["createFile"]    = ["write_file"],
-        ["readFile"]      = ["read_file"],
+        ["readFile"]      = ["read_file", "ocr"],
         ["listDirectory"] = ["list_files"],
         ["fileSearch"]    = ["list_files"],
         ["textSearch"]    = ["search_in_files"],

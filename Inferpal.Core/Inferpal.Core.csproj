@@ -64,6 +64,13 @@
     <!-- OCR of a scanned PDF on every system (pari 96): PP-OCRv6 in pure C#, its tiny model embedded (6 MB), Apache-2.0. -->
     <PackageReference Include="Sdcb.SimdPaddleOCR" Version="2.0.0" />
     <PackageReference Include="Sdcb.SimdPaddleOCR.Models.ChineseV6Tiny" Version="1.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- The recognizers of the alphabets the tiny model does not read (third-party/paddleocr-models, Apache-2.0): embedded,
+         so they reach every package with this assembly; their licence ships beside each package (VS, VS Code, ACP). -->
+    <EmbeddedResource Include="..\third-party\paddleocr-models\*.onnx;..\third-party\paddleocr-models\*.txt">
+      <LogicalName>Inferpal.Ocr.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
     <!-- DPAPI for the MCP OAuth token store (Windows-only at runtime; the call sites
          are already guarded). -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />

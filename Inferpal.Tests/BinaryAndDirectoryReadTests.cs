@@ -18,7 +18,10 @@ public sealed class BinaryAndDirectoryReadTests : IDisposable
 
     public BinaryAndDirectoryReadTests()
     {
-        File.Copy(typeof(ReadFileTool).Assembly.Location, Path.Combine(_root, "Lib.dll"));
+        // A small binary of its own (a header, NULs, the word searched for): the Core's assembly, which carries the OCR models,
+        // is past the size a search reads.
+        File.WriteAllBytes(Path.Combine(_root, "Lib.dll"),
+                           [0x4D, 0x5A, 0x90, 0, 3, 0, 0, 0, .. Encoding.ASCII.GetBytes("System.Runtime"), 0, 0, 0xFF, 0xFE, 0, 1]);
         File.WriteAllText(Path.Combine(_root, "Notes.txt"), "System notes, in plain text.");
         File.WriteAllText(Path.Combine(_root, "Wide.txt"), "System in UTF-16", Encoding.Unicode);   // NULs, and text
         Directory.CreateDirectory(Path.Combine(_root, "sub"));

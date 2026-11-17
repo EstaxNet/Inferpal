@@ -142,6 +142,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new GetDiagnosticsTool(editor, () => indexService.RootDir, codeConsent));
         Register(new GetActiveDocumentTool(editor));
         Register(new MsbuildPropertyTool(codeConsent, () => indexService.RootDir));
+        Register(new OcrTool(() => indexService.RootDir));
         Register(new EditNotebookTool(approval, history, () => indexService.RootDir, overlay, setDiff));
         Register(new RunNotebookTool(codeConsent, () => indexService.RootDir, overlay));
         Register(new FetchUrlTool(approval));

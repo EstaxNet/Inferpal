@@ -2139,6 +2139,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SetupCommandLeadMac" xml:space="preserve"><value>터미널에서 Homebrew로 Ollama를 설치한 뒤 다시 찾으세요:</value></data>
   <data name="SetupCommandLeadLinux" xml:space="preserve"><value>터미널에서 Ollama 사이트의 명령으로 설치한 뒤 다시 찾으세요:</value></data>
   <data name="SetupCommandLeadRemote" xml:space="preserve"><value>이 편집기는 다른 머신에 연결되어 있습니다. 그 머신의 터미널에서 Ollama를 설치한 뒤 다시 찾으세요:</value></data>
+  <data name="SetupCommandLeadStart" xml:space="preserve"><value>Ollama가 설치되어 있지만 서버가 응답하지 않습니다. 터미널에서 서버를 시작한 다음 다시 확인하세요:</value></data>
   <data name="SetupCommandShownOnly" xml:space="preserve"><value>Inferpal은 이 명령을 보여 줄 뿐 실행하지 않습니다.</value></data>
   <data name="SetupInstallOthers" xml:space="preserve"><value>또는 직접 설치:</value></data>
   <data name="SetupConsentRuns" xml:space="preserve"><value>Inferpal이 다음 명령을 실행합니다:</value></data>
@@ -2170,7 +2171,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="SetupInstallYourself" xml:space="preserve"><value>또는 설치 프로그램을 직접 다운로드:</value></data>
   <data name="SetupNotNow" xml:space="preserve"><value>나중에</value></data>
   <data name="AcpSetupInstallLead" xml:space="preserve"><value>이 컴퓨터에서 응답하는 모델 서버가 없습니다. Ollama를 설치하려면(약 {0}GB 다운로드, 내 계정에만, 관리자 권한 불필요) 터미널에서 다음을 실행하세요:</value></data>
-  <data name="AcpSetupStartLead" xml:space="preserve"><value>이 컴퓨터에서 응답하는 모델 서버가 없습니다. Ollama가 설치되어 있지만 실행 중이 아닙니다. 시작 메뉴에서 시작하거나 다음을 실행하세요:</value></data>
+  <data name="AcpSetupStartLead" xml:space="preserve"><value>이 컴퓨터에서 응답하는 모델 서버가 없습니다. Ollama가 설치되어 있지만 실행 중이 아닙니다. Ollama를 열거나 다음을 실행하세요:</value></data>
   <data name="AcpSetupCommandLead" xml:space="preserve"><value>여기서 응답하는 모델 서버가 없습니다. Ollama를 설치하려면 터미널에서 다음을 실행하세요:</value></data>
   <data name="AcpSetupNoWinget" xml:space="preserve"><value>이 컴퓨터에서 응답하는 모델 서버가 없습니다. Ollama(ollama.com)나 LM Studio(lmstudio.ai)를 설치한 뒤 이 설정을 다시 실행하세요.</value></data>
   <data name="AcpSetupRunAgain" xml:space="preserve"><value>그런 다음 이 설정을 다시 실행하세요.</value></data>

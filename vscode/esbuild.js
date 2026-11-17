@@ -50,6 +50,11 @@ const allOptions = [extensionOptions, chatWebviewOptions, settingsWebviewOptions
   const to = path.join(__dirname, 'media', 'mermaid');
   fs.mkdirSync(to, { recursive: true });
   for (const f of ['mermaid.min.js', 'LICENSE']) fs.copyFileSync(path.join(from, f), path.join(to, f));
+  // The licence of the OCR recognizers the host embeds (third-party/paddleocr-models, Apache-2.0), shipped beside it.
+  const ocr = path.join(__dirname, 'media', 'paddleocr-models');
+  fs.mkdirSync(ocr, { recursive: true });
+  for (const f of ['LICENSE', 'README.md'])
+    fs.copyFileSync(path.join(__dirname, '..', 'third-party', 'paddleocr-models', f), path.join(ocr, f));
   if (watch) {
     const contexts = await Promise.all(allOptions.map((o) => esbuild.context(o)));
     await Promise.all(contexts.map((ctx) => ctx.watch()));

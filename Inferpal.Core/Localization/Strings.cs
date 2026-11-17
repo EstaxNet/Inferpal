@@ -2727,6 +2727,7 @@ internal static class Strings
     public static string SetupCommandLeadMac => Get(nameof(SetupCommandLeadMac));
     public static string SetupCommandLeadLinux => Get(nameof(SetupCommandLeadLinux));
     public static string SetupCommandLeadRemote => Get(nameof(SetupCommandLeadRemote));
+    public static string SetupCommandLeadStart => Get(nameof(SetupCommandLeadStart));
     public static string SetupCommandShownOnly => Get(nameof(SetupCommandShownOnly));
     public static string SetupInstallOthers => Get(nameof(SetupInstallOthers));
     public static string SetupConsentRuns => Get(nameof(SetupConsentRuns));

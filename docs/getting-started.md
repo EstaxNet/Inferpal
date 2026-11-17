@@ -155,8 +155,9 @@ card back.
 - When none does, on Windows with winget, Inferpal offers to install Ollama for your account (about 1.6 GB, no
   administrator rights): the card shows the exact `winget` command before you click **Install**, then the steps; an
   Ollama already installed but not running is started instead.
-- On macOS and Linux it shows the command to run in a
-  terminal, and never runs it.
+- On macOS and Linux it shows the command that installs it, to run in a terminal, and never runs it. An Ollama already
+  installed is started instead: on a Mac its application is opened on your click (**Start Ollama**); installed as a
+  server only (Homebrew, or the Linux script's service), the card shows the command that starts it.
 - The ACP setup (`Inferpal.Host --setup`) prints the command.
 
 ### Choose the server and the model by hand

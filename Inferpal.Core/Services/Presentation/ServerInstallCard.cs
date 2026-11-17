@@ -44,6 +44,7 @@ internal sealed record ServerInstallCard(
             _ => new(
                 "command", Strings.SetupNoServerYet,
                 RemoteSide.Of(remoteName) != RemoteKind.None ? Strings.SetupCommandLeadRemote
+                : ServerInstall.Starts(offer) ? Strings.SetupCommandLeadStart
                 : offer.Command == ServerInstall.MacCommand ? Strings.SetupCommandLeadMac : Strings.SetupCommandLeadLinux,
                 null, null, offer.Command, Strings.SetupCommandShownOnly, Strings.SetupInstallOthers, null, null),
         };
@@ -77,6 +78,7 @@ internal sealed record ServerInstallCard(
         ServerInstallKind.NoWinget => [Strings.AcpSetupNoWinget],
         ServerInstallKind.Install  => [Strings.AcpSetupInstallLead(Gb(ServerInstall.ApproxDownloadGb)), "", "  " + offer.Command, "", Strings.AcpSetupRunAgain],
         ServerInstallKind.Start    => [Strings.AcpSetupStartLead, "", "  " + offer.Command, "", Strings.AcpSetupRunAgain],
+        _ when ServerInstall.Starts(offer) => [Strings.AcpSetupStartLead, "", "  " + offer.Command, "", Strings.AcpSetupRunAgain],
         _                          => [Strings.AcpSetupCommandLead, "", "  " + offer.Command, "", Strings.AcpSetupRunAgain],
     };
 }

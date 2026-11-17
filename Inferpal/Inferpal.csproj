@@ -134,6 +134,17 @@
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- The licence of the OCR recognizers embedded in Inferpal.Core (third-party/paddleocr-models, Apache-2.0). -->
+    <Content Include="..\third-party\paddleocr-models\LICENSE">
+      <Link>paddleocr-models\LICENSE</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\third-party\paddleocr-models\README.md">
+      <Link>paddleocr-models\README.md</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\third-party\mermaid\LICENSE">
       <Link>mermaid\LICENSE</Link>
       <IncludeInVSIX>true</IncludeInVSIX>

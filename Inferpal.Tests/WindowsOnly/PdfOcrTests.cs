@@ -37,7 +37,9 @@ public sealed class PdfOcrTests : IDisposable
         var said = await new ReadFileTool(() => _root).ExecuteAsync(JsonSerializer.SerializeToElement(new { path }), default);
 
         Assert.Contains("Text read by OCR (Windows OCR", said);
-        Assert.Contains("Cast iron teapot | 1 | 64.00 | 64.00", said);   // a row, never the column of items then the prices
+        // A row, never the column of items then the prices — the item and its prices on one line. The cells between them
+        // vary with the Windows build's OCR (a lone "1" read or not, as on the CI's Windows Server).
+        Assert.Matches(@"Cast iron teapot \|[^\n]*64\.00 \| 64\.00", said);
         Assert.Contains("Payment within thirty days", said);
     }
 

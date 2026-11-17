@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-9039%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-9054%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
 </p>
@@ -163,7 +163,7 @@ flowchart TB
     VS["Visual Studio<br/>2026 / 2022"]
     VSC["VS Code<br/>Windows · Linux · macOS"]
     ACP["Zed · JetBrains · Qt Creator<br/>Neovim · Emacs (ACP)"]
-    ENGINE["<b>Inferpal engine</b><br/>agent loop · 38 built-in tools + MCP<br/>approvals · backups · code index"]
+    ENGINE["<b>Inferpal engine</b><br/>agent loop · 39 built-in tools + MCP<br/>approvals · backups · code index"]
     MODEL[("Your model server<br/>Ollama · LM Studio · llama.cpp · vLLM<br/>on this computer or your own GPU machine")]
     VS & VSC & ACP --> ENGINE
     ENGINE <--> MODEL
@@ -195,7 +195,7 @@ or `/import roo` brings your models, rules, prompts, Roo's modes and MCP servers
 
 ## Also in the box
 
-- **38 built-in tools** — files, text and semantic search, build and tests, a shell with background jobs, git, the
+- **39 built-in tools** — files, text and semantic search, build and tests, a shell with background jobs, git, the
   editor, the debugger, compiler-backed analysis and rename, web search — plus any **MCP** server and your own shell
   commands. [Reference](docs/tools.md)
 - **Reviews and git text** — `/check` reviews your diff, a branch or a commit, every finding anchored to a line;

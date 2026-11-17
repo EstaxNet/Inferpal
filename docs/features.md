@@ -65,8 +65,9 @@ for your card, a server on another machine by its address, a key when a server a
 without a chat model — a download of a recommended model. Visual Studio takes the server that answers when nothing
 was set up yet, and says so; `/setup` looks again in both. When nothing answers, on Windows with winget, both offer
 to install Ollama for your account — the exact `winget` command and what it does shown before the click, the
-install stoppable while it downloads — or to start an Ollama installed but not running; macOS and Linux get the
-command to copy, never run.
+install stoppable while it downloads — or to start an Ollama installed but not running, on every system (on a Mac its
+application is opened on your click; its server alone gets the command that starts it); to install, macOS and Linux get
+the command to copy, never run.
 
 **Try it** — `/setup` looks for a server again. Step by step: [Getting started](getting-started.md).
 
@@ -206,7 +207,7 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
 - **Three modes** — **Chat** (tools, no plan), **Agent** (plan, act, observe) and **Plan** (`/plan`: read-only, it
   proposes and changes nothing). `/plan save` turns a plan into a committable `.inferpal/plans/` file. Beside them,
   the modes found for the workspace: [Modes](configuration.md#modes).
-- **38 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
+- **39 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
   Independent read-only calls run in parallel; `/tools off <tool>` takes one away from the model.
 - **Step by step** — `/agent-step` pauses before each tool call; **▶ Resume** goes on.
 - **Long runs you can leave** — the machine stays awake while the model works, a card left unanswered flashes the

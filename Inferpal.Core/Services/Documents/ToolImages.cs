@@ -72,6 +72,7 @@ internal static class ToolImages
             : $"the server does not say whether the model answering, {model}, reads images";
         messages.Add(new ChatMessageDto("user",
             $"[read_file read the image(s) {names}, but they were not sent: {why}. Do not guess what they show. Tell the user: "
-          + "they can describe the image, or choose a model that reads images.]") { IsScaffolding = true });
+          + "they can describe the image, or choose a model that reads images. To read the words written in it (an error, a value), "
+          + "call the ocr tool on it.]") { IsScaffolding = true });
     }
 }

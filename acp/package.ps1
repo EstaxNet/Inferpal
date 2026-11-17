@@ -87,6 +87,10 @@ try {
     $utf8 = [Text.UTF8Encoding]::new($false)
     [IO.File]::WriteAllText((Join-Path $stage 'README.txt'), $readme, $utf8)
     [IO.File]::WriteAllText((Join-Path $stage 'LICENSE.txt'), $license, $utf8)
+    # The licence of the OCR recognizers the host embeds (third-party/paddleocr-models, Apache-2.0).
+    $models = Join-Path $stage 'paddleocr-models'
+    New-Item -ItemType Directory -Force $models | Out-Null
+    foreach ($f in 'LICENSE', 'README.md') { Copy-Item (Join-Path $root "third-party/paddleocr-models/$f") $models }
 
     $name = "inferpal-acp-$Target-$version"
     if ($Target -eq 'win32-x64') {

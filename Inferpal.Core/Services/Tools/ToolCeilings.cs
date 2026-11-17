@@ -41,6 +41,7 @@ internal static class ToolCeilings
         ["generate_project_map"] = new(R),
         ["analyze_code"]         = new(R),
         ["read_skill_file"]      = new(R),
+        ["ocr"]                  = new(R),
         ["get_active_document"]  = new(R, ReadsLiveState: true),
         ["get_open_editors"]     = new(R, ReadsLiveState: true),
         ["get_debugger_state"]   = new(R, ReadsLiveState: true),

@@ -82,13 +82,56 @@ public sealed class ScanOnEverySystemTests : IDisposable
     }
 
     [Fact]
-    public void APageInAnAlphabetTheEngineDoesNotRead_IsSaid_NeverReadAsGarbage()
+    public void APageInAnAlphabetNoRecognizerReads_IsSaid_NeverReadAsGarbage()
     {
-        var reading = PdfOcr.Paddle(Scan("letter-ru-scan.pdf"), null, default);
+        var reading = PdfOcr.Paddle(Scan("letter-el-scan.pdf"), null, default);   // Greek: none of the product's languages
 
         Assert.Equal(OcrStatus.Unavailable, reading.Status);
         Assert.Equal(string.Empty, reading.Text);
         Assert.Contains("alphabet this OCR does not read", reading.Why);
+    }
+
+    /// <summary>Every language of the product is read: what the tiny model does not (Russian, Japanese, Korean) by the
+    /// recognizer of its alphabet, named to the model.</summary>
+    [Theory]
+    [InlineData("letter-ru-scan.pdf", "Уважаемый клиент", "Cyrillic")]
+    [InlineData("letter-ja-scan.pdf", "お客様各位", "Japanese")]
+    [InlineData("letter-ko-scan.pdf", "고객님께", "Korean")]
+    public void EveryLanguageOfTheProduct_IsRead(string fixture, string words, string alphabet)
+    {
+        var reading = PdfOcr.Paddle(Scan(fixture), null, default);
+
+        Assert.Equal(OcrStatus.Read, reading.Status);
+        Assert.Contains(words, reading.Text);
+        Assert.Equal($"PaddleOCR with its {alphabet} recognizer", reading.Engine);
+    }
+
+    /// <summary>A Latin page is never "rescued" by another alphabet's recognizer: the Cyrillic one reads English too, sure of
+    /// itself, with every accent lost — what it read must be in its own alphabet.</summary>
+    [Fact]
+    public async Task ALatinPage_IsNeverRescuedByAnotherAlphabetsRecognizer()
+    {
+        var jpeg = PdfPageImages.Extract(File.ReadAllBytes(Scan()), 1, default).Images[0].Bytes;
+        var image = StbImageSharp.ImageResult.FromMemory(jpeg, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
+        using var models = await Sdcb.SimdPaddleOCR.PaddleOcrModelSet.LoadAsync(
+            Sdcb.SimdPaddleOCR.Models.ChineseV6Tiny.ChineseV6TinyModels.Default, default);
+
+        Assert.Null(new PdfOcr.Scripts(models).Read(image));
+    }
+
+    /// <summary>The recognizers embedded in the Core (Apache-2.0) ship with their licence — PaddlePaddle's copyright line
+    /// included — in each package: Visual Studio's VSIX, VS Code's (beside the chat page), the ACP archive.</summary>
+    [Fact]
+    public void TheRecognizersOfOtherAlphabets_ShipWithTheirLicence_InEveryPackage()
+    {
+        var root = WebviewRebuildTests.RepoRoot();
+        var models = Path.Combine(root, "third-party", "paddleocr-models");
+        Assert.Contains("Copyright (c) 2016 PaddlePaddle Authors", File.ReadAllText(Path.Combine(models, "LICENSE")), StringComparison.Ordinal);
+        Assert.All(new[] { "eslav", "japan", "korean" }, m => Assert.True(File.Exists(Path.Combine(models, m + ".onnx"))));
+        Assert.Contains("<Link>paddleocr-models\\LICENSE</Link>", File.ReadAllText(Path.Combine(root, "Inferpal", "Inferpal.csproj")), StringComparison.Ordinal);
+        Assert.Contains("'third-party', 'paddleocr-models', f", File.ReadAllText(Path.Combine(root, "vscode", "esbuild.js")), StringComparison.Ordinal);
+        Assert.DoesNotContain("media/paddleocr-models", File.ReadAllText(Path.Combine(root, "vscode", ".vscodeignore")), StringComparison.Ordinal);
+        Assert.Contains("third-party/paddleocr-models/$f", File.ReadAllText(Path.Combine(root, "acp", "package.ps1")), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -99,14 +142,14 @@ public sealed class ScanOnEverySystemTests : IDisposable
         byte[] bomb = [0xFF, 0xD8, 0xFF, 0xC0, 0x00, 0x11, 0x08, 0x75, 0x30, 0x75, 0x30, 0x03,
                        0x01, 0x22, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01, 0xFF, 0xD9];
         var path = Path.Combine(_root, "mixed.pdf");
-        File.WriteAllBytes(path, ImagePdf(Jpeg("invoice-scan.pdf"), Jpeg("letter-ru-scan.pdf"), bomb));
+        File.WriteAllBytes(path, ImagePdf(Jpeg("invoice-scan.pdf"), Jpeg("letter-el-scan.pdf"), bomb));
 
         var reading = PdfOcr.Paddle(path, null, default);
 
         Assert.Equal(OcrStatus.Read, reading.Status);
         Assert.Contains("--- page 1 ---", reading.Text);
         Assert.Contains("Payment within thirty days", reading.Text);
-        Assert.Equal("page 2: " + "its text is in an alphabet this OCR does not read (it reads Latin and Chinese: not Cyrillic, Japanese kana or Korean)"
+        Assert.Equal("page 2: " + "its text is in an alphabet this OCR does not read (it reads Latin, Chinese, Cyrillic, Japanese and Korean)"
                      + "; page 3: a page picture too large or unreadable", reading.Skipped);
         Assert.Contains("[Not read, their text is not here — page 2:", AttachedDocuments.ScanText("mixed.pdf", reading));
     }

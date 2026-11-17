@@ -96,28 +96,120 @@ internal static class PdfOcr
 
     // ── Every system: SimdPaddleOCR (pure C#, no native code) ──
 
-    // The model's own measure of a line, high on the alphabets it reads: the median line of a page of Latin or Chinese text
-    // scores 36 or more, a page in an alphabet it does not read (Cyrillic, kana, hangul) 29 or less — read, it would be
-    // confident garbage. Measured at pari 96 (docs/probes/pari96/resultats.md).
+    // The model's own measure of a line (the median line of a page): a 300 dpi scan in Latin or Chinese scores 36 or more, a
+    // screenshot's small text 30.6 to 36.8, a page in an alphabet it does not read 20.5 to 28.9 (Cyrillic, kana, hangul,
+    // Greek) — read, that page would be confident garbage (pari 96 and 108). Under ForeignAlphabetScore a page is doubtful:
+    // the other alphabets' recognizers are tried; when none claims it, it is kept above ForeignFloor and said under it.
+    // ⚠ The margin is thin (28.9 against 30.6): measured on fifteen pages and ten screenshots, held by a test each way.
     private const float ForeignAlphabetScore = 33f;
+    private const float ForeignFloor = 29.75f;
+
+    // A dedicated recognizer's own measure, a probability: the median line of a page in its alphabet scores 0.9 to 1.0, a page
+    // in another 0.8 or less (pari 96, the product's ten languages).
+    private const float ScriptScore = 0.85f;
+
+    /// <summary>The recognizers of the alphabets the tiny model does not read — the product's other languages — with the
+    /// detector and classifier it shares (third-party/paddleocr-models, embedded in this assembly).</summary>
+    internal sealed class Scripts
+    {
+        private static readonly (string Name, string File, Func<char, bool> Own)[] Known =
+        [
+            ("Cyrillic", "eslav", c => c is >= '\u0400' and <= '\u04FF'),
+            ("Japanese", "japan", c => c is >= '\u3040' and <= '\u30FF' or >= '\u4E00' and <= '\u9FFF'),
+            ("Korean", "korean", c => c is >= '\uAC00' and <= '\uD7AF' or >= '\u1100' and <= '\u11FF' or >= '\u3130' and <= '\u318F'),
+        ];
+        private readonly List<(string Name, PaddleOcrAll Engine, Func<char, bool> Own)> _engines = [];
+
+        public Scripts(PaddleOcrModelSet shared)
+        {
+            // Width fixed as the models were converted (1×3×48×960); the orientation classifier off: it turned lines over.
+            var options = new PaddleOcrOptions
+            {
+                UseDirectionClassification = false,
+                Recognizer = new PaddleOcrRecognizerOptions { AdaptiveWidth = false, TargetWidth = 960 },
+            };
+            foreach (var (name, file, own) in Known)
+                _engines.Add((name, new PaddleOcrAll(shared.DetectionModel, shared.ClassificationModel,
+                                                     Sdcb.SimdPaddleOCR.OnnxSharp.Model.LoadOnnx(Resource(file + ".onnx")),
+                                                     Resource(file + ".txt"), options), own));
+        }
+
+        private static byte[] Resource(string name)
+        {
+            using var stream = typeof(PdfOcr).Assembly.GetManifestResourceStream("Inferpal.Ocr." + name)
+                               ?? throw new InvalidOperationException($"The OCR resource {name} is not in this build.");
+            using var bytes = new MemoryStream();
+            stream.CopyTo(bytes);
+            return bytes.ToArray();
+        }
+
+        /// <summary>
+        /// The page read by the recognizer most sure of it, when one is sure enough AND what it read is in its own alphabet;
+        /// <c>null</c> otherwise. ⚠ The Cyrillic and Korean recognizers also read English: a Latin page the tiny model read
+        /// poorly would come back "sure" in Latin letters with its accents lost — such a page stays said, never rescued.
+        /// </summary>
+        public (string Name, PaddleOcrLine[] Lines)? Read(StbImageSharp.ImageResult image)
+        {
+            (string Name, PaddleOcrLine[] Lines, float Median)? best = null;
+            foreach (var (name, engine, own) in _engines)
+            {
+                var lines = engine.Run(image.Data, image.Width, image.Height, format: ImagePixelFormat.Rgba32).Lines;
+                if (lines.Length == 0) continue;
+                var letters = lines.SelectMany(l => l.Text).Where(char.IsLetter).ToList();
+                if (letters.Count == 0 || letters.Count(own) < letters.Count * 0.3) continue;   // not its alphabet
+                var median = lines.Select(l => l.RecognitionScore).Order().ElementAt(lines.Length / 2);
+                if (best is null || median > best.Value.Median) best = (name, lines, median);
+            }
+            return best is { Median: >= ScriptScore } sure ? (sure.Name, sure.Lines) : null;
+        }
+    }
 
     /// <summary>The pages' pictures (<see cref="PdfPageImages"/>) read by PP-OCRv6 (tiny), in this process: the same reading on
-    /// every system, nothing to install. Latin and Chinese alphabets; a page in another one is said, never read as garbage.</summary>
+    /// every system, nothing to install. Latin and Chinese alphabets; a page in another is read again by the recognizers of the
+    /// product's other alphabets (Cyrillic, Japanese, Korean), the one most sure of it kept; one none reads is said, never read
+    /// as garbage.</summary>
     internal static OcrReading Paddle(string path, string? password, CancellationToken ct)
     {
-        const string engine = "PaddleOCR";
-        var until = DateTime.UtcNow + Budget;
         var extracted = PdfPageImages.Extract(File.ReadAllBytes(path), MaxPages, ct, password);
         if (extracted.Images.Count == 0)
-            return new(OcrStatus.Unavailable, string.Empty, engine, 0, extracted.Pages,
+            return new(OcrStatus.Unavailable, string.Empty, "PaddleOCR", 0, extracted.Pages,
                        extracted.NotDecoded > 0 ? "its pages are pictures in an encoding Inferpal does not decode (a black-and-white fax, JPEG 2000)"
                                                 : "no page picture could be taken from it");
-        using var ocr = PaddleOcrAll.LoadAsync(ChineseV6TinyModels.Default).GetAwaiter().GetResult();
+        return Pictures(extracted.Images, extracted.Pages, ct);
+    }
+
+    /// <summary>
+    /// The text of one picture — a screenshot, a photo of a page — by the same engine as a scan's pages (every system, the
+    /// product's ten languages). <paramref name="bytes"/> are the file's (PNG, JPEG, BMP, GIF).
+    /// </summary>
+    internal static OcrReading Picture(byte[] bytes, CancellationToken ct)
+    {
+        if (ForTests.Value is { } instead) return instead("picture");
+        try { return Pictures([new PdfPageImage(1, bytes, "")], 1, ct); }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or FormatException)
+        {
+            Diagnostics.Swallow("PdfOcr.Picture", ex);
+            return new(OcrStatus.Failed, string.Empty, "PaddleOCR", 0, 1, Diagnostics.RootMessage(ex));
+        }
+    }
+
+    /// <summary>The pictures read in order, the pages left out named (the loop both a scan and a picture go through).</summary>
+    private static OcrReading Pictures(IReadOnlyList<PdfPageImage> pictures, int pages, CancellationToken ct)
+    {
+        var engine = "PaddleOCR";
+        var until = DateTime.UtcNow + Budget;
+        // ⚠ The set outlives every engine built on it: the recognizers of other alphabets share its detector and classifier.
+        using var models = PaddleOcrModelSet.LoadAsync(ChineseV6TinyModels.Default, ct).GetAwaiter().GetResult();
+        // Owns the set (this overload), never disposed itself: the set's `using` releases the models once, after every engine.
+        var ocr = new PaddleOcrAll(models, new PaddleOcrOptions());
+        Scripts? scripts = null;
+        string? scriptsFailed = null;
+        var alphabets = new SortedSet<string>(StringComparer.Ordinal);
         var text = new StringBuilder();
         var skipped = new List<(int Page, string Why)>();
         int read = 0, foreign = 0, lastPage = 0;
-        var several = extracted.Pages > 1;
-        foreach (var picture in extracted.Images)
+        var several = pages > 1;
+        foreach (var picture in pictures)
         {
             ct.ThrowIfCancellationRequested();
             if (DateTime.UtcNow > until) break;
@@ -127,14 +219,26 @@ internal static class PdfOcr
             read++;
             // The size a picture declares, checked before anything decodes it: a JPEG header of a few bytes can ask for gigabytes.
             var (_, width, height) = ChatImages.Sniff(picture.Bytes);
+            if (width <= 0 && picture.Bytes is [(byte)'B', (byte)'M', ..] && picture.Bytes.Length >= 26)
+                (width, height) = (BitConverter.ToInt32(picture.Bytes, 18), Math.Abs(BitConverter.ToInt32(picture.Bytes, 22)));
             if (width <= 0 || height <= 0 || (long)width * height > ChatImages.MaxPixels) { skipped.Add((picture.Page, "a page picture too large or unreadable")); continue; }
             PaddleOcrLine[] lines;
             int imageWidth;
+            var otherAlphabet = false;
             try
             {
                 var image = StbImageSharp.ImageResult.FromMemory(picture.Bytes, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
                 lines = ocr.Run(image.Data, image.Width, image.Height, format: ImagePixelFormat.Rgba32).Lines;
                 imageWidth = image.Width;
+                // Another alphabet: read again by the recognizer of the product's other alphabets most sure of the page — a page
+                // of three lines or more (a stamp's or a signature's line or two stays said, never rescued into invented text).
+                if (lines.Length >= 3 && lines.Select(l => l.RecognitionScore).Order().ElementAt(lines.Length / 2) < ForeignAlphabetScore
+                    && LoadScripts() is { } loaded && loaded.Read(image) is { } other)
+                {
+                    lines = other.Lines;
+                    alphabets.Add(other.Name);
+                    otherAlphabet = true;
+                }
             }
             catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or IndexOutOfRangeException or OverflowException)
             {
@@ -145,7 +249,8 @@ internal static class PdfOcr
             }
             if (lines.Length == 0) continue;
             var scores = lines.Select(l => l.RecognitionScore).Order().ToList();
-            if (scores[scores.Count / 2] < ForeignAlphabetScore)
+            // Read by another alphabet's recognizer (its scores are probabilities, under this one's scale): kept.
+            if (!otherAlphabet && scores[scores.Count / 2] < ForeignFloor)
             {
                 foreign++;
                 skipped.Add((picture.Page, lines.Length < 3 ? "no printed text the OCR reads (a signature, a stamp, a picture), or an alphabet it does not read"
@@ -154,21 +259,55 @@ internal static class PdfOcr
             }
             if (text.Length > 0) text.Append("\n\n");
             if (several) text.Append(string.Create(CultureInfo.InvariantCulture, $"--- page {picture.Page} ---\n"));
-            text.Append(Rows(lines.Select(OcrLine.Of).ToList(), imageWidth));
+            // Between the floor and the doubt: kept (a screenshot's small text), and said — an alphabet nobody measured
+            // (Arabic, Hebrew, Thai) could land here as confident garbage.
+            if (!otherAlphabet && scores[scores.Count / 2] < ForeignAlphabetScore)
+                text.Append("[Read with low confidence: small text, or an alphabet this OCR does not read — check it against the image.]\n");
+            text.Append(ErrorCodes(Rows(lines.Select(OcrLine.Of).ToList(), imageWidth)));
         }
-        var total = Math.Max(extracted.Pages, extracted.Images.Count);
+        var total = Math.Max(pages, pictures.Count);
+        if (scriptsFailed is not null)
+            for (var i = 0; i < skipped.Count; i++)
+                if (skipped[i].Why == ForeignAlphabet)
+                    skipped[i] = (skipped[i].Page, $"{ForeignAlphabet[..^1]}; the recognizers of the other alphabets could not load: {scriptsFailed})");
         var gaps = skipped.Count == 0 ? null
             : string.Join("; ", skipped.GroupBy(s => s.Why).Select(g => $"page{(g.Count() > 1 ? "s" : "")} {string.Join(", ", g.Select(s => s.Page))}: {g.Key}"));
+        if (alphabets.Count > 0) engine += " with its " + string.Join(", ", alphabets) + " recognizer" + (alphabets.Count > 1 ? "s" : "");
         if (text.Length > 0) return new(OcrStatus.Read, text.ToString(), engine, read, total, Skipped: gaps);
         if (foreign > 0)
             return new(OcrStatus.Unavailable, string.Empty, engine, read, total, skipped.Count == 1 ? skipped[0].Why : ForeignAlphabet,
-                       Lasting: read == extracted.Images.Count);
-        if (read < extracted.Images.Count) return new(OcrStatus.Failed, string.Empty, engine, read, total, TimedOut);
+                       Lasting: read == pictures.Count && scriptsFailed is null);
+
+        // Loaded once, on the first page in another alphabet; a failure said with its cause, never tried again in this reading.
+        Scripts? LoadScripts()
+        {
+            if (scripts is not null || scriptsFailed is not null) return scripts;
+            try { return scripts = new Scripts(models); }
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or InvalidDataException
+                                           or NotSupportedException or OverflowException or IndexOutOfRangeException)
+            {
+                Diagnostics.Swallow("PdfOcr.Scripts", ex);
+                scriptsFailed = Diagnostics.RootMessage(ex);
+                return null;
+            }
+        }
+        if (read < pictures.Count) return new(OcrStatus.Failed, string.Empty, engine, read, total, TimedOut);
         return skipped.Count > 0 ? new(OcrStatus.Failed, string.Empty, engine, read, total, gaps)
                                  : new(OcrStatus.Empty, string.Empty, engine, read, total);
     }
 
-    private const string ForeignAlphabet = "its text is in an alphabet this OCR does not read (it reads Latin and Chinese: not Cyrillic, Japanese kana or Korean)";
+    private const string ForeignAlphabet = "its text is in an alphabet this OCR does not read (it reads Latin, Chinese, Cyrillic, Japanese and Korean)";
+
+    // The prefixes of the error codes a developer searches for, followed by their four or five digits, their first letter read
+    // upright: the OCR reads "Cs0246" for CS0246. A lowercase start (a git hash "ca12345", an identifier "ts2023") is left.
+    private static readonly System.Text.RegularExpressions.Regex ErrorCode = new(
+        @"\b(C[sS]|M[sS][bB]|N[uU]|N[eE][tT][sS][dD][kK]|T[sS]|C[aA]|I[dD][eE]|B[cC]|F[sS])(\d{4,5})\b",
+        System.Text.RegularExpressions.RegexOptions.CultureInvariant,
+        RegexBudget.Default);
+
+    /// <summary><paramref name="text"/> with the error codes it holds in their own case (<c>CS0246</c>, <c>MSB4019</c>).</summary>
+    internal static string ErrorCodes(string text) =>
+        ErrorCode.Replace(text, m => m.Groups[1].Value.ToUpperInvariant() + m.Groups[2].Value);
 
     /// <summary>A line the OCR read: its text, left edge and width, middle and height, and the slope of its top edge.</summary>
     internal readonly record struct OcrLine(string Text, float X, float Width, float Middle, float Height, float Slope)

@@ -13,7 +13,8 @@ internal enum ServerInstallKind
     Start,
     /// <summary>Windows without winget: nothing Inferpal can run; the links stay, and why is said.</summary>
     NoWinget,
-    /// <summary>macOS, Linux, or an editor connected to another machine: a command to copy, never run by Inferpal.</summary>
+    /// <summary>macOS, Linux, or an editor connected to another machine: a command to copy, never run by Inferpal — the
+    /// install, or the start of an Ollama installed outside an application Inferpal can open (<see cref="ServerInstall.Starts"/>).</summary>
     Command,
 }
 
@@ -22,7 +23,9 @@ internal enum ServerInstallKind
 /// and <see cref="ServerInstallKind.Start"/>), and <see cref="Command"/>, the same thing as the card shows it — one source,
 /// so the command shown is the command run.
 /// </summary>
-internal sealed record ServerInstallOffer(ServerInstallKind Kind, string? Program, IReadOnlyList<string> Arguments, string Command)
+/// <param name="StartsServer">A <see cref="ServerInstallKind.Command"/> that starts an installed Ollama, not one that installs it.</param>
+internal sealed record ServerInstallOffer(ServerInstallKind Kind, string? Program, IReadOnlyList<string> Arguments, string Command,
+                                          bool StartsServer = false)
 {
     /// <summary>Inferpal runs it on the person's click (otherwise the card only shows the command, or nothing).</summary>
     public bool Runs => Kind is ServerInstallKind.Install or ServerInstallKind.Start;
@@ -102,7 +105,7 @@ internal static class ServerInstall
         remoteName,
         OperatingSystem.IsWindows() ? HostOs.Windows : OperatingSystem.IsMacOS() ? HostOs.MacOs : HostOs.Linux,
         OperatingSystem.IsWindows() ? FindWinget() : null,
-        OperatingSystem.IsWindows() ? InstalledOllama() : null);
+        OperatingSystem.IsWindows() ? InstalledOllama() : OperatingSystem.IsMacOS() ? InstalledOllamaOnMac() : InstalledOllamaOnLinux());
 
     /// <summary>The offer for a machine described by its parts (the testable form of <see cref="OfferFor(string?)"/>).</summary>
     /// <param name="installed">Ollama on this machine: its application (<c>ollama app.exe</c>), else its <c>ollama.exe</c>
@@ -111,7 +114,17 @@ internal static class ServerInstall
     {
         var wingetCommand = "winget " + string.Join(' ', WingetArguments);
         if (os != HostOs.Windows)
+        {
+            var remote = RemoteSide.Of(remoteName) != RemoteKind.None;
+            if (!remote && installed is not null && installed.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+                // Ollama's application, opened as the Finder opens it: it starts its own server, outside this process.
+                return new(ServerInstallKind.Start, "/usr/bin/open", ["-a", installed], $"open -a {ShellQuoted(installed)}");
+            if (!remote && installed is not null)
+                // Its server alone (Homebrew, the Linux script): started by hand — under the Linux script, a system service.
+                return new(ServerInstallKind.Command, null, [],
+                           installed == LinuxService ? "sudo systemctl start ollama" : $"{ShellQuoted(installed)} serve", StartsServer: true);
             return new(ServerInstallKind.Command, null, [], os == HostOs.MacOs ? MacCommand : LinuxCommand);
+        }
         if (RemoteSide.Of(remoteName) != RemoteKind.None) return new(ServerInstallKind.Command, null, [], wingetCommand);
         if (installed is not null)
         {
@@ -139,6 +152,32 @@ internal static class ServerInstall
         : UserFolders.Of(Environment.SpecialFolder.LocalApplicationData) is { Length: > 0 } local
           && Path.Combine(local, "Microsoft", "WindowsApps", "winget.exe") is var alias && File.Exists(alias) ? alias
         : null;
+
+    /// <summary>The marker <see cref="InstalledOllamaOnLinux"/> gives for an Ollama installed as a system service.</summary>
+    internal const string LinuxService = "ollama.service";
+
+    /// <summary>True when <paramref name="offer"/> starts an installed Ollama rather than installing one.</summary>
+    internal static bool Starts(ServerInstallOffer offer) => offer.Kind == ServerInstallKind.Start || offer.StartsServer;
+
+    /// <summary>A path as a POSIX shell reads it literally (single quotes: <c>$</c>, backticks and <c>\</c> stay as written).</summary>
+    internal static string ShellQuoted(string path) => "'" + path.Replace("'", "'\\''") + "'";
+
+    /// <summary>Ollama on a Mac: its application (in /Applications or the account's own), else its server on the PATH
+    /// (Homebrew); null when neither is there.</summary>
+    internal static string? InstalledOllamaOnMac()
+    {
+        foreach (var app in new[] { "/Applications/Ollama.app", Path.Combine(UserFolders.Of(Environment.SpecialFolder.UserProfile), "Applications", "Ollama.app") })
+            if (Directory.Exists(app)) return app;
+        // A client started from the Dock has only the system's PATH: Homebrew's folders are looked at by name.
+        return Shell.ShellLauncher.FindOnPath("ollama")
+            ?? new[] { "/opt/homebrew/bin/ollama", "/usr/local/bin/ollama" }.FirstOrDefault(File.Exists);
+    }
+
+    /// <summary>Ollama on Linux: <see cref="LinuxService"/> when its script installed it as a system service, else its server
+    /// on the PATH; null when neither is there.</summary>
+    internal static string? InstalledOllamaOnLinux() =>
+        new[] { "/etc/systemd/system", "/usr/lib/systemd/system", "/lib/systemd/system" }.Any(d => File.Exists(Path.Combine(d, "ollama.service")))
+            ? LinuxService : Shell.ShellLauncher.FindOnPath("ollama");
 
     /// <summary>Ollama on this machine: its application where its installer puts it for this account, else <c>ollama.exe</c>
     /// on the PATH (installed some other way); null when neither is there.</summary>
@@ -233,8 +272,22 @@ internal static class ServerInstall
         KeepOwnStdioOutOfChildren();
         if (offer.Kind == ServerInstallKind.Start)
         {
+            var info = StartInfoFor(offer);
+            if (offer.Program == "/usr/bin/open")
+            {
+                // macOS: `open` hands the application to the system and ends — its exit code is the only verdict (a damaged
+                // or refused application), said rather than waited for as a slow server.
+                info.RedirectStandardError = true;
+                using var opener = Process.Start(info) ?? throw new InvalidOperationException($"{offer.Program} did not start.");
+                var refusal = opener.StandardError.ReadToEndAsync(ct);
+                using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                budget.CancelAfter(TimeSpan.FromSeconds(10));
+                await opener.WaitForExitAsync(budget.Token).ConfigureAwait(false);
+                if (opener.ExitCode != 0) throw new InvalidOperationException((await refusal.ConfigureAwait(false)).Trim());
+                return 0;
+            }
             // Started, never waited for: it starts its server and stays.
-            using var started = Process.Start(StartInfoFor(offer)) ?? throw new InvalidOperationException($"{offer.Program} did not start.");
+            using var started = Process.Start(info) ?? throw new InvalidOperationException($"{offer.Program} did not start.");
             return 0;
         }
 
