@@ -379,7 +379,7 @@ servers' tools wait on demand and `tool_search` loads them. See **[MCP](mcp.md)*
 ## Built-in tools
 
 You never pick a tool: you ask in plain words and the agent chooses. This section tells, family by family, what each
-kind of tool is for and what you would ask to see it at work, so you know what to expect. Under each family, the exact
+kind of tool is for and which tools the agent uses for what you want done, so you know what to expect. Under each family, the exact
 names and parameters, for when you write a rule (`allow run_command ^dotnet test`) or a prompt. A `?` marks an
 optional parameter.
 
@@ -388,14 +388,14 @@ optional parameter.
 Reading never asks. Before it changes anything, the agent opens files, searches and builds itself a picture of the
 code, as you would. A large result comes back in pages, and what it left out is said.
 
-| You ask | It reaches for |
+| When you want to | It uses |
 |---|---|
-| "Where is `OrderService` used?" | `search_in_files`, `analyze_code` (`callgraph`) |
-| "How does billing work in this project?" | `search_codebase` (by meaning, not exact words), `generate_project_map` |
-| "What breaks if I change this file?" | `analyze_code` (`impact`) |
-| "Why is this line like this?" | `git_history` (commits, blame), `get_git_status` |
-| "Which packages does the solution use?" | `get_solution_info` |
-| "What does the error in this screenshot say?" | `ocr`, or `read_file` on the image for a model that sees |
+| Find where a class, method or text is used | `search_in_files`, `analyze_code` (`callgraph`) |
+| Understand how a part of the project works | `search_codebase` (by meaning, not exact words), `generate_project_map` |
+| Know what a change to a file would affect | `analyze_code` (`impact`) |
+| Know why code is the way it is, or what changed recently | `git_history` (commits, blame), `get_git_status` |
+| See a solution's projects, frameworks and packages | `get_solution_info` |
+| Read the text of a screenshot or a scanned page | `ocr`, or `read_file` on the image for a model that sees |
 
 <details>
 <summary>Every reading tool and its parameters</summary>
@@ -425,12 +425,12 @@ code, as you would. A large result comes back in pages, and what it left out is 
 A file too big to read whole is queried instead: a log filtered by level and time, a data file answered by SQL, an
 archive read in place. A notebook is changed one cell at a time and run on a copy.
 
-| You ask | It reaches for |
+| When you want to | It uses |
 |---|---|
-| "The errors in app.log since 10:30" | `read_file` with `level` and `since` |
-| "How many orders failed, per day?" on a 50 000-line CSV | `query_data` (one read-only SQL query) |
-| "Find the exception in logs.zip" | `list_files` then `read_file` on `logs.zip!/…` |
-| "Fix the cell that fails and run it again" | `edit_notebook`, then `run_notebook` |
+| Find the errors of a log within a time range | `read_file` with `level`, `since` and `until` |
+| Count, filter or sum the rows of a large data file | `query_data` (one read-only SQL query) |
+| Look inside an archive without extracting it | `list_files`, then `read_file` on `archive.zip!/path` |
+| Fix a notebook cell and check its output | `edit_notebook`, then `run_notebook` |
 
 <details>
 <summary>The data and notebook tools and their parameters</summary>
@@ -449,13 +449,13 @@ Every change waits on a card that shows the real diff: Enter allows, Esc refuses
 changes, and **Undo run** puts the whole run back. An edit that would break a file's syntax is refused before you are
 asked, and a build runs after each one (Smart Fix).
 
-| You ask | It reaches for |
+| When you want to | It uses |
 |---|---|
-| "Add argument validation to this method" | `apply_diff` (one place), `write_file` (a new file) |
-| "Make the same change in these three files" | `apply_edits`, all or nothing |
-| "Rename `Customer` to `Client`" | `rename_symbol`: the compiler's references, not a text search |
-| "Rename the key ApiUrl everywhere" | `replace_in_files`: one approval for every file |
-| "Put that file back as it was" | `restore_file` |
+| Change code in one place, or create a file | `apply_diff`, `write_file` |
+| Make related changes in several files together | `apply_edits`, all or nothing |
+| Rename a class, method or variable everywhere it is used | `rename_symbol`: the compiler's references, not a text search |
+| Replace a text — a configuration key, a namespace — across the project | `replace_in_files`: one approval for every file |
+| Put a file back as it was before a change | `restore_file` |
 
 <details>
 <summary>Every editing tool and its parameters</summary>
@@ -480,13 +480,13 @@ asked, and a build runs after each one (Smart Fix).
 A command asks first. A build or a test run asks once per workspace, because it runs the code the repository wrote.
 A test or build that failed is said as failed, whatever the answer claims.
 
-| You ask | It reaches for |
+| When you want to | It uses |
 |---|---|
-| "Does it build?" | `get_diagnostics` |
-| "Make the failing test pass" | `run_tests`, an edit, `run_tests` again |
-| "Not available in C# 7.3" on a project that never asked for it | `msbuild_property`: where the setting comes from |
-| "Make the report faster" | `run_command` with `repeat`: several runs, medians compared |
-| "Start the API" | `run_command` with `background` |
+| Check that the project builds | `get_diagnostics` |
+| Make failing tests pass | `run_tests`, an edit, `run_tests` again |
+| Fix a build error that comes from a project setting | `msbuild_property`: where the setting is defined |
+| Make a program faster, and prove it | `run_command` with `repeat`: several runs, medians compared |
+| Start a server or an app and keep it running | `run_command` with `background` |
 
 <details>
 <summary>The build, run and test tools and their parameters</summary>
@@ -505,11 +505,11 @@ A test or build that failed is said as failed, whatever the answer claims.
 On this machine only. The agent looks at what the code produces instead of guessing from the source: the page your
 app serves, the window of the desktop app it launched, the answer of your API.
 
-| You ask | It reaches for |
+| When you want to | It uses |
 |---|---|
-| "Fix the 500 on POST /orders" | `run_command` (`background`), then `http_request` |
-| "The Pay button doesn't show" | `view_page`, at a laptop's width and a phone's |
-| "Why is Order greyed out?" | `view_window`: the window and every control's state |
+| Fix an error your web service returns | `run_command` (`background`), then `http_request` |
+| Fix how a web page looks | `view_page`, at desktop and phone widths |
+| Understand what a desktop app shows | `view_window`: the window and every control's state |
 
 <details>
 <summary>The tools that look at your app and their parameters</summary>
@@ -527,9 +527,9 @@ app serves, the window of the desktop app it launched, the answer of your API.
 Instead of guessing what the running code does, the agent sets a breakpoint, starts the program (you approve the
 start), then reads the call stack and the locals.
 
-| You ask | It reaches for |
+| When you want to | It uses |
 |---|---|
-| "Why is `total` null here?" | `debug_control` (breakpoint, start), `debug_inspect`, `get_debugger_state` |
+| Find out why a value is wrong while the program runs | `debug_control` (breakpoint, start), `debug_inspect`, `get_debugger_state` |
 
 <details>
 <summary>The debugger tools and their parameters</summary>
@@ -547,10 +547,10 @@ start), then reads the call stack and the locals.
 Every page fetched and every search asks first. Documentation you indexed with `/docs add` is searched without
 going online.
 
-| You ask | It reaches for |
+| When you want to | It uses |
 |---|---|
-| "What does this library's documentation say?" | `search_docs` (your `@Docs`), `fetch_url` |
-| "Is there a known fix for this error?" | `web_search`, then `fetch_url` |
+| Check a library's documentation | `search_docs` (your `@Docs`), `fetch_url` |
+| Look up an error or an answer online | `web_search`, then `fetch_url` |
 
 <details>
 <summary>The web tools and their parameters</summary>
@@ -564,7 +564,7 @@ going online.
 
 ### When it is not sure
 
-When "the form" could be one of three, the agent asks you on a card with the answers it proposes, instead of
+When a request could mean several things, the agent asks you on a card with the answers it proposes, instead of
 picking one; let it decide and it says what it assumed. In Visual Studio and VS Code.
 
 <details>
