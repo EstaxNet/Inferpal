@@ -377,16 +377,33 @@ servers' tools wait on demand and `tool_search` loads them. See **[MCP](mcp.md)*
 
 ## Built-in tools
 
-Every tool by what it does, for when you write a rule or a prompt. A `?` marks an optional parameter.
+You never pick a tool: you ask in plain words and the agent chooses. This section tells, family by family, what each
+kind of tool is for and what you would ask to see it at work, so you know what to expect. Under each family, the exact
+names and parameters, for when you write a rule (`allow run_command ^dotnet test`) or a prompt. A `?` marks an
+optional parameter.
 
-### Read, search and analyze
+### Read and understand your code
+
+Reading never asks. Before it changes anything, the agent opens files, searches and builds itself a picture of the
+code, as you would. A large result comes back in pages, and what it left out is said.
+
+| You ask | It reaches for |
+|---|---|
+| "Where is `OrderService` used?" | `search_in_files`, `analyze_code` (`callgraph`) |
+| "How does billing work in this project?" | `search_codebase` (by meaning, not exact words), `generate_project_map` |
+| "What breaks if I change this file?" | `analyze_code` (`impact`) |
+| "Why is this line like this?" | `git_history` (commits, blame), `get_git_status` |
+| "Which packages does the solution use?" | `get_solution_info` |
+| "What does the error in this screenshot say?" | `ocr`, or `read_file` on the image for a model that sees |
+
+<details>
+<summary>Every reading tool and its parameters</summary>
 
 | Tool | Required params | Description |
 |---|---|---|
 | `read_file` | `path`, `start_line?`, `end_line?`, `level?`, `since?`, `until?` | Read a file; a long one comes back in pages of whole lines, each naming the `start_line` to read on. A log reads filtered: `level` (`trace` to `fatal`) keeps the entries at that level or above, `since` and `until` (`HH:mm[:ss]`, or with a date `yyyy-MM-dd HH:mm[:ss]`) the entries between; an entry keeps the lines under it (a stack trace), each line comes under its number in the file, and the formats read are Serilog, NLog, log4net, Go's `log`, the `ILogger` console, ISO and syslog stamps; a page ends between two entries, and a `start_line` inside an entry starts from its first line. Lines before the first entry, entries with no level or no time under that filter, times compared without their date and a log that goes past midnight are said, never dropped in silence. The level is the first level word near the start of the line: in a log with no level column, a message's "error" can be taken for one. A document reads as its extracted text — PDF, Word `.docx` and `.doc`, Excel `.xlsx`/`.xls`/`.xlsb` (each sheet under its name, a row per line), PowerPoint `.pptx` (each slide in order, its notes after it), OpenDocument `.odt`/`.ods`/`.odp`, Outlook `.msg` e-mails (headers, body, attachments named). A scanned PDF (images, no text) is read by OCR on every system, nothing downloaded or installed: on Windows by Windows' own OCR (every language it has installed), elsewhere by the OCR built into Inferpal, which reads the alphabets of Inferpal's ten languages (Latin, Chinese, Cyrillic, Japanese, Korean) — up to 20 pages, a table put back row by row, and the model told the text comes from an OCR. A page in another alphabet is said, and its pictures are shown to a model that sees. A Jupyter notebook, an RTF and an `.eml` are text files: read as they are, so the agent can edit them (attached to a question, they give their cells, their text, their headers and body). A document that opens only with a password asks you for it on a card in the chat: the model gets the text, never the password, which stays in memory for that file until the editor closes; a background `/task` or an ACP client leaves it closed and says so. An image of the workspace (PNG, JPEG, WebP, GIF, BMP) is shown to the model when it reads images, right after the tool's results, reduced like an attached one (10 MB at most); a model that does not gets the text written in it instead, read by Inferpal's OCR (said as such); an image with no text, or a server that does not say, is told the image was not sent rather than left to guess. Another binary file is named, not shown. An entry of an archive — zip, nupkg, vsix, jar, tar, tar.gz — is read in place, never extracted: `logs.zip!/app/log.txt`; at most 8 MB read out per entry whatever the archive declares, the ignore files judging each entry as if the archive were a folder, a nested archive named and not opened. A zip protected by a password (ZipCrypto or AES) lists its entries freely; reading one asks you for the password on the same card as a protected PDF — three tries, kept in memory for that archive until the editor closes, never sent; 7z and RAR are not read |
 | `list_files` | `path`, `pattern?` | List files (glob, recursive; at most 300, fewer when their paths would not fit the context — the answer says how many it left out). An archive (`logs.zip`, or a folder in it, `logs.zip!/app`) lists its entries, each ready for `read_file` |
 | `search_in_files` | `path`, `pattern`, `file_pattern?` | Regex/text search (at most 100 matches, fewer when they would not fit the context — the answer names the files of those it left out). Documents (the formats `read_file` reads) are searched in their extracted text, at the line numbers `read_file` shows; documents that give no text, or that a search had no time left to read, are counted |
-| `query_data` | `path`, `sql` | A read-only SQL query (SQLite) on a data file of the workspace: a `.db` / `.sqlite` database, or a CSV or TSV file loaded in memory as the table `data` (columns from its header, numbers typed when a whole column is numeric; a semicolon CSV is recognised). To count, filter, sum or group rows a file too large to read holds. At most 200 rows shown, the rest said; a query that writes is refused, another database cannot be attached, and a query running past 20 s is stopped. A spreadsheet (XLSX) is not loaded: read it with `read_file` or export it as CSV |
 | `get_active_document` | — | Path + content of the file open in the editor; a long one comes back as its first page, naming the `start_line` from which `read_file` reads on |
 | `get_open_editors` | — | All open files, active one marked `[active]` |
 | `get_git_status` | `path?`, `include_diff?`, `diff_path?` | `git status`, last 20 commits, branches (most recent first, the current one always shown), diff summary with its total; long sections keep what fits and count the rest. The full diff is capped, and a cut names the files it left out — `diff_path` reads one of them |
@@ -396,11 +413,51 @@ Every tool by what it does, for when you write a rule or a prompt. A `?` marks a
 | `search_codebase` | `query`, `top_k?` | Semantic search over the indexed project. Offered to the model only while there is an index, or one being built: with semantic search off and no index, the model uses `search_in_files` instead. While the first indexing pass runs, results say how many files it has read so far |
 | `search_docs` | `query`, `top_k?` | Semantic search over `@Docs` external documentation. Offered once some documentation is indexed (`/docs add`) |
 | `generate_project_map` | `refresh?` | C# only: namespace tree, types, dependencies, hotspots — on a large solution the largest namespaces, the rest counted; past 10 000 source files the shallowest are read, and the map says how many of how many (cached for two minutes; `refresh=true` rescans) |
+| `ocr` | `path` | The text written in an image of the workspace (PNG, JPEG, BMP, GIF: a screenshot of an error, a photo of a page) or in a scanned PDF, read by the OCR built into Inferpal — on every system, nothing installed, the alphabets of Inferpal's ten languages (Latin, Chinese, Cyrillic, Japanese, Korean), a table put back row by row, and the model told it comes from an OCR and can hold misreadings. For a model that does not read images, and for one that does when it needs the exact words (an error to search for, a value to copy). Never asks: it only reads |
 | `tool_search` | `query` | Load MCP tools that wait on demand: keywords (matched against tool names and descriptions) or `select:name1,name2`; at most 5 per call, each returned with its schema and declared from the next request on, for the rest of the conversation. Offered only while an MCP server's tools are on demand — see **[MCP → Large tool sets](mcp.md#large-tool-sets-on-demand)** |
-| `ask_question` | `question`, `options?` | Ask you ONE question on a card in the chat, with up to 4 proposed answers and a box for your own words — when a request has several plausible meanings the workspace cannot settle ("the form" when there are three). You answer, or let the agent decide; it then says what it assumed. Only you answer; offered only where a card can be drawn (not in a background `/task` nor in an ACP client). Measured: Devstral Small 2 asks on 3 of 5 ambiguous requests and on none of 10 clear ones; Qwen3.8 rarely asks |
 | `read_skill_file` | `skill`, `path`, `start_line?`, `end_line?` | Read a file of a skill invoked with `/skill` — confined to that skill's folder (a `..` path or a link that leaves it is refused), which may lie outside the workspace (`~/.claude/skills`). Paged like `read_file`. Offered only while the repository or the user has a skill |
 
+</details>
+
+### Logs, data files and notebooks
+
+What used to be too big to read is queried instead: a log filtered by level and time, a data file answered by SQL,
+an archive read in place. A notebook is changed one cell at a time and run on a copy.
+
+| You ask | It reaches for |
+|---|---|
+| "The errors in app.log since 10:30" | `read_file` with `level` and `since` |
+| "How many orders failed, per day?" on a 50 000-line CSV | `query_data` (one read-only SQL query) |
+| "Find the exception in logs.zip" | `list_files` then `read_file` on `logs.zip!/…` |
+| "Fix the cell that fails and run it again" | `edit_notebook`, then `run_notebook` |
+
+<details>
+<summary>The data and notebook tools and their parameters</summary>
+
+| Tool | Required params | Description |
+|---|---|---|
+| `query_data` | `path`, `sql` | A read-only SQL query (SQLite) on a data file of the workspace: a `.db` / `.sqlite` database, or a CSV or TSV file loaded in memory as the table `data` (columns from its header, numbers typed when a whole column is numeric; a semicolon CSV is recognised). To count, filter, sum or group rows a file too large to read holds. At most 200 rows shown, the rest said; a query that writes is refused, another database cannot be attached, and a query running past 20 s is stopped. A spreadsheet (XLSX) is not loaded: read it with `read_file` or export it as CSV |
+| `edit_notebook` | `path`, `cell`, `action?`, `cell_type?`, `source?` | Change ONE cell of a Jupyter notebook by its id or number — replace its source, insert a cell before or after it, or delete it. The other cells, their outputs and the notebook's settings stay byte for byte as Jupyter wrote them; a changed code cell's old outputs are cleared. **Approval**: the card shows the cell's lines, never the notebook's JSON |
+| `run_notebook` | `path`, `cell?`, `timeout_seconds?` | Run a notebook from its first cell in the project's own Python (its `.venv`), and read each code cell's output and the first failing cell's traceback. Runs on a copy: the notebook file is not changed. Jupyter (`nbconvert`, `ipykernel`) missing from that Python is said with the command that installs it, never installed. Runs the repository's code: asked like a build |
+
+</details>
+
 ### Change files
+
+Every change waits on a card that shows the real diff: Enter allows, Esc refuses. Each file is backed up before it
+changes, and **Undo run** puts the whole run back. An edit that would break a file's syntax is refused before you are
+asked, and a build runs after each one (Smart Fix).
+
+| You ask | It reaches for |
+|---|---|
+| "Add argument validation to this method" | `apply_diff` (one place), `write_file` (a new file) |
+| "Make the same change in these three files" | `apply_edits`, all or nothing |
+| "Rename `Customer` to `Client`" | `rename_symbol`: the compiler's references, not a text search |
+| "Rename the key ApiUrl everywhere" | `replace_in_files`: one approval for every file |
+| "Put that file back as it was" | `restore_file` |
+
+<details>
+<summary>Every editing tool and its parameters</summary>
 
 | Tool | Required params | Description |
 |---|---|---|
@@ -415,19 +472,66 @@ Every tool by what it does, for when you write a rule or a prompt. A `?` marks a
 | `replace_selection` | `text` | Replace the active selection |
 | `update_memory` | `content?`, `mode?` | Update `.inferpal/memory.md` (`append` default / `replace` / `clear`, which takes no `content`). Writing it changes the system prompt of every later session, so the prompt is **always** shown even if a rule would allow it + snapshot; a snapshot that cannot be saved leaves the memory untouched |
 
-### Run, build and test
+</details>
+
+### Build, run and test
+
+A command asks first. A build or a test run asks once per workspace, because it runs the code the repository wrote.
+A test or build that failed is said as failed, whatever the answer claims.
+
+| You ask | It reaches for |
+|---|---|
+| "Does it build?" | `get_diagnostics` |
+| "Make the failing test pass" | `run_tests`, an edit, `run_tests` again |
+| "Not available in C# 7.3" on a project that never asked for it | `msbuild_property`: where the setting comes from |
+| "Make the report faster" | `run_command` with `repeat`: several runs, medians compared |
+| "Start the API" | `run_command` with `background` |
+
+<details>
+<summary>The build, run and test tools and their parameters</summary>
 
 | Tool | Required params | Description |
 |---|---|---|
 | `run_command` | `command?`, `working_directory?`, `background?`, `action?`, `id?`, `until?`, `timeout_seconds?`, `repeat?` | With `repeat` (2–20), the command is measured: one approval, a warm-up run left out, then each run's time, the median and the spread, and — against the same command's previous measure in the session — whether the difference is beyond the noise (the runs' ranges do not overlap) or within it; a failed run is no time, a failing warm-up measures nothing. Run a shell command — PowerShell on Windows, and on Linux/macOS when `pwsh` is on the PATH; bash otherwise (`sh` on a host without bash) ; cwd and `env` overrides persist across calls. **Approval**, configurable timeout. `background=true` starts a detached job and returns its `id`; `action` `poll` / `wait` / `stop` / `list` reads, waits on, ends or lists jobs (`command` is required otherwise); `wait` returns at the first line holding `until`, at the job's end, or after `timeout_seconds` (1-300, default 60) |
-| `edit_notebook` | `path`, `cell`, `action?`, `cell_type?`, `source?` | Change ONE cell of a Jupyter notebook by its id or number — replace its source, insert a cell before or after it, or delete it. The other cells, their outputs and the notebook's settings stay byte for byte as Jupyter wrote them; a changed code cell's old outputs are cleared. **Approval**: the card shows the cell's lines, never the notebook's JSON |
-| `run_notebook` | `path`, `cell?`, `timeout_seconds?` | Run a notebook from its first cell in the project's own Python (its `.venv`), and read each code cell's output and the first failing cell's traceback. Runs on a copy: the notebook file is not changed. Jupyter (`nbconvert`, `ipykernel`) missing from that Python is said with the command that installs it, never installed. Runs the repository's code: asked like a build |
-| `ocr` | `path` | The text written in an image of the workspace (PNG, JPEG, BMP, GIF: a screenshot of an error, a photo of a page) or in a scanned PDF, read by the OCR built into Inferpal — on every system, nothing installed, the alphabets of Inferpal's ten languages (Latin, Chinese, Cyrillic, Japanese, Korean), a table put back row by row, and the model told it comes from an OCR and can hold misreadings. For a model that does not read images, and for one that does when it needs the exact words (an error to search for, a value to copy). Never asks: it only reads |
-| `msbuild_property` | `name`, `project?` | The value an MSBuild property has for a .NET project and where it comes from — the file and line that set it, then each file that changed it (a `Directory.Build.props`, an import, a NuGet package's build files, the SDK). For the build errors whose message names a symptom (`C# 7.3`, `no static Main`) and not the file that decided it; `get_diagnostics` points to it under those errors. Runs an MSBuild evaluation (nothing built or written): asked like a build |
 | `get_diagnostics` | `path?` | `dotnet build` → MSBuild errors/warnings (90 s timeout). In VS Code, without `path`, the Problems panel's errors when it has any. A build runs the project's own targets: the first one the assistant starts in a workspace asks you once |
 | `run_tests` | `path?`, `filter?`, `runner?`, `timeout_seconds?` | Runs the project's own code — the first run the assistant starts in a workspace asks you once (a `/build` or `/tdd` you run does not). `dotnet test` / `pytest` (under the project's `.venv` or `venv` when there is one; a test file runs alone, from its project's root) / `npm test` / `cargo test` / `go test` (auto-detected; a `path` that does not exist is refused; a folder with no single .NET solution or project in it runs the one `get_diagnostics` would build, said above the report). `runner` also takes `jest`, `vitest`, `mocha`, `node` (run through npm); an unknown one is refused by name. `timeout_seconds` 1–1800 (0 or less = the maximum: there is no unlimited run), the clamp said |
+| `msbuild_property` | `name`, `project?` | The value an MSBuild property has for a .NET project and where it comes from — the file and line that set it, then each file that changed it (a `Directory.Build.props`, an import, a NuGet package's build files, the SDK). For the build errors whose message names a symptom (`C# 7.3`, `no static Main`) and not the file that decided it; `get_diagnostics` points to it under those errors. Runs an MSBuild evaluation (nothing built or written): asked like a build |
+
+</details>
+
+### Look at and call the app you build
+
+On this machine only. The agent looks at what the code produces instead of guessing from the source: the page your
+app serves, the window of the desktop app it launched, the answer of your API.
+
+| You ask | It reaches for |
+|---|---|
+| "Fix the 500 on POST /orders" | `run_command` (`background`), then `http_request` |
+| "The Pay button doesn't show" | `view_page`, at a laptop's width and a phone's |
+| "Why is Order greyed out?" | `view_window`: the window and every control's state |
+
+<details>
+<summary>The tools that look at your app and their parameters</summary>
+
+| Tool | Required params | Description |
+|---|---|---|
+| `http_request` | `url`, `method?`, `headers?`, `body?`, `wait_seconds?`, `timeout_seconds?` | Send one HTTP request — any method — and read the status, headers and body (1 MB read at most, the cut said): to call the app you just started and read its 500. **Approval** on every call; *Always* for one local address and port; any other address asked each time unless a rule of yours names it. No redirect followed; `wait_seconds` (local only) keeps trying while the server starts |
+| `view_page` | `url?`, `path?`, `width?` | Look at a page of the app you build as a browser renders it — served on this machine (`http://localhost:5173/cart`) or an HTML file of the workspace — captured at 1280 px and at 390 px (a phone), or at the one width you give: what the source does not show (a button that cannot be seen, a layout that overflows on a phone, an element over another, a total cut off). A model that sees gets the pictures; one that does not gets the text read on them by OCR. The browser: WebKit on macOS (built in), Edge on Windows, Firefox on Linux, else any Chrome, Chromium, Brave or Firefox found; none → it says what to install. The page cannot reach the Internet (its fonts or images from outside are missing on purpose). **Approval**, as `http_request` |
+| `view_window` | `job`, `wait?` | Look at the desktop app launched with `run_command` (`background: true`) — WPF, WinForms, MAUI, WinUI, AppKit, GTK, Qt: a picture of each window of that job and of the processes it started, and their accessibility tree (each control's role, name, value, disabled or not, place in the window) — for what the source does not show: a button greyed out, a field a binding leaves empty, a control outside the window or covered by another. A model that sees gets the picture; one that does not gets the text read on it by OCR, and every model gets the tree. Never a window of another process. Windows: built in. macOS: the app that runs Inferpal needs Screen Recording for the picture and Accessibility for the tree — without them it says so and how to allow them. Linux: X11 or XWayland with `xprop` and `xwd` for the picture, AT-SPI (`python3-gi`) for the tree; a native Wayland window gives its tree only; what is missing is named. Waits up to 20 s (at most 60) for a first window, and says what the job printed when none comes. Offered only while a background job runs |
+
+</details>
 
 ### Use the debugger
+
+Instead of guessing what the running code does, the agent sets a breakpoint, starts the program (you approve the
+start), then reads the call stack and the locals.
+
+| You ask | It reaches for |
+|---|---|
+| "Why is `total` null here?" | `debug_control` (breakpoint, start), `debug_inspect`, `get_debugger_state` |
+
+<details>
+<summary>The debugger tools and their parameters</summary>
 
 | Tool | Required params | Description |
 |---|---|---|
@@ -435,15 +539,41 @@ Every tool by what it does, for when you write a rule or a prompt. A `?` marks a
 | `debug_control` | `action`, `file?`, `line?` | Drives the debugger: `set_breakpoint` / `clear_breakpoint` / `list_breakpoints` / `start` / `continue` / `step_over` / `step_into` / `step_out` / `stop`. **Approval on `start` only** — it runs your program; the steps that follow observe an execution you already consented to. Finite step budget, and running out is reported. The breakpoints it sets are removed when the session stops; yours are never removed |
 | `debug_inspect` | `action?` (`state` \| `evaluate`), `expression?` | Reads a paused debugger: stop reason, user call stack, locals, and arbitrary expression evaluation in the current frame. Values are the debugger's own rendering — read, never parsed. **Approval on `evaluate`** — an expression can call your program's code |
 
+</details>
+
 ### Go online
+
+Every page fetched and every search asks first. Documentation you indexed with `/docs add` is searched without
+going online.
+
+| You ask | It reaches for |
+|---|---|
+| "What does this library's documentation say?" | `search_docs` (your `@Docs`), `fetch_url` |
+| "Is there a known fix for this error?" | `web_search`, then `fetch_url` |
+
+<details>
+<summary>The web tools and their parameters</summary>
 
 | Tool | Required params | Description |
 |---|---|---|
-| `http_request` | `url`, `method?`, `headers?`, `body?`, `wait_seconds?`, `timeout_seconds?` | Send one HTTP request — any method — and read the status, headers and body (1 MB read at most, the cut said): to call the app you just started and read its 500. **Approval** on every call; *Always* for one local address and port; any other address asked each time unless a rule of yours names it. No redirect followed; `wait_seconds` (local only) keeps trying while the server starts |
-| `view_window` | `job`, `wait?` | Look at the desktop app launched with `run_command` (`background: true`) — WPF, WinForms, MAUI, WinUI, AppKit, GTK, Qt: a picture of each window of that job and of the processes it started, and their accessibility tree (each control's role, name, value, disabled or not, place in the window) — for what the source does not show: a button greyed out, a field a binding leaves empty, a control outside the window or covered by another. A model that sees gets the picture; one that does not gets the text read on it by OCR, and every model gets the tree. Never a window of another process. Windows: built in. macOS: the app that runs Inferpal needs Screen Recording for the picture and Accessibility for the tree — without them it says so and how to allow them. Linux: X11 or XWayland with `xprop` and `xwd` for the picture, AT-SPI (`python3-gi`) for the tree; a native Wayland window gives its tree only; what is missing is named. Waits up to 20 s (at most 60) for a first window, and says what the job printed when none comes. Offered only while a background job runs |
-| `view_page` | `url?`, `path?`, `width?` | Look at a page of the app you build as a browser renders it — served on this machine (`http://localhost:5173/cart`) or an HTML file of the workspace — captured at 1280 px and at 390 px (a phone), or at the one width you give: what the source does not show (a button that cannot be seen, a layout that overflows on a phone, an element over another, a total cut off). A model that sees gets the pictures; one that does not gets the text read on them by OCR. The browser: WebKit on macOS (built in), Edge on Windows, Firefox on Linux, else any Chrome, Chromium, Brave or Firefox found; none → it says what to install. The page cannot reach the Internet (its fonts or images from outside are missing on purpose). **Approval**, as `http_request` |
 | `fetch_url` | `url`, `max_chars?`, `start_char?` | Fetch a page as text; a long one comes back in windows, each naming the `start_char` to read on. **Approval**, SSRF-guarded |
 | `web_search` | `query`, `max_results?` | DuckDuckGo search. **Approval** |
+
+</details>
+
+### When it is not sure
+
+When "the form" could be one of three, the agent asks you on a card with the answers it proposes, instead of
+picking one; let it decide and it says what it assumed. In Visual Studio and VS Code.
+
+<details>
+<summary>Its parameters</summary>
+
+| Tool | Required params | Description |
+|---|---|---|
+| `ask_question` | `question`, `options?` | Ask you ONE question on a card in the chat, with up to 4 proposed answers and a box for your own words — when a request has several plausible meanings the workspace cannot settle ("the form" when there are three). You answer, or let the agent decide; it then says what it assumed. Only you answer; offered only where a card can be drawn (not in a background `/task` nor in an ACP client). Measured: Devstral Small 2 asks on 3 of 5 ambiguous requests and on none of 10 clear ones; Qwen3.8 rarely asks |
+
+</details>
 
 ### `analyze_code` modes
 
