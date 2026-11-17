@@ -104,7 +104,7 @@ internal partial class InferpalToolWindowData
             _imageTextFolder ??= Directory.CreateTempSubdirectory("inferpal-ocr-text-").FullName;
             var path = Path.Combine(_imageTextFolder, "text-read-by-ocr.txt");
             await File.WriteAllTextAsync(path, text, ct);
-            await _vs.Documents().OpenTextDocumentAsync(new Uri(path), ct);
+            OpenInEditor(path, "ImageText.Show", ex => Localization.Strings.MsgError(ex.Message));
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { Diagnostics.Swallow("ImageText.Show", ex); }

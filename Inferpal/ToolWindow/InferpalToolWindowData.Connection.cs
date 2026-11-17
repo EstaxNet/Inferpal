@@ -532,7 +532,7 @@ internal partial class InferpalToolWindowData
                     },
                     act: task => _ = HandleSlashCommandAsync(task.Retry ? $"/task retry {task.Id}" : $"/task {task.Id}",
                                                              CancellationToken.None),
-                    kept: () => { if (notice.Pruned is { } pruned) _ = OpenSettingsPageAsync(pruned.Page, pruned.Section); });
+                    kept: () => { if (notice.Pruned is { } pruned) OpenSettingsPage(pruned.Page, pruned.Section); });
                 ApplyItemTheme(card);
                 // Under a restored question no answer will follow: said there, and kept with the conversation.
                 if (notice.Run is not null && !IsLoading && !_sendStarting

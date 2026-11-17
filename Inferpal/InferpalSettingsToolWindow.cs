@@ -95,22 +95,27 @@ internal class InferpalSettingsToolWindow : VsToolWindow
     }
 
     /// <summary>The settings' "Open Context X-Ray": the chat window, shown, with its panel open.</summary>
-    private async Task OpenXrayAsync()
+    private Task OpenXrayAsync()
     {
-        await Extensibility.Shell().ShowToolWindowAsync<InferpalToolWindow>(activate: true, CancellationToken.None);
-        if (_context.OpenXray is { } open) await open();
+        // Never awaited by the gesture (EditorCalls): the panel opens once the chat window is shown.
+        EditorCalls.Start(ct => Extensibility.Shell().ShowToolWindowAsync<InferpalToolWindow>(activate: true, ct),
+                          "Settings.OpenXray", "showing the chat", then: () => _context.OpenXray?.Invoke() ?? Task.CompletedTask);
+        return Task.CompletedTask;
     }
 
     /// <summary>A project file opens in the editor; a folder (the rules) in the file explorer.</summary>
-    private async Task OpenFileAsync(string path)
+    private Task OpenFileAsync(string path)
     {
         try
         {
             if (System.IO.Directory.Exists(path))
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"\"{path}\"") { UseShellExecute = true })?.Dispose();
             else
-                await Extensibility.Documents().OpenTextDocumentAsync(new Uri(path), CancellationToken.None);
+                // Never awaited by the gesture (EditorCalls): a settings window that waited on the editor froze.
+                EditorCalls.Start(ct => Extensibility.Documents().OpenTextDocumentAsync(new Uri(path), ct),
+                                  "Settings.OpenFile", "opening " + System.IO.Path.GetFileName(path));
         }
         catch (Exception ex) { Diagnostics.Swallow("Settings.OpenFile", ex); }
+        return Task.CompletedTask;
     }
 }

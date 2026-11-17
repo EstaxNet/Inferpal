@@ -160,20 +160,17 @@ internal partial class InferpalToolWindowData
 
     /// <summary>A cut turn's "Open time limits": the settings window, on the page that holds them — the open window shows
     /// it, else the one built next opens on it.</summary>
-    private void OpenTimeLimits() => _ = OpenSettingsPageAsync(
+    private void OpenTimeLimits() => OpenSettingsPage(
         Services.Presentation.CutCard.TimeLimitsPage, Services.Presentation.CutCard.TimeLimitsSection);
 
-    private async Task OpenSettingsPageAsync(string page, string section)
+    private void OpenSettingsPage(string page, string section)
     {
         if (_contextHolder.ShowSettingsPage is { } show) show(page, section);
         else _contextHolder.SettingsPage = (page, section);
-        try { await _vs.Shell().ShowToolWindowAsync<InferpalSettingsToolWindow>(activate: true, CancellationToken.None); }
-        catch (Exception ex)
-        {
-            // Not opened: a later plain open must not land on this page.
-            _contextHolder.SettingsPage = null;
-            Diagnostics.Swallow("Chat.OpenSettingsPage", ex);
-        }
+        // Not opened: a later plain open must not land on this page.
+        EditorCalls.Start(ct => _vs.Shell().ShowToolWindowAsync<InferpalSettingsToolWindow>(activate: true, ct),
+                          "Chat.OpenSettingsPage", "showing the settings",
+                          _ => { _contextHolder.SettingsPage = null; return Task.CompletedTask; });
     }
 
     /// <summary>Builds the chrome's commands; called by the constructor.</summary>
@@ -193,8 +190,8 @@ internal partial class InferpalToolWindowData
         MenuSettingsCommand    = new AsyncCommand(async (_, ct) =>
         {
             await RunOnVMContextAsync(CloseMenus);
-            try { await _vs.Shell().ShowToolWindowAsync<InferpalSettingsToolWindow>(activate: true, ct); }
-            catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("Chat.OpenSettings", ex); }
+            EditorCalls.Start(tok => _vs.Shell().ShowToolWindowAsync<InferpalSettingsToolWindow>(activate: true, tok),
+                              "Chat.OpenSettings", "showing the settings");
         });
         MenuStepModeCommand    = new AsyncCommand(async (_, _) => { await RunOnVMContextAsync(CloseMenus); await ToggleStepModeAsync(); });
         // Both go the way the editor's commands go (the pending prompt): the draft in the composer is kept, and a turn
@@ -742,7 +739,7 @@ internal partial class InferpalToolWindowData
             // Any run's files can be reviewed: a file changed since by a later run is refused its undo, and says so.
             review = () => _ = ReviewRunAsync(runId, null, null);
         }
-        InsertThemed(ChatMessageItem.ResultMsg(summary, undo, review, path => _ = OpenInEditorAsync(path)));
+        InsertThemed(ChatMessageItem.ResultMsg(summary, undo, review, path => OpenInEditor(path, "Chat.OpenResultFile", ex => Strings.MsgError(ex.Message))));
     }
 
     /// <summary>
@@ -1010,18 +1007,20 @@ internal partial class InferpalToolWindowData
         await HandleSlashCommandAsync("/undo-run #" + runId, CancellationToken.None);
     }
 
-    /// <summary>A file of a result bar opens in the editor; one that no longer opens is said, not a dead link.</summary>
-    private async Task OpenInEditorAsync(string path)
+    /// <summary>Opens files in place of the editor, for a test (the window runs there without Visual Studio).</summary>
+    internal Func<Uri, CancellationToken, Task>? OpenDocumentForTests { get; set; }
+
+    /// <summary>
+    /// Opens <paramref name="path"/> in the editor without the gesture that asked waiting for it (<see cref="EditorCalls"/>:
+    /// a chat gesture that waited on the editor froze the chat). A failure is said by <paramref name="saidOnFailure"/> when
+    /// given: the person asked for that file and would otherwise see nothing happen.
+    /// </summary>
+    private void OpenInEditor(string path, string context, Func<Exception, string>? saidOnFailure = null)
     {
-        try
-        {
-            await _vs.Documents().OpenTextDocumentAsync(new Uri(path), CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            Diagnostics.Swallow("Chat.OpenResultFile", ex);
-            await ShowInfoAsync(Strings.MsgError(ex.Message));
-        }
+        var uri = new Uri(path);
+        EditorCalls.Start(ct => OpenDocumentForTests is { } fake ? fake(uri, ct) : _vs.Documents().OpenTextDocumentAsync(uri, ct),
+                          context, "opening " + Path.GetFileName(path),
+                          saidOnFailure is null ? null : ex => ShowInfoAsync(saidOnFailure(ex)));
     }
 
     /// <summary>

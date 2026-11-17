@@ -542,18 +542,10 @@ internal partial class InferpalToolWindowData
 
         if (result.Message is { } message) await ShowInfoAsync(message);
 
+        // The user asked for a plan to be opened: a silent failure reads as "the command did nothing", which is
+        // indistinguishable from an empty plan — said.
         if (result.OpenPath is { } path)
-        {
-            try { await _vs.Documents().OpenTextDocumentAsync(new Uri(path), ct); }
-            catch (OperationCanceledException) { throw; }
-            catch (Exception ex)
-            {
-                // The user asked for a plan to be opened: a silent failure reads as "the command
-                // did nothing", which is indistinguishable from an empty plan.
-                Diagnostics.Swallow($"HandlePlanCommandAsync.Open({path})", ex);
-                await ShowInfoAsync(Strings.PlanOpenFailed(path));
-            }
-        }
+            OpenInEditor(path, "HandlePlanCommandAsync.Open", _ => Strings.PlanOpenFailed(path));
     }
 
     /// <summary>
@@ -617,9 +609,7 @@ internal partial class InferpalToolWindowData
 
             // Opening is a convenience: an editor that refuses the path must not hide a write that
             // happened, nor skip the system-prompt refresh below.
-            try { await _vs.Documents().OpenTextDocumentAsync(new Uri(write.Path), ct); }
-            catch (OperationCanceledException) { throw; }
-            catch (Exception ex) { Diagnostics.Swallow("Onboard.OpenContext", ex); }
+            OpenInEditor(write.Path, "Onboard.OpenContext");
         }
 
         if (result.RefreshSystemPrompt)
@@ -688,8 +678,7 @@ internal partial class InferpalToolWindowData
 
         // The file is created to be edited: opened, as VS Code does. A refused open loses a
         // convenience, not the file.
-        try { await _vs.Documents().OpenTextDocumentAsync(new Uri(path), CancellationToken.None); }
-        catch (Exception ex) { Diagnostics.Swallow("Scaffold.Open", ex); }
+        OpenInEditor(path, "Scaffold.Open");
     }
 
     /// <summary><c>/commit-exec &lt;message&gt;</c> — stage if needed, then commit (shared handler).</summary>

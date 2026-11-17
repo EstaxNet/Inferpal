@@ -356,7 +356,7 @@ public class VsAdapterRegressionTests
     public void AScaffoldedFile_IsOpenedInTheEditor()
     {
         var scaffold = Method(Vm + "InferpalToolWindowData.PromptHistory.cs", "ScaffoldFileAsync");
-        Assert.True(Calls(scaffold, "OpenTextDocumentAsync"),
+        Assert.True(Calls(scaffold, "OpenInEditor"),
             "ScaffoldFileAsync writes the file and never opens it, unlike VS Code.");
     }
 
@@ -372,9 +372,9 @@ public class VsAdapterRegressionTests
         var writeTry = Assert.Single(onboard.DescendantNodes().OfType<TryStatementSyntax>(),
                                      t => Calls(t.Block, "WriteAsync"));
 
-        Assert.False(Calls(writeTry.Block, "OpenTextDocumentAsync"),
+        Assert.False(Calls(writeTry.Block, "OpenInEditor"),
             "Opening context.md shares the write's try: a refused open hides the write and skips the refresh.");
-        Assert.True(Calls(onboard, "OpenTextDocumentAsync"), "witness: the written file is still opened");
+        Assert.True(Calls(onboard, "OpenInEditor"), "witness: the written file is still opened");
     }
 
     /// <summary>

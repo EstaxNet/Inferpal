@@ -315,7 +315,8 @@ public sealed class SettingsWindowTests : IAsyncLifetime
 
         var vm = ConventionCoverageTests.CodeOnly(Path.Combine(ConventionCoverageTests.RepoRoot(),
                                                                "Inferpal", "ToolWindow", "InferpalToolWindowData.SlashCommands.cs"));
-        Assert.Matches(@"case SlashCommandId\.Settings:\s*await _vs\.Shell\(\)\.ShowToolWindowAsync<InferpalSettingsToolWindow>", vm);
+        // Started, never awaited: a Visual Studio that never confirms must not hold the chat (EditorCalls).
+        Assert.Matches(@"case SlashCommandId\.Settings:\s*EditorCalls\.Start\(tok => _vs\.Shell\(\)\.ShowToolWindowAsync<InferpalSettingsToolWindow>", vm);
     }
 
     [Fact]
