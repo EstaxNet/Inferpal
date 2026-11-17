@@ -36,10 +36,12 @@ internal static class ProviderProbe
     /// check a server that was up. A 401/403 wins over a 404, which the probes of the OTHER backends' endpoints
     /// receive legitimately; a 404 alone still says that something answers at that URL.
     /// </summary>
+    /// <param name="perRequest">How long each request may take: <see cref="RequestDeadline"/> unless a test, whose machine
+    /// may be loaded, gives its own.</param>
     public static async Task<(string? Provider, string? Refusal)> DetectWithRefusalAsync(
-        string? baseUrl, string? apiKey, CancellationToken ct)
+        string? baseUrl, string? apiKey, CancellationToken ct, TimeSpan? perRequest = null)
     {
-        var answer = await ExamineAsync(baseUrl, apiKey, ct).ConfigureAwait(false);
+        var answer = await ExamineAsync(baseUrl, apiKey, ct, perRequest: perRequest).ConfigureAwait(false);
         return (answer.Provider, answer.Refusal);
     }
 
@@ -59,8 +61,9 @@ internal static class ProviderProbe
     /// is only guessed: one that drops its packets (a firewall, WSL's mirrored network) costs one timeout instead of four.
     /// ⚠ Never for an address the person gave: over a slow link the first request can time out where the next ones
     /// answer.</param>
+    /// <param name="perRequest">How long each request may take (<see cref="RequestDeadline"/> by default).</param>
     internal static async Task<ProbeAnswer> ExamineAsync(string? baseUrl, string? apiKey, CancellationToken ct,
-                                                         bool askOnce = false)
+                                                         bool askOnce = false, TimeSpan? perRequest = null)
     {
         var root = RootOf(baseUrl);
         if (string.IsNullOrEmpty(root)) return new(null, false, null, false);
@@ -69,7 +72,7 @@ internal static class ProviderProbe
         var answered = false;
         async Task<bool> Probe(string url, string property)
         {
-            var (ok, status, reason) = await ProbeAsync(url, apiKey, property, ct).ConfigureAwait(false);
+            var (ok, status, reason) = await ProbeAsync(url, apiKey, property, perRequest ?? RequestDeadline, ct).ConfigureAwait(false);
             answered |= status is not null;
             if (status is { } s && (int)s is >= 400 and < 500)
             {
@@ -115,14 +118,17 @@ internal static class ProviderProbe
         return b;
     }
 
+    /// <summary>How long one probe request may take: a model server answers its model list at once.</summary>
+    internal static readonly TimeSpan RequestDeadline = TimeSpan.FromSeconds(3);
+
     /// <returns>Whether the endpoint signs the backend, and the status it answered with (<c>null</c>: no answer).</returns>
     private static async Task<(bool Ok, System.Net.HttpStatusCode? Status, string? Reason)> ProbeAsync(
-        string url, string? apiKey, string requiredRootProperty, CancellationToken ct)
+        string url, string? apiKey, string requiredRootProperty, TimeSpan deadline, CancellationToken ct)
     {
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(3));
+            cts.CancelAfter(deadline);
             using var req = new HttpRequestMessage(HttpMethod.Get, url);
             if (!string.IsNullOrWhiteSpace(apiKey))
                 req.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");

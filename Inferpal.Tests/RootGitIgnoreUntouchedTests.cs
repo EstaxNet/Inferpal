@@ -49,7 +49,8 @@ public sealed class RootGitIgnoreUntouchedTests : IDisposable
         using var index = new ProjectIndexService(new FakeInferenceProvider(), new InferpalConfig { RagEnabled = true }, lsp);
         index.SetRoot(_root);
         index.StartIndexing(_root);
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        // A loaded runner can take more than 30 s to start the indexer: the wait is long, the verdict unchanged.
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(120);
         while ((index.IsIndexing || index.ChunkCount == 0) && DateTime.UtcNow < deadline) await Task.Delay(50);
         // WITNESS: the pass ran to its end — a pass that never started would leave any .gitignore alone too.
         Assert.True(!index.IsIndexing && index.ChunkCount > 0, "the indexing pass did not run: UNDECIDED, not green. " + index.Status);

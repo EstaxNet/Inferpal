@@ -408,8 +408,10 @@ internal static class WorkTreeWatch
         if (files.Output is null) return Failed(root, files);
 
         var dirty = new HashSet<string>(StringComparer.Ordinal);
+        var builds = new Dictionary<string, bool>(PathComparer.Default);
         foreach (var entry in Split(status.Output))
-            if (entry.Length > 3) dirty.Add(entry[3..]);   // "XY path"
+            if (entry.Length > 3 && !(entry.StartsWith("??", StringComparison.Ordinal) && IsBuildOutput(root, entry[3..], builds)))
+                dirty.Add(entry[3..]);   // "XY path"
 
         // "<mode> <object> <stage>\t<path>\0" then "  ctime: …\n … size: N\tflags: F\n" and the next entry.
         var index = new Dictionary<string, IndexEntry>(StringComparer.Ordinal);
@@ -432,6 +434,43 @@ internal static class WorkTreeWatch
             }
         }
         return (index, dirty);
+    }
+
+    /// <summary>
+    /// Whether an UNTRACKED path (relative to the work tree, '/'-separated) sits in what a build writes: <c>bin/</c> or
+    /// <c>obj/</c> beside a .NET project, <c>target/</c> beside a <c>Cargo.toml</c>, <c>node_modules/</c>,
+    /// <c>__pycache__/</c>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A repository without a <c>.gitignore</c> for them lists every file a build or a test run writes as untracked:
+    /// taken into the run, they crowded its result bar with assemblies counted in lines, and a large build pushed the call
+    /// past <see cref="MaxDirtyFiles"/>, uncovering it. They are not the person's files: a build makes them again. A file
+    /// git TRACKS in such a folder is still the person's, and is never asked about here.
+    /// </remarks>
+    /// <param name="seen">What each folder was found to be, for the rest of the listing: an <c>obj/</c> lists thousands.</param>
+    internal static bool IsBuildOutput(string root, string relativePath, Dictionary<string, bool>? seen = null)
+    {
+        var parts = relativePath.Split('/');
+        for (var i = 0; i < parts.Length - 1; i++)
+        {
+            var name = parts[i];
+            if (name is "node_modules" or "__pycache__") return true;
+            if (name is not ("bin" or "obj" or "target")) continue;
+            var folder = Path.Combine([root, .. parts[..(i + 1)]]);
+            if (seen is null || !seen.TryGetValue(folder, out var output))
+            {
+                var parent = Path.Combine([root, .. parts[..i]]);
+                try
+                {
+                    output = name == "target" ? File.Exists(Path.Combine(parent, "Cargo.toml"))
+                                             : Directory.EnumerateFiles(parent, "*.*proj").Any(f => f.EndsWith("proj", StringComparison.OrdinalIgnoreCase));
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { output = false; }
+                if (seen is not null) seen[folder] = output;
+            }
+            if (output) return true;
+        }
+        return false;
     }
 
     private static (Dictionary<string, IndexEntry>, HashSet<string>)? Failed(string root, GitBytes result)

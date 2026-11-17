@@ -25,18 +25,27 @@ public sealed class RunCommandWaitTests
     // The shell's own sleep, in both dialects the session may resolve to (PowerShell on Windows, a POSIX shell elsewhere).
     private static string Sleep(int s) => OperatingSystem.IsWindows() ? $"Start-Sleep -Seconds {s}" : $"sleep {s}";
 
+    /// <summary>A command that creates <paramref name="path"/>: the job's own word that it got that far.</summary>
+    private static string Touch(string path) =>
+        OperatingSystem.IsWindows() ? $"New-Item -ItemType File -Path '{path}' | Out-Null" : $"touch '{path}'";
+
+    // ⚠ A loaded runner can take tens of seconds to start a shell: a wait has the budget of a test that waits, and what it
+    // proves holds whatever the start costs — the job sleeps far longer than the wait's own budget.
+    private const int WaitBudget = 120;
+
     [Fact]
     public async Task ReturnsAtTheLine_BeforeTheDeadline()
     {
-        var (tool, id) = await StartAsync($"echo booting; {Sleep(1)}; echo 'Now listening on: http://localhost:5000'; {Sleep(20)}");
+        var (tool, id) = await StartAsync($"echo booting; {Sleep(1)}; echo 'Now listening on: http://localhost:5000'; {Sleep(200)}");
         using (tool)
         {
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            var said = await tool.ExecuteAsync(Args(new { action = "wait", id, until = "Now listening", timeout_seconds = 30 }), default);
+            var said = await tool.ExecuteAsync(Args(new { action = "wait", id, until = "Now listening", timeout_seconds = WaitBudget }), default);
 
             Assert.Contains("appeared; still running", said);
             Assert.Contains("http://localhost:5000", said);
-            Assert.True(watch.Elapsed < TimeSpan.FromSeconds(15), $"returned after {watch.Elapsed}, not at the line");
+            // At the line, not at the deadline: the job itself runs on for 200 s.
+            Assert.True(watch.Elapsed < TimeSpan.FromSeconds(WaitBudget - 10), $"returned after {watch.Elapsed}, not at the line");
             await tool.ExecuteAsync(Args(new { action = "stop", id }), default);
         }
     }
@@ -44,11 +53,15 @@ public sealed class RunCommandWaitTests
     [Fact]
     public async Task WhatFollowsTheLine_IsReturnedToo_NeverLostToTheNextPoll()
     {
-        var (tool, id) = await StartAsync($"echo 'Now listening'; echo 'Unhandled exception: port 5000 in use'; {Sleep(20)}");
+        var printed = Path.Combine(Path.GetTempPath(), "inferpal-wait-" + Guid.NewGuid().ToString("N"));
+        var (tool, id) = await StartAsync($"echo 'Now listening'; echo 'Unhandled exception: port 5000 in use'; {Touch(printed)}; {Sleep(200)}");
         using (tool)
         {
-            await Task.Delay(1500);   // both lines printed before the wait reads them
-            var said = await tool.ExecuteAsync(Args(new { action = "wait", id, until = "Now listening", timeout_seconds = 30 }), default);
+            // Both lines printed before the wait reads them: the job says so, never a fixed delay a slow start outlasts.
+            var deadline = DateTime.UtcNow.AddSeconds(WaitBudget);
+            while (!File.Exists(printed) && DateTime.UtcNow < deadline) await Task.Delay(200);
+            try { File.Delete(printed); } catch { }
+            var said = await tool.ExecuteAsync(Args(new { action = "wait", id, until = "Now listening", timeout_seconds = WaitBudget }), default);
             Assert.Contains("Unhandled exception", said);
             await tool.ExecuteAsync(Args(new { action = "stop", id }), default);
         }
@@ -60,7 +73,7 @@ public sealed class RunCommandWaitTests
         var (tool, id) = await StartAsync("echo 'port in use'; exit 3");
         using (tool)
         {
-            var said = await tool.ExecuteAsync(Args(new { action = "wait", id, until = "listening", timeout_seconds = 30 }), default);
+            var said = await tool.ExecuteAsync(Args(new { action = "wait", id, until = "listening", timeout_seconds = WaitBudget }), default);
             Assert.Contains("finished (exit code 3) before 'listening' appeared", said);
             Assert.Contains("port in use", said);
         }

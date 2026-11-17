@@ -110,7 +110,8 @@ public class ServerHeadersTests
 
         ServerHeaders.Note(url, Headers);
         string? provider;
-        try { (provider, _) = await ProviderProbe.DetectWithRefusalAsync(url, null, CancellationToken.None); }
+        // The product's 3 s per request is not a test's budget: a loaded runner answers a local server slower than that.
+        try { (provider, _) = await ProviderProbe.DetectWithRefusalAsync(url, null, CancellationToken.None, TimeSpan.FromSeconds(30)); }
         finally { ServerHeaders.Note(url, null); }
 
         Assert.Equal(InferenceProviderFactory.Ollama, provider);

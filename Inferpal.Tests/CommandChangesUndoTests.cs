@@ -208,6 +208,31 @@ public class CommandChangesUndoTests : IDisposable
         Assert.Contains(Strings.UndoRunIgnoredNote, report);
     }
 
+    /// <summary>
+    /// ⚠ What a build writes beside a project (<c>obj/</c>, <c>bin/</c>) is not the person's file: in a repository without a
+    /// <c>.gitignore</c> for it, it crowded the run's result bar with assemblies counted in lines. A file git TRACKS there
+    /// is still taken.
+    /// </summary>
+    [Fact]
+    public async Task WhatABuildWrites_IsNotPartOfTheRun_ButATrackedFileThereIs()
+    {
+        var root = Repository();
+        File.WriteAllText(Path.Combine(root, "app.csproj"), "<Project />\n");
+        Directory.CreateDirectory(Path.Combine(root, "bin"));
+        File.WriteAllText(Path.Combine(root, "bin", "keep.txt"), "kept\n");
+        Assert.True(Git(root, "add", "-A") && Git(root, "commit", "-q", "-m", "project"), "the project commit failed: UNDECIDED, not green.");
+        var tools = Registry(root);
+
+        using (tools.History.BeginRunScope())
+            await Run(tools, "mkdir obj; echo built > obj/app.dll; echo fresh > created.txt; echo more >> bin/keep.txt");
+
+        Assert.True(File.Exists(Path.Combine(root, "obj", "app.dll")), "the command did not run: this test is UNDECIDED, not green.");
+        var run = tools.History.Runs[0];
+        Assert.Equal(2, run.FileCount);   // created.txt and the tracked bin/keep.txt; never obj/app.dll
+        Assert.False(WorkTreeWatch.IsBuildOutput(root, "src/obj.txt"));   // a name, not a folder
+        Assert.True(WorkTreeWatch.IsBuildOutput(root, "node_modules/x/index.js"));
+    }
+
     [Fact]
     public async Task AFolderACommandDeleted_ComesBackWithItsFiles()
     {

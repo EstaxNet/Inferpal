@@ -42,7 +42,7 @@ internal static class AcpSetup
         Func<InferpalConfig, CancellationToken, Task<IReadOnlyList<ServerPlace>>>? scan = null,
         Func<ServerInstallOffer>? installOffer = null)
     {
-        probe      ??= ProviderProbe.DetectWithRefusalAsync;
+        probe      ??= (url, key, ct) => ProviderProbe.DetectWithRefusalAsync(url, key, ct);
         listModels ??= static (cfg, token) => InferenceProviderFactory.Create(cfg).ListModelsByKindAsync(token);
         scan       ??= static (cfg, token) => ServerScan.ScanAsync(cfg.BaseUrl, cfg.ApiKey, InferenceProviderFactory.Create, token);
         var config   = (load ?? InferpalConfig.Load)();
