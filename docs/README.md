@@ -58,6 +58,7 @@ flowchart LR
 | [Slash Commands](slash-commands.md) | The full `/command` reference |
 | [Tools](tools.md) | The 41 built-in agent tools, custom shell tools, permission rules, and the approval model |
 | [Mentions](mentions.md) | The `@` typed-context picker |
+| [File formats](file-formats.md) | Every file type Inferpal reads — documents, images, archives, data, logs, code — and what it does with each |
 | [Search & Indexing](search-and-indexing.md) | Semantic codebase search (RAG) and `@Docs` external documentation |
 | [MCP](mcp.md) | Connecting Model Context Protocol servers |
 | [Coming from Continue or Roo Code](coming-from-continue.md) | `/import`: what a Continue or Roo Code configuration brings over, and why the rest stays |

@@ -1134,7 +1134,7 @@ Everything is read on your machine, with nothing installed and nothing sent anyw
 name, a row per line), PowerPoint (each slide in order, its notes after it), OpenDocument, RTF, Jupyter notebooks
 (cells and outputs, not the JSON) and e-mails (`.eml`, `.msg`: headers, body, attachments named). The agent reads them
 too: `read_file` returns a document's text page by page, and `search_in_files` searches it at the same line numbers. A
-scan, or a file too large to read in time, says so instead of sending noise. A file protected by a password asks for it
+scanned PDF is read by OCR; a file too large to read in time says so instead of sending noise. A file protected by a password asks for it
 on a card in the chat; the model gets the text, never the password, and three wrong tries leave the file closed.
 
 **The agent looks at the page it builds** (`view_page`): asked "the Pay button cannot be seen on a phone", it opens the
@@ -1182,7 +1182,7 @@ can ask the model to fix it. Mermaid (MIT) ships with the extension, and nothing
 | VS Code: drag files from your file manager onto the chat with Shift held | One chip per file |
 | *Draw the states of an order as a Mermaid diagram* | The diagram drawn; **Code** shows what the model wrote |
 
-Every rule of what is attached, and how: [Mentions & context](mentions.md).
+Every rule of what is attached, and how: [Mentions & context](mentions.md). Every format read, in one table: [File formats](file-formats.md).
 
 ## 5. Your setup
 
