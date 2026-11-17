@@ -493,8 +493,14 @@ internal static class WindowCapture
         function list(pids) {
           const wanted = pids.split(',').map(Number);
           const out = [];
-          if (!$.CGPreflightScreenCaptureAccess()) out.push('NO_SCREEN_RECORDING');
-          const info = ObjC.castRefToObject($.CGWindowListCopyWindowInfo($.kCGWindowListOptionOnScreenOnly | $.kCGWindowListExcludeDesktopElements, $.kCGNullWindowID));
+          // CoreGraphics' functions of macOS 10.15 are not in the bridge's tables: bound by hand. Not bound, the permission
+          // is judged on the capture itself (an empty file).
+          try {
+            ObjC.bindFunction('CGPreflightScreenCaptureAccess', ['bool', []]);
+            if (!$.CGPreflightScreenCaptureAccess()) out.push('NO_SCREEN_RECORDING');
+          } catch (e) {}
+          // kCGWindowListOptionOnScreenOnly (1) | kCGWindowListExcludeDesktopElements (16), kCGNullWindowID (0).
+          const info = ObjC.castRefToObject($.CGWindowListCopyWindowInfo(1 | 16, 0));
           for (let i = 0; i < info.count; i++) {
             const d = info.objectAtIndex(i);
             const pid = d.objectForKey('kCGWindowOwnerPID').intValue;

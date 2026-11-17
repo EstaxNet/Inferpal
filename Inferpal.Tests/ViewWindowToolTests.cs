@@ -63,8 +63,15 @@ public sealed class ViewWindowToolTests : IDisposable
 
         Assert.Contains($"{id} shows no window after 1 s", said);
         Assert.Contains($"action poll, id {id}", said);
-        // The job's output is left for the model's own poll, never taken by the look.
-        Assert.Contains("listening on 5000", _jobs.Poll(id).NewOutput);
+        // The job's output is left for the model's own poll, never taken by the look (read until it has arrived: a shell
+        // starts more slowly on some machines).
+        var printed = "";
+        for (var i = 0; i < 100 && !printed.Contains("listening on 5000"); i++)
+        {
+            printed += _jobs.Poll(id).NewOutput;
+            if (!printed.Contains("listening on 5000")) await Task.Delay(200);
+        }
+        Assert.Contains("listening on 5000", printed);
     }
 
     [Fact]

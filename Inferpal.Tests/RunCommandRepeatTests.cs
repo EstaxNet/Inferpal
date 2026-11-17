@@ -119,8 +119,9 @@ public sealed class RunCommandRepeatTests : IDisposable
     public async Task RunsThatFail_KeepTheMeasureAFailedCheck_WithTheFailedRunsEnd()
     {
         var tool = new RunCommandTool(new CountingApproval(), new InferpalConfig(), () => _root.FullName);
-        // The warm-up passes and leaves a file; every counted run then fails with code 4.
-        var command = OperatingSystem.IsWindows()
+        // The warm-up passes and leaves a file; every counted run then fails with code 4. In the shell run_command speaks
+        // here: PowerShell wherever pwsh is found (a Linux runner has it), POSIX otherwise.
+        var command = Inferpal.Services.Shell.ShellLauncher.Resolve().Dialect == Inferpal.Services.Shell.ShellDialect.PowerShell
             ? "if (Test-Path ran.txt) { Write-Output 'second time'; exit 4 } else { New-Item ran.txt | Out-Null }"
             : "if [ -f ran.txt ]; then echo 'second time'; exit 4; else touch ran.txt; fi";
 
