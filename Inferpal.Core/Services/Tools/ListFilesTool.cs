@@ -13,7 +13,7 @@ internal class ListFilesTool : ITool
     public string Name => "list_files";
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
-    public string Description => "Recursively lists files in a directory, or the entries of an archive (zip, nupkg, vsix, jar, tar, tar.gz).";
+    public string Description => "Recursively lists files in a directory, or the entries of an archive (zip, nupkg, vsix, jar, 7z, rar, tar and its gz, bz2, xz forms).";
     public object Parameters => new
     {
         type = "object",
@@ -109,7 +109,7 @@ internal class ListFilesTool : ITool
         {
             if (!System.IO.Enumeration.FileSystemName.MatchesWin32Expression(expression, e.Path.AsSpan(e.Path.LastIndexOf('/') + 1), ignoreCase: true)) continue;
             if (Documents.Archives.ExcludedEntry(archive, e.Path)) { hidden++; continue; }
-            kept.Add($"{name}!/{e.Path}  ({e.Size} bytes)");
+            kept.Add(e.Size < 0 ? $"{name}!/{e.Path}  (size not stored)" : $"{name}!/{e.Path}  ({e.Size} bytes)");
         }
         var where = inner.Length > 0 ? $"{name}!/{inner}" : name;
         if (kept.Count == 0) return $"No entry of {where} matches{(hidden > 0 ? $" ({hidden} excluded by the ignore files)" : string.Empty)}.";

@@ -8,8 +8,9 @@ namespace Inferpal.Services.Documents;
 internal sealed record ArchiveEntry(string Path, long Size);
 
 /// <summary>
-/// The archives the agent reads into without extracting them: zip and the formats built on it (nupkg, vsix, jar), tar and
-/// tar.gz. An entry is named <c>logs.zip!/app/log.txt</c>.
+/// The archives the agent reads into without extracting them: zip and the formats built on it (nupkg, vsix, jar), 7z, RAR,
+/// tar with its gz, bz2 and xz forms, and a lone <c>.gz</c>, <c>.bz2</c> or <c>.xz</c> (one entry, the name without the
+/// extension). An entry is named <c>logs.zip!/app/log.txt</c>.
 /// </summary>
 /// <remarks>
 /// ⚠ Nothing is written to disk, and nothing is trusted from a header: an entry is read through a counted copy that stops
@@ -34,14 +35,25 @@ internal static class Archives
     internal static long MaxStreamBytes { get; set; } = 1L << 30;
 
     private static readonly string[] ZipExtensions = [".zip", ".nupkg", ".snupkg", ".vsix", ".jar", ".war", ".apk", ".whl"];
-    private static readonly string[] TarExtensions = [".tar", ".tgz", ".tar.gz"];
+    private static readonly string[] TarExtensions = [".tar", ".tgz", ".tar.gz", ".tbz", ".tbz2", ".tar.bz2", ".txz", ".tar.xz"];
+    private static readonly string[] PackedExtensions = [".7z", ".rar"];
+    private static readonly string[] SingleExtensions = [".gz", ".bz2", ".xz"];
 
-    /// <summary>Whether <paramref name="path"/> names an archive this reader opens, by its extension.</summary>
-    internal static bool Handles(string path)
+    private enum Kind { None, Zip, Tar, Packed, Single }
+
+    /// <summary>The reader for <paramref name="path"/>, by its extension; a tar's compression wins over a lone one.</summary>
+    private static Kind KindOf(string path)
     {
         var name = path.ToLowerInvariant();
-        return ZipExtensions.Any(name.EndsWith) || TarExtensions.Any(name.EndsWith);
+        return ZipExtensions.Any(name.EndsWith) ? Kind.Zip
+             : TarExtensions.Any(name.EndsWith) ? Kind.Tar
+             : PackedExtensions.Any(name.EndsWith) ? Kind.Packed
+             : SingleExtensions.Any(name.EndsWith) ? Kind.Single
+             : Kind.None;
     }
+
+    /// <summary>Whether <paramref name="path"/> names an archive this reader opens, by its extension.</summary>
+    internal static bool Handles(string path) => KindOf(path) != Kind.None;
 
     /// <summary>Splits <c>archive!/inner</c> into the archive's path and the entry's path inside it (with <c>/</c>, no
     /// leading slash); false when <paramref name="path"/> names no entry of an archive.</summary>
@@ -114,6 +126,15 @@ internal static class Archives
     {
         if (password.Length == 0) return false;
         if (Opens(archive) is { } problem) { UnreadableAfterPassword[(archive, entry)] = problem; return null; }
+        if (KindOf(archive) == Kind.Packed)
+        {
+            var packed = ReadPacked(archive, entry, [password], ct);
+            if (packed.Locked || packed.OpenedWith is null) return false;
+            // Kept only once an entry read through its checks: names in clear open with ANY password.
+            if (packed.Bytes is not null) { Passwords.GetOrAdd(archive, _ => new(StringComparer.Ordinal))[password] = 0; return true; }
+            UnreadableAfterPassword[(archive, entry)] = packed.Problem ?? "it could not be read";
+            return null;
+        }
         var outcome = ZipCrypt.Read(archive, entry, password, ct).Outcome;
         if (outcome == ZipCryptOutcome.WrongPassword) return false;
         if (outcome != ZipCryptOutcome.Opened)
@@ -136,6 +157,11 @@ internal static class Archives
     internal static (byte[]? Bytes, string? Problem, bool Locked) Read(string archive, string inner, CancellationToken ct)
     {
         if (Opens(archive) is { } problem) return (null, problem, false);
+        if (KindOf(archive) == Kind.Packed)
+        {
+            var packed = ReadPacked(archive, inner, [null, .. KeptPasswords(archive)], ct);
+            return (packed.Bytes, packed.Problem, packed.Locked);
+        }
         if (ZipExtensions.Any(archive.ToLowerInvariant().EndsWith) && IsEncryptedEntry(archive, inner))
         {
             // What no password can fix is said first: never a card for an entry that would not open anyway.
@@ -179,17 +205,7 @@ internal static class Archives
             {
                 if (name is null || !string.Equals(name, inner, StringComparison.Ordinal)) continue;
                 using var stream = open!();
-                using var copy = new MemoryStream();
-                var buffer = new byte[81920];
-                int read;
-                while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    ct.ThrowIfCancellationRequested();
-                    if (copy.Length + read > MaxEntryBytes)
-                        return (null, $"'{inner}' is larger than {MaxEntryBytes / (1024 * 1024)} MB once read out");
-                    copy.Write(buffer, 0, read);
-                }
-                return (copy.ToArray(), null);
+                return ReadOut(stream, inner, ct);
             }
         }
         catch (Exception ex) when (Unreadable(ex))
@@ -199,10 +215,159 @@ internal static class Archives
         return (null, $"it holds no entry '{inner}' — list its entries with list_files");
     }
 
+    /// <summary>An entry's bytes, counted as they come out of the decoder: never more than <see cref="MaxEntryBytes"/>,
+    /// whatever the archive declares.</summary>
+    private static (byte[]? Bytes, string? Problem) ReadOut(Stream stream, string inner, CancellationToken ct)
+    {
+        using var copy = new MemoryStream();
+        var buffer = new byte[81920];
+        int read;
+        while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (copy.Length + read > MaxEntryBytes)
+                return (null, $"'{inner}' is larger than {MaxEntryBytes / (1024 * 1024)} MB once read out");
+            copy.Write(buffer, 0, read);
+        }
+        return (copy.ToArray(), null);
+    }
+
+    private static IEnumerable<string> KeptPasswords(string archive) =>
+        Passwords.TryGetValue(archive, out var kept) ? kept.Keys : [];
+
+    /// <summary>A 7z or a RAR, opened with the first of <paramref name="passwords"/> that opens it (<c>null</c>: none),
+    /// its file entries read; <c>null</c> when none does, with what the last attempt threw.</summary>
+    /// <remarks>
+    /// ⚠ Opened by the reader its EXTENSION names, never by the signature: a zip renamed <c>.7z</c> would otherwise skip the
+    /// zip's own guards (<see cref="DeclaredZipEntries"/>), and an ARJ or ACE renamed <c>.rar</c> reach decoders this class
+    /// never meant to run. A wrong password on encrypted names throws as damage does: the two are told apart only by which
+    /// password was tried, never by the message.
+    /// </remarks>
+    private static (SharpCompress.Archives.IArchive? Archive, List<SharpCompress.Archives.IArchiveEntry> Entries, string? OpenedWith, Exception? Failure)
+        OpenPacked(string archive, IEnumerable<string?> passwords)
+    {
+        Exception? failure = null;
+        var sevenZip = archive.EndsWith(".7z", StringComparison.OrdinalIgnoreCase);
+        foreach (var password in passwords)
+        {
+            // The stream is ours: an open that throws halfway would otherwise leave the file held.
+            Stream? file = null;
+            SharpCompress.Archives.IArchive? opened = null;
+            try
+            {
+                file = File.OpenRead(archive);
+                var options = new SharpCompress.Readers.ReaderOptions { Password = password, LeaveStreamOpen = false };
+                opened = sevenZip ? SharpCompress.Archives.SevenZip.SevenZipArchive.Open(file, options)
+                                  : SharpCompress.Archives.Rar.RarArchive.Open(file, options);
+                var entries = opened.Entries.Take((int)MaxDeclaredEntries).Where(e => !e.IsDirectory).ToList();
+                return (opened, entries, password ?? string.Empty, null);
+            }
+            catch (Exception ex)
+            {
+                opened?.Dispose();
+                file?.Dispose();
+                if (!Unreadable(ex)) throw;
+                failure = ex;
+            }
+        }
+        return (null, [], null, failure);
+    }
+
+    /// <summary>
+    /// <paramref name="inner"/> of a 7z or a RAR, tried with each of <paramref name="passwords"/> (<c>null</c>: none).
+    /// <c>Locked</c>: it is protected and none of them opened it; <c>OpenedWith</c>: the password the archive opened with
+    /// (empty: none was needed), even when the entry then does not read.
+    /// </summary>
+    private static (byte[]? Bytes, string? Problem, bool Locked, string? OpenedWith) ReadPacked(
+        string archive, string inner, IReadOnlyList<string?> passwords, CancellationToken ct)
+    {
+        string? damage = null;
+        var locked = false;
+        var sevenZip = archive.EndsWith(".7z", StringComparison.OrdinalIgnoreCase);
+        foreach (var password in passwords)
+        {
+            var (opened, entries, openedWith, failure) = OpenPacked(archive, [password]);
+            if (opened is null)
+            {
+                // Without a password, a failure on encrypted names asks for one; with one, it was the wrong one.
+                if (password is not null || failure is SharpCompress.Common.CryptographicException
+                    || failure?.Message.Contains("password", StringComparison.OrdinalIgnoreCase) == true)
+                    locked = true;
+                else damage = $"it could not be read as an archive ({failure?.Message})";
+                continue;
+            }
+            using (opened)
+            {
+                var entry = entries.FirstOrDefault(e => e.Key is { } k && Safe(k) == inner);
+                if (entry is null)
+                    return (null, $"it holds no entry '{inner}' — list its entries with list_files", false, openedWith);
+                if (entry.IsEncrypted && password is null) { locked = true; continue; }
+                if (entry.IsSplitAfter || entry.VolumeIndexFirst != entry.VolumeIndexLast)
+                    return (null, "it continues in another volume of a split archive — open the first volume with 7-Zip", false, openedWith);
+                try
+                {
+                    if (opened.IsSolid)
+                    {
+                        // ⚠ Solid: reaching an entry decodes every one before it. Their DECLARED sizes bound that work, since
+                        // the decoder stops at them; past the budget the reading is refused, never started.
+                        long before = 0;
+                        foreach (var e in entries)
+                        {
+                            if (ReferenceEquals(e, entry)) break;
+                            before += Math.Max(0, e.Size);
+                        }
+                        if (before > MaxStreamBytes)
+                            return (null, $"it is a solid archive where reaching '{inner}' means decoding {before / (1024 * 1024)} MB first — extract it with 7-Zip", false, openedWith);
+                    }
+                    (byte[]? Bytes, string? Problem) plain;
+                    if (sevenZip || !opened.IsSolid)
+                    {
+                        // A 7z entry's own stream decodes its block once, up to it; its reader would decode the block again
+                        // for every entry it skips.
+                        using var stream = entry.OpenEntryStream();
+                        plain = ReadOut(stream, inner, ct);
+                    }
+                    else
+                    {
+                        // A solid RAR opens its entries only in order.
+                        plain = (null, $"it holds no entry '{inner}' — list its entries with list_files");
+                        using var reader = opened.ExtractAllEntries();
+                        while (reader.MoveToNextEntry())
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            if (reader.Entry.IsDirectory || reader.Entry.Key is not { } key || Safe(key) != inner) continue;
+                            using var stream = reader.OpenEntryStream();
+                            plain = ReadOut(stream, inner, ct);
+                            break;
+                        }
+                    }
+                    // ⚠ A 7z checks no CRC on this path, and its AES has no password check: a wrong key decodes to noise.
+                    // The CRC is checked here (a RAR checks its own, keyed when encrypted).
+                    if (sevenZip && plain.Bytes is { } read && entry.Crc != 0 && ZipCrypt.Crc32(read) != (uint)entry.Crc)
+                        throw new InvalidDataException("its content does not match its checksum");
+                    return (plain.Bytes, plain.Problem, false, openedWith);
+                }
+                catch (Exception ex) when (Unreadable(ex))
+                {
+                    // An encrypted entry that does not decode with a password typed: the password is wrong. Otherwise the
+                    // archive is damaged, password or not.
+                    if (password is not null && entry.IsEncrypted) { locked = true; continue; }
+                    damage = $"it could not be read as an archive ({ex.Message})";
+                }
+            }
+        }
+        return locked ? (null, "it is protected by a password", true, null) : (null, damage ?? "it could not be read", false, null);
+    }
+
     /// <summary>What a damaged or hostile archive throws while it is read: said as unreadable, never a crash.</summary>
+    /// <remarks>The decoders of a hostile archive also throw a bare <see cref="Exception"/>, an unimplemented branch, or
+    /// fail to allocate the dictionary its header declares.</remarks>
     private static bool Unreadable(Exception ex) =>
         ex is InvalidDataException or IOException or FormatException or NotSupportedException or UnauthorizedAccessException
-            or ArgumentException or OverflowException;
+            or ArgumentException or OverflowException or InvalidOperationException or IndexOutOfRangeException
+            or NotImplementedException or OutOfMemoryException or NullReferenceException
+            or SharpCompress.Common.SharpCompressException
+        || ex.GetType() == typeof(Exception);
 
     private static string? Opens(string archive)
     {
@@ -265,8 +430,34 @@ internal static class Archives
             }
             yield break;
         }
+        var kind = KindOf(archive);
+        if (kind == Kind.Packed)
+        {
+            var (opened, entries, _, failure) = OpenPacked(archive, [null, .. KeptPasswords(archive)]);
+            if (opened is null)
+                throw failure is SharpCompress.Common.CryptographicException || failure?.Message.Contains("password", StringComparison.OrdinalIgnoreCase) == true
+                    ? new InvalidDataException("even its entry names are protected by a password: reading one of its entries asks for it")
+                    : failure ?? new InvalidDataException("it does not open");
+            using (opened)
+            {
+                foreach (var entry in entries)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (entry.Key is null || Safe(entry.Key) is not { } safeName) { yield return (null, 0, null); continue; }
+                    yield return (safeName, entry.Size, null);   // read by ReadPacked, never through a walk
+                }
+            }
+            yield break;
+        }
         using var file = File.OpenRead(archive);
-        using Stream inflated = lower.EndsWith(".tar") ? file : new GZipStream(file, CompressionMode.Decompress);
+        if (kind == Kind.Single)
+        {
+            // One compressed file: one entry, its name without the extension; its size is known once read out.
+            var inner = Path.GetFileNameWithoutExtension(archive);
+            yield return (inner, -1, open ? () => Decompressing(file, lower) : null);
+            yield break;
+        }
+        using Stream inflated = lower.EndsWith(".tar") ? file : Decompressing(file, lower);
         // Headers (a PAX header may declare gigabytes) and skipped entries are read through this one budget, Stop seen
         // on every read: the archive reader trusts the sizes it is given.
         using var source = new Bounded(inflated, MaxStreamBytes, ct);
@@ -281,6 +472,14 @@ internal static class Archives
             yield return (safeName, entry.Length, open && data is not null ? () => new NonClosing(data) : null);
         }
     }
+
+    /// <summary>The decompressing stream for a <c>.gz</c>, <c>.bz2</c> or <c>.xz</c> (a tar's too), by the name's end.</summary>
+    private static Stream Decompressing(Stream file, string lowerName) =>
+        lowerName.EndsWith(".bz2") || lowerName.EndsWith(".tbz") || lowerName.EndsWith(".tbz2")
+            ? new SharpCompress.Compressors.BZip2.BZip2Stream(file, SharpCompress.Compressors.CompressionMode.Decompress, true)
+        : lowerName.EndsWith(".xz") || lowerName.EndsWith(".txz")
+            ? new SharpCompress.Compressors.Xz.XZStream(file)
+            : new GZipStream(file, CompressionMode.Decompress);
 
     /// <summary>An entry's path with <c>/</c>, without a leading <c>./</c> or <c>/</c> — never a leading dot of the name
     /// itself (<c>.env</c> stays <c>.env</c>).</summary>

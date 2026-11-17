@@ -1152,8 +1152,8 @@ name, a row per line), PowerPoint (each slide in order, its notes after it), Ope
 too: `read_file` returns a document's text page by page, and `search_in_files` searches it at the same line numbers. A
 scanned PDF is read by OCR, on every system; a file too large to read in time says so instead of sending noise. A file
 protected by a password asks for it on a card in the chat (Visual Studio and VS Code); the model gets the text, never
-the password, and three wrong tries leave the file closed. An archive (`.zip`, `.nupkg`, `.tar.gz`…) is read in place,
-entry by entry, never extracted.
+the password, and three wrong tries leave the file closed. An archive (`.zip`, `.7z`, `.rar`, `.tar.gz`, `.tar.xz`…) is read in
+place, entry by entry, never extracted.
 
 **The agent also looks at what it builds** — the page your app serves (`view_page`, captured at a laptop's width and a
 phone's) and the desktop app it launched (`view_window`): see

@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-9127%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-9146%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
   <a href="https://open-vsx.org/extension/EstaxNet/inferpal-vscode"><img src="https://img.shields.io/badge/Open%20VSX-install-C160EF" alt="Install from Open VSX"></a>
@@ -90,7 +90,7 @@ looks at what the code produces, measures it, and reads the files developers dea
 | Run a command several times after a warm-up and compare medians (`run_command` with `repeat`) | A change kept as "faster" only when the gain is beyond the normal variation between runs |
 | Read a log by level and time range (`read_file`) | Only the entries that matter, each with its stack trace and line number |
 | Answer one read-only SQL query on a CSV, TSV or SQLite file (`query_data`) | Counts, filters and sums on files too large to read |
-| Read inside zip files, NuGet packages and tar archives without extracting them | Logs and packages inspected where they are |
+| Read inside zip, 7z, RAR and tar archives and NuGet packages without extracting them | Logs and packages inspected where they are |
 | Change one cell of a Jupyter notebook, then run the notebook on a copy (`edit_notebook`, `run_notebook`) | The failing cell fixed and its output checked, the rest of the notebook untouched |
 | Ask MSBuild where a build setting is defined (`msbuild_property`) | A build error that comes from a setting fixed in the file that sets it |
 | Change a text across many files in one approval (`replace_in_files`) | A rename across a project, all files or none, each backed up first |

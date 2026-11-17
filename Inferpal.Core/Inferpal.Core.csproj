@@ -53,6 +53,8 @@
     <!-- E-mails: .eml by MimeKitLite (MIT, MimeKit without its S/MIME stack), .msg and the other OLE containers by OpenMcdf (MPL-2.0). -->
     <PackageReference Include="MimeKitLite" Version="4.18.0" />
     <PackageReference Include="OpenMcdf" Version="3.3.0" />
+    <!-- 7z, RAR and the .bz2/.xz compressions, read only: MIT, fully managed, no dependency on .NET 8. -->
+    <PackageReference Include="SharpCompress" Version="1.0.0" />
     <!-- Word 97-2003 (.doc): b2xtranslator's text extractor, BSD-3-Clause, measured on Apache POI's sample files. -->
     <PackageReference Include="GHSoftware.WordDocTextExtractor" Version="1.0.4" />
     <!-- OpenDocument protected by LibreOffice 24.2 and later: its key is derived by Argon2id. MIT. -->

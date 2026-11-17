@@ -49,10 +49,13 @@ The agent lists an archive and reads an entry **in place**, without extracting a
 | Kind | Extensions |
 |---|---|
 | Zip and the formats built on it | `.zip`, `.nupkg`, `.snupkg`, `.vsix`, `.jar`, `.war`, `.apk`, `.whl` |
-| Tar | `.tar`, `.tgz`, `.tar.gz` |
+| 7z and RAR | `.7z`, `.rar` (RAR4 and RAR5) |
+| Tar | `.tar`, `.tgz`, `.tar.gz`, `.tbz2`, `.tar.bz2`, `.txz`, `.tar.xz` |
+| One compressed file | `.gz`, `.bz2`, `.xz` (seen as an archive of one entry: `app.log.gz!/app.log`) |
 
-A password-protected zip (ZipCrypto or AES) asks you for its password on a card. 7z and RAR are not read. An archive
-inside an archive is named, not opened. At most 8 MB read out per entry.
+A password-protected zip (ZipCrypto or AES), 7z or RAR asks you for its password on a card; when even the names of a
+7z or a RAR are protected, it is listed once you have typed it. An archive inside an archive is named, not opened, and
+an archive split into volumes (`.part1.rar`, `.7z.001`) is not read. At most 8 MB read out per entry.
 
 ## Data files
 
