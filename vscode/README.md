@@ -157,7 +157,7 @@ Inferpal reads your card's memory when the server runs on this computer: an NVID
 
 ## Official sources
 
-Inferpal is an independent open-source project (GPL v3) by EstaxNet. It has no hosted version and no account, and is not affiliated with any cloud or API provider. The official sources are the [GitHub releases](https://github.com/EstaxNet/Inferpal/releases) and the Marketplace listings for [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs) and [VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode). Questions and bug reports go on [GitHub](https://github.com/EstaxNet/Inferpal/issues).
+Inferpal is an independent open-source project (GPL v3) by EstaxNet. It has no hosted version and no account, and is not affiliated with any cloud or API provider. The official sources are the [GitHub releases](https://github.com/EstaxNet/Inferpal/releases) and the Marketplace listings for [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs) and [VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode), and [Open VSX](https://open-vsx.org/extension/EstaxNet/inferpal-vscode) for VSCodium, Cursor and the other editors built on VS Code. Questions and bug reports go on [GitHub](https://github.com/EstaxNet/Inferpal/issues).
 
 **Finding Inferpal useful?** [A rating](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode&ssr=false#review-details) helps other developers find it.
 

@@ -21,11 +21,12 @@
   <img src="https://img.shields.io/badge/tests-9123%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
+  <a href="https://open-vsx.org/extension/EstaxNet/inferpal-vscode"><img src="https://img.shields.io/badge/Open%20VSX-install-C160EF" alt="Install from Open VSX"></a>
 </p>
 
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><b>Visual Studio 2026 / 2022</b></a> ·
-  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><b>VS Code</b></a> (Windows x64, Linux x64, macOS on Apple Silicon and Intel) ·
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><b>VS Code</b></a> and <a href="https://open-vsx.org/extension/EstaxNet/inferpal-vscode"><b>Open VSX</b></a> (VSCodium, Cursor; Windows x64, Linux x64, macOS on Apple Silicon and Intel) ·
   <a href="docs/acp.md"><b>Zed, JetBrains, Qt Creator, Neovim, Emacs</b></a>
 </p>
 
@@ -203,7 +204,7 @@ start in one and finish in the other:
 ## Get started
 
 1. **Install** from the Marketplace — [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs)
-   or [VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode) — or from the
+   or [VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode), [Open VSX](https://open-vsx.org/extension/EstaxNet/inferpal-vscode) for VSCodium and the other editors built on VS Code — or from the
    [latest release](https://github.com/EstaxNet/Inferpal/releases/latest), which also carries the
    [ACP agent](docs/acp.md) for the other editors.
 2. **Run a model server.** [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai), on this computer or a
@@ -261,7 +262,7 @@ Inferpal is an independent open-source project by EstaxNet. It has no hosted ver
 affiliated with any cloud or API provider. The only official sources are this repository's
 [releases](https://github.com/EstaxNet/Inferpal/releases) and the Marketplace listings for
 [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs) and
-[VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode).
+[VS Code](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode), and [Open VSX](https://open-vsx.org/extension/EstaxNet/inferpal-vscode).
 
 ## Contributing
 

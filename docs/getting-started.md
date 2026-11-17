@@ -69,7 +69,8 @@ Visual Studio-only: [the list](features.md#two-editors-one-engine).
 Install from the
 **[VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode)** —
 search *Inferpal* in the Extensions view, or run
-`code --install-extension EstaxNet.inferpal-vscode`. The backend (`Inferpal.Host`) is
+`code --install-extension EstaxNet.inferpal-vscode`. In VSCodium, Cursor and the other editors built on
+VS Code, install it from **[Open VSX](https://open-vsx.org/extension/EstaxNet/inferpal-vscode)**. The backend (`Inferpal.Host`) is
 bundled and self-contained — no .NET installation required.
 
 <details>
