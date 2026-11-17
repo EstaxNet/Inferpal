@@ -1813,6 +1813,13 @@ internal class FileHistoryService
         if (!Path.IsPathFullyQualified(UserHistoryRoot))
             throw new IOException($"the history is set to be kept outside the project, and this account has no application "
                                   + $"data folder to keep it in (\"{UserHistoryRoot}\")");
+        return Path.Combine(UserHistoryRoot, FolderNameOf(anchor));
+    }
+
+    /// <summary>The name, under a folder of the account, of what Inferpal keeps for the folder <paramref name="anchor"/>: its
+    /// name and a hash of its full path, both by the shared rule for paths.</summary>
+    internal static string FolderNameOf(string anchor)
+    {
         var full  = Path.TrimEndingDirectorySeparator(Tools.PathSanitizer.Resolved(Path.GetFullPath(anchor)));
         var folds = PathComparer.Comparison != StringComparison.Ordinal;
         var hash  = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
@@ -1822,7 +1829,7 @@ internal class FileHistoryService
         var name  = Path.GetFileName(full);
         if (folds) name = name.ToLowerInvariant();
         if (name.Length > 40) name = name[..(char.IsHighSurrogate(name[39]) ? 39 : 40)];   // never half a character
-        return Path.Combine(UserHistoryRoot, name.Length == 0 ? hash : $"{name}-{hash}");
+        return name.Length == 0 ? hash : $"{name}-{hash}";
     }
 
     /// <summary>The file, in a history kept outside the project, that names the folder it belongs to.</summary>
