@@ -26,7 +26,7 @@ Windows, Linux and macOS (Apple Silicon and Intel), with the backend bundled (no
 
 Open the chat from the **Inferpal** icon in the activity bar. Every change waits for your approval.
 
-## New in 1.9: show it what you are looking at
+## Show it what you are looking at
 
 The spec is a PDF, the test data lives in a spreadsheet, the error is on a screenshot. Hand them over as they are.
 
@@ -41,9 +41,9 @@ Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocume
 
 When the model that will answer does not see images, the text written in the image goes instead, read on your computer by Inferpal's OCR; only a picture with no text gets a card that offers one of your server that does, or sending without it. A large image is scaled down to 1920 × 1080 first, and said.
 
-## New in 1.9.1: it looks, it measures, it checks
+## It looks, it measures, it checks
 
-A local model guesses where a developer would go and look. Now the agent goes and looks.
+A local model guesses where a developer would go and look. Inferpal's agent goes and looks.
 
 | You ask | The agent |
 |---|---|
@@ -59,14 +59,14 @@ A local model guesses where a developer would go and look. Now the agent goes an
 | "Rename this key everywhere" | One approval for every file, with the diff, all or nothing (`replace_in_files`) |
 | "Why is this line like this?" | Reads the commits, the blame and what a commit changed (`git_history`) |
 
-A screenshot sent to a model that does not see images is no longer lost: its text goes instead, read on your computer by
+A screenshot sent to a model that does not see images is not lost: its text goes instead, read on your computer by
 Inferpal's own OCR, in all ten of its languages, nothing to install. Scanned PDFs are read too, on Windows, Linux and macOS. When "the form"
 could be one of three, the agent asks you on a card instead of guessing (Visual Studio and VS Code). Calling your app and running a command still ask
 you first; an *Always* covers one local address and port.
 
-Also new, in VS Code and ACP editors: Intel Macs get their own build; an Ollama that is installed but not running is
-no longer offered for install again (on a Mac its app opens on your click, on Linux the card shows the command that
-starts it); and the graphics memory is detected on a Mac, and with an AMD card on Linux.
+In VS Code and ACP editors, on Intel and Apple Silicon Macs alike: an Ollama that is installed but not running is
+never offered for install again (on a Mac its app opens on your click, on Linux the card shows the command that
+starts it), and the graphics memory is detected on a Mac, and with an AMD card on Linux.
 
 ## A failing test? It reads the debugger, not just the log
 

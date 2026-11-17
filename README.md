@@ -41,7 +41,7 @@
 
 ---
 
-## New in 1.9: show it what you are looking at
+## Show it what you are looking at
 
 <table>
   <tr>
@@ -76,11 +76,11 @@ Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocume
 answer does not see images, the text written in the image goes instead, read on your machine by Inferpal's OCR. In Visual Studio, VS Code and ACP editors.
 [How each format is read](docs/mentions.md)
 
-Also new: a model server behind a reverse proxy (Caddy, nginx, Cloudflare Access) is set up from the settings, which show what is sent and to whom. [What's in 1.9.0](https://github.com/EstaxNet/Inferpal/releases/tag/v1.9.0) · [See them in the feature tour](docs/features.md#documents-images-and-diagrams)
+A model server behind a reverse proxy (Caddy, nginx, Cloudflare Access) is set up from the settings, which show what is sent and to whom. [See them in the feature tour](docs/features.md#documents-images-and-diagrams)
 
-## New in 1.9.1: it looks, it measures, it checks
+## It looks, it measures, it checks
 
-A local model guesses where a developer would go and look. Now the agent goes and looks.
+A local model guesses where a developer would go and look. Inferpal's agent goes and looks.
 
 | You ask | The agent |
 |---|---|
@@ -96,14 +96,14 @@ A local model guesses where a developer would go and look. Now the agent goes an
 | "Rename this key everywhere" | One approval for every file, with the diff, all or nothing (`replace_in_files`) |
 | "Why is this line like this?" | Reads the commits, the blame and what a commit changed (`git_history`) |
 
-A screenshot sent to a model that does not see images is no longer lost: its text goes instead, read on your computer by
+A screenshot sent to a model that does not see images is not lost: its text goes instead, read on your computer by
 Inferpal's own OCR, in all ten of its languages, nothing to install. Scanned PDFs are read too, on Windows, Linux and macOS. When "the form"
 could be one of three, the agent asks you on a card instead of guessing (Visual Studio and VS Code). Calling your app and running a command still ask
 you first; an *Always* covers one local address and port.
 
-Also new, in VS Code and ACP editors: Intel Macs get their own build; an Ollama that is installed but not running is
-no longer offered for install again (on a Mac its app opens on your click, on Linux the card shows the command that
-starts it); and the graphics memory is detected on a Mac, and with an AMD card on Linux.
+In VS Code and ACP editors, on Intel and Apple Silicon Macs alike: an Ollama that is installed but not running is
+never offered for install again (on a Mac its app opens on your click, on Linux the card shows the command that
+starts it), and the graphics memory is detected on a Mac, and with an AMD card on Linux.
 
 ## One turn, from question to green build
 
