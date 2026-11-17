@@ -114,6 +114,7 @@ public sealed class UnavailableToolNotOfferedTests : IDisposable
         var (index, config, client) = Unindexed();
         var docs = new DocsIndexService(client, config)
         {
+            DirForTests = Path.Combine(_root, "docs-db"),
             CrawlForTests = (_, _) => Task.FromResult(new List<DocCrawler.Page>
             {
                 new("https://docs.example.com/a", "Retries", "How retries work: every request is retried three times."),

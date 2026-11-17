@@ -41,13 +41,15 @@ internal sealed class DocsDatabase
     internal static string? OverrideDirForTests { get; set; }
 
     /// <summary>The database file, whether it exists or not.</summary>
-    internal static string PathNow() =>
-        IndexHome.Resolve(Path.Combine(OverrideDirForTests ?? BaseDir(), "docs.db"), OldDir is { } old ? Path.Combine(old, "docs.db") : null);
+    internal static string PathNow(string? dir = null) =>
+        dir is not null ? Path.Combine(dir, "docs.db")
+        : IndexHome.Resolve(Path.Combine(OverrideDirForTests ?? BaseDir(), "docs.db"), OldDir is { } old ? Path.Combine(old, "docs.db") : null);
 
-    public DocsDatabase()
+    /// <param name="dir">A folder of the caller's own (a test's service); <c>null</c>: the shared database.</param>
+    public DocsDatabase(string? dir = null)
     {
-        _dbPath = PathNow();
-        Directory.CreateDirectory(OverrideDirForTests ?? BaseDir());
+        _dbPath = PathNow(dir);
+        Directory.CreateDirectory(dir ?? OverrideDirForTests ?? BaseDir());
         EnsureSchema();
     }
 

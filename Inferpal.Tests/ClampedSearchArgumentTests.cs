@@ -36,14 +36,19 @@ namespace Inferpal.Tests;
 /// name and not a scanned rule: one subject and one exemption measure nothing.
 /// </para>
 /// </remarks>
+// Its @Docs tests index a site: into a folder of their own, never the suite's — left there, they offered search_docs to every
+// host test that ran after them, and those tests' requests no longer fitted their window.
+[Collection(DocsDatabaseCollection.Name)]
 public sealed class ClampedSearchArgumentTests : IDisposable
 {
     private readonly string _root;
+    private readonly string _docs = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"docs-{Guid.NewGuid():N}");
     private readonly List<ProjectIndexService> _services = [];
 
     public ClampedSearchArgumentTests()
     {
         TestRagStore.Redirect();
+        DocsDatabase.OverrideDirForTests = _docs;
         _root = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"clamp-{Guid.NewGuid():N}");
         Directory.CreateDirectory(Path.Combine(_root, "src"));
 
@@ -56,7 +61,10 @@ public sealed class ClampedSearchArgumentTests : IDisposable
     public void Dispose()
     {
         foreach (var s in _services) s.Dispose();
+        DocsDatabase.OverrideDirForTests = null;
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         try { Directory.Delete(_root, recursive: true); } catch { }
+        try { Directory.Delete(_docs, recursive: true); } catch { }
     }
 
     private static string SampleClass(string name) => string.Join('\n',

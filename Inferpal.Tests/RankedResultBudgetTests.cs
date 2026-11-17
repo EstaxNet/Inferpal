@@ -93,6 +93,7 @@ public sealed class RankedResultBudgetTests : IDisposable
             Enumerable.Range(0, 20_000).Select(i => i % 30 == 0 ? marker : $"word{i % 17}"));
         var docs = new DocsIndexService(client, config)
         {
+            DirForTests = Path.Combine(_root, "docs-db"),
             CrawlForTests = (_, _) => Task.FromResult(new List<DocCrawler.Page>
             {
                 new("https://docs.example.com/a", "Retries",  Page("retries")),

@@ -51,6 +51,12 @@ internal sealed class DocsIndexService : IDisposable
     /// <summary>Tests replace the network crawl (and its SSRF guard) with pages they control.</summary>
     internal Func<string, CancellationToken, Task<List<DocCrawler.Page>>>? CrawlForTests { get; init; }
 
+    /// <summary>A database folder of this service's own, for a test; <c>null</c>: the shared one.</summary>
+    /// <remarks>⚠ A test that crawls into the shared database leaves its site there for every test after it: each host they
+    /// build then offers search_docs, whose definition no longer lets their requests fit their window — red in the full
+    /// suite, green alone. Crawling for a test with neither this nor <see cref="DocsDatabase.OverrideDirForTests"/> throws.</remarks>
+    internal string? DirForTests { get; init; }
+
     /// <summary>Tests hand in a real crawler over a transport they control — its refusals and time-outs are counted.</summary>
     internal Func<DocCrawler>? CrawlerForTests { get; init; }
 
@@ -157,7 +163,7 @@ internal sealed class DocsIndexService : IDisposable
     {
         try
         {
-            var (sites, chunks) = await ReloadFromDbAsync(new DocsDatabase(), ct);
+            var (sites, chunks) = await ReloadFromDbAsync(new DocsDatabase(DirForTests), ct);
 
             LoadFailure = null;
             Status = chunks.Count > 0
@@ -277,6 +283,8 @@ internal sealed class DocsIndexService : IDisposable
     public async Task AddOrReindexAsync(
         DocSite site, IProgress<string>? progress, CancellationToken ct, Func<DocSite, bool>? stillWanted = null)
     {
+        if (CrawlForTests is not null && DirForTests is null && DocsDatabase.OverrideDirForTests is null)
+            throw new InvalidOperationException("A test that crawls gives its DocsIndexService a folder of its own (DirForTests).");
         // One pass at a time: a source asked for meanwhile waits its turn. Dropped, it stayed at 0 pages after
         // /docs add had announced it and saved it to the settings.
         if (!await _indexLock.WaitAsync(0, ct))
@@ -414,7 +422,7 @@ internal sealed class DocsIndexService : IDisposable
             await IndexHome.MovedAsync(ct).ConfigureAwait(false);
 
             // ── Persist + refresh memory ─────────────────────────────────────────
-            var db = new DocsDatabase();
+            var db = new DocsDatabase(DirForTests);
             await db.SaveSiteAsync(site, pages.Count + keptPages, chunks, ct);
             // ⚠ ONE model is recorded for the whole corpus, and this pass may change it: the OTHER sites' vectors were made
             // by the model recorded before. Left in storage, the reload below compared them to the NEW record and brought
@@ -500,7 +508,7 @@ internal sealed class DocsIndexService : IDisposable
         try
         {
             await IndexHome.MovedAsync(ct).ConfigureAwait(false);
-            var db = new DocsDatabase();
+            var db = new DocsDatabase(DirForTests);
             await db.DeleteSiteAsync(docId, ct);
             await ReloadFromDbAsync(db, ct);
             Status = $"Docs: {ChunkCount} chunks from {_sites.Count} source(s)"

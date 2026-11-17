@@ -35,7 +35,8 @@ internal class ReadFileTool : ITool
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
         "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
-        "lines, and the answer says which start_line to pass to read on.";
+        "lines, and the answer says which start_line to pass to read on. A log reads filtered by level and time (level, since, until): " +
+        "only the matching entries, each line under its number.";
     public object Parameters => new
     {
         type = "object",
@@ -44,12 +45,16 @@ internal class ReadFileTool : ITool
             path       = new { type = "string",  description = "Absolute path to the file." },
             start_line = new { type = "integer", description = "First line to read, 1-based (optional) — to continue a long file." },
             end_line   = new { type = "integer", description = "Last line to read, inclusive (optional)." },
+            level      = new { type = "string",  description = "A log: only entries at this level or above (optional).", @enum = LogFilter.LevelNames },
+            since      = new { type = "string",  description = "A log: only entries at or after this time, \"HH:mm[:ss]\" or \"yyyy-MM-dd HH:mm[:ss]\" (optional)." },
+            until      = new { type = "string",  description = "A log: only entries at or before this time, same forms (optional)." },
         },
         required = new[] { "path" }
     };
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
+        if (LogRefusal(args) is { } refused) return refused;
         var root = _getWorkspaceRoot();
         // A real file whose name holds '!' is that file: the archive reading is for a path that names no file.
         if (Documents.Archives.TrySplit(args.Str("path"), out var archivePart, out var inner)
@@ -104,6 +109,7 @@ internal class ReadFileTool : ITool
             if (extracted is null)
                 return $"'{name}' gives no text to read: {Documents.AttachedDocuments.WhyNoText(path)}.";
             _history?.NoteOpened(path);
+            if (Filtered(args)) return LogPage(extracted, name, args);
             var page = PageOf(extracted, name, args.Int("start_line", 0), args.Int("end_line", 0));
             return page.Text.Length > MaxChars ? Cap(page.Text, name) : page.Text;
         }
@@ -136,6 +142,7 @@ internal class ReadFileTool : ITool
             return $"[{Path.GetFileName(path)} is empty: 0 characters]";
         }
 
+        if (Filtered(args)) return LogPage(content, Path.GetFileName(path), args);
         var shown = PageOf(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
         // ⚠ What the model has SEEN, not what it asked for: a first page or a range is not the file, and write_file lets
         // a whole-file rewrite through only once every line of it has been in front of the model. A read cut at
@@ -195,11 +202,35 @@ internal class ReadFileTool : ITool
             return $"'{shown}' is a binary file ({bytes.Length} bytes): its content is not shown as text.";
         var text = TextFileEncoding.Decode(bytes);
         if (text.Length == 0) return $"[{shown} is empty: 0 characters]";
+        if (Filtered(args)) return LogPage(text, shown, args);
         var page = PageOf(text, shown, args.Int("start_line", 0), args.Int("end_line", 0));
         return page.Text.Length > MaxChars ? Cap(page.Text, shown) : page.Text;
     }
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> ArchiveCards = new(PathComparer.Default);
+
+    // A filter written empty ("level": "") is no filter: the plain read, never a selection of nothing.
+    private static bool Filtered(JsonElement args) =>
+        args.Keyword("level") is not null || args.Trimmed("since") is not null || args.Trimmed("until") is not null;
+
+    /// <summary>A filter that cannot be read, named before anything is read; <c>null</c> when there is none or it reads.</summary>
+    private static string? LogRefusal(JsonElement args)
+    {
+        if (args.Keyword("level") is { } level && !LogFilter.LevelNames.Contains(level))
+            return $"Unknown level '{level}': pass one of {string.Join(", ", LogFilter.LevelNames)}.";
+        foreach (var name in new[] { "since", "until" })
+            if (args.Trimmed(name) is { } moment && LogFilter.ParseMoment(moment) is null)
+                return $"'{moment}' is not a time {name} can take: pass \"HH:mm\", \"HH:mm:ss\" or \"yyyy-MM-dd HH:mm:ss\".";
+        return null;
+    }
+
+    /// <summary>
+    /// A log's entries that match, from <c>start_line</c>. Never noted as read: the model saw a selection, not the file —
+    /// write_file must not take it for the whole.
+    /// </summary>
+    private static string LogPage(string text, string name, JsonElement args) =>
+        LogFilter.Apply(text, name, args.Keyword("level"), LogFilter.ParseMoment(args.Trimmed("since")),
+                        LogFilter.ParseMoment(args.Trimmed("until")), args.Int("start_line", 0), args.Int("end_line", 0), PageChars);
 
     /// <summary>Pages of a scan shown when no OCR read it.</summary>
     internal const int MaxScanPictures = 5;
