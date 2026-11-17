@@ -60,7 +60,7 @@ internal static class ToolImages
             if (messages.Count > 0 && messages[^1].Role == "tool")
                 messages.Add(new ChatMessageDto("assistant", "Looking at the image(s).") { IsScaffolding = true });
             messages.Add(new ChatMessageDto("user",
-                $"[The image(s) read_file read: {names}. They are the files you asked to read — answer from them; do not read them again.]")
+                $"[The image(s) your tool calls gave: {names}. They are what you asked to see — answer from them; do not ask for them again.]")
             {
                 IsScaffolding = true,
                 Images = [.. images.Select(i => i.Base64)],
@@ -82,14 +82,14 @@ internal static class ToolImages
         if (read.Count > 0)
         {
             messages.Add(new ChatMessageDto("user",
-                $"[read_file read the image(s) {names}; they were not sent as pictures: {why}. Their text follows instead.]\n\n"
+                $"[Your tool calls gave the image(s) {names}; they were not sent as pictures: {why}. Their text follows instead.]\n\n"
               + string.Join("\n\n", read)
               + (unread.Count > 0 ? $"\n\n[No text was found in {string.Join(", ", unread)}: do not guess what it shows.]" : string.Empty))
             { IsScaffolding = true });
             return;
         }
         messages.Add(new ChatMessageDto("user",
-            $"[read_file read the image(s) {names}, but they were not sent: {why}. Do not guess what they show. Tell the user: "
+            $"[Your tool calls gave the image(s) {names}, but they were not sent: {why}. Do not guess what they show. Tell the user: "
           + "they can describe the image, or choose a model that reads images. To read the words written in it (an error, a value), "
           + "call the ocr tool on it.]") { IsScaffolding = true });
     }

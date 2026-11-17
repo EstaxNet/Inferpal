@@ -377,9 +377,12 @@ public partial class HostServerTests
     public async Task AConversationCompactedBeforeARestart_ComesBackCompacted_AndAsksForNoNewSummary()
     {
         var root = Directory.CreateTempSubdirectory("inferpal-summary-kept-").FullName;
+        // A window the compacted conversation fits in with room to spare once the tool definitions are added (about half of
+        // 8 192 tokens, and more with each tool): the question is whether a restart asks for a summary again, not whether
+        // the tools still fit.
         static void Config(InferpalConfig cfg)
         {
-            cfg.ContextWindowSize = 8_192; cfg.CompactionEnabled = true; cfg.ContextWindowKeepTurns = 2;
+            cfg.ContextWindowSize = 12_288; cfg.CompactionEnabled = true; cfg.ContextWindowKeepTurns = 2;
             cfg.KvCacheAnchorMessages = 2; cfg.OodaTurnThreshold = 0;
         }
         var screen = new List<object>();

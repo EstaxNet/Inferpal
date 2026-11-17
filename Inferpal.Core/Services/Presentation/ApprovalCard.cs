@@ -166,7 +166,8 @@ internal static class ApprovalCard
             }
         }
 
-        if (prompt.ToolName == "http_request" && HttpCard(prompt, preview) is { } http) return http;
+        // view_page on a served page asks with http_request's subject and agreement: the same card.
+        if (prompt.ToolName is "http_request" or "view_page" && HttpCard(prompt, preview) is { } http) return http;
 
         var card = new ApprovalCardModel(title, subject, meta, preview, more > 0 ? Strings.ApprovalMoreLines(more) : string.Empty,
                                      // What "Always" lasts: across solutions in one Visual Studio; until the host restarts elsewhere.

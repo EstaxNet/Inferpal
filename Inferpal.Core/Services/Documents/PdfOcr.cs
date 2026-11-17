@@ -91,7 +91,34 @@ internal static class PdfOcr
         if (run.Exit == 3)
             return new(OcrStatus.Unavailable, string.Empty, "Windows OCR", 0, 0,
                        "Windows has no OCR language installed: the person can add a language with its text recognition in Windows' language settings");
+        if (File.Exists(output)) File.WriteAllText(output, WindowsPages(File.ReadAllLines(output, Encoding.UTF8)), Encoding.UTF8);
         return Finish(run, output, "Windows OCR");
+    }
+
+    /// <summary>The Windows script's pages — one JSON line each, the boxes of its lines — as text, a table's in rows by
+    /// <see cref="Rows"/>: one reader for both engines, the page's skew taken out (an OCR that does not straighten its boxes,
+    /// as Windows Server's, scattered a table's columns).</summary>
+    internal static string WindowsPages(IEnumerable<string> pages)
+    {
+        var text = new StringBuilder();
+        foreach (var page in pages.Where(p => p.TrimStart().StartsWith('{')))
+        {
+            // A run stopped at the budget may leave its last page half written: the pages before it are kept.
+            System.Text.Json.JsonDocument json;
+            try { json = System.Text.Json.JsonDocument.Parse(page); }
+            catch (System.Text.Json.JsonException) { continue; }
+            using var _ = json;
+            var width = (float)json.RootElement.GetProperty("width").GetDouble();
+            var lines = new List<OcrLine>();
+            if (json.RootElement.TryGetProperty("lines", out var array) && array.ValueKind == System.Text.Json.JsonValueKind.Array)
+                foreach (var l in array.EnumerateArray())
+                    lines.Add(new OcrLine(l.GetProperty("t").GetString() ?? string.Empty, (float)l.GetProperty("x").GetDouble(),
+                                          (float)l.GetProperty("w").GetDouble(), (float)l.GetProperty("m").GetDouble(),
+                                          (float)l.GetProperty("h").GetDouble(), (float)l.GetProperty("s").GetDouble()));
+            if (text.Length > 0) text.Append('\n');
+            text.Append(Rows(lines, width));
+        }
+        return text.ToString();
     }
 
     // ── Every system: SimdPaddleOCR (pure C#, no native code) ──
@@ -335,7 +362,8 @@ internal static class PdfOcr
     }
 
     /// <summary>
-    /// The page's lines in the OCR's order, a table's put back in rows (the rule of the Windows script, see the remarks): short
+    /// The page's lines in the OCR's order, a table's put back in rows (both engines' one reader: Paddle's lines and the Windows
+    /// script's boxes, <see cref="WindowsPages"/>): short
     /// lines (under 35 % of the page) that share a row once the page's skew is taken out — read on its long lines only, the
     /// detector draws short ones flat — joined " | " left to right, when 3 rows or more of 2 cells or more follow each other
     /// with no other line between them.
@@ -480,46 +508,20 @@ for ($i = 0; $i -lt $count; $i++) {
     $result = Await ($engine.RecognizeAsync($bitmap)) ([Windows.Media.Ocr.OcrResult])
     $pixelWidth = $bitmap.PixelWidth
     $bitmap.Dispose(); $stream.Dispose(); $page.Dispose()
+    # Each line's box and slope, one JSON line per page: the rows are rebuilt by the product's one reader (Rows, in C#), which
+    # takes the page's skew out first.
     $boxes = @($result.Lines | ForEach-Object {
-        $l = $_; $rects = $l.Words | ForEach-Object { $_.BoundingRect }
+        $words = @($_.Words | Sort-Object { $_.BoundingRect.X })
+        $rects = $words | ForEach-Object { $_.BoundingRect }
         $x0 = ($rects | ForEach-Object { $_.X } | Measure-Object -Minimum).Minimum
         $x1 = ($rects | ForEach-Object { $_.X + $_.Width } | Measure-Object -Maximum).Maximum
-        [pscustomobject]@{ Text = $l.Text; X = $x0; W = $x1 - $x0
-                           Mid = ($rects | ForEach-Object { $_.Y + $_.Height / 2 } | Measure-Object -Average).Average
-                           H = ($rects | ForEach-Object { $_.Height } | Measure-Object -Average).Average } })
-    # Rows of short lines; a run of rows is a table when it holds 3 rows of 2 cells or more, and a line outside it between
-    # two rows ends the run (a header row far above the items, two address blocks side by side, are no table).
-    $rowOf = @{}
-    $rows = New-Object System.Collections.ArrayList
-    foreach ($bx in ($boxes | Where-Object { $_.W -lt 0.35 * $pixelWidth } | Sort-Object Mid)) {
-        $row = $rows | Where-Object { [Math]::Abs($_.Mid - $bx.Mid) -lt $bx.H / 2 } | Select-Object -First 1
-        if ($null -eq $row) { $row = [pscustomobject]@{ Mid = $bx.Mid; Cells = New-Object System.Collections.ArrayList }; [void]$rows.Add($row) }
-        [void]$row.Cells.Add($bx); $rowOf[$bx] = $row
-    }
-    $sorted = @($rows | Where-Object { $_.Cells.Count -ge 2 } | Sort-Object Mid)
-    $runs = New-Object System.Collections.ArrayList
-    $current = New-Object System.Collections.ArrayList
-    foreach ($row in $sorted) {
-        if ($current.Count -gt 0) {
-            $low = $current[$current.Count - 1].Mid; $high = $row.Mid
-            $between = @($boxes | Where-Object { $_.Mid -gt $low + $_.H / 2 -and $_.Mid -lt $high - $_.H / 2 -and -not ($rowOf.ContainsKey($_) -and $rowOf[$_].Cells.Count -ge 2) })
-            if ($between.Count -gt 0) { [void]$runs.Add($current); $current = New-Object System.Collections.ArrayList }
-        }
-        [void]$current.Add($row)
-    }
-    if ($current.Count -gt 0) { [void]$runs.Add($current) }
-    $tableOf = @{}
-    foreach ($run in $runs) { if ($run.Count -ge 3) { foreach ($row in $run) { foreach ($c in $row.Cells) { $tableOf[$c] = $run } } } }
-    $done = @{}
-    $text = New-Object System.Text.StringBuilder
-    if ($i -gt 0) { [void]$text.AppendLine() }
-    foreach ($bx in $boxes) {
-        if (-not $tableOf.ContainsKey($bx)) { [void]$text.AppendLine($bx.Text); continue }
-        $run = $tableOf[$bx]
-        if ($done.ContainsKey($run)) { continue }
-        foreach ($row in $run) { [void]$text.AppendLine((($row.Cells | Sort-Object X | ForEach-Object { $_.Text }) -join ' | ')) }
-        $done[$run] = $true
-    }
+        $first = $words[0].BoundingRect; $last = $words[$words.Count - 1].BoundingRect
+        $run = ($last.X + $last.Width / 2) - ($first.X + $first.Width / 2)
+        $slope = if ($words.Count -ge 2 -and $run -gt 0) { (($last.Y + $last.Height / 2) - ($first.Y + $first.Height / 2)) / $run } else { 0 }
+        [ordered]@{ t = $_.Text; x = $x0; w = $x1 - $x0
+                    m = ($rects | ForEach-Object { $_.Y + $_.Height / 2 } | Measure-Object -Average).Average
+                    h = ($rects | ForEach-Object { $_.Height } | Measure-Object -Average).Average; s = $slope } })
+    $text = (ConvertTo-Json -Compress -Depth 4 -InputObject ([ordered]@{ width = $pixelWidth; lines = $boxes })) + "`n"
     [IO.File]::AppendAllText($Out, $text.ToString(), $utf8)
     "PAGE $($i + 1)"
 }

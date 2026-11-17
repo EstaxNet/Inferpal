@@ -110,6 +110,7 @@ public sealed class ToolEffectTests : IDisposable
         {
             // Asking: the approval card, the editor's write gate, or the consent to build or test the workspace.
             var asks = code.Contains("RequestApprovalAsync(", StringComparison.Ordinal)
+                    || code.Contains("RequestScopedApprovalAsync(", StringComparison.Ordinal)
                     || code.Contains("RequestBatchApprovalAsync(", StringComparison.Ordinal)
                     || code.Contains("EditorWriteGate.AuthorizeAsync(", StringComparison.Ordinal)
                     || code.Contains("_consent.RefusalAsync(", StringComparison.Ordinal);

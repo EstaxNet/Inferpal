@@ -41,7 +41,7 @@ internal sealed class ModeTools
             "restore_file", "update_memory",
         ],
         ["execute"] = ["run_command", "run_tests", "debug_control", "debug_inspect", "run_notebook"],
-        ["web"]     = ["fetch_url", "web_search", "http_request"],
+        ["web"]     = ["fetch_url", "web_search", "http_request", "view_page"],
     };
 
     /// <summary>The tool that searches the MCP tools offered on demand: kept with any MCP grant.</summary>

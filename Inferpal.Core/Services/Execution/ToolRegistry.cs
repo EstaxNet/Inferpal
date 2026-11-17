@@ -147,6 +147,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new RunNotebookTool(codeConsent, () => indexService.RootDir, overlay));
         Register(new FetchUrlTool(approval));
         Register(new HttpRequestTool(approval));
+        Register(new ViewPageTool(approval, () => indexService.RootDir, _readImages));
         Register(new WebSearchTool(approval));
         Register(new GetSolutionInfoTool(editor, () => indexService.RootDir));
         Register(new GetOpenEditorsTool(editor));

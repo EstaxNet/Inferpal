@@ -3,7 +3,7 @@
 This page shows what the agent can do on your machine and what it must ask you first. In short: reading never asks; a
 write, a command or a web call waits for your answer on a card, unless a rule of yours already decides.
 
-The agent completes tasks by calling tools. There are **39 built-in tools**, plus any
+The agent completes tasks by calling tools. There are **40 built-in tools**, plus any
 **user-defined shell tools** and any tools exposed by connected **[MCP](mcp.md) servers**.
 
 ## What the agent can do, and what asks first
@@ -16,6 +16,7 @@ The agent completes tasks by calling tools. There are **39 built-in tools**, plu
 | Build and test | `get_diagnostics`, `run_tests`, `msbuild_property` | The first time in a workspace |
 | Go online | `fetch_url`, `web_search` | Yes |
 | Call an app or API it runs | `http_request` | Yes; for a local address, once per address if you answer *Always* |
+| Look at the page it builds | `view_page` | Yes; once per local address, the same agreement as `http_request` |
 | Use the debugger | `get_debugger_state`, `debug_control`, `debug_inspect` | To start your program, and to evaluate an expression |
 | Use tools you added | [Custom shell tools](#custom-shell-tools), [MCP tools](#mcp-tools) | Yes |
 
@@ -53,7 +54,7 @@ card:
 
 - Gated tools: `write_file`, `apply_diff`, `apply_edits`, `delete_file`, `run_command`,
   `rename_symbol`, `restore_file`, `update_memory`, `insert_at_cursor`, `replace_selection`,
-  `fetch_url`, `web_search`, `http_request`, `debug_control` `start`, `debug_inspect` `evaluate`, custom shell
+  `fetch_url`, `web_search`, `http_request`, `view_page`, `debug_control` `start`, `debug_inspect` `evaluate`, custom shell
   tools, and every MCP tool call.
 
 `fetch_url` and `web_search` are gated because they are the outbound channel of the *lethal
@@ -67,6 +68,10 @@ address, your local network included, is asked call by call with no *Always*, un
 full: `allow http_request ^GET https://staging\.example\.com:443$` (the rule reads `METHOD scheme://host:port`, and
 must match all of it). No redirect is followed, and headers that would reroute the request (`Host`, `Upgrade`,
 `Proxy-*`…) are refused.
+
+`view_page` opens a page of this machine in a browser whose network is cut, and its scripts run — they may call your
+app as a request would: it asks like `http_request`, and an *Always* given to one tool for a local address covers the
+other. An HTML file of the workspace is asked once per workspace.
 
 </details>
 
@@ -434,6 +439,7 @@ Every tool by what it does, for when you write a rule or a prompt. A `?` marks a
 | Tool | Required params | Description |
 |---|---|---|
 | `http_request` | `url`, `method?`, `headers?`, `body?`, `wait_seconds?`, `timeout_seconds?` | Send one HTTP request — any method — and read the status, headers and body (1 MB read at most, the cut said): to call the app you just started and read its 500. **Approval** on every call; *Always* for one local address and port; any other address asked each time unless a rule of yours names it. No redirect followed; `wait_seconds` (local only) keeps trying while the server starts |
+| `view_page` | `url?`, `path?`, `width?` | Look at a page of the app you build as a browser renders it — served on this machine (`http://localhost:5173/cart`) or an HTML file of the workspace — captured at 1280 px and at 390 px (a phone), or at the one width you give: what the source does not show (a button that cannot be seen, a layout that overflows on a phone, an element over another, a total cut off). A model that sees gets the pictures; one that does not gets the text read on them by OCR. The browser: WebKit on macOS (built in), Edge on Windows, Firefox on Linux, else any Chrome, Chromium, Brave or Firefox found; none → it says what to install. The page cannot reach the Internet (its fonts or images from outside are missing on purpose). **Approval**, as `http_request` |
 | `fetch_url` | `url`, `max_chars?`, `start_char?` | Fetch a page as text; a long one comes back in windows, each naming the `start_char` to read on. **Approval**, SSRF-guarded |
 | `web_search` | `query`, `max_results?` | DuckDuckGo search. **Approval** |
 

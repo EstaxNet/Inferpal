@@ -37,10 +37,10 @@ internal sealed record DocumentExtraction(string Text, int Pages, int PagesWitho
 internal static class DocumentText
 {
     /// <summary>
-    /// <paramref name="read"/> on a thread of its own, waited for at most <see cref="Deadline"/> (and the person's Stop): past
+    /// <paramref name="read"/> on a thread of its own, waited for at most <paramref name="limit"/> (and the person's Stop): past
     /// it the caller goes on, said as too slow, and the thread finishes alone — bounded by <see cref="MaxBytes"/>.
     /// </summary>
-    private static DocumentExtraction RunWithin(Func<DocumentExtraction> read, CancellationToken ct)
+    private static DocumentExtraction RunWithin(Func<DocumentExtraction> read, TimeSpan limit, CancellationToken ct)
     {
         DocumentExtraction? result = null;
         Exception? failure = null;
@@ -50,7 +50,7 @@ internal static class DocumentText
             catch (Exception ex) { failure = ex; }
         }) { IsBackground = true, Name = "Inferpal document reader" };
         worker.Start();
-        var until = DateTime.UtcNow + Deadline + TimeSpan.FromMilliseconds(250);
+        var until = DateTime.UtcNow + limit + TimeSpan.FromMilliseconds(250);
         while (!worker.Join(50))
         {
             ct.ThrowIfCancellationRequested();
@@ -73,6 +73,11 @@ internal static class DocumentText
 
     /// <summary>How long one document may take to read.</summary>
     internal static readonly TimeSpan Deadline = TimeSpan.FromSeconds(2);
+
+    /// <summary>How long a document the person typed the password of may take: its key derivation alone (LibreOffice's
+    /// Argon2id, 64 MiB and 3 passes; Office's 100 000 hash rounds) can pass <see cref="Deadline"/> on a slow machine, and the
+    /// person is waiting for this file, not reading many.</summary>
+    internal static readonly TimeSpan PasswordDeadline = TimeSpan.FromSeconds(10);
 
     /// <summary>The largest document read, in bytes: a PDF holds images, so the attachment limit of a text file is too small.</summary>
     internal const long MaxBytes = 20L * 1024 * 1024;
@@ -109,7 +114,8 @@ internal static class DocumentText
     internal static DocumentExtraction Extract(byte[] bytes, string extension, CancellationToken ct = default, string? password = null)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        deadline.CancelAfter(Deadline);
+        var limit = password is null ? Deadline : PasswordDeadline;
+        deadline.CancelAfter(limit);
         // ⚠ The content before the extension: WordPad and many exports save RTF as .doc, web apps save an HTML or text table
         // as .xls. Read by the compound-file readers they were "damaged"; they are read as what they are.
         var kind = extension.ToLowerInvariant();
@@ -136,7 +142,7 @@ internal static class DocumentText
                 ".doc" => DocText.Extract(bytes, deadline.Token, password),
                 ".eml" or ".msg" => EmailText.Extract(bytes, kind, deadline.Token),
                 _       => PdfText.Extract(bytes, deadline.Token, password),
-            }, ct);
+            }, limit, ct);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return new(string.Empty, 0, 0, DocumentProblem.TooSlow); }
         catch (DocumentLimitException ex)

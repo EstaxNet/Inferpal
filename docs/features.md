@@ -207,7 +207,7 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
 - **Three modes** — **Chat** (tools, no plan), **Agent** (plan, act, observe) and **Plan** (`/plan`: read-only, it
   proposes and changes nothing). `/plan save` turns a plan into a committable `.inferpal/plans/` file. Beside them,
   the modes found for the workspace: [Modes](configuration.md#modes).
-- **39 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
+- **40 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
   Independent read-only calls run in parallel; `/tools off <tool>` takes one away from the model.
 - **Step by step** — `/agent-step` pauses before each tool call; **▶ Resume** goes on.
 - **Long runs you can leave** — the machine stays awake while the model works, a card left unanswered flashes the
@@ -1105,6 +1105,11 @@ name, a row per line), PowerPoint (each slide in order, its notes after it), Ope
 too: `read_file` returns a document's text page by page, and `search_in_files` searches it at the same line numbers. A
 scan, or a file too large to read in time, says so instead of sending noise. A file protected by a password asks for it
 on a card in the chat; the model gets the text, never the password, and three wrong tries leave the file closed.
+
+**The agent looks at the page it builds** (`view_page`): asked "the Pay button cannot be seen on a phone", it opens the
+page your app serves on this machine — or an HTML file of the workspace — in a browser cut off from the network, captures
+it at a laptop's width and a phone's, and sees what the source does not show: a button white on white, a block wider than
+a phone, a banner over a form. On Windows, Linux and macOS (WebKit, built in); it asks first, like a request to your app.
 
 **Images go as images**, to a model that sees them (Qwen3.8, Ornith, Gemma 4, on LM Studio or Ollama). A large one is
 scaled down to 1920 × 1080 first, and said. When the model that will answer does not see images, the text written in the
