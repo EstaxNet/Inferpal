@@ -162,7 +162,8 @@ public sealed class GitHistoryToolTests : IDisposable
         var report = await RunAsync(new { path = "src/my file.cs", start_line = 2, end_line = 2 });
 
         Assert.Contains("int timeout = 30;", report);
-        Assert.DoesNotContain("99", report);
+        // The line, never a bare "99": the report also shows the commit's hash, which holds "99" by chance.
+        Assert.DoesNotContain("timeout = 99", report);
         Assert.Contains("uncommitted changes are not shown", report);
     }
 
