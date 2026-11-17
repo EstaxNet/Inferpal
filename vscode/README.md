@@ -59,14 +59,11 @@ A local model guesses where a developer would go and look. Inferpal's agent goes
 | "Rename this key everywhere" | One approval for every file, with the diff, all or nothing (`replace_in_files`) |
 | "Why is this line like this?" | Reads the commits, the blame and what a commit changed (`git_history`) |
 
-A screenshot sent to a model that does not see images is not lost: its text goes instead, read on your computer by
-Inferpal's own OCR, in all ten of its languages, nothing to install. Scanned PDFs are read too, on Windows, Linux and macOS. When "the form"
-could be one of three, the agent asks you on a card instead of guessing (Visual Studio and VS Code). Calling your app and running a command still ask
-you first; an *Always* covers one local address and port.
-
-In VS Code and ACP editors, on Intel and Apple Silicon Macs alike: an Ollama that is installed but not running is
-never offered for install again (on a Mac its app opens on your click, on Linux the card shows the command that
-starts it), and the graphics memory is detected on a Mac, and with an AMD card on Linux.
+The text of a screenshot or a scanned PDF is read by Inferpal's own OCR, in its ten languages, on Windows, Linux and
+macOS, with nothing to install. When "the form" could be one of three, the agent asks you on a card instead of
+guessing. Calling your app and running a command still ask you first; an *Always* covers one local address and port.
+Looking at a desktop app's window works on Windows, on macOS once you allow screen recording and accessibility, and
+on Linux under X11 (a native Wayland window gives its controls, not its picture).
 
 ## A failing test? It reads the debugger, not just the log
 
@@ -101,13 +98,15 @@ Inferpal runs whatever model your server holds, and a bigger model makes it bett
 
 These were measured on one 24 GB card (LM Studio, 32K context), with its free memory cut to stand in for the smaller cards. Each model ran once, so a gap of a task or two means nothing. We could not test larger cards, multi-GPU machines, 70B-class models or a Mac with lots of memory, for lack of budget and infrastructure rather than interest, so we recommend nothing above 24 GB. `/bench` measures the models you have, on your machine. See [every figure](https://github.com/EstaxNet/Inferpal/blob/v1.9.1/docs/models.md).
 
+Inferpal reads your card's memory when the server runs on this computer: an NVIDIA card, an AMD card on Linux, or an Apple Silicon Mac's unified memory. Otherwise, give it in *Settings → Server and models* or with `/hardware <gb>`.
+
 ---
 
 ## Get started
 
 1. **Run a model server.** [Ollama](https://ollama.com) and [LM Studio](https://lmstudio.ai) are both free, and can run on this computer or on a machine you own. On a 24 GB card: `ollama pull qwen3.8`.
 2. **Open your project folder** in a trusted workspace.
-3. **Open Inferpal** from its activity-bar icon. The first time, it looks for a model server on this computer and proposes the models that fit your card: **Start with these**. For a server on another machine, type its address on the same card. On Ollama without a chat model, the card downloads one for you. With no server at all on Windows, the card can install Ollama for your account, showing the `winget` command first. `/setup` brings the card back.
+3. **Open Inferpal** from its activity-bar icon. The first time, it looks for a model server on this computer and proposes the models that fit your card: **Start with these**. For a server on another machine, type its address on the same card. On Ollama without a chat model, the card downloads one for you. An Ollama installed but not running is started from the card (on Linux, the card shows the command that starts it). With no server at all, the card installs Ollama for your account on Windows, showing the `winget` command first, and shows the install command on macOS and Linux. `/setup` brings the card back.
 4. **Ask a question, or right-click a failing test.**
 
 **Coming from Continue or Roo Code?** `/import continue` or `/import roo` brings over your model server, models, rules, prompts, Roo's custom modes, MCP servers and documentation sites. A card shows what it will take, and nothing is written until you apply. See [Coming from Continue or Roo Code](https://github.com/EstaxNet/Inferpal/blob/v1.9.1/docs/coming-from-continue.md).

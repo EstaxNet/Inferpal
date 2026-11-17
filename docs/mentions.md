@@ -16,13 +16,22 @@ then. A path typed after `@` in VS Code is read when you send.
   <br><sub>A chip is what goes with your question. These dashed ones were found while typing; a mention adds one you chose.</sub>
 </p>
 
-**Try it**
+**You want → type this**
 
-| Type | What happens |
+| You want the model to see | Type |
 |---|---|
-| `@diff what could break in what I changed?` | The current `git diff` goes with the question |
-| `@problems fix these` | The current errors go with it |
-| `@file`, then pick a file | A chip holds the file, and it goes with your question |
+| A file | `@file`, then pick it (in VS Code, a path works too: `@src/app.ts`) |
+| A folder's files | `@folder`, then pick it |
+| The code that matches an idea | `@code` followed by what you look for: `@code retry with backoff` |
+| What you changed | `@diff what could break in what I changed?` |
+| One commit | `@commit`, then pick it or type its hash |
+| The current errors | `@problems fix these` |
+| Where the debugger stopped | `@debugger` |
+| The last command of a terminal (VS Code) | `@terminal` |
+| The Output window (Visual Studio) | `@output` |
+| A web page | `@url` followed by the address |
+| What you copied | `@clipboard` |
+| The solution's C# tree | `@tree` |
 
 > [!TIP]
 > The `@`-mention popup and the `/`-command popup are mutually exclusive — typing `@` opens
@@ -43,11 +52,12 @@ limits bites — or a file cannot be read — the attachment ends with a line sa
 file named in the list but absent from the text is never mistaken for a file that is simply empty.
 Attach a subfolder to get the rest.
 
-**A document is attached as its text**: a PDF; a Word `.docx` or `.doc`; an Excel workbook (`.xlsx`, `.xls`, `.xlsb`: each sheet under its name, a row per line, cells separated by tabs); a PowerPoint `.pptx` (each slide in order, then its notes); an OpenDocument `.odt`, `.ods` or `.odp` (LibreOffice); an RTF; a Jupyter notebook (its cells and their outputs, never its JSON or its images); an e-mail `.eml` or `.msg` (subject, sender, recipients, date, body, and the names of its attachments, which are not read). Inferpal reads it on your machine — nothing is sent
+**A document is attached as its text**: a PDF; a Word `.docx` or `.doc`; an Excel workbook (`.xlsx`, `.xlsm`, `.xls`, `.xlsb`: each sheet under its name, a row per line, cells separated by tabs); a PowerPoint `.pptx` (each slide in order, then its notes); an OpenDocument `.odt`, `.ods` or `.odp` (LibreOffice); an RTF; a Jupyter notebook (its cells and their outputs, never its JSON or its images); an e-mail `.eml` or `.msg` (subject, sender, recipients, date, body, and the names of its attachments, which are not read). Inferpal reads it on your machine — nothing is sent
 anywhere to convert it — with `@file`, a chip, Browse, a file pinned to every request, or an ACP attachment, and tells the
-model the text was extracted. Like any attachment it is cut past the size of one, and its chip says so. What has no text
-to read is said instead of attached: a scanned PDF or one made only of images, a file larger than 20 MB, or one that
-takes more than 2 seconds to read. **A document protected by a password** (PDF, Word `.docx` and `.doc`, Excel `.xlsx` and `.xls`, PowerPoint, OpenDocument) asks you for it on a card in the chat (Open,
+model the text was extracted. Like any attachment it is cut past the size of one, and its chip says so. A **scanned
+PDF** (pages made of images) is read by OCR on your machine, and the model is told the text comes from an OCR. What has
+no text to read is said instead of attached: a scan in which the OCR finds no text, a file larger than 20 MB, or one
+that takes more than 2 seconds to read. Every format, in one table: [File formats](file-formats.md). **A document protected by a password** (PDF, Word `.docx` and `.doc`, Excel `.xlsx` and `.xls`, PowerPoint, OpenDocument) asks you for it on a card in the chat (Open,
 or Don't attach): the model gets the text, never the password, which is kept in memory for that file until the editor
 closes — never saved, never sent. A Word 95 document protected by a password stays closed, and an ACP attachment of a
 protected file is said protected. Pages without text in a PDF that has some are
@@ -56,9 +66,10 @@ attached, and say so.
 
 **An image goes with the question as an image**, never as text: paste a screenshot in the prompt (Ctrl+V), drop one on
 the chat, attach it with `@file`, Browse or Attach to Chat — or, from an ACP client, its image blocks. PNG, JPEG, WebP and
-GIF are sent as they are; a BMP is converted to PNG; HEIC and TIFF are refused, with the advice to save the image as
-a PNG; an SVG is text, attached as its markup. A large photo is turned upright by its EXIF orientation before it is scaled down. At most 4 images per question, 10 MB each. An image larger than 1920 × 1080 is scaled down to fit on your machine
-(a model reads no more from a larger one), and said — small text may become hard to read, so crop the part that matters;
+GIF are sent as they are; a BMP is converted to PNG; HEIC and TIFF are not attached, with the advice to save the image
+as PNG or JPEG; an SVG is text, attached as its markup. A large photo is turned upright by its EXIF orientation before it is scaled down. At most 4 images per question, 10 MB each. A PNG, JPEG, GIF or BMP larger than 1920 × 1080 is scaled down to fit on your
+machine (a model reads no more from a larger one); a large WebP is sent as it is, and the server reduces it. Both are
+said — small text may become hard to read, so crop the part that matters;
 one that declares more than 40 million pixels is refused before anything decodes it. The chip shows the image's size; the
 line under the chips names the model it goes to. **When the model that will answer does not see images** — as your
 server publishes it: LM Studio's `vision`, Ollama's `vision` capability — the text written in the image goes instead, read
@@ -140,7 +151,7 @@ ignore file, the line and the pattern; `@folder` leaves such files out of its li
 
 ## Mentions in VS Code
 
-**VS Code:** typed mentions work there too (since 1.2.0) — the eleven categories from
+**VS Code:** typed mentions work there too — the eleven categories from
 `@file` to `@terminal` are offered in a two-level popup, and resolved mentions appear as
 context chips in the composer, alongside a "+" attach menu (active file, selection, file
 from disk, and **pin the active file** — pinned files show above the input box, ✕ unpins one).
@@ -151,7 +162,8 @@ the model is told the same, with `read_file` to read the rest.
 
 ## Related
 
-- [Tools → `get_debugger_state`](tools.md#built-in-tools) backs `@debugger`.
+- [Tools → `get_debugger_state`](tools.md#use-the-debugger) backs `@debugger`.
+- [File formats](file-formats.md) — every document, image and archive Inferpal reads, and what it does with each.
 - [Slash Commands](slash-commands.md) for the `/` command list.
 
 **Next:** [Search & Indexing](search-and-indexing.md) — how `@code` and the chips find the right code.

@@ -5,9 +5,10 @@ settings in the Settings window and never open a file: they are listed under [Th
 change](#the-settings-most-people-change). The rest of the page is for a team that commits its policy with its
 code, and for looking up one key.
 
-Inferpal is configured through the **Settings** window (gear icon / **Inferpal Settings**
-command, or `/settings` from the chat). A few values are also settable from the chat via slash commands (`/model`,
-`/hardware`, `/tools`). This page documents every setting and the underlying config key.
+Inferpal is configured through the **Settings** window: **Tools → Inferpal → Inferpal Settings…** in Visual Studio,
+the gear in the chat's title bar in VS Code, or `/settings` in the chat of either. A few values are also set from the
+chat with slash commands (`/model`, `/hardware`, `/tools`). This page documents every setting and the underlying
+config key.
 
 - **[Where settings live, and which one wins](#where-settings-live-and-which-one-wins)** — your machine decides, a repository can only narrow
 - **[The settings most people change](#the-settings-most-people-change)** — where to find each one
@@ -32,7 +33,7 @@ flowchart LR
 ```
 
 - **Visual Studio, VS Code and every open window share one `config.json`.** It sits under your user profile, in
-  `%AppData%\Inferpal\` (`~/.config/Inferpal/` on Linux, `~/Library/Application Support/Inferpal/` on macOS), and
+  `%AppData%\Inferpal\` (`~/.config/Inferpal/` on Linux and macOS), and
   it holds every key of the [reference](#config-key-reference). VS Code adds a few `inferpal.*` settings of its
   own, for that editor: [Getting Started](getting-started.md#choose-the-server-and-the-model-by-hand).
 - **A repository recommends, you apply.** `.inferpal/project.json` can name models and a context window: nothing
@@ -122,16 +123,16 @@ counts the unsaved changes, and **Cancel** puts the form back as it was saved.
 
 | Page | Contains |
 |---|---|
-| **Server and models** | Server address and **Test**, chat model, autocomplete model, code search model, context window; **Suggest the best models** (picks among the installed models from Inferpal's measurements, and on Ollama the context window for the card; fills the form, saves nothing; *How these models were measured* opens the page of the models measured, by graphics card); **Loaded now** (the models in memory, what each is used for, its memory, context and when it unloads, with **Unload** and **Unload all**). *Show advanced settings* adds: a model per task (agent, explain/fix/refactor, edit with AI, background tasks, `/bench` routing), sampling and reasoning (the level for a question and for an agent run), your GPU (graphics memory, unloading idle models), connection (server type, API key) |
+| **Server and models** | Server address and **Test**, chat model, autocomplete model, code search model, context window; **Suggest the best models** (picks among the installed models from Inferpal's measurements, and on Ollama the context window for the card; fills the form, saves nothing; *How these models were measured* opens the page of the models measured, by graphics card); for autocomplete and code search, where each runs (the chat's server or another one); **Loaded now** (the models in memory, what each is used for, its memory, context and when it unloads, with **Unload** and **Unload all**); access through a reverse proxy ([Remote inference](remote-inference.md#behind-a-reverse-proxy)). *Show advanced settings* adds: a model per task (agent, explain/fix/refactor, edit with AI, background tasks, `/bench` routing), sampling and reasoning (the level for a question and for an agent run), your GPU (graphics memory, unloading idle models), connection (server type, API key) |
 | **Agent and approvals** | Plan before acting, check the build after each edit, steps per request, where the backups of changed files are kept (in the project or in your user folder); *Ask me before changing files, running commands or going online*, with the number of approval rules; custom instructions, language persona; time limits (folded) |
-| **Context and memory** | Long conversations (summarizing, turns kept whole, session recap, summary time limit, opening messages kept as is); pinned files |
-| **Code search** | Background indexing, relevant code added to each question, language servers, results per search, minimum similarity |
+| **Context and memory** | What fills this conversation's window; long conversations (summarizing, turns kept whole, session recap, summary time limit, opening messages kept as is); pinned files; the repository's instruction files (whose are read), the ignore files, the skills' automatic mode |
+| **Code search** | Background indexing, relevant code added to each question, language servers, results per search, minimum similarity; the `@Docs` sites; the search index kept for each repository opened |
 | **Autocomplete** | Ghost text and its speed; the change shown before applying it (*Edit with AI*) |
-| **Tools and MCP servers** | MCP servers as cards that say whether each one runs, and why not; the approval rules as a table, team file first, each rule saying whether it applies; your slash commands; your agent tools. Every list keeps an *Edit as text* (or JSON) view |
-| **Language and appearance** | Interface language (independent of the editor's), the theme in use (Inferpal follows the editor's, high contrast included), density, agent steps shown open |
+| **Tools and MCP servers** | The tools a request declares, what each weighs, and a switch to turn one off; MCP servers as cards that say whether each one runs, and why not; the approval rules as a table, team file first, each rule saying whether it applies; your slash commands; your agent tools. Every list keeps an *Edit as text* (or JSON) view |
+| **Language and appearance** | Interface language (independent of the editor's), the theme in use (Inferpal follows the editor's, high contrast included), density, agent steps shown open, the signal at the end of a long answer |
 
 The *Show advanced settings* box only folds: it never changes a value, and it opens by itself when a
-model per task, the sampling setting or a reasoning level is no longer at its factory value — the settings that change,
+model per task, the sampling setting or a reasoning level is not at its factory value — the settings that change,
 without a word on screen, which model answers or how are never hidden.
 
 > [!TIP]
@@ -175,9 +176,9 @@ These overlays (and `rules/`, `checks/`, `prompts/`) are meant to be committed.
   new `history/`.
 - Snapshot names end in `.bak`, so no test runner or compiler mistakes a backup for the file it copies.
 - A history folder made by an earlier version gets its own `.gitignore` the first time the workspace is opened.
-- Earlier versions also added `.inferpal/history/` (or, the oldest, the whole `.inferpal/`) to the repository's
-  `.gitignore`; once the folder carries its own, that line is no longer needed and can be removed — with the whole
-  folder ignored, the overlays above are not committed.
+- A `.inferpal/history/` (or `.inferpal/`) line that an earlier version wrote into the repository's `.gitignore` is
+  not needed once the folder carries its own, and can be removed — with the whole folder ignored, the overlays above
+  are not committed.
 
 </details>
 
@@ -219,7 +220,7 @@ repository never takes the place of a mode you wrote:
 
 | Where | Format |
 |---|---|
-| `%AppData%\Inferpal\modes\*.md` | Your own, in every workspace — the format below. Beside Inferpal's settings: `~/.config/Inferpal/modes` on Linux, `~/Library/Application Support/Inferpal/modes` on macOS. |
+| `%AppData%\Inferpal\modes\*.md` | Your own, in every workspace — the format below. Beside Inferpal's settings: `~/.config/Inferpal/modes` on Linux and macOS. |
 | `.inferpal/modes/*.md` | The repository's — the format below. |
 | `.github/agents/*.md` | GitHub Copilot's custom agents (`*.agent.md`, as Copilot writes them), as they are: `name`, `description`, `tools`, `model` (a name or a list: the first one the server has) and `reasoning-effort`; the body is the instructions. `handoffs`, `agents`, `hooks`, `mcp-servers` and the rest are not carried, and `/modes` names them. |
 | `.roomodes` | Roo Code's custom modes (YAML or JSON): `roleDefinition` then `customInstructions` then the files of `.roo/rules-<slug>/` as instructions; `groups` as tools (`read`, `edit` with its `fileRegex`, `command`, `mcp`). Roo keeps no model in this file. |
@@ -325,7 +326,7 @@ Every persisted setting, its type, and default value.
 | `agentModel` | string | `""` | AgentOrchestrator model (empty = `defaultModel`) |
 | `utilityModel` | string | `""` | Model for background utility tasks — session titles, `/commit` message proposals, compaction summaries (empty = `defaultModel`, unless that model is not loaded and the agent or code-actions model is: the loaded one answers, so a title never loads a model). Optional: the compaction summary replaces the turns it covers, and small models keep fewer of its facts — see [Models](models.md#by-graphics-card). Resolution is centralized in `ModelRouter` |
 | `modelRouterAuto` | bool | `false` | Model Router auto mode: when no `utilityModel` is set, utility tasks use the model `/bench` recommended for the utility role — but only if it is already warm in VRAM (a cold model is never loaded for a title or commit message; falls back to the chat model). An explicit `utilityModel` always wins |
-| `ragEmbeddingModel` | string | `""` | Embedding model — optional. Empty = the best embedding model installed (EmbeddingGemma first), never for code search one measured to search it worse than keywords alone (bge-m3, nomic-embed-text v1, mxbai-embed-large, Qwen3 Embedding 0.6B); none left = keyword search only, said in the index's status, which also says when a model named here is one of those |
+| `ragEmbeddingModel` | string | `""` | Embedding model — optional. Empty = the best embedding model installed (EmbeddingGemma first), never for code search one measured to search it worse than keywords alone (bge-m3, nomic-embed-text v1.5, mxbai-embed-large, Qwen3 Embedding 0.6B); none left = keyword search only, said in the index's status, which also says when a model named here is one of those |
 | `ragEmbeddingRunsOn` | string | `"chat"` | Where code search embeds: `chat` (the server of `baseUrl`), `autocomplete` (the completion's server) or `other` (the server of `ragEmbeddingBaseUrl`) — the project is indexed on this machine, only the questions go to the team server |
 | `ragEmbeddingBaseUrl` | string | `""` | The embedding server's address, when `ragEmbeddingRunsOn` is `other` |
 | `ragEmbeddingProvider` | string | `""` | That server's backend, found by its **Test** button; empty = `provider` |
@@ -351,7 +352,7 @@ Every persisted setting, its type, and default value.
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `inlineCompletionEnabled` | bool | `true` | Enable ghost-text completions |
-| `inlineCompletionMode` | string | `"Default"` | FIM speed: `Fast` / `Default` (shown *Balanced*) / `HighAccuracy` (shown *Accurate*) |
+| `inlineCompletionMode` | string | `"Default"` | FIM speed: `Fast` (short suggestions, after 300 ms) / `Default` (shown *Balanced*: longer suggestions, after 600 ms) / `HighAccuracy` (shown *Accurate*: whole blocks, after 1 s) |
 | `inlineCompletionTrigger` | string | `"auto"` | When a suggestion is asked for: `auto` (shown *As I type*, after a pause in typing) / `onDemand` (shown *When I ask*: only Alt+', nothing sent otherwise) |
 
 ### RAG / semantic index

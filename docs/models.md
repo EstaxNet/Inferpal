@@ -5,8 +5,8 @@
 section gives the reasons, the rest waits until you want a model's figures or its fine print.
 
 > [!TIP]
-> In a hurry? **Qwen3.8 27B** and **Devstral Small 2** are the two models to start with for agent work; see
-> [At a glance](#at-a-glance). Already have models installed? *Settings → Server and models → Suggest the best models*
+> In a hurry? Take the agent for your card in [By graphics card](#by-graphics-card); on 24 GB, **Qwen3.8 27B**, or
+> **Devstral Small 2** for speed ([At a glance](#at-a-glance)). Already have models installed? *Settings → Server and models → Suggest the best models*
 > picks among them from the figures on this page, and says why. Every figure on this page comes from Inferpal's own test battery — real tasks on real
 > projects, judged on their outcome (the project's tests green), never on the model's wording.
 
@@ -93,7 +93,7 @@ section.
 | [Qwen3 Coder 30B](#qwen3-coder) | Agent usable (9/14) | Uses its fill-in-the-middle tokens; reads its XML tool calls | Fast: 3B active parameters |
 | [Qwen3 4B Thinking 2507](#qwen3) | Small machines | Reads its JSON tool calls when left as text | Long reasoning |
 | [Mellum2 12B-A2.5B Base](#mellum) (JetBrains) | ✅ **Autocomplete (FIM)** — recommended (29/36, 0.1 s) | Uses its fill-in-the-middle tokens | A completion model: never the chat or the agent |
-| [Qwen2.5 Coder 7B](#qwen-coder) | Superseded for autocomplete by Mellum2; not the agent (3/14) | Uses its fill-in-the-middle tokens | A 2024 model, no longer benched |
+| [Qwen2.5 Coder 7B](#qwen-coder) | Superseded for autocomplete by Mellum2; not the agent (3/14) | Uses its fill-in-the-middle tokens | A 2024 model, not benched |
 
 ## Code search: do you need an embedding model?
 
@@ -175,7 +175,7 @@ then write 63 to 87 % fewer tokens).
   4.7 Flash, sent `none`, reasons six times longer.
 - llama-server gets the same treatment from what its `/props` publishes for the model; an older one lists nothing
   and is sent nothing.
-- Ollama and other OpenAI-compatible servers are sent nothing yet: not measured.
+- Ollama and other OpenAI-compatible servers are sent nothing: not measured.
 
 </details>
 
@@ -641,7 +641,7 @@ Bonsai 27B 15 at 32K, Granite 4.2 8B 14 at 8K.
 
 Each figure is **one run**, and the same model varies from one run to the next — Gemma 4 12B scored 13/14, then 6/14,
 on two identical runs — so a gap of one or two tasks between two models means nothing. Only recent models are measured:
-the 2024 models once on this list (Llama 3.1 8B, Codestral 22B, Qwen2.5 Coder 7B as an agent) are no longer benched.
+the 2024 models (Llama 3.1 8B, Codestral 22B, Qwen2.5 Coder 7B as an agent) are not benched.
 
 ### What the context window changes
 

@@ -1,9 +1,17 @@
 # Remote Inference Guide
 
-Inferpal talks to its model server over plain HTTP, so the server does **not** have to be
-the machine running Visual Studio. Pointing the extension at a remote box — a workstation
-with a big GPU, a home server, another machine on your LAN — lets you keep Visual Studio
-light while a beefier machine does the inference.
+Inferpal talks to its model server over HTTP, so the server does **not** have to be the
+machine running your editor. Point Inferpal at a remote machine — a workstation with a big
+GPU, a home server, a team server — and your editor stays light while that machine runs the
+models.
+
+| You want to | Go to |
+|---|---|
+| Use a GPU on another machine of your network | Sections [1](#1-expose-the-server-on-the-remote-host), [2](#2-point-inferpal-at-the-remote-host) and [3](#3-set-the-vram-budget-required-for-remote-hosts) |
+| Keep ghost text on this machine, the chat on a team server | [Run ghost text or code search on another server](#run-ghost-text-or-code-search-on-another-server) |
+| Use VS Code connected to WSL, SSH or a container | [Section 5](#5-vs-code-connected-to-wsl-ssh-or-a-container) |
+| Reach a server behind Caddy, nginx or Cloudflare | [Behind a reverse proxy](#behind-a-reverse-proxy) |
+| Fix a connection that fails | [Troubleshooting](#troubleshooting) |
 
 ```mermaid
 flowchart LR
@@ -102,7 +110,7 @@ sudo ufw allow 1234/tcp    # LM Studio
 
 ### Verify from the client machine
 
-From the machine running Visual Studio, confirm the host is reachable (replace the IP):
+From the machine running your editor, confirm the host is reachable (replace the IP):
 
 ```powershell
 # Ollama
@@ -152,8 +160,8 @@ for example.
 
 - Its kind and its key are under **Connection**, with the advanced settings. That server gets its own key, never the
   chat's.
-- Ghost text on another machine than the chat's no longer waits for a chat answer to finish; on the chat's machine,
-  under any of its names or addresses, it still does, the graphics card being one.
+- Ghost text on another machine than the chat's does not wait for a chat answer to finish; on the chat's machine,
+  under any of its names or addresses, it does, since both share one graphics card.
 - Code search can also run on **The autocomplete server**. With a server on this machine, indexing your code stays here
   while the chat answers on a team server.
 
@@ -209,7 +217,7 @@ model, Inferpal routes all of it through a central GPU scheduler:
 - a chat/agent run takes a lease for its whole duration;
 - RAG and `@Docs` embedding loops and `/task` wait while a chat/agent run holds the lease — in
   any Inferpal process on the machine — and resume right after; a run waiting on an approval
-  card lets the lease go until it is answered;
+  card lets the lease go after 10 seconds, until the card is answered;
 - inline completions yield via an IPC busy-signal so they
   don't compete with an active chat.
 
@@ -225,7 +233,7 @@ With **Remote - WSL**, **Remote - SSH**, **Dev Containers** or a tunnel, VS Code
 next to your files, with the extension's package for that machine.
 
 - Packages exist for **Linux x64**, Windows x64 and
-  macOS on Apple silicon: an ARM Linux machine or container (a Dev Container on an Apple-silicon Mac, an ARM server) and
+  macOS (Apple silicon and Intel): an ARM Linux machine or container (a Dev Container on an Apple-silicon Mac, an ARM server) and
   Alpine-based images (musl) have none, and Inferpal does not start there.
 - Measured from WSL (Ubuntu, x64): the engine
   starts, reaches the model servers and completes code in about the time it takes from Windows (1.3 s against 1.1 s, same

@@ -20,8 +20,11 @@ these give the model their **text**.
 | PowerPoint | `.pptx` | Each slide in order, its speaker notes after it |
 | OpenDocument | `.odt`, `.ods`, `.odp` | As their Office counterparts |
 | Rich text | `.rtf` | Its text |
-| Jupyter notebook | `.ipynb` | Its cells and their outputs, not its JSON. The agent also edits one cell at a time and runs the notebook ([Tools](tools.md#logs-data-files-and-notebooks)) |
+| Jupyter notebook | `.ipynb` | Attached: its cells and their outputs, not its JSON. The agent also edits one cell at a time and runs the notebook ([Tools](tools.md#logs-data-files-and-notebooks)) |
 | E-mail | `.eml`, `.msg` | The headers and the body, its attachments named |
+
+A notebook, an RTF file and an `.eml` are text files: attached to a question they give their text as above, while the
+agent's `read_file` reads them as they are written, so it can edit them.
 
 A document protected by a **password** (PDF, Office, OpenDocument) asks you for it on a card in Visual Studio and
 VS Code; the model gets the text, never the password. At most 20 MB per document.
@@ -30,12 +33,13 @@ VS Code; the model gets the text, never the password. At most 20 MB per document
 
 | Format | Extensions | What happens |
 |---|---|---|
-| PNG, JPEG, WebP, GIF | `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif` | Sent with your question to a model that sees images, reduced to 1920 × 1080 when larger |
+| PNG, JPEG, GIF | `.png`, `.jpg`, `.jpeg`, `.gif` | Sent with your question to a model that sees images, reduced to 1920 × 1080 when larger |
+| WebP | `.webp` | Sent as it is, whatever its size: the server reduces a large one, and the chat says so |
 | BMP | `.bmp` | Converted to PNG on your machine, then sent the same way |
-| HEIC, TIFF | `.heic`, `.heif`, `.tif`, `.tiff` | Accepted as an attachment but not sent: model servers do not decode them, and the chat says so |
+| HEIC, TIFF | `.heic`, `.heif`, `.tif`, `.tiff` | Offered by the attach pickers, then not attached: the chat asks you to save the image as PNG or JPEG |
 
 A model that does **not** see images gets the **text written in the image** instead, read by Inferpal's OCR, in its
-ten languages. The agent's own `ocr` tool reads `.png`, `.jpg`, `.jpeg`, `.bmp` and `.gif`. At most 4 images per
+ten languages. The agent's own `ocr` tool reads `.png`, `.jpg`, `.jpeg`, `.bmp` and `.gif` (not `.webp`). At most 4 images per
 question, 10 MB each. An `.svg` is text: it is attached as its markup.
 
 ## Archives

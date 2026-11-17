@@ -31,15 +31,15 @@ editor with tools disabled).
 
 - [Code actions: work on the code in your editor](#code-actions-work-on-the-code-in-your-editor) — `/explain`, `/fix`,
   `/review`, `/refactor`, `/test`, `/doc`
-- [Build, test and commit](#build-test-and-commit) — `/build`, `/fix-build`, `/tdd`, `/map`, `/git`, `/commit`,
-  `/pr-description`
+- [Build, test and commit](#build-test-and-commit) — `/build`, `/fix-build`, `/tdd`, `/solution`, `/map`, `/git`,
+  `/commit`, `/pr-description`
 - [Review a change, set your rules](#review-a-change-set-your-rules) — `/check`, `/checks`, `/rules`, `/permissions`
 - [Undo or replay what the agent did](#undo-or-replay-what-the-agent-did) — `/undo-run`, `/restore`, `/replay`
 - [Plan and steer the agent](#plan-and-steer-the-agent) — `/plan`, `/agent-step`, `/resume`, `/modes`
 - [Debug a running program](#debug-a-running-program) — `/debug`
 - [Run a task in the background](#run-a-task-in-the-background) — `/task`
-- [Give the model context](#give-the-model-context) — `/read`, `/diff`, `/xray`, `/memory`, `/note`, `/onboard`,
-  `/import`
+- [Give the model context](#give-the-model-context) — `/read`, `/diff`, `/xray`, `/context`, `/instructions`,
+  `/memory`, `/skill`, `/note`, `/onboard`, `/import`
 - [Look at files, run a command, search](#look-at-files-run-a-command-search) — `/ls`, `/grep`, `/run`, `/fetch`,
   `/search-web`, `/search-code`
 - [Manage the code index and documentation sites](#manage-the-code-index-and-documentation-sites) — `/index`, `/docs`
@@ -54,7 +54,7 @@ editor with tools disabled).
 > by the host process (same approval and permission pipeline; `/tdd`, `/bench` and
 > `/models pull` are cancellable, a `/docs` crawl runs in the background). Still VS-only: `/fix-build`, coupled
 > to Visual Studio's build by construction — it answers "not available in this editor yet".
-> `/setup` opens VS Code's first-run card.
+> `/setup` opens VS Code's first-run card; an ACP client answers that it is not available there.
 
 ## Code actions: work on the code in your editor
 
@@ -115,7 +115,7 @@ What a rule and a check are, and how they differ: [Rules & AI Checks](rules-and-
 | `/plan` | Toggle plan mode — read-only: the agent explores and proposes a plan without editing files |
 | `/plan save [name]` | Save the plan from the last answer to `.inferpal/plans/<name>.md` — committed with the code, so it survives `/clear`, a restart and a colleague's clone |
 | `/plan list` | List this repository's plans with their progress |
-| `/plan <name>` | Open a plan and make it the active one |
+| `/plan <name>` | Open a plan and make it the active one (`/plan open <name>` and `/plan show <name>` do the same) |
 | `/plan next` | Show the next unfinished step of the active plan |
 | `/plan done <n>` / `/plan undone <n>` | Tick or reopen a step — the file is edited surgically, your prose and notes are untouched |
 | `/agent-step` | Toggle agent step mode (pause between tool calls) |
@@ -137,7 +137,7 @@ What a rule and a check are, and how they differ: [Rules & AI Checks](rules-and-
 | `/task <objective>` | Run an agent task **in the background**, detached from the conversation: submitting returns immediately and you keep working while it runs. Tasks run one at a time and wait for the chat to be idle before taking the GPU; a task still waiting when another solution is opened does not run there (it says so). **Read-only**: a background run explores and reports (`read_file`, `search_codebase`, `analyze_code`, …) but never edits your files, builds or runs anything, or goes online — so it can never interrupt you with an approval prompt. A notice appears in the chat when it finishes — and, in VS Code, if Inferpal restarts first (a server setting changed), the chat names the tasks, background commands and documentation indexing the restart stopped |
 | `/task` · `/task list` | List the background tasks, newest first, with their state (queued / running / done / failed / cancelled). When the model server does not answer, the tasks wait for it — named above the list — and start on their own when it is back, instead of failing one after another; a task whose server stopped answering during its run says so, with the time |
 | `/task <id>` | Show one task's full report, plus its step journal. Finished tasks are kept per workspace and editor: their reports and proposals are still there after a restart, and a task that was running or queued when the editor closed says so. A number is never given twice, a restart included |
-| `/task stop <id>` · `/task clear` | Cancel a task · forget the finished ones |
+| `/task stop <id>` · `/task clear` | Cancel a task (`/task cancel <id>` too) · forget the finished ones |
 | `/task retry <id>` | Run a finished task's objective again under a new number — same mode (`propose` or not), same workspace |
 | `/task propose <objective>` | Same, but the task may **express** file changes: the editing tools are available to it and every edit is recorded instead of applied. The report comes back with a numbered diff per proposed change and nothing touched. Still no commands and no network |
 | `/task apply <id> <n>` | Apply **one** proposal, through the usual approval prompt — so `/undo-run` covers it like any other write. There is deliberately no form that applies them all: approving a batch sight-unseen is what the read-only default exists to avoid. A file changed since the task ran is refused as stale rather than overwritten |
@@ -232,7 +232,7 @@ What a rule and a check are, and how they differ: [Rules & AI Checks](rules-and-
 |---|---|
 | `/models` | List / pull (Ollama, LM Studio) / delete (Ollama) / show running models |
 | `/hardware [gb]` | Show the GPU/VRAM profile; `/hardware <gb>` sets the VRAM budget |
-| `/bench [model…]` | Local test bench of installed models (default: all, capped at 5) — warm TTFT, tokens/s, VRAM pressure and a 5-task quality micro-eval scored by programmatic assertions (C# fix, instruction following, summary, tool call, FIM), plus per-role recommendations (agent / utility / FIM) feeding the Model Router; `/bench last` redisplays the persisted run |
+| `/bench [model…]` | Local test bench of installed models (default: all, capped at 5) — warm TTFT, tokens/s, VRAM pressure and a 5-task quality micro-eval scored by programmatic assertions (C# fix, instruction following, summary, tool call, FIM), plus per-role recommendations (agent / utility / FIM) feeding the Model Router; `/bench last` redisplays the persisted run (alias `/benchmark`) |
 | `/arena <prompt>` | Model arena: sends the same prompt to two models (sequentially — one GPU) and shows both answers blind-labelled A/B. Pair = chat model vs utility model, or explicit: `/arena <model1> <model2> <prompt>`. Vote with `/arena a\|b\|tie` (reveals the models), cumulative local standings with `/arena stats` |
 | `/setup` | Look for a model server again (the configured address, then where one usually listens) and set it up with models that fit — in VS Code a card, where another address can be typed |
 
@@ -254,7 +254,7 @@ over a command file of the same name.
 
 | Command | Description |
 |---|---|
-| `/prompts [init]` | List the custom commands — `.inferpal/prompts/*.md`, this machine's own prompts folder (beside Inferpal's settings: `%AppData%\Inferpal\prompts` on Windows, `~/.config/Inferpal/prompts` on Linux, `~/Library/Application Support/Inferpal/prompts` on macOS — where `/import` writes) and the commands the repository wrote for Copilot (`.github/prompts/*.prompt.md`), Claude Code (`.claude/commands/**/*.md`) and Continue (`.continue/prompts/`) — with where each comes from, which one a clash hides, and the variables Inferpal leaves as written; or scaffold an example |
+| `/prompts [init]` | List the custom commands — `.inferpal/prompts/*.md`, this machine's own prompts folder (beside Inferpal's settings: `%AppData%\Inferpal\prompts` on Windows, `~/.config/Inferpal/prompts` on Linux and macOS — where `/import` writes) and the commands the repository wrote for Copilot (`.github/prompts/*.prompt.md`), Claude Code (`.claude/commands/**/*.md`) and Continue (`.continue/prompts/`) — with where each comes from, which one a clash hides, and the variables Inferpal leaves as written; or scaffold an example |
 
 **Try it** — `/prompts init` scaffolds an example.
 

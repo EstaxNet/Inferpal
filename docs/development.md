@@ -104,9 +104,10 @@ dotnet test Inferpal.Tests/Inferpal.Tests.csproj
 dotnet test Inferpal.Tests/Inferpal.Tests.csproj --filter InlineDiffScenarioFixturesTests
 ```
 
-- The suite is large (the exact figure is the `tests-N passing` badge at the top of the README,
-  which `DocCountersTests` locks against the assembly — this sentence deliberately carries no
-  number of its own, the last one had rotted by 500 tests).
+- The suite is large: the exact figure is the `tests-N passing` badge at the top of the README,
+  which `DocCountersTests` locks against the assembly.
+- On Windows the suite runs twice, `net8.0-windows` and `net10.0-windows`; add `-f net8.0-windows` to run one leg.
+  Elsewhere it runs on `net10.0`, without the tests in `Inferpal.Tests/WindowsOnly/`.
 - The test project uses `InternalsVisibleTo`, so the
   extension's `internal` types are testable directly.
 - All the logic lives in `Inferpal.Core`,
@@ -183,8 +184,9 @@ Inferpal.Core/
     ├── Mcp/         MCP stdio + HTTP JSON-RPC client (with OAuth)
     ├── Editor/      IEditorSurface port (implemented by the VS adapter)
     ├── Signals/     File-based IPC signals (chat-busy, build, debugger…)
-    └── …            CodeActions, Commands, Governance, Hardware, Persistence,
-                     Presentation, Prompting, Shell
+    └── …            Arena, Bench, CodeActions, Commands, Coverage, Debugging,
+                     Documents, Governance, Hardware, Import, Persistence,
+                     Presentation, Prompting, Shell, Tasks
 Inferpal/
 ├── Commands/        VS menu commands + editor context-menu code actions
 ├── Localization/    string-resources.json (%key% tokens for VS commands)
@@ -232,8 +234,12 @@ If the tool touches the filesystem, runs commands, or reaches the network, take 
 ## Adding a language
 
 1. Create `Inferpal.Core/Localization/Strings.XX-YY.resx` with the **same keys** as `Strings.resx`.
-2. Add the culture code and display name to `LanguageOptions` in `InferpalSettingsData.cs`.
-3. Build — the satellite `XX-YY/Inferpal.Core.resources.dll` is generated and included in the VSIX.
+2. Add the culture code and its name, written in that language, to `SettingsSchema.Languages`
+   (`Inferpal.Core/Services/Presentation/SettingsSchema.cs`): both editors' language lists read it.
+3. Translate the Visual Studio command table (`Inferpal/Localization/XX-YY/string-resources.json`) and the VS Code
+   texts (`vscode/l10n/bundle.l10n.xx-yy.json`, `vscode/package.nls.xx-yy.json`).
+4. Build — the satellite `XX-YY/Inferpal.Core.resources.dll` is generated and included in the VSIX.
+   `LocalizationCompletenessTests` names any key a channel misses.
 
 > [!IMPORTANT]
 > `Strings.cs` is written **by hand** (not auto-generated). Every new `.resx` key must be

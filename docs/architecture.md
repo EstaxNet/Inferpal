@@ -13,7 +13,7 @@ flowchart LR
     end
     subgraph others["Other editors"]
         code["VS Code extension<br/>TypeScript"]
-        acp["ACP client<br/>Zed, JetBrains, Neovim, Emacs"]
+        acp["ACP client<br/>Zed, JetBrains, Qt Creator, Neovim, Emacs"]
     end
     host["Inferpal.Host<br/>Inferpal.Core"]
     model(["Model server"])
@@ -60,7 +60,7 @@ Two adapters consume it:
 
 The same `Inferpal.Host` executable serves two more doors:
 
-- **Agent Client Protocol** (`--acp`, for Zed, the JetBrains IDEs, Neovim, Emacs) — `Inferpal.Host/Acp/`: each
+- **Agent Client Protocol** (`--acp`, for Zed, the JetBrains IDEs, Qt Creator, Neovim, Emacs) — `Inferpal.Host/Acp/`: each
   thread drives a `HostServer` of its own, in memory, through the very JSON-RPC methods VS Code calls; the agent adds
   no logic of its own (setup guide: [acp.md](acp.md)).
 - **The browser settings window** (`--settings [folder]`, and `/settings` in an ACP thread) —
@@ -131,7 +131,7 @@ solution/debugger/build trackers and the chat auto-scroller.
 - **It is a separate assembly, and it targets `net472`.** `devenv.exe` is a .NET Framework 4.7.2
   process, and its MEF discovery reflects over the assembly declared as an asset: a .NET 8
   assembly has a reference closure the Framework cannot resolve, so every one of our types is
-  rejected — silently. Since 1.6.0 the shipped in-process assembly is therefore
+  rejected — silently. That is why the shipped in-process assembly is
   `Inferpal.InProc.dll`, never `Inferpal.dll`.
 - It does **not** reference `Inferpal.Core`. What it shares with the Core it shares **in source**
   (`<Compile Link>`: the signal bus, `Diagnostics`, the debugger DTOs, `RetryGate`), so the two
@@ -175,6 +175,9 @@ IPC channels:
 | `BuildSignalFile` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | `VsBuildMonitor` surfaces VS build failures as the "Build Failed" banner |
 | `ActiveSolutionSignal` | devenv → host | per VS instance (`<name>.<devenv pid>.json`) | authoritative open solution for `/solution`, `/map`, RAG — its root is the folder holding the solution and its projects (`SolutionExtent`) |
 | `InlineDiffPreviewSignal` | host → devenv | per VS instance (`<name>.<devenv pid>.json`) | carries inline-diff preview requests to the in-editor renderer |
+
+Smaller channels of `Services/Signals/` carry the rest: files dropped on the chat, the Error List selection, the
+Output pane, a completion asked for by keyboard, and the in-process heartbeat (`InProcAliveSignal`).
 
 Per-instance channels key their file names on the devenv PID (the in-process package declares
 its own PID; the extensibility host declares the PID of its owning `devenv`, found among its

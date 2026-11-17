@@ -8,7 +8,8 @@ Inferpal turns a **local LLM** — served by [Ollama](https://ollama.com),
 [LM Studio](https://lmstudio.ai), or any OpenAI-compatible server — into an **agentic
 developer assistant** with tool calling, inline completions, semantic codebase search, and
 zero required cloud dependency. It ships as a **Visual Studio 2026 and 2022 extension** (the
-primary target) and a **VS Code extension**, both driven by the same `Inferpal.Core` engine (a few editor features
+primary target), a **VS Code extension** and an **[ACP agent](acp.md)** for Zed, the JetBrains IDEs, Qt Creator,
+Neovim and other Agent Client Protocol editors — all driven by the same `Inferpal.Core` engine (a few editor features
 are Visual Studio-only for now: [the list](features.md#two-editors-one-engine)).
 
 This folder is the full documentation set, split into **functional** guides (how to use it)
@@ -27,7 +28,7 @@ further down.
 |---|---|---|
 | **Try it now** | [Getting Started](getting-started.md): from nothing to a first answer | [Features](features.md#1-start-here): talk to it, then hand it a task |
 | **Use it every day** | [Features](features.md): what it does, with something to try in each section | [Slash Commands](slash-commands.md) and [Mentions](mentions.md) for what you type, [Tools](tools.md) for what the agent can do |
-| **Show it a document, a screenshot or a diagram** | [Features](features.md#documents-images-and-diagrams): PDF, Office files, images, Mermaid diagrams drawn | [Mentions](mentions.md): every rule of what is attached, and how |
+| **Show it a document, a screenshot or a diagram** | [Features](features.md#documents-images-and-diagrams): PDF, Office files, images, Mermaid diagrams drawn | [File formats](file-formats.md) for every type it reads, [Mentions](mentions.md) for how to attach one |
 | **Choose a server or a model** | [Providers](providers.md): which server, and what each can do | [Models](models.md): which model for which job |
 | **Set it up for a team** | [Remote Inference](remote-inference.md): a model server on another machine | [Rules & AI Checks](rules-and-checks.md) for what travels with the repository, [Configuration](configuration.md) for every setting, [MCP](mcp.md) for tool servers |
 | **Connect another editor** | [Zed, JetBrains, Qt Creator, Neovim (ACP)](acp.md): the same agent over the Agent Client Protocol | [ACP across machines](acp-security.md): who drives the agent |
@@ -38,11 +39,11 @@ further down.
 
 ```mermaid
 flowchart LR
-    user([You]) -->|prompt| chat[Inferpal chat]
+    user([You]) -->|question| editor[Your editor<br/>Visual Studio / VS Code / ACP client]
+    editor --> chat[Inferpal engine<br/>Inferpal.Core]
     chat -->|tool calls| tools[41 built-in tools<br/>+ MCP + custom]
     chat <-->|HTTP| provider[Model server<br/>Ollama / LM Studio / OpenAI-compatible]
     tools --> ws[(Your workspace)]
-    editor([VS editor]) -->|ghost text| chat
     chat -->|index| rag[(Semantic index)]
 ```
 
@@ -50,7 +51,7 @@ flowchart LR
 
 | Guide | What it covers |
 |---|---|
-| [Getting Started](getting-started.md) | Install a backend, build & install the extension, first run |
+| [Getting Started](getting-started.md) | Start a model server, install the extension, connect, ask a first question |
 | [Providers](providers.md) | Ollama / LM Studio / OpenAI-compatible — capabilities and setup |
 | [Models](models.md) | Which model for which job, what Inferpal does for each, and how to set it up |
 | [Configuration](configuration.md) | Every setting and config key, with defaults |
@@ -62,7 +63,7 @@ flowchart LR
 | [Search & Indexing](search-and-indexing.md) | Semantic codebase search (RAG) and `@Docs` external documentation |
 | [MCP](mcp.md) | Connecting Model Context Protocol servers |
 | [Coming from Continue or Roo Code](coming-from-continue.md) | `/import`: what a Continue or Roo Code configuration brings over, and why the rest stays |
-| [Rules & AI Checks](rules-and-checks.md) | Repo-versioned governance (`.inferpal/rules`, `.inferpal/checks`) |
+| [Rules & AI Checks](rules-and-checks.md) | Instructions and review criteria your repository carries (`.inferpal/rules`, `.inferpal/checks`) |
 | [Remote Inference](remote-inference.md) | Run the model server on another machine; VS Code connected to WSL, SSH or a container |
 | [Zed, JetBrains, Qt Creator, Neovim (ACP)](acp.md) | Inferpal as an Agent Client Protocol agent in other editors |
 | [ACP across machines](acp-security.md) | Who drives the agent, SSH, and why WebSocket bridges stay off open networks |
@@ -79,7 +80,8 @@ flowchart LR
 | | |
 |---|---|
 | Visual Studio | **2026**, and **2022 from 17.14** — Community / Professional / Enterprise. One package for both. |
-| VS Code | the same engine ([what is Visual Studio-only for now](features.md#two-editors-one-engine)) — VSIX for **Windows x64, Linux x64 and macOS (Apple Silicon since 1.5.0, Intel)**, each with a bundled self-contained backend (`Inferpal.Host`) |
+| VS Code | the same engine ([what is Visual Studio-only for now](features.md#two-editors-one-engine)) — VSIX for **Windows x64, Linux x64 and macOS (Apple Silicon and Intel)**, each with a bundled self-contained backend (`Inferpal.Host`) |
+| ACP editors | one archive per system — **Windows x64, Linux x64, macOS (Apple Silicon and Intel)** — holding `Inferpal.Host` with its own runtime: [setup](acp.md) |
 | Runtime | .NET 8 (`net8.0-windows`; core engine is plain `net8.0`), declared for .NET 8 and 10 — Visual Studio runs it on its .NET 10 extension host when it ships one (2026, and 2022 17.14 builds that carry it) · the VS Code and ACP host: .NET 10 (`net10.0`), carried by its package |
 | Extension model | VS: hybrid VSIX — `Microsoft.VisualStudio.Extensibility.Sdk` 17.14.x out-of-process, plus `Inferpal.InProc` (**net472**) for everything `devenv.exe` hosts and its `Inferpal.Fim` sidecar · VS Code: TypeScript + JSON-RPC host |
 | Built-in tools | 41 built-in tools (+ MCP servers + user shell tools) |

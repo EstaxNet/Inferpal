@@ -73,6 +73,12 @@ a cosine similarity.
 `.cs` `.ts` `.tsx` `.js` `.jsx` `.py` `.go` `.java` `.cpp` `.c` `.h` `.hpp` `.rs` `.fs`
 `.razor` `.vue`
 
+Left out of the index: build output, dependencies and version-control folders, files of 200 KB or more, the files
+your ignore files exclude (`.inferpalignore`, `.aiignore`, `.cursorignore`… — see
+[Features → Safety](features.md#safety)), and the `indexExclude` patterns of the committed project profile
+([Configuration → The project profile](configuration.md#the-project-profile-inferpalprojectjson)). `/index` and
+`search_codebase` say what was skipped.
+
 ### Settings
 
 `ragEnabled`, `ragAutoContextEnabled`, `ragEmbeddingModel` (empty = the best embedding model installed, or keywords
@@ -109,7 +115,7 @@ flowchart TD
   keyword search sees the rest. So load it with at least 1,024 tokens.
 - **Vector store** (`RagDatabase`): SQLite WAL, one database per solution under
   `%LocalAppData%/Inferpal/rag/{hash}.db` on Windows, so it does not travel with a roaming profile
-  (`~/.config/Inferpal/rag/` on Linux, `~/Library/Application Support/Inferpal/rag/` on macOS). In-memory map for
+  (`~/.config/Inferpal/rag/` on Linux and macOS). In-memory map for
   O(1) per-file access. An index from an earlier version is copied there at the next start and nothing is built
   again; the old copy goes after 14 days without a write.
 - **Hybrid ranking**: the vector side keeps chunks above `ragSimilarityThreshold` (default

@@ -18,11 +18,20 @@ flowchart LR
     C["A check"] -- "read by /check" --> K
 ```
 
-Two fully-local, **repo-versioned** governance features modelled on Continue's
-`.continue/rules` and `.continue/checks`. Both are managed by slash commands — there is no
-Settings section — and their file contents are never translated (they are your content).
+Both are Markdown files you commit, so the whole team gets them, and both run on your local model. They follow
+Continue's `.continue/rules` and `.continue/checks`. Slash commands manage them — there is no settings page for them —
+and their contents are never translated (they are your content).
+
+Your repository may already give coding agents instructions (`AGENTS.md`, `CLAUDE.md`, Copilot's, Cursor's…): those
+are read too, without a rule — see [Features → What the model reads](features.md#what-the-model-reads).
 
 ## Rules — `.inferpal/rules/*.md`
+
+**Write your first rule:**
+
+1. Type `/rules init`: it writes an example rule under `.inferpal/rules/` (it never overwrites a file).
+2. Edit it, or add your own `.md` file beside it: a short frontmatter, then the instructions.
+3. Type `/rules` to see the rules found. The next question uses them; nothing to restart.
 
 Each markdown file is a rule with optional YAML frontmatter:
 
@@ -42,8 +51,8 @@ alwaysApply: false
   `alwaysApply: true` / no `globs`. Rules that always apply are in the system prompt under a
   `## Rules` section; rules a glob selects ride with the question, in the `## Active file` block sent when the active
   file changes — so opening another file never changes the start of the request, which a server's prompt cache keeps.
-- **Re-scoping**: the system prompt is rebuilt before every question, so rules are re-evaluated
-  against the file active at that moment, and an edited rule applies from the next question.
+- **Re-scoping**: rules are read again before every question and matched against the file active at that moment, so
+  an edited rule applies from the next question.
 - **Frontmatter keys**: `description` (→ the rule's name, else the filename), `globs` (glob
   patterns, written as a comma-separated list, an inline array `["**/*.cs", "**/*.ts"]` or a YAML
   block list of `- pattern` lines), `alwaysApply` (bool). Everything after the frontmatter is the
@@ -82,7 +91,7 @@ says it was made without checks; `/checks init` writes one when you want your ow
 | `/check init` | Scaffolds an example |
 | `/checks` | Lists the available checks; `/checks init` scaffolds one |
 
-Available in **both front-ends** (VS and VS Code).
+Available in Visual Studio, VS Code and [ACP](acp.md) editors.
 
 > [!NOTE]
 > Nothing leaves your machine — the review runs on your configured local model.

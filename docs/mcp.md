@@ -10,7 +10,8 @@ server** and expose its tools to the agent — the same servers used by Claude D
 
 ## Add your first server
 
-1. **Settings → Tools and MCP servers** — tick *Use MCP servers*.
+1. Open the settings (in an [ACP](acp.md) editor, type `/settings`), page **Tools and MCP servers**, and tick
+   *Use MCP servers*.
 2. Paste a server map in the Claude Desktop / Continue format:
 
    ```json
@@ -342,8 +343,7 @@ without that capability are refreshed when you save settings (or on startup).
 > **Tool results are forwarded as text.** Inferpal passes on `text` blocks and the text of `resource`
 > blocks. A tool that answers with an image, audio, a resource link or a binary blob has that block
 > **named** in the result instead of forwarded — a local text model cannot read a PNG, but "the tool
-> returned an image" and "the tool returned nothing" are not the same answer, and a screenshot server
-> used to read as the second.
+> returned an image" and "the tool returned nothing" are not the same answer.
 
 <details>
 <summary><b>In detail: structured arguments, roots, sampling</b></summary>

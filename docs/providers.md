@@ -23,16 +23,15 @@ model:
   memory each loaded model takes, and an idle model can unload by itself.
 - **LM Studio** is a desktop app with its own server. `/models` lists and downloads too; a model is deleted in LM Studio,
   and the memory of each model is not reported.
-- **OpenAI-compatible** covers generic servers, with an optional **API key**. `/models` has no list or download there:
-  you manage the models on the server.
+- **OpenAI-compatible** covers generic servers, with an optional **API key**. `/models` lists what the server serves,
+  but cannot download or delete: you manage the models on the server.
 
 The full comparison is in [What each server can do](#what-each-server-can-do).
 
 ## Supported providers
 
-Inferpal talks to a model server over HTTP through a provider abstraction
-(`IInferenceProvider`, resolved at startup by `InferenceProviderFactory`). You pick the
-provider in **Settings → Server and models**: **Test** names the server that answers and selects its type.
+Inferpal talks to a model server over HTTP. You pick the server in **Settings → Server and models**: **Test** names
+the server that answers and selects its type, saved as the `provider` key.
 
 | Provider | `provider` value | Endpoint style | Notes |
 |---|---|---|---|
@@ -60,15 +59,15 @@ provider in **Settings → Server and models**: **Test** names the server that a
 
 ## What each server can do
 
-Each provider advertises a `ProviderCapabilities` record; features degrade safely when a
-capability is missing.
+When a server lacks a capability, the feature that needs it says so instead of failing.
 
 | Capability | Ollama | LM Studio | OpenAI-compatible |
 |---|:---:|:---:|:---:|
 | Chat + tool calling | ✅ | ✅ | ✅ |
 | Embeddings (semantic search) | ✅ | ✅ | ✅ |
 | Inline completions (FIM) | ✅ | ✅ | ✅ (see below) |
-| Model management (`/models` list/pull) | ✅ | ✅ | ❌ |
+| Model list (`/models`) | ✅ | ✅ | ✅ |
+| Model download (`/models pull`) | ✅ | ✅ | ❌ |
 | `/models delete` | ✅ | ❌ (delete it in LM Studio) | ❌ |
 | Loaded models (`/models running`, `/hardware`) | ✅ | ✅ | ❌ |
 | Per-model VRAM figure (`/api/ps`) | ✅ | ❌ | ❌ |
@@ -84,7 +83,7 @@ would ask it.
 - The server wraps the code before and after the cursor in the
   model's own fill-in-the-middle tokens; on this server type Inferpal never writes them itself.
 - llama-server (recognized by its `/props`) is asked
-  through `/infill` — not yet measured on a real llama-server.
+  through `/infill` — not measured on a real llama-server.
 - Any other server is asked through `/v1/completions` with
   `suffix`, which Ollama's `/v1` accepts for a model that has a fill-in-the-middle template (measured on Ollama 0.40.4:
   28 of 36 completions right with `qwen2.5-coder:7b`, against 27 through Ollama's own API).

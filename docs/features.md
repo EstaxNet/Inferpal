@@ -223,13 +223,14 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
   Chat mode.
 - **Agentic loop** — the model autonomously chains tool calls (read/write files, run
   commands, search the web, diagnose builds, run tests, search the codebase) for up to
-  **20 turns**, showing each step as a collapsible bubble. Independent read-only tools
-  (`read_file`, `list_files`, `search_in_files`) in a single turn run **in parallel**.
+  **20 steps** per request by default (*Steps per request*, `agentMaxIterations`), showing each step as a collapsible
+  bubble. Independent read-only calls in a single turn (`read_file`, `list_files`, `search_in_files`…) run **in
+  parallel**.
 - **Turning tools off** — `/tools` lists every tool with what it weighs in each request; `/tools off <tool>` (or the
   Tools page's button) turns one off in every conversation, built-in or MCP: the model is never offered it, and your
   own commands that use it keep working. See [Tools](tools.md#turning-a-tool-off).
-- **Persistent plans** (`/plan save`) — a plan proposed in the chat used to die at the next
-  `/clear`. Saved, it becomes `.inferpal/plans/<name>.md`: numbered steps with checkboxes,
+- **Persistent plans** (`/plan save`) — a plan proposed in the chat lives only in that
+  conversation. Saved, it becomes `.inferpal/plans/<name>.md`: numbered steps with checkboxes,
   committed with the code, so it survives a restart, shows up in the review of the change it
   describes, and reaches a colleague. `/plan next` picks it back up, `/plan done <n>` ticks a
   step. Ticking edits **one character** of the file — the prose and notes you wrote by hand are
@@ -306,17 +307,25 @@ A local model guesses where a developer would go and look; these tools let it lo
   gives the median and the spread, and whether a change is faster beyond the noise.
 - **The text of an image** — `ocr` reads a screenshot, a photo of a page or a scanned PDF in Inferpal's ten languages,
   nothing to install; a model that does not see images gets that text instead of the picture.
-- **Long logs, data files, archives** — `read_file` filters a log by level and time, each entry with its stack trace;
-  `query_data` answers one read-only SQL query on a CSV, TSV or SQLite file; an archive is read in place, never
-  extracted.
+- **Long logs, data files, archives** — `read_file` filters a log by level and time (`level`, `since`, `until`), each
+  entry with its stack trace; `query_data` answers one read-only SQL query on a CSV, TSV or SQLite file; an archive
+  (`logs.zip!/app/log.txt`) is read in place, never extracted.
 - **Notebooks** — `edit_notebook` changes one cell, `run_notebook` runs the notebook on a copy and reads the traceback.
-- **Settings and history** — `msbuild_property` finds the file a build setting comes from; `git_history` reads the
-  commits, the blame and a commit's change.
-- **A question instead of a guess** *(Visual Studio and VS Code, not ACP editors)* — when a request could mean several things, `ask_question` asks
-  you on a card; **one approval for many files** — `replace_in_files` changes a text across the project, all or
-  nothing.
+- **Where a setting comes from, and why a line is there** — `msbuild_property` finds the file that sets a build
+  property (the "C# 7.3" nobody asked for); `git_history` reads the commits, the blame and a commit's change.
+- **A question instead of a guess** *(Visual Studio and VS Code, not ACP editors nor `/task`)* — when a request could
+  mean several things, `ask_question` asks you on a card, with up to four answers to pick from.
+- **One approval for many files** — `replace_in_files` changes a text across the project, all or nothing, every file
+  backed up first.
 
-Every tool and its parameters: [tools.md](tools.md).
+| You ask | It uses |
+|---|---|
+| *The Pay button doesn't show on a phone* | `view_page` |
+| *Fix the 500 on POST /orders* | `run_command` (`background`), then `http_request` |
+| *Make the report faster* | `run_command` with `repeat` |
+| *How many orders failed, per day?* on a large CSV | `query_data` |
+
+Every tool and its parameters: [tools.md](tools.md); every format they read: [File formats](file-formats.md).
 
 </details>
 
@@ -370,16 +379,17 @@ for the model — each exclusion said, never silent. Writing one of these files 
   asks as before. A card left unanswered for 15 seconds while the editor does not have the focus
   says so outside the panel: Visual Studio flashes its taskbar button, VS Code shows a notification
   that closes with the answer.
-- **Approval prompts** — `write_file`, `apply_diff`, `apply_edits`, `delete_file`,
-  `run_command`, `rename_symbol`, `fetch_url`, `web_search`, custom shell tools, and MCP calls
-  each prompt **Allow once / Always this session / Deny** ("Always" allows the tool for this session in this
+- **Approval prompts** — every tool that writes (`write_file`, `apply_diff`, `apply_edits`, `replace_in_files`,
+  `delete_file`, `rename_symbol`…), `run_command`, the tools that reach the network or your app (`fetch_url`,
+  `web_search`, `http_request`, `view_page`), custom shell tools and MCP calls each prompt
+  **Allow once / Always this session / Deny** ("Always" allows the tool for this session in this
   workspace — another solution opened in Visual Studio asks again, and coming back finds it allowed — never written
   to disk). Edit prompts show the **actual diff** before you confirm. A command or a write that
   one narrow rule describes also offers that rule (*commands that start with `dotnet test`*,
   *writes under `tests/`*), written to the per-machine rules when picked; `/permissions suggest`
-  names the ones you keep granting.
-- **The first build or test run in a workspace asks** — the agent's first build, test run or
-  Smart Fix check in a workspace asks once, even after "Always", because each runs the repository's
+  names the ones you keep granting. What each tool asks: [Tools](tools.md#what-the-agent-can-do-and-what-asks-first).
+- **The first build or test run in a workspace asks** — the agent's first build, test run, Smart Fix check,
+  `msbuild_property` evaluation or notebook run in a workspace asks once, even after "Always", because each runs the repository's
   code. A refusal holds until the editor restarts. A `/build` or `/tdd` you run yourself counts as
   agreement.
 - **Instruction files always ask first** — a write to a file agents read back as instructions is
@@ -624,7 +634,7 @@ The change appears in the editor in red and green; keep or drop each part.
   the model rewrites the selection **directly in the editor** (re-indented to match the
   original), shown first when *Show the change before applying it* is on — in VS Code, in its Refactor Preview. Uses
   the Inline Edit model (falls back to Code Actions → chat model); the same prompt in both editors.
-- **Inline diff preview for code actions** — `/fix`, `/refactor` and `/doc` no longer rewrite
+- **Inline diff preview for code actions** — `/fix`, `/refactor` and `/doc` never rewrite
   the buffer blind: the change is shown in the editor with per-hunk accept/reject (Visual
   Studio: a red/green adornment with ✓/✗ per hunk, and ✓✓/✗✗ on the first open hunk to decide
   all the hunks not yet answered; VS Code: the native Refactor Preview).
@@ -643,8 +653,9 @@ The change appears in the editor in red and green; keep or drop each part.
 <summary><b>In detail: build errors</b></summary>
 
 - **Fix with AI** — when a build fails (agent, `/build`, or a VS solution build), a button
-  pre-fills the prompt with the MSBuild errors **and the content of each affected file** (up
-  to 5 files × 4 000 chars).
+  pre-fills the prompt with the MSBuild errors **and the code of the files they name** (up to 5
+  files: each whole when it fits in 4 000 characters, else the lines around each error; the rest
+  named).
 - **Build Failed banner** — when Visual Studio finishes a solution build with errors, a banner
   appears above the input with the first error and **Fix them**, which puts `/fix-build` in the
   prompt. In VS Code, a task of the *build* group that fails draws the banner over the chat: the errors of the
@@ -728,8 +739,8 @@ suggestion right now: with *When I ask*, nothing is ever sent until you do.
 - **On a server of their own** — the chat on a team server, ghost text on this machine: *Runs on › Another server* on
   the *Server and models* page (its kind and key under *Connection*, with the advanced settings), or
   `inlineCompletionRunsOn` in `config.json`. That server gets its own key, never the chat's, and its own model — the
-  chat's is not there to fall back on. Ghost text on another machine than the chat's no longer waits for a chat answer
-  to finish; on the chat's machine — under any of its names or addresses — it still does, the card being one.
+  chat's is not there to fall back on. Ghost text on another machine than the chat's does not wait for a chat answer
+  to finish; on the chat's machine — under any of its names or addresses — it does, the graphics card being one.
 - Visual Studio holds suggestions back only while the completion list is open; VS Code shows one only if it extends
   the list's selection. Supported on Ollama, LM Studio, and OpenAI-compatible servers that
   complete around the cursor (llama-server, Ollama's `/v1`) — see [Providers](providers.md).
@@ -1134,13 +1145,14 @@ Everything is read on your machine, with nothing installed and nothing sent anyw
 name, a row per line), PowerPoint (each slide in order, its notes after it), OpenDocument, RTF, Jupyter notebooks
 (cells and outputs, not the JSON) and e-mails (`.eml`, `.msg`: headers, body, attachments named). The agent reads them
 too: `read_file` returns a document's text page by page, and `search_in_files` searches it at the same line numbers. A
-scanned PDF is read by OCR; a file too large to read in time says so instead of sending noise. A file protected by a password asks for it
-on a card in the chat; the model gets the text, never the password, and three wrong tries leave the file closed.
+scanned PDF is read by OCR, on every system; a file too large to read in time says so instead of sending noise. A file
+protected by a password asks for it on a card in the chat (Visual Studio and VS Code); the model gets the text, never
+the password, and three wrong tries leave the file closed. An archive (`.zip`, `.nupkg`, `.tar.gz`…) is read in place,
+entry by entry, never extracted.
 
-**The agent looks at the page it builds** (`view_page`): asked "the Pay button cannot be seen on a phone", it opens the
-page your app serves on this machine — or an HTML file of the workspace — in a browser cut off from the network, captures
-it at a laptop's width and a phone's, and sees what the source does not show: a button white on white, a block wider than
-a phone, a banner over a form. On Windows, Linux and macOS (WebKit, built in); it asks first, like a request to your app.
+**The agent also looks at what it builds** — the page your app serves (`view_page`, captured at a laptop's width and a
+phone's) and the desktop app it launched (`view_window`): see
+[It looks, it measures, it checks](#the-agent-at-work).
 
 **Images go as images**, to a model that sees them (Qwen3.8, Ornith, Gemma 4, on LM Studio or Ollama). A large one is
 scaled down to 1920 × 1080 first, and said. When the model that will answer does not see images, the text written in the
@@ -1286,6 +1298,7 @@ Studio to VS Code and back — and to any editor that speaks the [Agent Client P
 | `/tdd` with the debugger, `/debug` | ✓ | ✓ | — |
 | `/fix-build` | ✓ | — | — |
 | Settings | the same seven pages | the same seven pages | the same seven pages, in your browser |
+| Runs on | Windows | Windows x64, Linux x64, macOS (Apple Silicon and Intel) | Windows x64, Linux x64, macOS (Apple Silicon and Intel) |
 
 <details>
 <summary><b>In detail: what each front-end has</b></summary>
@@ -1302,20 +1315,20 @@ Studio to VS Code and back — and to any editor that speaks the [Agent Client P
   `/settings` opens it from the chat (and the settings window in Visual Studio).
 - **Headless slash commands** — nearly all the slash commands are served by the host over JSON-RPC with the
   same approval/permission pipeline; long commands are cancellable.
-- **Zed, JetBrains IDEs, Neovim, Emacs** — the same host, run with `--acp`, is an
+- **Zed, JetBrains IDEs, Qt Creator, Neovim, Emacs** — the same host, run with `--acp`, is an
   [Agent Client Protocol](acp.md) agent: modes and model as thread options, the real diff before every change,
   sessions saved and reloaded. Its settings are the same seven pages, in the browser: `/settings` in a thread, a button
   at first setup, or `Inferpal.Host --settings`; saved, they apply to the open threads from their next question.
 - **Typed @-mentions, `/plan` and `/agent-step` modes, and per-turn RAG auto-context** all
   work in VS Code too.
-- **Not in VS Code yet** — `/fix-build` is Visual Studio's alone (it answers that it is not available), and so is
-  the ⭐ that saves a code block to the snippet library.
+- **Visual Studio only** — `/fix-build` (VS Code answers that it is not available; there, a failed build task's
+  banner sends its errors to the agent) and the ⭐ that saves a code block to the snippet library.
 
 </details>
 
 ### Localization & theming
 
-- **10 UI languages**, following Visual Studio or overridden independently.
+- **10 UI languages**, following your editor's language or chosen on the *Language and appearance* settings page.
 - **Theme awareness** — colors follow the editor's Light / Dark / Blue themes and Windows high
   contrast; **Density** (*Language and appearance*) draws the conversation comfortable or compact.
 

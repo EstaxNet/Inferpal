@@ -52,7 +52,9 @@ On Linux, the host does not start without `libicu` (or `icu-libs`): install it, 
 
 ### Zed
 
-Agent Panel → **External Agents** → **Add Agent** → **Add Custom Agent**, then in `settings.json`:
+1. In the Agent Panel, open **External Agents** → **Add Agent** → **Add Custom Agent**.
+2. Zed opens its `settings.json`: add Inferpal under `agent_servers`, with the full path of the executable.
+3. Start a thread with **Inferpal** from the Agent Panel's new-thread menu.
 
 ```json
 {
@@ -66,8 +68,6 @@ Agent Panel → **External Agents** → **Add Agent** → **Add Custom Agent**, 
   }
 }
 ```
-
-Start a thread with **Inferpal** from the Agent Panel's new-thread menu.
 
 ### JetBrains IDEs (Rider and the others)
 
@@ -234,7 +234,7 @@ have not played, read in their code and documentation:
 ## Set it up
 
 Inferpal uses the settings Visual Studio and VS Code already share (`%AppData%\Inferpal\config.json` on Windows,
-`~/.config/Inferpal/config.json` on Linux, `~/Library/Application Support/Inferpal/config.json` on macOS): if you use Inferpal in one of them, there is nothing to do.
+`~/.config/Inferpal/config.json` on Linux and macOS): if you use Inferpal in one of them, there is nothing to do.
 
 With a local Ollama already running, there is nothing to set up: Inferpal finds it.
 
@@ -277,7 +277,7 @@ Once Inferpal is set up, type **`/settings`** in any thread to open the same pag
 
 ## What you get
 
-- **Three modes, plus each mode found for the workspace** — *Default* (answers, and uses the tools as needed), *Agent* (plans the task, then carries it out
+- **Three modes, plus the [modes](configuration.md#modes) your repository defines and your own** — *Default* (answers, and uses the tools as needed), *Agent* (plans the task, then carries it out
   step by step), *Plan* (reads and explores, changes nothing) — and the **model**, chosen among the models your server
   has installed. Both appear as the session's options in your client.
 - The model shown is the one that answers: in
@@ -299,8 +299,8 @@ Once Inferpal is set up, type **`/settings`** in any thread to open the same pag
   images (otherwise a notice says it was not seen); a PDF, Word, Excel or other document as its text. A document
   protected by a password stays closed, and says so — an ACP client gives Inferpal no box to ask for it.
 - **Sessions are saved** after every turn and listed again for the folder they belong to; reopened, they come back
-  whole. A session VS Code or Visual Studio saves for the same folder is listed too, branches included (from this
-  version on: older ones do not record their folder).
+  whole. A session VS Code or Visual Studio saves for the same folder is listed too, branches included (a session
+  saved by an older version does not record its folder, so it is not listed).
 
 **Try it** — in a thread:
 
@@ -319,7 +319,7 @@ Once Inferpal is set up, type **`/settings`** in any thread to open the same pag
   rule written to your settings, a documentation crawl's verdict — arrives as a session notice, out of the transcript;
   a conversation made to fit before a question arrives as a compaction, with the summary the model now reads.
 - A client
-  that does not declare them gets the text and the `context_compact` step as before.
+  that does not declare them gets the same text in the transcript, and the compaction as a `context_compact` step.
 - The end of a cut answer and a
   `/task` report always stay in the transcript.
 
@@ -333,6 +333,10 @@ editor says so, once:
 - inline suggestions (ghost text);
 - the debugger tools (`/debug`, the debugger capture of `/tdd`);
 - the Context X-Ray panel (the settings open in your browser: `/settings`);
+- the cards that ask **you** something during a turn — the agent's question (`ask_question`, which is not offered
+  here), a protected document's password (the document stays closed, and says so), an MCP server's form (servers
+  are not offered forms) and a repository MCP server's start-up value (that server is not started): ACP gives the
+  agent no box to ask in;
 - the commands that work on the editor or its panels: `/explain`, `/review`, `/fix`, `/refactor`, `/doc`, `/branch`,
   `/agent-step`, `/resume`, and `/test` (it works on the editor's active file). To start over, open a new thread
   instead of `/clear`;

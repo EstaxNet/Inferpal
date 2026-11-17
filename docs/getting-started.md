@@ -64,7 +64,7 @@ listing, *Inferpal — Local AI Agent for Visual Studio* — or the prebuilt VSI
 
 The VS Code extension shares the same engine and the same Inferpal configuration as the
 Visual Studio extension — configure once, use in both editors. A few editor features are
-Visual Studio-only for now: [the list](features.md#two-editors-one-engine).
+Visual Studio-only: [the list](features.md#two-editors-one-engine).
 
 Install from the
 **[VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode)** —
@@ -112,9 +112,11 @@ To build it from source, see **[Development → VS Code extension](development.m
 
 ## 4. Open the chat
 
-In Visual Studio: **Tools → Inferpal → Inferpal Chat**.
-
-In VS Code: open the **Inferpal** view in the Activity Bar.
+| Editor | Open the chat | Open the settings |
+|---|---|---|
+| Visual Studio | **Tools → Inferpal → Inferpal Chat** | **Tools → Inferpal → Inferpal Settings…** |
+| VS Code | the **Inferpal** view in the Activity Bar | the gear in the chat's title bar, or *Inferpal: Settings* |
+| Both | — | `/settings` in the chat |
 
 ## 5. Connect to your server
 
@@ -213,11 +215,10 @@ Switch to the **Inferpal** chat window, type a prompt, and press **Enter** (or c
 Explain this project: what it does and where it starts
 ```
 
-In VS Code too, start chatting: streaming replies with full markdown, the agentic loop with approvals and a
-live plan block, collapsible tool bubbles, typed `@`-mentions, slash-command
-autocomplete, inline FIM completions, unsaved-buffer awareness and live diagnostics from
-the Problems panel are all wired. Nearly all slash commands work headless through the
-host — see **[Slash Commands](slash-commands.md)** for the few still VS-only.
+VS Code has the same chat: streamed replies in Markdown, the agent with its approvals and its live plan, the
+`@`-mentions, slash-command completion, ghost text, unsaved changes and the Problems panel's diagnostics. Nearly every
+slash command works in both editors — **[Slash Commands](slash-commands.md)** names the few that are Visual
+Studio-only.
 
 ## 7. Add project context (optional)
 
