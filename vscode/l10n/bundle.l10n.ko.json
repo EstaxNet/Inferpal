@@ -237,5 +237,6 @@
   "Drawing the diagram…": "다이어그램을 그리는 중…",
   "Diagram drawn from the Mermaid code": "Mermaid 코드로 그린 다이어그램",
   "This diagram does not read, so it is shown as code": "이 다이어그램을 읽을 수 없어 코드로 표시합니다",
-  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} 모델에게 수정을 요청하세요."
+  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} 모델에게 수정을 요청하세요.",
+  "{0} (proposed change)": "{0} (제안된 변경)"
 }

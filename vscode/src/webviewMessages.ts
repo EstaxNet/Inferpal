@@ -240,7 +240,7 @@ export type ExtToWebview =
   | { type: 'assistant'; text: string; timestamp: string; notice?: boolean }
   | { type: 'tool'; name: string; input: string; output: string; hasErrors: boolean; diff?: string; timestamp: string; expanded: boolean }
   | { type: 'plan'; plan: WvPlan }
-  | { type: 'approval'; id: number; message: string; card?: ApprovalCard | null }
+  | { type: 'approval'; id: number; message: string; card?: ApprovalCard | null; hasDiff?: boolean }
   | { type: 'approvalDismiss'; id: number }
   /** An MCP server's form to fill; the same `card.id` again replaces the card drawn (what to fix). */
   | { type: 'inputForm'; card: InputCard }
@@ -327,7 +327,7 @@ export type WebviewToExt =
   | { type: 'approvalAnswer'; id: number; answer: number }
   | { type: 'inputAnswer'; id: string; action: InputFormAnswer['action']; values: InputFormAnswer['values'] }
   | { type: 'mentionQuery'; query: string }
-  | { type: 'openApprovalDiff'; text: string }
+  | { type: 'openApprovalDiff'; text: string; id?: number }
   | { type: 'xrayToggle'; id: string; enabled: boolean }
   /** A question's "Go back here" (the `ordinal`-th question bubble of the view, notices included). */
   | { type: 'rewindPlan'; ordinal: number; question: string }

@@ -237,5 +237,6 @@
   "Drawing the diagram…": "Diagramm wird gezeichnet…",
   "Diagram drawn from the Mermaid code": "Aus dem Mermaid-Code gezeichnetes Diagramm",
   "This diagram does not read, so it is shown as code": "Dieses Diagramm lässt sich nicht lesen und wird als Code angezeigt",
-  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} Bitten Sie das Modell, es zu korrigieren."
+  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} Bitten Sie das Modell, es zu korrigieren.",
+  "{0} (proposed change)": "{0} (vorgeschlagene Änderung)"
 }

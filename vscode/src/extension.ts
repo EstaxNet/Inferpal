@@ -1,6 +1,7 @@
 ﻿// Extension entry point: resolves the Inferpal.Host binary, spawns/supervises it,
 // wires the editor bridge (reverse RPC + document sync) and registers the chat view.
 import * as fs from 'fs';
+import { ApprovalDiffContent } from './approvalDiffContent';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { ChatViewProvider } from './chatViewProvider';
@@ -30,6 +31,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   bridge = new EditorBridge(context.secrets);
   context.subscriptions.push(bridge);
+  // The two sides of an approval card's files, for VS Code's diff editor ("Open diff").
+  context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(ApprovalDiffContent.scheme, new ApprovalDiffContent()));
 
   // This is what makes debug_control / debug_inspect exist for the model on this
   // front-end. Created unconditionally — vscode.debug is always there — while whether *this*
@@ -49,7 +52,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     log,
     terminals,
   );
-  bridge.setApprovalCard((note, token) => chatView.requestApproval(note.message, token, note.card ?? null));
+  bridge.setApprovalCard((note, token) => chatView.requestApproval(note.message, token, note.card ?? null, note.diffs ?? []));
   bridge.setInputCard((card, token) => chatView.requestInput(card, token));
   context.subscriptions.push(
     chatView,

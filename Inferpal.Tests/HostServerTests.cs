@@ -37,7 +37,8 @@ public partial class HostServerTests
     private static readonly ModelWait TestWait = new ModelWait(1_000, TimeSpan.FromSeconds(9), null, TimeSpan.FromMinutes(5));
     private sealed record ThinkingNote(string? Text);
     private sealed record ToolNote(string Name, string Input, string Output, bool HasErrors, string? Diff = null, string? Kept = null);
-    private sealed record ApprovalNote(string Message);
+    private sealed record ApprovalNote(string Message, List<ApprovalDiffNote>? Diffs = null);
+    private sealed record ApprovalDiffNote(string Path, string OldText, string NewText);
 
     private sealed class ClientTarget
     {
@@ -48,6 +49,8 @@ public partial class HostServerTests
         public int     ApprovalAnswer  = 0;
         public int     ApprovalPrompts;
         public string? LastApprovalMessage;
+        /// <summary>The files the last card carried: what VS Code's "Open diff" opens.</summary>
+        public List<ApprovalDiffNote>? LastApprovalDiffs;
         public string? Diagnostics;
 
         [JsonRpcMethod("editor/diagnostics")]
@@ -146,6 +149,7 @@ public partial class HostServerTests
         {
             ApprovalPrompts++;
             LastApprovalMessage = note.Message;
+            LastApprovalDiffs = note.Diffs;
             ApprovalEntered.TrySetResult(true);
             if (WhileTheCardWaits is { } typing) await typing();
 
@@ -2029,6 +2033,28 @@ public partial class HostServerTests
 
         Assert.True(ok);
         Assert.NotNull(h.Target.LastApprovalMessage);
+    }
+
+    [Fact]
+    public async Task ACardThatChangesAFile_CarriesItsDiff_ToVsCode_AndACommandCarriesNone()
+    {
+        // VS Code's "Open diff" opens the file before and after side by side: the card must carry them, to an editor that
+        // asked for no structured events too; a card that changes no file carries none, and VS Code then offers no link.
+        using var h = CreateHarness();
+        h.Target.ApprovalAnswer = 1;
+        var root = Path.GetTempPath();
+        var approval = new RpcApprovalService(new InferpalConfig(), () => root, h.ServerRpc);
+
+        await approval.RequestApprovalAsync("write_file", "Pricing.cs", CancellationToken.None, subject: "Pricing.cs",
+            diff: new Services.CodeActions.DiffInfo("class Pricing { }\n", "// Prices.\nclass Pricing { }\n", "Pricing.cs"))
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var edit = Assert.Single(h.Target.LastApprovalDiffs!);
+        Assert.Equal(Path.Combine(root, "Pricing.cs"), edit.Path);
+        Assert.Equal("// Prices.\nclass Pricing { }\n", edit.NewText);
+
+        await approval.RequestApprovalAsync("run_command", "dotnet --version", CancellationToken.None, subject: "dotnet --version")
+            .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        Assert.Empty(h.Target.LastApprovalDiffs ?? []);
     }
 
     [Fact]

@@ -582,6 +582,16 @@ export interface ApprovalNote {
   message: string;
   /** The card the chat draws; absent from an older host, which only sends the message. */
   card?: ApprovalCard | null;
+  /** Each file the call changes, its text before and after: what "Open diff" opens side by side. Empty or absent for a
+   * card that changes no file (a command, a page to look at), which offers no "Open diff". */
+  diffs?: ApprovalFileDiff[];
+}
+
+/** One file's change on an approval card. */
+export interface ApprovalFileDiff {
+  path: string;
+  oldText: string;
+  newText: string;
 }
 
 /** One line of an approval card's preview. */

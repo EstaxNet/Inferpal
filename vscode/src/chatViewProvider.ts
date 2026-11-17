@@ -9,6 +9,7 @@ import { DROPPED_FILE_LIMIT } from './droppedFiles';
 import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
+import { ApprovalDiffContent } from './approvalDiffContent';
 import { say as sayInStatusBar } from './inlineCompletions';
 import { hostErrorText, hostUnavailableMessage, isConnectionLost, promptOpenFolder } from './hostStatus';
 import { mentionTokens, resolveMention } from './mentionPaths';
@@ -26,7 +27,7 @@ import { renderChatHtml } from './webview/chatWebviewHtml';
 import { samePath } from './debugBridge';
 import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
-  ApprovalCard, AwayNotice, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
+  ApprovalCard, ApprovalFileDiff, AwayNotice, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
   ModelsByKind, SavedMessage, SessionLoadResult, SessionSwitches, hasSwitches, noSwitches, SlashEffect, TestsGenerateResult, TurnNote, WindowNoticeResult,
   ConfigReloadResult, ImageDto, ImageNotSeenCard, ImageText, ImageTextBanner,
 } from './protocol';
@@ -131,6 +132,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** The message is kept with the answer: a rehydration rebuilds the webview from the transcript,
    *  which carries no card, so every card still waiting is posted again (see hydrate). */
   private readonly pendingApprovals = new Map<number, { message: string; card: ApprovalCard | null; resolve: (answer: number) => void }>();
+
+  /** The files of the last cards, by card id: "Open diff" still opens them after the card is answered. Bounded. */
+  private readonly approvalDiffs = new Map<number, ApprovalFileDiff[]>();
+
+  private rememberApprovalDiffs(id: number, diffs: ApprovalFileDiff[]): void {
+    if (diffs.length === 0) {
+      return;
+    }
+    this.approvalDiffs.set(id, diffs);
+    while (this.approvalDiffs.size > 50) {
+      this.approvalDiffs.delete(this.approvalDiffs.keys().next().value!);
+    }
+  }
   /** Input cards waiting for the user (an MCP server's form), by the host's card id: posted again by a rehydration, like
    *  the approval cards. */
   private readonly pendingInputs = new Map<string, { card: InputCard; resolve: (answer: InputFormAnswer | null) => void }>();
@@ -315,7 +329,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * (0 deny / 1 once / 2 always / 3 the card's narrow rule). Returns undefined when the card cannot be
    * shown (no resolved view, or no turn running) — the caller then falls back to a modal dialog.
    */
-  async requestApproval(message: string, token?: CancellationToken, card: ApprovalCard | null = null): Promise<number | undefined> {
+  async requestApproval(message: string, token?: CancellationToken, card: ApprovalCard | null = null,
+                        diffs: ApprovalFileDiff[] = []): Promise<number | undefined> {
     // ⚠ Outside a turn, no card: a card in a conversation nobody is watching holds the tool (a repository's MCP server
     // asked about when the host starts), and the next Enter in an empty composer answered it — "Allow once" given to a
     // question nobody read, while the card the user was reading still waited. The modal asks instead, as in Visual
@@ -336,11 +351,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
     }
     const id = ++this.approvalSeq;
+    this.rememberApprovalDiffs(id, diffs);
     const answer = new Promise<number>((resolve) => this.pendingApprovals.set(id, { message, card, resolve }));
     // Turn cancelled while the card is up: deny, and retire the card in the webview so
     // it cannot be answered into a run that no longer exists (ghost card).
     const cancelSub = token?.onCancellationRequested(() => this.dismissApproval(id));
-    this.post({ type: 'approval', id, message, card });
+    this.post({ type: 'approval', id, message, card, hasDiff: diffs.length > 0 });
     const attention = ChatViewProvider.attentionWhileWaiting(
       t('Inferpal is waiting for your approval.'), () => this.pendingApprovals.has(id), answer);
     try {
@@ -1832,6 +1848,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       case 'openApprovalDiff': {
         try {
+          // The card's files in VS Code's diff editor, before and after side by side; an older host that sent no file
+          // falls back to the card's text.
+          const diffs = msg.id !== undefined ? this.approvalDiffs.get(msg.id) : undefined;
+          if (diffs && diffs.length > 0) {
+            for (const d of diffs) {
+              const key = `${msg.id}/${encodeURIComponent(d.path)}`;
+              ApprovalDiffContent.put(`before/${key}`, d.oldText);
+              ApprovalDiffContent.put(`after/${key}`, d.newText);
+              const name = d.path.split(/[\\/]/).pop() ?? d.path;
+              await vscode.commands.executeCommand('vscode.diff',
+                vscode.Uri.from({ scheme: ApprovalDiffContent.scheme, path: `/before/${key}/${name}` }),
+                vscode.Uri.from({ scheme: ApprovalDiffContent.scheme, path: `/after/${key}/${name}` }),
+                t('{0} (proposed change)', vscode.workspace.asRelativePath(d.path)), { preview: diffs.length === 1 });
+            }
+            return;
+          }
           const doc = await vscode.workspace.openTextDocument({ language: 'diff', content: msg.text });
           await vscode.window.showTextDocument(doc, { preview: true });
         } catch (err) {
@@ -4691,7 +4723,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // The transcript carries no card and the webview just rebuilt from it: a card still waiting
     // would vanish while the host keeps waiting for its answer, with no timeout.
     for (const [id, pending] of this.pendingApprovals) {
-      this.post({ type: 'approval', id, message: pending.message, card: pending.card });
+      this.post({ type: 'approval', id, message: pending.message, card: pending.card, hasDiff: this.approvalDiffs.has(id) });
     }
     for (const pending of this.pendingInputs.values()) {
       this.post({ type: 'inputForm', card: pending.card });

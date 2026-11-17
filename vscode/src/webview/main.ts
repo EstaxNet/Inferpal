@@ -2097,7 +2097,7 @@ function kbd(text: string): HTMLElement {
   return k;
 }
 
-function addApprovalCard(id: number, message: string, card?: ApprovalCard | null): void {
+function addApprovalCard(id: number, message: string, card?: ApprovalCard | null, hasDiff?: boolean): void {
   if (streamEl) {
     actNarration.push(streamEl);
   }
@@ -2118,11 +2118,16 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
   const subject = document.createElement('span');
   subject.className = 'approval-subject';
   subject.textContent = [card?.subject, card?.meta].filter((p) => p).join(' · ');
-  const openDiff = document.createElement('button');
-  openDiff.className = 'linkbtn';
-  openDiff.textContent = t('approvalOpenDiff');
-  openDiff.addEventListener('click', () => post({ type: 'openApprovalDiff', text: card?.message ?? message }));
-  head.append(icon('edit', 14), title, subject, openDiff);
+  head.append(icon('edit', 14), title, subject);
+  // Only a card that changes a file offers its diff: on a command or a page to look at, the link opened the card's text.
+  // An older host sends no files: its card shows the link when its preview holds a change.
+  if (hasDiff ?? (card?.preview ?? []).some((l) => l.kind === 'add' || l.kind === 'del')) {
+    const openDiff = document.createElement('button');
+    openDiff.className = 'linkbtn';
+    openDiff.textContent = t('approvalOpenDiff');
+    openDiff.addEventListener('click', () => post({ type: 'openApprovalDiff', text: card?.message ?? message, id }));
+    head.append(openDiff);
+  }
   el.setAttribute('aria-label', [card?.title, card?.subject].filter((p) => p).join(' — ') || message);
 
   let preview: HTMLElement;
@@ -4028,7 +4033,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       renderPlan(msg.plan);
       break;
     case 'approval':
-      addApprovalCard(msg.id, msg.message, msg.card);
+      addApprovalCard(msg.id, msg.message, msg.card, msg.hasDiff);
       break;
     case 'approvalDismiss':
       dismissApprovalCard(msg.id);

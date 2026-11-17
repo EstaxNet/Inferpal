@@ -98,7 +98,7 @@ internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
     protected override async Task<ApprovalDecision> PromptUserAsync(Services.Presentation.ApprovalPrompt prompt, CancellationToken ct)
     {
         var card = Services.Presentation.ApprovalCard.Build(prompt, RootDir);
-        return await AskAsync(Flatten(prompt.Message, prompt.Diff), card, _structured ? prompt : null, ct);
+        return await AskAsync(Flatten(prompt.Message, prompt.Diff), card, _structured ? prompt : null, ct, Diffs(prompt));
     }
 
     protected override Task<ApprovalDecision> PromptUserAsync(string message, Services.CodeActions.DiffInfo? diff, CancellationToken ct) =>
@@ -174,13 +174,16 @@ internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
         }
     }
 
+    /// <param name="diffs">Each file's change (<see cref="Diffs"/>): what "Open diff" opens side by side. Empty for a card
+    /// that changes no file, which then offers no "Open diff".</param>
     private async Task<ApprovalDecision> AskAsync(string message, Services.Presentation.ApprovalCardModel? card,
-                                                  Services.Presentation.ApprovalPrompt? prompt, CancellationToken ct)
+                                                  Services.Presentation.ApprovalPrompt? prompt, CancellationToken ct,
+                                                  List<object>? diffs = null)
     {
         try
         {
             var answer = prompt is null
-                ? await _rpc.InvokeWithParameterObjectAsync<int>("approval/request", new { message, card }, ct)
+                ? await _rpc.InvokeWithParameterObjectAsync<int>("approval/request", new { message, card, diffs = diffs ?? [] }, ct)
                 : await _rpc.InvokeWithParameterObjectAsync<int>("approval/request", new
                   {
                       message,
@@ -188,7 +191,7 @@ internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
                       callId  = ToolEventRegistry.CurrentCallId,
                       tool    = prompt.ToolName,
                       details = prompt.Details,
-                      diffs   = Diffs(prompt),
+                      diffs   = diffs ?? Diffs(prompt),
                   }, ct);
             return answer switch
             {

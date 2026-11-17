@@ -237,5 +237,6 @@
   "Drawing the diagram…": "Рисуем диаграмму…",
   "Diagram drawn from the Mermaid code": "Диаграмма, нарисованная по коду Mermaid",
   "This diagram does not read, so it is shown as code": "Эту диаграмму не удалось прочитать, поэтому показан её код",
-  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} Попросите модель исправить его."
+  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} Попросите модель исправить его.",
+  "{0} (proposed change)": "{0} (предлагаемое изменение)"
 }

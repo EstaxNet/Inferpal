@@ -237,5 +237,6 @@
   "Drawing the diagram…": "正在绘制图表…",
   "Diagram drawn from the Mermaid code": "根据 Mermaid 代码绘制的图表",
   "This diagram does not read, so it is shown as code": "无法读取此图表，因此显示为代码",
-  "Mermaid: {0} Ask the model to fix it.": "Mermaid：{0} 请让模型修正它。"
+  "Mermaid: {0} Ask the model to fix it.": "Mermaid：{0} 请让模型修正它。",
+  "{0} (proposed change)": "{0}（建议的更改）"
 }

@@ -237,5 +237,6 @@
   "Drawing the diagram…": "図を描画しています…",
   "Diagram drawn from the Mermaid code": "Mermaid コードから描いた図",
   "This diagram does not read, so it is shown as code": "この図は読み取れないため、コードで表示しています",
-  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} モデルに修正を依頼してください。"
+  "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} モデルに修正を依頼してください。",
+  "{0} (proposed change)": "{0}（提案された変更）"
 }
