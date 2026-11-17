@@ -21,6 +21,10 @@ internal static class SpreadsheetText
 
     static SpreadsheetText() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);   // an .xls names its code page
 
+    /// <summary>An ExcelDataReader over <paramref name="bytes"/>, the code pages an <c>.xls</c> names registered first.</summary>
+    internal static IExcelDataReader Open(byte[] bytes, string? password) =>
+        ExcelReaderFactory.CreateReader(new MemoryStream(bytes), new ExcelReaderConfiguration { Password = password, LeaveOpen = false });
+
     internal static DocumentExtraction Extract(byte[] bytes, CancellationToken ct, string? password)
     {
         // A protected .xlsx is an encrypted OLE container; opened here, as for a DOCX, so the same card serves every format.
@@ -39,8 +43,7 @@ internal static class SpreadsheetText
         var stoppedAt = 0;
         try
         {
-            using var reader = ExcelReaderFactory.CreateReader(new MemoryStream(bytes),
-                new ExcelReaderConfiguration { Password = OfficeCrypto.IsCompoundFile(bytes) ? password : null, LeaveOpen = false });
+            using var reader = Open(bytes, OfficeCrypto.IsCompoundFile(bytes) ? password : null);
             var sheet = 0;
             do
             {
@@ -79,7 +82,7 @@ internal static class SpreadsheetText
     }
 
     /// <summary>A cell as text: a number and a date in the invariant culture, a date without a midnight time.</summary>
-    private static string Cell(object? value) => value switch
+    internal static string Cell(object? value) => value switch
     {
         null => string.Empty,
         DateTime d => d.TimeOfDay == TimeSpan.Zero ? d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)

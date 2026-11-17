@@ -223,7 +223,7 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
   Chat mode.
 - **Agentic loop** — the model autonomously chains tool calls (read/write files, run
   commands, search the web, diagnose builds, run tests, search the codebase) for up to
-  **20 steps** per request by default (*Steps per request*, `agentMaxIterations`), showing each step as a collapsible
+  **40 steps** per request by default (*Steps per request*, `agentMaxIterations`), showing each step as a collapsible
   bubble. Independent read-only calls in a single turn (`read_file`, `list_files`, `search_in_files`…) run **in
   parallel**.
 - **Turning tools off** — `/tools` lists every tool with what it weighs in each request; `/tools off <tool>` (or the
@@ -312,8 +312,8 @@ look at what the code produces, measure it, and read the files developers deal w
 - **The text of an image** — `ocr` reads a screenshot, a photo of a page or a scanned PDF in Inferpal's ten languages,
   nothing to install; a model that does not see images gets that text instead of the picture.
 - **Long logs, data files, archives** — `read_file` filters a log by level and time (`level`, `since`, `until`), each
-  entry with its stack trace; `query_data` answers one read-only SQL query on a CSV, TSV or SQLite file too large to
-  read; a zip, NuGet or tar archive is listed and read in place, never extracted.
+  entry with its stack trace; `query_data` answers one read-only SQL query on a CSV, TSV, JSON, Excel or SQLite file
+  too large to read; a zip, NuGet or tar archive is listed and read in place, never extracted.
 - **Notebooks** — `edit_notebook` changes one cell, `run_notebook` runs the notebook on a copy and reads the traceback.
 - **Where a setting comes from, and why a line is there** — `msbuild_property` finds the file that sets a build
   property, so a build error that comes from a setting is fixed where the setting is defined; `git_history` reads the

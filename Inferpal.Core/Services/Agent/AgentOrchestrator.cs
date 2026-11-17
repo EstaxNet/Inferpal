@@ -239,7 +239,7 @@ internal sealed class AgentOrchestrator
     // Fallback iteration cap when AgentMaxIterations is 0/unset. There is deliberately
     // no "unlimited" mode: an uncapped agent loop on a single shared local GPU is a
     // footgun (and the settings UI documents 0 as "use the default").
-    internal const int DefaultMaxIterations = 20;
+    internal const int DefaultMaxIterations = 40;
 
     /// <summary>Of what a capped result keeps, the share taken from its END.</summary>
     internal const int TailCharsInContext = MaxToolResultCharsInContext / 4;

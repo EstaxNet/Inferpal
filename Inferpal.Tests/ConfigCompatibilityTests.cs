@@ -33,6 +33,7 @@ public sealed class ConfigCompatibilityTests : IDisposable
     private static readonly Dictionary<string, (string Json, string Why)> AddedSince = new(StringComparer.Ordinal)
     {
         ["requestHeaders"] = ("\"\"", "no headers: a server that needed none still needs none"),
+        ["agentMaxIterationsRaised"] = ("true", "set as the file is read: its old default of 20 steps is raised once, any other count kept"),
     };
 
     /// <summary>
@@ -40,7 +41,36 @@ public sealed class ConfigCompatibilityTests : IDisposable
     /// (every key is written), one whose file predates the key gets the new one: ⚠ a change without a line here fails the
     /// suite — say who gets what before changing it.
     /// </summary>
-    private static readonly Dictionary<string, string> DefaultChangedSince = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, string> DefaultChangedSince = new(StringComparer.Ordinal)
+    {
+        ["agentMaxIterations"] = "20 → 40 steps: a run that reads, edits, builds and tests again ran out of 20; every file "
+                               + "holds 20 as a value, so a 20 read without agentMaxIterationsRaised is raised once "
+                               + "(TheOldDefaultStepCount_IsRaisedOnce_AndAChosenTwentyStays)",
+    };
+
+    /// <summary>A file of the last version holds the old default, 20 steps, as a value: it is read as 40, saved as 40 at
+    /// the next save; a 20 the person sets afterwards stays; a count they had chosen (the full fixture's 30) is kept.</summary>
+    [Fact]
+    public void TheOldDefaultStepCount_IsRaisedOnce_AndAChosenTwentyStays()
+    {
+        File.Copy(Fixture("-factory"), _path, overwrite: true);
+        Assert.Equal(20, Parse(_path)["agentMaxIterations"]!.GetValue<int>());   // witness: the release wrote its default
+
+        var config = InferpalConfig.Load();
+        Assert.Equal(40, config.AgentMaxIterations);
+
+        config.ContextWindowSize = 16_384;   // any save writes the raised count and its mark
+        config.Save();
+        Assert.Equal(40, Parse(_path)["agentMaxIterations"]!.GetValue<int>());
+        Assert.True(Parse(_path)["agentMaxIterationsRaised"]!.GetValue<bool>());
+
+        var again = InferpalConfig.Load();
+        again.AgentMaxIterations = 20;
+        again.Save();
+        Assert.Equal(20, InferpalConfig.Load().AgentMaxIterations);
+
+        Assert.Equal(30, LoadReleaseFile().AgentMaxIterations);
+    }
 
     private readonly string? _previous = InferpalConfig.OverridePathForTests;
     private readonly string  _path = Path.Combine(Path.GetTempPath(), "inferpal-tests", $"compat-{Guid.NewGuid():N}.json");

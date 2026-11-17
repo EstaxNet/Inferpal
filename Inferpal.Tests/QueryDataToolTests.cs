@@ -141,11 +141,84 @@ public sealed class QueryDataToolTests : IDisposable
         Assert.Contains($"more rows than the {QueryDataTool.MaxRows} shown", said);
     }
 
-    [Fact]
-    public async Task ASpreadsheet_IsNamed_WithWhatToDo()
+    private string Fixture(string name)
     {
-        Write("book.xlsx", "x");
-        Assert.Contains("export it as CSV", await Query("book.xlsx", "SELECT 1"));
+        var path = Path.Combine(_root, name);
+        File.Copy(Path.Combine(WebviewRebuildTests.RepoRoot(), "Inferpal.Tests", "Fixtures", "documents", name), path);
+        return path;
+    }
+
+    /// <summary>The fixture (<c>docs/probes/pari110/build_corpus.py fixture</c>): a title merged over the columns, a blank
+    /// row, the header, a region merged over three orders, Excel dates (one with a time), and a second sheet.</summary>
+    [Fact]
+    public async Task AWorkbook_IsATablePerSheet_MergedCellsFilled_DatesReadByDateFunctions()
+    {
+        Fixture("ventes-fusion.xlsx");
+
+        var nord = await Query("ventes-fusion.xlsx", "SELECT COUNT(*) AS n FROM Ventes_2026 WHERE \"Région\" = 'Nord'");
+        var march = await Query("ventes-fusion.xlsx", "SELECT COUNT(*) AS n FROM Ventes_2026 WHERE strftime('%Y-%m', Date) = '2026-03'");
+        var time = await Query("ventes-fusion.xlsx", "SELECT Date FROM Ventes_2026 WHERE Client = 'Cy'");
+        var join = await Query("ventes-fusion.xlsx", "SELECT pays FROM Clients WHERE nom = 'Bob'");
+
+        Assert.Contains("sheet 'Ventes 2026' as the table Ventes_2026 (4 row(s)); columns: Région TEXT, Date TEXT, Client TEXT, Montant REAL.", nord);
+        Assert.Contains("1 row(s) above the header left out", nord);
+        Assert.Contains("1 merged range(s) filled", nord);
+        Assert.EndsWith("\nn\n3", nord.ReplaceLineEndings("\n"));          // 1 without the fill
+        Assert.EndsWith("\nn\n3", march.ReplaceLineEndings("\n"));         // 2026-03-02, -15, -31
+        Assert.EndsWith("2026-04-01 14:30:00", time.Trim());
+        Assert.EndsWith("BE", join.Trim());
+    }
+
+    [Fact]
+    public async Task AJsonArray_AndAJsonlFile_AreTheTableData_NestedValuesAsJsonText()
+    {
+        Write("a.json", "[{\"id\": 1, \"ok\": true, \"tags\": [\"x\"]}, {\"id\": 2, \"ok\": false, \"extra\": \"late key\"}, 3]");
+        Write("e.jsonl", "{\"level\":\"error\",\"user\":{\"id\":7}}\n\nnot json\n{\"level\":\"info\",\"user\":{\"id\":7},\"ms\":1.5}\r\n");
+
+        var array = await Query("a.json", "SELECT SUM(ok), COUNT(extra) FROM data");
+        var lines = await Query("e.jsonl", "SELECT COUNT(DISTINCT json_extract(user, '$.id')) AS users, SUM(ms) FROM data");
+
+        Assert.Contains("(2 row(s)); columns: id INTEGER, ok INTEGER, tags TEXT, extra TEXT.", array);
+        Assert.Contains("tags hold(s) JSON text", array);
+        Assert.Contains("1 item(s) that are not objects were left out", array);
+        Assert.EndsWith("\n1,1", array.ReplaceLineEndings("\n"));
+        Assert.Contains("1 line(s) that are not valid JSON were left out", lines);
+        Assert.EndsWith("\n1,1.5", lines.ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public async Task AKeywordSheet_IsAnUnquotedTable_AHeadingMergedDownIsNoValue_BooleansAreOneAndZero()
+    {
+        Fixture("ventes-fusion.xlsx");
+
+        var said = await Query("ventes-fusion.xlsx", "SELECT COUNT(Notes) AS notes, SUM(\"Payé\") AS paid FROM Order_");
+
+        Assert.Contains("sheet 'Order' as the table Order_ (3 row(s))", said);
+        var guessed = await Query("ventes-fusion.xlsx", "SELECT COUNT(*) FROM [Sheet1$]");
+        Assert.StartsWith("Error:", guessed);
+        Assert.Contains("no such table", guessed);
+        Assert.Contains("as the table Ventes_2026", guessed);   // the real names, with the error
+        Assert.EndsWith("\nnotes,paid\n2,1", said.ReplaceLineEndings("\n"));   // "Notes" copied into row 2 would count 3
+    }
+
+    [Fact]
+    public async Task AJsonWithAKeyPerLine_IsRefusedPastTheColumnLimit_BeforeItIsHeld()
+    {
+        Write("k.jsonl", string.Concat(Enumerable.Range(0, QueryDataTool.MaxColumns + 1).Select(i => $"{{\"k{i}\":1}}\n")));
+        Write("page.xls", "<html><table><tr><td>1</td></tr></table></html>");
+
+        Assert.Contains($"more than {QueryDataTool.MaxColumns} different keys", await Query("k.jsonl", "SELECT 1"));
+        Assert.Contains("not an Excel workbook", await Query("page.xls", "SELECT 1"));
+    }
+
+    [Fact]
+    public async Task AJsonThatIsNoArray_AndAnOpenDocumentSheet_SayWhy()
+    {
+        Write("o.json", "{\"a\": 1}");
+        Write("b.ods", "x");
+
+        Assert.Contains("not an array of objects", await Query("o.json", "SELECT 1"));
+        Assert.Contains("OpenDocument spreadsheet", await Query("b.ods", "SELECT 1"));
     }
 
     [Theory]

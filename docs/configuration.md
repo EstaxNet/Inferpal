@@ -439,7 +439,8 @@ reported as unreachable after 15 s, not after the operating system's own retries
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `agentModeEnabled` | bool | `false` | Enable the Plan→Act→Observe orchestrator |
-| `agentMaxIterations` | int | `20` | Max Plan→Act→Observe iterations |
+| `agentMaxIterations` | int | `40` | Max Plan→Act→Observe iterations |
+| `agentMaxIterationsRaised` | bool | `true` | Set once a file's old default of 20 steps was raised to 40; a 20 you set afterwards stays. Written by Inferpal, not meant to be edited |
 
 ### Extensibility & state
 

@@ -65,8 +65,12 @@ an archive split into volumes (`.part1.rar`, `.7z.001`) is not read. At most 8 M
 |---|---|
 | SQLite database | `.db`, `.sqlite`, `.sqlite3` |
 | Delimited text, loaded as the table `data` | `.csv` (comma or semicolon), `.tsv` |
+| JSON, loaded as the table `data` (columns from the keys) | `.json` (an array of objects), `.jsonl`, `.ndjson` (one object per line) |
+| Excel workbook, one table per sheet named after it | `.xlsx`, `.xlsm`, `.xlsb`, `.xls` |
 
-An Excel workbook is not loaded for SQL: it is read as text, or exported as CSV first.
+In a sheet, a title above the header is left out, a merged cell gives its value to its whole range, and a date reads
+as `yyyy-MM-dd` text, which SQLite's date functions take. A nested JSON object stays JSON text, read with `json_extract`.
+A password-protected workbook and an OpenDocument sheet (`.ods`) are read with `read_file`, not loaded for SQL.
 
 ## Logs
 

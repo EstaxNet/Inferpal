@@ -197,7 +197,7 @@ flowchart TD
     smart -- "yes" --> fix["Smart Fix: build/typecheck → errors inline"]
     fix --> add["Append result"]
     smart -- "no" --> add
-    add --> cap{"Turn limit reached?<br/>agentMaxIterations, 20 by default"}
+    add --> cap{"Turn limit reached?<br/>agentMaxIterations, 40 by default"}
     cap -- "no" --> req
     cap -- "yes" --> stop["Stops with the limit message"]
     done -- "no tool calls" --> final["Final answer"]

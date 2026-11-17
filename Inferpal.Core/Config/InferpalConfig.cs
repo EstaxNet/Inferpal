@@ -602,10 +602,31 @@ internal class InferpalConfig
     /// <summary>
     /// Maximum number of Plan → Act → Observe iterations the agent is allowed to run.
     /// <c>0</c> falls back to the default cap (<see cref="Services.Agent.AgentOrchestrator.DefaultMaxIterations"/>,
-    /// 20) — there is no unlimited mode.
+    /// 40) — there is no unlimited mode.
     /// </summary>
     [JsonPropertyName("agentMaxIterations")]
-    public int AgentMaxIterations { get; set; } = 20;
+    public int AgentMaxIterations { get; set; } = 40;   // = AgentOrchestrator.DefaultMaxIterations (the docs read the literal)
+
+    /// <summary>
+    /// <c>true</c> once <see cref="AgentMaxIterations"/> follows the default of 40. A file written before it holds the old
+    /// default, 20, as a value: read without this key, a 20 is raised to 40 once (<see cref="RaiseOldIterationDefault"/>);
+    /// a 20 set by hand afterwards stays.
+    /// </summary>
+    [JsonPropertyName("agentMaxIterationsRaised")]
+    public bool AgentMaxIterationsRaised { get; set; } = true;
+
+    /// <summary>The default every saved file held as a value before it was raised to 40.</summary>
+    internal const int OldDefaultMaxIterations = 20;
+
+    /// <summary>Raises a file's old default of 20 steps to the current one, once: only a file that does not carry
+    /// <c>agentMaxIterationsRaised</c> — every file written before it — holds the old default rather than a choice.</summary>
+    private static void RaiseOldIterationDefault(InferpalConfig cfg, string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        if (doc.RootElement.ValueKind != JsonValueKind.Object || doc.RootElement.TryGetProperty("agentMaxIterationsRaised", out _)) return;
+        if (cfg.AgentMaxIterations == OldDefaultMaxIterations) cfg.AgentMaxIterations = Services.Agent.AgentOrchestrator.DefaultMaxIterations;
+        cfg.AgentMaxIterationsRaised = true;
+    }
 
     // ── VRAM / Model lifetime ─────────────────────────────────────────────────
 
@@ -793,9 +814,11 @@ internal class InferpalConfig
         {
             // Opened sharing write and delete, a held file read again (off the UI thread): the other editor replacing
             // the file neither makes it unreadable nor is refused its rename.
-            cfg = JsonSerializer.Deserialize<InferpalConfig>(Services.Signals.SignalFile.ReadShared(path));
+            var json = Services.Signals.SignalFile.ReadShared(path);
+            cfg = JsonSerializer.Deserialize<InferpalConfig>(json);
             if (cfg is not null)
             {
+                RaiseOldIterationDefault(cfg, json);
                 repaired = RepairNullText(cfg);
                 CanonicalizeChoices(cfg);
                 return true;
