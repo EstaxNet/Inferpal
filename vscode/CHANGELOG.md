@@ -3,6 +3,34 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.9.1
+
+It looks, it measures, it checks: the agent looks at the page and the app it builds, calls your API, measures before it
+optimizes, and reads what local models used to guess.
+
+- **It looks at what it builds**: the page your app serves, at a laptop's width and a phone's (`view_page`), and the
+  window of the desktop app it launched with every control's state (`view_window`). Images of the project open without
+  being attached.
+- **It calls the app it is building**: it starts your API in the background, waits until it listens, calls it, reads
+  a 500's stack trace, fixes it and calls again. Each call asks you first; *Always* covers that local address and port.
+- **It measures before it optimizes**: a command run several times after a warm-up, median and spread; and whether a change
+  is faster beyond the noise.
+- **A screenshot for a model that does not see images is no longer lost**: its text goes instead, read on your computer
+  by Inferpal's OCR in its ten languages, nothing to install. Scanned PDFs are read too, on every system.
+- **Logs, data files and archives**: a long log read by level and time, each entry with its stack trace; one read-only
+  SQL query on a CSV, TSV or SQLite file; a zip, NuGet package or `.tar.gz` read in place, a protected zip asking for its
+  password on a card.
+- **Notebooks fixed and run**: one cell changed, the others untouched; the notebook run on a copy and the traceback read.
+- **It asks instead of guessing**: when a request could mean several things, a card asks you, with the answers it
+  proposes.
+- **One change in many files, one approval**; **the history of your code** (commits, blame); **a build error traced to
+  the file its setting comes from**; **a vulnerable NuGet package** reported with the command that updates it.
+- **Intel Macs** get their own build; an installed Ollama is no longer offered for install again (on a Mac its app
+  opens on your click, on Linux the card shows the command that starts it); the graphics memory is detected on a Mac,
+  and with an AMD card on Linux.
+- **Fixed**: "Open diff" on an approval card opens VS Code's diff editor, the file before and after side by side, and
+  shows only on a card that changes a file; the run bar no longer counts a refused command as run.
+
 ## 1.9.0
 
 Show it what you are looking at: documents, screenshots and diagrams in the chat, and a server behind a proxy that just

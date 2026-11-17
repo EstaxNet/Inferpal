@@ -289,6 +289,37 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
 
 </details>
 
+<details>
+<summary><b>In detail: it looks, it measures, it checks</b></summary>
+
+A local model guesses where a developer would go and look; these tools let it look instead.
+
+- **The page it builds** — `view_page` captures a page your app serves on this machine, or an HTML file, at a
+  laptop's width and a phone's, in a browser cut off from the network: a button that cannot be seen, a layout that
+  overflows on a phone. It asks first, like a request to your app.
+- **The desktop app it launched** — `view_window` shows the window of the app the agent started in the background and
+  every control's role, name, value, state and place: a button left greyed out, a field a binding leaves empty. A model
+  that does not see images gets the controls too. Windows, macOS (it says which permission to allow) and Linux.
+- **The app it is building, called for real** — it starts your API in the background, waits for its "listening" line,
+  then sends requests with `http_request` and reads the answer, a 500's stack trace included, to fix and call again.
+- **A measure, not one lucky run** — `run_command` with `repeat` runs a command several times after a warm-up and
+  gives the median and the spread, and whether a change is faster beyond the noise.
+- **The text of an image** — `ocr` reads a screenshot, a photo of a page or a scanned PDF in Inferpal's ten languages,
+  nothing to install; a model that does not see images gets that text instead of the picture.
+- **Long logs, data files, archives** — `read_file` filters a log by level and time, each entry with its stack trace;
+  `query_data` answers one read-only SQL query on a CSV, TSV or SQLite file; an archive is read in place, never
+  extracted.
+- **Notebooks** — `edit_notebook` changes one cell, `run_notebook` runs the notebook on a copy and reads the traceback.
+- **Settings and history** — `msbuild_property` finds the file a build setting comes from; `git_history` reads the
+  commits, the blame and a commit's change.
+- **A question instead of a guess** *(Visual Studio and VS Code, not ACP editors)* — when a request could mean several things, `ask_question` asks
+  you on a card; **one approval for many files** — `replace_in_files` changes a text across the project, all or
+  nothing.
+
+Every tool and its parameters: [tools.md](tools.md).
+
+</details>
+
 ## 2. Stay in control
 
 Before a change, you decide. After it, you can take it back.

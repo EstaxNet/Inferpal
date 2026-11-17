@@ -25,7 +25,7 @@
 
 <p align="center">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><b>Visual Studio 2026 / 2022</b></a> ·
-  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><b>VS Code</b></a> (Windows x64, Linux x64, macOS on Apple Silicon) ·
+  <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><b>VS Code</b></a> (Windows x64, Linux x64, macOS on Apple Silicon and Intel) ·
   <a href="docs/acp.md"><b>Zed, JetBrains, Qt Creator, Neovim, Emacs</b></a>
 </p>
 
@@ -73,10 +73,37 @@ The spec is a PDF, the test data lives in a spreadsheet, the error is on a scree
 
 Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks and e-mails
 (`.eml`, `.msg`) are read too, by you and by the agent's `read_file` and `search_in_files`. When the model that will
-answer does not see images, a card offers one of your server that does. In Visual Studio, VS Code and ACP editors.
+answer does not see images, the text written in the image goes instead, read on your machine by Inferpal's OCR. In Visual Studio, VS Code and ACP editors.
 [How each format is read](docs/mentions.md)
 
 Also new: a model server behind a reverse proxy (Caddy, nginx, Cloudflare Access) is set up from the settings, which show what is sent and to whom. [What's in 1.9.0](https://github.com/EstaxNet/Inferpal/releases/tag/v1.9.0) · [See them in the feature tour](docs/features.md#documents-images-and-diagrams)
+
+## New in 1.9.1: it looks, it measures, it checks
+
+A local model guesses where a developer would go and look. Now the agent goes and looks.
+
+| You ask | The agent |
+|---|---|
+| "The Pay button doesn't show" | Captures the page your app serves, at a laptop's width and a phone's, in a browser cut off from the network (`view_page`) |
+| "Why is Order greyed out?" | Looks at the window of the desktop app it launched, and the state of every control in it (`view_window`) |
+| "Fix the 500 on POST /orders" | Starts your API in the background, waits until it listens, calls it, reads the stack trace, fixes it and calls again (`http_request`) |
+| "Make the report faster" | Runs it several times after a warm-up and says whether a change is faster beyond the noise, so a change that gains nothing is not kept on one lucky run (`run_command` with `repeat`) |
+| "The errors since 10:30" | Reads only those entries of a long log, each with its stack trace and line number (`read_file` by level and time) |
+| "How many orders failed, per day?" | Answers with one read-only SQL query on the CSV, TSV or SQLite file, not by reading 50 000 lines (`query_data`) |
+| "Find the exception in logs.zip" | Reads inside the archive without extracting it: zip, NuGet package, `.tar.gz` |
+| "Fix the cell that fails" | Changes that one notebook cell, runs the notebook on a copy and reads the traceback (`edit_notebook`, `run_notebook`) |
+| "Not available in C# 7.3" | Asks MSBuild where the setting comes from and fixes it in that file (`msbuild_property`) |
+| "Rename this key everywhere" | One approval for every file, with the diff, all or nothing (`replace_in_files`) |
+| "Why is this line like this?" | Reads the commits, the blame and what a commit changed (`git_history`) |
+
+A screenshot sent to a model that does not see images is no longer lost: its text goes instead, read on your computer by
+Inferpal's own OCR, in all ten of its languages, nothing to install. Scanned PDFs are read too, on Windows, Linux and macOS. When "the form"
+could be one of three, the agent asks you on a card instead of guessing (Visual Studio and VS Code). Calling your app and running a command still ask
+you first; an *Always* covers one local address and port.
+
+Also new, in VS Code and ACP editors: Intel Macs get their own build; an Ollama that is installed but not running is
+no longer offered for install again (on a Mac its app opens on your click, on Linux the card shows the command that
+starts it); and the graphics memory is detected on a Mac, and with an AMD card on Linux.
 
 ## One turn, from question to green build
 
