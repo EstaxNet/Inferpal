@@ -79,24 +79,25 @@ answer does not see images, the text written in the image goes instead, read on 
 
 ## It looks, it measures, it checks
 
-A local model guesses where a developer would go and look. Inferpal's agent goes and looks.
+A model that only reads source code has to imagine what the program does. Inferpal's agent can check instead: it
+looks at what the code produces, measures it, and reads the files developers deal with every day.
 
-| You ask | The agent |
+| The agent can | What you get |
 |---|---|
-| "The Pay button doesn't show" | Captures the page your app serves, at a laptop's width and a phone's, in a browser cut off from the network (`view_page`) |
-| "Why is Order greyed out?" | Looks at the window of the desktop app it launched, and the state of every control in it (`view_window`) |
-| "Fix the 500 on POST /orders" | Starts your API in the background, waits until it listens, calls it, reads the stack trace, fixes it and calls again (`http_request`) |
-| "Make the report faster" | Runs it several times after a warm-up and says whether a change is faster beyond the noise, so a change that gains nothing is not kept on one lucky run (`run_command` with `repeat`) |
-| "The errors since 10:30" | Reads only those entries of a long log, each with its stack trace and line number (`read_file` by level and time) |
-| "How many orders failed, per day?" | Answers with one read-only SQL query on the CSV, TSV or SQLite file, not by reading 50 000 lines (`query_data`) |
-| "Find the exception in logs.zip" | Reads inside the archive without extracting it: zip, NuGet package, `.tar.gz` |
-| "Fix the cell that fails" | Changes that one notebook cell, runs the notebook on a copy and reads the traceback (`edit_notebook`, `run_notebook`) |
-| "Not available in C# 7.3" | Asks MSBuild where the setting comes from and fixes it in that file (`msbuild_property`) |
-| "Rename this key everywhere" | One approval for every file, with the diff, all or nothing (`replace_in_files`) |
-| "Why is this line like this?" | Reads the commits, the blame and what a commit changed (`git_history`) |
+| Open a page of the web app you build, at desktop and phone widths, in a browser with no network access (`view_page`) | Layout and styling problems the source does not show — an invisible element, a layout that breaks on a phone — seen, not guessed |
+| Look at the window of a desktop app it started, with every control's type, text, value and state (`view_window`) | A disabled button or an empty field noticed, even by a model that cannot read images |
+| Start your web service, send it real HTTP requests and read the answers (`http_request`) | An error reproduced, fixed, then confirmed by calling the service again |
+| Run a command several times after a warm-up and compare medians (`run_command` with `repeat`) | A change kept as "faster" only when the gain is beyond the normal variation between runs |
+| Read a log by level and time range (`read_file`) | Only the entries that matter, each with its stack trace and line number |
+| Answer one read-only SQL query on a CSV, TSV or SQLite file (`query_data`) | Counts, filters and sums on files too large to read |
+| Read inside zip files, NuGet packages and tar archives without extracting them | Logs and packages inspected where they are |
+| Change one cell of a Jupyter notebook, then run the notebook on a copy (`edit_notebook`, `run_notebook`) | The failing cell fixed and its output checked, the rest of the notebook untouched |
+| Ask MSBuild where a build setting is defined (`msbuild_property`) | A build error that comes from a setting fixed in the file that sets it |
+| Change a text across many files in one approval (`replace_in_files`) | A rename across a project, all files or none, each backed up first |
+| Read which commits touched a file and who last changed each line (`git_history`) | Code understood before it is changed |
 
 The text of a screenshot or a scanned PDF is read by Inferpal's own OCR, in its ten languages, on Windows, Linux and
-macOS, with nothing to install. When "the form" could be one of three, the agent asks you on a card instead of
+macOS, with nothing to install. When a request could mean several things, the agent asks you on a card instead of
 guessing (Visual Studio and VS Code). Calling your app and running a command still ask you first; an *Always* covers
 one local address and port. [Every tool, by what you ask](docs/tools.md)
 
