@@ -487,6 +487,10 @@ internal partial class InferpalToolWindowData
             statusBubble?.ShowWait(wait);
         }));
 
+        // How fast each model wrote during the turn: the header shows the figure of the model that answered. Read in the
+        // finally, after it is closed.
+        var speeds = GenerationMeter.Open();
+
         // The turn's run, whatever way the turn ends: its last line carries it (going back to the question undoes it).
         string? turnRunId = null;
         try
@@ -959,6 +963,7 @@ internal partial class InferpalToolWindowData
         finally
         {
             waitScope.Dispose();
+            speeds.Dispose();
             // Background RAG indexing resumes automatically when RunAgentAsync releases its
             // GpuScheduler chat lease — no manual gate balancing needed here anymore.
             await RunOnVMContextAsync(() =>
@@ -972,7 +977,14 @@ internal partial class InferpalToolWindowData
                 _tools.History.EndRun();
                 // The header line ends on how long the turn took; a run stopped before its end still gets its glyph.
                 if (_runLine is { RunGlyph: Glyphs.Tool }) _runLine.EndRun(null);
-                if (_turnHead is not null) _turnHead.TurnState = Services.Presentation.RunSummary.Duration(DateTime.UtcNow - sendStart);
+                if (_turnHead is not null)
+                {
+                    // How long the turn took, then how fast the model that answered (the header's) wrote — no figure
+                    // under a stopped or failed turn, as the host decides for VS Code.
+                    var rate = localCts is { IsCancellationRequested: false } && !_turnFailed ? speeds.RateOf(_turnHead.Label) : null;
+                    _turnHead.TurnState       = Services.Presentation.RunSummary.Timing(DateTime.UtcNow - sendStart, rate);
+                    _turnHead.TurnStateDetail = Services.Presentation.RunSummary.RateDetail(rate);
+                }
                 _turnHead = null;
                 _runLine  = null;
                 // Before the turn is released: no other gesture sees the question without its notes.

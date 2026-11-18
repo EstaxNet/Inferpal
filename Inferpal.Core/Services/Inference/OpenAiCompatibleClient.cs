@@ -529,7 +529,9 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var reasoningBuilder = new System.Text.StringBuilder();
         // Accumulate streamed tool-call fragments (name + arguments arrive piecewise).
         var toolAcc        = new ToolCallAccumulator();
-        int tokensUsed = 0, promptTokens = 0;
+        int tokensUsed = 0, promptTokens = 0, completionTokens = 0, usefulChunks = 0;
+        var lastUseful = TimeSpan.Zero;
+        OpenAiTimings? timings = null;   // llama-server's own measure, on its final chunk
         int? cachedTokens = null;
         // What the stream contained: the one thing missing to diagnose an empty turn.
         var chunkCount   = 0;
@@ -617,9 +619,11 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 {
                     promptTokens = usage.PromptTokens ?? promptTokens;
                     cachedTokens = usage.PromptTokensDetails?.CachedTokens ?? cachedTokens;
+                    completionTokens = usage.CompletionTokens ?? completionTokens;
                     tokensUsed   = usage.TotalTokens
                                    ?? ((usage.PromptTokens ?? 0) + (usage.CompletionTokens ?? 0));
                 }
+                if (chunk?.Timings is { } measured) timings = measured;
 
                 chunkCount++;
                 if (chunk?.Choices is { Count: > 0 } fin && fin[0].FinishReason is { Length: > 0 } fr)
@@ -629,9 +633,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
                 if (delta is null) continue;
 
                 // The first word, thought or call: the reading is over. A role alone, a ping or a progress note is not one.
-                if (firstUseful is null
-                    && (!string.IsNullOrEmpty(delta.ReasoningContent) || !string.IsNullOrEmpty(delta.Reasoning)
-                        || !string.IsNullOrEmpty(delta.Content) || delta.ToolCalls is { Count: > 0 }))
+                var useful = !string.IsNullOrEmpty(delta.ReasoningContent) || !string.IsNullOrEmpty(delta.Reasoning)
+                             || !string.IsNullOrEmpty(delta.Content) || delta.ToolCalls is { Count: > 0 };
+                if (useful) { usefulChunks++; lastUseful = wait.Elapsed; }
+                if (firstUseful is null && useful)
                 {
                     firstUseful = wait.Elapsed;
                     wait.Arrived();
@@ -777,6 +782,17 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         if (firstUseful is { } read && wait!.Load is { Loading: false } load)
             PrefillRates.Shared.RecordRead(base_, model, size.Total, promptTokens, cachedTokens ?? 0, read - load.EndedAfter,
                                            mayIncludeLoad: load.EndedAfter == TimeSpan.Zero);
+
+        // What the model wrote, for the speed the answer's header shows. llama-server measures it itself (timings): taken
+        // as it is. Otherwise the server's count over the client's clock, from the first useful chunk to the last — and
+        // ⚠ that clock starts AFTER the first chunk was written, so its share of the count is left out (a short answer in
+        // two chunks would read twice its speed; an answer sent in ONE chunk, as Ollama's /v1 sends a tool call, none).
+        // ⚠ No count (a stream Inferpal stopped before the usage chunk, a server that sends none) is no sample — never
+        // the chunks counted instead.
+        if (timings is { PredictedN: > 0 and var written, PredictedMs: > 0 and var ms })
+            GenerationMeter.Generated(model, written, TimeSpan.FromMilliseconds(ms));
+        else if (firstUseful is { } first && usefulChunks > 0)
+            GenerationMeter.Generated(model, (int)((long)completionTokens * (usefulChunks - 1) / usefulChunks), lastUseful - first);
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.
         var (lastAnswer, lastThought) = envelope.Flush();

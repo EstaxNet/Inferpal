@@ -329,15 +329,21 @@ internal sealed partial class HostServer : IDisposable
     {
         var clock  = System.Diagnostics.Stopwatch.StartNew();
         var notes  = new TurnNotes();
+        // How fast each model wrote during the turn: the header shows the figure of the model that answered.
+        using var speeds = GenerationMeter.Open();
         var result = await SendTurnAsync(p, ct, notes);
         // Every way out of the turn reports what the NEXT question will send: the context gauge shows it, and it is the
         // figure of the X-Ray the gauge opens. The turn's own prompt measure includes the run's internal transcript, which
         // the next question does not carry — read as the fill, the gauge said 88 % where the X-Ray said 56 %.
         var s = Session();
+        // No figure under a stopped or failed turn, as in Visual Studio: what was written is not the answer.
+        var rate = result is { Cancelled: false, Error: null, Model: { } answered } ? speeds.RateOf(answered) : null;
         return result with
         {
             NextTurnTokens = NextTurnTokens(s),
             Duration = Services.Presentation.RunSummary.Duration(clock.Elapsed),
+            Rate = Services.Presentation.RunSummary.Rate(rate),
+            RateDetail = Services.Presentation.RunSummary.RateDetail(rate),
             AnnounceEnd = Services.Agent.ChatTurnPolicy.AnnouncesEnd(s.Config, clock.Elapsed),
             AppliedNotes = notes.Applied.Count > 0 ? [.. notes.Applied.Select(n => new TurnNoteDto(n.Id, n.Text, n.AfterCalls))] : null,
             UnappliedNotes = notes.Unapplied.Count > 0 ? [.. notes.Unapplied.Select(n => new TurnNoteDto(n.Id, n.Text))] : null,

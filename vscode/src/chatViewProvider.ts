@@ -3641,6 +3641,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.append({
           role: 'assistant', text: finalText, timestamp: ChatViewProvider.now(),
           model: result.model ?? undefined, duration: result.duration ?? undefined, run: result.run ?? null,
+          rate: result.rate ?? undefined, rateDetail: result.rateDetail ?? undefined,
         });
       }
       // The answer STAYS: this is added after it. Without it, a run cut short at its iteration
@@ -3679,6 +3680,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         contextWindow: this.contextWindow,
         run: result.run ?? null,
         duration: result.duration ?? null,
+        rate: result.rate ?? null,
+        rateDetail: result.rateDetail ?? null,
         model: result.model ?? null,
         canRegenerate: this.canRegenerate(),
         cut: result.error ? result.cut ?? null : null,

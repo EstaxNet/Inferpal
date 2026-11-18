@@ -1475,6 +1475,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RunTestsFailed" xml:space="preserve"><value>テスト失敗</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} 秒</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} 分 {1} 秒</value></data>
+  <data name="TurnRate" xml:space="preserve"><value>{0} tok/s</value></data>
+  <data name="TurnRateDetail" xml:space="preserve"><value>{1:0.0} 秒で {0:N0} トークンを生成</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>ファイルを作成</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>ファイルを変更</value></data>
   <data name="ApprovalChangeFiles" xml:space="preserve"><value>{0} 個のファイルを変更</value></data>

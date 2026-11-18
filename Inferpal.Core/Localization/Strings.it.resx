@@ -1475,6 +1475,8 @@ Digita `/setup` per riprovare.</value></data>
   <data name="RunTestsFailed" xml:space="preserve"><value>test non superati</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} s</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} min {1} s</value></data>
+  <data name="TurnRate" xml:space="preserve"><value>{0} tok/s</value></data>
+  <data name="TurnRateDetail" xml:space="preserve"><value>{0:N0} {0:token scritto|token scritti} in {1:0.0} s</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>Creare un file</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>Modificare un file</value></data>
   <data name="ApprovalChangeFiles" xml:space="preserve"><value>Modificare {0} {0:file|file}</value></data>

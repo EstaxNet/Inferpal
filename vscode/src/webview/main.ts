@@ -1572,6 +1572,14 @@ function renderBuildBanner(banner: WvBuildBanner | null): void {
   }
 }
 
+/** The end of the answer's header: how long the turn took, then how fast the model wrote — "21 s · 38 tok/s", as in
+ *  Visual Studio (RunSummary.Timing) — with what the speed is made of in the tooltip. No speed: the duration alone. */
+function showTiming(target: TurnView, duration: string, rate: string | null | undefined,
+                    rateDetail: string | null | undefined): void {
+  target.when.textContent = [duration, rate].filter((part) => !!part).join(' · ');
+  target.when.title = rate && rateDetail ? rateDetail : '';
+}
+
 /** The run's line and result bar, once the turn has ended: what it did, the files it changed, the last check. */
 function renderRunSummary(target: TurnView, run: RunSummary | null | undefined): void {
   if (!run) {
@@ -3885,7 +3893,7 @@ function renderTranscript(transcript: WvTranscriptItem[], running = false): void
           view.who.textContent = item.model;
         }
         if (item.duration) {
-          view.when.textContent = item.duration;
+          showTiming(view, item.duration, item.rate, item.rateDetail);
         }
         renderRunSummary(view, item.run);
       }
@@ -4217,7 +4225,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
         } else if (msg.model) {
           view.who.textContent = msg.model;
         }
-        view.when.textContent = msg.duration ?? '';
+        showTiming(view, msg.duration ?? '', msg.rate, msg.rateDetail);
         renderRunSummary(view, msg.run);
       }
       turn = null;

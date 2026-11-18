@@ -274,4 +274,23 @@ internal static class RunSummary
         elapsed.TotalSeconds < 60
             ? Strings.TurnSeconds(Math.Max(0, (int)Math.Round(elapsed.TotalSeconds)))
             : Strings.TurnMinutes((int)elapsed.TotalMinutes, elapsed.Seconds.ToString("00", CultureInfo.InvariantCulture));
+
+    /// <summary>
+    /// The end of the answer's header: how long the turn took, then how fast the model that answered wrote — "21 s ·
+    /// 38 tok/s". Without a measured speed (<c>null</c>: the server gave no count), the duration alone, never "0 tok/s".
+    /// One text for both editors.
+    /// </summary>
+    public static string Timing(TimeSpan elapsed, GenerationRate? rate) =>
+        Rate(rate) is { } speed ? Duration(elapsed) + " · " + speed : Duration(elapsed);
+
+    /// <summary>How fast the model wrote — "38 tok/s"; <c>null</c> without a measured speed.</summary>
+    public static string? Rate(GenerationRate? rate) => rate is { } r ? Strings.TurnRate(Speed(r)) : null;
+
+    /// <summary>The tooltip of the speed: what it is made of — "1,240 tokens written in 32.6 s"; <c>null</c> without one.</summary>
+    public static string? RateDetail(GenerationRate? rate) =>
+        rate is { } r ? Strings.TurnRateDetail(r.Tokens, r.Time.TotalSeconds) : null;
+
+    /// <summary>Whole tokens per second from ten on; one decimal below, where a whole number hides half the figure.</summary>
+    private static string Speed(GenerationRate rate) =>
+        rate.PerSecond.ToString(rate.PerSecond >= 10 ? "0" : "0.0", CultureInfo.CurrentCulture);
 }

@@ -158,6 +158,9 @@ internal sealed record TurnNoteDto(string Id, string Text, int AfterCalls = 0);
 /// <param name="Run">The run of the turn — its steps, the files it changed, its last check — for the line under the
 /// answer and the result bar; <c>null</c> when no tool ran.</param>
 /// <param name="Duration">How long the turn took, as the answer's header shows it ("21 s").</param>
+/// <param name="Rate">How fast the model that answered wrote, after the duration in the header ("38 tok/s"); <c>null</c>
+/// when the server gave no count — never "0 tok/s".</param>
+/// <param name="RateDetail">What <see cref="Rate"/> is made of, for its tooltip ("1,240 tokens written in 32.6 s").</param>
 /// <param name="Model">The model that answered.</param>
 /// <param name="QuestionKept">False when the turn stopped before its question entered the history (a Stop during the
 /// context build): Regenerate then has nothing to take back — taking back "the last question" would remove the one
@@ -195,7 +198,9 @@ internal sealed record ChatSendResult(
     bool    OffersContinue = false,
     bool    AnnounceEnd = false,
     string? RunId = null,
-    CutCardDto? Cut = null);
+    CutCardDto? Cut = null,
+    string? Rate = null,
+    string? RateDetail = null);
 
 /// <summary>Under the cause of a turn cut at its bound (<see cref="Services.Presentation.CutCard"/>): what it wrote, and the
 /// way to the time limits.</summary>

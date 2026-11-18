@@ -1475,6 +1475,8 @@
   <data name="RunTestsFailed" xml:space="preserve"><value>тесты не пройдены</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} с</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} мин {1} с</value></data>
+  <data name="TurnRate" xml:space="preserve"><value>{0} ток/с</value></data>
+  <data name="TurnRateDetail" xml:space="preserve"><value>{0:N0} {0:токен написан|токена написано|токенов написано} за {1:0.0} с</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>Создать файл</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>Изменить файл</value></data>
   <data name="ApprovalChangeFiles" xml:space="preserve"><value>Изменить {0} {0:файл|файла|файлов}</value></data>

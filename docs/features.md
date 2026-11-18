@@ -1264,6 +1264,10 @@ Which model for which card: **[Models](models.md#by-graphics-card)**, measured o
   Opt-in **auto mode** (`modelRouterAuto`): with no utility model set, background tasks use
   the model `/bench` recommended for the utility role — but only when it is already warm in
   VRAM; a cold model is never loaded for a title or commit message.
+- **Speed of each answer** — the answer's header names the model and how long the turn took, then how fast the
+  model wrote: `21 s · 38 tok/s`. The tooltip says what it is made of (`1,240 tokens written in 32.6 s`): the tokens the
+  server counted for that model, its reasoning included, over the time it spent writing them. A server that gives no
+  count shows no figure, never a guess.
 
 </details>
 

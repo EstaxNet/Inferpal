@@ -153,6 +153,10 @@ internal static class Strings
     public static string RunTestsFailed => Get(nameof(RunTestsFailed));
     public static string TurnSeconds(int seconds) => Format(Get(nameof(TurnSeconds)), seconds);
     public static string TurnMinutes(int minutes, string seconds) => Format(Get(nameof(TurnMinutes)), minutes, seconds);
+    /// <summary>The speed in the answer's header — {0}=tokens per second, already formatted.</summary>
+    public static string TurnRate(string perSecond) => Format(Get(nameof(TurnRate)), perSecond);
+    /// <summary>What the speed is made of, in its tooltip — {0}=tokens written, {1}=seconds spent writing them.</summary>
+    public static string TurnRateDetail(long tokens, double seconds) => Format(Get(nameof(TurnRateDetail)), tokens, seconds);
     public static string ApprovalCreateFile => Get(nameof(ApprovalCreateFile));
     public static string ApprovalChangeFile => Get(nameof(ApprovalChangeFile));
     public static string ApprovalChangeFiles(int files) => Format(Get(nameof(ApprovalChangeFiles)), files);

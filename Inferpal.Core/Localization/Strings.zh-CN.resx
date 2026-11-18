@@ -1475,6 +1475,8 @@
   <data name="RunTestsFailed" xml:space="preserve"><value>测试失败</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0} 秒</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0} 分 {1} 秒</value></data>
+  <data name="TurnRate" xml:space="preserve"><value>{0} tok/s</value></data>
+  <data name="TurnRateDetail" xml:space="preserve"><value>{1:0.0} 秒内生成 {0:N0} 个令牌</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>创建文件</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>修改文件</value></data>
   <data name="ApprovalChangeFiles" xml:space="preserve"><value>修改 {0} 个文件</value></data>

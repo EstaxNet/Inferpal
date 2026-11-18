@@ -111,6 +111,10 @@ internal class ChatMessageItem : NotifyPropertyChangedObject
     // ── A turn's header line ("turn"): the model in Label, then how long, or what it is doing ──
     private string _turnState = string.Empty;
     [DataMember] public string TurnState { get => _turnState; set => SetProperty(ref _turnState, value); }
+    /// <summary>The tooltip of <see cref="TurnState"/> once the turn ended: what the speed is made of; <c>null</c> without
+    /// one — an empty string would still draw an empty tooltip.</summary>
+    private string? _turnStateDetail;
+    [DataMember] public string? TurnStateDetail { get => _turnStateDetail; set => SetProperty(ref _turnStateDetail, value); }
 
     // ── A run line ("run") and its steps ("tool"): folded together, the line says what the steps did ──
     private string _runDetail     = string.Empty;

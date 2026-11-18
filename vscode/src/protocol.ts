@@ -183,6 +183,10 @@ export interface ChatSendResult {
   cut?: CutCard | null;
   /** How long the turn took ("21 s"), localized by the host. */
   duration?: string | null;
+  /** How fast the model that answered wrote ("38 tok/s"), after the duration; absent when the server gave no count. */
+  rate?: string | null;
+  /** What the rate is made of, for its tooltip ("1,240 tokens written in 32.6 s"). */
+  rateDetail?: string | null;
   /** The model that answered. */
   model?: string | null;
   /** False when the turn stopped before its question entered the host's history (a Stop during the context build). */

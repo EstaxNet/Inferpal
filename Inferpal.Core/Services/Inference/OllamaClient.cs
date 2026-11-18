@@ -219,7 +219,8 @@ internal class OllamaClient : InferenceProviderBase
         List<ToolCallDto>? toolCalls = null;
         int tokensUsed = 0, promptTokens = 0, chunkCount = 0;
         int? cachedTokens = null;
-        long loadNanoseconds = 0, readNanoseconds = 0;
+        long loadNanoseconds = 0, readNanoseconds = 0, writeNanoseconds = 0;
+        int generated = 0;
         string? doneReason = null;
         var cut = false;   // the answer stopped at the length limit (done_reason "length")
         var bounded = false;   // the client stopped reading at OutputBound
@@ -341,8 +342,10 @@ internal class OllamaClient : InferenceProviderBase
                     promptTokens = chunk.PromptEvalCount ?? 0;
                     cachedTokens = chunk.PromptEvalCachedCount;
                     tokensUsed   = promptTokens + (chunk.EvalCount ?? 0);
+                    generated    = chunk.EvalCount ?? 0;
                     loadNanoseconds = chunk.LoadDuration ?? 0;
                     readNanoseconds = chunk.PromptEvalDuration ?? 0;
+                    writeNanoseconds = chunk.EvalDuration ?? 0;
                     doneReason   = chunk.DoneReason;
                     cut          = chunk.DoneReason == "length";
                     break;
@@ -385,6 +388,10 @@ internal class OllamaClient : InferenceProviderBase
             else if (promptTokens == 0 || promptTokens * 2 >= size.Total)
                 PrefillRates.Shared.Record(base_, model, size.Total, promptTokens > 0 ? promptTokens : size.Total, measured);
         }
+
+        // What the model wrote, for the speed the answer's header shows: Ollama's own count and time. A stream Inferpal
+        // stopped before the final chunk carries neither: no sample.
+        GenerationMeter.Generated(model, generated, TimeSpan.FromTicks(writeNanoseconds / 100));
 
         // What the envelope held back — a marker the end of the stream cut in two — is released now.
         var (lastAnswer, lastThought) = envelope.Flush();

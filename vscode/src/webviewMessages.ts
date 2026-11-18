@@ -82,9 +82,11 @@ export interface WvTranscriptItem {
    *  the model gave — or a 'user' entry that is a slash command served without the model, not a question: same bubble,
    *  but a restored conversation must not hand it back to the model as one. */
   notice?: boolean;
-  /** An answer's model, duration and run, kept for this session's redraws (a saved session does not carry them). */
+  /** An answer's model, duration, speed and run, kept for this session's redraws (a saved session does not carry them). */
   model?: string;
   duration?: string;
+  rate?: string;
+  rateDetail?: string;
   run?: RunSummary | null;
   /** The run of changes the turn made, read back from a saved session (which keeps the id, not the summary). */
   runId?: string;
@@ -258,7 +260,7 @@ export type ExtToWebview =
   | { type: 'streamReset' }
   // notice: the turn's text is a notice no answer of the model (a slash command, a code action's outcome) — drawn as the
   // transcript keeps it, under no model's name.
-  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; offersContinue?: boolean; contextWindow?: number; run?: RunSummary | null; duration?: string | null; model?: string | null; canRegenerate?: boolean; notice?: boolean; cut?: CutCard | null }
+  | { type: 'turnEnded'; text: string; error: string | null; cancelled: boolean; tokens: number; promptTokens: number; timestamp: string; endNotice?: string | null; offersContinue?: boolean; contextWindow?: number; run?: RunSummary | null; duration?: string | null; rate?: string | null; rateDetail?: string | null; model?: string | null; canRegenerate?: boolean; notice?: boolean; cut?: CutCard | null }
   | { type: 'editorContext'; file: string | null; problems: number }
   /** A build task failed (the banner), or passed (null: the banner goes). */
   | { type: 'buildBanner'; banner: WvBuildBanner | null }

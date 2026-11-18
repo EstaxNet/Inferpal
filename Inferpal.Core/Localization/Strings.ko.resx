@@ -1475,6 +1475,8 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RunTestsFailed" xml:space="preserve"><value>테스트 실패</value></data>
   <data name="TurnSeconds" xml:space="preserve"><value>{0}초</value></data>
   <data name="TurnMinutes" xml:space="preserve"><value>{0}분 {1}초</value></data>
+  <data name="TurnRate" xml:space="preserve"><value>{0} tok/s</value></data>
+  <data name="TurnRateDetail" xml:space="preserve"><value>{1:0.0}초 동안 토큰 {0:N0}개 생성</value></data>
   <data name="ApprovalCreateFile" xml:space="preserve"><value>파일 만들기</value></data>
   <data name="ApprovalChangeFile" xml:space="preserve"><value>파일 변경</value></data>
   <data name="ApprovalChangeFiles" xml:space="preserve"><value>파일 {0}개 변경</value></data>

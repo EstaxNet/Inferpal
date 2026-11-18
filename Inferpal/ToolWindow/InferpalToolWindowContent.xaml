@@ -603,7 +603,8 @@
                                 </Style>
                             </StackPanel.Style>
                             <TextBlock Text="{Binding Label}" FontSize="11" FontWeight="SemiBold" Foreground="{Binding ThemeText}"/>
-                            <TextBlock Text="{Binding TurnState}" FontSize="11" Foreground="{Binding ThemeSubtleText}" Margin="8,0,0,0"/>
+                            <TextBlock Text="{Binding TurnState}" ToolTip="{Binding TurnStateDetail}" FontSize="11"
+                                       Foreground="{Binding ThemeSubtleText}" Margin="8,0,0,0"/>
                         </StackPanel>
 
                         <!-- ── The run line: "3 steps · read 1 file · edited 1 · build passed"; it opens the steps ── -->

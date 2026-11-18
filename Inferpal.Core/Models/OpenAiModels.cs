@@ -60,11 +60,19 @@ record OpenAiFnCall(
 /// <summary>One SSE chunk from the <c>/v1/chat/completions</c> stream. <see cref="Error"/> is set
 /// when the server injects a failure mid-stream after the 200 headers (LM Studio / llama.cpp do this
 /// for context overflow); it is a raw element because servers disagree on whether it is a string or
-/// an object — see <c>InferenceProviderBase.TryExtractError</c>.</summary>
+/// an object — see <c>InferenceProviderBase.TryExtractError</c>. <see cref="Timings"/>: llama-server's own measure
+/// of the request, on its final chunk.</summary>
 record OpenAiStreamChunk(
     [property: JsonPropertyName("choices")] List<OpenAiChoice>? Choices = null,
     [property: JsonPropertyName("usage")]   OpenAiUsage? Usage = null,
-    [property: JsonPropertyName("error")]   JsonElement Error = default);
+    [property: JsonPropertyName("error")]   JsonElement Error = default,
+    [property: JsonPropertyName("timings")] OpenAiTimings? Timings = null);
+
+/// <summary>llama-server's measure of a request: the tokens it generated and the milliseconds it spent generating
+/// them — a time no buffering on the way and no hidden output can distort, unlike the client's clock.</summary>
+record OpenAiTimings(
+    [property: JsonPropertyName("predicted_n")]  int? PredictedN = null,
+    [property: JsonPropertyName("predicted_ms")] double? PredictedMs = null);
 
 /// <summary>A streamed choice; <see cref="FinishReason"/> is non-null on the terminal chunk.</summary>
 record OpenAiChoice(
