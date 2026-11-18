@@ -2594,10 +2594,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * Reads through `openTextDocument`, so dirty buffers win over disk. Non-file tokens
    * (someone's @handle) simply resolve to nothing and stay as typed. */
   /** `labels`: what the person reads under the question when a file was not sent whole, or not sent at all. */
-  private async expandMentions(prompt: string, host: HostClient): Promise<{ text: string; paths: string[]; labels: string[] }> {
+  /** `typedImages`: whether an image typed as @file goes as an image (a question), or not at all (a code action's excerpt
+   *  quoting a path); `chipImages`: the chips' images, counted against the per-question limit and never sent twice. */
+  private async expandMentions(prompt: string, host: HostClient, typedImages = false,
+                               chipImages: string[] = []): Promise<{
+    text: string; paths: string[]; labels: string[]; images: { image: ImageDto; thumbnail?: string; token: string }[];
+  }> {
     const folders = (vscode.workspace.workspaceFolders ?? []).map((f) => ({ name: f.name, target: f.uri }));
+    const images: { image: ImageDto; thumbnail?: string; token: string }[] = [];
     if (folders.length === 0 || !prompt.includes('@')) {
-      return { text: prompt, paths: [], labels: [] };
+      return { text: prompt, paths: [], labels: [], images };
     }
     const MAX_FILES = 5;
     const MAX_CHARS = 40_000;
@@ -2650,6 +2656,34 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         labels.push(excluded[0].notice);
         continue;
       }
+      // An image typed as @file goes as an image, as Browse attaches it and as Visual Studio does — never "not attached";
+      // an SVG for a model that does not see goes as its markup, read as text below.
+      if (typedImages && (IMAGE_FILE.test(uri.fsPath) || SVG_FILE.test(uri.fsPath))) {
+        if (chipImages.some((p) => samePath(p, uri.fsPath))) {
+          continue;   // already a chip: it goes once
+        }
+        let typed: Awaited<ReturnType<ChatViewProvider['typedImage']>>;
+        try {
+          typed = await this.typedImage(uri, host, chipImages.length + images.length);
+        } catch (err) {
+          // The host could not read it: the text path below says why, the question still goes.
+          this.log(`[chat] typed image ${token}: ${String(err)}`);
+          typed = undefined;
+        }
+        if (typed && 'image' in typed) {
+          images.push({ image: typed.image, thumbnail: typed.thumbnail, token });
+          if (typed.note) {
+            labels.push(typed.note);
+          }
+          attached++;
+          continue;
+        }
+        if (typed && 'refusal' in typed) {
+          attachments += `\n\n## Not attached: ${token}\n${typed.refusal}`;
+          labels.push(typed.refusal);
+          continue;
+        }
+      }
       try {
         // ⚠ A file VS Code cannot open as text (a PDF, a DOCX, another binary) was left as plain text with nothing said:
         // the host reads it — a document's text, or why there is none, said to both readers.
@@ -2689,7 +2723,30 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       attachments += `\n\n## Not looked at: ${unread} more @-mentions\n(at most ${MAX_ATTEMPTS} are looked at per question; read_file reads a file)`;
       labels.push(t('{0} more @-mentions not looked at (at most {1} per question)', unread, MAX_ATTEMPTS));
     }
-    return { text: prompt + attachments, paths, labels };
+    return { text: prompt + attachments, paths, labels, images };
+  }
+
+  /** An image file typed as @file: the picture (with what was done to it), a refusal, or undefined when the text path
+   *  reads it instead — an SVG that goes as its markup, or no reason given. */
+  private async typedImage(uri: vscode.Uri, host: HostClient, already: number):
+    Promise<{ image: ImageDto; thumbnail?: string; note?: string } | { refusal: string } | undefined> {
+    if (SVG_FILE.test(uri.fsPath)) {
+      // Drawn or not for the model the question will go to: the banner's choice when it holds for this window.
+      const other = this.imageAskOther;
+      const model = other && other.forModel === this.model && other.agent === this.windowAgentMode() ? other.model : this.model;
+      const open = vscode.workspace.textDocuments.find((d) => d.isDirty && samePath(d.uri.fsPath, uri.fsPath));
+      const read = await host.svgRead({ path: uri.fsPath, data: open ? Buffer.from(open.getText(), 'utf8').toString('base64') : undefined,
+                                        model: model || undefined, agentMode: this.windowAgentMode(), already });
+      if (read.image) {
+        return { image: read.image, thumbnail: read.thumbnail ?? undefined };
+      }
+      return read.refusal ? { refusal: read.refusal } : undefined;
+    }
+    const read = await host.imageRead({ path: uri.fsPath, already });
+    if (read.image) {
+      return { image: read.image, thumbnail: read.thumbnail ?? undefined, note: read.note ?? undefined };
+    }
+    return read.refusal ? { refusal: read.refusal } : undefined;
   }
 
   private denyAllPending(): void {
@@ -3519,13 +3576,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // What another editor saved since: this question answers with it (its model and agent mode included).
       await this.followSettings(host);
       const agentMode = this.windowAgentMode();
-      const mentions = await this.expandMentions(prompt, host);
+      const chips = this.regenerating ? this.resendAttachments ?? [] : this.continuing ? [] : this.pendingAttachments;
+      const mentions = await this.expandMentions(prompt, host, !codeAction,
+                                                 chips.filter((a) => a.image).map((a) => a.origin ?? a.name));
       let expanded = mentions.text;
       const attachedPaths = [...mentions.paths];
       // Under the question: the chips, and any typed @file that was cut or not sent.
       const named = [...mentions.labels];
-      const chips = this.regenerating ? this.resendAttachments ?? [] : this.continuing ? [] : this.pendingAttachments;
-      let images: ImageDto[] = [];
+      // The images typed as @file go with the chips' (counted with them against the per-question limit).
+      let images: ImageDto[] = mentions.images.map((m) => m.image);
       const imageTexts: { label: string; text: string }[] = [];
       let model = this.model || undefined;
       let modelOverridesRoles: boolean | undefined;
@@ -3614,6 +3673,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
               if (at >= 0) {
                 named.splice(at, 1);
               }
+              // One typed in the question is named to the model, which reads the @file and would guess at it.
+              const typed = mentions.images.find((m) => m.image === image);
+              if (typed) {
+                expanded += `\n\n## Not attached: ${typed.token}\n(an image, not sent: the model does not see images)`;
+              }
             }
           }
           images = [];
@@ -3627,7 +3691,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       if (asked && images.length > 0) {
         // The small copies only: the transcript is posted whole at every redraw of the view.
-        asked.images = chips.filter((a) => a.image && a.thumbnail && images.includes(a.image)).map((a) => a.thumbnail!);
+        asked.images = [...mentions.images, ...chips].filter((a) => a.image && a.thumbnail && images.includes(a.image))
+          .map((a) => a.thumbnail!);
         if (named.length === 0) {
           this.hydrate();
         }
