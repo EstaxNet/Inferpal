@@ -2342,6 +2342,8 @@
   <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} 未附加：其 {1} × {2} 像素超出 Inferpal 可读取的范围。</value></data>
   <data name="ImageScaledNote" xml:space="preserve"><value>{0}（{1} × {2}）将缩小为 {3} × {4} 发送：图片再大，模型也读不出更多内容。小字可能难以辨认——请裁剪出重要部分。</value></data>
   <data name="ImageDamaged" xml:space="preserve"><value>{0} 未附加：无法作为图片读取（可能已损坏）。</value></data>
+  <data name="ImageNotDecoded" xml:space="preserve"><value>未附加 {0}：{1}。</value></data>
+  <data name="ImageFirstPageOnly" xml:space="preserve"><value>{0} 有 {1} 页：只附加第一页。</value></data>
   <data name="ImageOcrChip" xml:space="preserve"><value>OCR 读取的文本 · {0} 行</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} 看不到图片：改为发送 {1} 的文本，由 Inferpal 的 OCR 在本机读取——词语和数字可能读错。</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — OCR 读取的文本，代替图片发送</value></data>

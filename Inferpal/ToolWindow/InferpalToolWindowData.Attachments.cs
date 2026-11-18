@@ -298,7 +298,7 @@ internal partial class InferpalToolWindowData
                 await NotifyMentionAsync(Strings.ImageTooLarge(name, (int)(Services.Documents.ChatImages.MaxBytes / (1024 * 1024))));
                 return;
             }
-            var read = Services.Documents.ChatImages.Read(await File.ReadAllBytesAsync(path, ct), name);
+            var read = await Services.Documents.ChatImages.ReadAsync(await File.ReadAllBytesAsync(path, ct), name, ct);
             if (read.Image is not { } image)
             {
                 await NotifyMentionAsync(read.Refusal ?? string.Empty);

@@ -497,6 +497,10 @@ internal static class Strings
     /// <summary>A binary file asked to be read as text — {0}=its name.</summary>
     public static string AttachBinaryFile(string name) => Format(Get(nameof(AttachBinaryFile)), name);
     public static string AttachDocumentNoText(string name) => Format(Get(nameof(AttachDocumentNoText)), name);
+    /// <summary>An image Inferpal converts that it could not — {0}=file, {1}=the cause, in English.</summary>
+    public static string ImageNotDecoded(string name, string why) => Format(Get(nameof(ImageNotDecoded)), name, why);
+    /// <summary>A TIFF of several pages: its first is attached — {0}=file, {1}=pages.</summary>
+    public static string ImageFirstPageOnly(string name, int pages) => Format(Get(nameof(ImageFirstPageOnly)), name, pages);
     /// <summary>An event log with no event, a diagram with no text and no link — {0}=file.</summary>
     public static string AttachDocumentNothingInIt(string name) => Format(Get(nameof(AttachDocumentNothingInIt)), name);
     public static string AttachScanNotRead(string file, string why) => Format(Get(nameof(AttachScanNotRead)), file, why);

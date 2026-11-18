@@ -24,7 +24,7 @@ internal sealed class OcrTool : ITool
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public string Description =>
-        "Read the text written in an image of the workspace (PNG, JPEG, BMP, GIF: a screenshot of an error, a photo of a page) or " +
+        "Read the text written in an image of the workspace (PNG, JPEG, BMP, GIF, TIFF, HEIC: a screenshot of an error, a photo of a page) or " +
         "in a scanned PDF, by OCR — Latin, Chinese, Cyrillic, Japanese and Korean alphabets; tables come back row by row. Use it " +
         "when you need the exact words of an image: an error message to search for, a value to copy. The text can hold misreadings.";
 
@@ -67,11 +67,19 @@ internal sealed class OcrTool : ITool
 
         if (Path.GetExtension(path).Equals(".webp", StringComparison.OrdinalIgnoreCase))
             return $"'{name}' is a WebP image, a format this OCR does not decode: a model that reads images can be shown it with read_file.";
-        if (!Extensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
-            return $"'{name}' is not an image the OCR reads ({string.Join(", ", Extensions)}) nor a scanned PDF: read it with read_file.";
+        // A TIFF (a scan's usual format) or a HEIC photo: converted as an attachment is, then read.
+        var converted = Path.GetExtension(path).ToLowerInvariant() is ".tif" or ".tiff" or ".heic" or ".heif";
+        if (!converted && !Extensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+            return $"'{name}' is not an image the OCR reads ({string.Join(", ", Extensions)}, .tif, .heic) nor a scanned PDF: read it with read_file.";
         if (new FileInfo(path).Length > ChatImages.MaxBytes)
             return $"'{name}' is an image larger than {ChatImages.MaxBytes / (1024 * 1024)} MB: the OCR does not read it.";
         var bytes = await File.ReadAllBytesAsync(path, ct);
+        if (converted)
+        {
+            var read = await ChatImages.ReadAsync(bytes, name, ct);
+            if (read.Image is not { } image) return $"'{name}' cannot be read: {read.Refusal}";
+            bytes = Convert.FromBase64String(image.Base64);
+        }
         var reading = await Task.Run(() => PdfOcr.Picture(bytes, ct), ct);
         return reading.Status switch
         {

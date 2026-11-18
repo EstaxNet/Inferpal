@@ -509,7 +509,7 @@ internal sealed class AcpSession : IAsyncDisposable
     /// the turn answers <c>cancelled</c> without reaching the host.</param>
     public async Task<string> PromptAsync(JsonElement prompt, bool stopped = false)
     {
-        var content = AcpPromptBlocks.Read(prompt);
+        var content = await AcpPromptBlocks.ReadAsync(prompt, CancellationToken.None);
         lock (_gate)
         {
             if (_turnOpen) throw AcpRpc.Error(AcpRpc.InvalidParams, "A prompt is already running in this session.");

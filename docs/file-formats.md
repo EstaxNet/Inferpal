@@ -44,7 +44,8 @@ VS Code; the model gets the text, never the password. At most 20 MB per document
 | PNG, JPEG, GIF | `.png`, `.jpg`, `.jpeg`, `.gif` | Sent with your question to a model that sees images, reduced to 1920 × 1080 when larger |
 | WebP | `.webp` | Sent as it is, whatever its size: the server reduces a large one, and the chat says so |
 | BMP | `.bmp` | Converted to PNG on your machine, then sent the same way |
-| HEIC, TIFF | `.heic`, `.heif`, `.tif`, `.tiff` | Offered by the attach pickers, then not attached: the chat asks you to save the image as PNG or JPEG |
+| TIFF | `.tif`, `.tiff` | Drawn on your machine and sent as a PNG (uncompressed, LZW, Deflate or PackBits; gray, colour, palette, 1 to 16 bits). A file of several pages sends its first and says so; a TIFF compressed in JPEG or as a fax is not attached, and the chat says why |
+| HEIC | `.heic`, `.heif` | An iPhone photo, converted by your system's own decoder and sent as a JPEG: Windows needs the free *HEIF Image Extensions* and *HEVC Video Extensions* from the Microsoft Store, macOS has it built in, Linux needs libheif (`libheif-examples` or `libheif-tools`). Without one, the chat names what to install |
 
 A model that does **not** see images gets the **text written in the image** instead, read by Inferpal's OCR, in its
 ten languages. The agent's own `ocr` tool reads `.png`, `.jpg`, `.jpeg`, `.bmp` and `.gif` (not `.webp`). At most 4 images per

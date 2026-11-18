@@ -1600,7 +1600,7 @@ internal sealed partial class HostServer : IDisposable
             try { bytes = Convert.FromBase64String(p.Data ?? string.Empty); }
             catch (FormatException) { return new(null, null, Strings.ImageDamaged(name), null); }
         }
-        var read = Services.Documents.ChatImages.Read(bytes, name);
+        var read = await Services.Documents.ChatImages.ReadAsync(bytes, name, ct);
         if (read.Image is not { } image) return new(null, null, read.Refusal, null);
         return new(new ImageDto(image.Name, image.MediaType, image.Base64),
                    Services.Presentation.ImageCards.Chip(image, p.Pasted).Detail, null, read.Note, Services.Documents.ChatImages.Thumbnail(image));

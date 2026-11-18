@@ -2217,7 +2217,7 @@ public sealed class AcpAgentTests : IDisposable
     }
 
     [Fact]
-    public void PromptBlocks_ReadTextLinksAndEmbeddedFiles_AndRefuseAnUnknownBlock()
+    public async Task PromptBlocks_ReadTextLinksAndEmbeddedFiles_AndRefuseAnUnknownBlock()
     {
         var file = Path.Combine(_root, "linked.cs");
         var blocks = JsonSerializer.SerializeToElement(new object[]
@@ -2227,7 +2227,7 @@ public sealed class AcpAgentTests : IDisposable
             new { type = "resource", resource = new { uri = "file:///x/embedded.txt", text = "embedded body" } },
             new { type = "image", data = "AAAA", mimeType = "image/png" },
         });
-        var content = AcpPromptBlocks.Read(blocks);
+        var content = await AcpPromptBlocks.ReadAsync(blocks, CancellationToken.None);
         Assert.Equal("Look at ", content.Text);
         Assert.Equal(2, content.Attachments.Count);
         Assert.Equal(Path.GetFullPath(file), content.Attachments[0].Path);
@@ -2237,27 +2237,27 @@ public sealed class AcpAgentTests : IDisposable
         Assert.Empty(content.Images!);
 
         // A real image goes with the question, read by the Core's reader.
-        var png = AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(new object[]
+        var png = await AcpPromptBlocks.ReadAsync(JsonSerializer.SerializeToElement(new object[]
         {
             new { type = "text", text = "What does it say?" },
             new { type = "image", data = Convert.ToBase64String(ChatImagesTests.Png(64, 32)), mimeType = "image/png" },
-        }));
+        }), CancellationToken.None);
         Assert.Equal(("image.png", "image/png"), (Assert.Single(png.Images!).Name, png.Images![0].MediaType));
         Assert.Empty(png.Notes);
 
         // ⚠ An image Zed pastes carries a link of its own, not a file: named by the name it carries, never by the link
         // (the notice read "the text of zed:///agent/pasted-image?name=Image goes instead").
-        var pasted = AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(new object[]
+        var pasted = await AcpPromptBlocks.ReadAsync(JsonSerializer.SerializeToElement(new object[]
         {
             new { type = "image", data = Convert.ToBase64String(ChatImagesTests.Png(64, 32)), mimeType = "image/png",
                   uri = "zed:///agent/pasted-image?name=Image" },
-        }));
+        }), CancellationToken.None);
         var named = Assert.Single(pasted.Images!).Name;
         Assert.StartsWith("Image", named, StringComparison.Ordinal);
         Assert.DoesNotContain("zed:", named, StringComparison.Ordinal);
 
-        Assert.Throws<ArgumentException>(() => AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(new[] { new { type = "video" } })));
-        Assert.Throws<ArgumentException>(() => AcpPromptBlocks.Read(JsonSerializer.SerializeToElement(Array.Empty<object>())));
+        await Assert.ThrowsAsync<ArgumentException>(() => AcpPromptBlocks.ReadAsync(JsonSerializer.SerializeToElement(new[] { new { type = "video" } }), CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentException>(() => AcpPromptBlocks.ReadAsync(JsonSerializer.SerializeToElement(Array.Empty<object>()), CancellationToken.None));
     }
 
     /// <summary>

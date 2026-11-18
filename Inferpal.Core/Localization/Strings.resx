@@ -2346,6 +2346,8 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ImageTooManyPixels" xml:space="preserve"><value>{0} is not attached: its {1} × {2} pixels are more than Inferpal reads.</value></data>
   <data name="ImageScaledNote" xml:space="preserve"><value>{0} ({1} × {2}) is sent scaled down to {3} × {4}: a model reads no more from a larger image. Small text may become hard to read — crop the part that matters.</value></data>
   <data name="ImageDamaged" xml:space="preserve"><value>{0} is not attached: it could not be read as an image (damaged?).</value></data>
+  <data name="ImageNotDecoded" xml:space="preserve"><value>{0} is not attached: {1}.</value></data>
+  <data name="ImageFirstPageOnly" xml:space="preserve"><value>{0} holds {1} {1:page|pages}: only the first is attached.</value></data>
   <data name="ImageOcrChip" xml:space="preserve"><value>text read by OCR · {0} {0:line|lines}</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} does not see images: the text of {1} goes instead, read on this computer by Inferpal's OCR — words and figures can be misread.</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — text read by OCR, sent instead of the image</value></data>

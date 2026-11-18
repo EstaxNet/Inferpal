@@ -202,8 +202,9 @@ internal sealed record AcpPromptContent(string Text, IReadOnlyList<AcpAttachment
 /// <summary>Reads <c>session/prompt</c>'s content blocks.</summary>
 internal static class AcpPromptBlocks
 {
-    /// <summary>The message, or the reason it is not one (thrown as invalid params by the caller).</summary>
-    public static AcpPromptContent Read(JsonElement prompt)
+    /// <summary>The message, or the reason it is not one (thrown as invalid params by the caller). An image goes through
+    /// the attachments' reader, a HEIC photo converted by the system's decoder as in the editors.</summary>
+    public static async Task<AcpPromptContent> ReadAsync(JsonElement prompt, CancellationToken ct)
     {
         if (prompt.ValueKind != JsonValueKind.Array || prompt.GetArrayLength() == 0)
             throw new ArgumentException("'prompt' must be a non-empty array of content blocks.");
@@ -255,8 +256,13 @@ internal static class AcpPromptBlocks
                         notes.Add($"[An image was attached ({name}) past the {Services.Documents.ChatImages.MaxPerQuestion} a question carries; it was not sent.]");
                         break;
                     }
-                    var read = Services.Documents.ChatImages.Read(bytes, name);
-                    if (read.Image is { } image) images.Add(new ImageDto(image.Name, image.MediaType, image.Base64));
+                    var read = await Services.Documents.ChatImages.ReadAsync(bytes, name, ct);
+                    if (read.Image is { } image)
+                    {
+                        images.Add(new ImageDto(image.Name, image.MediaType, image.Base64));
+                        // What the reader did to it (scaled down, its first page only) reaches the model, as in the editors.
+                        if (read.Note is { } note) notes.Add($"[{note}]");
+                    }
                     else notes.Add($"[An image was attached ({name}) and not sent: {read.Refusal}]");
                     break;
                 }

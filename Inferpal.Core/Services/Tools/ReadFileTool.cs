@@ -74,7 +74,7 @@ internal class ReadFileTool : ITool
             var name = Path.GetFileName(path);
             if (new FileInfo(path).Length > Documents.ChatImages.MaxBytes)
                 return $"'{name}' is an image larger than {Documents.ChatImages.MaxBytes / (1024 * 1024)} MB: it is not shown.";
-            var read = Documents.ChatImages.Read(await File.ReadAllBytesAsync(path, ct), name);
+            var read = await Documents.ChatImages.ReadAsync(await File.ReadAllBytesAsync(path, ct), name, ct);
             if (read.Image is not { } image) return $"'{name}' is an image that is not shown: {read.Refusal}";
             _images.Put(image);
             var size = image.Width > 0 ? $", {image.Width}×{image.Height}" : string.Empty;

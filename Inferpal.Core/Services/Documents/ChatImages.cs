@@ -47,6 +47,39 @@ internal static class ChatImages
     /// rather than as a text or a document.</summary>
     internal static bool Handles(string path) => Extensions.Contains(Path.GetExtension(path).ToLowerInvariant());
 
+    /// <summary>The most pixels a converted photo may have: a phone's full resolution (48 MP), scaled down when sent.</summary>
+    internal const long MaxConvertedPixels = 64_000_000;
+
+    /// <summary>
+    /// <see cref="Read"/>, and a HEIC photo (no server decodes one) converted by this system's decoder first, then sent as a
+    /// JPEG; why it could not be is said with what installs the decoder.
+    /// </summary>
+    internal static async Task<ChatImageRead> ReadAsync(byte[] bytes, string name, CancellationToken ct)
+    {
+        if (bytes.LongLength > MaxBytes || !HeicImage.Is(bytes)) return Read(bytes, name);
+        var (converted, why) = await HeicImage.ConvertAsync(bytes, ct).ConfigureAwait(false);
+        if (converted is null) return new(null, Strings.ImageNotDecoded(name, why ?? "it could not be converted"), null);
+        // Its size read from its header before a pixel is decoded; a phone's full-resolution photo (48 MP) passes, since it
+        // is scaled down anyway.
+        var (type, width, height) = Sniff(converted);
+        if (type is null) return new(null, Strings.ImageDamaged(name), null);
+        if ((long)width * height > MaxConvertedPixels) return new(null, Strings.ImageTooManyPixels(name, width, height), null);
+        StbImageSharp.ImageResult image;
+        try { image = StbImageSharp.ImageResult.FromMemory(converted, StbImageSharp.ColorComponents.RedGreenBlueAlpha); }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or IndexOutOfRangeException or OverflowException)
+        {
+            Diagnostics.Swallow("ChatImages.Heic", ex);
+            return new(null, Strings.ImageDamaged(name), null);
+        }
+        // macOS converts to a JPEG that keeps the photo's EXIF orientation: applied here, as for any JPEG.
+        var (pixels, w0, h0) = type == "image/jpeg" ? Orient(image.Data, image.Width, image.Height, JpegOrientation(converted))
+                                                    : (image.Data, image.Width, image.Height);
+        var drawn = Encode(pixels, w0, h0, LargeWidth, LargeHeight, jpeg: true);
+        var scaled = drawn.Width != w0 || drawn.Height != h0;
+        return new(new ChatImage(name, Convert.ToBase64String(drawn.Data), drawn.MediaType, drawn.Width, drawn.Height, drawn.Data.LongLength),
+                   null, scaled ? Strings.ImageScaledNote(name, w0, h0, drawn.Width, drawn.Height) : null);
+    }
+
     /// <summary>The image in <paramref name="bytes"/>, named <paramref name="name"/>, or why it is not attached.</summary>
     internal static ChatImageRead Read(byte[] bytes, string name)
     {
@@ -60,6 +93,19 @@ internal static class ChatImages
             var rawHeight = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(22));
             width  = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(18));
             height = rawHeight == int.MinValue ? -1 : Math.Abs(rawHeight);
+        }
+        // A TIFF no server decodes: drawn here, sent as a PNG — its first page, the others said.
+        if (mediaType is null && !bmp && TiffImage.Is(bytes))
+        {
+            var tiff = TiffImage.Decode(bytes, MaxPixels);
+            if (tiff.Rgba is null) return new(null, Strings.ImageNotDecoded(name, tiff.Refusal ?? "it is damaged"), null);
+            var drawn = Encode(tiff.Rgba, tiff.Width, tiff.Height, LargeWidth, LargeHeight, jpeg: false);
+            var notes = new List<string>();
+            if (drawn.Width != tiff.Width || drawn.Height != tiff.Height)
+                notes.Add(Strings.ImageScaledNote(name, tiff.Width, tiff.Height, drawn.Width, drawn.Height));
+            if (tiff.Pages > 1) notes.Add(Strings.ImageFirstPageOnly(name, tiff.Pages));
+            return new(new ChatImage(name, Convert.ToBase64String(drawn.Data), drawn.MediaType, drawn.Width, drawn.Height, drawn.Data.LongLength), null,
+                       notes.Count > 0 ? string.Join(" ", notes) : null);
         }
         if (mediaType is null && !bmp)
         {
