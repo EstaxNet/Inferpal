@@ -34,7 +34,7 @@ internal class ReadFileTool : ITool
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
-        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
+        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg, .evtx event logs, .drawio/.vsdx diagrams); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
         "lines, and the answer says which start_line to pass to read on. A log reads filtered by level and time (level, since, until): " +
         "only the matching entries, each line under its number.";
     public object Parameters => new
@@ -109,7 +109,7 @@ internal class ReadFileTool : ITool
             if (extracted is null)
                 return $"'{name}' gives no text to read: {Documents.AttachedDocuments.WhyNoText(path)}.";
             _history?.NoteOpened(path);
-            if (Filtered(args)) return LogPage(extracted, name, args);
+            if (Filtered(args)) return DocumentLogPage(extracted, name, args);
             var page = PageOf(extracted, name, args.Int("start_line", 0), args.Int("end_line", 0));
             return page.Text.Length > MaxChars ? Cap(page.Text, name) : page.Text;
         }
@@ -143,6 +143,12 @@ internal class ReadFileTool : ITool
         }
 
         if (Filtered(args)) return LogPage(content, Path.GetFileName(path), args);
+        // A test report reads first as its result, a draw.io diagram as its shapes and links; asked for lines, each is the
+        // XML it holds.
+        if (args.Int("start_line", 0) == 0 && args.Int("end_line", 0) == 0
+            && (Documents.TestReportText.Summarize(Path.GetFileName(path), content, PageChars)
+                ?? Documents.DiagramText.ForRead(Path.GetFileName(path), content, PageChars, ct)) is { } first)
+            return first;
         var shown = PageOf(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
         // ⚠ What the model has SEEN, not what it asked for: a first page or a range is not the file, and write_file lets
         // a whole-file rewrite through only once every line of it has been in front of the model. A read cut at
@@ -198,11 +204,18 @@ internal class ReadFileTool : ITool
         }
         if (locked) return $"'{shown}' is protected by a password: it was not opened (no one here to type it). Go on without it.";
         if (bytes is null) return $"'{shown}' cannot be read: {problem}.";
+        // A document is read from a file of its own, never from inside an archive: said for what it is, not "binary".
+        if (Documents.DocumentText.ToolsRead(inner))
+            return $"'{shown}' is a document inside an archive: its text is read once it is extracted to a file of its own.";
         if (TextFileEncoding.IsBinary(bytes))
             return $"'{shown}' is a binary file ({bytes.Length} bytes): its content is not shown as text.";
         var text = TextFileEncoding.Decode(bytes);
         if (text.Length == 0) return $"[{shown} is empty: 0 characters]";
         if (Filtered(args)) return LogPage(text, shown, args);
+        // A test report or a diagram in a CI artifact reads as it does on disk.
+        if (args.Int("start_line", 0) == 0 && args.Int("end_line", 0) == 0
+            && (Documents.TestReportText.Summarize(inner, text, PageChars) ?? Documents.DiagramText.ForRead(inner, text, PageChars, ct)) is { } first)
+            return first;
         var page = PageOf(text, shown, args.Int("start_line", 0), args.Int("end_line", 0));
         return page.Text.Length > MaxChars ? Cap(page.Text, shown) : page.Text;
     }
@@ -228,9 +241,21 @@ internal class ReadFileTool : ITool
     /// A log's entries that match, from <c>start_line</c>. Never noted as read: the model saw a selection, not the file —
     /// write_file must not take it for the whole.
     /// </summary>
-    private static string LogPage(string text, string name, JsonElement args) =>
+    private static string LogPage(string text, string name, JsonElement args, int firstLine = 0) =>
         LogFilter.Apply(text, name, args.Keyword("level"), LogFilter.ParseMoment(args.Trimmed("since")),
-                        LogFilter.ParseMoment(args.Trimmed("until")), args.Int("start_line", 0), args.Int("end_line", 0), PageChars);
+                        LogFilter.ParseMoment(args.Trimmed("until")), args.Int("start_line", firstLine), args.Int("end_line", 0), PageChars);
+
+    /// <summary>A document's text filtered as a log, the header Inferpal wrote above it said first.</summary>
+    /// <remarks>⚠ The header is never judged as lines of the log: judged, it went under "lines before the first entry",
+    /// and with it the only word that a long event log was cut to its newest events. Its lines keep their numbers, so a
+    /// start_line from a plain read points at the same entry.</remarks>
+    private static string DocumentLogPage(string extracted, string name, JsonElement args)
+    {
+        var end = extracted.StartsWith('[') ? extracted.IndexOf("\n\n", StringComparison.Ordinal) : -1;
+        if (end < 0) return LogPage(extracted, name, args);
+        var headerLines = extracted.AsSpan(0, end).Count('\n') + 2;
+        return extracted[..end] + "\n" + LogPage(extracted, name, args, firstLine: headerLines + 1);
+    }
 
     /// <summary>Pages of a scan shown when no OCR read it.</summary>
     internal const int MaxScanPictures = 5;

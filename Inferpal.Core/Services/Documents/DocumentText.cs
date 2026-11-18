@@ -28,7 +28,10 @@ internal sealed class DocumentLimitException(string message) : Exception(message
 /// <param name="Problem">Why no text, or <see cref="DocumentProblem.None"/>.</param>
 /// <param name="StoppedAt">Reading stopped at a limit (<see cref="PdfText.MaxPages"/> pages, <see cref="PdfText.MaxChars"/>
 /// characters): the pages read, the rest left out and said; 0 when the whole document was read.</param>
-internal sealed record DocumentExtraction(string Text, int Pages, int PagesWithoutText, DocumentProblem Problem, int StoppedAt = 0);
+/// <param name="Header">What the model is told the text is, in place of the line a document gets (an event log is not a
+/// document whose formatting and images were left out); it then says any cut itself.</param>
+internal sealed record DocumentExtraction(string Text, int Pages, int PagesWithoutText, DocumentProblem Problem, int StoppedAt = 0,
+                                          string? Header = null);
 
 /// <summary>
 /// Reads the text of a PDF or a DOCX the person attaches, on this machine, with no package: a DOCX is a zip of XML, a PDF
@@ -82,18 +85,32 @@ internal static class DocumentText
     /// <summary>The largest document read, in bytes: a PDF holds images, so the attachment limit of a text file is too small.</summary>
     internal const long MaxBytes = 20L * 1024 * 1024;
 
+    /// <summary>The largest file of the kind <paramref name="path"/> names that is read: an event log at Windows' default size
+    /// (20 MiB of records and its headers) passes <see cref="MaxBytes"/>, and its text is bounded apart (the newest events).</summary>
+    internal static long MaxBytesOf(string path) =>
+        Path.GetExtension(path).Equals(".evtx", StringComparison.OrdinalIgnoreCase) ? 64L * 1024 * 1024 : MaxBytes;
+
+    /// <summary>How long an event log may take: tens of thousands of events at a few per microsecond, read whole for its
+    /// newest ones.</summary>
+    internal static readonly TimeSpan EventLogDeadline = TimeSpan.FromSeconds(10);
+
+    /// <summary>How long reading the file <paramref name="path"/> names may take, without a password.</summary>
+    internal static TimeSpan DeadlineOf(string path) =>
+        Path.GetExtension(path).Equals(".evtx", StringComparison.OrdinalIgnoreCase) ? EventLogDeadline : Deadline;
+
     /// <summary>The extensions of the documents this reader extracts text from. ⚠ VS Code sends exactly these to the host
     /// (<c>readAttachable</c>): <c>DocumentTextTests</c> holds the two lists equal.</summary>
     internal static readonly string[] Extensions =
-        [".pdf", ".docx", ".xlsx", ".xlsm", ".xlsb", ".xls", ".pptx", ".ipynb", ".odt", ".ods", ".odp", ".rtf", ".eml", ".msg", ".doc"];
+        [".pdf", ".docx", ".xlsx", ".xlsm", ".xlsb", ".xls", ".pptx", ".ipynb", ".odt", ".ods", ".odp", ".rtf", ".eml", ".msg", ".doc",
+         ".evtx", ".drawio", ".vsdx"];
 
     /// <summary>Whether <paramref name="path"/> is a document this reader extracts text from, by its extension.</summary>
     internal static bool Handles(string path) => Extensions.Contains(Path.GetExtension(path).ToLowerInvariant());
 
-    /// <summary>The documents that are text files themselves (a notebook's JSON, RTF, a MIME e-mail): attached, they are read
-    /// as their content; the agent's read_file and search_in_files take them as they are, so an edit quotes what is in the
-    /// file and write_file knows it was read.</summary>
-    internal static bool IsTextFile(string path) => Path.GetExtension(path).ToLowerInvariant() is ".ipynb" or ".rtf" or ".eml";
+    /// <summary>The documents that are text files themselves (a notebook's JSON, RTF, a MIME e-mail, a draw.io diagram's
+    /// XML): attached, they are read as their content; the agent's read_file and search_in_files take them as they are, so
+    /// an edit quotes what is in the file and write_file knows it was read.</summary>
+    internal static bool IsTextFile(string path) => Path.GetExtension(path).ToLowerInvariant() is ".ipynb" or ".rtf" or ".eml" or ".drawio";
 
     /// <summary>Whether the agent's tools read <paramref name="path"/> through this reader rather than as a text file.</summary>
     internal static bool ToolsRead(string path) => Handles(path) && !IsTextFile(path);
@@ -114,7 +131,7 @@ internal static class DocumentText
     internal static DocumentExtraction Extract(byte[] bytes, string extension, CancellationToken ct = default, string? password = null)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var limit = password is null ? Deadline : PasswordDeadline;
+        var limit = password is not null ? PasswordDeadline : DeadlineOf(extension);
         deadline.CancelAfter(limit);
         // ⚠ The content before the extension: WordPad and many exports save RTF as .doc, web apps save an HTML or text table
         // as .xls. Read by the compound-file readers they were "damaged"; they are read as what they are.
@@ -141,6 +158,8 @@ internal static class DocumentText
                 ".rtf" => RtfText.Extract(bytes, deadline.Token),
                 ".doc" => DocText.Extract(bytes, deadline.Token, password),
                 ".eml" or ".msg" => EmailText.Extract(bytes, kind, deadline.Token),
+                ".evtx" => EvtxText.Extract(bytes, deadline.Token),
+                ".drawio" or ".vsdx" => DiagramText.Extract(bytes, kind, deadline.Token),
                 _       => PdfText.Extract(bytes, deadline.Token, password),
             }, limit, ct);
         }

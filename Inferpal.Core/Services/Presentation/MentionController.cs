@@ -523,12 +523,14 @@ internal static class MentionController
         {
             Documents.DocumentProblem.None      => null,
             // A scan is for the OCR (BinaryRefusalAsync), unless it already found nothing in it.
+            Documents.DocumentProblem.NoText when Documents.AttachedDocuments.NoTextKind(filePath) is not null
+                                                => Strings.AttachDocumentNothingInIt(name),
             Documents.DocumentProblem.NoText    => filePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)
                                                    && Documents.AttachedDocuments.ScanKnown(filePath) is not { Status: Documents.OcrStatus.Empty }
                                                        ? null : Strings.AttachDocumentNoText(name),
             Documents.DocumentProblem.Encrypted => Strings.AttachDocumentLocked(name),
-            Documents.DocumentProblem.TooSlow   => Strings.AttachDocumentTooSlow(name, (int)Documents.DocumentText.Deadline.TotalSeconds),
-            Documents.DocumentProblem.TooLarge  => Strings.AttachDocumentTooLarge(name, (int)(Documents.DocumentText.MaxBytes / (1024 * 1024))),
+            Documents.DocumentProblem.TooSlow   => Strings.AttachDocumentTooSlow(name, (int)Documents.DocumentText.DeadlineOf(filePath).TotalSeconds),
+            Documents.DocumentProblem.TooLarge  => Strings.AttachDocumentTooLarge(name, (int)(Documents.DocumentText.MaxBytesOf(filePath) / (1024 * 1024))),
             _                                   => Strings.AttachDocumentUnreadable(name),
         };
     }
@@ -551,7 +553,7 @@ internal static class MentionController
     /// about the code on the screen, the answer about the code saved.</remarks>
     /// <param name="overlay">The editor's unsaved buffers, refreshed by the caller; null when the editor mirrors none.</param>
     /// <remarks>A PDF or DOCX gives its extracted text under a line that says so (<see cref="Documents.AttachedDocuments.ForModel"/>),
-    /// sized by <see cref="Documents.DocumentText.MaxBytes"/>, not by the text limit.</remarks>
+    /// sized by <see cref="Documents.DocumentText.MaxBytesOf"/>, not by the text limit.</remarks>
     public static async Task<string?> FileMentionTextAsync(string path, Editor.OpenDocumentOverlay? overlay, CancellationToken ct)
     {
         if (Documents.DocumentText.Handles(path)) return await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct, ocr: true), ct).ConfigureAwait(false);

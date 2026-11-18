@@ -108,6 +108,7 @@
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>Проверено: проиндексированные изменения в `{0}` (остальные — когда там ничего не проиндексировано).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} — двоичный файл: в нём нет текста для чтения.</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>В {0} нет текста для чтения: это скан или в нём только изображения.</value></data>
+  <data name="AttachDocumentNothingInIt" xml:space="preserve"><value>В {0} нечего читать: нет событий или нет фигур с текстом и связей.</value></data>
   <data name="AttachScanNotRead" xml:space="preserve"><value>{0} — это скан, и его не удалось прочитать на этом компьютере: {1}.</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} открывается только с паролем: его текст прочитать нельзя.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>Не удалось прочитать {0}: файл повреждён или в формате, который Inferpal не читает.</value></data>

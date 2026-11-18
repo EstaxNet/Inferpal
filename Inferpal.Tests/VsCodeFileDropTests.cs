@@ -31,9 +31,11 @@ public class VsCodeFileDropTests
         Assert.Contains("reader.onerror = () => resolve(null);", Webview, StringComparison.Ordinal);
         Assert.Contains("outcome: 'unreadable'", Webview, StringComparison.Ordinal);
         Assert.Contains("const data = await readDropped(file);", Webview, StringComparison.Ordinal);
-        Assert.Contains("import { DROPPED_FILE_LIMIT } from '../droppedFiles';", Webview, StringComparison.Ordinal);
-        Assert.Contains("import { DROPPED_FILE_LIMIT } from './droppedFiles';", Provider, StringComparison.Ordinal);
-        Assert.DoesNotContain("const DROPPED_FILE_LIMIT", Webview + Provider, StringComparison.Ordinal);
+        // One function for both sides (an event log's own limit included), never a second copy of the number.
+        Assert.Contains("import { droppedFileLimit } from '../droppedFiles';", Webview, StringComparison.Ordinal);
+        Assert.Contains("import { droppedFileLimit } from './droppedFiles';", Provider, StringComparison.Ordinal);
+        Assert.Contains("file.size > droppedFileLimit(name)", Webview, StringComparison.Ordinal);
+        Assert.DoesNotContain("1024 * 1024", Webview, StringComparison.Ordinal);
     }
 
     /// <summary>The copy goes to a folder made for the drop (private to the account, never a fixed name in the shared temp)

@@ -28,7 +28,7 @@ import { renderXray, setXraySink } from './xray';
 import { icon, iconButton, setIcon, type IconName } from './icons';
 import { mentionFor } from '../mentionPaths';
 import { splitBubbleText } from '../bubbleText';
-import { DROPPED_FILE_LIMIT } from '../droppedFiles';
+import { droppedFileLimit } from '../droppedFiles';
 
 const vscode = window.__vsapi ?? acquireVsCodeApi();
 const post = (msg: WebviewToExt) => vscode.postMessage(msg);
@@ -3574,7 +3574,7 @@ document.addEventListener('drop', (e) => {
         continue;
       }
       // Past the limit, never read into the page: the extension says it is not attached.
-      if (file.size > DROPPED_FILE_LIMIT) {
+      if (file.size > droppedFileLimit(name)) {
         post({ type: 'attachDroppedFile', name, data: '', mediaType: file.type, outcome: 'tooLarge' });
         continue;
       }

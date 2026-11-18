@@ -108,6 +108,7 @@ Questa azione non può essere annullata.</value></data>
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>Revisionato: le modifiche in stage sotto `{0}` (le altre, quando lì non c'è niente in stage).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} è un file binario: non ha testo da leggere.</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} non ha testo da leggere: è una scansione o contiene solo immagini.</value></data>
+  <data name="AttachDocumentNothingInIt" xml:space="preserve"><value>{0} non contiene nulla da leggere: nessun evento, o nessuna forma con testo e nessun collegamento.</value></data>
   <data name="AttachScanNotRead" xml:space="preserve"><value>{0} è una scansione e non è stato possibile leggerla su questa macchina: {1}.</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} si apre solo con una password: il suo testo non può essere letto.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>Impossibile leggere {0}: è danneggiato o in un formato che Inferpal non legge.</value></data>

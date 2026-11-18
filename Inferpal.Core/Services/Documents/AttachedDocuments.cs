@@ -25,7 +25,7 @@ internal static class AttachedDocuments
     {
         var info = new FileInfo(path);
         if (!info.Exists) return new(string.Empty, 0, 0, DocumentProblem.Unreadable);
-        if (info.Length > DocumentText.MaxBytes) return new(string.Empty, 0, 0, DocumentProblem.TooLarge);
+        if (info.Length > DocumentText.MaxBytesOf(path)) return new(string.Empty, 0, 0, DocumentProblem.TooLarge);
         if (Known.TryGetValue(path, out var known) && known.Written == info.LastWriteTimeUtc && known.Length == info.Length)
             return known.Result;
         var result = DocumentText.Extract(path, ct, Passwords.GetValueOrDefault(path));
@@ -48,7 +48,7 @@ internal static class AttachedDocuments
     {
         if (password.Length == 0) return false;
         var info = new FileInfo(path);
-        if (!info.Exists || info.Length > DocumentText.MaxBytes) return false;
+        if (!info.Exists || info.Length > DocumentText.MaxBytesOf(path)) return false;
         var result = DocumentText.Extract(path, ct, password);
         // ⚠ A wrong password can also come back as damaged: a part with no checksum decrypts to bytes that do not inflate,
         // a size read from garbage runs past the data. Only a document that opened is a right password — kept, it would
@@ -82,6 +82,7 @@ internal static class AttachedDocuments
         var name = Path.GetFileName(path);
         if (ocr && IsScan(path, result)) return Scan(path, ct) is { Status: OcrStatus.Read } reading ? ScanText(name, reading) : null;
         if (result.Problem != DocumentProblem.None) return null;
+        if (result.Header is { } own) return own + "\n\n" + result.Text;
         var pages = result.Pages == 1 ? "1 page" : string.Create(CultureInfo.InvariantCulture, $"{result.Pages} pages");
         var header = result.Pages == 0
             ? $"[Text extracted from {name}: formatting, images and comments are not here.]"
@@ -146,17 +147,27 @@ internal static class AttachedDocuments
         return header + "\n\n" + reading.Text;
     }
 
+    /// <summary>Why an event log or a diagram gives no text — never "a scan": it holds no event, or no shape with text and
+    /// no link. <c>null</c> for any other document.</summary>
+    internal static string? NoTextKind(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".evtx" => "it holds no event",
+        ".drawio" or ".vsdx" => "it holds no shape with text and no link",
+        _ => null,
+    };
+
     /// <summary>Why the document gives no text, in English, for the model; null when it gives some.</summary>
     public static string? WhyNoText(string path) => Read(path).Problem switch
     {
         DocumentProblem.None => null,
+        DocumentProblem.NoText when NoTextKind(path) is { } kind => kind,
         DocumentProblem.NoText => ScanKnown(path) is { Status: OcrStatus.Empty } ? "it holds no text: a scan in which the OCR found none"
                                   : OcrNotRead.TryGetValue(path, out var why) && File.GetLastWriteTimeUtc(path) == why.Written
                                       ? $"it holds no text: a scan the OCR could not read ({why.Why})"
                                   : "it holds no text: a scan, or images",
         DocumentProblem.Encrypted => "it opens only with a password",
         DocumentProblem.TooSlow => "it took too long to read",
-        DocumentProblem.TooLarge => string.Create(CultureInfo.InvariantCulture, $"it is larger than {DocumentText.MaxBytes / (1024 * 1024)} MB"),
+        DocumentProblem.TooLarge => string.Create(CultureInfo.InvariantCulture, $"it is larger than {DocumentText.MaxBytesOf(path) / (1024 * 1024)} MB"),
         _ => "it could not be read: damaged, or in a form Inferpal does not read",
     };
 }

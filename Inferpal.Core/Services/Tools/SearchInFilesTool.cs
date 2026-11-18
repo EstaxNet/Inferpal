@@ -19,7 +19,7 @@ internal class SearchInFilesTool : ITool
     public string Name => "search_in_files";
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
-    public string Description => "Searches for text or a regex pattern in files, the text of documents (PDF, Office, OpenDocument, Outlook .msg) included. Returns file:line:content.";
+    public string Description => "Searches for text or a regex pattern in files, the text of documents (PDF, Office, OpenDocument, Outlook .msg, event logs, Visio diagrams) included. Returns file:line:content.";
     public object Parameters => new
     {
         type = "object",
@@ -89,6 +89,7 @@ internal class SearchInFilesTool : ITool
         var documentWatch = new System.Diagnostics.Stopwatch();
         var documentsSearched = 0;
         var documentsWithoutText = 0;
+        var documentsInPart = new List<string>();
         var documentsNotSearched = 0;
         foreach (var file in files)
         {
@@ -118,6 +119,8 @@ internal class SearchInFilesTool : ITool
                     var extracted = Documents.AttachedDocuments.ForModel(file, ct);
                     documentWatch.Stop();
                     if (extracted is null) { documentsWithoutText++; continue; }
+                    // Read in part (a long event log keeps its newest events): what was left out is not searched.
+                    if (Documents.AttachedDocuments.Read(file, ct).StoppedAt > 0) documentsInPart.Add(relPath);
                     documentsSearched++;
                     lines = [.. extracted.Split('\n')];
                     // Inferpal's own header ("[Text extracted from …: images are not here.]") is not the document: never
@@ -190,6 +193,11 @@ internal class SearchInFilesTool : ITool
         if (documentsSearched > 0 && results.Count > 0)
             notes.Append($"\n({documentsSearched} PDF/DOCX file(s) were searched in their extracted text; read_file shows them at "
                        + "the same line numbers.)");
+        if (documentsInPart.Count > 0)
+            notes.Append($"\n({documentsInPart.Count} document(s) were searched only in part — their text is cut where read_file "
+                       + $"cuts it (an event log keeps its newest events): {string.Join(", ", documentsInPart.Take(5))}"
+                       + (documentsInPart.Count > 5 ? $", +{documentsInPart.Count - 5} more" : "")
+                       + ". No match there is NOT \"absent from them\".)");
         if (documentsWithoutText > 0)
             notes.Append($"\n({documentsWithoutText} PDF/DOCX file(s) give no text to search (a scan, images, a password, or "
                        + "too large): read_file on one says which.)");

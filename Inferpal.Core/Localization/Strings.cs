@@ -497,6 +497,8 @@ internal static class Strings
     /// <summary>A binary file asked to be read as text — {0}=its name.</summary>
     public static string AttachBinaryFile(string name) => Format(Get(nameof(AttachBinaryFile)), name);
     public static string AttachDocumentNoText(string name) => Format(Get(nameof(AttachDocumentNoText)), name);
+    /// <summary>An event log with no event, a diagram with no text and no link — {0}=file.</summary>
+    public static string AttachDocumentNothingInIt(string name) => Format(Get(nameof(AttachDocumentNothingInIt)), name);
     public static string AttachScanNotRead(string file, string why) => Format(Get(nameof(AttachScanNotRead)), file, why);
     public static string AttachDocumentLocked(string name) => Format(Get(nameof(AttachDocumentLocked)), name);
     public static string AttachDocumentUnreadable(string name) => Format(Get(nameof(AttachDocumentUnreadable)), name);

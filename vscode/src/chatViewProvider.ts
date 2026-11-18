@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
-import { DROPPED_FILE_LIMIT } from './droppedFiles';
+import { droppedFileLimit } from './droppedFiles';
 import { t } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
@@ -4210,7 +4210,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * is not there to read it (said by `hostForGesture`).
    */
   private async readAttachable(uri: vscode.Uri): Promise<{ text: string | null; refusal: string | null; forModel: string | null } | undefined> {
-    if (!/\.(pdf|docx|xlsx|xlsm|xlsb|xls|pptx|ipynb|odt|ods|odp|rtf|eml|msg|doc)$/i.test(uri.fsPath)) {
+    if (!/\.(pdf|docx|xlsx|xlsm|xlsb|xls|pptx|ipynb|odt|ods|odp|rtf|eml|msg|doc|evtx|drawio|vsdx)$/i.test(uri.fsPath)) {
       try {
         return { text: (await vscode.workspace.openTextDocument(uri)).getText(), refusal: null, forModel: null };
       } catch {
@@ -4267,7 +4267,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     if (outcome === 'tooLarge') {
-      void vscode.window.showWarningMessage(t('{0} is not attached: it is larger than {1} MB.', name, DROPPED_FILE_LIMIT / (1024 * 1024)));
+      void vscode.window.showWarningMessage(t('{0} is not attached: it is larger than {1} MB.', name, droppedFileLimit(name) / (1024 * 1024)));
       return;
     }
     if (outcome === 'unreadable') {

@@ -111,6 +111,7 @@ Cette action est irréversible.</value></data>
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>Relu : les changements indexés sous `{0}` (les autres le sont quand rien n'y est indexé).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0} est un fichier binaire : il n'a pas de texte à lire.</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>{0} n'a pas de texte à lire : c'est un scan, ou il ne contient que des images.</value></data>
+  <data name="AttachDocumentNothingInIt" xml:space="preserve"><value>{0} ne contient rien à lire : aucun événement, ou aucune forme avec du texte ni aucun lien.</value></data>
   <data name="AttachScanNotRead" xml:space="preserve"><value>{0} est un scan, et il n’a pas pu être lu sur cette machine : {1}.</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} ne s'ouvre qu'avec un mot de passe : son texte ne peut pas être lu.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} n'a pas pu être lu : il est endommagé, ou dans une forme qu'Inferpal ne lit pas.</value></data>

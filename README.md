@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-9230%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-9264%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
   <a href="https://open-vsx.org/extension/EstaxNet/inferpal-vscode"><img src="https://img.shields.io/badge/Open%20VSX-install-C160EF" alt="Install from Open VSX"></a>
@@ -72,8 +72,8 @@ The spec is a PDF, the test data lives in a spreadsheet, the error is on a scree
 | A file protected by a password | Attach it as usual | A card asks you for the password (Visual Studio and VS Code); the model gets the text, never the password |
 | A question about a flow or a design | Ask for a diagram | A Mermaid diagram drawn in the chat, its code one click away |
 
-Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks and e-mails
-(`.eml`, `.msg`) are read too, by you and by the agent's `read_file` and `search_in_files`. When the model that will
+Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks, e-mails
+(`.eml`, `.msg`), Windows event logs (`.evtx`) and diagrams (`.drawio`, `.vsdx`) are read too, by you and by the agent's `read_file` and `search_in_files`. When the model that will
 answer does not see images, the text written in the image goes instead, read on your machine by Inferpal's OCR. In Visual Studio, VS Code and ACP editors.
 [How each format is read](docs/file-formats.md)
 

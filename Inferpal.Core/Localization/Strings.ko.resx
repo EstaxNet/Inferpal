@@ -108,6 +108,7 @@
   <data name="CheckPathStagedLabel" xml:space="preserve"><value>검토 대상: `{0}` 아래의 스테이징된 변경(그곳에 스테이징된 것이 없으면 나머지 변경).</value></data>
   <data name="AttachBinaryFile" xml:space="preserve"><value>{0}은(는) 이진 파일입니다. 읽을 텍스트가 없습니다.</value></data>
   <data name="AttachDocumentNoText" xml:space="preserve"><value>{0}에는 읽을 텍스트가 없습니다. 스캔본이거나 이미지만 있습니다.</value></data>
+  <data name="AttachDocumentNothingInIt" xml:space="preserve"><value>{0}에는 읽을 내용이 없습니다. 이벤트가 없거나, 텍스트가 있는 도형과 연결이 없습니다.</value></data>
   <data name="AttachScanNotRead" xml:space="preserve"><value>{0}은(는) 스캔이며 이 컴퓨터에서 읽을 수 없었습니다: {1}.</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0}은(는) 암호가 있어야 열 수 있어 텍스트를 읽을 수 없습니다.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0}을(를) 읽을 수 없습니다. 손상되었거나 Inferpal이 읽지 못하는 형식입니다.</value></data>

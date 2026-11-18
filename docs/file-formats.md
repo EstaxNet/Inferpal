@@ -22,12 +22,20 @@ these give the model their **text**.
 | Rich text | `.rtf` | Its text |
 | Jupyter notebook | `.ipynb` | Attached: its cells and their outputs, not its JSON. The agent also edits one cell at a time and runs the notebook ([Tools](tools.md#logs-data-files-and-notebooks)) |
 | E-mail | `.eml`, `.msg` | The headers and the body, its attachments named |
+| Windows event log | `.evtx` | Each event as a log entry — its time in your machine's zone, its level, its source and id, then its data as written (a .NET crash: the exception and its stack). Filtered by level and time like any log. A log too long keeps its newest events and says how many older ones are left out. Read on Windows, Linux and macOS |
+| Diagram | `.drawio`, `.vsdx` | Page by page, its shapes (their text) and its links (`A → B: label`); a compressed draw.io page too. Positions, colours and styles are left out |
 
 A notebook, an RTF file and an `.eml` are text files: attached to a question they give their text as above, while the
 agent's `read_file` reads them as they are written, so it can edit them.
 
+A **test report** — VSTest's `.trx`, or JUnit XML from pytest, Maven, Gradle, jest-junit or go-junit-report — reads first
+as its result when the agent opens it: the counts, then each failed test with its message and its stack, without running
+the suite again. It stays a text file: `start_line` reads its XML. A **draw.io** diagram is read the same way — its
+shapes and links first, its XML with `start_line`, so the agent can still edit it. In an archive (a CI artifact), a test
+report or a draw.io diagram reads as it does on disk; a binary document inside an archive is read once extracted.
+
 A document protected by a **password** (PDF, Office, OpenDocument) asks you for it on a card in Visual Studio and
-VS Code; the model gets the text, never the password. At most 20 MB per document.
+VS Code; the model gets the text, never the password. At most 20 MB per document, 64 MB for an event log.
 
 ## Images
 
