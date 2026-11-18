@@ -40,12 +40,27 @@ internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSessio
     /// </remarks>
     public bool IsAvailable => declared;
 
-    public async Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct)
+    public async Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, BreakpointOptions? options,
+                                                             CancellationToken ct)
     {
         var dto = await CallAsync<DebugBreakpointDto?>(
-            "debug/addBreakpoint", new DebugBreakpointParams(file, line), ct);
-        return dto is null ? null : new DebugBreakpointInfo(dto.File, dto.Line, dto.Enabled);
+            "debug/addBreakpoint",
+            new DebugBreakpointParams(file, line, options?.TrimmedCondition, options?.HitCount, options?.MarkedLog),
+            ct);
+        return dto is null ? null : Info(dto);
     }
+
+    /// <remarks>The adapter answers with the debug console's output after <paramref name="since"/>; the marked lines are
+    /// picked here, one reader for both editors (<see cref="BreakpointOptions.TraceLines"/>).</remarks>
+    public async Task<TraceRead> ReadTraceAsync(string? since, CancellationToken ct)
+    {
+        var dto = await CallAsync<DebugTraceDto?>("debug/trace", new DebugTraceParams(since), ct)
+                  ?? throw new DebuggerNotAnsweringException("The editor answered debug/trace with nothing.");
+        return new TraceRead(BreakpointOptions.TraceLines(dto.Text), dto.Next, dto.Cut);
+    }
+
+    private static DebugBreakpointInfo Info(DebugBreakpointDto b) =>
+        new(b.File, b.Line, b.Enabled, b.Condition, b.HitCount, b.Log);
 
     public Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct) =>
         CallAsync<bool>("debug/removeBreakpoint", new DebugBreakpointParams(file, line), ct);
@@ -53,7 +68,7 @@ internal sealed class RpcDebugSession(JsonRpc rpc, bool declared) : IDebugSessio
     public async Task<IReadOnlyList<DebugBreakpointInfo>> ListBreakpointsAsync(CancellationToken ct)
     {
         var dtos = await CallAsync<List<DebugBreakpointDto>?>("debug/listBreakpoints", null, ct);
-        return dtos?.Select(b => new DebugBreakpointInfo(b.File, b.Line, b.Enabled)).ToList()
+        return dtos?.Select(Info).ToList()
                ?? (IReadOnlyList<DebugBreakpointInfo>)[];
     }
 

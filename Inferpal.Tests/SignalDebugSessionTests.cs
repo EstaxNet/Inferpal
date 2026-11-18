@@ -133,7 +133,7 @@ public class SignalDebugSessionTests : IDisposable
         Assert.Null((await session.StartAsync(CancellationToken.None)).State);
         // Nobody to answer is not "no breakpoint" nor "none set": said as such, and at once.
         var refused = await Assert.ThrowsAsync<DebuggerNotAnsweringException>(
-            () => session.AddBreakpointAsync(@"C:\p\a.cs", 3, CancellationToken.None));
+            () => session.AddBreakpointAsync(@"C:\p\a.cs", 3, null, CancellationToken.None));
         Assert.Contains("in-process half is not running", refused.Message, StringComparison.Ordinal);
         await Assert.ThrowsAsync<DebuggerNotAnsweringException>(() => session.ListBreakpointsAsync(CancellationToken.None));
         var elapsed = DateTimeOffset.UtcNow - started;
@@ -155,11 +155,52 @@ public class SignalDebugSessionTests : IDisposable
             Breakpoints: [new DebugBreakpointInfo(r.File!, r.Line + 1, Enabled: true)]));
         var session = new SignalDebugSession();
 
-        var bp = await session.AddBreakpointAsync(@"C:\p\a.cs", 12, CancellationToken.None);
+        var bp = await session.AddBreakpointAsync(@"C:\p\a.cs", 12, null, CancellationToken.None);
 
         Assert.NotNull(bp);
         Assert.Equal(13, bp.Line);
         Assert.Equal(SignalDebugSession.OpAddBreakpoint, _driver.SeenOps.Single());
+    }
+
+    [Fact]
+    public async Task AConditionAndATracepoint_TravelToTheDriver_TheMessageMarked()
+    {
+        DebugCommandRequest? seen = null;
+        _driver.Start(r =>
+        {
+            seen = r;
+            return new DebugCommandResponse(r.Id, Ok: true,
+                Breakpoints: [new DebugBreakpointInfo(r.File!, r.Line, true, r.Condition, r.HitCount, r.Log)]);
+        });
+        var session = new SignalDebugSession();
+
+        var bp = await session.AddBreakpointAsync(@"C:\p\a.cs", 12, new BreakpointOptions("  x > 1 ", 4, " x={x} "), CancellationToken.None);
+
+        Assert.Equal("x > 1", seen?.Condition);
+        Assert.Equal(4, seen?.HitCount);
+        Assert.Equal(BreakpointOptions.TraceMarker + "x={x}", seen?.Log);   // the reader finds the trace by this mark
+        Assert.Equal("x={x}", BreakpointOptions.TraceLines(bp?.Log).Single());
+    }
+
+    [Fact]
+    public async Task TheTrace_TravelsFromAPlace_AndOnlyTheMarkedLinesComeBack()
+    {
+        DebugCommandRequest? seen = null;
+        _driver.Start(r =>
+        {
+            seen = r;
+            return new DebugCommandResponse(r.Id, Ok: true, Flag: true, Next: "120:ab",
+                Text: "'App.exe' loaded.\r\n" + BreakpointOptions.TraceMarker + "x=1\r\nprogram output\r\n" + BreakpointOptions.TraceMarker + "x=2\r\n");
+        });
+        var session = new SignalDebugSession();
+
+        var read = await session.ReadTraceAsync("40:cd", CancellationToken.None);
+
+        Assert.Equal(SignalDebugSession.OpReadTrace, seen?.Op);
+        Assert.Equal("40:cd", seen?.Since);
+        Assert.Equal(["x=1", "x=2"], read.Lines);
+        Assert.Equal("120:ab", read.Next);
+        Assert.True(read.Cut);
     }
 
     [Fact]

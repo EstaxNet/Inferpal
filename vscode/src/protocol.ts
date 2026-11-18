@@ -1224,11 +1224,20 @@ export interface DebugBreakpointDto {
   file: string;
   line: number;
   enabled: boolean;
+  /** What the breakpoint kept of a condition, a hit count, a tracepoint message; absent: none. */
+  condition?: string | null;
+  hitCount?: number | null;
+  log?: string | null;
 }
 
 export interface DebugBreakpointParams {
   file: string;
   line: number;
+  /** On an add only: stop only when this expression holds, only at this pass, or write this (already marked)
+   *  message at each pass without stopping. */
+  condition?: string | null;
+  hitCount?: number | null;
+  log?: string | null;
 }
 
 export interface DebugStepParams {

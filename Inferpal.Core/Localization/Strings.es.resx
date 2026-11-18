@@ -358,6 +358,8 @@ Haga clic en ↻ Reintentar en la cabecera una vez corregido.</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Sesión de depuración no iniciada (rechazada por el usuario).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Evaluar en el programa en pausa: puede ejecutar su código: {0}</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Expresión no evaluada (rechazada por el usuario).</value></data>
+  <data name="DebugBreakpointCodeConfirm" xml:space="preserve"><value>Poner un punto de interrupción en {0} cuyas expresiones se evalúan en el programa en cada paso — pueden ejecutar código del programa: {1}</value></data>
+  <data name="DebugBreakpointCodeCancelled" xml:space="preserve"><value>Punto de interrupción no establecido (rechazado por el usuario).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Aplicar cambio a: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Cambio cancelado por el usuario.</value></data>
   <data name="ProjectCodeConsent" xml:space="preserve"><value>¿Ejecutar el propio código de este espacio de trabajo ({0})? Una compilación o una ejecución de pruebas ejecuta lo que escribió el repositorio: sus objetivos de compilación, sus scripts de prueba, su propio entorno de Python. Se pregunta una vez para este espacio de trabajo, y de nuevo tras un reinicio.</value></data>

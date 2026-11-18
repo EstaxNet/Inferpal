@@ -12,8 +12,33 @@ internal sealed class AgentBreakpoints
     private readonly object _gate = new();
     private readonly HashSet<(string File, int Line)> _owned = new(new LocationComparer());
 
-    public void Track(string file, int line)   { lock (_gate) _owned.Add((file, line)); }
-    public void Untrack(string file, int line) { lock (_gate) _owned.Remove((file, line)); }
+    private readonly HashSet<(string File, int Line)> _tracepoints = new(new LocationComparer());
+
+    /// <summary>The place in the debug output where the current run's trace starts (<see cref="TraceRead.Next"/> when the
+    /// first tracepoint was set, or at the start that followed); <c>null</c> while none was ever set.</summary>
+    public string? TraceStart { get; set; }
+
+    /// <summary>Whether a tracepoint the assistant set is still there: only then does a state read look at the trace —
+    /// once they are gone, what they wrote belongs to a run that is over.</summary>
+    public bool HasTracepoints { get { lock (_gate) return _tracepoints.Count > 0; } }
+
+    public void Track(string file, int line, bool tracepoint = false)
+    {
+        lock (_gate)
+        {
+            _owned.Add((file, line));
+            if (tracepoint) _tracepoints.Add((file, line));
+        }
+    }
+
+    public void Untrack(string file, int line)
+    {
+        lock (_gate)
+        {
+            _owned.Remove((file, line));
+            _tracepoints.Remove((file, line));
+        }
+    }
     public bool Owns(string file, int line)    { lock (_gate) return _owned.Contains((file, line)); }
 
     public IReadOnlyList<(string File, int Line)> Snapshot()
@@ -67,7 +92,9 @@ internal sealed class AgentCleaningDebugSession(IDebugSession inner, AgentBreakp
     public IDebugSession Inner => inner;
 
     public bool IsAvailable => inner.IsAvailable;
-    public Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct) => inner.AddBreakpointAsync(file, line, ct);
+    public Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, BreakpointOptions? options, CancellationToken ct) =>
+        inner.AddBreakpointAsync(file, line, options, ct);
+    public Task<TraceRead> ReadTraceAsync(string? since, CancellationToken ct) => inner.ReadTraceAsync(since, ct);
     public Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct) => inner.RemoveBreakpointAsync(file, line, ct);
     public Task<IReadOnlyList<DebugBreakpointInfo>> ListBreakpointsAsync(CancellationToken ct) => inner.ListBreakpointsAsync(ct);
     /// <summary>

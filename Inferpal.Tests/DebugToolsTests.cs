@@ -53,12 +53,43 @@ public class DebugToolsTests
                      new DebugFrame(2, "Program.Main", file, 20)],
             Locals: [new DebugVariable("total", "int", "106")]);
 
-        public Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct)
+        /// <summary>False: a debugger that binds the place and drops the condition, the hit count and the message.</summary>
+        public bool KeepsOptions { get; set; } = true;
+        public BreakpointOptions? LastOptions { get; private set; }
+
+        /// <summary>The debug output the tracepoints wrote in, marked lines and others alike; a place is a line count.</summary>
+        public readonly List<string> Output = [];
+
+        /// <summary>How many of the last lines the debugger still holds (its read window); older ones are lost.</summary>
+        public int Held { get; set; } = int.MaxValue;
+
+        public Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, BreakpointOptions? options, CancellationToken ct)
         {
+            LastOptions = options;
             if (!BreakpointAccepted) return Task.FromResult<DebugBreakpointInfo?>(null);
-            var bp = new DebugBreakpointInfo(file, line, true);
+            var bp = KeepsOptions && options is not null
+                ? new DebugBreakpointInfo(file, line, true, string.IsNullOrWhiteSpace(options.Condition) ? null : options.Condition,
+                                          options.HitCount, options.MarkedLog)
+                : new DebugBreakpointInfo(file, line, true);
             Breakpoints.Add(bp);
             return Task.FromResult<DebugBreakpointInfo?>(bp);
+        }
+
+        /// <summary>Empties the output, as Visual Studio empties its Debug pane when a session starts: a place taken before
+        /// is not one of this output's.</summary>
+        public void EmptyOutput() { Output.Clear(); _generation++; }
+        private int _generation;
+
+        public Task<TraceRead> ReadTraceAsync(string? since, CancellationToken ct)
+        {
+            var place = $"{_generation}:{Output.Count}";
+            if (since is null) return Task.FromResult(new TraceRead([], place, false));
+            var parts = since.Split(':');
+            var from = parts.Length == 2 && parts[0] == _generation.ToString() && int.TryParse(parts[1], out var at) && at <= Output.Count
+                ? at : 0;                                     // a place this output does not hold: from its start
+            var window = Math.Max(from, Output.Count - Held);
+            return Task.FromResult(new TraceRead(
+                BreakpointOptions.TraceLines(string.Join("\n", Output.Skip(window))), place, window > from));
         }
 
         public Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct) =>
@@ -73,9 +104,19 @@ public class DebugToolsTests
         /// <summary>Set to make the launch start and keep running, with no stop within the budget.</summary>
         public bool StartStillRunning { get; set; }
 
+        /// <summary>What the next run (a start, a resume) writes in the output while it runs.</summary>
+        public readonly List<string> RunWrites = [];
+
+        private void Run()
+        {
+            Output.AddRange(RunWrites);
+            RunWrites.Clear();
+        }
+
         public Task<DebugStartResult> StartAsync(CancellationToken ct)
         {
             Starts++;
+            Run();
             return Task.FromResult(
                 StartFailure is { } why ? DebugStartResult.Failed(why) :
                 StartStillRunning       ? DebugStartResult.NoStopYet :
@@ -91,7 +132,7 @@ public class DebugToolsTests
             : NoStopOutcome == DebugResumeOutcome.Failed ? DebugResumeResult.Failed("the adapter refused")
             : new DebugResumeResult(NoStopOutcome);
 
-        public Task<DebugResumeResult> ContinueAsync(CancellationToken ct) { Continues++; return Task.FromResult(Resumed()); }
+        public Task<DebugResumeResult> ContinueAsync(CancellationToken ct) { Continues++; Run(); return Task.FromResult(Resumed()); }
 
         public Task<DebugResumeResult> StepAsync(DebugStepKind kind, CancellationToken ct)
         {
@@ -121,8 +162,8 @@ public class DebugToolsTests
     private static JsonElement Args(object args) => JsonSerializer.SerializeToElement(args);
 
     private static DebugControlTool Control(FakeDebugSession session, IApprovalService approval,
-                                            DebugStepBudget? budget = null) =>
-        new(session, approval, budget ?? new DebugStepBudget(), () => TestPaths.P(@"C:\ws"));
+                                            DebugStepBudget? budget = null, AgentBreakpoints? agent = null) =>
+        new(session, approval, budget ?? new DebugStepBudget(), () => TestPaths.P(@"C:\ws"), agent);
 
     // ── Consent: the session, not the step ──────────────────────────────────────────
 
@@ -205,6 +246,270 @@ public class DebugToolsTests
         await tool.ExecuteAsync(Args(args), CancellationToken.None);
 
         Assert.Equal(14, Assert.Single(session.Breakpoints).Line);
+    }
+
+    // ── Conditional breakpoints and tracepoints ────────────────────────────────────
+
+    private static string SetArgs(object extra)
+    {
+        var args = new Dictionary<string, object> { ["action"] = "set_breakpoint", ["file"] = TestPaths.P(@"C:\ws\src\Program.cs"), ["line"] = 14 };
+        foreach (var p in extra.GetType().GetProperties()) args[p.Name] = p.GetValue(extra)!;
+        return JsonSerializer.Serialize(args);
+    }
+
+    [Fact]
+    public async Task AConditionAndAPass_ReachTheDebugger_AndTheAnswerSaysWhatItKept()
+    {
+        var session = new FakeDebugSession();
+
+        var result = await Control(session, new StubApproval(approve: true))
+            .ExecuteAsync(Args(SetArgs(new { condition = "order.Total == 0", hit_count = 3 })), CancellationToken.None);
+
+        Assert.Equal("order.Total == 0", session.LastOptions?.Condition);
+        Assert.Equal(3, session.LastOptions?.HitCount);
+        Assert.Contains("it stops only when `order.Total == 0` is true at pass 3", result);
+        Assert.DoesNotContain("did not keep", result);
+    }
+
+    [Fact]
+    public async Task ADebuggerThatDropsTheCondition_IsSaidToHaveDroppedIt()
+    {
+        var session = new FakeDebugSession { KeepsOptions = false };
+
+        var result = await Control(session, new StubApproval(approve: true))
+            .ExecuteAsync(Args(SetArgs(new { condition = "order.Total == 0", log = "total={order.Total}" })), CancellationToken.None);
+
+        Assert.Contains("did not keep the condition, the message (it STOPS at each pass)", result);
+    }
+
+    [Fact]
+    public async Task ATracepoint_WritesWithoutStopping_AndTheRunsResultCarriesOnlyItsNewLines()
+    {
+        var session = new FakeDebugSession { State = null, NoStopOutcome = DebugResumeOutcome.Ended };
+        var tool = Control(session, new StubApproval(approve: true));
+
+        var set = await tool.ExecuteAsync(Args(SetArgs(new { log = "total={order.Total}" })), CancellationToken.None);
+        Assert.Equal(BreakpointOptions.TraceMarker + "total={order.Total}", session.LastOptions?.MarkedLog);
+        Assert.Contains("WITHOUT stopping", set);
+
+        // The debug output holds the program's and the debugger's lines too: only the marked ones come back.
+        session.RunWrites.AddRange(["Loaded 'System.Private.CoreLib.dll'.", BreakpointOptions.TraceMarker + "total=10",
+                                    "program says hello", BreakpointOptions.TraceMarker + "total=0"]);
+        var first = await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+        Assert.Contains("Tracepoints wrote 2 line(s):\ntotal=10\ntotal=0", first);
+        Assert.DoesNotContain("program says hello", first);
+
+        session.RunWrites.Add(BreakpointOptions.TraceMarker + "total=7");
+        var next = await tool.ExecuteAsync(Args("""{"action":"continue"}"""), CancellationToken.None);
+        Assert.Contains("Tracepoints wrote 1 line(s):\ntotal=7", next);
+        Assert.DoesNotContain("total=10", next);   // already shown
+    }
+
+    [Fact]
+    public async Task ARunWithoutTracepoints_ReadsNoTrace()
+    {
+        var session = new FakeDebugSession { State = null };
+        session.Output.Add(BreakpointOptions.TraceMarker + "left by someone else");
+
+        var result = await Control(session, new StubApproval(approve: true))
+            .ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+
+        Assert.Contains("ran to completion", result);   // witness: the run's result came back
+        Assert.DoesNotContain("Tracepoints", result);
+    }
+
+    [Fact]
+    public async Task ABreakpointAlreadyThere_SaysTheConditionWasNotApplied()
+    {
+        var session = new FakeDebugSession();
+        session.Breakpoints.Add(new DebugBreakpointInfo(TestPaths.P(@"C:\ws\src\Program.cs"), 14, true));
+
+        var result = await Control(session, new StubApproval(approve: true))
+            .ExecuteAsync(Args(SetArgs(new { condition = "x > 1" })), CancellationToken.None);
+
+        Assert.Contains("was NOT applied", result);
+        Assert.Null(session.LastOptions);   // nothing was added
+    }
+
+    [Fact]
+    public async Task TheDebuggerState_CarriesWhatThisSessionsTracepointsWrote_EvenWhenNothingIsPaused()
+    {
+        var fake = new FakeDebugSession { State = null };
+        var agent = new AgentBreakpoints();
+        var session = new AgentCleaningDebugSession(fake, agent);
+        var state = new GetDebuggerStateTool(session, () => TestPaths.P(@"C:\ws"));
+        fake.Output.Add(BreakpointOptions.TraceMarker + "an earlier run");
+
+        var none = await state.ExecuteAsync(Args("{}"), CancellationToken.None);
+        Assert.DoesNotContain("Tracepoints", none);   // no tracepoint set here: no trace read
+
+        await Control(fake, new StubApproval(approve: true), agent: agent)
+            .ExecuteAsync(Args(SetArgs(new { log = "i={i}" })), CancellationToken.None);
+        fake.Output.AddRange(["noise", BreakpointOptions.TraceMarker + "i=1", BreakpointOptions.TraceMarker + "i=2"]);
+
+        var result = await state.ExecuteAsync(Args("{}"), CancellationToken.None);
+
+        Assert.Contains("No paused debug session", result);
+        Assert.Contains("Tracepoints wrote 2 line(s):\ni=1\ni=2", result);
+        Assert.DoesNotContain("an earlier run", result);
+
+        // Its tracepoint gone (the session stopped), the trace belongs to a run that is over: no longer shown.
+        await agent.RemoveAllAsync(fake, CancellationToken.None);
+        var after = await state.ExecuteAsync(Args("{}"), CancellationToken.None);
+        Assert.Contains("No paused debug session", after);   // witness: the state was read
+        Assert.DoesNotContain("Tracepoints", after);
+    }
+
+    [Fact]
+    public async Task AConditionOrAMessage_RunsCode_SoItAsksFirst_AndARefusalSetsNothing()
+    {
+        var session = new FakeDebugSession();
+        var refused = new StubApproval(approve: false);
+
+        var result = await Control(session, refused)
+            .ExecuteAsync(Args(SetArgs(new { condition = "Purge() == 0", log = "n={n}" })), CancellationToken.None);
+
+        Assert.Equal(1, refused.Calls);
+        Assert.Equal("Purge() == 0  |  n={n}", refused.LastSubject);   // what the permission rules match
+        Assert.Equal(Strings.DebugBreakpointCodeCancelled, result);
+        Assert.Empty(session.Breakpoints);
+
+        // Reference arm: a breakpoint with neither asks nothing.
+        var plain = new StubApproval(approve: false);
+        await Control(session, plain).ExecuteAsync(Args(SetArgs(new { })), CancellationToken.None);
+        Assert.Equal(0, plain.Calls);
+        Assert.Single(session.Breakpoints);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("null")]
+    [InlineData("\"\"")]
+    public async Task AnEmptyHitCount_IsNoHitCount(string hitCount)
+    {
+        var session = new FakeDebugSession();
+        var args = SetArgs(new { }).TrimEnd('}') + ",\"hit_count\":" + hitCount + "}";
+
+        await Control(session, new StubApproval(approve: true)).ExecuteAsync(Args(args), CancellationToken.None);
+
+        Assert.Null(session.LastOptions?.HitCount);
+        Assert.Null(Assert.Single(session.Breakpoints).HitCount);
+    }
+
+    [Fact]
+    public async Task AnOutputEmptiedByTheNextRun_IsReadFromItsStart()
+    {
+        // Visual Studio empties its Debug pane when a session starts; the new run writes about as much as the last one.
+        var session = new FakeDebugSession { State = null };
+        var tool = Control(session, new StubApproval(approve: true));
+        await tool.ExecuteAsync(Args(SetArgs(new { log = "n={n}" })), CancellationToken.None);
+        session.RunWrites.AddRange(Enumerable.Range(1, 4).Select(i => BreakpointOptions.TraceMarker + "first " + i));
+        await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+
+        session.EmptyOutput();
+        session.RunWrites.AddRange(Enumerable.Range(1, 4).Select(i => BreakpointOptions.TraceMarker + "second " + i));
+        var second = await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+
+        Assert.Contains("Tracepoints wrote 4 line(s):\nsecond 1\nsecond 2\nsecond 3\nsecond 4", second);
+    }
+
+    [Fact]
+    public async Task ARunOfTracepointsAlone_IsNotToldItMissedABreakpoint()
+    {
+        var session = new FakeDebugSession { State = null };
+        var tool = Control(session, new StubApproval(approve: true));
+        await tool.ExecuteAsync(Args(SetArgs(new { log = "n={n}" })), CancellationToken.None);
+        session.RunWrites.Add(BreakpointOptions.TraceMarker + "n=1");
+
+        var result = await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+
+        Assert.Contains("tracepoints write without stopping", result);
+        Assert.DoesNotContain("No breakpoint was hit", result);
+    }
+
+    [Fact]
+    public async Task ANewRun_ShowsOnlyItsOwnTrace_AndLostOutputIsSaid()
+    {
+        var session = new FakeDebugSession { State = null, NoStopOutcome = DebugResumeOutcome.Ended };
+        var tool = Control(session, new StubApproval(approve: true));
+        await tool.ExecuteAsync(Args(SetArgs(new { log = "n={n}" })), CancellationToken.None);
+
+        session.RunWrites.AddRange(Enumerable.Range(1, 5).Select(i => BreakpointOptions.TraceMarker + "n=" + i));
+        await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+
+        // Started again: what the first run wrote is not this run's.
+        await tool.ExecuteAsync(Args(SetArgs(new { log = "n={n}" })), CancellationToken.None);
+        session.RunWrites.Add(BreakpointOptions.TraceMarker + "second run");
+        var second = await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+        Assert.Contains("Tracepoints wrote 1 line(s):\nsecond run", second);
+
+        // A read window smaller than what was written since: the loss is said, never shown as all there was.
+        session.Held = 2;
+        session.RunWrites.AddRange(Enumerable.Range(1, 6).Select(i => BreakpointOptions.TraceMarker + "late " + i));
+        var cut = await tool.ExecuteAsync(Args("""{"action":"continue"}"""), CancellationToken.None);
+        Assert.Contains("lines before these were lost", cut);
+        Assert.Contains("late 6", cut);
+    }
+
+    [Fact]
+    public async Task ATracepointOfALaterSession_ShowsNothingTheRunBeforeWrote()
+    {
+        // VS Code's console only grows: a session the user starts after the agent's run keeps that run's lines.
+        var fake = new FakeDebugSession { State = null };
+        var agent = new AgentBreakpoints();
+        var tool = new DebugControlTool(new AgentCleaningDebugSession(fake, agent), new StubApproval(approve: true),
+                                        new DebugStepBudget(), () => TestPaths.P(@"C:\ws"), agent);
+        await tool.ExecuteAsync(Args(SetArgs(new { log = "n={n}" })), CancellationToken.None);
+        fake.RunWrites.Add(BreakpointOptions.TraceMarker + "first run");
+        await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);   // ends: its tracepoint goes
+        Assert.False(agent.HasTracepoints);
+
+        // The user's own session, paused: the agent sets a tracepoint there, and the program writes on.
+        await tool.ExecuteAsync(Args(SetArgs(new { log = "m={m}" })), CancellationToken.None);
+        fake.Output.Add(BreakpointOptions.TraceMarker + "second session");
+        var state = await new GetDebuggerStateTool(new AgentCleaningDebugSession(fake, agent), () => TestPaths.P(@"C:\ws"))
+            .ExecuteAsync(Args("{}"), CancellationToken.None);
+
+        Assert.Contains("Tracepoints wrote 1 line(s):\nsecond session", state);
+        Assert.DoesNotContain("first run", state);
+    }
+
+    [Fact]
+    public async Task ARunThatEnds_KeepsItsLastLines_AndASessionWithoutTracepointsReadsNoTrace()
+    {
+        var fake = new FakeDebugSession();   // paused
+        var agent = new AgentBreakpoints();
+        var tool = new DebugControlTool(new AgentCleaningDebugSession(fake, agent), new StubApproval(approve: true),
+                                        new DebugStepBudget(), () => TestPaths.P(@"C:\ws"), agent);
+        await tool.ExecuteAsync(Args(SetArgs(new { log = "n={n}" })), CancellationToken.None);
+        await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+
+        // The resume that ends the run removes the tracepoint — and still carries what the run wrote last.
+        fake.State = null;
+        fake.NoStopOutcome = DebugResumeOutcome.Ended;
+        fake.RunWrites.Add(BreakpointOptions.TraceMarker + "last line");
+        var ended = await tool.ExecuteAsync(Args("""{"action":"continue"}"""), CancellationToken.None);
+        Assert.Contains("Tracepoints wrote 1 line(s):\nlast line", ended);
+
+        // A later session with a plain breakpoint: its steps say nothing of tracepoints.
+        fake.State = FakeDebugSession.Paused();
+        await tool.ExecuteAsync(Args(SetArgs(new { })), CancellationToken.None);
+        await tool.ExecuteAsync(Args("""{"action":"start"}"""), CancellationToken.None);
+        var step = await tool.ExecuteAsync(Args("""{"action":"step_over"}"""), CancellationToken.None);
+        Assert.Contains("Program.cs", step);   // witness: the step's state came back
+        Assert.DoesNotContain("Tracepoints", step);
+    }
+
+    [Fact]
+    public async Task ANegativeHitCount_IsClamped_AndSaid()
+    {
+        var session = new FakeDebugSession();
+
+        var result = await Control(session, new StubApproval(approve: true))
+            .ExecuteAsync(Args(SetArgs(new { hit_count = -3 })), CancellationToken.None);
+
+        Assert.Equal(1, session.LastOptions?.HitCount);
+        Assert.Contains("hit_count", result);
     }
 
     [Fact]

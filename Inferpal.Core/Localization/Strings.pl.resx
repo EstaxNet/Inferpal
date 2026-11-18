@@ -358,6 +358,8 @@ Kontynuować?</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Sesja debugowania nie została uruchomiona (odrzucona przez użytkownika).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Oblicz w wstrzymanym programie — może to uruchomić jego kod: {0}</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Wyrażenie nie zostało obliczone (odrzucone przez użytkownika).</value></data>
+  <data name="DebugBreakpointCodeConfirm" xml:space="preserve"><value>Ustawić punkt przerwania w {0}, którego wyrażenia są obliczane w programie przy każdym przejściu — mogą wykonać kod programu: {1}</value></data>
+  <data name="DebugBreakpointCodeCancelled" xml:space="preserve"><value>Nie ustawiono punktu przerwania (odrzucone przez użytkownika).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Zastosuj zmianę do: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Zmiana anulowana przez użytkownika.</value></data>
   <data name="ProjectCodeConsent" xml:space="preserve"><value>Uruchomić własny kod tego obszaru roboczego ({0})? Kompilacja lub uruchomienie testów wykonuje to, co napisało repozytorium: jego cele kompilacji, skrypty testowe, własne środowisko Python. Pytanie pada raz dla tego obszaru roboczego i ponownie po restarcie.</value></data>

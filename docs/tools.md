@@ -55,7 +55,7 @@ card:
 
 - Gated tools: `write_file`, `apply_diff`, `apply_edits`, `replace_in_files`, `edit_notebook`, `delete_file`,
   `run_command`, `rename_symbol`, `restore_file`, `update_memory`, `insert_at_cursor`, `replace_selection`,
-  `fetch_url`, `web_search`, `http_request`, `view_page`, `debug_control` `start`, `debug_inspect` `evaluate`, custom shell
+  `fetch_url`, `web_search`, `http_request`, `view_page`, `debug_control` `start` and a breakpoint with a `condition` or `log`, `debug_inspect` `evaluate`, custom shell
   tools, and every MCP tool call. `get_diagnostics`, `run_tests`, `msbuild_property` and `run_notebook` run the
   repository's own code: they ask once per workspace.
 
@@ -537,7 +537,7 @@ start), then reads the call stack and the locals.
 | Tool | Required params | Description |
 |---|---|---|
 | `get_debugger_state` | — | Break state when paused: reason, exception, call stack (`file:line`), locals (backs `@debugger`) |
-| `debug_control` | `action`, `file?`, `line?` | Drives the debugger: `set_breakpoint` / `clear_breakpoint` / `list_breakpoints` / `start` / `continue` / `step_over` / `step_into` / `step_out` / `stop`. **Approval on `start` only** — it runs your program; the steps that follow observe an execution you already consented to. Finite step budget, and running out is reported. The breakpoints it sets are removed when the session stops; yours are never removed |
+| `debug_control` | `action`, `file?`, `line?`, `condition?`, `hit_count?`, `log?` | Drives the debugger: `set_breakpoint` / `clear_breakpoint` / `list_breakpoints` / `start` / `continue` / `step_over` / `step_into` / `step_out` / `stop`. A breakpoint can stop only when `condition` holds, only at pass `hit_count`, or write `log` at each pass without stopping (a tracepoint); what tracepoints wrote comes back with the next start, continue or step, and from `get_debugger_state`. **Approval on `start`**, which runs your program, and on a breakpoint with a `condition` or `log`, whose expressions the program evaluates at each pass; the steps that follow observe an execution you already consented to. Finite step budget, and running out is reported. The breakpoints it sets are removed when the session stops; yours are never removed |
 | `debug_inspect` | `action?` (`state` \| `evaluate`), `expression?` | Reads a paused debugger: stop reason, user call stack, locals, and arbitrary expression evaluation in the current frame. Values are the debugger's own rendering — read, never parsed. **Approval on `evaluate`** — an expression can call your program's code |
 
 </details>

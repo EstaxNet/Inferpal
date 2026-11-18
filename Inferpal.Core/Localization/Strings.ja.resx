@@ -358,6 +358,8 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="DebugStartCancelled" xml:space="preserve"><value>デバッグ セッションは開始されませんでした (ユーザーが拒否)。</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>一時停止中のプログラムで評価します（プログラムのコードが実行される場合があります）: {0}</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>式は評価されませんでした（ユーザーが拒否しました）。</value></data>
+  <data name="DebugBreakpointCodeConfirm" xml:space="preserve"><value>{0} にブレークポイントを設定します。その式は通過のたびにプログラム内で評価され、プログラムのコードを実行する可能性があります: {1}</value></data>
+  <data name="DebugBreakpointCodeCancelled" xml:space="preserve"><value>ブレークポイントは設定されませんでした (ユーザーが拒否)。</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>変更を適用：{0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>ユーザーによって変更がキャンセルされました。</value></data>
   <data name="ProjectCodeConsent" xml:space="preserve"><value>このワークスペース自身のコードを実行しますか ({0})? ビルドやテストの実行は、リポジトリが書いたもの (ビルドターゲット、テストスクリプト、独自の Python 環境) を実行します。このワークスペースでは一度確認し、再起動後にもう一度確認します。</value></data>

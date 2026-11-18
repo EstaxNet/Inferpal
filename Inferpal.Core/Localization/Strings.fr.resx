@@ -358,6 +358,8 @@ Continuer ?</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Session de débogage non démarrée (refusée par l'utilisateur).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Évaluer dans le programme en pause — cela peut exécuter son code : {0}</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Expression non évaluée (refusée par l'utilisateur).</value></data>
+  <data name="DebugBreakpointCodeConfirm" xml:space="preserve"><value>Poser un point d'arrêt en {0} dont les expressions s'évaluent dans le programme à chaque passage — elles peuvent exécuter son code : {1}</value></data>
+  <data name="DebugBreakpointCodeCancelled" xml:space="preserve"><value>Point d'arrêt non posé (refusé par l'utilisateur).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Appliquer la modification à : {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Modification annulée par l'utilisateur.</value></data>
   <data name="ProjectCodeConsent" xml:space="preserve"><value>Exécuter le code propre à cet espace de travail ({0}) ? Un build ou un lancement de tests exécute ce que le dépôt a écrit : ses cibles de build, ses scripts de test, son propre environnement Python. Demandé une fois pour cet espace de travail, et de nouveau après un redémarrage.</value></data>

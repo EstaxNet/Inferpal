@@ -358,6 +358,8 @@
   <data name="DebugStartCancelled" xml:space="preserve"><value>Сеанс отладки не запущен (отклонено пользователем).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Вычислить в приостановленной программе — это может выполнить её код: {0}</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Выражение не вычислено (отклонено пользователем).</value></data>
+  <data name="DebugBreakpointCodeConfirm" xml:space="preserve"><value>Поставить точку останова в {0}, выражения которой вычисляются в программе при каждом проходе — они могут выполнять её код: {1}</value></data>
+  <data name="DebugBreakpointCodeCancelled" xml:space="preserve"><value>Точка останова не поставлена (отклонено пользователем).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Применить изменение к: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Изменение отменено пользователем.</value></data>
   <data name="ProjectCodeConsent" xml:space="preserve"><value>Запустить собственный код этой рабочей области ({0})? Сборка или запуск тестов выполняет то, что написал репозиторий: его цели сборки, тестовые скрипты, собственное окружение Python. Спрашивается один раз для этой рабочей области и снова после перезапуска.</value></data>

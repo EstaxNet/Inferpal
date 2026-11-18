@@ -358,6 +358,8 @@ API 키가 필요하다면 설정에서 키를 확인하세요. 그렇지 않다
   <data name="DebugStartCancelled" xml:space="preserve"><value>디버깅 세션이 시작되지 않았습니다(사용자가 거부함).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>일시 중지된 프로그램에서 평가합니다(프로그램 코드가 실행될 수 있음): {0}</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>식이 평가되지 않았습니다(사용자가 거부함).</value></data>
+  <data name="DebugBreakpointCodeConfirm" xml:space="preserve"><value>{0}에 중단점을 설정합니다. 그 식은 지날 때마다 프로그램 안에서 평가되며 프로그램의 코드를 실행할 수 있습니다: {1}</value></data>
+  <data name="DebugBreakpointCodeCancelled" xml:space="preserve"><value>중단점을 설정하지 않았습니다 (사용자가 거부함).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>변경 적용: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>사용자가 변경을 취소했습니다.</value></data>
   <data name="ProjectCodeConsent" xml:space="preserve"><value>이 작업 영역의 자체 코드를 실행할까요 ({0})? 빌드나 테스트 실행은 저장소가 작성한 것(빌드 대상, 테스트 스크립트, 자체 Python 환경)을 실행합니다. 이 작업 영역에서는 한 번 묻고, 다시 시작하면 다시 묻습니다.</value></data>

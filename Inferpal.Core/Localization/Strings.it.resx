@@ -358,6 +358,8 @@ Continuare?</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Sessione di debug non avviata (rifiutata dall'utente).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Valutare nel programma in pausa: può eseguire il suo codice: {0}</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Espressione non valutata (rifiutata dall'utente).</value></data>
+  <data name="DebugBreakpointCodeConfirm" xml:space="preserve"><value>Impostare un punto di interruzione in {0} le cui espressioni vengono valutate nel programma a ogni passaggio — possono eseguire codice del programma: {1}</value></data>
+  <data name="DebugBreakpointCodeCancelled" xml:space="preserve"><value>Punto di interruzione non impostato (rifiutato dall'utente).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Applica modifica a: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Modifica annullata dall'utente.</value></data>
   <data name="ProjectCodeConsent" xml:space="preserve"><value>Eseguire il codice di questo spazio di lavoro ({0})? Una build o un'esecuzione dei test esegue ciò che il repository ha scritto: i suoi target di build, i suoi script di test, il suo ambiente Python. Chiesto una volta per questo spazio di lavoro, e di nuovo dopo un riavvio.</value></data>

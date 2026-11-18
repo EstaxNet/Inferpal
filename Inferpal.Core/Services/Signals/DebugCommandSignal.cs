@@ -19,7 +19,14 @@ internal sealed record DebugCommandRequest(
     [property: JsonPropertyName("program")] string? Program = null,
     [property: JsonPropertyName("args")]    IReadOnlyList<string>? Args = null,
     [property: JsonPropertyName("cwd")]     string? Cwd = null,
-    [property: JsonPropertyName("root")]    string? Root = null);
+    [property: JsonPropertyName("root")]    string? Root = null,
+    // add_bp: what the breakpoint carries beyond its place (BreakpointOptions); a driver that predates them ignores them,
+    // and the breakpoint it answers with says so (no condition, no message).
+    [property: JsonPropertyName("cond")]    string? Condition = null,
+    [property: JsonPropertyName("hits")]    int? HitCount = null,
+    [property: JsonPropertyName("log")]     string? Log = null,
+    // trace: the place in the Debug pane to read from (TraceRead.Next of the last read, opaque); null = only where it ends.
+    [property: JsonPropertyName("since")]   string? Since = null);
 
 /// <summary>The in-process driver's answer, correlated by <see cref="Id"/>.</summary>
 internal sealed record DebugCommandResponse(
@@ -29,7 +36,9 @@ internal sealed record DebugCommandResponse(
     [property: JsonPropertyName("state")] DebugStopState? State = null,
     [property: JsonPropertyName("flag")]  bool Flag = false,
     [property: JsonPropertyName("text")]  string? Text = null,
-    [property: JsonPropertyName("bps")]   IReadOnlyList<DebugBreakpointInfo>? Breakpoints = null);
+    [property: JsonPropertyName("bps")]   IReadOnlyList<DebugBreakpointInfo>? Breakpoints = null,
+    // trace: where the Debug pane ends now — the place the next read starts from (opaque).
+    [property: JsonPropertyName("next")]  string? Next = null);
 
 /// <summary>
 /// File-based IPC carrying debugger <b>commands</b> from the out-of-process extension host to the

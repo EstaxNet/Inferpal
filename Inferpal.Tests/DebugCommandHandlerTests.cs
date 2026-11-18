@@ -19,8 +19,9 @@ public class DebugCommandHandlerTests
         public readonly List<DebugBreakpointInfo> Breakpoints = [];
         public readonly List<string> Calls = [];
 
-        public Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct)
+        public Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, BreakpointOptions? options, CancellationToken ct)
         { Calls.Add("add"); return Task.FromResult<DebugBreakpointInfo?>(null); }
+        public Task<Services.Debugging.TraceRead> ReadTraceAsync(string? since, CancellationToken ct) => Task.FromResult(new Services.Debugging.TraceRead([], since, false));
 
         public Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct)
         { Calls.Add("remove"); return Task.FromResult(false); }

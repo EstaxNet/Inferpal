@@ -26,6 +26,8 @@ internal static class DebugOps
     internal const string State            = "state";
     internal const string Evaluate         = "evaluate";
     internal const string Stop             = "stop";
+    /// <summary>The end of the editor's debug output, for the lines the assistant's tracepoints wrote.</summary>
+    internal const string ReadTrace        = "trace";
 
     /// <summary>
     /// What a resume (continue / step) that reached no stop answers in <c>Text</c> — values, not operations, hence a

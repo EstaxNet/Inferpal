@@ -27,8 +27,60 @@ internal sealed record DebugFrame(int Id, string Function, string? File, int? Li
 /// </remarks>
 internal sealed record DebugVariable(string Name, string Type, string Value);
 
-/// <summary>A breakpoint as the debugger knows it.</summary>
-internal sealed record DebugBreakpointInfo(string File, int Line, bool Enabled);
+/// <summary>A breakpoint as the debugger knows it — its condition, hit count and tracepoint message as the debugger holds
+/// them, <c>null</c> for none (or a debugger that does not say).</summary>
+internal sealed record DebugBreakpointInfo(string File, int Line, bool Enabled, string? Condition = null, int? HitCount = null,
+                                           string? Log = null);
+
+/// <summary>
+/// What a breakpoint the assistant asks for carries beyond its place: a condition, the pass it stops at, or a message
+/// written at each pass without stopping (a tracepoint; a logpoint in VS Code).
+/// </summary>
+/// <remarks>
+/// ⚠ A tracepoint's message is written with <see cref="TraceMarker"/> in front, and the trace is read back by that mark
+/// only (<see cref="TraceLines"/>): the debug output also holds the program's own output and the debugger's (modules
+/// loaded, threads ended) — returned whole, the trace drowns, and the program's output passes for what was asked.
+/// </remarks>
+internal sealed record BreakpointOptions(string? Condition = null, int? HitCount = null, string? Log = null)
+{
+    /// <summary>The mark in front of every line a tracepoint writes.</summary>
+    internal const string TraceMarker = "[inferpal] ";
+
+    /// <summary>Nothing beyond the place: a plain breakpoint.</summary>
+    public bool IsEmpty => string.IsNullOrWhiteSpace(Condition) && HitCount is null && string.IsNullOrWhiteSpace(Log);
+
+    /// <summary>The message as the debugger is asked to write it: marked; <c>null</c> for a breakpoint that stops.</summary>
+    public string? MarkedLog => string.IsNullOrWhiteSpace(Log) ? null : TraceMarker + Log!.Trim();
+
+    /// <summary>The condition as the debugger is asked to test it; <c>null</c> for none.</summary>
+    public string? TrimmedCondition => string.IsNullOrWhiteSpace(Condition) ? null : Condition!.Trim();
+
+    /// <summary>The lines the assistant's tracepoints wrote in <paramref name="output"/>, in order and without their mark;
+    /// nothing else of the output.</summary>
+    public static IReadOnlyList<string> TraceLines(string? output)
+    {
+        var lines = new List<string>();
+        if (string.IsNullOrEmpty(output)) return lines;
+        foreach (var raw in output!.Replace("\r\n", "\n").Split('\n'))
+        {
+            var at = raw.IndexOf(TraceMarker, StringComparison.Ordinal);
+            if (at >= 0) lines.Add(raw.Substring(at + TraceMarker.Length).TrimEnd());
+        }
+        return lines;
+    }
+}
+
+/// <summary>
+/// What the tracepoints wrote since a place in the editor's debug output: <see cref="Lines"/> (marked ones only),
+/// <see cref="Next"/> the place to read from next time, <see cref="Cut"/> when output written since that place is no longer
+/// held (the reader keeps only the end of a long output).
+/// </summary>
+/// <remarks>⚠ A place, never a count of lines already shown: the output is read through a window of its last characters,
+/// which drops its oldest text and is emptied by a new session — a count then hides new lines as seen, or shows old ones
+/// as new. ⚠ And opaque, each editor's own: Visual Studio empties its Debug pane when a session starts, and a pane rewritten
+/// to about the same length is told from the one marked only by the text the place stood after — a bare length would
+/// read from there and lose the run's first lines.</remarks>
+internal sealed record TraceRead(IReadOnlyList<string> Lines, string? Next, bool Cut);
 
 /// <summary>
 /// What happened when a session was asked to start — three outcomes, not two.
@@ -176,8 +228,15 @@ internal interface IDebugSession
     /// </summary>
     bool IsAvailable { get; }
 
-    /// <summary>Adds a breakpoint, returning it as the debugger bound it, or <c>null</c> on refusal.</summary>
-    Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct);
+    /// <summary>Adds a breakpoint, returning it as the debugger bound it — with what it took of
+    /// <paramref name="options"/> — or <c>null</c> on refusal.</summary>
+    Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, BreakpointOptions? options, CancellationToken ct);
+
+    /// <summary>What the assistant's tracepoints wrote in this editor's debug output after the place
+    /// <paramref name="since"/> (an earlier <see cref="TraceRead.Next"/>), oldest first, without their mark. A place the
+    /// output no longer holds (emptied by a new session) reads it from its start; <c>null</c> returns only where it ends
+    /// now (no lines).</summary>
+    Task<TraceRead> ReadTraceAsync(string? since, CancellationToken ct);
 
     /// <summary>Removes a breakpoint. <c>false</c> when there was none at that location.</summary>
     Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct);

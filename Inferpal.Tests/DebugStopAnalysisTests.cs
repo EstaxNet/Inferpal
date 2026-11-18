@@ -35,7 +35,8 @@ public sealed class DebugStopAnalysisTests : IDisposable
         public bool IsAvailable => true;
         public Task<DebugStopState?> GetStateAsync(CancellationToken ct) =>
             silent ? throw new DebuggerNotAnsweringException("no answer in 20 s") : Task.FromResult(state);
-        public Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct) => throw new NotSupportedException();
+        public Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, BreakpointOptions? options, CancellationToken ct) => throw new NotSupportedException();
+        public Task<Services.Debugging.TraceRead> ReadTraceAsync(string? since, CancellationToken ct) => Task.FromResult(new Services.Debugging.TraceRead([], since, false));
         public Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct) => throw new NotSupportedException();
         public Task<IReadOnlyList<DebugBreakpointInfo>> ListBreakpointsAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task<DebugStartResult> StartAsync(CancellationToken ct) => throw new NotSupportedException();

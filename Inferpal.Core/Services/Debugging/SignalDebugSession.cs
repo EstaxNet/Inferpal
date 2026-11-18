@@ -41,6 +41,7 @@ internal sealed class SignalDebugSession : IDebugSession, IDebugRefusals
     internal const string OpState            = DebugOps.State;
     internal const string OpEvaluate         = DebugOps.Evaluate;
     internal const string OpStop             = DebugOps.Stop;
+    internal const string OpReadTrace        = DebugOps.ReadTrace;
     /// <summary>Attaches to a waiting repro runner and captures the unhandled-exception stop.</summary>
     internal const string OpCaptureTest      = DebugOps.CaptureTest;
 
@@ -62,10 +63,12 @@ internal sealed class SignalDebugSession : IDebugSession, IDebugRefusals
 
     public bool IsAvailable => DebugCommandSignal.IsDriverReady();
 
-    public async Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct)
+    public async Task<DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, BreakpointOptions? options,
+                                                             CancellationToken ct)
     {
         var response = await AskAsync(
-            new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpAddBreakpoint, File: file, Line: line),
+            new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpAddBreakpoint, File: file, Line: line,
+                Condition: options?.TrimmedCondition, HitCount: options?.HitCount, Log: options?.MarkedLog),
             QueryTimeout, ct);
         // The driver returns the breakpoint as the debugger bound it, which may differ from what
         // was asked (VS moves a breakpoint to the next executable line). None bound = refused.
@@ -85,6 +88,17 @@ internal sealed class SignalDebugSession : IDebugSession, IDebugRefusals
         var response = await AskAsync(
             new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpListBreakpoints), QueryTimeout, ct);
         return response.Breakpoints ?? [];
+    }
+
+    /// <remarks>The driver answers with the Debug pane of the Output window after <paramref name="since"/>; the marked lines
+    /// are picked here, one reader for both editors (<see cref="BreakpointOptions.TraceLines"/>). ⚠ Waits for the channel
+    /// as briefly as a state read: a run the assistant started holds it for minutes, and a trace asked meanwhile must not
+    /// hang the call that asked.</remarks>
+    public async Task<TraceRead> ReadTraceAsync(string? since, CancellationToken ct)
+    {
+        var response = await AskAsync(
+            new(Id: string.Empty, Pid: 0, Ts: 0, Op: OpReadTrace, Since: since), QueryTimeout, ct, StateLockWait);
+        return new TraceRead(BreakpointOptions.TraceLines(response.Text), response.Next, response.Flag);
     }
 
     public async Task<DebugStartResult> StartAsync(CancellationToken ct)

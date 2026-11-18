@@ -23,8 +23,8 @@ internal sealed class GetDebuggerStateTool(IDebugSession? session = null, Func<s
     public string Description =>
         "Returns the editor's current debugger state when execution is paused at a breakpoint "
         + "or exception: break reason, exception type/message, call stack (top frames with file:line), "
-        + "and the local variables of the current frame. Returns a clear message when no debug session "
-        + "is paused. Use this to diagnose runtime failures the user is currently debugging.";
+        + "and the local variables of the current frame, then what your tracepoints wrote. Returns a clear message "
+        + "when no debug session is paused. Use this to diagnose runtime failures the user is currently debugging.";
 
     public object Parameters => new
     {
@@ -34,7 +34,11 @@ internal sealed class GetDebuggerStateTool(IDebugSession? session = null, Func<s
     };
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
-        => await DebuggerStateReader.TryReadAsync(session, root?.Invoke(), ct)
-           ?? "No paused debug session. Start debugging and hit a breakpoint (or an exception), "
-            + "then call this tool again.";
+    {
+        var state = await DebuggerStateReader.TryReadAsync(session, root?.Invoke(), ct)
+                    ?? "No paused debug session. Start debugging and hit a breakpoint (or an exception), "
+                     + "then call this tool again.";
+        // What tracepoints wrote, paused or not: a run with tracepoints does not stop.
+        return await DebuggerStateReader.TryReadTraceAsync(session, ct) is { } trace ? state + "\n\n" + trace : state;
+    }
 }

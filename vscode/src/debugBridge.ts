@@ -20,7 +20,10 @@ import {
 
 /** Reverse-RPC surface for the debugger; wired only when the host is told we serve it. */
 export interface DebugDelegate {
-  addBreakpoint(file: string, line: number): Promise<DebugBreakpointDto | null>;
+  addBreakpoint(file: string, line: number, condition?: string | null, hitCount?: number | null,
+                log?: string | null): Promise<DebugBreakpointDto | null>;
+  /** The debug console's output after the place `since` (opaque; null = only where it ends), for the logpoints' trace. */
+  trace(since: string | null): DebugTraceDto;
   removeBreakpoint(file: string, line: number): Promise<boolean>;
   listBreakpoints(): Promise<DebugBreakpointDto[]>;
   start(): Promise<DebugStartDto>;
@@ -45,12 +48,23 @@ type Transition = 'stopped' | 'ended' | 'timeout';
 /** The text tabs open and the editor in front, noted before a capture so they can be put back after it. */
 type ShownEditors = { open: Set<string>; active: vscode.Uri | undefined };
 
+/** `debug/trace`: the debug console's output after a place, where it ends now, and whether output written since that
+ *  place was no longer held. */
+export interface DebugTraceDto {
+  text: string | null;
+  next: string;
+  cut: boolean;
+}
+
 /** What an evaluation answers: the value, or the adapter's words for why there is none. */
 export interface DebugEvaluateDto {
   value: string | null;
   refusal: string | null;
 }
 
+/** How much of the debug console the bridge keeps for the logpoints' trace, as the in-process driver of Visual Studio reads
+ *  the end of its Debug pane. */
+const TRACE_CHARS = 40_000;
 /** The DAP requests that set a paused program running. */
 const RESUMING_REQUESTS = new Set(['continue', 'next', 'stepIn', 'stepOut', 'stepBack', 'reverseContinue', 'goto', 'restartFrame', 'restart']);
 
@@ -63,13 +77,31 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
   private lastStop: { reason: string; text: string | null } | undefined;
   /** Resolvers waiting for the next stop-or-end transition. */
   private waiters: Array<(t: Transition) => void> = [];
+  /** The debug console's output (DAP `output` events), for the logpoints' trace; bounded by TRACE_CHARS. */
+  private output: string[] = [];
+  private outputChars = 0;
+  /** Characters ever received: the place where the output ends, which only grows (a read resumes from it). */
+  private outputTotal = 0;
+  /** What each launch configuration's debug adapter said it supports (its `initialize` response), by the configuration's
+   *  name; one not started yet is unknown. */
+  private readonly capabilities = new Map<string, { supportsConditionalBreakpoints?: boolean;
+                                                   supportsHitConditionalBreakpoints?: boolean; supportsLogPoints?: boolean }>();
+
+  private keepOutput(text: string): void {
+    this.output.push(text);
+    this.outputChars += text.length;
+    this.outputTotal += text.length;
+    while (this.outputChars > TRACE_CHARS && this.output.length > 1) {
+      this.outputChars -= this.output.shift()!.length;
+    }
+  }
 
   constructor(private readonly log?: (line: string) => void) {
     // The DAP traffic is the only place `stopped` and `continued` are visible: the vscode API
     // exposes sessions, not their execution state.
     this.disposables.push(
       vscode.debug.registerDebugAdapterTrackerFactory('*', {
-        createDebugAdapterTracker: () => ({
+        createDebugAdapterTracker: (session: vscode.DebugSession) => ({
           // ⚠ An adapter need not send `continued` after a request that resumes: a pause kept until then is read later
           // as "paused at a breakpoint", over a program that runs. The request itself ends it — the agent's, or the
           // toolbar's.
@@ -78,11 +110,22 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
               this.stoppedThreadId = undefined;
             }
           },
-          onDidSendMessage: (m: { type?: string; event?: string; body?: { threadId?: number } }) => {
+          onDidSendMessage: (m: { type?: string; event?: string; command?: string; body?: { threadId?: number } }) => {
+            if (m.type === 'response' && m.command === 'initialize') {
+              // By the launch configuration's name: its type is rewritten on the way (node → pwa-node, python → debugpy).
+              this.capabilities.set(session.configuration.name, (m.body ?? {}) as { supportsLogPoints?: boolean });
+              return;
+            }
             if (m.type !== 'event') {
               return;
             }
-            if (m.event === 'stopped') {
+            if (m.event === 'output') {
+              // Where a logpoint writes: kept for `debug/trace`, the oldest dropped past the bound.
+              const text = (m.body as { output?: string } | undefined)?.output;
+              if (typeof text === 'string' && text.length > 0) {
+                this.keepOutput(text);
+              }
+            } else if (m.event === 'stopped') {
               const body = m.body as { threadId?: number; reason?: string; text?: string; description?: string };
               this.stoppedThreadId = body?.threadId ?? 0;
               // An exception stop carries its identity in the event body — kept for the
@@ -121,10 +164,13 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
    */
   private readonly agentBreakpointIds = new Set<string>();
 
-  async addBreakpoint(file: string, line: number): Promise<DebugBreakpointDto | null> {
+  async addBreakpoint(file: string, line: number, condition?: string | null, hitCount?: number | null,
+                      log?: string | null): Promise<DebugBreakpointDto | null> {
     const location = new vscode.Location(vscode.Uri.file(file), new vscode.Position(Math.max(0, line - 1), 0));
     const before = vscode.debug.breakpoints.length;
-    const created = new vscode.SourceBreakpoint(location, true);
+    // A logpoint (a message, no stop) when `log` is given; the hit condition as the adapter reads it, a pass number.
+    const created = new vscode.SourceBreakpoint(location, true, condition || undefined,
+                                                hitCount ? String(hitCount) : undefined, log || undefined);
     vscode.debug.addBreakpoints([created]);
     this.agentBreakpointIds.add(created.id);
 
@@ -185,14 +231,52 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
     if (!(bp instanceof vscode.SourceBreakpoint)) {
       return undefined; // function / data / exception breakpoints have no file:line to report
     }
+    // What it holds beyond its place, read back from the breakpoint — and dropped where the debug adapter said it does
+    // not honour it (its capabilities, known once a session has started): VS Code keeps whatever it is given, and an
+    // adapter without logpoints STOPS where the assistant was told it would not.
+    // The adapter this breakpoint will run under: the one of the launch configuration `start` uses.
+    const launch = this.launchConfiguration(vscode.workspace.workspaceFolders?.[0])?.name;
+    const caps = launch ? this.capabilities.get(launch) : undefined;
+    const hits = bp.hitCondition && /^\d+$/.test(bp.hitCondition.trim()) ? Number(bp.hitCondition.trim()) : null;
     return {
       file: bp.location.uri.fsPath,
       line: bp.location.range.start.line + 1,
       enabled: bp.enabled,
+      condition: caps && !caps.supportsConditionalBreakpoints ? null : bp.condition || null,
+      hitCount: caps && !caps.supportsHitConditionalBreakpoints ? null : hits,
+      log: caps && !caps.supportsLogPoints ? null : bp.logMessage || null,
     };
   }
 
+  /**
+   * The debug console's output of the sessions run since the host started, as the adapters sent it (DAP `output`
+   * events) — the host picks the lines the assistant's logpoints wrote by their mark. Bounded: the oldest output goes
+   * first.
+   */
+  trace(since: string | null): DebugTraceDto {
+    const next = String(this.outputTotal);
+    if (since === null) {
+      return { text: null, next, cut: false };
+    }
+    // The console is never emptied here (it only grows): a place is a character count since the host started.
+    const asked = /^\d+$/.test(since) ? Math.min(Number(since), this.outputTotal) : 0;
+    const held = this.output.join('');
+    const heldFrom = this.outputTotal - held.length;   // the place where what is held starts
+    const from = Math.max(asked, heldFrom);
+    return { text: held.slice(from - heldFrom), next, cut: from > asked };
+  }
+
   // ── Running ───────────────────────────────────────────────────────────────
+
+  /** The launch configuration `start` runs: the folder's first one with a name. */
+  private launchConfiguration(folder: vscode.WorkspaceFolder | undefined): { name?: string; type?: string } | undefined {
+    return folder
+      ? vscode.workspace
+          .getConfiguration('launch', folder.uri)
+          .get<Array<{ name?: string; type?: string }>>('configurations', [])
+          .find((c) => typeof c.name === 'string' && c.name.length > 0)
+      : undefined;
+  }
 
   /**
    * Starts the workspace's first launch configuration and waits for the first stop.
@@ -211,10 +295,7 @@ export class DebugBridge implements DebugDelegate, vscode.Disposable {
       return { state: null, failure: 'No folder is open, so there is nothing to launch.' };
     }
 
-    const configured = vscode.workspace
-      .getConfiguration('launch', folder.uri)
-      .get<Array<{ name?: string; type?: string }>>('configurations', []);
-    const configuration = configured.find((c) => typeof c.name === 'string' && c.name.length > 0);
+    const configuration = this.launchConfiguration(folder);
     if (!configuration) {
       return {
         state: null,

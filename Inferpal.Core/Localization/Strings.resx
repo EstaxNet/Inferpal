@@ -359,6 +359,8 @@ Continue?</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Debugging session not started (declined by user).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Evaluate in the paused program — this can run the program's code: {0}</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Expression not evaluated (declined by user).</value></data>
+  <data name="DebugBreakpointCodeConfirm" xml:space="preserve"><value>Set a breakpoint at {0} whose expressions run in the program at each pass — they can run the program's code: {1}</value></data>
+  <data name="DebugBreakpointCodeCancelled" xml:space="preserve"><value>Breakpoint not set (declined by user).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Apply change to: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Change cancelled by user.</value></data>
   <data name="ProjectCodeConsent" xml:space="preserve"><value>Run this workspace's own code ({0})? A build or a test run executes what the repository wrote: its build targets, its test scripts, its own Python environment. Asked once for this workspace, and again after a restart.</value></data>

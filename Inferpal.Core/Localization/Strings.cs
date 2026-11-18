@@ -1283,6 +1283,10 @@ internal static class Strings
 
     public static string DebugEvaluateConfirm(string expression) =>
         Format(Get(nameof(DebugEvaluateConfirm)), expression);
+    /// <summary>The card of a breakpoint whose condition or message runs in the program — {0}=file:line, {1}=the expressions.</summary>
+    public static string DebugBreakpointCodeConfirm(string where, string expressions) =>
+        Format(Get(nameof(DebugBreakpointCodeConfirm)), where, expressions);
+    public static string DebugBreakpointCodeCancelled => Get(nameof(DebugBreakpointCodeCancelled));
 
     // ── /debug ───────────────────────────────────────────────
     public static string DebugUnavailable         => Get(nameof(DebugUnavailable));

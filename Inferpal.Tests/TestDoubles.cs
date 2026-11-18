@@ -45,8 +45,10 @@ internal sealed class NullEditorSurface : Services.Editor.IEditorSurface
 internal sealed class NullDebugSession : Services.Debugging.IDebugSession
 {
     public bool IsAvailable => true;
-    public Task<Services.Debugging.DebugBreakpointInfo?> AddBreakpointAsync(string file, int line, CancellationToken ct) =>
+    public Task<Services.Debugging.DebugBreakpointInfo?> AddBreakpointAsync(string file, int line,
+        Services.Debugging.BreakpointOptions? options, CancellationToken ct) =>
         Task.FromResult<Services.Debugging.DebugBreakpointInfo?>(null);
+    public Task<Services.Debugging.TraceRead> ReadTraceAsync(string? since, CancellationToken ct) => Task.FromResult(new Services.Debugging.TraceRead([], since, false));
     public Task<bool> RemoveBreakpointAsync(string file, int line, CancellationToken ct) => Task.FromResult(false);
     public Task<IReadOnlyList<Services.Debugging.DebugBreakpointInfo>> ListBreakpointsAsync(CancellationToken ct) =>
         Task.FromResult<IReadOnlyList<Services.Debugging.DebugBreakpointInfo>>([]);

@@ -358,6 +358,8 @@ Fortfahren?</value></data>
   <data name="DebugStartCancelled" xml:space="preserve"><value>Debugsitzung nicht gestartet (vom Benutzer abgelehnt).</value></data>
   <data name="DebugEvaluateConfirm" xml:space="preserve"><value>Im angehaltenen Programm auswerten – dabei kann sein Code ausgeführt werden: {0}</value></data>
   <data name="DebugEvaluateCancelled" xml:space="preserve"><value>Ausdruck nicht ausgewertet (vom Benutzer abgelehnt).</value></data>
+  <data name="DebugBreakpointCodeConfirm" xml:space="preserve"><value>Einen Haltepunkt in {0} setzen, dessen Ausdrücke bei jedem Durchlauf im Programm ausgewertet werden — sie können Code des Programms ausführen: {1}</value></data>
+  <data name="DebugBreakpointCodeCancelled" xml:space="preserve"><value>Haltepunkt nicht gesetzt (vom Benutzer abgelehnt).</value></data>
   <data name="DiffConfirm" xml:space="preserve"><value>Änderung anwenden auf: {0}</value></data>
   <data name="DiffCancelled" xml:space="preserve"><value>Änderung vom Benutzer abgebrochen.</value></data>
   <data name="ProjectCodeConsent" xml:space="preserve"><value>Den eigenen Code dieses Arbeitsbereichs ausführen ({0})? Ein Build oder Testlauf führt aus, was das Repository geschrieben hat: seine Build-Ziele, seine Testskripte, seine eigene Python-Umgebung. Wird einmal für diesen Arbeitsbereich gefragt, nach einem Neustart erneut.</value></data>

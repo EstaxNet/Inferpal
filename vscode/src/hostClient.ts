@@ -372,7 +372,9 @@ export class HostClient {
     // ── Reverse debugger requests ───────────────────────────────────────────
     const debug = this.debugDelegate;
     if (debug) {
-      conn.onRequest('debug/addBreakpoint', (p: DebugBreakpointParams) => debug.addBreakpoint(p.file, p.line));
+      conn.onRequest('debug/addBreakpoint', (p: DebugBreakpointParams) =>
+        debug.addBreakpoint(p.file, p.line, p.condition, p.hitCount, p.log));
+      conn.onRequest('debug/trace', (p: { since?: string | null }) => debug.trace(p?.since ?? null));
       conn.onRequest('debug/removeBreakpoint', (p: DebugBreakpointParams) => debug.removeBreakpoint(p.file, p.line));
       conn.onRequest('debug/listBreakpoints', () => debug.listBreakpoints());
       conn.onRequest('debug/start', () => debug.start());

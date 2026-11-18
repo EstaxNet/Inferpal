@@ -175,9 +175,21 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             case DebugOps.AddBreakpoint:
             {
                 await Jtf.SwitchToMainThreadAsync(ct);
-                var bound = AddBreakpoint(request.File!, request.Line);
+                var bound = AddBreakpoint(request.File!, request.Line, request.Condition, request.HitCount, request.Log);
                 await TaskScheduler.Default.SwitchTo();
                 return new(request.Id, Ok: true, Breakpoints: bound);
+            }
+
+            case DebugOps.ReadTrace:
+            {
+                await Jtf.SwitchToMainThreadAsync(ct);
+                var (text, next, cut, error) = ReadDebugPane(request.Since);
+                await TaskScheduler.Default.SwitchTo();
+                // ⚠ A pane that could not be read is an error, never "nothing from the start": answered as a place 0, the
+                // next read would show older sessions' lines as this run's.
+                return error is null
+                    ? new(request.Id, Ok: true, Text: text, Flag: cut, Next: next)
+                    : new(request.Id, Ok: false, Error: error);
             }
 
             case DebugOps.RemoveBreakpoint:
@@ -582,7 +594,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
 
     // ── EnvDTE automation (UI thread only) ──────────────────────────────────────────
 
-    private IReadOnlyList<DebugBreakpointInfo> AddBreakpoint(string file, int line)
+    private IReadOnlyList<DebugBreakpointInfo> AddBreakpoint(string file, int line, string? condition, int? hitCount, string? log)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         // The debugger may bind the breakpoint somewhere else (next executable line), and it may
@@ -590,12 +602,141 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         // from what Add created, never from the file's whole list: the host announces the first
         // entry, which would otherwise be any breakpoint the user already had in that file.
         var created = new List<DebugBreakpointInfo>();
-        foreach (EnvDTE.Breakpoint bp in _dte.Debugger.Breakpoints.Add(string.Empty, file, line))
+        // ⚠ Automation creates every breakpoint as one that stops, and only then turns the stop off: added while the program
+        // runs, a tracepoint in a hot loop stops it before it becomes one — refused, with the way to set it.
+        if (!string.IsNullOrEmpty(log) && _dte.Debugger.CurrentMode == EnvDTE.dbgDebugMode.dbgRunMode)
+            throw new InvalidOperationException(
+                "Visual Studio cannot set a tracepoint while the program runs without risking a stop on it: set it while "
+                + "the program is paused, or before start.");
+        var breakpoints = _dte.Debugger.Breakpoints.Add(
+            Function: string.Empty, File: file, Line: line, Column: 1,
+            Condition: condition ?? string.Empty,
+            ConditionType: EnvDTE.dbgBreakpointConditionType.dbgBreakpointConditionTypeWhenTrue,
+            HitCount: hitCount ?? 0,
+            HitCountType: hitCount is null ? EnvDTE.dbgHitCountType.dbgHitCountTypeNone : EnvDTE.dbgHitCountType.dbgHitCountTypeEqual);
+        foreach (EnvDTE.Breakpoint bp in breakpoints)
         {
-            try { created.Add(new DebugBreakpointInfo(bp.File ?? string.Empty, bp.FileLine, bp.Enabled)); }
-            catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.ReadBreakpoint", ex); }
+            // A tracepoint: the message at each pass, and no stop. ⚠ A message the debugger refuses leaves a breakpoint
+            // that STOPS: still reported (Describe reads it without its message), so the assistant tracks it, removes it
+            // with the session, and is told the message was not kept — dropped from the report, it would stay in the
+            // user's solution.
+            if (!string.IsNullOrEmpty(log) && bp is EnvDTE80.Breakpoint2 tracepoint)
+            {
+                try
+                {
+                    tracepoint.Message = log;
+                    tracepoint.BreakWhenHit = false;
+                }
+                catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.Tracepoint", ex); }
+            }
+            try { created.Add(Describe(bp)); }
+            catch (Exception ex)
+            {
+                Services.Diagnostics.Swallow("VsDebugDriver.ReadBreakpoint", ex);
+                // It exists: reported, so it is tracked — at the line it was bound to when that reads, or the session's end
+                // would remove nothing and leave it in the user's solution.
+                var bound = line;
+                try { bound = bp.FileLine; } catch (Exception lineEx) { Services.Diagnostics.Swallow("VsDebugDriver.ReadBreakpointLine", lineEx); }
+                created.Add(new DebugBreakpointInfo(file, bound, true));
+            }
         }
         return created;
+    }
+
+    /// <summary>A breakpoint as the debugger holds it: what it kept of a condition, a hit count, a message — read back,
+    /// never echoed from the request, so a debugger that dropped one is seen to have.</summary>
+    private static DebugBreakpointInfo Describe(EnvDTE.Breakpoint bp)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        string? condition = null, message = null;
+        int? hits = null;
+        // ⚠ Each as VS holds it, its kind included: "x changes" is not "x is true", and "from pass 5" or "every 5th pass" is
+        // not "at pass 5" — read as the assistant's own, a user's breakpoint would be misdescribed.
+        try
+        {
+            if (!string.IsNullOrEmpty(bp.Condition))
+                condition = bp.ConditionType == EnvDTE.dbgBreakpointConditionType.dbgBreakpointConditionTypeWhenChanged
+                    ? bp.Condition + " changes" : bp.Condition;
+        }
+        catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.Condition", ex); }
+        try { hits = bp.HitCountType == EnvDTE.dbgHitCountType.dbgHitCountTypeEqual ? bp.HitCountTarget : (int?)null; }
+        catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.HitCount", ex); }
+        try { message = bp is EnvDTE80.Breakpoint2 b2 && !b2.BreakWhenHit && !string.IsNullOrEmpty(b2.Message) ? b2.Message : null; } catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.Message", ex); }
+        return new DebugBreakpointInfo(bp.File ?? string.Empty, bp.FileLine, bp.Enabled, condition, hits, message);
+    }
+
+    /// <summary>The Debug pane of the Output window, by its GUID (its name is translated).</summary>
+    private const string DebugPane = "{FC076020-078A-11D1-A7DF-00A0C9110051}";
+
+    /// <summary>How much of the Debug pane's end is read for the trace: its start is the oldest output.</summary>
+    private const int TraceChars = 40_000;
+
+    /// <summary>How many characters before a place identify it: the pane emptied and rewritten to about the same length
+    /// holds other text there.</summary>
+    private const int PlaceProbe = 64;
+
+    /// <summary>
+    /// The Debug pane after the place <paramref name="since"/> — <c>"length:fingerprint of the text before it"</c>; a place
+    /// the pane no longer holds (emptied by a new session, then rewritten) reads it from its start; <c>null</c> returns
+    /// only where it ends — at most its last <see cref="TraceChars"/>, <c>Cut</c> when text written after the place was
+    /// left out. The marked lines are picked by the reader on the other side. No pane yet (no session): nothing, from the
+    /// start.
+    /// </summary>
+    private (string? Text, string? Next, bool Cut, string? Error) ReadDebugPane(string? since)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        try
+        {
+            if (!(_dte is EnvDTE80.DTE2 dte)) return (null, null, false, "DTE automation is unavailable");
+            foreach (EnvDTE.OutputWindowPane pane in dte.ToolWindows.OutputWindow.OutputWindowPanes)
+            {
+                if (!string.Equals(pane.Guid, DebugPane, StringComparison.OrdinalIgnoreCase)) continue;
+                var doc = pane.TextDocument;
+                int length = doc.EndPoint.AbsoluteCharOffset - 1;   // offsets start at 1
+                var held = Math.Min(length, TraceChars + PlaceProbe);
+                var tailPoint = doc.EndPoint.CreateEditPoint();
+                tailPoint.CharLeft(held);
+                var tail = tailPoint.GetText(doc.EndPoint);      // the last characters, place probe included
+                // ⚠ Automation counts a line break as one character, the text holds "\r\n": every place, fingerprint and cut
+                // is computed in the automation's count, or a place drifts by the line breaks and is taken for another pane.
+                var oneCharBreaks = tail.Replace("\r\n", "\n");
+                if (oneCharBreaks.Length == held) tail = oneCharBreaks;
+                var heldFrom = length - tail.Length;
+                string Place(int at) =>
+                    at.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":" + Fingerprint(tail, at - heldFrom);
+                if (since is null) return (null, Place(length), false, null);
+
+                // Where to read from: the place, when the pane still holds it (same length before it, same text before
+                // it); a place older than what is held, from there (what lies between is lost: Cut); anything else — a
+                // place past the end, or text before it that differs — is a pane emptied since: from its start.
+                var from = 0;
+                var colon = since.IndexOf(':');
+                if (colon > 0 && int.TryParse(since.Substring(0, colon), System.Globalization.NumberStyles.None,
+                                              System.Globalization.CultureInfo.InvariantCulture, out var at) && at <= length)
+                {
+                    if (at >= heldFrom) from = Place(at) == since ? at : 0;
+                    else from = at;
+                }
+                var window = Math.Max(from, Math.Max(0, length - TraceChars));
+                return (tail.Substring(window - heldFrom), Place(length), window > from, null);
+            }
+            return (null, "0:", false, null);
+        }
+        catch (Exception ex)
+        {
+            Services.Diagnostics.Swallow("VsDebugDriver.ReadDebugPane", ex);
+            return (null, null, false, "the Debug pane could not be read: " + ex.Message);
+        }
+    }
+
+    /// <summary>A stable fingerprint (FNV-1a) of the <see cref="PlaceProbe"/> characters of <paramref name="text"/> before
+    /// <paramref name="at"/>; empty at the start.</summary>
+    private static string Fingerprint(string text, int at)
+    {
+        var start = Math.Max(0, at - PlaceProbe);
+        uint hash = 2166136261;
+        for (var i = start; i < at && i < text.Length; i++) { hash ^= text[i]; hash *= 16777619; }
+        return at <= 0 ? string.Empty : hash.ToString("x8", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private bool RemoveBreakpoint(string file, int line)
@@ -625,7 +766,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         {
             foreach (EnvDTE.Breakpoint bp in _dte.Debugger.Breakpoints)
             {
-                try { all.Add(new DebugBreakpointInfo(bp.File ?? string.Empty, bp.FileLine, bp.Enabled)); }
+                try { all.Add(Describe(bp)); }
                 catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.ReadBreakpoint", ex); }
             }
         }

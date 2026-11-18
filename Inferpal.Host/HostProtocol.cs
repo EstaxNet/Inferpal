@@ -412,11 +412,23 @@ internal sealed record EditResultDto(string? Path, bool ReplacedSelection);
 // `Count = 3` under Visual Studio and `(3) [21, 42, 43]` under VS Code, so parsing one of them
 // breaks the other.
 
-/// <summary>Reverse `debug/addBreakpoint`, `debug/removeBreakpoint` parameters.</summary>
-internal sealed record DebugBreakpointParams(string File, int Line);
+/// <summary>Reverse `debug/addBreakpoint`, `debug/removeBreakpoint` parameters. <c>Condition</c>, <c>HitCount</c> and
+/// <c>Log</c> (already marked, <see cref="Services.Debugging.BreakpointOptions.MarkedLog"/>) only on an add; an adapter that
+/// predates them ignores them, and the breakpoint it answers with says so.</summary>
+internal sealed record DebugBreakpointParams(string File, int Line, string? Condition = null, int? HitCount = null,
+                                             string? Log = null);
 
-/// <summary>A breakpoint as the adapter's debugger bound it.</summary>
-internal sealed record DebugBreakpointDto(string File, int Line, bool Enabled);
+/// <summary>Reverse `debug/trace` parameters: the place in the debug console's output to read from (the <c>Next</c> of the
+/// last read, opaque); <c>null</c> = only where it ends.</summary>
+internal sealed record DebugTraceParams(string? Since);
+
+/// <summary>The debug console's output after that place (<c>Text</c>), the place where it ends now (<c>Next</c>), and
+/// whether output written since was no longer held (<c>Cut</c>).</summary>
+internal sealed record DebugTraceDto(string? Text, string? Next, bool Cut);
+
+/// <summary>A breakpoint as the adapter's debugger bound it, with what it kept of a condition, a hit count, a message.</summary>
+internal sealed record DebugBreakpointDto(string File, int Line, bool Enabled, string? Condition = null, int? HitCount = null,
+                                          string? Log = null);
 
 /// <summary>
 /// `debug/continue` and `debug/step`: the stop, or why there is none — <c>Outcome</c> is one of
