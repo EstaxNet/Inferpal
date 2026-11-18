@@ -2344,6 +2344,10 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="ImageDamaged" xml:space="preserve"><value>{0} nie zostanie dołączony: nie udało się go odczytać jako obrazu (uszkodzony?).</value></data>
   <data name="ImageNotDecoded" xml:space="preserve"><value>{0} nie został dołączony: {1}.</value></data>
   <data name="ImageFirstPageOnly" xml:space="preserve"><value>{0} ma {1} {1:stronę|strony|stron}: dołączono tylko pierwszą.</value></data>
+  <data name="SvgDrawnChip" xml:space="preserve"><value>narysowany z SVG · {0} × {1}</value></data>
+  <data name="SvgMarkupChip" xml:space="preserve"><value>jego znaczniki jako tekst · {0} KB</value></data>
+  <data name="SvgNoBrowserChip" xml:space="preserve"><value>jego znaczniki jako tekst — brak przeglądarki, by go narysować</value></data>
+  <data name="SvgNotDrawnChip" xml:space="preserve"><value>jego znaczniki jako tekst — nie udało się go narysować</value></data>
   <data name="ImageOcrChip" xml:space="preserve"><value>tekst odczytany przez OCR · {0} {0:wiersz|wiersze|wierszy}</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} nie widzi obrazów: zamiast nich idzie tekst z {1}, odczytany na tym komputerze przez OCR Inferpala — słowa i liczby mogą być źle odczytane.</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — tekst odczytany przez OCR, wysłany zamiast obrazu</value></data>

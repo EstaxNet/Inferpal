@@ -171,6 +171,8 @@ export interface WvChip {
   image?: { detail: string; warning: string };
   /** Found by the search while the person types, not attached by them: drawn apart, said to be excerpts. */
   auto?: boolean;
+  /** A file's chip: its second line (an SVG sent as its markup says so). */
+  detail?: string;
 }
 
 export interface WvPlanStep {

@@ -243,6 +243,9 @@ internal partial class InferpalToolWindowData
                 await RunOnVMContextAsync(() => InsertThemed(ChatMessageItem.NoticeMsg(refused)));
                 return;
             }
+            // An SVG: drawn for a model that sees (pari 111), its markup otherwise — the chip says which.
+            string? markup = null;
+            if (Services.Documents.SvgImage.Handles(filePath) && (markup = await AttachSvgAsync(filePath, ct)) is null) return;
             if (await MentionController.FileMentionTextAsync(filePath, _tools.Overlay, ct) is not { } content)
             {
                 await RunOnVMContextAsync(() =>
@@ -250,7 +253,7 @@ internal partial class InferpalToolWindowData
                 return;
             }
             var label   = Path.GetFileName(filePath);
-            await RunOnVMContextAsync(() => AddAttachment(label, content, sourcePath: filePath));
+            await RunOnVMContextAsync(() => AddAttachment(label, content, sourcePath: filePath, detail: markup));
         }
         catch (Exception ex)
         {
@@ -270,6 +273,61 @@ internal partial class InferpalToolWindowData
             };
             return dlg.ShowDialog() == true ? dlg.FileName : null;
         }, "AttachFileDialog");
+
+    /// <summary>
+    /// An SVG the person attaches (pari 111): drawn and attached as an image for a model that sees images, when a browser
+    /// draws it; otherwise nothing is attached here and the chip's line for its markup comes back.
+    /// </summary>
+    /// <returns><c>null</c> when it was attached drawn; else the line the markup's chip carries.</returns>
+    private async Task<string?> AttachSvgAsync(string path, CancellationToken ct)
+    {
+        var count = 0;
+        await RunOnVMContextAsync(() => count = Attachments.Count(a => a.Image is not null));
+        bool? sees = null;
+        if (count < Services.Documents.ChatImages.MaxPerQuestion)
+        {
+            var model = await ImageModelAsync(null, ct);
+            try { sees = await _client.SeesImagesAsync(model, ct); }
+            // A server slow to answer: not known to see, so its markup goes — never nothing attached.
+            catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
+            {
+                Diagnostics.Swallow("SvgChip.Sees", ex);
+            }
+        }
+        if (sees != true || new FileInfo(path).Length > Services.Documents.ChatImages.MaxBytes)
+            return Services.Documents.SvgImage.MarkupChip(new FileInfo(path).Length);
+        // What the editor shows, unsaved changes included — as its markup would go.
+        if (_tools.Overlay is { } overlay) await overlay.RefreshAsync(ct, [path]);
+        var svg = _tools.Overlay is { } open && open.TryGetUnsaved(path, out var unsaved)
+            ? System.Text.Encoding.UTF8.GetBytes(unsaved) : await File.ReadAllBytesAsync(path, ct);
+        var (drawn, detail) = await Services.Documents.SvgImage.AttachAsync(svg, Path.GetFileName(path), sees, ct);
+        if (drawn is not { } image) return detail;
+        // The question's bubble draws its images from files: the drawing, never the .svg (which WPF cannot draw), kept
+        // beside pasted images; what an earlier day left is removed here, as a paste removes its own.
+        var folder = Path.Combine(Path.GetTempPath(), "Inferpal", "pasted");
+        Directory.CreateDirectory(folder);
+        foreach (var old in new DirectoryInfo(folder).GetFiles("image-svg-*.png"))
+            if (old.LastWriteTimeUtc < DateTime.UtcNow.AddDays(-1)) { try { old.Delete(); } catch { } }
+        var shown = Path.Combine(folder,
+            "image-svg-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture) + ".png");
+        await File.WriteAllBytesAsync(shown, Convert.FromBase64String(image.Base64), ct);
+        await RunOnVMContextAsync(() =>
+        {
+            AttachmentItem? item = null;
+            item = new AttachmentItem(image.Name, string.Empty, () => Post(() =>
+            {
+                Attachments.Remove(item!);
+                HasAttachments = Attachments.Count > 0;
+            }), origin: path) { Image = image, ImageFile = shown, Detail = detail };
+            var chip         = ThemePalette.For(_isDark, _isHighContrast);
+            item.Background  = chip.AttachChipBg;
+            item.Foreground  = chip.AttachChipText;
+            item.BorderColor = chip.AttachChipBorder;
+            Attachments.Add(item);
+            HasAttachments = true;
+        });
+        return null;
+    }
 
     /// <summary>
     /// An image the person attaches — a file picked, dropped or mentioned, or one pasted (<paramref name="pasted"/>, saved by
@@ -365,7 +423,8 @@ internal partial class InferpalToolWindowData
     /// <param name="content">The text the chip sends.</param>
     /// <param name="sourcePath">The file a whole-file chip holds — pinnable, and skipped by the auto-context.</param>
     /// <param name="origin">The file the text comes from when it is not <paramref name="sourcePath"/> (a selection).</param>
-    private void AddAttachment(string label, string content, string? sourcePath = null, string? origin = null)
+    /// <param name="detail">The chip's second line (an SVG sent as its markup says so).</param>
+    private void AddAttachment(string label, string content, string? sourcePath = null, string? origin = null, string? detail = null)
     {
         // ⚠ Every chip of a file's text comes here: one the workspace's ignore files exclude is refused, and said.
         if (Services.Governance.ContentExclusions.NoticeFor(origin ?? sourcePath, _indexService.RootDir) is { } excluded)
@@ -394,7 +453,7 @@ internal partial class InferpalToolWindowData
         {
             Attachments.Remove(item!);
             HasAttachments = Attachments.Count > 0;
-        }), sourcePath: sourcePath, onPin: onPin, isCut: capped.Cut, origin: origin);
+        }), sourcePath: sourcePath, onPin: onPin, isCut: capped.Cut, origin: origin) { Detail = detail ?? string.Empty };
         var chip         = ThemePalette.For(_isDark, _isHighContrast);
         item.Background  = chip.AttachChipBg;
         item.Foreground  = chip.AttachChipText;

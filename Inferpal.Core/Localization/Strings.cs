@@ -501,6 +501,12 @@ internal static class Strings
     public static string ImageNotDecoded(string name, string why) => Format(Get(nameof(ImageNotDecoded)), name, why);
     /// <summary>A TIFF of several pages: its first is attached — {0}=file, {1}=pages.</summary>
     public static string ImageFirstPageOnly(string name, int pages) => Format(Get(nameof(ImageFirstPageOnly)), name, pages);
+    /// <summary>The chip of an SVG drawn for a model that sees — {0}×{1}, the drawn size.</summary>
+    public static string SvgDrawnChip(int width, int height) => Format(Get(nameof(SvgDrawnChip)), width, height);
+    /// <summary>The chip of an SVG sent as its markup — {0}=its size in KB.</summary>
+    public static string SvgMarkupChip(int kb) => Format(Get(nameof(SvgMarkupChip)), kb);
+    public static string SvgNoBrowserChip => Get(nameof(SvgNoBrowserChip));
+    public static string SvgNotDrawnChip => Get(nameof(SvgNotDrawnChip));
     /// <summary>An event log with no event, a diagram with no text and no link — {0}=file.</summary>
     public static string AttachDocumentNothingInIt(string name) => Format(Get(nameof(AttachDocumentNothingInIt)), name);
     public static string AttachScanNotRead(string file, string why) => Format(Get(nameof(AttachScanNotRead)), file, why);

@@ -98,6 +98,9 @@ type PendingAttachment = {
 
 /** The files attached as images (the Core's `ChatImages.Extensions`; the Core says which it refuses). */
 const IMAGE_FILE = /\.(png|jpg|jpeg|webp|gif|bmp|heic|heif|tif|tiff)$/i;
+
+/** An SVG: drawn for a model that sees images, its markup otherwise (the host's `svg/read`, pari 111). */
+const SVG_FILE = /\.svg$/i;
 /** A regenerated question's turn, as it was sent: the prompt, whether it was a code action, the relevant-code query. */
 type TurnReplay = { prompt: string; codeAction: boolean; query?: string };
 
@@ -2068,6 +2071,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.draftChanged(msg.text);
         return;
       case 'attachImage':
+        // An SVG pasted or dropped as an image (its type image/svg+xml): drawn or its markup, as any SVG.
+        if (SVG_FILE.test(msg.name)) {
+          await this.attachSvg({ name: msg.name, data: msg.data }, msg.name);
+          return;
+        }
         await this.attachImage({ name: msg.name, data: msg.data, pasted: msg.pasted });
         return;
       case 'attachDroppedFile':
@@ -2161,6 +2169,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         if (!picked || picked.length === 0) {
           return;
         }
+        if (SVG_FILE.test(picked[0].fsPath)) {
+          await this.attachSvg({ path: picked[0].fsPath }, picked[0].path.split('/').pop() ?? picked[0].fsPath);
+          return;
+        }
         if (IMAGE_FILE.test(picked[0].fsPath)) {
           await this.attachImage({ path: picked[0].fsPath });
           return;
@@ -2197,7 +2209,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** `sourcePath`: the file a whole-file chip holds, as Visual Studio's `SourcePath` — never for a selection or a
    * synthetic chip (clipboard, problems), which are not that file. `origin`: the file the text comes from, a selection's
    * included — judged against the workspace's ignore files when the question is sent. */
-  private addChip(name: string, content: string, sourcePath?: string, origin?: string): void {
+  private addChip(name: string, content: string, sourcePath?: string, origin?: string, detail?: string): void {
     // A chip that holds part of its file says how much, on the chip and under the question.
     const capped = capAttachment(content, 60_000);
     const chip = {
@@ -2207,6 +2219,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       sourcePath: capped.cut ? undefined : sourcePath,
       content: capped.text,
       origin,
+      detail,
     };
     // Attached again: the same whole file, or the same text under the same name, is one chip, not two — a second one
     // would send it twice (Visual Studio's AttachmentItem.Repeats). The chip holds what was just attached: a file
@@ -2255,6 +2268,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     return this.pendingAttachments.map((a) => ({
       name: a.name, auto: a.auto === true,
       image: a.image ? this.imageChip(image++, a.detail ?? '') : undefined,
+      detail: a.image ? undefined : a.detail,
     }));
   }
 
@@ -2289,6 +2303,54 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
     } catch (err) {
       this.gestureFailed('attach image', err);
+    }
+  }
+
+  /**
+   * An SVG the person attaches (pari 111): drawn, as an image chip, for a model that sees images when a browser draws it;
+   * its markup otherwise, as a file chip whose line says so. `ownFile`: the chip is the file itself (pinnable, its path).
+   */
+  private async attachSvg(params: { path?: string; name?: string; data?: string }, label: string, ownFile = true): Promise<void> {
+    const host = this.hostForGesture();
+    if (!host) {
+      return;
+    }
+    try {
+      const already = this.pendingAttachments.filter((a) => a.image).length;
+      // A file open with unsaved changes goes as the editor shows it, its path kept for the ignore files.
+      const open = params.path ? vscode.workspace.textDocuments.find((d) => d.isDirty && samePath(d.uri.fsPath, params.path!)) : undefined;
+      const sent = open ? { ...params, data: Buffer.from(open.getText(), 'utf8').toString('base64') } : params;
+      const read = await host.svgRead({ ...sent, model: this.model || undefined, agentMode: this.windowAgentMode(), already });
+      if (read.refusal) {
+        void vscode.window.showWarningMessage(read.refusal);
+        return;
+      }
+      if (read.image) {
+        this.pendingAttachments.push({ name: read.image.name, content: '', origin: params.path, image: read.image,
+                                       detail: read.detail, thumbnail: read.thumbnail ?? undefined });
+        this.postChips();
+        // As for any image: where it goes, said on the chips.
+        try {
+          await this.refreshImageSeen(host);
+          this.postChips();
+        } catch (err) {
+          this.log(`[chat] image/check failed: ${String(err)}`);
+        }
+        return;
+      }
+      if (params.path) {
+        // Its markup as the editor holds it, unsaved changes included.
+        const text = await this.readAttachable(vscode.Uri.file(params.path));
+        if (text?.text !== undefined && text.text !== null) {
+          this.addChip('📄 ' + label, text.text, ownFile ? params.path : undefined, params.path, read.detail);
+        } else if (text?.refusal) {
+          void vscode.window.showWarningMessage(text.refusal);
+        }
+      } else if (read.text !== null) {
+        this.addChip('📄 ' + label, read.text, undefined, undefined, read.detail);
+      }
+    } catch (err) {
+      this.gestureFailed('attach SVG', err);
     }
   }
 
@@ -4274,6 +4336,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       void vscode.window.showWarningMessage(t("{0} could not be read, and is not attached.", name));
       return;
     }
+    if (SVG_FILE.test(name) || mediaType === 'image/svg+xml') {
+      await this.attachSvg({ name, data }, name);
+      return;
+    }
     if (IMAGE_FILE.test(name) || mediaType.startsWith('image/')) {
       await this.attachImage({ name, data });
       return;
@@ -4309,6 +4375,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       if ((await vscode.workspace.fs.stat(uri)).type & vscode.FileType.Directory) {
         await this.resolveMention('folder', uri.fsPath);
+        return;
+      }
+      if (SVG_FILE.test(uri.fsPath)) {
+        await this.attachSvg({ path: uri.fsPath }, label ?? vscode.workspace.asRelativePath(uri), !label);
         return;
       }
       if (IMAGE_FILE.test(uri.fsPath)) {

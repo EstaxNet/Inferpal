@@ -253,8 +253,8 @@ public sealed class DocumentTextTests : IDisposable
     }
 
     /// <summary>
-    /// VS Code's three ways to attach a file the person chooses — Browse, the explorer's Attach to Chat, a typed @file —
-    /// read it through one helper that sends a PDF, a DOCX or a file VS Code will not open as text to the host's reader:
+    /// VS Code's ways to attach a file the person chooses — Browse, the explorer's Attach to Chat, a typed @file, and an SVG
+    /// sent as its markup — read it through one helper that sends a PDF, a DOCX or a file VS Code will not open as text to the host's reader:
     /// opened as text, a typed one was left as plain text with nothing said, the other two failed with VS Code's error.
     /// </summary>
     [Fact]
@@ -262,7 +262,7 @@ public sealed class DocumentTextTests : IDisposable
     {
         // Line endings folded: the public clone keeps this file in CRLF.
         var code = WebviewRebuildTests.TsCode("chatViewProvider.ts").Replace("\r\n", "\n");
-        Assert.Equal(3, System.Text.RegularExpressions.Regex.Matches(code, @"this\.readAttachable\(").Count);
+        Assert.Equal(4, System.Text.RegularExpressions.Regex.Matches(code, @"this\.readAttachable\(").Count);
         Assert.Contains("host.attachRead(uri.fsPath)", code, StringComparison.Ordinal);
         // The same list as the Core's: a format the Core reads but VS Code opens as text would attach as noise.
         var listed = System.Text.RegularExpressions.Regex.Match(code, @"/\\\.\(([a-z|]+)\)\$/i\.test\(uri\.fsPath\)").Groups[1].Value.Split('|');

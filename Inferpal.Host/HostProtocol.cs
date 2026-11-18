@@ -114,6 +114,16 @@ internal sealed record ImageReadParams(string? Name = null, string? Data = null,
 /// <param name="Thumbnail">A small PNG of it as a data URL, drawn under the question; <c>null</c> when it cannot be made.</param>
 internal sealed record ImageReadResult(ImageDto? Image, string? Detail, string? Refusal, string? Note, string? Thumbnail = null);
 
+/// <summary><c>svg/read</c>: an SVG the person attaches — a file, or bytes dropped — judged for the model the next question
+/// answers with (the same choice as <c>image/check</c>).</summary>
+internal sealed record SvgReadParams(string? Path = null, string? Name = null, string? Data = null, string? Model = null,
+                                     bool? AgentMode = null, bool ModelOverridesRoles = false, int Already = 0);
+
+/// <summary>What <c>svg/read</c> gives: the drawing (for a model that sees, when a browser drew it), or nothing — its
+/// markup goes; <paramref name="Detail"/> is the chip's line either way; <paramref name="Text"/> the markup of dropped bytes
+/// (a file's is read by the editor, its unsaved changes included).</summary>
+internal sealed record SvgReadResult(ImageDto? Image, string Detail, string? Thumbnail, string? Refusal, string? Text);
+
 /// <summary><c>image/check</c>: whether the model the next question answers with sees images, for the images named.</summary>
 /// <param name="Images">The images themselves, for their text to be read when the model does not see them (pari 108);
 /// <c>null</c> from an adapter that sends only names (no text read, the card for all).</param>

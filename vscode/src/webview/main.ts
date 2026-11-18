@@ -3451,6 +3451,12 @@ function renderChips(chips: WvChip[], imageLine?: string,
       detail.className = 'chip-detail';
       detail.textContent = chip.image.detail;
       name.appendChild(detail);
+    } else if (chip.detail) {
+      el.title = chip.detail;
+      const detail = document.createElement('span');
+      detail.className = 'chip-detail';
+      detail.textContent = chip.detail;
+      name.appendChild(detail);
     }
     const close = document.createElement('button');
     setIcon(close, 'close', undefined, 11);
@@ -3502,7 +3508,9 @@ function attachImageFiles(files: FileList | null | undefined, pasted: boolean): 
     const reader = new FileReader();
     reader.onload = () => {
       const url = String(reader.result ?? '');
-      post({ type: 'attachImage', name: file.name || 'image.png', data: url.slice(url.indexOf(',') + 1), pasted });
+      // A pasted file has no name: named by its type, so an SVG is read as one.
+      const name = file.name || (file.type === 'image/svg+xml' ? 'image.svg' : 'image.png');
+      post({ type: 'attachImage', name, data: url.slice(url.indexOf(',') + 1), pasted });
     };
     reader.readAsDataURL(file);
   }

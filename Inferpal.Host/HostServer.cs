@@ -1607,6 +1607,54 @@ internal sealed partial class HostServer : IDisposable
     }
 
     /// <summary>
+    /// An SVG the person attaches (pari 111): drawn for the model the next question answers with when it sees images and a
+    /// browser draws it, its markup otherwise — the chip's line says which. A file the ignore files exclude is refused.
+    /// </summary>
+    [JsonRpcMethod("svg/read", UseSingleObjectParameterDeserialization = true)]
+    public async Task<SvgReadResult> SvgReadAsync(SvgReadParams p, CancellationToken ct)
+    {
+        var name = p.Name ?? string.Empty;
+        var path = string.IsNullOrWhiteSpace(p.Path) ? null : p.Path.Trim();
+        if (path is not null)
+        {
+            name = name.Length > 0 ? name : Path.GetFileName(path);
+            if (Services.Governance.ContentExclusions.Of(path) is not null)
+                return new(null, string.Empty, null, MentionController.FileRefusal(path, Session().RootDir), null);
+        }
+        // The editor's text when it holds the file unsaved (sent as Data, with the path for its rules), else the disk.
+        byte[]? given = null;
+        if (p.Data is not null)
+        {
+            try { given = Convert.FromBase64String(p.Data); }
+            catch (FormatException) { return new(null, string.Empty, null, Strings.AttachError("not base64"), null); }
+        }
+        bool? sees = null;
+        if (p.Already < Services.Documents.ChatImages.MaxPerQuestion)
+        {
+            var s = Session();
+            var mode = TurnMode(s);
+            var (model, _) = await AnsweringModelAsync(s, mode, false, mode is null && TurnIsAgent(s, false, p.AgentMode),
+                                                       p.Model, p.ModelOverridesRoles, ct);
+            try { sees = await s.Client.SeesImagesAsync(model, ct); }
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
+            {
+                Diagnostics.Swallow("SvgRead.Sees", ex);
+            }
+        }
+        // Its markup going (a model that does not see, or one past the attachments' size): its line from its length, never
+        // a read of the whole file only to count it — the editor reads its text.
+        var length = given?.LongLength ?? (path is null ? 0 : new FileInfo(path).Length);
+        if (sees != true || length > Services.Documents.ChatImages.MaxBytes)
+            return new(null, Services.Documents.SvgImage.MarkupChip(length), null, null,
+                       given is not null && path is null ? Services.Tools.TextFileEncoding.Decode(given) : null);
+        var bytes = given ?? await File.ReadAllBytesAsync(path!, ct);
+        var (drawn, detail) = await Services.Documents.SvgImage.AttachAsync(bytes, name, sees, ct);
+        if (drawn is { } image)
+            return new(new ImageDto(image.Name, image.MediaType, image.Base64), detail, Services.Documents.ChatImages.Thumbnail(image), null, null);
+        return new(null, detail, null, null, path is null ? Services.Tools.TextFileEncoding.Decode(bytes) : null);
+    }
+
+    /// <summary>
     /// Whether the model the next question answers with — the one <c>chat/send</c> resolves — sees images, as its server
     /// publishes it; when it does not, the card the adapter shows before sending, offering a model of the server that does.
     /// </summary>

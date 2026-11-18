@@ -2344,6 +2344,10 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="ImageDamaged" xml:space="preserve"><value>{0} non viene allegato: non è stato letto come immagine (danneggiato?).</value></data>
   <data name="ImageNotDecoded" xml:space="preserve"><value>{0} non è allegato: {1}.</value></data>
   <data name="ImageFirstPageOnly" xml:space="preserve"><value>{0} contiene {1} {1:pagina|pagine}: viene allegata solo la prima.</value></data>
+  <data name="SvgDrawnChip" xml:space="preserve"><value>disegnato dal suo SVG · {0} × {1}</value></data>
+  <data name="SvgMarkupChip" xml:space="preserve"><value>il suo markup, come testo · {0} KB</value></data>
+  <data name="SvgNoBrowserChip" xml:space="preserve"><value>il suo markup, come testo — nessun browser per disegnarlo</value></data>
+  <data name="SvgNotDrawnChip" xml:space="preserve"><value>il suo markup, come testo — non è stato possibile disegnarlo</value></data>
   <data name="ImageOcrChip" xml:space="preserve"><value>testo letto da OCR · {0} {0:riga|righe}</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} non vede le immagini: al loro posto va il testo di {1}, letto su questo computer dall'OCR di Inferpal — parole e cifre possono essere lette male.</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — testo letto da OCR, inviato al posto dell'immagine</value></data>

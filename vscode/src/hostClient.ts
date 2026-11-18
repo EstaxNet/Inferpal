@@ -930,6 +930,13 @@ export class HostClient {
     return this.connection().sendRequest('image/read', params);
   }
 
+  /** An SVG to attach (pari 111): drawn for the model the next question answers with when it sees images, else its
+   *  markup — the chip's line says which; `text` is the markup of dropped bytes. */
+  svgRead(params: { path?: string; name?: string; data?: string; model?: string; agentMode?: boolean; already?: number }):
+    Promise<{ image: ImageDto | null; detail: string; thumbnail: string | null; refusal: string | null; text: string | null }> {
+    return this.connection().sendRequest('svg/read', params);
+  }
+
   /** Whether the model the next question answers with sees images, and the card to show when it does not. */
   imageCheck(params: { names: string[]; model?: string; agentMode?: boolean; images?: ImageDto[] }, token?: CancellationToken):
     Promise<{ model: string; sees: boolean | null; goesTo: string; card: ImageNotSeenCard | null; chipWarning: string;

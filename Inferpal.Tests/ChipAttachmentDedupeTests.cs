@@ -42,7 +42,7 @@ public class ChipAttachmentDedupeTests
     public void AChipAttachedAgain_IsNotAddedTwice()
     {
         var chat = Chat().Replace("\r\n", "\n");
-        Assert.Contains("private addChip(name: string, content: string, sourcePath?: string, origin?: string): void {", chat, StringComparison.Ordinal);   // witness
+        Assert.Contains("private addChip(name: string, content: string, sourcePath?: string, origin?: string, detail?: string): void {", chat, StringComparison.Ordinal);   // witness
 
         Assert.Contains("const repeated = this.pendingAttachments.findIndex((a) => a.sourcePath && chip.sourcePath\n"
                       + "      ? samePath(a.sourcePath, chip.sourcePath)\n"

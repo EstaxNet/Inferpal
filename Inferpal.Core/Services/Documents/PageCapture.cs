@@ -110,14 +110,15 @@ internal static class PageCapture
     /// the page out. Every other address goes to a proxy that does not exist, names resolve to nothing but the page's host,
     /// and WebRTC (which no proxy carries) is off.
     /// </remarks>
+    /// <param name="height">The viewport's height; by default the one a page is looked at with (<see cref="HeightFor"/>).</param>
     internal static async Task<(byte[]? Png, string? Why)> CaptureAsync(CaptureBrowser browser, string url, int width,
-                                                                        CancellationToken ct)
+                                                                        CancellationToken ct, int? height = null)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var page) || (page.Scheme != Uri.UriSchemeHttp && page.Scheme != Uri.UriSchemeHttps))
             throw new ArgumentException("A capture renders an http page of this machine.", nameof(url));
         var host = page.Host;
         var port = page.Port.ToString(CultureInfo.InvariantCulture);
-        var height = HeightFor(width);
+        var viewport = height ?? HeightFor(width);
         // ⚠ A browser installed as a snap sees its own /tmp, not ours: its profile and its picture go where both can reach.
         var work = SnapName(browser.Executable) is { } snap && UserFolders.Of(Environment.SpecialFolder.UserProfile) is { Length: > 0 } home
             ? Directory.CreateDirectory(Path.Combine(home, "snap", snap, "common", "inferpal-" + Guid.NewGuid().ToString("N"))).FullName
@@ -127,7 +128,7 @@ internal static class PageCapture
             var png = Path.Combine(work, "page.png");
             var profile = Directory.CreateDirectory(Path.Combine(work, "profile")).FullName;
             var psi = new ProcessStartInfo(browser.Executable);
-            var size = $"{width.ToString(CultureInfo.InvariantCulture)},{height.ToString(CultureInfo.InvariantCulture)}";
+            var size = $"{width.ToString(CultureInfo.InvariantCulture)},{viewport.ToString(CultureInfo.InvariantCulture)}";
             switch (browser.Engine)
             {
                 case CaptureEngine.Chromium:
@@ -156,7 +157,7 @@ internal static class PageCapture
                     var script = Path.Combine(work, "capture.js");
                     await File.WriteAllTextAsync(script, WebKitScript, ct);
                     foreach (var a in new[] { "-l", "JavaScript", script, url, width.ToString(CultureInfo.InvariantCulture),
-                                              height.ToString(CultureInfo.InvariantCulture), png,
+                                              viewport.ToString(CultureInfo.InvariantCulture), png,
                                               "^" + page.Scheme + "://" + System.Text.RegularExpressions.Regex.Escape(host) + ":" + port + "/" })
                         psi.ArgumentList.Add(a);
                     break;

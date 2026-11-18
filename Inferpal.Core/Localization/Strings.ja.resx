@@ -2344,6 +2344,10 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ImageDamaged" xml:space="preserve"><value>{0} は添付されません: 画像として読み取れませんでした（破損している可能性があります）。</value></data>
   <data name="ImageNotDecoded" xml:space="preserve"><value>{0} は添付されません: {1}。</value></data>
   <data name="ImageFirstPageOnly" xml:space="preserve"><value>{0} には {1} ページあります: 最初のページだけを添付します。</value></data>
+  <data name="SvgDrawnChip" xml:space="preserve"><value>SVG から描画 · {0} × {1}</value></data>
+  <data name="SvgMarkupChip" xml:space="preserve"><value>マークアップをテキストとして · {0} KB</value></data>
+  <data name="SvgNoBrowserChip" xml:space="preserve"><value>マークアップをテキストとして — 描画するブラウザーがありません</value></data>
+  <data name="SvgNotDrawnChip" xml:space="preserve"><value>マークアップをテキストとして — 描画できませんでした</value></data>
   <data name="ImageOcrChip" xml:space="preserve"><value>OCR で読み取ったテキスト · {0} 行</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} は画像を見られません。代わりに {1} のテキストを送ります。このコンピューター上で Inferpal の OCR が読み取ったもので、語や数字の読み誤りがあり得ます。</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — OCR で読み取ったテキスト(画像の代わりに送信)</value></data>

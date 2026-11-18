@@ -2344,6 +2344,10 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ImageDamaged" xml:space="preserve"><value>{0} n'est pas joint : il n'a pas pu être lu comme une image (endommagé ?).</value></data>
   <data name="ImageNotDecoded" xml:space="preserve"><value>{0} n'est pas joint : {1}.</value></data>
   <data name="ImageFirstPageOnly" xml:space="preserve"><value>{0} contient {1} {1:page|pages} : seule la première est jointe.</value></data>
+  <data name="SvgDrawnChip" xml:space="preserve"><value>dessiné depuis son SVG · {0} × {1}</value></data>
+  <data name="SvgMarkupChip" xml:space="preserve"><value>son balisage, en texte · {0} Ko</value></data>
+  <data name="SvgNoBrowserChip" xml:space="preserve"><value>son balisage, en texte — aucun navigateur pour le dessiner</value></data>
+  <data name="SvgNotDrawnChip" xml:space="preserve"><value>son balisage, en texte — il n'a pas pu être dessiné</value></data>
   <data name="ImageOcrChip" xml:space="preserve"><value>texte lu par OCR · {0} {0:ligne|lignes}</value></data>
   <data name="ImageOcrGoesTo" xml:space="preserve"><value>{0} ne voit pas les images : le texte de {1} part à la place, lu sur cet ordinateur par l'OCR d'Inferpal — des mots et des chiffres peuvent être mal lus.</value></data>
   <data name="ImageOcrLabel" xml:space="preserve"><value>{0} — texte lu par OCR, envoyé à la place de l'image</value></data>

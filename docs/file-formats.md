@@ -48,8 +48,12 @@ VS Code; the model gets the text, never the password. At most 20 MB per document
 | HEIC | `.heic`, `.heif` | An iPhone photo, converted by your system's own decoder and sent as a JPEG: Windows needs the free *HEIF Image Extensions* and *HEVC Video Extensions* from the Microsoft Store, macOS has it built in, Linux needs libheif (`libheif-examples` or `libheif-tools`). Without one, the chat names what to install |
 
 A model that does **not** see images gets the **text written in the image** instead, read by Inferpal's OCR, in its
-ten languages. The agent's own `ocr` tool reads `.png`, `.jpg`, `.jpeg`, `.bmp` and `.gif` (not `.webp`). At most 4 images per
-question, 10 MB each. An `.svg` is text: it is attached as its markup.
+ten languages. The agent's own `ocr` tool reads `.png`, `.jpg`, `.jpeg`, `.bmp`, `.gif`, `.tif` and `.heic` (not `.webp`). At
+most 4 images per question, 10 MB each.
+
+An **SVG** attached goes **drawn** to a model that sees images — by the browser `view_page` uses (Edge, Chrome, Firefox, or
+macOS' WebKit), with no network, its scripts not run — and as its **markup** to one that does not, or when no browser is
+there to draw it; its chip says which. The agent's `read_file` reads an SVG as the text it is.
 
 ## Archives
 

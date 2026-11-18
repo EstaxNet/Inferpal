@@ -568,6 +568,13 @@ internal partial class InferpalToolWindowData
                 await NotifyMentionAsync(refused);
                 return;
             }
+            // An SVG: drawn for a model that sees (pari 111), its markup otherwise — the chip says which.
+            string? markup = null;
+            if (Services.Documents.SvgImage.Handles(filePath) && (markup = await AttachSvgAsync(filePath, ct)) is null)
+            {
+                if (typed) await RunOnVMContextAsync(StripMentionToken);
+                return;
+            }
             // The unsaved buffer, as read_file shows it: the file as the user sees it in the editor.
             if (_tools.Overlay is { } overlay) await overlay.RefreshAsync(ct, [filePath]);
             if (await MentionController.FileMentionTextAsync(filePath, _tools.Overlay, ct) is not { } content)
@@ -581,7 +588,7 @@ internal partial class InferpalToolWindowData
             {
                 // Setting Prompt triggers TriggerMentionSearch → clears suggestions automatically.
                 if (typed) StripMentionToken();
-                AddAttachment(label, content, sourcePath: filePath);
+                AddAttachment(label, content, sourcePath: filePath, detail: markup);
             });
         }
         catch (OperationCanceledException) { }
