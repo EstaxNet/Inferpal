@@ -44,11 +44,15 @@ public class SystemPromptPerTurnTests
                  {
                      (vm,   "_history.Add(new ChatMessageDto(\"user\", historyText));",
                       "RefreshSystemPrompt(withMode: oneTimeModel is null);var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(), _history);"
-                      + "historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, activeFile);"),
+                      + "var toolHint = ToolHints.For(userText,"
+                      + "ToolHints.OfferedBy(_tools, oneTimeModel is null && _toolsEnabled, _planMode, () => turnMode));"
+                      + "historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, toolHint, activeFile);"),
                      (host, "s.History.Add(new ChatMessageDto(\"user\", promptText));",
                       "RefreshSystemPrompt(s, withMode: !p.CodeAction);var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);"
+                      + "var toolHint = ToolHints.For(string.IsNullOrWhiteSpace(p.Query) ? p.Prompt : p.Query,"
+                      + "ToolHints.OfferedBy(s.Tools, !p.CodeAction && s.ToolsEnabled, s.PlanMode, () => CurrentMode(s)));"
                       + "var promptText = ChatTurnPolicy.WithInjectedContext(ChatTurnPolicy.WithUserNotes(p.Prompt, p.Notes ?? []),"
-                      + "autoCtx, workspace, activeFile);"),
+                      + "autoCtx, workspace, toolHint, activeFile);"),
                  })
         {
             var head = string.Concat(Before(code, append).Where(c => !char.IsWhiteSpace(c)));

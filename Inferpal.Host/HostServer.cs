@@ -442,9 +442,13 @@ internal sealed partial class HostServer : IDisposable
             ChatTurnPolicy.CloseUnanswered(s.History);
             RefreshSystemPrompt(s, withMode: !p.CodeAction);
             var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);
+            // A parameter models miss, said when the typed question calls for it and the turn offers its tool, judged on
+            // the registry the turn sends (ToolHints). ⚠ Before the active-file block, which runs to the request heading.
+            var toolHint = ToolHints.For(string.IsNullOrWhiteSpace(p.Query) ? p.Prompt : p.Query,
+                ToolHints.OfferedBy(s.Tools, !p.CodeAction && s.ToolsEnabled, s.PlanMode, () => CurrentMode(s)));
             // Asked again (Regenerate), the question carries the notes its first answer read, as the history kept it.
             var promptText = ChatTurnPolicy.WithInjectedContext(ChatTurnPolicy.WithUserNotes(p.Prompt, p.Notes ?? []),
-                                                                autoCtx, workspace, activeFile);
+                                                                autoCtx, workspace, toolHint, activeFile);
             s.History.Add(new ChatMessageDto("user", promptText));
             // The images go with the question, never in its text; an earlier question's are not sent again.
             Services.Documents.ChatImages.RetireEarlier(s.History, before: s.History.Count - 1);

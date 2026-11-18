@@ -368,7 +368,12 @@ internal partial class InferpalToolWindowData
                 // What follows the active file rides with the question, when the history does not already say it — judged
                 // here, on the history the question joins (ActiveFileContext).
                 var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(), _history);
-                historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, activeFile);
+                // A parameter models miss, said when the typed question calls for it and the turn offers its tool, judged on
+                // the registry the turn sends, as the host does (ToolHints). ⚠ Before the active-file block, which runs to
+                // the request heading and is rebuilt in place.
+                var toolHint = ToolHints.For(userText,
+                    ToolHints.OfferedBy(_tools, oneTimeModel is null && _toolsEnabled, _planMode, () => turnMode));
+                historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, toolHint, activeFile);
                 _history.Add(new ChatMessageDto("user", historyText));
                 // The images go with the question, never in its text; an earlier question's are not sent again.
                 Services.Documents.ChatImages.RetireEarlier(_history, before: _history.Count - 1);

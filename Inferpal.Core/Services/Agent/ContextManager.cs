@@ -240,8 +240,12 @@ internal static class ContextManager
     /// the registry each front-end then sends.
     /// </summary>
     internal static int NextTurnToolTokens(IToolRegistry tools, bool toolsEnabled, bool planMode, Governance.ChatMode? mode = null) =>
-        !toolsEnabled ? 0
-        : RequestSize.ToolTokens((planMode ? new PlanModeToolRegistry(tools) : Governance.ChatModes.ToolsFor(tools, mode, null)).Definitions);
+        !toolsEnabled ? 0 : RequestSize.ToolTokens(NextTurnTools(tools, planMode, mode).Definitions);
+
+    /// <summary>The registry the next turn sends when its tools are on: Plan's read-only one, or the held mode's. One
+    /// answer for what the gauge measures and for what the question's hints may name (<c>ToolHints.OfferedBy</c>).</summary>
+    internal static IToolRegistry NextTurnTools(IToolRegistry tools, bool planMode, Governance.ChatMode? mode) =>
+        planMode ? new PlanModeToolRegistry(tools) : Governance.ChatModes.ToolsFor(tools, mode, null);
 
     /// <summary>
     /// The MCP tools the next chat turn leaves out until <c>tool_search</c> loads them, by server: none with tools off

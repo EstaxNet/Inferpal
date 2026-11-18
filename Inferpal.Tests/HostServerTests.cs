@@ -624,6 +624,56 @@ public partial class HostServerTests
     }
 
     /// <summary>
+    /// A question that asks for speed carries the line on <c>run_command</c>'s repeated measure, before the active-file
+    /// block (which runs to the request heading and is rebuilt in place), with every question that calls for it; a code
+    /// action, which offers no tool, carries none (<see cref="ToolHints"/>).
+    /// </summary>
+    [Fact]
+    public async Task AQuestionForSpeed_CarriesTheMeasureHint_BeforeTheActiveFile_AndACodeActionNone()
+    {
+        var root = NewRootWithCSharpRule();
+        try
+        {
+            using var h = CreateHarness();
+            string? question = null, system = null;
+            h.Fake.OnChatRequest = (_, history, _, _) =>
+            {
+                system   = history.FirstOrDefault(m => m.Role == "system")?.Content;
+                question = history.Last(m => m.Role == "user").Content;
+                return Task.FromResult(new ChatTurnResult("ok", null, 1, 1));
+            };
+            await h.InitializeAsync(rootDir: root).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            await h.Client.NotifyWithParameterObjectAsync("editor/didChangeActiveDocument",
+                new { path = Path.Combine(root, "src", "Program.cs") });
+            await WaitForXraySectionAsync(h, id => id == "Rules|scoped");
+
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send",
+                new { prompt = "Make the report faster.", agentMode = false }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.NotNull(question);
+            var hint = question!.IndexOf(ToolHints.Header + "\n\n" + ToolHints.Measure, StringComparison.Ordinal);
+            var file = question.IndexOf("## Active file: src/Program.cs", StringComparison.Ordinal);
+            Assert.True(hint >= 0 && file > hint, question);   // both there, the hint first
+            Assert.DoesNotContain(ToolHints.Measure, system);
+
+            question = null;
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send",
+                new { prompt = "Still too slow, make it faster.", agentMode = false }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.Contains(ToolHints.Measure, question);   // said again: a compaction may have dropped the first
+
+            await h.Client.InvokeAsync("chat/reset").WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            question = null;
+            await h.Client.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send",
+                new { prompt = "Make this faster.", agentMode = false, codeAction = true }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+            Assert.NotNull(question);                      // witness: this turn reached the model
+            Assert.DoesNotContain(ToolHints.Measure, question);
+        }
+        finally
+        {
+            try { Directory.Delete(root, recursive: true); } catch { }
+        }
+    }
+
+    /// <summary>
     /// The repository's instructions to coding agents reach the model under VS Code, scoped to the active file — the
     /// same builder as Visual Studio's, given the file's absolute path.
     /// </summary>
