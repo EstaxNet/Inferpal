@@ -48,7 +48,7 @@ internal partial class InferpalToolWindowData
     {
         PinWorkspaceRoot();
         var root = _indexService.RootDir;
-        var held = await Services.Commands.RunCopyCommandHandler.HeldOrLeftAsync(HeldCopy, root, ct);
+        var held = await Services.Commands.RunCopyCommandHandler.HeldOrLeftAsync(HeldCopy, root, ct, ConversationStore.VisualStudioSlot);
         if (held is not null) Hold(held);
         if (question.Length == 0)
         {
@@ -147,7 +147,8 @@ internal partial class InferpalToolWindowData
         CopyRun? copy = null;
         if (toCopy)
         {
-            var (made, refusal) = await Services.Commands.RunCopyCommandHandler.HeldOrNewAsync(HeldCopy, _indexService.RootDir, CancellationToken.None);
+            var (made, refusal) = await Services.Commands.RunCopyCommandHandler.HeldOrNewAsync(HeldCopy, _indexService.RootDir,
+                                                                                                    CancellationToken.None, ConversationStore.VisualStudioSlot);
             if (made is null)
             {
                 await RunOnVMContextAsync(() =>
@@ -227,6 +228,43 @@ internal partial class InferpalToolWindowData
                     InsertThemed(ChatMessageItem.NoticeMsg(card.KeptSaid));
                 }))));
         });
+
+    /// <summary>
+    /// The notice of a start's gestures on the copy it named: exactly that copy taken up, then its review or its discard as
+    /// the card does. Taken up, it is held: left again later, a start says it again. ⚠ Refused (another window took it up,
+    /// this window holds another copy of the repository), said — never silent.
+    /// </summary>
+    private async Task ActOnLeftCopyAsync(string folder, bool discard)
+    {
+        try
+        {
+            PinWorkspaceRoot();
+            CopyRun? copy;
+            if (HeldCopy is { } held)
+            {
+                if (!PathComparer.SameDirectory(held.Copy.Folder, folder))
+                {
+                    await ShowInfoAsync(Strings.CopyAlreadyHeld(held.Copy.Branch));
+                    return;
+                }
+                copy = held;
+            }
+            else if ((copy = await CopyRun.TakeUpAsync(folder, _indexService.RootDir, ConversationStore.VisualStudioSlot,
+                                                       CancellationToken.None)) is null)
+            {
+                await ShowInfoAsync(Strings.CopyNoneOpen);
+                return;
+            }
+            Hold(copy);
+            if (discard) await DiscardCopyAsync(copy);
+            else await ShowCopyReviewAsync(copy, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            Diagnostics.Swallow("Copy.LeftNotice", ex);
+            await ShowInfoAsync(Strings.MsgError(Diagnostics.RootMessage(ex)));
+        }
+    }
 
     /// <summary>"Discard the copy": the copy and its branch removed — refused while a question is answered in it.</summary>
     private Task DiscardCopyAsync(CopyRun copy) => CopyGestureAsync(async () =>

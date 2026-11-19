@@ -63,15 +63,21 @@ internal sealed class WorkCopy
     public required string Branch { get; init; }
     public required string BaseCommit { get; init; }
 
+    /// <summary>The editor that holds the copy (<c>vs</c>, <c>vscode</c>): the one whose next start says it when it is left
+    /// behind; <c>""</c> when unknown.</summary>
+    public string Editor { get; init; } = "";
+
     /// <summary>Where the copies live, one folder per repository below it.</summary>
     internal static string Home { get; set; } = Rag.IndexHome.FolderOf("copies");
 
-    /// <summary>The record beside a copy's folder (<c>&lt;n&gt;.json</c>): what a later session needs to find it again, and the
-    /// process that holds it — a copy is found again only once that process is gone.</summary>
-    private sealed record Record(string Repository, string Folder, string Branch, string BaseCommit, int OwnerPid = 0, long OwnerSince = 0);
+    /// <summary>The record beside a copy's folder (<c>&lt;n&gt;.json</c>): what a later session needs to find it again, the
+    /// process that holds it — a copy is found again only once that process is gone —, the editor it holds it for, and
+    /// whether the notice of a start already said it was left.</summary>
+    private sealed record Record(string Repository, string Folder, string Branch, string BaseCommit, int OwnerPid = 0, long OwnerSince = 0,
+                                 string Editor = "", bool Said = false);
 
-    private static Record Owned(string repository, string folder, string branch, string head) =>
-        new(repository, folder, branch, head, Environment.ProcessId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+    private static Record Owned(string repository, string folder, string branch, string head, string editor) =>
+        new(repository, folder, branch, head, Environment.ProcessId, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), editor);
 
     private static string RecordOf(string folder) => folder + ".json";
 
@@ -81,13 +87,79 @@ internal sealed class WorkCopy
     /// lives (another editor, another ACP thread of this process) is never found: it is not theirs to apply or discard.
     /// Never removed here: the person reviews, applies or discards them.
     /// </summary>
-    internal static async Task<IReadOnlyList<WorkCopy>> FindAsync(string repository, CancellationToken ct)
+    internal static async Task<IReadOnlyList<WorkCopy>> FindAsync(string repository, CancellationToken ct) =>
+        [.. (await LeftAsync(repository, ct)).Select(l => l.Copy)];
+
+    /// <summary>
+    /// The copy <paramref name="editor"/>'s next start says was left behind — the first one held for that editor whose
+    /// holder is gone —, until its notice is dismissed (<see cref="MarkSaidAsync"/>), with how many files its run changed
+    /// there; <c>null</c> when none, or when the copies could not be read (the rest of the notice is said all the same).
+    /// </summary>
+    internal static async Task<(WorkCopy Copy, int? Changed)?> LeftToSayAsync(string repository, string editor, CancellationToken ct)
+    {
+        try
+        {
+            foreach (var (copy, record) in await LeftAsync(repository, ct))
+                if (!record.Said && record.Editor == editor)
+                    return (copy, await copy.ChangedCountAsync(ct));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("WorkCopy.LeftToSay", ex);
+        }
+        return null;
+    }
+
+    /// <summary>The copy left behind in <paramref name="folder"/>, of <paramref name="repository"/> — exactly that one, its
+    /// holder gone; <c>null</c> when it is not (held again, discarded, not a copy).</summary>
+    internal static async Task<WorkCopy?> LeftAtAsync(string repository, string folder, CancellationToken ct) =>
+        (await LeftAsync(repository, ct)).Select(l => l.Copy).FirstOrDefault(c => PathComparer.SameDirectory(c.Folder, folder));
+
+    /// <summary>
+    /// The notice that said the copy in <paramref name="folder"/> was left is dismissed: no start says it again. ⚠ Only while
+    /// its holder is still gone: a copy taken up since (reviewed from the notice, a <c>/run-copy</c>) is held, and the next
+    /// time it is left it is said again. ⚠ Only a copy's record: the folder comes from a client.
+    /// </summary>
+    internal static async Task MarkSaidAsync(string folder, CancellationToken ct)
+    {
+        try
+        {
+            var full = Path.GetFullPath(folder);
+            if (!RunRoot.Holds(Path.GetFullPath(Home), full) || !File.Exists(RecordOf(full))) return;
+            if (System.Text.Json.JsonSerializer.Deserialize<Record>(await File.ReadAllTextAsync(RecordOf(full), ct)) is not { } record
+                || !PathComparer.SameDirectory(record.Folder, full)
+                || record.OwnerPid > 0 && Signals.SignalFile.WriterAlive(record.OwnerPid, record.OwnerSince))
+                return;
+            await File.WriteAllTextAsync(RecordOf(full), System.Text.Json.JsonSerializer.Serialize(record with { Said = true }), ct);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or ArgumentException)
+        {
+            Diagnostics.Swallow("WorkCopy.MarkSaid", ex);
+        }
+    }
+
+    /// <summary>The files the run changed in the copy since it was made — committed there or not, new ones included;
+    /// <c>null</c> when git could not say.</summary>
+    internal async Task<int?> ChangedCountAsync(CancellationToken ct)
+    {
+        // The review's own listing: a rename counted as the file deleted and the file created, as the review shows it.
+        var changed = await GitProcess.CaptureBytesAsync(["diff", "--no-ext-diff", "--no-textconv", "--no-renames", "--name-only", "-z", BaseCommit],
+                                                         Folder, ct, MaxFileBytes);
+        var added = await GitProcess.CaptureBytesAsync(["ls-files", "--others", "--exclude-standard", "-z"], Folder, ct, MaxFileBytes);
+        if (changed.Output is null || added.Output is null) return null;
+        return Encoding.UTF8.GetString(changed.Output).Split('\0', StringSplitOptions.RemoveEmptyEntries)
+            .Concat(Encoding.UTF8.GetString(added.Output).Split('\0', StringSplitOptions.RemoveEmptyEntries))
+            .Distinct(StringComparer.Ordinal).Count();
+    }
+
+    /// <summary>The copies <see cref="FindAsync"/> finds, with their records.</summary>
+    private static async Task<IReadOnlyList<(WorkCopy Copy, Record Record)>> LeftAsync(string repository, CancellationToken ct)
     {
         var top = await GitText(["rev-parse", "--show-toplevel"], repository, ct);
         var root = Path.GetFullPath(top ?? repository);
         var dir = Path.Combine(Home, FileHistoryService.FolderNameOf(root));
         if (!Directory.Exists(dir)) return [];
-        var found = new List<WorkCopy>();
+        var found = new List<(WorkCopy, Record)>();
         foreach (var file in Directory.EnumerateFiles(dir, "*.json").Order(StringComparer.Ordinal))
         {
             Record? record;
@@ -100,15 +172,17 @@ internal sealed class WorkCopy
             if (record is null || !Directory.Exists(record.Folder)) continue;
             if (record.OwnerPid > 0 && Signals.SignalFile.WriterAlive(record.OwnerPid, record.OwnerSince)) continue;
             if (await GitText(["rev-parse", "--verify", "--quiet", "refs/heads/" + record.Branch], root, ct) is null) continue;
-            found.Add(new WorkCopy { Repository = root, Folder = record.Folder, Branch = record.Branch, BaseCommit = record.BaseCommit });
+            found.Add((new WorkCopy { Repository = root, Folder = record.Folder, Branch = record.Branch, BaseCommit = record.BaseCommit,
+                                      Editor = record.Editor }, record));
         }
         return found;
     }
 
-    /// <summary>Makes this process the copy's holder (a copy found again is taken up): no other session finds it meanwhile.</summary>
-    internal async Task TakeOverAsync(CancellationToken ct)
+    /// <summary>Makes this process the copy's holder, for <paramref name="editor"/> (a copy found again is taken up): no other
+    /// session finds it meanwhile.</summary>
+    internal async Task TakeOverAsync(CancellationToken ct, string editor = "")
     {
-        try { await File.WriteAllTextAsync(RecordOf(Folder), System.Text.Json.JsonSerializer.Serialize(Owned(Repository, Folder, Branch, BaseCommit)), ct); }
+        try { await File.WriteAllTextAsync(RecordOf(Folder), System.Text.Json.JsonSerializer.Serialize(Owned(Repository, Folder, Branch, BaseCommit, editor)), ct); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Diagnostics.Swallow("WorkCopy.TakeOver", ex); }
     }
 
@@ -130,8 +204,9 @@ internal sealed class WorkCopy
         return paths;
     }
 
-    /// <summary>Makes a copy of <paramref name="repository"/> at its HEAD on a new branch; the refusal says why there is none.</summary>
-    internal static async Task<(WorkCopy? Copy, string? Refusal)> CreateAsync(string repository, CancellationToken ct)
+    /// <summary>Makes a copy of <paramref name="repository"/> at its HEAD on a new branch, held for <paramref name="editor"/>;
+    /// the refusal says why there is none.</summary>
+    internal static async Task<(WorkCopy? Copy, string? Refusal)> CreateAsync(string repository, CancellationToken ct, string editor = "")
     {
         var head = await GitText(["rev-parse", "--verify", "HEAD"], repository, ct);
         if (head is null) return (null, "this folder is not a git repository with a commit: a copy starts from the last commit");
@@ -154,7 +229,7 @@ internal sealed class WorkCopy
         Directory.CreateDirectory(Path.GetDirectoryName(folder)!);
         // ⚠ The record first, beside the folder (inside, it would be one of the run's changes): a `worktree add` stopped half way
         // leaves a branch and a folder that a record lets a later session find; without one, nothing would reach them.
-        try { await File.WriteAllTextAsync(RecordOf(folder), System.Text.Json.JsonSerializer.Serialize(Owned(root, folder, branch, head)), ct); }
+        try { await File.WriteAllTextAsync(RecordOf(folder), System.Text.Json.JsonSerializer.Serialize(Owned(root, folder, branch, head, editor)), ct); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return (null, "the copy's record could not be written: " + ex.Message);
@@ -165,7 +240,7 @@ internal sealed class WorkCopy
             if (!Directory.Exists(folder)) try { File.Delete(RecordOf(folder)); } catch { }
             return (null, "git could not make the copy: " + add.Failure);
         }
-        return (new WorkCopy { Repository = root, Folder = folder, Branch = branch, BaseCommit = head }, null);
+        return (new WorkCopy { Repository = root, Folder = folder, Branch = branch, BaseCommit = head, Editor = editor }, null);
     }
 
     /// <summary>What the run changed in the copy against the commit it started from, created and deleted files included.</summary>

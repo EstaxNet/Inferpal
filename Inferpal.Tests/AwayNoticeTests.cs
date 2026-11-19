@@ -260,7 +260,7 @@ public partial class HostServerTests
 
         var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
         Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(provider, @"await this\.showAwayNotice\(host\);").Count);
-        Assert.Contains("sessionAwayDismissed(msg.runIds, msg.taskIds)", provider, StringComparison.Ordinal);
+        Assert.Contains("sessionAwayDismissed(msg.runIds, msg.taskIds, msg.copyFolder)", provider, StringComparison.Ordinal);
         Assert.Contains("if (this.awayAsked) {", provider, StringComparison.Ordinal);   // once per window
         Assert.Contains("(m.role === 'user' || m.role === 'assistant') && !m.notice", provider, StringComparison.Ordinal);
         var webview = WebviewRebuildTests.TsCode("webview/main.ts");

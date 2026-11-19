@@ -105,11 +105,12 @@ internal sealed class CopyRun
         return new CopyStart(null, Encoding.UTF8.GetString(head.Output).Trim(), string.IsNullOrEmpty(branch) ? null : branch, uncommitted);
     }
 
-    /// <summary>Makes the copy of <paramref name="workspace"/>'s repository; the refusal says why when it cannot.</summary>
-    internal static async Task<(CopyRun? Run, string? Refusal)> StartAsync(string workspace, CancellationToken ct)
+    /// <summary>Makes the copy of <paramref name="workspace"/>'s repository, held for <paramref name="editor"/>; the refusal says
+    /// why when it cannot.</summary>
+    internal static async Task<(CopyRun? Run, string? Refusal)> StartAsync(string workspace, CancellationToken ct, string editor = "")
     {
         if (string.IsNullOrWhiteSpace(workspace)) return (null, "no folder is open: a copy is made of the folder open in the editor");
-        var (copy, refusal) = await WorkCopy.CreateAsync(workspace, ct);
+        var (copy, refusal) = await WorkCopy.CreateAsync(workspace, ct, editor);
         return copy is null ? (null, refusal) : (new CopyRun(copy, workspace, leftBefore: false), null);
     }
 
@@ -117,11 +118,23 @@ internal sealed class CopyRun
     /// The copy of <paramref name="workspace"/>'s repository an earlier session left (its holder gone), taken up by this
     /// process, oldest first; <c>null</c> when none.
     /// </summary>
-    internal static async Task<CopyRun?> FindLeftAsync(string workspace, CancellationToken ct)
+    internal static async Task<CopyRun?> FindLeftAsync(string workspace, CancellationToken ct, string editor = "")
     {
         if (string.IsNullOrWhiteSpace(workspace)) return null;
         if ((await WorkCopy.FindAsync(workspace, ct)).FirstOrDefault() is not { } copy) return null;
-        await copy.TakeOverAsync(ct);
+        await copy.TakeOverAsync(ct, editor);
+        return new CopyRun(copy, workspace, leftBefore: true);
+    }
+
+    /// <summary>
+    /// The copy left behind in <paramref name="folder"/> — exactly the one a notice named, never another — taken up by this
+    /// process for <paramref name="editor"/>; <c>null</c> when it is not left there any more (taken up by another window,
+    /// discarded).
+    /// </summary>
+    internal static async Task<CopyRun?> TakeUpAsync(string folder, string workspace, string editor, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(workspace) || await WorkCopy.LeftAtAsync(workspace, folder, ct) is not { } copy) return null;
+        await copy.TakeOverAsync(ct, editor);
         return new CopyRun(copy, workspace, leftBefore: true);
     }
 

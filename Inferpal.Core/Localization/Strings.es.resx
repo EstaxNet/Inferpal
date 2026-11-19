@@ -2445,4 +2445,9 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="CopyStartOfCommit" xml:space="preserve"><value>el commit `{0}`</value></data>
   <data name="CopyWhileBusy" xml:space="preserve"><value>Todavía hay un turno en curso: espere a que termine y vuelva a intentarlo.</value></data>
   <data name="CopyCompareUnavailable" xml:space="preserve"><value>No se encontró la herramienta de comparación de Visual Studio: el archivo de la copia es `{0}` y el suyo `{1}`.</value></data>
+  <data name="AwayCopyLeft" xml:space="preserve"><value>Al cerrarse {0} quedó una copia del repositorio, en la rama `{1}`. Su ejecución había cambiado allí {2} {2:archivo|archivos}.</value></data>
+  <data name="AwayCopyLeftUncounted" xml:space="preserve"><value>Al cerrarse {0} quedó una copia del repositorio, en la rama `{1}`.</value></data>
+  <data name="AwayCopyLeftNote" xml:space="preserve"><value>Permanece hasta que la descarte: revísela para conservar o descartar cada cambio, o vuelva a preguntar sobre ella con `/run-copy`.</value></data>
+  <data name="CopyReviewTheCopy" xml:space="preserve"><value>Revisar la copia</value></data>
+  <data name="CopyAlreadyHeld" xml:space="preserve"><value>Esta ventana ya tiene una copia del repositorio, en la rama `{0}`: aplíquela o descártela primero.</value></data>
 </root>

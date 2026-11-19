@@ -12,6 +12,7 @@ import {
   CopyDiscardResult,
   CopyPrepareResult,
   CopyReview,
+  CopyTakeUpResult,
   ApprovalNote,
   ApprovalRuleTable,
   McpCardsResult,
@@ -531,6 +532,11 @@ export class HostClient {
     return this.connection().sendRequest<CopyApplyResult>('copy/apply', { reviewId, kept });
   }
 
+  /** Takes up exactly the copy a notice of a start named (its folder), for its review or its discard. */
+  copyTakeUp(folder: string): Promise<CopyTakeUpResult> {
+    return this.connection().sendRequest<CopyTakeUpResult>('copy/takeUp', { folder });
+  }
+
   /** Removes the copy this window holds, and its branch. */
   copyDiscard(): Promise<CopyDiscardResult> {
     return this.connection().sendRequest<CopyDiscardResult>('copy/discard');
@@ -1024,8 +1030,8 @@ export class HostClient {
   }
 
   /** The notice dismissed: its runs and tasks are not said again. */
-  sessionAwayDismissed(runIds: string[], taskIds: string[]): Promise<void> {
-    return this.connection().sendRequest<void>('session/awayDismissed', { runIds, taskIds });
+  sessionAwayDismissed(runIds: string[], taskIds: string[], copyFolder?: string): Promise<void> {
+    return this.connection().sendRequest<void>('session/awayDismissed', { runIds, taskIds, copyFolder });
   }
 
   /** A question's "Go back here": what going back would do to the files, or why it cannot. `question` is the clicked

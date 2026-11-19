@@ -318,7 +318,9 @@ export type ExtToWebview =
 export type WebviewToExt =
   | { type: 'ready' }
   /** The notice of a start dismissed: what it said is not said again. */
-  | { type: 'awayDismissed'; runIds: string[]; taskIds: string[] }
+  | { type: 'awayDismissed'; runIds: string[]; taskIds: string[]; copyFolder?: string }
+  /** The notice's copy left behind: its review, or discarded — said no more either way. */
+  | { type: 'awayCopy'; folder: string; action: 'review' | 'discard' }
   /** `typed`: the composer's text, which the webview cleared as it sent — a refusal gives it back. */
   | { type: 'send'; text: string; typed?: boolean }
   /** Enter during a turn: a note for the run's next step (sent after the turn when no step will read it). */

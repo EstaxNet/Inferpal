@@ -83,6 +83,20 @@ public class RunCopyFrontEndTests
     }
 
     [Fact]
+    public void TheNoticesCopyLeftBehind_IsReviewedOrDiscarded_ThenSaidNoMore()
+    {
+        var code = Provider();
+        var act = code[code.IndexOf("private async actOnLeftCopy(", StringComparison.Ordinal)..];
+        act = act[..act.IndexOf("\n  }\n", StringComparison.Ordinal)];
+
+        Assert.Contains("const taken = await host.copyTakeUp(folder);", act);                       // exactly the named copy
+        Assert.Matches(new Regex(@"if \(!taken\.held\) \{\s*this\.sayOutOfTurn\(taken\.error"), act);   // refused: said
+        Assert.Contains("await this.discardCopy();", act);
+        Assert.DoesNotContain("sessionAwayDismissed", act);                                          // taken up, it is held
+        Assert.Contains("await host.sessionAwayDismissed(msg.runIds, msg.taskIds, msg.copyFolder);", code);
+    }
+
+    [Fact]
     public void TheCardWaitingForThePerson_IsDrawnAgainAfterEveryRedraw()
     {
         var code = Provider();

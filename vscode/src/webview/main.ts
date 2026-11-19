@@ -1995,7 +1995,8 @@ function renderAwayNotice(notice: AwayNotice): void {
   const dismiss = iconButton('close', notice.dismiss, 11);
   dismiss.classList.add('away-dismiss');
   dismiss.addEventListener('click', () => {
-    post({ type: 'awayDismissed', runIds: notice.run ? [notice.run.runId] : [], taskIds: notice.tasks.map((t) => t.id) });
+    post({ type: 'awayDismissed', runIds: notice.run ? [notice.run.runId] : [], taskIds: notice.tasks.map((t) => t.id),
+           copyFolder: notice.copy?.folder });
     card.remove();
   });
   head.append(title, dismiss);
@@ -2051,6 +2052,26 @@ function renderAwayNotice(notice: AwayNotice): void {
       undo,
     );
     block.append(text, files, warning, actions);
+    card.appendChild(block);
+  }
+
+  if (notice.copy) {
+    const copy = notice.copy;
+    const block = document.createElement('div');
+    block.className = 'away-item away-copy';
+    const text = document.createElement('div');
+    renderMarkdownInto(text, copy.text);
+    const note = document.createElement('div');
+    note.className = 'away-muted';
+    renderMarkdownInto(note, copy.note);
+    const actions = document.createElement('div');
+    actions.className = 'away-actions';
+    // Dealt with either way: the block goes, the rest of the notice stays.
+    actions.append(
+      action(copy.review, true, () => { block.remove(); post({ type: 'awayCopy', folder: copy.folder, action: 'review' }); }),
+      action(copy.discard, false, () => { block.remove(); post({ type: 'awayCopy', folder: copy.folder, action: 'discard' }); }),
+    );
+    block.append(text, note, actions);
     card.appendChild(block);
   }
 

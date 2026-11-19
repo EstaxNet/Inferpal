@@ -2449,4 +2449,9 @@ What you save there applies from your next question, in this thread and the othe
   <data name="CopyStartOfCommit" xml:space="preserve"><value>the commit `{0}`</value></data>
   <data name="CopyWhileBusy" xml:space="preserve"><value>A turn is still running: wait for it to finish, then try again.</value></data>
   <data name="CopyCompareUnavailable" xml:space="preserve"><value>Visual Studio's comparison tool was not found: the copy's file is `{0}`, yours is `{1}`.</value></data>
+  <data name="AwayCopyLeft" xml:space="preserve"><value>A copy of the repository was left when {0} closed, on the branch `{1}`. Its run had changed {2} {2:file|files} there.</value></data>
+  <data name="AwayCopyLeftUncounted" xml:space="preserve"><value>A copy of the repository was left when {0} closed, on the branch `{1}`.</value></data>
+  <data name="AwayCopyLeftNote" xml:space="preserve"><value>It stays until you discard it: review it to keep or drop each change, or ask on it again with `/run-copy`.</value></data>
+  <data name="CopyReviewTheCopy" xml:space="preserve"><value>Review the copy</value></data>
+  <data name="CopyAlreadyHeld" xml:space="preserve"><value>This window already holds a copy of the repository, on the branch `{0}`: apply or discard it first.</value></data>
 </root>

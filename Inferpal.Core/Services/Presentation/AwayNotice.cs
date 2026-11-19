@@ -14,8 +14,13 @@ internal sealed record AwayTask(string Id, string Text, bool Retry);
 /// <summary>Old indexes removed at this start: what the notice says, and the words of its button.</summary>
 internal sealed record AwayPruned(string Text, string Detail, string SeeKept, string Page, string Section);
 
+/// <summary>A copy of the repository the closing left behind (<c>/run-copy</c>): what the notice says, and its two gestures.</summary>
+/// <param name="Folder">The copy's folder: what the notice marks said when it is dismissed.</param>
+internal sealed record AwayCopy(string Folder, string Text, string Note, string Review, string Discard);
+
 /// <summary>What happened while the editor was closed, said once at the next start (<see cref="AwayNotice"/>).</summary>
-internal sealed record AwayNoticeModel(string Title, AwayRun? Run, IReadOnlyList<AwayTask> Tasks, AwayPruned? Pruned = null)
+internal sealed record AwayNoticeModel(string Title, AwayRun? Run, IReadOnlyList<AwayTask> Tasks, AwayPruned? Pruned = null,
+                                       AwayCopy? Copy = null)
 {
     /// <summary>The runs the notice says — marked said when it is dismissed.</summary>
     public IReadOnlyList<string> RunIds => Run is null ? [] : [Run.RunId];
@@ -42,9 +47,12 @@ internal static class AwayNotice
     /// <param name="now">Today, for the times: a time of another day carries its date.</param>
     /// <param name="root">The workspace: the files are named under it.</param>
     /// <param name="pruned">The old indexes this start removed; they are gone, so this is the one time they are said.</param>
+    /// <param name="left">A copy of the repository this editor held when it closed (<c>WorkCopy.LeftToSayAsync</c>), and how
+    /// many files its run changed there.</param>
     public static AwayNoticeModel? Build(IEnumerable<HistoryRun> runs, string editorSlot, string editorName,
                                         IReadOnlyList<BackgroundTaskSnapshot> tasks, IReadOnlySet<string> saidRuns,
-                                        DateTime now, string? root = null, Rag.PrunedIndexes? pruned = null)
+                                        DateTime now, string? root = null, Rag.PrunedIndexes? pruned = null,
+                                        (Execution.WorkCopy Copy, int? Changed)? left = null)
     {
         AwayRun? cut = null;
         // The newest run of this editor, by id (local times repeat an hour every autumn): the closing cut it, or nothing.
@@ -76,8 +84,14 @@ internal static class AwayNotice
             ? new AwayPruned(Strings.KeptPruned(p.Names.Count, Rag.KeptIndexes.Size(p.Bytes), string.Join(", ", p.Names.Select(n => $"`{n}`"))),
                              Strings.KeptPrunedDetail, Strings.KeptSeeKept, Rag.KeptIndexes.Page, Rag.KeptIndexes.Section)
             : null;
-        if (cut is null && said.Count == 0) return removed is null ? null : new(Strings.KeptPrunedTitle, null, said, removed);
-        return new(Strings.AwayTitle, cut, said, removed);
+        var copy = left is { } l
+            ? new AwayCopy(l.Copy.Folder, l.Changed is int n ? Strings.AwayCopyLeft(editorName, l.Copy.Branch, n)
+                                                             : Strings.AwayCopyLeftUncounted(editorName, l.Copy.Branch),
+                           Strings.AwayCopyLeftNote, Strings.CopyReviewTheCopy, Strings.CopyReviewDiscard)
+            : null;
+        if (cut is null && said.Count == 0 && copy is null)
+            return removed is null ? null : new(Strings.KeptPrunedTitle, null, said, removed);
+        return new(Strings.AwayTitle, cut, said, removed, copy);
     }
 
     /// <summary>A file as the notice names it: under the workspace, with forward slashes; as it is outside it.</summary>

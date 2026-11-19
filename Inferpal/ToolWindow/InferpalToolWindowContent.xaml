@@ -3132,6 +3132,25 @@
                                         </Button>
                                     </WrapPanel>
                                 </StackPanel>
+                                <!-- A copy of the repository the closing left behind (/run-copy): its review, or discarded. -->
+                                <StackPanel Margin="0,8,0,0" Visibility="{Binding HasAwayCopy, Converter={StaticResource b2v}}">
+                                    <TextBlock Text="{Binding AwayCopyText}" FontSize="13" TextWrapping="Wrap" Foreground="{Binding ThemeText}"/>
+                                    <TextBlock Text="{Binding AwayCopyNote}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                                               Foreground="{Binding ThemeSubtleText}"/>
+                                    <WrapPanel Margin="0,8,0,0" HorizontalAlignment="Right">
+                                        <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" Margin="0,0,6,0" BorderThickness="1" Cursor="Hand"
+                                                Background="{Binding DataContext.ThemeChip, ElementName=root}"
+                                                BorderBrush="{Binding DataContext.ThemeAccentLine, ElementName=root}"
+                                                Command="{Binding AwayCopyReviewCommand}" AutomationProperties.Name="{Binding BtnAwayCopyReview}">
+                                            <TextBlock Text="{Binding BtnAwayCopyReview}" FontSize="13" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                        </Button>
+                                        <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" BorderThickness="1" Cursor="Hand"
+                                                Background="Transparent" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                Command="{Binding AwayCopyDiscardCommand}" AutomationProperties.Name="{Binding BtnAwayCopyDiscard}">
+                                            <TextBlock Text="{Binding BtnAwayCopyDiscard}" FontSize="13" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                        </Button>
+                                    </WrapPanel>
+                                </StackPanel>
                                 <!-- The background tasks: Retry for one the closing stopped, Open the report for one never read. -->
                                 <ItemsControl ItemsSource="{Binding AwayTasks}" Margin="0,4,0,0" Focusable="False">
                                     <ItemsControl.ItemTemplate>

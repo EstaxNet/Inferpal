@@ -403,10 +403,13 @@ internal sealed partial class HostServer : IDisposable
     /// is taken up only by <c>copy/prepare</c>, whose card says so before any question goes to it.</summary>
     private static async Task<(Services.Execution.CopyRun? Copy, string? Refusal)> HeldOrNewCopyAsync(HostSession s, CancellationToken ct)
     {
-        var (copy, refusal) = await Services.Commands.RunCopyCommandHandler.HeldOrNewAsync(s.Copy, s.RootDir, ct);
+        var (copy, refusal) = await Services.Commands.RunCopyCommandHandler.HeldOrNewAsync(s.Copy, s.RootDir, ct, CopyEditor(s));
         if (copy is not null) s.Copy = copy;
         return (copy, refusal);
     }
+
+    /// <summary>The editor a copy this session makes or takes up is held for: the next start of that editor says it if left.</summary>
+    private static string CopyEditor(HostSession s) => s.Editor.HasEditor ? ConversationStore.VsCodeSlot : AcpRunsEditor;
 
     /// <summary>The copy this session holds; <c>null</c> when none. ⚠ Review, apply and discard reach this one only — never a
     /// copy another session holds or left, which nothing the person saw named.</summary>
@@ -420,7 +423,7 @@ internal sealed partial class HostServer : IDisposable
         {
             var s = Session();
             // A copy an earlier session left (its holder gone) is taken up here, and the card says so.
-            var held = HeldCopy(s) ?? (s.Copy = await Services.Commands.RunCopyCommandHandler.HeldOrLeftAsync(null, s.RootDir, token));
+            var held = HeldCopy(s) ?? (s.Copy = await Services.Commands.RunCopyCommandHandler.HeldOrLeftAsync(null, s.RootDir, token, CopyEditor(s)));
             var start = await Services.Execution.CopyRun.PrepareAsync(s.RootDir, token);
             // A question goes to the held copy: the card names the commit IT started from, not the workspace's.
             var commit = held?.StartCommit ?? start.Commit;
@@ -473,6 +476,26 @@ internal sealed partial class HostServer : IDisposable
             if (!done) return new CopyDiscardResult(null, problem);
             s.Copy = null;
             return new CopyDiscardResult(problem, Message: problem is null ? Strings.CopyDiscarded(copy.Copy.Branch) : Strings.CopyDiscardedBut(problem));
+        });
+
+    /// <summary>
+    /// <c>copy/takeUp</c>: the copy a notice of a start named — exactly that one, never another left beside it — taken up by
+    /// this session, for its review or its discard. Refused, said, when this session holds another copy, or when the named
+    /// one is no longer left (another window took it up, it was discarded).
+    /// </summary>
+    [JsonRpcMethod("copy/takeUp", UseSingleObjectParameterDeserialization = true)]
+    public Task<CopyTakeUpResult> CopyTakeUpAsync(CopyTakeUpParams p, CancellationToken ct) =>
+        WithTurnSlotAsync("copy/takeUp", ct, async token =>
+        {
+            var s = Session();
+            if (HeldCopy(s) is { } held)
+                return PathComparer.SameDirectory(held.Copy.Folder, p.Folder)
+                    ? new CopyTakeUpResult(true)
+                    : new CopyTakeUpResult(false, Strings.CopyAlreadyHeld(held.Copy.Branch));
+            if (await Services.Execution.CopyRun.TakeUpAsync(p.Folder, s.RootDir, CopyEditor(s), token) is not { } copy)
+                return new CopyTakeUpResult(false, Strings.CopyNoneOpen);
+            s.Copy = copy;
+            return new CopyTakeUpResult(true);
         });
 
     /// <summary>The notes of one turn, as its end left them: read by the model, or for the adapter to send next.</summary>
@@ -2356,20 +2379,28 @@ internal sealed partial class HostServer : IDisposable
     /// last message is a question and a run was cut, the line under it says no answer was written.
     /// </summary>
     [JsonRpcMethod("session/away", UseSingleObjectParameterDeserialization = true)]
-    public AwayNoticeDto? SessionAway(SessionAwayParams p)
+    public async Task<AwayNoticeDto?> SessionAwayAsync(SessionAwayParams p, CancellationToken ct)
     {
         var s     = Session();
         var queue = TaskQueue(s);
+        // A copy this editor held when it closed: said, never removed — a client without an editor makes none.
+        var left  = s.Editor.HasEditor && s.RootDir.Length > 0
+            ? await Services.Execution.WorkCopy.LeftToSayAsync(s.RootDir, ConversationStore.VsCodeSlot, ct)
+            : null;
         var model = Services.Presentation.AwayNotice.Build(s.Tools.History.Runs, ConversationStore.VsCodeSlot, "VS Code",
                                                           queue.List(), queue.SaidRuns(), DateTime.Now, s.RootDir,
-                                                          Services.Rag.KeptIndexes.PruneHere(s.RootDir));
+                                                          Services.Rag.KeptIndexes.PruneHere(s.RootDir), left);
         return model is null ? null
             : AwayNoticeDto.Of(model, model.Run is not null && p.EndsOnAQuestion ? Strings.AwayNoAnswer("VS Code") : null);
     }
 
     /// <summary>The notice of a start dismissed: what it said is not said again.</summary>
     [JsonRpcMethod("session/awayDismissed", UseSingleObjectParameterDeserialization = true)]
-    public void SessionAwayDismissed(AwayDismissedParams p) => TaskQueue(Session()).MarkSaid(p.RunIds, p.TaskIds);
+    public async Task SessionAwayDismissedAsync(AwayDismissedParams p, CancellationToken ct)
+    {
+        TaskQueue(Session()).MarkSaid(p.RunIds, p.TaskIds);
+        if (p.CopyFolder is { Length: > 0 } folder) await Services.Execution.WorkCopy.MarkSaidAsync(folder, ct);
+    }
 
     [JsonRpcMethod("session/delete", UseSingleObjectParameterDeserialization = true)]
     public bool SessionDelete(SessionRefParams p) => Session().Store.Delete(p.Name);

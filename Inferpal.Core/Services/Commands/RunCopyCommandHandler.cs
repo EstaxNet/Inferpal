@@ -30,16 +30,18 @@ internal static class RunCopyCommandHandler
     public static string NoneOpen => Strings.CopyNoneOpen + " " + Strings.SlashUsage(Usage);
 
     /// <summary>The copy a question or a review reaches: the one <paramref name="held"/>, else one an editor that closed
-    /// left in <paramref name="workspace"/>'s repository (taken up by this process); <c>null</c> when none.</summary>
-    public static async Task<CopyRun?> HeldOrLeftAsync(CopyRun? held, string workspace, CancellationToken ct) =>
-        held is { Discarded: false } ? held : await CopyRun.FindLeftAsync(workspace, ct);
+    /// left in <paramref name="workspace"/>'s repository (taken up by this process, for <paramref name="editor"/>); <c>null</c>
+    /// when none.</summary>
+    public static async Task<CopyRun?> HeldOrLeftAsync(CopyRun? held, string workspace, CancellationToken ct, string editor = "") =>
+        held is { Discarded: false } ? held : await CopyRun.FindLeftAsync(workspace, ct, editor);
 
-    /// <summary>The copy a question goes to: the one <paramref name="held"/>, else a new one at the last commit; the
-    /// refusal, translated, when none can be made.</summary>
-    public static async Task<(CopyRun? Copy, string? Refusal)> HeldOrNewAsync(CopyRun? held, string workspace, CancellationToken ct)
+    /// <summary>The copy a question goes to: the one <paramref name="held"/>, else a new one at the last commit, held for
+    /// <paramref name="editor"/>; the refusal, translated, when none can be made.</summary>
+    public static async Task<(CopyRun? Copy, string? Refusal)> HeldOrNewAsync(CopyRun? held, string workspace, CancellationToken ct,
+                                                                             string editor = "")
     {
         if (held is { Discarded: false }) return (held, null);
-        var (made, refusal) = await CopyRun.StartAsync(workspace, ct);
+        var (made, refusal) = await CopyRun.StartAsync(workspace, ct, editor);
         return made is null ? (null, Strings.CopyNotMade(refusal ?? "git gave no reason")) : (made, null);
     }
 }

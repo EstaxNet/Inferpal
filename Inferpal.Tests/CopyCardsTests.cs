@@ -137,6 +137,22 @@ public sealed class CopyCardsTests
     }
 
     [Fact]
+    public void TheNoticeOfAStart_SaysTheCopyLeftBehind_WithItsTwoGestures()
+    {
+        var copy = new WorkCopy { Repository = Path.GetTempPath(), Folder = Path.Combine(Path.GetTempPath(), "c", "3"), Branch = "inferpal/3", BaseCommit = "abc" };
+
+        var counted = AwayNotice.Build([], "vscode", "VS Code", [], new HashSet<string>(), DateTime.Now, left: (copy, 3));
+        var uncounted = AwayNotice.Build([], "vscode", "VS Code", [], new HashSet<string>(), DateTime.Now, left: (copy, null));
+
+        Assert.Equal(Strings.AwayTitle, counted!.Title);
+        Assert.Equal(Strings.AwayCopyLeft("VS Code", "inferpal/3", 3), counted.Copy!.Text);
+        Assert.Equal(copy.Folder, counted.Copy.Folder);
+        Assert.Equal((Strings.CopyReviewTheCopy, Strings.CopyReviewDiscard), (counted.Copy.Review, counted.Copy.Discard));
+        Assert.Equal(Strings.AwayCopyLeftUncounted("VS Code", "inferpal/3"), uncounted!.Copy!.Text);
+        Assert.Null(AwayNotice.Build([], "vscode", "VS Code", [], new HashSet<string>(), DateTime.Now));   // nothing to say
+    }
+
+    [Fact]
     public void TheCardOfACopy_IsNeverSavedWithTheConversation() =>
         Assert.Contains("copy", Inferpal.Services.Persistence.SessionManager.ScreenOnlyRoles);
 

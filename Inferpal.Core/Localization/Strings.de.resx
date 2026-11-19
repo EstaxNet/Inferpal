@@ -2445,4 +2445,9 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="CopyStartOfCommit" xml:space="preserve"><value>der Commit `{0}`</value></data>
   <data name="CopyWhileBusy" xml:space="preserve"><value>Ein Durchlauf läuft noch: Warten Sie, bis er fertig ist, und versuchen Sie es dann erneut.</value></data>
   <data name="CopyCompareUnavailable" xml:space="preserve"><value>Das Vergleichstool von Visual Studio wurde nicht gefunden: Die Datei der Kopie ist `{0}`, Ihre ist `{1}`.</value></data>
+  <data name="AwayCopyLeft" xml:space="preserve"><value>Beim Schließen von {0} blieb eine Kopie des Repositorys zurück, auf dem Branch `{1}`. Ihr Lauf hatte dort {2} {2:Datei|Dateien} geändert.</value></data>
+  <data name="AwayCopyLeftUncounted" xml:space="preserve"><value>Beim Schließen von {0} blieb eine Kopie des Repositorys zurück, auf dem Branch `{1}`.</value></data>
+  <data name="AwayCopyLeftNote" xml:space="preserve"><value>Sie bleibt, bis Sie sie verwerfen: Sehen Sie sie durch, um jede Änderung zu behalten oder zu verwerfen, oder fragen Sie mit `/run-copy` erneut darauf.</value></data>
+  <data name="CopyReviewTheCopy" xml:space="preserve"><value>Kopie durchsehen</value></data>
+  <data name="CopyAlreadyHeld" xml:space="preserve"><value>Dieses Fenster hält bereits eine Kopie des Repositorys, auf dem Branch `{0}`: Übernehmen oder verwerfen Sie sie zuerst.</value></data>
 </root>

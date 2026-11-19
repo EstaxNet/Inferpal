@@ -43,12 +43,13 @@ internal sealed class VsWindowHarness : IDisposable
     /// not look near the process's folder (this repository, under a test). Implies no folder open.</param>
     /// <param name="client">The client every service holds, in place of <paramref name="fake"/> (Visual Studio's
     /// <see cref="SwitchingProvider"/> over fakes).</param>
+    /// <param name="alive">Which processes are alive, for a test whose files name a process that is gone; every one by default.</param>
     public VsWindowHarness(FakeInferenceProvider? fake = null, bool folderOpen = true, string? root = null, InferpalConfig? config = null,
-                           bool rootless = false, IInferenceProvider? client = null)
+                           bool rootless = false, IInferenceProvider? client = null, Func<int, bool>? alive = null)
     {
         Root = root ?? Directory.CreateTempSubdirectory("inferpal-vm").FullName;
         if (rootless) folderOpen = false;
-        SignalFile._isProcessAliveOverride = _ => true;
+        SignalFile._isProcessAliveOverride = alive ?? (_ => true);
         if (folderOpen) ActiveSolutionSignal.WriteFolder(Root);
         Fake = fake ?? new FakeInferenceProvider();
         // RAG off: on, the window's start would index whatever repository holds the test, once the test's folder is gone.

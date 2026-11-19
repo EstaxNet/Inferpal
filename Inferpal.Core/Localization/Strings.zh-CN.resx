@@ -2445,4 +2445,9 @@
   <data name="CopyStartOfCommit" xml:space="preserve"><value>提交 `{0}`</value></data>
   <data name="CopyWhileBusy" xml:space="preserve"><value>仍有一轮正在进行：请等待其完成后再试。</value></data>
   <data name="CopyCompareUnavailable" xml:space="preserve"><value>未找到 Visual Studio 的比较工具：副本的文件为 `{0}`，您的文件为 `{1}`。</value></data>
+  <data name="AwayCopyLeft" xml:space="preserve"><value>{0} 关闭时留下了一份仓库副本，位于分支 `{1}`。其运行在那里更改了 {2} 个文件。</value></data>
+  <data name="AwayCopyLeftUncounted" xml:space="preserve"><value>{0} 关闭时留下了一份仓库副本，位于分支 `{1}`。</value></data>
+  <data name="AwayCopyLeftNote" xml:space="preserve"><value>它会一直保留，直到您丢弃它：审阅它以逐一保留或丢弃每处更改，或用 `/run-copy` 再次就它提问。</value></data>
+  <data name="CopyReviewTheCopy" xml:space="preserve"><value>审阅副本</value></data>
+  <data name="CopyAlreadyHeld" xml:space="preserve"><value>此窗口已持有一份仓库副本，位于分支 `{0}`：请先应用或丢弃它。</value></data>
 </root>

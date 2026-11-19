@@ -6,6 +6,7 @@ using Inferpal.Localization;
 using Inferpal.Services;
 using Inferpal.Models;
 using Inferpal.Services.Execution;
+using Inferpal.Services.Persistence;
 using Xunit;
 
 namespace Inferpal.Tests;
@@ -226,6 +227,58 @@ public partial class HostServerTests
         Assert.Equal(Strings.CopyNoneOpen + " " + Strings.SlashUsage("/run-copy <question>"), bare.Markdown);
         Assert.Equal(Strings.RunCopyNotHereYet, withoutEditor.Markdown);
         Assert.False(Directory.Exists(Path.Combine(WorkCopy.Home, FileHistoryService.FolderNameOf(Path.GetFullPath(h.RootDir)))));
+    }
+
+    /// <summary>A copy VS Code held when it closed is said by its next start, once: dismissed, never again.</summary>
+    [Fact]
+    public async Task Copy_ACopyVsCodeLeftBehind_IsSaidAtTheNextStart_UntilItsNoticeIsDismissed()
+    {
+        using var h = CreateHarness();
+        await CommittedAsync(h);
+        var (left, _) = await CopyRun.StartAsync(h.RootDir, CancellationToken.None, ConversationStore.VsCodeSlot);
+        File.WriteAllText(Path.Combine(left!.Copy.Folder, "Pay.cs"), "class Pay { int B; }\n");
+        CopyRunTests.LeftByAGoneProcess(left.Copy);
+        try
+        {
+            var notice = await CopyCall<AwayNoticeDto?>(h, "session/away", new { });
+
+            Assert.Equal(Strings.AwayCopyLeft("VS Code", left.Copy.Branch, 1), notice!.Copy!.Text);
+            Assert.True(PathComparer.SameDirectory(left.Copy.Folder, notice.Copy.Folder));
+
+            await CopyCall<object?>(h, "session/awayDismissed", new { runIds = Array.Empty<string>(), taskIds = Array.Empty<string>(),
+                                                                      copyFolder = notice.Copy.Folder });
+            Assert.Null((await CopyCall<AwayNoticeDto?>(h, "session/away", new { }))?.Copy);
+        }
+        finally { await left.DiscardAsync(CancellationToken.None); }
+    }
+
+    /// <summary>The notice's gestures take up exactly the copy it named — never another left beside it — and say why not.</summary>
+    [Fact]
+    public async Task Copy_TakeUp_ReachesExactlyTheNamedCopy_AndSaysWhyNot()
+    {
+        using var h = CreateHarness();
+        await CommittedAsync(h);
+        var (other, _) = await CopyRun.StartAsync(h.RootDir, CancellationToken.None, ConversationStore.VsCodeSlot);
+        var (named, _) = await CopyRun.StartAsync(h.RootDir, CancellationToken.None, ConversationStore.VsCodeSlot);
+        CopyRunTests.LeftByAGoneProcess(other!.Copy);
+        CopyRunTests.LeftByAGoneProcess(named!.Copy);
+        try
+        {
+            var taken = await CopyCall<CopyTakeUpResult>(h, "copy/takeUp", new { folder = named.Copy.Folder });
+            var review = await CopyCall<CopyReviewDto?>(h, "copy/review");
+            var second = await CopyCall<CopyTakeUpResult>(h, "copy/takeUp", new { folder = other.Copy.Folder });
+
+            Assert.True(taken.Held);
+            Assert.Equal(named.Copy.Branch, review!.Branch);
+            Assert.False(second.Held);
+            Assert.Equal(Strings.CopyAlreadyHeld(named.Copy.Branch), second.Error);                   // never swapped in silence
+        }
+        finally
+        {
+            await CopyCall<CopyDiscardResult>(h, "copy/discard");
+            await other.DiscardAsync(CancellationToken.None);
+        }
+        Assert.False(Directory.Exists(named.Copy.Folder));
     }
 
     [Fact]

@@ -271,6 +271,67 @@ public sealed class CopyRunTests : IDisposable
     }
 
     [Fact]
+    public async Task ACopyLeftBehind_IsSaidByTheEditorThatHeldIt_WithWhatItsRunChanged_UntilItsNoticeIsDismissed()
+    {
+        Commit();
+        var (run, _) = await CopyRun.StartAsync(_repo.FullName, CancellationToken.None, "vscode");
+        File.WriteAllText(Path.Combine(run!.Copy.Folder, "Pay.cs"), "class Pay { }\n");
+        File.WriteAllText(Path.Combine(run.Copy.Folder, "New.cs"), "class New { }\n");
+
+        Assert.Null(await WorkCopy.LeftToSayAsync(_repo.FullName, "vscode", CancellationToken.None));   // its holder lives
+        LeftByAGoneProcess(run.Copy);
+        var left = await WorkCopy.LeftToSayAsync(_repo.FullName, "vscode", CancellationToken.None);
+
+        Assert.NotNull(left);
+        Assert.Equal(run.Copy.Branch, left!.Value.Copy.Branch);
+        Assert.Equal(2, left.Value.Changed);
+        Assert.Null(await WorkCopy.LeftToSayAsync(_repo.FullName, "vs", CancellationToken.None));       // another editor's
+        await WorkCopy.MarkSaidAsync(left.Value.Copy.Folder, CancellationToken.None);
+        Assert.Null(await WorkCopy.LeftToSayAsync(_repo.FullName, "vscode", CancellationToken.None));   // said once
+        Assert.NotNull(await CopyRun.FindLeftAsync(_repo.FullName, CancellationToken.None, "vs"));      // still there to take up
+        await run.DiscardAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task TwoCopiesLeft_TheNoticeNamesItsEditors_AndItsGesturesTakeUpExactlyThatOne()
+    {
+        Commit();
+        var (first, _) = await CopyRun.StartAsync(_repo.FullName, CancellationToken.None, "vscode");
+        var (second, _) = await CopyRun.StartAsync(_repo.FullName, CancellationToken.None, "vs");
+        LeftByAGoneProcess(first!.Copy);
+        LeftByAGoneProcess(second!.Copy);
+
+        var named = await WorkCopy.LeftToSayAsync(_repo.FullName, "vs", CancellationToken.None);
+        var taken = await CopyRun.TakeUpAsync(named!.Value.Copy.Folder, _repo.FullName, "vs", CancellationToken.None);
+
+        Assert.True(PathComparer.SameDirectory(second.Copy.Folder, named.Value.Copy.Folder));       // Visual Studio's, not the first
+        Assert.True(PathComparer.SameDirectory(second.Copy.Folder, taken!.Copy.Folder));
+        Assert.Null(await CopyRun.TakeUpAsync(second.Copy.Folder, _repo.FullName, "vs", CancellationToken.None));   // held now
+        // Held again, the notice dismissed after it marks nothing: left again later, it is said again.
+        await WorkCopy.MarkSaidAsync(taken.Copy.Folder, CancellationToken.None);
+        LeftByAGoneProcess(taken.Copy);
+        Assert.NotNull(await WorkCopy.LeftToSayAsync(_repo.FullName, "vs", CancellationToken.None));
+        await first.DiscardAsync(CancellationToken.None);
+        await taken.DiscardAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task MarkingSaid_RewritesNothingButACopysRecord()
+    {
+        var outside = Directory.CreateTempSubdirectory("inferpal-marksaid-").FullName;
+        try
+        {
+            var package = Path.Combine(outside, "package.json");
+            File.WriteAllText(package, "{ \"name\": \"app\" }");
+
+            await WorkCopy.MarkSaidAsync(Path.Combine(outside, "package"), CancellationToken.None);   // a folder a client sent
+
+            Assert.Equal("{ \"name\": \"app\" }", File.ReadAllText(package));
+        }
+        finally { Directory.Delete(outside, recursive: true); }
+    }
+
+    [Fact]
     public async Task EveryRunInOneCopy_FilesItsAgreementsUnderOneScope_ThatNoOtherCopyShares()
     {
         Commit();

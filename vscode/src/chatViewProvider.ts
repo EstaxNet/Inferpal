@@ -1902,12 +1902,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         try {
-          await host.sessionAwayDismissed(msg.runIds, msg.taskIds);
+          await host.sessionAwayDismissed(msg.runIds, msg.taskIds, msg.copyFolder);
         } catch (err) {
           this.gestureFailed('the notice marked said', err);
         }
         return;
       }
+      case 'awayCopy':
+        await this.actOnLeftCopy(msg.folder, msg.action);
+        return;
       case 'xrayToggle': {
         // Applies the toggle host-side (next turns) and re-renders the refreshed panel.
         const host = this.hostForGesture();
@@ -4222,6 +4225,38 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.showCopyCard({ kind: 'start', question, card: prepared.card });
     } catch (err) {
       this.gestureFailed('run on a copy', err);
+    }
+  }
+
+  /**
+   * The notice's copy left behind: exactly that copy taken up (`copy/takeUp`), then its review, or discarded as the card
+   * does. Taken up, it is held: left again later, a start says it again. ⚠ Refused (another window took it up, this one
+   * holds another copy), said — never silent.
+   */
+  private async actOnLeftCopy(folder: string, action: 'review' | 'discard'): Promise<void> {
+    if (this.awayNotice) {
+      this.awayNotice = { ...this.awayNotice, copy: null };
+    }
+    const host = this.hostForGesture();
+    if (!host) {
+      return;
+    }
+    try {
+      const taken = await host.copyTakeUp(folder);
+      if (!taken.held) {
+        this.sayOutOfTurn(taken.error ?? '');
+        return;
+      }
+      if (action === 'review') {
+        const review = await host.copyReview();
+        if (review) {
+          this.showCopyCard({ kind: 'review', review, dropped: [] });
+        }
+      } else {
+        await this.discardCopy();
+      }
+    } catch (err) {
+      this.gestureFailed('act on the copy left', err);
     }
   }
 

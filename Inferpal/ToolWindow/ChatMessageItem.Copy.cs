@@ -60,6 +60,17 @@ internal partial class ChatMessageItem
     [DataMember] public AsyncCommand? CopyDiscardCommand { get; private set; }
     [DataMember] public AsyncCommand? CopyKeepCommand    { get; private set; }
 
+    // ── The copy a closing left behind, in the notice of a start (its item's role is "away") ──
+    private bool _hasAwayCopy;
+    /// <summary>The notice names a copy left behind; off once reviewed or discarded from it.</summary>
+    [DataMember] public bool HasAwayCopy { get => _hasAwayCopy; private set => SetProperty(ref _hasAwayCopy, value); }
+    [DataMember] public string AwayCopyText       { get; private set; } = string.Empty;
+    [DataMember] public string AwayCopyNote       { get; private set; } = string.Empty;
+    [DataMember] public string BtnAwayCopyReview  { get; private set; } = string.Empty;
+    [DataMember] public string BtnAwayCopyDiscard { get; private set; } = string.Empty;
+    [DataMember] public AsyncCommand? AwayCopyReviewCommand  { get; private set; }
+    [DataMember] public AsyncCommand? AwayCopyDiscardCommand { get; private set; }
+
     private CopyReviewTexts? _copyTexts;
 
     /// <summary>The copy a review card shows: its gestures act on that copy, whatever workspace is open by then.</summary>

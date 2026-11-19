@@ -263,6 +263,12 @@ internal sealed record CopyApplyResult(List<string> Written, List<CopyLeftDto> L
 /// <paramref name="Text"/> says it in the person's language.</summary>
 internal sealed record CopyLeftDto(string Path, string Reason, string Text);
 
+/// <summary><c>copy/takeUp</c>: the folder of the copy a notice of a start named.</summary>
+internal sealed record CopyTakeUpParams(string Folder);
+
+/// <summary><c>copy/takeUp</c>: whether this session now holds that copy, or why not (<paramref name="Error"/>, translated).</summary>
+internal sealed record CopyTakeUpResult(bool Held, string? Error = null);
+
 /// <summary><c>copy/discard</c>: what could not be removed, in English; <c>null</c> when the copy and its branch went.</summary>
 /// <param name="Message">What the conversation says of it, translated.</param>
 internal sealed record CopyDiscardResult(string? Problem, string? Error = null, string? Message = null);
@@ -1083,17 +1089,18 @@ internal sealed record NewRuleParams(bool Allow, string? Tool, string? Pattern);
 /// <summary>`session/away` answer: what the closing of this editor cut or left unread, said once at a start (the
 /// <c>AwayNotice</c> presenter), with the words of its buttons in the person's language.</summary>
 /// <param name="Run">The newest run the closing cut; <c>null</c> when none.</param>
+/// <param name="Copy">A copy of the repository the closing left behind; <c>null</c> when none.</param>
 internal sealed record AwayNoticeDto(
     string Title, AwayRunDto? Run, List<AwayTaskDto> Tasks,
     string Review, string Undo, string OpenReport, string Retry, string Dismiss, string? NoAnswer,
-    Services.Presentation.AwayPruned? Pruned)
+    Services.Presentation.AwayPruned? Pruned, Services.Presentation.AwayCopy? Copy = null)
 {
     public static AwayNoticeDto Of(Services.Presentation.AwayNoticeModel m, string? noAnswer) => new(
         m.Title,
         m.Run is { } run ? new AwayRunDto(run.RunId, run.Text, [.. run.Files], run.Warning) : null,
         [.. m.Tasks.Select(t => new AwayTaskDto(t.Id, t.Text, t.Retry))],
         Localization.Strings.RunReviewButton, Localization.Strings.RunUndo, Localization.Strings.AwayOpenReport,
-        Localization.Strings.McpCardRetry, Localization.Strings.BuildBannerDismiss, noAnswer, m.Pruned);
+        Localization.Strings.McpCardRetry, Localization.Strings.BuildBannerDismiss, noAnswer, m.Pruned, m.Copy);
 }
 
 /// <summary>A run the closing cut, in <see cref="AwayNoticeDto"/>.</summary>
@@ -1102,8 +1109,9 @@ internal sealed record AwayRunDto(string RunId, string Text, List<Services.Prese
 /// <summary>A background task in <see cref="AwayNoticeDto"/>; <paramref name="Retry"/> for one the closing stopped.</summary>
 internal sealed record AwayTaskDto(string Id, string Text, bool Retry);
 
-/// <summary>`session/awayDismissed` — the notice dismissed: its runs and tasks are not said again.</summary>
-internal sealed record AwayDismissedParams(List<string> RunIds, List<string> TaskIds);
+/// <summary>`session/awayDismissed` — the notice dismissed: its runs and tasks are not said again, nor the copy left in
+/// <paramref name="CopyFolder"/>.</summary>
+internal sealed record AwayDismissedParams(List<string> RunIds, List<string> TaskIds, string? CopyFolder = null);
 
 /// <summary>`session/away` — the restored conversation ends on a question nothing answered.</summary>
 internal sealed record SessionAwayParams(bool EndsOnAQuestion = false);

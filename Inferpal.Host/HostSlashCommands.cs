@@ -644,7 +644,7 @@ internal sealed partial class HostServer
                 {
                     var question = RunCopyCommandHandler.Question(p.Text);
                     if (question.Length == 0
-                        && (s.Copy = await RunCopyCommandHandler.HeldOrLeftAsync(s.Copy, s.RootDir, cts.Token)) is null)
+                        && (s.Copy = await RunCopyCommandHandler.HeldOrLeftAsync(s.Copy, s.RootDir, cts.Token, ConversationStore.VsCodeSlot)) is null)
                         return new SlashCommandResult(true, RunCopyCommandHandler.NoneOpen);
                     return new SlashCommandResult(true, null, [new SlashEffectDto("runCopy", question)]);
                 }

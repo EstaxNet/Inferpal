@@ -514,9 +514,11 @@ internal partial class InferpalToolWindowData
             _awayAsked = true;
 
             var queue = BackgroundTasks();
+            // A copy this window held when Visual Studio closed (/run-copy): said, never removed.
+            var left = await WorkCopy.LeftToSayAsync(root, ConversationStore.VisualStudioSlot, CancellationToken.None);
             var notice = Services.Presentation.AwayNotice.Build(_tools.History.Runs, ConversationStore.VisualStudioSlot,
                                                                "Visual Studio", queue.List(), queue.SaidRuns(), DateTime.Now, root,
-                                                               Services.Rag.KeptIndexes.PruneHere(root));
+                                                               Services.Rag.KeptIndexes.PruneHere(root), left);
             if (notice is null) return;
             await RunOnVMContextAsync(() =>
             {
@@ -527,12 +529,19 @@ internal partial class InferpalToolWindowData
                     undo:    () => { if (notice.Run is { } run) _ = UndoFromResultBarAsync(run.RunId); },
                     dismiss: () =>
                     {
-                        _ = Task.Run(() => queue.MarkSaid(notice.RunIds, notice.TaskIds));
+                        _ = Task.Run(async () =>
+                        {
+                            queue.MarkSaid(notice.RunIds, notice.TaskIds);
+                            if (notice.Copy is { } copy) await WorkCopy.MarkSaidAsync(copy.Folder, CancellationToken.None);
+                        });
                         _ = RunOnVMContextAsync(() => { if (card is not null) Messages.Remove(card); });
                     },
                     act: task => _ = HandleSlashCommandAsync(task.Retry ? $"/task retry {task.Id}" : $"/task {task.Id}",
                                                              CancellationToken.None),
-                    kept: () => { if (notice.Pruned is { } pruned) OpenSettingsPage(pruned.Page, pruned.Section); });
+                    kept: () => { if (notice.Pruned is { } pruned) OpenSettingsPage(pruned.Page, pruned.Section); },
+                    // The copy left: exactly that one taken up, then its review or its discard.
+                    reviewCopy: () => { if (notice.Copy is { } copy) _ = ActOnLeftCopyAsync(copy.Folder, discard: false); },
+                    discardCopy: () => { if (notice.Copy is { } copy) _ = ActOnLeftCopyAsync(copy.Folder, discard: true); });
                 ApplyItemTheme(card);
                 // Under a restored question no answer will follow: said there, and kept with the conversation.
                 if (notice.Run is not null && !IsLoading && !_sendStarting

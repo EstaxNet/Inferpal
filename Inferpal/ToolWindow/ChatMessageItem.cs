@@ -517,7 +517,8 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
     /// <param name="act">A task's button: Retry, or Open the report.</param>
     /// <param name="kept">The button of the old indexes removed: the settings, on what is kept.</param>
     internal static ChatMessageItem AwayMsg(Services.Presentation.AwayNoticeModel notice, Action review, Action undo,
-                                            Action dismiss, Action<Services.Presentation.AwayTask> act, Action? kept = null)
+                                            Action dismiss, Action<Services.Presentation.AwayTask> act, Action? kept = null,
+                                            Action? reviewCopy = null, Action? discardCopy = null)
     {
         var item = new ChatMessageItem
         {
@@ -542,7 +543,24 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
             AwayPrunedText   = Plain(notice.Pruned?.Text ?? string.Empty),
             AwayPrunedDetail = notice.Pruned?.Detail ?? string.Empty,
             BtnAwayKept      = notice.Pruned?.SeeKept ?? string.Empty,
+            HasAwayCopy        = notice.Copy is not null,
+            AwayCopyText       = Plain(notice.Copy?.Text ?? string.Empty),
+            AwayCopyNote       = Plain(notice.Copy?.Note ?? string.Empty),
+            BtnAwayCopyReview  = notice.Copy?.Review ?? string.Empty,
+            BtnAwayCopyDiscard = notice.Copy?.Discard ?? string.Empty,
         };
+        item.AwayCopyReviewCommand = new AsyncCommand((_, _) =>
+        {
+            item.HasAwayCopy = false;   // dealt with: the review card takes over
+            reviewCopy?.Invoke();
+            return Task.CompletedTask;
+        });
+        item.AwayCopyDiscardCommand = new AsyncCommand((_, _) =>
+        {
+            item.HasAwayCopy = false;
+            discardCopy?.Invoke();
+            return Task.CompletedTask;
+        });
         foreach (var task in notice.Tasks)
             item.AwayTasks.Add(new AwayTaskItem(task with { Text = Plain(task.Text) },
                                                 task.Retry ? Strings.McpCardRetry : Strings.AwayOpenReport, () => act(task)));

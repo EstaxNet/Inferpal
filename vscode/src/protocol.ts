@@ -281,6 +281,9 @@ export interface CopyAppliedCard {
 /** `copy/apply`: what was written, or why nothing was (`error`). */
 export interface CopyApplyResult { written: string[]; error?: string | null; runId?: string | null; card?: CopyAppliedCard | null }
 
+/** `copy/takeUp`: whether this window now holds the copy a notice named, or why not. */
+export interface CopyTakeUpResult { held: boolean; error?: string | null }
+
 /** `copy/discard`: `message` is what the conversation says; `error` why nothing was removed. */
 export interface CopyDiscardResult { problem?: string | null; error?: string | null; message?: string | null }
 
@@ -1553,4 +1556,6 @@ export interface AwayNotice {
   pruned: { text: string; detail: string; seeKept: string; page: string; section: string } | null;
   /** The line under a restored question no answer will follow; null when the conversation does not end on one. */
   noAnswer: string | null;
+  /** A copy of the repository the closing left behind (`/run-copy`): its review, or discarded. */
+  copy?: { folder: string; text: string; note: string; review: string; discard: string } | null;
 }

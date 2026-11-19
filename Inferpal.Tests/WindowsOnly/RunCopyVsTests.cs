@@ -124,6 +124,35 @@ public sealed class RunCopyVsTests
     }
 
     [Fact]
+    public async Task ACopyVisualStudioLeftBehind_IsSaidAtItsNextStart_AndItsReviewIsOneClickAway()
+    {
+        var root = Directory.CreateTempSubdirectory("inferpal-vm").FullName;   // deleted by the window's harness
+        File.WriteAllText(Path.Combine(root, "Pay.cs"), "class Pay\n{\n    int A() => 1;\n}\n");
+        Assert.True(Git(root, "init", "-q", "-b", "main", ".") && Git(root, "add", "-A") && Git(root, "commit", "-q", "-m", "start"),
+                    "git is needed: this test is UNDECIDED, not green.");
+        var (left, _) = await CopyRun.StartAsync(root, CancellationToken.None, Services.Persistence.ConversationStore.VisualStudioSlot);
+        File.WriteAllText(Path.Combine(left!.Copy.Folder, "Pay.cs"), "class Pay\n{\n    int A() => 2;\n}\n");
+        CopyRunTests.LeftByAGoneProcess(left.Copy);   // what Visual Studio closing during the run leaves
+
+        // Every process alive but the one that held the copy, gone with the Visual Studio that closed.
+        using var vs = new VsWindowHarness(root: root, config: new InferpalConfig { DefaultModel = "m", AgentModeEnabled = false },
+                                           alive: pid => pid != 99_999_999);
+        await VsWindowHarness.UntilAsync(() => vs.Window.Messages.Any(m => m.Role == "away" && m.HasAwayCopy));
+        var notice = vs.Window.Messages.First(m => m.Role == "away");
+
+        Assert.Contains(left.Copy.Branch, notice.AwayCopyText);
+        await ClickAsync(notice.AwayCopyReviewCommand);
+        await VsWindowHarness.UntilAsync(() => Card(vs, m => m.IsCopyReview) is not null);
+        Assert.False(notice.HasAwayCopy);                                                            // dealt with
+        Assert.Single(Assert.Single(Card(vs, m => m.IsCopyReview)!.CopyFiles).Hunks);
+        Assert.Contains("int A() => 1;", File.ReadAllText(Path.Combine(root, "Pay.cs")));            // nothing applied
+
+        await ClickAsync(Card(vs, m => m.IsCopyReview)!.CopyDiscardCommand);
+        await VsWindowHarness.UntilAsync(() => !vs.Window.Messages.Any(m => m.Role == "copy"));
+        Assert.False(Directory.Exists(left.Copy.Folder));
+    }
+
+    [Fact]
     public async Task ContinueAfterTheCopyWasDiscarded_GoesThroughTheStartCard_NeverIntoANewCopyWithoutAWord()
     {
         using var vs = Window();

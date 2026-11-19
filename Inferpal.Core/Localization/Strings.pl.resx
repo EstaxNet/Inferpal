@@ -2445,4 +2445,9 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="CopyStartOfCommit" xml:space="preserve"><value>commit `{0}`</value></data>
   <data name="CopyWhileBusy" xml:space="preserve"><value>Tura jeszcze trwa: poczekaj, aż się zakończy, i spróbuj ponownie.</value></data>
   <data name="CopyCompareUnavailable" xml:space="preserve"><value>Nie znaleziono narzędzia porównywania Visual Studio: plik kopii to `{0}`, twój to `{1}`.</value></data>
+  <data name="AwayCopyLeft" xml:space="preserve"><value>Gdy {0} się zamknął, została kopia repozytorium na gałęzi `{1}`. Jej uruchomienie zmieniło tam {2} {2:plik|pliki|plików}.</value></data>
+  <data name="AwayCopyLeftUncounted" xml:space="preserve"><value>Gdy {0} się zamknął, została kopia repozytorium na gałęzi `{1}`.</value></data>
+  <data name="AwayCopyLeftNote" xml:space="preserve"><value>Zostaje, dopóki jej nie odrzucisz: przejrzyj ją, aby zachować lub odrzucić każdą zmianę, albo zapytaj o nią ponownie przez `/run-copy`.</value></data>
+  <data name="CopyReviewTheCopy" xml:space="preserve"><value>Przejrzyj kopię</value></data>
+  <data name="CopyAlreadyHeld" xml:space="preserve"><value>To okno ma już kopię repozytorium na gałęzi `{0}`: najpierw ją zastosuj lub odrzuć.</value></data>
 </root>
