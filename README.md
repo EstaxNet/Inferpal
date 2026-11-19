@@ -65,6 +65,38 @@
   <tr>
     <td align="center" valign="top" width="50%">
       <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/check-sql-dark.png">
+        <img src="docs/assets/features/check-sql-light.png" alt="VS Code: asked how many orders failed each day, the agent runs one SQL query on orders.csv (50,000 rows) and answers with the count and the amount lost" width="400">
+      </picture>
+      <br><sub><b>It queries your data.</b> One SQL query on a 50,000-row CSV, an Excel sheet or a JSON file.</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/check-log-dark.png">
+        <img src="docs/assets/features/check-log-light.png" alt="VS Code: asked what went wrong since 10:30, the agent reads app.log at error level since 10:30 and finds three gateway timeouts with their stack trace" width="400">
+      </picture>
+      <br><sub><b>It reads a log by level and time.</b> The errors since 10:30, each with its stack trace.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/check-http-dark.png">
+        <img src="docs/assets/features/check-http-light.png" alt="VS Code: the agent sends a POST to the local discounts API and reads the 201 Created answer, which applies 30 percent for the 40 asked" width="400">
+      </picture>
+      <br><sub><b>It calls the app you are building</b> to check its fix, with the real request and answer.</sub>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/check-measure-dark.png">
+        <img src="docs/assets/features/check-measure-light.png" alt="VS Code: the agent measures the stock report five times before and after its fix: from 1.93 s to 0.71 s, beyond the noise" width="400">
+      </picture>
+      <br><sub><b>It measures before it claims faster.</b> Five runs after a warm-up, compared beyond the noise.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <picture>
         <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/editor-vscode-dark.png">
         <img src="docs/assets/features/editor-vscode-light.png" alt="VS Code: a finished run with its result bar, then the next request waiting on an approval card that shows the new test file as a diff, with Allow once, Always this session and Deny" width="400">
       </picture>
@@ -84,9 +116,9 @@
   </tr>
 </table>
 
-It also opens your web app at phone width, looks at the window of a desktop app it started, calls your service, reads
-logs, notebooks and archives, and works from a right-click on an error, a failing test or a selection. Zed, JetBrains
-IDEs, Qt Creator, Neovim and Emacs get the same agent through the [Agent Client Protocol](docs/acp.md).
+It also looks at the window of a desktop app it started, reads screenshots, notebooks and archives, asks you on a card
+when a request could mean several things, and works from a right-click on an error, a failing test or a selection. Zed,
+JetBrains IDEs, Qt Creator, Neovim and Emacs get the same agent through the [Agent Client Protocol](docs/acp.md).
 
 ## Your code stays with you
 
