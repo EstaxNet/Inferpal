@@ -68,6 +68,37 @@ function Get-VsixBuildPostconditions {
 
 <#
 .SYNOPSIS
+    The SHA-256 of a package entry's bytes, as hex.
+#>
+function Get-VsixEntryHash {
+    param([Parameter(Mandatory)]$Entry)
+    $stream = $Entry.Open()
+    try {
+        $sha = [Security.Cryptography.SHA256]::Create()
+        try { return [BitConverter]::ToString($sha.ComputeHash($stream)) } finally { $sha.Dispose() }
+    } finally { $stream.Dispose() }
+}
+
+<#
+.SYNOPSIS
+    The machine field of a package entry's PE header (0x8664 = x64, 0xAA64 = ARM64).
+#>
+function Get-VsixEntryMachine {
+    param([Parameter(Mandatory)]$Entry)
+    $stream = $Entry.Open()
+    $copy = New-Object IO.MemoryStream
+    try { $stream.CopyTo($copy) } finally { $stream.Dispose() }
+    try {
+        $br = New-Object IO.BinaryReader($copy)
+        $copy.Position = 0x3C
+        $pe = $br.ReadInt32()
+        $copy.Position = $pe + 4
+        return [int]$br.ReadUInt16()
+    } finally { $copy.Dispose() }
+}
+
+<#
+.SYNOPSIS
     Reasons to refuse this package. An EMPTY array means it is publishable.
 #>
 function Get-VsixPayloadRefusals {
@@ -114,34 +145,52 @@ function Get-VsixPayloadRefusals {
         if (-not ($names | Where-Object { $_ -match 'runtimes/win-x64/native/e_sqlite3\.dll$' })) {
             $reasons += 'no native win-x64 e_sqlite3.dll: the provider has nothing to call'
         }
-        # Presence was never the question, architecture is. 1.6.2 flattened a native without
-        # looking: the ARM64 one came out on an amd64 extension, masked the good one, and the
-        # package failed exactly as before with a less readable exception. Read the PE header.
-        if ($names -contains 'e_sqlite3.dll') {
-            $tmp = [IO.Path]::GetTempFileName()
-            try {
-                $z2 = [System.IO.Compression.ZipFile]::OpenRead($Vsix)
-                try {
-                    $entry = @($z2.Entries | Where-Object { $_.FullName -eq 'e_sqlite3.dll' })[0]
-                    [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $tmp, $true)
-                } finally { $z2.Dispose() }
-                $fs = [IO.File]::OpenRead($tmp)
-                try {
-                    $br = New-Object IO.BinaryReader($fs)
-                    $fs.Position = 0x3C
-                    $pe = $br.ReadInt32()
-                    $fs.Position = $pe + 4
-                    $machine = $br.ReadUInt16()
-                } finally { $fs.Dispose() }
-                if ($machine -ne 0x8664) {
-                    $reasons += ('the flattened e_sqlite3.dll is not x64 (machine 0x{0:X}): it masks the good native' -f $machine)
-                }
-            } catch {
-                $reasons += "could not read the architecture of the flattened e_sqlite3.dll: $($_.Exception.Message)"
-            } finally { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
-        } else {
+        # Its architecture is read with every flattened native's, below.
+        if ($names -notcontains 'e_sqlite3.dll') {
             $reasons += 'no flattened e_sqlite3.dll: a DllImport probes the assembly folder, not the runtimes RID layout'
         }
+    }
+
+    # The layout, as a PROPERTY. A package that ships its Windows build under runtimes/win/lib/<tfm>/
+    # ships a portable one too, and the build copies the PORTABLE one flat at the root: for
+    # Microsoft.Data.SqlClient a stub that throws PlatformNotSupportedException on every connection.
+    # The out-of-process host loads the root copy by name -- a VSIX payload carries no deps.json to
+    # resolve runtimes/ -- so the root copy must BE the Windows one, byte for byte. And a native
+    # flattened beside it (a DllImport probes the folder of its assembly) must be the x64 one:
+    # presence was never the question, architecture is. 1.6.2 flattened e_sqlite3 without looking,
+    # the ARM64 one came out on an amd64 extension and masked the good one. Each entry is judged on
+    # its own: one that cannot be read is named, and the others are still read.
+    $layout = $null
+    try {
+        $layout = [System.IO.Compression.ZipFile]::OpenRead($Vsix)
+        $byName = @{}
+        foreach ($e in $layout.Entries) { $byName[$e.FullName.Replace('\', '/')] = $e }
+        foreach ($lib in @($byName.Keys | Where-Object { $_ -match '^runtimes/win/lib/[^/]+/[^/]+\.dll$' })) {
+            $flat = $lib.Substring($lib.LastIndexOf('/') + 1)
+            if (-not $byName.ContainsKey($flat)) {
+                $reasons += "no $flat at the root: the host loads by name and never reaches $lib"
+                continue
+            }
+            try {
+                if ((Get-VsixEntryHash $byName[$lib]) -ne (Get-VsixEntryHash $byName[$flat])) {
+                    $reasons += "$flat at the root is not the Windows implementation in ${lib}: the host loads the root one"
+                }
+            } catch { $reasons += "could not compare $flat with ${lib}: $($_.Exception.Message)" }
+        }
+        foreach ($native in @($byName.Keys | Where-Object { $_ -match '^runtimes/win-x64/native/[^/]+\.dll$' })) {
+            $flat = $native.Substring($native.LastIndexOf('/') + 1)
+            if (-not $byName.ContainsKey($flat)) { continue }
+            try {
+                $machine = Get-VsixEntryMachine $byName[$flat]
+                if ($machine -ne 0x8664) {
+                    $reasons += ('the flattened {0} is not x64 (machine 0x{1:X}): it masks the good native' -f $flat, $machine)
+                }
+            } catch { $reasons += "could not read the architecture of the flattened ${flat}: $($_.Exception.Message)" }
+        }
+    } catch {
+        $reasons += "could not read the package layout: $($_.Exception.Message)"
+    } finally {
+        if ($null -ne $layout) { $layout.Dispose() }
     }
 
     # What the build commits to putting there. Nothing is copied here: a fourth restore target

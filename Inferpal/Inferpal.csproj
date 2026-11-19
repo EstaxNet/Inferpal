@@ -639,6 +639,43 @@
            Text="RestoreSidecarRuntimeToVsix: the VSIX carries no System.Text.Encodings.Web.dll. System.Text.Json 9.0.0.0 binds it from JsonSerializer.Serialize, which the sidecar reaches on the response path of every completion; the shared net8 framework only serves 8.0.x." />
   </Target>
 
+  <!-- ── Put the Windows implementations at the root of the VSIX ────────────
+       Fourth exception, for the out-of-process host alone (Inferpal.Fim resolves through its own deps.json and uses none
+       of these; the in-proc assembly references none). A package that ships its Windows build under
+       runtimes\win\lib\<tfm>\ also ships a portable one under lib\<tfm>\, and the build copies THAT one flat at the root:
+       for Microsoft.Data.SqlClient a 93 KB assembly that throws PlatformNotSupportedException on every connection (the
+       real one is 1.6 MB); for System.Diagnostics.EventLog, Microsoft.Win32.SystemEvents and
+       System.Security.Cryptography.Pkcs the same layout, inert while the host's WindowsDesktop framework serves them
+       first. The runtimes\ layout is only resolved through a deps.json, which a VSIX payload does not carry: the host
+       loads the root copy by name. So the root copy is the Windows one — a property of the layout, not a list of
+       packages. And SqlClient's native SNI flat, from win-x64, as e_sqlite3 is (an ARM64 Visual Studio gets neither):
+       a DllImport probes the folder of its assembly. -->
+  <Target Name="RestoreWindowsImplementationsToVsix"
+          BeforeTargets="GenerateTemplatesManifest;GenerateFileManifest">
+    <ItemGroup>
+      <_VsixWindowsLib Include="@(VSIXSourceItem)"
+                       Condition="$([System.String]::Copy('%(VSIXSourceItem.TargetPath)').Replace('/','\').StartsWith('runtimes\win\lib\'))">
+        <TargetPath>%(Filename)%(Extension)</TargetPath>
+      </_VsixWindowsLib>
+      <!-- The portable copy at the root goes; the Windows one takes its place (its runtimes\ copy stays, inert). -->
+      <VSIXSourceItem Remove="@(_VsixWindowsLib)" MatchOnMetadata="TargetPath" MatchOnMetadataOptions="PathLike" />
+      <VSIXSourceItem Include="@(_VsixWindowsLib)" />
+
+      <_VsixFlatSni Include="@(VSIXSourceItem)"
+                    Condition="$([System.String]::Copy('%(VSIXSourceItem.TargetPath)').Replace('/','\').Equals('runtimes\win-x64\native\Microsoft.Data.SqlClient.SNI.dll'))">
+        <TargetPath>Microsoft.Data.SqlClient.SNI.dll</TargetPath>
+      </_VsixFlatSni>
+      <VSIXSourceItem Include="@(_VsixFlatSni)" />
+    </ItemGroup>
+    <ItemGroup>
+      <_SqlClientSniInVsix Include="@(VSIXSourceItem)"
+                           Condition="'%(Filename)%(Extension)' == 'Microsoft.Data.SqlClient.SNI.dll'" />
+    </ItemGroup>
+    <!-- ⚠ The FLAT copy, not any SNI: the runtimes\ ones are always there and satisfy a match on the file name. -->
+    <Error Condition="'@(_VsixFlatSni)' == '' Or '@(_SqlClientSniInVsix)' == ''"
+           Text="RestoreWindowsImplementationsToVsix: the VSIX carries no Microsoft.Data.SqlClient.SNI.dll at its root. SqlClient on Windows calls it for every connection and a DllImport probes the root, never runtimes\; without it query_database cannot reach SQL Server from Visual Studio." />
+  </Target>
+
   <!-- ── Prune non-Windows runtime assets from the VSIX ──────────────────────
        SQLitePCLRaw (via Microsoft.Data.Sqlite) pulls ~15 MB of Linux/macOS/wasm natives
        (libe_sqlite3.so/.dylib/.a). Useless (Windows amd64-only extension) and worse:
