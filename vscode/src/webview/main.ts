@@ -1568,11 +1568,29 @@ function stepStatus(name: string, output: string | undefined): { code: string; f
     const nb = /^(?:Note: [^\n]*\n\n)*[^\n]*?: (\d+)\/(\d+) code cells ran(?:; cell (\d+) failed)?/.exec(output);
     return !nb ? undefined : nb[3] ? { code: `#${nb[3]}`, failed: true } : { code: `${nb[1]}/${nb[2]}`, failed: nb[1] !== nb[2] };
   }
+  if (name === 'query_database' && output) {
+    const rows = queryRows(output);
+    return rows === undefined ? undefined : { code: rows, failed: false };
+  }
   if (name !== 'http_request' || !output) {
     return undefined;
   }
   const m = /^(?:Note: [^\n]*\n\n)*HTTP (\d{3}) /.exec(output);
   return m ? { code: m[1], failed: m[1][0] === '4' || m[1][0] === '5' } : undefined;
+}
+
+/**
+ * How many rows a database read showed, "200+" when more were left; undefined for anything but a query's rows. Read on
+ * the output's last line, which the reader writes for that, as RunSummary.QueryRows reads it in the Core: the rows
+ * themselves are never parsed. A reloaded step, its output cut, shows none.
+ */
+function queryRows(output: string): string | undefined {
+  if (output.startsWith('Error:')) {
+    return undefined;
+  }
+  const text = output.trimEnd();
+  const m = /^\((?:(\d+) rows?\)$|more rows than the (\d+) shown)/.exec(text.slice(text.lastIndexOf('\n') + 1));
+  return !m ? undefined : m[1] !== undefined ? m[1] : m[2] + '+';
 }
 
 /** What a step acted on: the path, command, query or address its arguments name. */
@@ -1582,7 +1600,7 @@ function stepSubject(input: string | undefined): string {
   }
   try {
     const args = JSON.parse(input) as Record<string, unknown>;
-    for (const key of ['path', 'file_path', 'command', 'query', 'url', 'symbol', 'pattern']) {
+    for (const key of ['path', 'file_path', 'command', 'query', 'url', 'symbol', 'pattern', 'sql', 'table']) {
       let value = args[key];
       if (typeof value === 'string' && value) {
         // A request names its method before its address (http_request), as RunSummary.Subject in the Core.
@@ -2435,7 +2453,22 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
   const subject = document.createElement('span');
   subject.className = 'approval-subject';
   subject.textContent = [card?.subject, card?.meta].filter((p) => p).join(' · ');
-  head.append(icon('edit', 14), title, subject);
+  // A card that states facts (query_database: the database, where it is declared, its server and account) draws them
+  // under its title, label beside value.
+  const facts = card?.rows ?? [];
+  head.append(icon(facts.length > 0 ? 'database' : 'edit', 14), title, subject);
+  let rows: HTMLElement | undefined;
+  if (facts.length > 0) {
+    rows = document.createElement('dl');
+    rows.className = 'approval-rows';
+    for (const fact of facts) {
+      const dt = document.createElement('dt');
+      dt.textContent = fact.label;
+      const dd = document.createElement('dd');
+      dd.textContent = fact.value;
+      rows.append(dt, dd);
+    }
+  }
   // Only a card that changes a file offers its diff: on a command or a page to look at, the link opened the card's text.
   // An older host sends no files: its card shows the link when its preview holds a change.
   if (hasDiff ?? (card?.preview ?? []).some((l) => l.kind === 'add' || l.kind === 'del')) {
@@ -2528,7 +2561,11 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
     }
   });
 
-  el.append(card ? head : document.createElement('span'), preview);
+  el.append(card ? head : document.createElement('span'));
+  if (rows) {
+    el.appendChild(rows);
+  }
+  el.appendChild(preview);
   if (card?.warning) {
     const warning = document.createElement('div');
     warning.className = 'approval-warning';

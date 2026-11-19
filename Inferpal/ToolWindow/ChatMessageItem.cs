@@ -309,6 +309,10 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public bool   OffersAlways   { get; private set; } = true;
     /// <summary>A warning above the answers (what leaves the machine); empty for none.</summary>
     [DataMember] public string CardWarning    { get; private set; } = string.Empty;
+
+    /// <summary>The approval card states facts under its title (<see cref="CopyRows"/>: a database's engine, server,
+    /// account).</summary>
+    [DataMember] public bool HasCardRows      { get; private set; }
     /// <summary>A line under the answers saying what they mean here; empty for none.</summary>
     [DataMember] public string CardNote       { get; private set; } = string.Empty;
     /// <summary>Data may leave the machine: drawn as a warning, Deny its default answer (Enter included).</summary>
@@ -1110,6 +1114,8 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
             });
         }
         item.HasCardLines = item.CardLines.Count > 0;
+        foreach (var row in card.Rows ?? []) item.CopyRows.Add(new CopyRowItem(row.Label, row.Value));
+        item.HasCardRows = item.CopyRows.Count > 0;
         return item;
     }
 

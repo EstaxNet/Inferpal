@@ -147,9 +147,13 @@ public sealed partial class AcpAgentTests : IDisposable
         {
             PathOverride = limitsTold ?? Path.Combine(_root, $"limits-told-{Guid.NewGuid():N}.json"),
         };
+        // ⚠ Its own settings, read at the start AND followed before each question: the suite's shared settings file is
+        // written by tests running beside this one. And a 32k window the person chose (no automatic mark: it never
+        // follows a model): the tools' definitions alone weigh past 80 % of the 8k factory window, where every question
+        // is compacted or cut — a test not about the window would count a summary among its model calls.
+        static InferpalConfig Own() => new() { RagEnabled = false, DefaultModel = "test-model", ContextWindowSize = 32_768 };
         var agent = new AcpAgent(
-            () => host?.Invoke(provider)
-                  ?? new HostServer(_ => provider, () => new InferpalConfig { RagEnabled = false, DefaultModel = "test-model" }),
+            () => host?.Invoke(provider) ?? new HostServer(_ => provider, Own, fileSettings: Own),
             ready ?? (_ => Task.FromResult(true)), webDir, openBrowser ?? (_ => true), told);
         var (agentSide, clientSide) = FullDuplexStream.CreatePair();
         var rpc = AcpRpc.Create(agentSide, agentSide, agent);
@@ -1111,6 +1115,45 @@ public sealed partial class AcpAgentTests : IDisposable
         Assert.Contains("echo a -- b", text, StringComparison.Ordinal);
         Assert.StartsWith("```", text, StringComparison.Ordinal);
         Assert.EndsWith("```", text.TrimEnd(), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A database card asks with what the editors draw: the facts (where the connection is declared, the server, the
+    /// account), the warning, and the query. ⚠ Facts and query in code blocks: the values come from a project file, and
+    /// read as Markdown an account named <c>*app*</c> would show as "app" in italics — another account than the one used.
+    /// A server elsewhere is asked before any connection, so no database is needed here.
+    /// </summary>
+    [Fact]
+    public async Task ADatabasesPermission_ShowsItsFactsAndTheQuery_AsWritten()
+    {
+        File.WriteAllText(Path.Combine(_root, ".env"), "DATABASE_URL=\"Host=db.example.test;Username=*app*;Database=app\"\n");
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = async (_, _, tools, _) =>
+        {
+            await tools.ExecuteAsync("query_database", JsonSerializer.SerializeToElement(new
+            {
+                connection = ".env#DATABASE_URL", action = "query", sql = "SELECT name -- the name\nFROM orders",
+            }), CancellationToken.None);
+            return new ChatTurnResult("Read.", null, 0, 0);
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var sid = await NewSessionAsync(h);
+        h.Client.Answer = (method, _) => method == "session/request_permission"
+            ? new { outcome = new { outcome = "selected", optionId = "reject_once" } }
+            : null;
+
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, sid, "read it")));
+
+        var permission = Assert.Single(h.Client.Requests, r => r.GetProperty("method").GetString() == "session/request_permission");
+        var texts = permission.GetProperty("params").GetProperty("toolCall").GetProperty("content").EnumerateArray()
+            .Select(c => c.GetProperty("content").GetProperty("text").GetString()!).ToList();
+        var facts = texts[0];
+        Assert.StartsWith("```", facts, StringComparison.Ordinal);
+        Assert.Contains("DATABASE_URL", facts, StringComparison.Ordinal);                       // where it is declared
+        Assert.Contains("db.example.test", facts, StringComparison.Ordinal);
+        Assert.Contains("*app*", facts, StringComparison.Ordinal);
+        Assert.Equal(4, facts.Split('\n').Count(l => !l.StartsWith("```", StringComparison.Ordinal)));   // one fact per line
+        var query = Assert.Single(texts, t => t.StartsWith("```", StringComparison.Ordinal) && t.Contains("SELECT", StringComparison.Ordinal));
+        Assert.Contains("SELECT name -- the name\nFROM orders", query, StringComparison.Ordinal);
     }
 
     [Fact]

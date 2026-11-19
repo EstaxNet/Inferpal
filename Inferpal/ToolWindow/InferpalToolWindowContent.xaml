@@ -2289,6 +2289,24 @@
                                     <TextBlock Text="{Binding CardSubject}" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
                                                TextWrapping="Wrap" Foreground="{Binding ThemeSubtleText}"/>
                                 </DockPanel>
+                                <!-- The facts the card states (query_database: where, engine, server, account) -->
+                                <ItemsControl ItemsSource="{Binding CopyRows}" Margin="12,0,12,8" Grid.IsSharedSizeScope="True"
+                                              Visibility="{Binding HasCardRows, Converter={StaticResource b2v}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,1">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" SharedSizeGroup="CardRowLabel"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="12" Margin="0,0,12,0"
+                                                           Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="12" TextWrapping="Wrap"
+                                                           Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                                 <Border BorderThickness="0,1,0,1" Padding="0,8" Background="{Binding ThemeCodeBg}"
                                         BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
                                         Visibility="{Binding HasCardLines, Converter={StaticResource b2v}}">

@@ -2855,7 +2855,26 @@ kbd {
   border: 0;
 }
 
+.approval-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 12px;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.approval-rows dt {
+  color: var(--ip-muted);
+}
+
+.approval-rows dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .approval-warning {
+  white-space: pre-line;
   margin: 0 12px;
   padding: 6px 8px;
   border-radius: 4px;

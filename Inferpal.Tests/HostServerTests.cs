@@ -255,8 +255,12 @@ public partial class HostServerTests
         var built  = new List<InferpalConfig>();
         var server = new HostServer(cfg => { built.Add(cfg); return fake; }, () =>
         {
-            // RAG off unless a test asks: initialize indexes the workspace when it is on.
-            var cfg = new InferpalConfig { RagEnabled = false, SavePathForTests = settingsFile };
+            // RAG off unless a test asks: initialize indexes the workspace when it is on. ⚠ A 32k window the person chose (no
+            // automatic mark: it never follows a model, which a test before may have sized): the tools' definitions alone
+            // weigh past 80 % of the 8k factory window, where every question is compacted or cut — a test not about the
+            // window would read a summary in place of its conversation. A test about the factory window asks for it
+            // (FactoryWindow).
+            var cfg = new InferpalConfig { RagEnabled = false, SavePathForTests = settingsFile, ContextWindowSize = 32_768 };
             configure?.Invoke(cfg);
             return cfg;
         }, roleProviderFactory: roleFactory,
@@ -1829,7 +1833,8 @@ public partial class HostServerTests
     [Fact]
     public async Task ChatSend_AtTheOodaThreshold_WritesASessionSummary_ThatJoinsTheSystemPromptAtTheCompaction()
     {
-        using var h = CreateHarness(cfg => { cfg.OodaTurnThreshold = 2; cfg.ContextWindowSize = 8_192; cfg.CompactionEnabled = true; });
+        // A window that holds the tools' definitions (~7k tokens) and two short turns under its trigger, and not the long ones.
+        using var h = CreateHarness(cfg => { cfg.OodaTurnThreshold = 2; cfg.ContextWindowSize = 16_384; cfg.CompactionEnabled = true; });
         await h.InitializeAsync();
         // Turns answer "done" — long ones once asked to, so the history outgrows the window; the utility model, asked
         // for the session summary, answers with the summary.
@@ -3869,12 +3874,21 @@ public partial class HostServerTests
     private static string OwnSettingsFile() =>
         Path.Combine(Directory.CreateTempSubdirectory("inferpal-adopt").FullName, "config.json");
 
+    /// <summary>The window a fresh install has: the factory value, without the automatic mark.</summary>
+    private static void FactoryWindow(InferpalConfig cfg)
+    {
+        var factory = new InferpalConfig();
+        cfg.ContextWindowSize = factory.ContextWindowSize;
+        cfg.ContextWindowSizeAuto = factory.ContextWindowSizeAuto;
+    }
+
     /// <summary>An Ollama session whose settings file is its own, on a 14 GB card (no probe), the index and completions
     /// off: nothing lives beside the chat.</summary>
     private static Harness WindowHarness(string file, Action<InferpalConfig>? configure = null)
     {
         var h = CreateHarness(cfg =>
         {
+            FactoryWindow(cfg);
             cfg.Provider = "ollama"; cfg.BaseUrl = "http://192.0.2.7:11434"; cfg.DefaultModel = "granite4.2:8b";
             cfg.VramBudgetGb = 14; cfg.InlineCompletionEnabled = false;
             configure?.Invoke(cfg);

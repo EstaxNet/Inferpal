@@ -2451,4 +2451,22 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="AwayCopyLeftNote" xml:space="preserve"><value>Sie bleibt, bis Sie sie verwerfen: Sehen Sie sie durch, um jede Änderung zu behalten oder zu verwerfen, oder fragen Sie mit `/run-copy` erneut darauf.</value></data>
   <data name="CopyReviewTheCopy" xml:space="preserve"><value>Kopie durchsehen</value></data>
   <data name="CopyAlreadyHeld" xml:space="preserve"><value>Dieses Fenster hält bereits eine Kopie des Repositorys, auf dem Branch `{0}`: Übernehmen oder verwerfen Sie sie zuerst.</value></data>
+  <data name="ApprovalReadDatabase" xml:space="preserve"><value>Der Agent möchte die Datenbank {0} lesen</value></data>
+  <data name="ApprovalDatabaseQuery" xml:space="preserve"><value>Eine Abfrage, so wie sie ausgeführt wird</value></data>
+  <data name="ApprovalDatabaseTables" xml:space="preserve"><value>Ihre Tabellen, vor jeder Abfrage</value></data>
+  <data name="ApprovalDatabaseStructure" xml:space="preserve"><value>Die Struktur von {0}: Spalten, Schlüssel, Indizes</value></data>
+  <data name="DatabaseRowFoundIn" xml:space="preserve"><value>Gefunden in</value></data>
+  <data name="DatabaseRowEngine" xml:space="preserve"><value>Engine</value></data>
+  <data name="DatabaseRowServer" xml:space="preserve"><value>Server</value></data>
+  <data name="DatabaseRowAccount" xml:space="preserve"><value>Konto</value></data>
+  <data name="DatabaseServerHere" xml:space="preserve"><value>{0}, auf diesem Rechner</value></data>
+  <data name="DatabaseAccountReadOnly" xml:space="preserve"><value>{0}, das nur lesen kann</value></data>
+  <data name="DatabaseAccountCanWrite" xml:space="preserve"><value>{0}, das schreiben kann</value></data>
+  <data name="DatabaseAccountUnknown" xml:space="preserve"><value>{0} (seine Rechte konnten nicht gelesen werden)</value></data>
+  <data name="DatabaseAccountNotRead" xml:space="preserve"><value>{0} (seine Rechte werden nach Ihrer Zustimmung gelesen)</value></data>
+  <data name="DatabaseWindowsAccount" xml:space="preserve"><value>Ihr Windows-Konto, {0}</value></data>
+  <data name="DatabaseCanWrite" xml:space="preserve"><value>Dieses Konto kann schreiben. Inferpal lässt nur eine Leseabfrage durch und führt sie in einer Transaktion aus, die nie übernommen wird; eine Funktion von Ihnen, die anderswo schreibt, entgeht diesen beiden Prüfungen — ein Konto, das nur lesen kann, ist die Sperre, die immer hält.</value></data>
+  <data name="DatabaseElsewhere" xml:space="preserve"><value>Dieser Server ist nicht auf diesem Rechner: Prüfen Sie, ob es eine Entwicklungsdatenbank ist. Eine Regel kann einen Server dauerhaft ablehnen (deny query_database prod).</value></data>
+  <data name="DatabaseReadNote" xml:space="preserve"><value>Nur lesen: eine Anweisung, die liest, in einer Transaktion, die nichts behält, höchstens 30 s. Die Zeilen gehen an das Modell auf Ihrem Server.</value></data>
+  <data name="DatabaseAlwaysTooltip" xml:space="preserve"><value>Lesezugriffe auf {0} erfolgen ohne Karte, bis der Editor geschlossen wird. Eine andere Datenbank fragt weiterhin.</value></data>
 </root>

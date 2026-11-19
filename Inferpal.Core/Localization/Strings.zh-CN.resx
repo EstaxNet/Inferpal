@@ -2451,4 +2451,22 @@
   <data name="AwayCopyLeftNote" xml:space="preserve"><value>它会一直保留，直到您丢弃它：审阅它以逐一保留或丢弃每处更改，或用 `/run-copy` 再次就它提问。</value></data>
   <data name="CopyReviewTheCopy" xml:space="preserve"><value>审阅副本</value></data>
   <data name="CopyAlreadyHeld" xml:space="preserve"><value>此窗口已持有一份仓库副本，位于分支 `{0}`：请先应用或丢弃它。</value></data>
+  <data name="ApprovalReadDatabase" xml:space="preserve"><value>代理想要读取数据库 {0}</value></data>
+  <data name="ApprovalDatabaseQuery" xml:space="preserve"><value>一次读取，与将要执行的完全一致</value></data>
+  <data name="ApprovalDatabaseTables" xml:space="preserve"><value>查询之前，先看它的表</value></data>
+  <data name="ApprovalDatabaseStructure" xml:space="preserve"><value>{0} 的结构：列、键、索引</value></data>
+  <data name="DatabaseRowFoundIn" xml:space="preserve"><value>来源</value></data>
+  <data name="DatabaseRowEngine" xml:space="preserve"><value>引擎</value></data>
+  <data name="DatabaseRowServer" xml:space="preserve"><value>服务器</value></data>
+  <data name="DatabaseRowAccount" xml:space="preserve"><value>账户</value></data>
+  <data name="DatabaseServerHere" xml:space="preserve"><value>{0}，位于本机</value></data>
+  <data name="DatabaseAccountReadOnly" xml:space="preserve"><value>{0}，只能读取</value></data>
+  <data name="DatabaseAccountCanWrite" xml:space="preserve"><value>{0}，可以写入</value></data>
+  <data name="DatabaseAccountUnknown" xml:space="preserve"><value>{0}（无法读取其权限）</value></data>
+  <data name="DatabaseAccountNotRead" xml:space="preserve"><value>{0}（在您同意后读取其权限）</value></data>
+  <data name="DatabaseWindowsAccount" xml:space="preserve"><value>您的 Windows 账户 {0}</value></data>
+  <data name="DatabaseCanWrite" xml:space="preserve"><value>此账户可以写入。Inferpal 只放行读取，并在从不提交的事务中执行；而您自己的、会写入别处的函数不在这两道检查之内——只能读取的账户才是始终有效的锁。</value></data>
+  <data name="DatabaseElsewhere" xml:space="preserve"><value>此服务器不在本机：请确认它是开发数据库。规则可以永久拒绝某个服务器（deny query_database prod）。</value></data>
+  <data name="DatabaseReadNote" xml:space="preserve"><value>仅读取：一条读取语句，在不保留任何内容的事务中执行，最多 30 秒。这些行会发送给您服务器上的模型。</value></data>
+  <data name="DatabaseAlwaysTooltip" xml:space="preserve"><value>在编辑器关闭前，读取 {0} 不再弹出卡片。其他数据库仍会询问。</value></data>
 </root>

@@ -2451,4 +2451,22 @@
   <data name="AwayCopyLeftNote" xml:space="preserve"><value>Она остаётся, пока вы её не удалите: просмотрите её, чтобы сохранить или отбросить каждое изменение, или задайте по ней вопрос снова через `/run-copy`.</value></data>
   <data name="CopyReviewTheCopy" xml:space="preserve"><value>Просмотреть копию</value></data>
   <data name="CopyAlreadyHeld" xml:space="preserve"><value>У этого окна уже есть копия репозитория на ветке `{0}`: сначала примените или удалите её.</value></data>
+  <data name="ApprovalReadDatabase" xml:space="preserve"><value>Агент хочет прочитать базу данных {0}</value></data>
+  <data name="ApprovalDatabaseQuery" xml:space="preserve"><value>Один запрос на чтение — в том виде, в каком он будет выполнен</value></data>
+  <data name="ApprovalDatabaseTables" xml:space="preserve"><value>Её таблицы — до любого запроса</value></data>
+  <data name="ApprovalDatabaseStructure" xml:space="preserve"><value>Структура {0}: столбцы, ключи, индексы</value></data>
+  <data name="DatabaseRowFoundIn" xml:space="preserve"><value>Найдено в</value></data>
+  <data name="DatabaseRowEngine" xml:space="preserve"><value>СУБД</value></data>
+  <data name="DatabaseRowServer" xml:space="preserve"><value>Сервер</value></data>
+  <data name="DatabaseRowAccount" xml:space="preserve"><value>Учётная запись</value></data>
+  <data name="DatabaseServerHere" xml:space="preserve"><value>{0}, на этом компьютере</value></data>
+  <data name="DatabaseAccountReadOnly" xml:space="preserve"><value>{0}, только чтение</value></data>
+  <data name="DatabaseAccountCanWrite" xml:space="preserve"><value>{0}, может записывать</value></data>
+  <data name="DatabaseAccountUnknown" xml:space="preserve"><value>{0} (права прочитать не удалось)</value></data>
+  <data name="DatabaseAccountNotRead" xml:space="preserve"><value>{0} (права будут прочитаны после вашего согласия)</value></data>
+  <data name="DatabaseWindowsAccount" xml:space="preserve"><value>ваша учётная запись Windows, {0}</value></data>
+  <data name="DatabaseCanWrite" xml:space="preserve"><value>Эта учётная запись может записывать. Inferpal пропускает только чтение и выполняет его в транзакции, которую никогда не фиксирует; ваша функция, записывающая в другое место, обходит обе проверки — учётная запись только для чтения остаётся защитой, которая держит всегда.</value></data>
+  <data name="DatabaseElsewhere" xml:space="preserve"><value>Этот сервер находится не на этом компьютере: убедитесь, что это база для разработки. Правило может навсегда отклонить сервер (deny query_database prod).</value></data>
+  <data name="DatabaseReadNote" xml:space="preserve"><value>Только чтение: одна читающая инструкция в транзакции, которая ничего не сохраняет, не более 30 с. Строки отправляются модели на вашем сервере.</value></data>
+  <data name="DatabaseAlwaysTooltip" xml:space="preserve"><value>Чтение {0} идёт без карточки до закрытия редактора. Другая база данных по-прежнему спрашивает.</value></data>
 </root>

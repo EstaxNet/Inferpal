@@ -15,3 +15,4 @@ global using Inferpal.Services.Tasks;
 global using Inferpal.Services.Debugging;
 global using Inferpal.Services.Import;
 global using Inferpal.Services.Coverage;
+global using Inferpal.Services.Databases;

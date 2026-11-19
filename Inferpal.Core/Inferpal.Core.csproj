@@ -75,7 +75,7 @@
     </EmbeddedResource>
     <!-- DPAPI for the MCP OAuth token store (Windows-only at runtime; the call sites
          are already guarded). -->
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.21" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.16" />
     <!-- ── Security remediation ─────────────────────────────────────────────
@@ -87,6 +87,11 @@
     <!-- Keep the same System.Text.Json the VS extension runs with (VS SDK pulls 9.x);
          net8.0 alone would compile against the inbox 8.x. -->
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <!-- query_database (pari 115): the three drivers it reads PostgreSQL, SQL Server and MySQL/MariaDB with — MIT, and
+         SqlClient 7 without the Azure identity stack (Microsoft.Data.SqlClient.Extensions.Azure, not taken). -->
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
+    <PackageReference Include="MySqlConnector" Version="3.0.0" />
   </ItemGroup>
 
 </Project>

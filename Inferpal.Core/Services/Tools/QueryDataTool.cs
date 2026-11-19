@@ -26,9 +26,6 @@ internal sealed class QueryDataTool : ITool
 
     public QueryDataTool(Func<string?> getRoot) => _getRoot = getRoot;
 
-    /// <summary>The most rows a result shows.</summary>
-    internal const int MaxRows = 200;
-
     /// <summary>The largest database file opened (copied first).</summary>
     internal const long MaxDatabaseBytes = 200L * 1024 * 1024;
 
@@ -69,7 +66,8 @@ internal sealed class QueryDataTool : ITool
     public string Description =>
         "Runs a read-only SQL query (SQLite) on a data file: a .db or .sqlite database, or a CSV, TSV, JSON, JSONL or Excel " +
         "file loaded as the table `data` (a workbook: a table per sheet); the tables and columns loaded are said. Use it to " +
-        "count, filter, sum or group rows instead of reading a large data file. Only SELECT (and schema PRAGMAs). At most 200 rows.";
+        "count, filter, sum or group rows instead of reading a large data file. Only SELECT (and schema PRAGMAs). As many rows as " +
+        "the answer holds are shown, the cut said.";
 
     public object Parameters => new
     {
@@ -191,13 +189,13 @@ internal sealed class QueryDataTool : ITool
             var more = false;
             while (reader.Read())
             {
-                if (shown >= MaxRows || sb.Length > ToolOutputBudget.ListChars) { more = true; break; }
+                if (sb.Length > ToolOutputBudget.ListChars) { more = true; break; }
                 sb.AppendLine(string.Join(",", Enumerable.Range(0, reader.FieldCount).Select(i => Cell(reader, i, ref cut))));
                 shown++;
             }
             if (shown == 0) sb.AppendLine("(no rows)");
             if (cut > 0) sb.AppendLine($"({cut} cell(s) cut at {MaxCellChars} characters, marked …)");
-            if (more) sb.AppendLine($"(more rows than the {shown} shown: aggregate, filter or add LIMIT/OFFSET)");
+            if (more) sb.AppendLine($"(more rows than the {shown} shown, all this answer holds: aggregate, filter, or page with LIMIT/OFFSET)");
             return sb.ToString().TrimEnd();
         }
         catch (SqliteException) when (timedOut)

@@ -31,10 +31,16 @@ internal sealed record ApprovalPreviewLine(string Kind, string Text);
 /// <param name="Warning">A warning above the answers (what leaves the machine); empty for none.</param>
 /// <param name="Note">A line under the answers saying what they mean here; empty for none.</param>
 /// <param name="Outbound">Data may leave the machine: the card is drawn as a warning, and Deny is its default answer.</param>
+/// <param name="Rows">Facts the card states one per line, label beside value (a database's engine, server and account);
+/// <c>null</c> for none.</param>
 internal sealed record ApprovalCardModel(
     string Title, string Subject, string Meta, IReadOnlyList<ApprovalPreviewLine> Preview, string More,
     string AlwaysTooltip, string Message, string RuleLabel = "", string RuleTooltip = "", bool OffersAlways = true,
-    string AllowLabel = "", string AlwaysLabel = "", string Warning = "", string Note = "", bool Outbound = false);
+    string AllowLabel = "", string AlwaysLabel = "", string Warning = "", string Note = "", bool Outbound = false,
+    IReadOnlyList<ApprovalCardRow>? Rows = null);
+
+/// <summary>One fact a card states: <paramref name="Label"/> beside <paramref name="Value"/>.</summary>
+internal sealed record ApprovalCardRow(string Label, string Value);
 
 /// <summary>Builds <see cref="ApprovalCardModel"/> — the same card in both editors.</summary>
 internal static class ApprovalCard
@@ -95,8 +101,56 @@ internal static class ApprovalCard
                                      Note: Strings.ApprovalSendElsewhereNote(rule), Outbound: true);
     }
 
+    /// <summary>
+    /// <c>query_database</c>'s card, read from its details (<see cref="Tools.QueryDatabaseTool.Details"/>): the database, where
+    /// the project declares it, its engine, server and account, and the query as it will run. On this machine, "Always" for
+    /// that database; elsewhere, a warning card whose default answer is Deny, with no "Always".
+    /// </summary>
+    private static ApprovalCardModel? DatabaseCard(ApprovalPrompt prompt)
+    {
+        var text = prompt.Details.Replace("\r\n", "\n");
+        var blank = text.IndexOf("\n\n", StringComparison.Ordinal);
+        var head = (blank < 0 ? text : text[..blank]).Split('\n');
+        var facts = new Dictionary<string, string>(StringComparer.Ordinal);
+        // The first of each fact: the tool writes each once, and a later line is never a fact of its own.
+        foreach (var line in head)
+            if (line.IndexOf(": ", StringComparison.Ordinal) is var colon and > 0) facts.TryAdd(line[..colon], line[(colon + 2)..]);
+        if (!facts.TryGetValue("database", out var database) || !facts.TryGetValue("asks", out var asks)) return null;
+        var here = facts.GetValueOrDefault("where") == "this machine";
+        var account = facts.GetValueOrDefault("account", string.Empty);
+        if (account.StartsWith("windows ", StringComparison.Ordinal)) account = Strings.DatabaseWindowsAccount(account[8..]);
+        account = facts.GetValueOrDefault("rights") switch
+        {
+            "read-only"    => Strings.DatabaseAccountReadOnly(account),
+            "can write"    => Strings.DatabaseAccountCanWrite(account),
+            "unknown"      => Strings.DatabaseAccountUnknown(account),
+            _              => Strings.DatabaseAccountNotRead(account),
+        };
+        var server = facts.GetValueOrDefault("server", string.Empty);
+        var rows = new List<ApprovalCardRow>
+        {
+            new(Strings.DatabaseRowFoundIn, facts.GetValueOrDefault("found in", string.Empty)),
+            new(Strings.DatabaseRowEngine, facts.GetValueOrDefault("engine", string.Empty)),
+            new(Strings.DatabaseRowServer, here ? Strings.DatabaseServerHere(server) : server),
+            new(Strings.DatabaseRowAccount, account),
+        };
+        var preview = blank < 0 ? [] : text[(blank + 2)..].Split('\n').Select(l => new ApprovalPreviewLine("ctx", l)).ToList();
+        var subject = asks == "query" ? Strings.ApprovalDatabaseQuery
+                    : asks.StartsWith("describe ", StringComparison.Ordinal) ? Strings.ApprovalDatabaseStructure(asks[9..])
+                    : Strings.ApprovalDatabaseTables;
+        var warnings = new List<string>();
+        if (facts.GetValueOrDefault("rights") == "can write") warnings.Add(Strings.DatabaseCanWrite);
+        if (!here) warnings.Add(Strings.DatabaseElsewhere);
+        var always = here && !prompt.Forced;
+        return new ApprovalCardModel(Strings.ApprovalReadDatabase(database), subject, string.Empty, preview, string.Empty,
+                                     always ? Strings.DatabaseAlwaysTooltip(database) : string.Empty, prompt.Message,
+                                     OffersAlways: always, AlwaysLabel: always ? Strings.ApprovalAlwaysFor(database) : string.Empty,
+                                     Warning: string.Join("\n\n", warnings), Note: Strings.DatabaseReadNote, Outbound: !here, Rows: rows);
+    }
+
     public static ApprovalCardModel Build(ApprovalPrompt prompt, string? root, bool keepsGrantsAcrossSolutions = false)
     {
+        if (prompt.ToolName == "query_database" && DatabaseCard(prompt) is { } database) return database;
         // A file tool's subject is its path; any other tool's is the string its rules match (an MCP call's raw JSON plus
         // its values), which is not for display: what it runs is in its details.
         // ⚠ A change to SEVERAL files (apply_edits) has every path as its subject, one per line, so that the rules match

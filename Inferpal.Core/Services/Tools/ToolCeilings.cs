@@ -38,6 +38,8 @@ internal static class ToolCeilings
         ["get_git_status"]       = new(R),
         ["git_history"]          = new(R, ConcurrentSafe: true),
         ["query_data"]           = new(R),
+        // Reads through a connection, a server elsewhere included; nothing it runs writes (three locks, pari 115).
+        ["query_database"]       = new(R | N),
         ["generate_project_map"] = new(R),
         ["analyze_code"]         = new(R),
         ["read_skill_file"]      = new(R),

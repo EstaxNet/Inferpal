@@ -160,6 +160,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new GetGitStatusTool(editor, root));
         Register(new GitHistoryTool(root));
         Register(new QueryDataTool(root));
+        Register(new QueryDatabaseTool(approval, root));
         Register(new RunTestsTool(root, codeConsent));
         Register(new InsertAtCursorTool(editor, approval, _fileHistory));
         Register(new ReplaceSelectionTool(editor, approval, _fileHistory));

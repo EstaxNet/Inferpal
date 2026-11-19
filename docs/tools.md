@@ -3,7 +3,7 @@
 This page shows what the agent can do on your machine and what it must ask you first. In short: reading never asks; a
 write, a command or a web call waits for your answer on a card, unless a rule of yours already decides.
 
-The agent completes tasks by calling tools. There are **41 built-in tools**, plus any
+The agent completes tasks by calling tools. There are **42 built-in tools**, plus any
 **user-defined shell tools** and any tools exposed by connected **[MCP](mcp.md) servers**.
 
 ## What the agent can do, and what asks first
@@ -429,6 +429,7 @@ archive read in place. A notebook is changed one cell at a time and run on a cop
 |---|---|
 | Find the errors of a log within a time range | `read_file` with `level`, `since` and `until` |
 | Count, filter or sum the rows of a large data file | `query_data` (one read-only SQL query) |
+| Look at the data of the project's development database | `query_database` (its tables, a table's columns, one read-only SELECT) |
 | Look inside an archive without extracting it | `list_files`, then `read_file` on `archive.zip!/path` |
 | Fix a notebook cell and check its output | `edit_notebook`, then `run_notebook` |
 
@@ -437,7 +438,8 @@ archive read in place. A notebook is changed one cell at a time and run on a cop
 
 | Tool | Required params | Description |
 |---|---|---|
-| `query_data` | `path`, `sql` | A read-only SQL query (SQLite) on a data file of the workspace: a `.db` / `.sqlite` database, a CSV or TSV file loaded in memory as the table `data` (columns from its header, numbers typed when a whole column is numeric; a semicolon CSV is recognised), a JSON array or JSONL file loaded as `data` (columns from the keys, nested values as JSON text), or an Excel workbook with one table per sheet (merged cells filled, dates as `yyyy-MM-dd`). To count, filter, sum or group rows a file too large to read holds. At most 200 rows shown, the rest said; a query that writes is refused, another database cannot be attached, and a query running past 20 s is stopped. A spreadsheet (XLSX) is not loaded: read it with `read_file` or export it as CSV |
+| `query_data` | `path`, `sql` | A read-only SQL query (SQLite) on a data file of the workspace: a `.db` / `.sqlite` database, a CSV or TSV file loaded in memory as the table `data` (columns from its header, numbers typed when a whole column is numeric; a semicolon CSV is recognised), a JSON array or JSONL file loaded as `data` (columns from the keys, nested values as JSON text), or an Excel workbook with one table per sheet (merged cells filled, dates as `yyyy-MM-dd`). To count, filter, sum or group rows a file too large to read holds. As many rows as the answer holds are shown, the cut said; a query that writes is refused, another database cannot be attached, and a query running past 20 s is stopped. A spreadsheet (XLSX) is not loaded: read it with `read_file` or export it as CSV |
+| `query_database` | `connection`, `action?`, `table?`, `sql?`, `engine?` | Reads a development database the project declares — PostgreSQL, SQL Server, MySQL or MariaDB: its tables, a table's structure (columns, keys and constraints, indexes, a view's definition), or the rows of one read — `SELECT`/`WITH`, `EXPLAIN` without `ANALYZE`, `SHOW`, `DESCRIBE`, or SQL Server's system procedures that only read (`sp_help`, `sp_helptext`, `sp_helpindex`…) — as many rows as the answer holds, the cut said; 30 s at most. Inferpal stores no connection: `connection` names where the project declares it — a settings file's key (`appsettings.Development.json#ConnectionStrings:Default`), a `.env` key (`.env#DATABASE_URL`), `env:DATABASE_URL`, or the project's .NET user secrets (`secrets:Shop.Api/Shop.Api.csproj#ConnectionStrings:Shop`) — and the string itself never reaches the model. Read-only by three locks: the query is read in its engine's dialect and refused unless it is one read of the database (no write, no DDL, no second statement, nothing that reads the server's files or another server), it runs in a transaction that keeps nothing, and the card says whether the account can write. **Approval**: on this machine, the first read of each database (its engine, server and account on the card; "Always" for that database); a server elsewhere is asked before it is reached, every time. `engine` only when the string's form does not say it. A server is refused for good by a rule: `deny query_database prod` |
 | `edit_notebook` | `path`, `cell`, `action?`, `cell_type?`, `source?` | Change ONE cell of a Jupyter notebook by its id or number — replace its source, insert a cell before or after it, or delete it. The other cells, their outputs and the notebook's settings stay byte for byte as Jupyter wrote them; a changed code cell's old outputs are cleared. **Approval**: the card shows the cell's lines, never the notebook's JSON |
 | `run_notebook` | `path`, `cell?`, `timeout_seconds?` | Run a notebook from its first cell in the project's own Python (its `.venv`), and read each code cell's output and the first failing cell's traceback. Runs on a copy: the notebook file is not changed. Jupyter (`nbconvert`, `ipykernel`) missing from that Python is said with the command that installs it, never installed. Runs the repository's code: asked like a build |
 

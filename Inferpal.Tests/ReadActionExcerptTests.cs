@@ -137,7 +137,7 @@ public partial class HostServerTests
     [Fact]
     public async Task CodeExcerpt_CutsAFileBeyondTheBudget_AndBothReadersLearnHowMuch()
     {
-        using var h = CreateHarness();                     // the default window
+        using var h = CreateHarness(FactoryWindow);        // the default window
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         var r = await ExcerptAsync(h, ReadActionExcerptTests.Source(1_200));   // 36,000 characters

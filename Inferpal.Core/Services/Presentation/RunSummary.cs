@@ -230,14 +230,32 @@ internal static class RunSummary
             return nb.Groups[3].Success ? ($"#{nb.Groups[3].Value}", true)
                  : ($"{nb.Groups[1].Value}/{nb.Groups[2].Value}", nb.Groups[1].Value != nb.Groups[2].Value);
         }
+        if (toolName == "query_database" && output is not null)
+            return QueryRows(output) is { } rows ? (rows, false) : null;
         if (toolName != "http_request" || output is null) return null;
         var m = System.Text.RegularExpressions.Regex.Match(output, @"^(?:Note: [^\n]*\n\n)*HTTP (\d{3}) ",
             System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
         return m.Success ? (m.Groups[1].Value, m.Groups[1].Value[0] is '4' or '5') : null;
     }
 
+    /// <summary>
+    /// How many rows a database read showed (<c>query_database</c>), "200+" when more were left; <c>null</c> for anything
+    /// but a query's rows — an error, a refusal, a table's structure, a list of tables. Read on the output's LAST line, which
+    /// the reader writes for that (<c>DatabaseReader.QueryAsync</c>): the rows themselves are never parsed. A reloaded
+    /// step, its output cut, shows none. The webview reads it the same way (<c>queryRows</c>).
+    /// </summary>
+    internal static string? QueryRows(string output)
+    {
+        if (output.StartsWith("Error:", StringComparison.Ordinal)) return null;
+        var text = output.TrimEnd();
+        var m = System.Text.RegularExpressions.Regex.Match(text[(text.LastIndexOf('\n') + 1)..],
+            @"^\((?:(\d+) rows?\)$|more rows than the (\d+) shown)",
+            System.Text.RegularExpressions.RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+        return !m.Success ? null : m.Groups[1].Success ? m.Groups[1].Value : m.Groups[2].Value + "+";
+    }
+
     /// <summary>The argument names a step acts on, in the order a step line looks for them.</summary>
-    private static readonly string[] SubjectKeys = ["path", "file_path", "command", "query", "url", "symbol", "pattern"];
+    private static readonly string[] SubjectKeys = ["path", "file_path", "command", "query", "url", "symbol", "pattern", "sql", "table"];
 
     /// <summary>
     /// What a step acted on, as its line in the run shows it: the path, command, query or address its arguments name;

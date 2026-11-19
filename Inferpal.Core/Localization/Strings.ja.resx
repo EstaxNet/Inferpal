@@ -2451,4 +2451,22 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="AwayCopyLeftNote" xml:space="preserve"><value>破棄するまで残ります。レビューして変更ごとに残すか破棄するかを選ぶか、`/run-copy` でもう一度質問してください。</value></data>
   <data name="CopyReviewTheCopy" xml:space="preserve"><value>コピーをレビュー</value></data>
   <data name="CopyAlreadyHeld" xml:space="preserve"><value>このウィンドウはすでにブランチ `{0}` にリポジトリのコピーを持っています。先に適用するか破棄してください。</value></data>
+  <data name="ApprovalReadDatabase" xml:space="preserve"><value>エージェントがデータベース {0} を読もうとしています</value></data>
+  <data name="ApprovalDatabaseQuery" xml:space="preserve"><value>実行されるとおりの読み取り</value></data>
+  <data name="ApprovalDatabaseTables" xml:space="preserve"><value>クエリの前に、そのテーブル一覧</value></data>
+  <data name="ApprovalDatabaseStructure" xml:space="preserve"><value>{0} の構造：列、キー、インデックス</value></data>
+  <data name="DatabaseRowFoundIn" xml:space="preserve"><value>検出場所</value></data>
+  <data name="DatabaseRowEngine" xml:space="preserve"><value>エンジン</value></data>
+  <data name="DatabaseRowServer" xml:space="preserve"><value>サーバー</value></data>
+  <data name="DatabaseRowAccount" xml:space="preserve"><value>アカウント</value></data>
+  <data name="DatabaseServerHere" xml:space="preserve"><value>{0}（このマシン上）</value></data>
+  <data name="DatabaseAccountReadOnly" xml:space="preserve"><value>{0}（読み取り専用）</value></data>
+  <data name="DatabaseAccountCanWrite" xml:space="preserve"><value>{0}（書き込み可能）</value></data>
+  <data name="DatabaseAccountUnknown" xml:space="preserve"><value>{0}（権限を読み取れませんでした）</value></data>
+  <data name="DatabaseAccountNotRead" xml:space="preserve"><value>{0}（権限は許可後に読み取ります）</value></data>
+  <data name="DatabaseWindowsAccount" xml:space="preserve"><value>Windows アカウント {0}</value></data>
+  <data name="DatabaseCanWrite" xml:space="preserve"><value>このアカウントは書き込みができます。Inferpal は読み取りだけを通し、決して確定しないトランザクションの中で実行します。ただし、別の場所に書き込むあなたの関数はこの 2 つの確認をすり抜けます。常に効くのは、読み取り専用のアカウントです。</value></data>
+  <data name="DatabaseElsewhere" xml:space="preserve"><value>このサーバーはこのマシン上にありません。開発用データベースであることを確認してください。ルールでサーバーを恒久的に拒否できます（deny query_database prod）。</value></data>
+  <data name="DatabaseReadNote" xml:space="preserve"><value>読み取りのみ：読み取る文 1 つを、何も残さないトランザクションで、最大 30 秒。行はあなたのサーバー上のモデルに送られます。</value></data>
+  <data name="DatabaseAlwaysTooltip" xml:space="preserve"><value>{0} の読み取りは、エディターを閉じるまでカードなしで行われます。別のデータベースは引き続き確認されます。</value></data>
 </root>

@@ -1726,7 +1726,9 @@ internal sealed class AcpSession : IAsyncDisposable
         // ⚠ A deletion's diff reads as a file emptied: the question that says the file goes comes first.
         // ⚠ In a code block (AcpToolCalls.Block): read as Markdown, the command the person decides on shows otherwise than
         // it runs — "--" becomes a dash, a backslash before a dot disappears.
-        List<object> content = diffs.Count == 0 ? [TextContent(AcpToolCalls.Block(note.Message))]
+        // A card that states facts (query_database: where, engine, server, account) asks with them, as the editors draw it.
+        List<object> content = diffs.Count == 0 && note.Card?.Rows is { Count: > 0 } ? FactsContent(note.Card)
+                             : diffs.Count == 0 ? [TextContent(AcpToolCalls.Block(note.Message))]
                              : note.Tool == "delete_file" ? [TextContent(AcpToolCalls.Block(note.Message)), .. diffs]
                              : diffs;
         // ⚠ The card the client already draws for the call gets the diffs first (same queue: on screen before the
@@ -1768,6 +1770,26 @@ internal sealed class AcpSession : IAsyncDisposable
             if (note.CallId is not null && _calls.TryGetValue(note.CallId, out var failed)) failed.Rejected = true;
             return 0;
         }
+    }
+
+    /// <summary>
+    /// A card that states facts, as a client reads it: the facts, label beside value, then the warning, what runs, and the
+    /// note. ⚠ Facts and query go in code blocks: their values come from a project file the model pointed at, and read as
+    /// Markdown a server named <c>[localhost](http://x)</c> would show as another server than the one connected to.
+    /// </summary>
+    private static List<object> FactsContent(CardNote card)
+    {
+        var rows = card.Rows ?? [];
+        var width = rows.Max(r => (r.Label ?? string.Empty).Length) + 2;
+        var content = new List<object>
+        {
+            TextContent(AcpToolCalls.Block(string.Join("\n", rows.Select(r => (r.Label ?? string.Empty).PadRight(width) + r.Value)))),
+        };
+        if (!string.IsNullOrWhiteSpace(card.Warning)) content.Add(TextContent(card.Warning));
+        if (card.Preview is { Count: > 0 } lines)
+            content.Add(TextContent(AcpToolCalls.Block(string.Join("\n", lines.Select(l => l.Text ?? string.Empty)))));
+        if (!string.IsNullOrWhiteSpace(card.Note)) content.Add(TextContent(card.Note));
+        return content;
     }
 
     /// <summary>
@@ -1833,8 +1855,14 @@ internal sealed class AcpSession : IAsyncDisposable
     public sealed record ToolEndNote(string CallId, string? Output, bool Failed = false);
     public sealed record WaitNote(ModelWaitDto? Wait);
     public sealed record PathNote(string? Path);
+    /// <param name="Rows">Facts the card states (a database's engine, server, account); <paramref name="Preview"/> what it
+    /// runs, <paramref name="Warning"/> and <paramref name="Note"/> said around it.</param>
     public sealed record CardNote(string? Title, string? Subject, string? RuleLabel = null, bool OffersAlways = true,
-                                  string? AllowLabel = null, string? AlwaysLabel = null, bool Outbound = false);
+                                  string? AllowLabel = null, string? AlwaysLabel = null, bool Outbound = false,
+                                  List<CardRowNote>? Rows = null, List<CardLineNote>? Preview = null, string? Warning = null,
+                                  string? Note = null);
+    public sealed record CardRowNote(string? Label, string? Value);
+    public sealed record CardLineNote(string? Kind, string? Text);
     public sealed record DiffNote(string? Path, string? OldText, string? NewText);
     public sealed record ApprovalNote(string Message, CardNote? Card, string? CallId, string? Tool, string? Details, List<DiffNote>? Diffs);
     public sealed record PermissionOutcome(string? Outcome, string? OptionId);

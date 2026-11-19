@@ -133,12 +133,15 @@ public sealed class QueryDataToolTests : IDisposable
     public async Task MoreRowsThanShown_IsSaid()
     {
         var sb = new StringBuilder("n\n");
-        for (var i = 0; i < QueryDataTool.MaxRows + 50; i++) sb.Append(i).Append('\n');
+        for (var i = 0; i < 20_000; i++) sb.Append(i).Append('\n');
         Write("many.csv", sb.ToString());
 
         var said = await Query("many.csv", "SELECT n FROM data");
 
-        Assert.Contains($"more rows than the {QueryDataTool.MaxRows} shown", said);
+        // As many rows as the answer holds — far more than a fixed count would have shown of numbers this short.
+        var shown = int.Parse(System.Text.RegularExpressions.Regex.Match(said, @"more rows than the (\d+) shown").Groups[1].Value);
+        Assert.InRange(shown, 1000, 19_999);
+        Assert.True(said.Length <= ToolOutputBudget.ListChars + 300, said.Length.ToString());
     }
 
     private string Fixture(string name)

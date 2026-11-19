@@ -113,7 +113,7 @@ public sealed class ToolCeilingsTests : IDisposable
         "get_diagnostics", "get_active_document", "get_open_editors", "get_solution_info",
         "get_git_status", "get_debugger_state", "generate_project_map", "analyze_code",
         "web_search", "fetch_url", "read_skill_file", "git_history", "ask_question", "query_data", "msbuild_property", "ocr",
-        "view_window",
+        "view_window", "query_database",
     ];
 
     private static readonly string[] OldTaskList =

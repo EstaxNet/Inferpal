@@ -718,6 +718,8 @@ export interface ApprovalCard {
   note?: string;
   /** Data may leave the machine: drawn as a warning, Deny the default answer. */
   outbound?: boolean;
+  /** Facts the card states one per line, label beside value (a database's engine, server and account); absent for none. */
+  rows?: { label: string; value: string }[];
 }
 
 /** One file a run changed. */
