@@ -23,12 +23,18 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/demo-vscode.gif" alt="Inferpal in VS Code: asked to add argument validation to a C# method and cover it with xUnit tests, the agent plans, edits the method, creates the test file and runs the tests behind approval cards, and ends on its answer and a result bar with Undo run, on a local model" width="820">
+  <img src="docs/assets/demo-checkout.gif" alt="VS Code with Inferpal: the checkout page, open in a browser pane at a phone's width, hides its prices and its Pay button. Asked about it, the agent looks at the page, reads site.css and proposes a one-line change on an approval card; once allowed, the line changes in the editor, the page reloads with its Pay button, and the agent answers" width="880">
   <br>
-  <sub>"Add argument validation to this method and cover it with tests" — a real run on a local model (Devstral Small 2 in LM Studio), sped up.</sub>
+  <sub>"On a phone, customers cannot find the Pay button." It looks at the page at a phone's width, changes one line once you allow it, and looks again. Replayed in VS Code.</sub>
 </p>
 
 ## See it work
+
+<p align="center">
+  <img src="docs/assets/demo-completion.gif" alt="VS Code: while a method body is typed in Discounts.cs, Inferpal's suggestion shows in grey (the capped percentage and the rounded total) and Tab takes it" width="802">
+  <br>
+  <sub><b>Completions as you type</b>, from the model on your machine. Tab takes them. Replayed in VS Code.</sub>
+</p>
 
 <p align="center">
   <img src="docs/assets/demo-tdd-vscode.gif" alt="/tdd in VS Code on a local Qwen3.8 27B: the failing test is run again under the debugger, the fix is shown as a diff and approved, and the suite turns green after two rounds" width="820">
@@ -37,88 +43,22 @@
 </p>
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/demo-viewpage-dark.gif">
-    <img src="docs/assets/demo-viewpage-light.gif" width="754" alt="The chat in VS Code: asked why customers cannot find the Pay button on a phone, the agent looks at the checkout page at 390 px, edits site.css, and looks again. Beside it, the two pictures it looked at: before, the order summary runs past the right edge and the Pay button is off the screen; after the fix, the prices and the Pay button show">
-  </picture>
+  <img src="docs/assets/demo-vscode.gif" alt="Inferpal in VS Code: asked to add argument validation to a C# method and cover it with xUnit tests, the agent plans, edits the method, creates the test file and runs the tests behind approval cards, and ends on its answer and a result bar with Undo run, on a local model" width="820">
   <br>
-  <sub><b>It looks at your app.</b> <code>view_page</code> opens the page at a phone's width, sees the Pay button off the screen, fixes the CSS and looks again.<br>Replayed step by step in the chat panel, beside the two pictures Inferpal took of the page.</sub>
+  <sub><b>"Add argument validation to this method and cover it with tests."</b> A real run on a local model (Devstral Small 2 in LM Studio), sped up.</sub>
 </p>
 
-<table>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/documents-vs-dark.png">
-        <img src="docs/assets/features/documents-vs-light.png" alt="Visual Studio: a question with a PDF spec and an Excel workbook attached: the answer quotes page 7 of the spec and two rows of the workbook, in a table" width="400">
-      </picture>
-      <br><sub><b>Your spec is a PDF, your cases are in Excel.</b> Read on your machine, quoted page by page and row by row.</sub>
-    </td>
-    <td align="center" valign="top" width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/diagram-vscode-dark.png">
-        <img src="docs/assets/features/diagram-vscode-light.png" alt="VS Code: a state diagram of an order drawn in the chat, under a bar with Diagram, Code, copy and Open larger" width="400">
-      </picture>
-      <br><sub><b>Ask for a diagram, get it drawn.</b> Its Mermaid code one click away.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/check-sql-dark.png">
-        <img src="docs/assets/features/check-sql-light.png" alt="VS Code: asked how many orders failed each day, the agent runs one SQL query on orders.csv (50,000 rows) and answers with the count and the amount lost" width="400">
-      </picture>
-      <br><sub><b>It queries your data.</b> One SQL query on a 50,000-row CSV, an Excel sheet or a JSON file.</sub>
-    </td>
-    <td align="center" valign="top" width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/check-log-dark.png">
-        <img src="docs/assets/features/check-log-light.png" alt="VS Code: asked what went wrong since 10:30, the agent reads app.log at error level since 10:30 and finds three gateway timeouts with their stack trace" width="400">
-      </picture>
-      <br><sub><b>It reads a log by level and time.</b> The errors since 10:30, each with its stack trace.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/check-http-dark.png">
-        <img src="docs/assets/features/check-http-light.png" alt="VS Code: the agent sends a POST to the local discounts API and reads the 201 Created answer, which applies 30 percent for the 40 asked" width="400">
-      </picture>
-      <br><sub><b>It calls the app you are building</b> to check its fix, with the real request and answer.</sub>
-    </td>
-    <td align="center" valign="top" width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/check-measure-dark.png">
-        <img src="docs/assets/features/check-measure-light.png" alt="VS Code: the agent measures the stock report five times before and after its fix: from 1.93 s to 0.71 s, beyond the noise" width="400">
-      </picture>
-      <br><sub><b>It measures before it claims faster.</b> Five runs after a warm-up, compared beyond the noise.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/editor-vscode-dark.png">
-        <img src="docs/assets/features/editor-vscode-light.png" alt="VS Code: a finished run with its result bar, then the next request waiting on an approval card that shows the new test file as a diff, with Allow once, Always this session and Deny" width="400">
-      </picture>
-      <br><sub><b>Nothing changes without you.</b> Every write and command waits on the real diff: Enter allows, Esc refuses.</sub>
-    </td>
-    <td align="center" valign="top" width="50%">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="docs/assets/features/review-run-dark.png">
-        <img src="docs/assets/features/review-run-light.png" alt="VS Code: the changes of a run, file by file, each with Keep and Undo; a file changed after the run is left as it is and said" width="400">
-      </picture>
-      <br><sub><b>Undo the whole run, or each change on its own.</b> Every file is backed up before it is written.</sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%"><img src="docs/assets/chat-visual-studio.png" alt="The Inferpal chat in Visual Studio: the agent's plan, then an approval card showing the diff of OrderService.cs with Allow once, Always this session and Deny" width="400"><br><sub><b>Visual Studio 2026 / 2022</b></sub></td>
-    <td align="center" valign="top" width="50%"><img src="docs/assets/chat-vscode.png" alt="The Inferpal chat in VS Code at the same moment of the same task: two steps done, then the same approval card for OrderService.cs" width="400"><br><sub><b>VS Code</b> on Windows, Linux and macOS — conversations go from one editor to the other</sub></td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/assets/chat-visual-studio.png" alt="The Inferpal chat in Visual Studio: the agent's plan, then an approval card showing the diff of OrderService.cs with Allow once, Always this session and Deny" width="420">
+  <img src="docs/assets/chat-vscode.png" alt="The Inferpal chat in VS Code at the same moment of the same task: two steps done, then the same approval card for OrderService.cs" width="420">
+  <br>
+  <sub>The same agent in <b>Visual Studio 2026 / 2022</b> and in <b>VS Code</b> on Windows, Linux and macOS. Conversations go from one editor to the other.</sub>
+</p>
 
-It also looks at the window of a desktop app it started, reads screenshots, notebooks and archives, asks you on a card
-when a request could mean several things, and works from a right-click on an error, a failing test or a selection. Zed,
-JetBrains IDEs, Qt Creator, Neovim and Emacs get the same agent through the [Agent Client Protocol](docs/acp.md).
+It also queries your CSV, Excel and JSON files with SQL, reads a log by level and time, calls the service you are
+building to check a fix, measures before it says faster, reads PDFs, spreadsheets, notebooks and screenshots, and
+looks at the window of a desktop app it started. Zed, JetBrains IDEs, Qt Creator, Neovim and Emacs get the same agent
+through the [Agent Client Protocol](docs/acp.md).
 
 ## Your code stays with you
 
