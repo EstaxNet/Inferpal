@@ -10,7 +10,8 @@ internal sealed record CaptureBrowser(string Name, string Executable, CaptureEng
 /// <summary>How a <see cref="CaptureBrowser"/> is driven.</summary>
 internal enum CaptureEngine
 {
-    /// <summary>Edge, Chrome, Chromium, Brave: <c>--headless --screenshot</c>.</summary>
+    /// <summary>Edge, Chrome, Chromium, Brave: driven through the DevTools protocol (<see cref="ChromiumDevTools"/>), else
+    /// <c>--headless --screenshot</c>.</summary>
     Chromium,
     /// <summary>Firefox: <c>--headless --screenshot</c> with a throwaway profile.</summary>
     Firefox,
@@ -40,6 +41,10 @@ internal static class PageCapture
 {
     /// <summary>The longest one capture may take — a browser's first start on a cold disk included.</summary>
     internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(60);
+
+    /// <summary>The part of <see cref="Budget"/> a Chromium capture through its DevTools protocol may take before the command
+    /// line takes over with the rest.</summary>
+    private static readonly TimeSpan ProtocolBudget = TimeSpan.FromSeconds(25);
 
     /// <summary>The viewport's height for a width: a phone's for a narrow one, a laptop's otherwise (the measured pair: 390 ×
     /// 844 and 1280 × 900).</summary>
@@ -128,23 +133,35 @@ internal static class PageCapture
             var png = Path.Combine(work, "page.png");
             var profile = Directory.CreateDirectory(Path.Combine(work, "profile")).FullName;
             var psi = new ProcessStartInfo(browser.Executable);
+            var budget = Budget;
             var size = $"{width.ToString(CultureInfo.InvariantCulture)},{viewport.ToString(CultureInfo.InvariantCulture)}";
             switch (browser.Engine)
             {
                 case CaptureEngine.Chromium:
-                    foreach (var a in new[]
-                             {
-                                 "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
-                                 "--disable-background-networking", "--disable-component-update", "--disable-sync",
-                                 "--disable-extensions", "--disable-breakpad", "--disable-crash-reporter", $"--user-data-dir={profile}",
-                                 // No such proxy, and the loopback itself sent to it (<-loopback>) but for the page's own origin.
-                                 "--proxy-server=127.0.0.1:9", $"--proxy-bypass-list=<-loopback>;{host}:{port}",
-                                 $"--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE {host}",
-                                 "--force-webrtc-ip-handling-policy=disable_non_proxied_udp", "--webrtc-ip-handling-policy=disable_non_proxied_udp",
-                                 // A dev server's own certificate (https://localhost:5001): only the page's origin is reachable.
-                                 "--ignore-certificate-errors", "--hide-scrollbars", "--virtual-time-budget=3000",
-                                 $"--screenshot={png}", $"--window-size={size}", url,
-                             })
+                    string[] Flags(string userData) =>
+                    [
+                        "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+                        "--disable-background-networking", "--disable-component-update", "--disable-sync",
+                        "--disable-extensions", "--disable-breakpad", "--disable-crash-reporter", $"--user-data-dir={userData}",
+                        // No such proxy, and the loopback itself sent to it (<-loopback>) but for the page's own origin.
+                        "--proxy-server=127.0.0.1:9", $"--proxy-bypass-list=<-loopback>;{host}:{port}",
+                        $"--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE {host}",
+                        "--force-webrtc-ip-handling-policy=disable_non_proxied_udp", "--webrtc-ip-handling-policy=disable_non_proxied_udp",
+                        // A dev server's own certificate (https://localhost:5001): only the page's origin is reachable.
+                        "--ignore-certificate-errors", "--hide-scrollbars",
+                    ];
+                    // The page laid out at the exact width asked (ChromiumDevTools); a browser whose protocol does not
+                    // answer is captured from the command line, whose window cannot be narrower than about 520 px.
+                    var devTools = Directory.CreateDirectory(Path.Combine(work, "profile-devtools")).FullName;
+                    // One budget for the capture: the protocol gets part of it, the command line what is left.
+                    var started = Stopwatch.StartNew();
+                    var (drawn, why) = await ChromiumDevTools.CaptureAsync(browser.Executable, Flags(devTools), devTools, url, width,
+                                                                           viewport, ProtocolBudget, ct);
+                    if (drawn is not null) return (drawn, null);
+                    Diagnostics.Record("PageCapture.DevTools", $"{browser.Name}: {why}; captured from the command line instead");
+                    budget = Budget - started.Elapsed;
+                    foreach (var a in Flags(profile).Concat([$"--virtual-time-budget={ChromiumDevTools.SettleMilliseconds}",
+                                                             $"--screenshot={png}", $"--window-size={size}", url]))
                         psi.ArgumentList.Add(a);
                     break;
                 case CaptureEngine.Firefox:
@@ -162,7 +179,7 @@ internal static class PageCapture
                         psi.ArgumentList.Add(a);
                     break;
             }
-            var run = await ChildProcess.RunAsync(psi, Budget, ct);
+            var run = await ChildProcess.RunAsync(psi, budget, ct);
             if (run.TimedOut) return (null, $"{browser.Name} did not finish the capture within {Budget.TotalSeconds:0} s: it was stopped.");
             if (!File.Exists(png) || new FileInfo(png).Length == 0)
             {
