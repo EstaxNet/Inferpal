@@ -179,6 +179,59 @@ public sealed class WorkCopyTests : IDisposable
     }
 
     [Fact]
+    public async Task AFolderADiscardLeft_IsPassedOver_NeverRemovedByTheNextCopy()
+    {
+        Commit();
+        var (first, _) = await WorkCopy.CreateAsync(_repo.FullName, CancellationToken.None);
+        await first!.DiscardAsync(CancellationToken.None);
+        // What a discard that could not delete everything leaves — or a copy another editor has just made: a folder.
+        Directory.CreateDirectory(Path.Combine(first.Folder, "src"));
+        File.WriteAllText(Path.Combine(first.Folder, "src", "left.txt"), "left");
+
+        var (next, refusal) = await WorkCopy.CreateAsync(_repo.FullName, CancellationToken.None);
+
+        Assert.True(next is not null, refusal);
+        Assert.NotEqual(first.Folder, next!.Folder);
+        Assert.True(File.Exists(Path.Combine(first.Folder, "src", "left.txt")));                     // untouched
+        await next.DiscardAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    /// <remarks>What a discard removes itself, once git has left it. Windows' enumeration never descends a folder link: there
+    /// this holds the removal; the POSIX legs, where it would descend, hold that the link is never followed.</remarks>
+    public async Task WhatADiscardRemovesItself_RemovesALink_NeverWhatItLeadsTo()
+    {
+        var outside = Directory.CreateTempSubdirectory("inferpal-workcopy-outside-");
+        var left = Path.Combine(_home.FullName, "left");
+        try
+        {
+            var kept = Path.Combine(outside.FullName, "kept.txt");
+            File.WriteAllText(kept, "the person's");
+            File.SetAttributes(kept, FileAttributes.ReadOnly);
+            Directory.CreateDirectory(left);
+            File.WriteAllText(Path.Combine(left, "built.dll"), "x");
+            File.SetAttributes(Path.Combine(left, "built.dll"), FileAttributes.ReadOnly);
+            try { Directory.CreateSymbolicLink(Path.Combine(left, "linked"), outside.FullName); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return;   // undecided here: this machine cannot create links without a privilege
+            }
+
+            var problem = await WorkCopy.RemoveFolderAsync(left, CancellationToken.None);
+
+            Assert.Null(problem);
+            Assert.False(Directory.Exists(left));                                                    // read-only file included
+            Assert.Equal("the person's", File.ReadAllText(kept));
+            Assert.True(File.GetAttributes(kept).HasFlag(FileAttributes.ReadOnly));                  // never reached
+        }
+        finally
+        {
+            foreach (var f in Directory.EnumerateFiles(outside.FullName)) File.SetAttributes(f, FileAttributes.Normal);
+            outside.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task AFolderWithNoCommit_IsRefused_AndSaysWhy()
     {
         Assert.True(Git("init", "-q", "."), "git is needed: this test is UNDECIDED, not green.");

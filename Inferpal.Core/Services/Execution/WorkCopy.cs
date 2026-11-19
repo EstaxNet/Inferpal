@@ -74,12 +74,17 @@ internal sealed class WorkCopy
 
         var branches = await GitText(["branch", "--list", BranchPrefix + "*", "--format=%(refname:short)"], root, ct) ?? "";
         var taken = branches.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(b => b.Trim()).ToHashSet(StringComparer.Ordinal);
+        // ⚠ A number whose folder is there is passed over, never removed here: it may be a copy another editor has just made
+        // (read after the lists above), or what a discard could not remove — a dead end either way if it stopped this copy.
         var n = 1;
-        while (taken.Contains(BranchPrefix + n)) n++;
+        string folder;
+        for (;; n++)
+        {
+            if (taken.Contains(BranchPrefix + n)) continue;
+            folder = Path.Combine(Home, FileHistoryService.FolderNameOf(root), n.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            if (!Directory.Exists(folder)) break;
+        }
         var branch = BranchPrefix + n;
-
-        var folder = Path.Combine(Home, FileHistoryService.FolderNameOf(root), n.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        if (Directory.Exists(folder)) return (null, $"a copy's folder is already there: {folder} — discard that copy first");
         Directory.CreateDirectory(Path.GetDirectoryName(folder)!);
         var add = await GitProcess.CaptureBytesAsync(["worktree", "add", "-b", branch, folder, head], root, ct, MaxFileBytes, budget: Budget);
         if (add.Output is null) return (null, "git could not make the copy: " + add.Failure);
@@ -112,9 +117,57 @@ internal sealed class WorkCopy
     {
         var remove = await GitProcess.CaptureBytesAsync(["worktree", "remove", "--force", Folder], Repository, ct, MaxFileBytes, budget: Budget);
         var branch = await GitProcess.CaptureBytesAsync(["branch", "-D", Branch], Repository, ct, MaxFileBytes);
-        var problems = new[] { remove.Output is null ? "the copy's folder: " + remove.Failure : null,
-                               branch.Output is null ? $"the branch {Branch}: " + branch.Failure : null }.Where(p => p is not null);
+        // ⚠ git stops at the first file it cannot delete — one a build that has just ended still holds for a moment — and
+        // leaves the rest: what it left is removed again for a few seconds, and said if it stays.
+        var left = Directory.Exists(Folder) ? await RemoveFolderAsync(Folder, ct) : null;
+        // Removed by hand, or not at all: git's own entry for it goes too, or every later copy at that number is refused
+        // ("missing but already registered worktree").
+        var prune = remove.Output is null
+            ? await GitProcess.CaptureBytesAsync(["worktree", "prune"], Repository, ct, MaxFileBytes)
+            : default;
+        var problems = new[]
+        {
+            left is not null ? $"the copy's folder {Folder}: {left}; it can be deleted by hand" : null,
+            remove.Output is null && prune.Output is null ? "git's record of the copy: " + (prune.Failure ?? remove.Failure) : null,
+            branch.Output is null ? $"the branch {Branch}: " + branch.Failure : null,
+        }.Where(p => p is not null);
         return problems.Any() ? "not removed — " + string.Join("; ", problems) : null;
+    }
+
+    /// <summary>How long a discard keeps trying to remove a folder a program still holds a file in.</summary>
+    internal static TimeSpan RemoveFor { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// Removes <paramref name="folder"/>, read-only entries included, trying again for <see cref="RemoveFor"/> while a file in
+    /// it is held: <c>null</c> once it is gone, else why it stays.
+    /// </summary>
+    /// <remarks>⚠ A link inside is removed, never followed: one to the person's repository or to an ancestor would clear the
+    /// attributes of files that are not the copy's, or loop.</remarks>
+    internal static async Task<string?> RemoveFolderAsync(string folder, CancellationToken ct)
+    {
+        var until = DateTime.UtcNow + RemoveFor;
+        var walk = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint, IgnoreInaccessible = true };
+        for (;;)
+        {
+            try
+            {
+                foreach (var entry in new DirectoryInfo(folder).EnumerateFileSystemInfos("*", walk))
+                    if (entry.Attributes.HasFlag(FileAttributes.ReadOnly)) entry.Attributes &= ~FileAttributes.ReadOnly;
+                Directory.Delete(folder, recursive: true);
+                return null;
+            }
+            catch (DirectoryNotFoundException) { return null; }
+            // A file held by another program for a moment (a build that has just ended): tried again until the deadline.
+            catch (IOException ex) when (ex is not FileNotFoundException and not PathTooLongException && DateTime.UtcNow < until) { }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Diagnostics.Swallow("WorkCopy.RemoveFolder", ex);
+                return ex is IOException and not FileNotFoundException and not PathTooLongException
+                    ? "a program still holds a file in it"
+                    : "it could not be deleted (" + ex.Message + ")";
+            }
+            await Task.Delay(250, ct);
+        }
     }
 
     /// <summary>
