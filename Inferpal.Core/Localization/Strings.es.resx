@@ -2391,4 +2391,56 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="CopyLeftNotInReview" xml:space="preserve"><value>no está en la última revisión de la copia: revísela de nuevo</value></data>
   <data name="CopyReviewChanged" xml:space="preserve"><value>La copia cambió desde esta revisión: revísela de nuevo antes de aplicar.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>Se está respondiendo una pregunta en la copia: descártela cuando termine la respuesta.</value></data>
+  <data name="SlashHintRunCopy" xml:space="preserve"><value>ejecutar el agente en una copia del repositorio y luego conservar o descartar cada cambio (`/run-copy &lt;pregunta&gt;`)</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Este comando aún no está disponible en este editor: úselo desde VS Code.</value></data>
+  <data name="CopyStartTitle" xml:space="preserve"><value>Trabajar en una copia del repositorio</value></data>
+  <data name="CopyStartLead" xml:space="preserve"><value>Sus archivos se quedan como están mientras el agente trabaja</value></data>
+  <data name="CopyStartOfLabel" xml:space="preserve"><value>Copia de</value></data>
+  <data name="CopyStartOf" xml:space="preserve"><value>`{0}` en su último commit, `{1}`</value></data>
+  <data name="CopyStartOfDetached" xml:space="preserve"><value>el último commit, `{0}`</value></data>
+  <data name="CopyStartBranchLabel" xml:space="preserve"><value>En la rama</value></data>
+  <data name="CopyStartBranchNew" xml:space="preserve"><value>una nueva rama `inferpal/`, creada para esta ejecución</value></data>
+  <data name="CopyStartBranchHeld" xml:space="preserve"><value>`{0}`, tal como la dejó su última pregunta en la copia</value></data>
+  <data name="CopyStartBranchLeft" xml:space="preserve"><value>`{0}`, dejada por un editor que se cerró durante su ejecución</value></data>
+  <data name="CopyStartKeptLabel" xml:space="preserve"><value>Guardada en</value></data>
+  <data name="CopyStartKeptValue" xml:space="preserve"><value>la carpeta propia de Inferpal, fuera del repositorio</value></data>
+  <data name="CopyStartUncommitted" xml:space="preserve"><value>{0} {0:cambio sin confirmar no va|cambios sin confirmar no van} con ella</value></data>
+  <data name="CopyStartUncommittedUnknown" xml:space="preserve"><value>git no pudo listar sus cambios sin confirmar: ninguno va con ella</value></data>
+  <data name="CopyStartUncommittedHint" xml:space="preserve"><value>El agente parte del último commit. Confírmelos primero si debe verlos.</value></data>
+  <data name="CopyStartMore" xml:space="preserve"><value>…y {0} más</value></data>
+  <data name="CopyStartRules" xml:space="preserve"><value>Las reglas que rechazan un comando y los archivos que se ocultan al modelo son también los de este repositorio en la copia. Un «Siempre» que dio aquí no se traslada: la copia vuelve a preguntar.</value></data>
+  <data name="CopyStartGo" xml:space="preserve"><value>Empezar en la copia</value></data>
+  <data name="CopyStartGoHeld" xml:space="preserve"><value>Continuar en la copia</value></data>
+  <data name="CopyStartMine" xml:space="preserve"><value>Trabajar en mis archivos</value></data>
+  <data name="CopyReviewTitle" xml:space="preserve"><value>Revise los cambios: conserve o descarte cada uno</value></data>
+  <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:archivo|archivos} · {1} {1:cambio|cambios} · {2} {2:conservado|conservados}</value></data>
+  <data name="CopyReviewFileKept" xml:space="preserve"><value>{0} de {1} {0:conservado|conservados}</value></data>
+  <data name="CopyReviewNewFile" xml:space="preserve"><value>archivo nuevo</value></data>
+  <data name="CopyReviewDeletedFile" xml:space="preserve"><value>eliminado</value></data>
+  <data name="CopyReviewLines" xml:space="preserve"><value>Líneas {0}–{1}</value></data>
+  <data name="CopyReviewLine" xml:space="preserve"><value>Línea {0}</value></data>
+  <data name="CopyReviewKeep" xml:space="preserve"><value>Conservar</value></data>
+  <data name="CopyReviewDrop" xml:space="preserve"><value>Descartar</value></data>
+  <data name="CopyReviewDropped" xml:space="preserve"><value>Descartado</value></data>
+  <data name="CopyReviewShow" xml:space="preserve"><value>Mostrar</value></data>
+  <data name="CopyReviewHide" xml:space="preserve"><value>Ocultar</value></data>
+  <data name="CopyReviewApply" xml:space="preserve"><value>Aplicar {0} {0:cambio|cambios} a mis archivos</value></data>
+  <data name="CopyReviewPartial" xml:space="preserve"><value>Aplicar {0} de {1} cambios es una combinación que la ejecución nunca tuvo: compile o pruebe de nuevo tras aplicar.</value></data>
+  <data name="CopyReviewDiscard" xml:space="preserve"><value>Descartar la copia</value></data>
+  <data name="CopyReviewNothing" xml:space="preserve"><value>La ejecución no cambió nada en la copia.</value></data>
+  <data name="CopyReviewLeftOut" xml:space="preserve"><value>Fuera de esta revisión: {0}.</value></data>
+  <data name="CopyAppliedTitle" xml:space="preserve"><value>{0} de {1} {1:cambio aplicado|cambios aplicados} a sus archivos</value></data>
+  <data name="CopyAppliedUndo" xml:space="preserve"><value>`/undo-run` los revierte</value></data>
+  <data name="CopyNotApplied" xml:space="preserve"><value>{0} {0:cambio no se aplicó|cambios no se aplicaron}: {1}</value></data>
+  <data name="CopyNotAppliedNote" xml:space="preserve"><value>Su versión se queda como está. El cambio de la copia sigue en la rama `{0}`.</value></data>
+  <data name="CopyLinesShort" xml:space="preserve"><value>líneas {0}–{1}</value></data>
+  <data name="CopyLineShort" xml:space="preserve"><value>línea {0}</value></data>
+  <data name="CopyCompare" xml:space="preserve"><value>Comparar con mi versión</value></data>
+  <data name="CopyMerge" xml:space="preserve"><value>Pedir al agente que lo fusione</value></data>
+  <data name="CopyMergePrompt" xml:space="preserve"><value>Lleva a mi versión de `{0}` el cambio que hizo la copia (en la rama `{1}`), conservando mis propios cambios.</value></data>
+  <data name="CopyKeepForNow" xml:space="preserve"><value>Conservar la copia por ahora</value></data>
+  <data name="CopyDiscarded" xml:space="preserve"><value>Se quitaron la copia y su rama `{0}`.</value></data>
+  <data name="CopyDiscardedBut" xml:space="preserve"><value>La copia se descartó, pero: {0}.</value></data>
+  <data name="CopyKeptForNow" xml:space="preserve"><value>La copia sigue en la rama `{0}`: `/run-copy` solo vuelve a mostrar sus cambios, `/run-copy &lt;pregunta&gt;` continúa en ella.</value></data>
+  <data name="CopyStartOfCommit" xml:space="preserve"><value>el commit `{0}`</value></data>
 </root>

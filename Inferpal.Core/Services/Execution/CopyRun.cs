@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Inferpal.Services.Execution;
 
-/// <summary>What the start card of a run on a copy says, before anything is made (planche CopyStart).</summary>
+/// <summary>What the start card of a run on a copy says, before anything is made.</summary>
 /// <param name="Refusal">Why no copy can be made of this folder (no git repository, no commit, git did not answer), in English
 /// — the card frames it; <c>null</c> when one can.</param>
 /// <param name="Commit">The commit the copy starts from, short.</param>
@@ -13,10 +13,10 @@ namespace Inferpal.Services.Execution;
 internal sealed record CopyStart(string? Refusal, string? Commit, string? Branch, IReadOnlyList<string>? Uncommitted);
 
 /// <summary>One file the run changed in the copy, as the review lists it: its path in the repository, whether the run created
-/// or deleted it, and its hunks — each kept or dropped on its own (pari 81).</summary>
+/// or deleted it, and its hunks — each kept or dropped on its own.</summary>
 internal sealed record CopyReviewFile(string Path, bool Created, bool Deleted, IReadOnlyList<CodeActions.DiffHunk> Hunks);
 
-/// <summary>What the run left in its copy, for the review (planche CopyReview).</summary>
+/// <summary>What the run left in its copy, for the review.</summary>
 /// <param name="Id">This review's number: an apply names the review it keeps hunks of, and is refused once the copy was read
 /// again since — what the person kept is what they saw.</param>
 /// <param name="Branch">The copy's branch, where what is not applied stays until the copy is discarded.</param>
@@ -72,6 +72,15 @@ internal sealed class CopyRun
 
     /// <summary>Whether the copy has been discarded: nothing more reaches it.</summary>
     internal bool Discarded { get; private set; }
+
+    /// <summary>The review read last: what an apply keeps hunks of, and where the card after it places them.</summary>
+    internal CopyReview? LastReview { get; private set; }
+
+    /// <summary>The commit the copy started from, short: what a card names.</summary>
+    internal string StartCommit => Copy.BaseCommit[..Math.Min(7, Copy.BaseCommit.Length)];
+
+    /// <summary>The folder the person opened, as a path in the repository: <c>""</c> at its top, else ending in '/'.</summary>
+    internal string Inside => _inside;
 
     /// <summary>What the start card says for <paramref name="workspace"/>; nothing is made.</summary>
     internal static async Task<CopyStart> PrepareAsync(string workspace, CancellationToken ct)
@@ -140,6 +149,16 @@ internal sealed class CopyRun
     internal async Task<CopyReview> ReviewAsync(CancellationToken ct)
     {
         var (changes, problem) = await Copy.ChangesAsync(ct);
+        // A change with no line to keep or drop (an empty file created or deleted, a mode changed) is said, never offered:
+        // shown with nothing to tick, it could never be applied.
+        var lineless = changes.Where(c => c.Plan.Hunks.Count == 0).Select(c => c.Path).ToList();
+        if (lineless.Count > 0)
+        {
+            var note = $"{lineless.Count} {(lineless.Count == 1 ? "file" : "files")} changed without a line to keep or drop (an "
+                     + $"empty file, or only its mode), not offered: {string.Join(", ", lineless)} (on the branch {Copy.Branch})";
+            problem = problem is null ? note : problem + "; " + note;
+            changes = [.. changes.Where(c => c.Plan.Hunks.Count > 0)];
+        }
         var inside = changes.Where(c => c.Path.StartsWith(_inside, PathComparer.Comparison)).ToList();
         var outside = changes.Count - inside.Count;
         if (outside > 0)
@@ -152,7 +171,7 @@ internal sealed class CopyRun
         _changes = inside;
         var id = Interlocked.Increment(ref _reviewId);
         var files = inside.Select(c => new CopyReviewFile(c.Path, c.Before is null, c.After is null, c.Plan.Hunks)).ToList();
-        return new CopyReview(id, Copy.Branch, files, problem);
+        return LastReview = new CopyReview(id, Copy.Branch, files, problem);
     }
 
     /// <summary>

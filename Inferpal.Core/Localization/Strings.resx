@@ -2395,4 +2395,56 @@ What you save there applies from your next question, in this thread and the othe
   <data name="CopyLeftNotInReview" xml:space="preserve"><value>it is not in the copy's last review: review it again</value></data>
   <data name="CopyReviewChanged" xml:space="preserve"><value>The copy changed since this review: review it again before applying.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>A question is being answered in the copy: discard it once the answer ends.</value></data>
+  <data name="SlashHintRunCopy" xml:space="preserve"><value>run the agent on a copy of the repository, then keep or drop each change (`/run-copy &lt;question&gt;`)</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>This command is not available in this editor yet — use it from VS Code.</value></data>
+  <data name="CopyStartTitle" xml:space="preserve"><value>Work on a copy of the repository</value></data>
+  <data name="CopyStartLead" xml:space="preserve"><value>Your files stay as they are while the agent works</value></data>
+  <data name="CopyStartOfLabel" xml:space="preserve"><value>Copy of</value></data>
+  <data name="CopyStartOf" xml:space="preserve"><value>`{0}` at its last commit, `{1}`</value></data>
+  <data name="CopyStartOfDetached" xml:space="preserve"><value>the last commit, `{0}`</value></data>
+  <data name="CopyStartBranchLabel" xml:space="preserve"><value>On branch</value></data>
+  <data name="CopyStartBranchNew" xml:space="preserve"><value>a new `inferpal/` branch, created for this run</value></data>
+  <data name="CopyStartBranchHeld" xml:space="preserve"><value>`{0}`, as your last question on the copy left it</value></data>
+  <data name="CopyStartBranchLeft" xml:space="preserve"><value>`{0}`, left by an editor that closed during its run</value></data>
+  <data name="CopyStartKeptLabel" xml:space="preserve"><value>Kept in</value></data>
+  <data name="CopyStartKeptValue" xml:space="preserve"><value>Inferpal's own folder, outside the repository</value></data>
+  <data name="CopyStartUncommitted" xml:space="preserve"><value>{0} {0:change|changes} you have not committed {0:does|do} not go with it</value></data>
+  <data name="CopyStartUncommittedUnknown" xml:space="preserve"><value>git could not list the changes you have not committed: none of them goes with it</value></data>
+  <data name="CopyStartUncommittedHint" xml:space="preserve"><value>The agent works from the last commit. Commit them first if it should see them.</value></data>
+  <data name="CopyStartMore" xml:space="preserve"><value>…and {0} more</value></data>
+  <data name="CopyStartRules" xml:space="preserve"><value>The rules that refuse a command, and the files kept from the model, are this repository's in the copy too. An “Always” you gave here does not carry over: the copy asks again.</value></data>
+  <data name="CopyStartGo" xml:space="preserve"><value>Start on the copy</value></data>
+  <data name="CopyStartGoHeld" xml:space="preserve"><value>Continue on the copy</value></data>
+  <data name="CopyStartMine" xml:space="preserve"><value>Work in my files instead</value></data>
+  <data name="CopyReviewTitle" xml:space="preserve"><value>Review the changes — keep or drop each one</value></data>
+  <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:file|files} · {1} {1:change|changes} · {2} kept</value></data>
+  <data name="CopyReviewFileKept" xml:space="preserve"><value>{0} of {1} kept</value></data>
+  <data name="CopyReviewNewFile" xml:space="preserve"><value>new file</value></data>
+  <data name="CopyReviewDeletedFile" xml:space="preserve"><value>deleted</value></data>
+  <data name="CopyReviewLines" xml:space="preserve"><value>Lines {0}–{1}</value></data>
+  <data name="CopyReviewLine" xml:space="preserve"><value>Line {0}</value></data>
+  <data name="CopyReviewKeep" xml:space="preserve"><value>Keep</value></data>
+  <data name="CopyReviewDrop" xml:space="preserve"><value>Drop</value></data>
+  <data name="CopyReviewDropped" xml:space="preserve"><value>Dropped</value></data>
+  <data name="CopyReviewShow" xml:space="preserve"><value>Show</value></data>
+  <data name="CopyReviewHide" xml:space="preserve"><value>Hide</value></data>
+  <data name="CopyReviewApply" xml:space="preserve"><value>Apply {0} {0:change|changes} to my files</value></data>
+  <data name="CopyReviewPartial" xml:space="preserve"><value>Applying {0} of {1} changes is a combination the run never had: build or test again once applied.</value></data>
+  <data name="CopyReviewDiscard" xml:space="preserve"><value>Discard the copy</value></data>
+  <data name="CopyReviewNothing" xml:space="preserve"><value>The run changed nothing in the copy.</value></data>
+  <data name="CopyReviewLeftOut" xml:space="preserve"><value>Not in this review — {0}.</value></data>
+  <data name="CopyAppliedTitle" xml:space="preserve"><value>{0} of {1} {1:change|changes} applied to your files</value></data>
+  <data name="CopyAppliedUndo" xml:space="preserve"><value>`/undo-run` gives them back</value></data>
+  <data name="CopyNotApplied" xml:space="preserve"><value>{0} {0:change was|changes were} not applied: {1}</value></data>
+  <data name="CopyNotAppliedNote" xml:space="preserve"><value>Your version is left as it is. The copy's change is still on the branch `{0}`.</value></data>
+  <data name="CopyLinesShort" xml:space="preserve"><value>lines {0}–{1}</value></data>
+  <data name="CopyLineShort" xml:space="preserve"><value>line {0}</value></data>
+  <data name="CopyCompare" xml:space="preserve"><value>Compare with my version</value></data>
+  <data name="CopyMerge" xml:space="preserve"><value>Ask the agent to merge it</value></data>
+  <data name="CopyMergePrompt" xml:space="preserve"><value>Bring the change the copy made to `{0}` (on the branch `{1}`) into my version of the file, keeping my own changes.</value></data>
+  <data name="CopyKeepForNow" xml:space="preserve"><value>Keep the copy for now</value></data>
+  <data name="CopyDiscarded" xml:space="preserve"><value>The copy and its branch `{0}` were removed.</value></data>
+  <data name="CopyDiscardedBut" xml:space="preserve"><value>The copy was discarded, but {0}.</value></data>
+  <data name="CopyKeptForNow" xml:space="preserve"><value>The copy stays on the branch `{0}`: `/run-copy` alone shows its changes again, `/run-copy &lt;question&gt;` continues on it.</value></data>
+  <data name="CopyStartOfCommit" xml:space="preserve"><value>the commit `{0}`</value></data>
 </root>

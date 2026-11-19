@@ -2391,4 +2391,56 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="CopyLeftNotInReview" xml:space="preserve"><value>コピーの最後のレビューに含まれていません。もう一度レビューしてください</value></data>
   <data name="CopyReviewChanged" xml:space="preserve"><value>このレビュー以降にコピーが変更されました。適用する前にもう一度レビューしてください。</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>コピーで質問に回答中です。回答が終わってから破棄してください。</value></data>
+  <data name="SlashHintRunCopy" xml:space="preserve"><value>リポジトリのコピーでエージェントを実行し、変更ごとに残すか破棄するかを選ぶ (`/run-copy &lt;質問&gt;`)</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>このコマンドはこのエディターではまだ使えません。VS Code から使ってください。</value></data>
+  <data name="CopyStartTitle" xml:space="preserve"><value>リポジトリのコピーで作業する</value></data>
+  <data name="CopyStartLead" xml:space="preserve"><value>エージェントの作業中もあなたのファイルはそのままです</value></data>
+  <data name="CopyStartOfLabel" xml:space="preserve"><value>コピー元</value></data>
+  <data name="CopyStartOf" xml:space="preserve"><value>`{0}` の最新コミット `{1}`</value></data>
+  <data name="CopyStartOfDetached" xml:space="preserve"><value>最新のコミット `{0}`</value></data>
+  <data name="CopyStartBranchLabel" xml:space="preserve"><value>ブランチ</value></data>
+  <data name="CopyStartBranchNew" xml:space="preserve"><value>この実行用に作成する新しい `inferpal/` ブランチ</value></data>
+  <data name="CopyStartBranchHeld" xml:space="preserve"><value>`{0}`（コピーでの前回の質問が終わった状態）</value></data>
+  <data name="CopyStartBranchLeft" xml:space="preserve"><value>`{0}`（実行中に閉じたエディターが残したもの）</value></data>
+  <data name="CopyStartKeptLabel" xml:space="preserve"><value>保存場所</value></data>
+  <data name="CopyStartKeptValue" xml:space="preserve"><value>リポジトリ外の Inferpal 専用フォルダー</value></data>
+  <data name="CopyStartUncommitted" xml:space="preserve"><value>コミットしていない変更 {0} 件はコピーに含まれません</value></data>
+  <data name="CopyStartUncommittedUnknown" xml:space="preserve"><value>git がコミットしていない変更を一覧できませんでした。どれもコピーには含まれません</value></data>
+  <data name="CopyStartUncommittedHint" xml:space="preserve"><value>エージェントは最新のコミットから作業します。見せたい場合は先にコミットしてください。</value></data>
+  <data name="CopyStartMore" xml:space="preserve"><value>…ほか {0} 件</value></data>
+  <data name="CopyStartRules" xml:space="preserve"><value>コマンドを拒否するルールと、モデルから隠すファイルは、コピーでもこのリポジトリのものが適用されます。ここで与えた「常に」は引き継がれず、コピーでは改めて確認します。</value></data>
+  <data name="CopyStartGo" xml:space="preserve"><value>コピーで開始</value></data>
+  <data name="CopyStartGoHeld" xml:space="preserve"><value>コピーで続ける</value></data>
+  <data name="CopyStartMine" xml:space="preserve"><value>自分のファイルで作業する</value></data>
+  <data name="CopyReviewTitle" xml:space="preserve"><value>変更を確認し、一つずつ残すか破棄するかを選んでください</value></data>
+  <data name="CopyReviewCount" xml:space="preserve"><value>ファイル {0} 件 · 変更 {1} 件 · 残す {2} 件</value></data>
+  <data name="CopyReviewFileKept" xml:space="preserve"><value>{1} 件中 {0} 件を残す</value></data>
+  <data name="CopyReviewNewFile" xml:space="preserve"><value>新規ファイル</value></data>
+  <data name="CopyReviewDeletedFile" xml:space="preserve"><value>削除</value></data>
+  <data name="CopyReviewLines" xml:space="preserve"><value>{0}–{1} 行目</value></data>
+  <data name="CopyReviewLine" xml:space="preserve"><value>{0} 行目</value></data>
+  <data name="CopyReviewKeep" xml:space="preserve"><value>残す</value></data>
+  <data name="CopyReviewDrop" xml:space="preserve"><value>破棄</value></data>
+  <data name="CopyReviewDropped" xml:space="preserve"><value>破棄済み</value></data>
+  <data name="CopyReviewShow" xml:space="preserve"><value>表示</value></data>
+  <data name="CopyReviewHide" xml:space="preserve"><value>隠す</value></data>
+  <data name="CopyReviewApply" xml:space="preserve"><value>{0} 件の変更を自分のファイルに適用</value></data>
+  <data name="CopyReviewPartial" xml:space="preserve"><value>{1} 件中 {0} 件だけを適用する組み合わせは、実行では一度も試されていません。適用後にもう一度ビルドまたはテストしてください。</value></data>
+  <data name="CopyReviewDiscard" xml:space="preserve"><value>コピーを破棄</value></data>
+  <data name="CopyReviewNothing" xml:space="preserve"><value>実行はコピーに何も変更しませんでした。</value></data>
+  <data name="CopyReviewLeftOut" xml:space="preserve"><value>このレビューに含まれないもの: {0}。</value></data>
+  <data name="CopyAppliedTitle" xml:space="preserve"><value>{1} 件中 {0} 件の変更をファイルに適用しました</value></data>
+  <data name="CopyAppliedUndo" xml:space="preserve"><value>`/undo-run` で元に戻せます</value></data>
+  <data name="CopyNotApplied" xml:space="preserve"><value>{0} 件の変更を適用しませんでした: {1}</value></data>
+  <data name="CopyNotAppliedNote" xml:space="preserve"><value>あなたのバージョンはそのままです。コピーの変更はブランチ `{0}` に残っています。</value></data>
+  <data name="CopyLinesShort" xml:space="preserve"><value>{0}–{1} 行目</value></data>
+  <data name="CopyLineShort" xml:space="preserve"><value>{0} 行目</value></data>
+  <data name="CopyCompare" xml:space="preserve"><value>自分のバージョンと比較</value></data>
+  <data name="CopyMerge" xml:space="preserve"><value>エージェントにマージを頼む</value></data>
+  <data name="CopyMergePrompt" xml:space="preserve"><value>コピーが `{0}` に加えた変更（ブランチ `{1}`）を、私の変更を残したまま私のバージョンのファイルに取り込んでください。</value></data>
+  <data name="CopyKeepForNow" xml:space="preserve"><value>コピーを今は残す</value></data>
+  <data name="CopyDiscarded" xml:space="preserve"><value>コピーとそのブランチ `{0}` を削除しました。</value></data>
+  <data name="CopyDiscardedBut" xml:space="preserve"><value>コピーは破棄しましたが、次の問題があります: {0}。</value></data>
+  <data name="CopyKeptForNow" xml:space="preserve"><value>コピーはブランチ `{0}` に残ります。`/run-copy` だけで変更を再表示し、`/run-copy &lt;質問&gt;` でその続きができます。</value></data>
+  <data name="CopyStartOfCommit" xml:space="preserve"><value>コミット `{0}`</value></data>
 </root>

@@ -110,6 +110,8 @@ export interface ChatSendParams {
   modelOverridesRoles?: boolean;
   /** The images the question carries, as `image/read` gave them (the Core's `ChatImages`). */
   images?: ImageDto[];
+  /** The question goes to the copy of the repository this window holds, or a new one (`/run-copy`, pari 106). */
+  inCopy?: boolean;
 }
 
 /** An image the question carries: its name, its type, its bytes in base64. */
@@ -196,7 +198,90 @@ export interface ChatSendResult {
   /** The notes no step read (typed during the final answer, or the turn stopped first): sent as the next message after
    *  a turn that ended normally, given back to the composer otherwise. */
   unappliedNotes?: TurnNote[] | null;
+  /** A question sent to a copy (`inCopy`): what its run left there, for the review card. */
+  copy?: CopyReview | null;
 }
+
+/** A row of the start card of a run on a copy; identifiers in backticks. */
+export interface CopyCardRow { label: string; value: string }
+
+/** The start card of a run on a copy (the Core's `CopyStartCardModel`). */
+export interface CopyStartCard {
+  title: string;
+  lead: string;
+  rows: CopyCardRow[];
+  /** What does not go with the copy, as a title; absent when everything is committed. */
+  uncommitted?: string | null;
+  uncommittedFiles: string[];
+  uncommittedHint?: string | null;
+  rules: string;
+  go: string;
+  mine: string;
+  cancel: string;
+}
+
+/** `copy/prepare`: the start card, or why no copy can be made. */
+export interface CopyPrepareResult {
+  refusal?: string | null;
+  /** The refusal as the conversation says it. */
+  refusalText?: string | null;
+  held: boolean;
+  leftBefore?: string | null;
+  card?: CopyStartCard | null;
+}
+
+/** One change the person keeps or drops: its lines removed and added, at 0-based lines. */
+export interface CopyHunk { index: number; oldStart: number; newStart: number; removed: string[]; added: string[] }
+
+/** One file's texts on the review card: `kept` and the apply texts are indexed by the number of changes kept. */
+export interface CopyReviewFileTexts { tag?: string | null; kept: string[]; hunkLabels: string[] }
+
+/** One file the run changed in the copy. */
+export interface CopyReviewFile { path: string; created: boolean; deleted: boolean; hunks: CopyHunk[]; texts?: CopyReviewFileTexts | null }
+
+/** The review card's labels, and its counted texts for every number of kept changes (index = changes kept). */
+export interface CopyReviewTexts {
+  title: string;
+  keep: string;
+  drop: string;
+  dropped: string;
+  show: string;
+  hide: string;
+  discard: string;
+  nothing?: string | null;
+  leftOut?: string | null;
+  counts: string[];
+  apply: string[];
+  partial: string[];
+}
+
+/** What a run left in its copy (the Core's `CopyReview`); `id` is what `copy/apply` names. */
+export interface CopyReview { id: number; branch: string; files: CopyReviewFile[]; problem?: string | null; texts?: CopyReviewTexts | null }
+
+/** A file whose kept changes were not applied; `canMerge`: compare and merge are offered (the person's own version is why,
+ *  and the copy still has the file). */
+export interface CopyNotAppliedFile { path: string; lines: string; copyPath: string; minePath: string; canMerge: boolean; mergePrompt: string }
+
+/** The kept changes not applied for one reason. */
+export interface CopyNotAppliedGroup { title: string; note?: string | null; files: CopyNotAppliedFile[] }
+
+/** The card after an apply (the Core's `CopyAppliedCardModel`). */
+export interface CopyAppliedCard {
+  title: string;
+  undo?: string | null;
+  notApplied: CopyNotAppliedGroup[];
+  compare: string;
+  merge: string;
+  discard: string;
+  keepForNow: string;
+  keptSaid: string;
+}
+
+/** `copy/apply`: what was written, or why nothing was (`error`). */
+export interface CopyApplyResult { written: string[]; error?: string | null; runId?: string | null; card?: CopyAppliedCard | null }
+
+/** `copy/discard`: `message` is what the conversation says; `error` why nothing was removed. */
+export interface CopyDiscardResult { problem?: string | null; error?: string | null; message?: string | null }
 
 export interface ToolNotice {
   name: string;

@@ -350,8 +350,11 @@ internal sealed partial class HostServer : IDisposable
                     return (c, why);
                 });
             }
-            catch (OperationCanceledException) { return new ChatSendResult(string.Empty, true, 0, 0); }   // Stop while it was made
-            if (made.Copy is null) return new ChatSendResult(string.Empty, false, 0, 0, Error: Strings.CopyNotMade(made.Refusal ?? "git gave no reason"));
+            // Neither reached the history: a Regenerate must not take back the exchange before it.
+            catch (OperationCanceledException) { return new ChatSendResult(string.Empty, true, 0, 0, QuestionKept: false); }   // Stop while it was made
+            if (made.Copy is null)
+                return new ChatSendResult(string.Empty, false, 0, 0, Error: Strings.CopyNotMade(made.Refusal ?? "git gave no reason"),
+                                          QuestionKept: false);
             copy = made.Copy;
         }
         ChatSendResult result;
@@ -368,7 +371,9 @@ internal sealed partial class HostServer : IDisposable
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     Diagnostics.Swallow("HostServer.CopyReview", ex);
-                    review = new CopyReviewDto(0, copy.Copy.Branch, [], "the copy's changes could not be read: " + Diagnostics.RootMessage(ex));
+                    // Its card still offers the discard: the copy is held, and nothing else reaches it.
+                    review = CopyReviewDto.Of(new Services.Execution.CopyReview(0, copy.Copy.Branch, [],
+                        "the copy's changes could not be read: " + Diagnostics.RootMessage(ex)));
                 }
             }
         }
@@ -419,9 +424,11 @@ internal sealed partial class HostServer : IDisposable
             var held = HeldCopy(s) ?? (s.Copy = await Services.Execution.CopyRun.FindLeftAsync(s.RootDir, token));
             var start = await Services.Execution.CopyRun.PrepareAsync(s.RootDir, token);
             // A question goes to the held copy: the card names the commit IT started from, not the workspace's.
-            var commit = held is null ? start.Commit : held.Copy.BaseCommit[..Math.Min(7, held.Copy.BaseCommit.Length)];
+            var commit = held?.StartCommit ?? start.Commit;
             return new CopyPrepareResult(start.Refusal, commit, start.Branch, start.Uncommitted?.ToList(), held is not null,
-                                         held?.LeftBefore == true ? held.Copy.Branch : null);
+                                         held?.LeftBefore == true ? held.Copy.Branch : null,
+                                         start.Refusal is null ? Services.Presentation.CopyCards.Start(start, held) : null,
+                                         start.Refusal is { } refused ? Strings.CopyNotMade(refused) : null);
         });
 
     /// <summary>The copy's changes read again (a follow-up may have changed them), for the review. In the turn slot: reading
@@ -450,7 +457,8 @@ internal sealed partial class HostServer : IDisposable
             var outcome = await copy.ApplyAsync(p.ReviewId, kept, s.Tools.History, token, path => s.Overlay.TryGetUnsaved(path, out _));
             if (outcome.Applied is not { } applied) return new CopyApplyResult([], [], outcome.Refusal);
             return new CopyApplyResult([.. applied.Written],
-                [.. applied.Left.Select(l => new CopyLeftDto(l.Path, l.Reason.ToString(), l.Why))], RunId: outcome.RunId);
+                [.. applied.Left.Select(l => new CopyLeftDto(l.Path, l.Reason.ToString(), l.Why))], RunId: outcome.RunId,
+                Card: Services.Presentation.CopyCards.Applied(applied, kept, copy.LastReview!, copy.Copy, copy.Inside, copy.Workspace));
         });
     }
 
@@ -465,7 +473,7 @@ internal sealed partial class HostServer : IDisposable
             var (done, problem) = await copy.DiscardAsync(token);
             if (!done) return new CopyDiscardResult(null, problem);
             s.Copy = null;
-            return new CopyDiscardResult(problem);
+            return new CopyDiscardResult(problem, Message: problem is null ? Strings.CopyDiscarded(copy.Copy.Branch) : Strings.CopyDiscardedBut(problem));
         });
 
     /// <summary>The notes of one turn, as its end left them: read by the model, or for the adapter to send next.</summary>

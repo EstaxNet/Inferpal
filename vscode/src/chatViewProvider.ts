@@ -40,6 +40,7 @@ import {
   WvSlashCommand,
   WvTranscriptItem,
   WvChip,
+  WvCopyCard,
 } from './webviewMessages';
 
 /**
@@ -108,7 +109,8 @@ type MentionsExpanded = {
   text: string; paths: string[]; labels: string[]; images: { image: ImageDto; thumbnail?: string; token: string }[];
 };
 /** A regenerated question's turn, as it was sent: the prompt, whether it was a code action, the relevant-code query. */
-type TurnReplay = { prompt: string; codeAction: boolean; query?: string };
+/** `inCopy`: the question goes to the copy this window holds (`/run-copy`), its bubble keeping the command. */
+type TurnReplay = { prompt: string; codeAction: boolean; query?: string; inCopy?: boolean };
 
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = 'inferpal.chat';
@@ -223,6 +225,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     shown: string;
     attachments: PendingAttachment[];
   } | undefined;
+  /** The card of a run on a copy waiting for the person (start, review, applied): the transcript does not carry it, so
+   *  every redraw shows it again — the copy is held by the host until it is applied or discarded. */
+  private copyCard: WvCopyCard | null = null;
+  /** The bubble of the `/run-copy` that opened the start card: replaced by the question once the person answers. */
+  private copyEcho: WvTranscriptItem | undefined;
   /** The chips a regenerated question carries again — never the ones waiting in the composer for the next question. */
   private resendAttachments: PendingAttachment[] | undefined;
   /** The notes a regenerated question's run read: asked again, it carries them (`chat/send` `notes`). */
@@ -603,6 +610,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const host = this.getHost();
     if (!host?.isRunning) {
       return;
+    }
+    // The copy a card showed belongs to the host that stopped: `/run-copy` finds it again, as a copy left behind.
+    if (this.copyCard) {
+      this.copyEcho = undefined;
+      this.showCopyCard(null);
     }
     host.setChatEvents({
       onToken: (text) => {
@@ -1920,6 +1932,30 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
         return;
       }
+      case 'copyStart':
+        await this.answerCopyStart(msg.question, msg.choice);
+        break;
+      case 'copyApply':
+        await this.applyCopy(msg.reviewId, msg.kept);
+        break;
+      case 'copyChoice':
+        if (this.copyCard?.kind === 'review') {
+          this.copyCard.dropped = msg.dropped;
+        }
+        break;
+      case 'copyDiscard':
+        await this.discardCopy();
+        break;
+      case 'copyKeep':
+        this.showCopyCard(null);
+        this.sayOutOfTurn(msg.said);
+        break;
+      case 'copyCompare':
+        await this.compareWithCopy(msg.copyPath, msg.minePath, msg.path);
+        break;
+      case 'copyMerge':
+        this.post({ type: 'restoreDraft', text: msg.prompt });
+        break;
       case 'runReview': {
         const host = this.hostForGesture();
         if (!host) {
@@ -3214,7 +3250,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // never dispatched again from its words: resent as words, an /explain answer came back as an agent turn (tools,
       // the chat model) with the whole excerpt pasted into the question and the prompt history.
       if (replay) {
-        await this.chatTurn(replay.prompt, host, replay.codeAction, replay.query);
+        await this.chatTurn(replay.prompt, host, replay.codeAction, replay.query, replay.inCopy === true);
         return;
       }
 
@@ -3279,6 +3315,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           const slash = await host.commandSlash(prompt, this.historyEntries());
           if (slash.handled) {
             const outcome = await this.applySlashEffects(slash.effects ?? []);
+            if (outcome.copyQuestion !== null) {
+              question.notice = true;
+              this.finishTurn('', null, false, 0);
+              await this.openCopyStart(outcome.copyQuestion, question);
+              return;
+            }
             if (outcome.chatPrompt !== null) {
               // sendAsPrompt (expanded user template): continue as a normal chat turn — refused like a typed question
               // when the backend is known to be down, its bubble taken back.
@@ -3388,8 +3430,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Applies the editor-side effects of a handled slash command. */
   private async applySlashEffects(
     effects: SlashEffect[],
-  ): Promise<{ chatPrompt: string | null; notes: string[]; rehydrate: boolean; dropHostMarkdown: boolean }> {
+  ): Promise<{ chatPrompt: string | null; notes: string[]; rehydrate: boolean; dropHostMarkdown: boolean; copyQuestion: string | null }> {
     let chatPrompt: string | null = null;
+    let copyQuestion: string | null = null;
     const notes: string[] = [];
     let rehydrate = false;
     let dropHostMarkdown = false;
@@ -3468,6 +3511,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           // `/setup`: the first-run card, looking again.
           void this.setupFlow.start('command');
           break;
+        case 'runCopy':
+          // `/run-copy <question>`: the start card first — nothing is made before the person answers it.
+          copyQuestion = e.value ?? null;
+          break;
         case 'openSettings':
           // `/settings`: the settings panel, as the command palette opens it.
           try {
@@ -3529,7 +3576,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           break; // unknown kinds are ignored (forward compatibility)
       }
     }
-    return { chatPrompt, notes, rehydrate, dropHostMarkdown };
+    return { chatPrompt, notes, rehydrate, dropHostMarkdown, copyQuestion };
   }
 
   /** /explain and /review: active selection (or whole document) fenced into the prompt,
@@ -3573,7 +3620,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** One model turn (agent or plain chat) with @-mention and pending-chip expansion. `codeAction`: a read-only
    * code action, answered by the code-actions model without tools. `query`: what the auto-context searches for —
    * the prompt as written by default, never with the attached files appended. */
-  private async chatTurn(prompt: string, host: HostClient, codeAction = false, query?: string): Promise<void> {
+  private async chatTurn(prompt: string, host: HostClient, codeAction = false, query?: string, inCopy = false): Promise<void> {
     // When the request left: a long turn's end is announced (announceRunEnd); 0 = it never left.
     let startedAt = 0;
     try {
@@ -3701,7 +3748,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           this.hydrate();
         }
       }
-      if (asked) {
+      // A question for a copy is not resent as such: its bubble is `/run-copy …`, which asks again through the start card.
+      if (asked && !inCopy) {
         this.lastSent = { question: asked, text: prompt, codeAction, query, shown: asked.text, attachments: [...chips] };
       }
       // A regenerated question's notes come back under it, read: asked again with them, it is the question the history
@@ -3740,6 +3788,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // attached file instead of the question (Visual Studio searches the typed text).
         query: query ?? prompt,
         notes: notes.length > 0 ? notes : undefined,
+        inCopy: inCopy || undefined,
       });
       // A stopped turn's partial answer is the host's: empty when nothing visible had come (reasoning only).
       const finalText = result.cancelled ? result.text : result.text || this.streamText;
@@ -3790,6 +3839,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           continues: result.offersContinue === true,
         });
       }
+      // What the run left in its copy, stopped or failed too: the person keeps or drops it.
+      if (result.copy) {
+        this.copyCard = { kind: 'review', review: result.copy, dropped: {} };
+      }
       this.busy = false;
       this.lastTokens = result.tokensUsed;
       this.sessionTokens += result.tokensUsed;
@@ -3819,6 +3872,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       });
       const normal = !result.error && !result.cancelled;
       this.settleNotes(result.appliedNotes, normal);
+      // Under the turn it ends: the review of what its run left in the copy.
+      if (result.copy) {
+        this.post({ type: 'copyCard', card: this.copyCard });
+      }
       this.turnEnded(result.error ? 'failed' : result.cancelled ? 'stopped' : 'normal');
       this.announceRunEnd(result.announceEnd === true, result.error ? 'failed' : result.cancelled ? 'stopped' : 'normal',
                           [result.duration, result.run?.detail].filter((part) => !!part).join(' · '));
@@ -3903,11 +3960,20 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const prompt = t('Continue.');
     this.continuing = true;
+    // ⚠ A run on a copy continues in the copy: sent as an ordinary question, its next steps wrote in the person's files.
+    const last = [...this.transcript].reverse().find((m) => ChatViewProvider.isModelQuestion(m));
+    const inCopy = !!last && ChatViewProvider.isCopyQuestion(last.text);
     try {
-      await this.send(prompt, false, { prompt, codeAction: this.lastSent?.codeAction === true, query: prompt });
+      await this.send(inCopy ? `/run-copy ${prompt}` : prompt, false,
+                      { prompt, codeAction: !inCopy && this.lastSent?.codeAction === true, query: prompt, inCopy });
     } finally {
       this.continuing = false;
     }
+  }
+
+  /** A question asked on a copy of the repository: its bubble keeps the command. */
+  private static isCopyQuestion(text: string): boolean {
+    return /^\/run-copy\s/i.test(text);
   }
 
   /** A question meant for the model: anything typed, or a refused /explain or /review — never a command served
@@ -4117,6 +4183,145 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * accounts for it. Background work (bootstrap, polling, pushing state on a change nobody asked
    * for) keeps the bare `isRunning` test — a toast there is noise, not information.
    */
+  /**
+   * `/run-copy <question>`: the start card, or why no copy can be made of this folder — nothing is made before the person
+   * answers. `/run-copy` alone: the review of the copy held (the host took up a copy left behind), the way back to it.
+   */
+  private async openCopyStart(question: string, echo: WvTranscriptItem): Promise<void> {
+    const host = this.hostForGesture();
+    if (!host) {
+      return;
+    }
+    try {
+      if (!question) {
+        const review = await host.copyReview();
+        if (review) {
+          this.showCopyCard({ kind: 'review', review, dropped: {} });
+        }
+        return;
+      }
+      const prepared = await host.copyPrepare();
+      if (!prepared.card) {
+        this.sayOutOfTurn(prepared.refusalText ?? prepared.refusal ?? '');
+        return;
+      }
+      this.copyEcho = echo;
+      this.showCopyCard({ kind: 'start', question, card: prepared.card });
+    } catch (err) {
+      this.gestureFailed('run on a copy', err);
+    }
+  }
+
+  private showCopyCard(card: WvCopyCard | null): void {
+    this.copyCard = card;
+    this.post({ type: 'copyCard', card });
+  }
+
+  /**
+   * The start card's answer. The bubble of the command goes: on the copy, the question is asked under `/run-copy …`
+   * itself, so a saved conversation asks it again through the card — never in the person's files.
+   */
+  private async answerCopyStart(question: string, choice: 'copy' | 'mine' | 'cancel'): Promise<void> {
+    // ⚠ Refused before the card goes: a turn running, no host, a backend down — taken away first, the question was lost
+    // with it (it was not typed, nothing gave it back).
+    if (choice !== 'cancel') {
+      const refused = this.busy || this.hostStarting || !this.getHost()?.isRunning
+        || (this.status?.connected === false && (await this.refusedWhileBackendDown(question, false)));
+      if (refused) {
+        if (this.busy) {
+          void vscode.window.showWarningMessage(t('A turn is still running — wait for it to finish or stop it, then try again.'));
+        } else if (!this.getHost()?.isRunning || this.hostStarting) {
+          void vscode.window.showWarningMessage(hostUnavailableMessage());
+        }
+        this.post({ type: 'copyCard', card: this.copyCard });
+        return;
+      }
+    }
+    this.showCopyCard(null);
+    const echo = this.copyEcho;
+    this.copyEcho = undefined;
+    const at = echo ? this.transcript.indexOf(echo) : -1;
+    if (at >= 0) {
+      this.transcript.splice(at, 1);
+      this.hydrate();
+      this.autoSaveLast();
+    }
+    if (choice === 'cancel') {
+      this.post({ type: 'restoreDraft', text: `/run-copy ${question}` });
+    } else if (choice === 'mine') {
+      await this.send(question);
+    } else {
+      await this.send(`/run-copy ${question}`, false, { prompt: question, codeAction: false, query: question, inCopy: true });
+    }
+  }
+
+  /** The review card's Apply; refused, the review card comes back with its choices. */
+  private async applyCopy(reviewId: number, kept: Record<string, number[]>): Promise<void> {
+    const host = this.hostForGesture();
+    try {
+      const applied = host ? await host.copyApply(reviewId, kept) : undefined;
+      if (applied?.card) {
+        this.showCopyCard({ kind: 'applied', card: applied.card });
+        return;
+      }
+      if (applied?.error) {
+        this.sayOutOfTurn(applied.error);
+      }
+    } catch (err) {
+      this.gestureFailed('apply the changes of the copy', err);
+    }
+    await this.reviewCopyAgain();
+  }
+
+  /**
+   * After a refused apply or discard: the copy as the host holds it now — its review read again (the one shown may be
+   * old), or no card when it holds none (a restarted host). ⚠ Drawn again unchanged, a card the host no longer backs
+   * stayed for good, every button refused.
+   */
+  private async reviewCopyAgain(): Promise<void> {
+    try {
+      const review = await this.getHost()?.copyReview();
+      if (review !== undefined) {
+        this.showCopyCard(review ? { kind: 'review', review, dropped: this.copyCard?.kind === 'review' ? this.copyCard.dropped : {} } : null);
+        return;
+      }
+    } catch (err) {
+      // Its slot is held (a turn runs): the card stays as it was, its buttons back.
+      this.log(`[chat] copy/review failed: ${String(err)}`);
+    }
+    this.post({ type: 'copyCard', card: this.copyCard });
+  }
+
+  /** "Discard the copy"; refused (a question is answered in it), the card comes back. */
+  private async discardCopy(): Promise<void> {
+    const host = this.hostForGesture();
+    try {
+      const discarded = host ? await host.copyDiscard() : undefined;
+      if (discarded && !discarded.error) {
+        this.showCopyCard(null);
+        if (discarded.message) {
+          this.sayOutOfTurn(discarded.message);
+        }
+        return;
+      }
+      if (discarded?.error) {
+        this.sayOutOfTurn(discarded.error);
+      }
+    } catch (err) {
+      this.gestureFailed('discard the copy', err);
+    }
+    await this.reviewCopyAgain();
+  }
+
+  /** A file the apply left, the copy's version beside the person's. */
+  private async compareWithCopy(copyPath: string, minePath: string, relative: string): Promise<void> {
+    try {
+      await vscode.commands.executeCommand('vscode.diff', vscode.Uri.file(copyPath), vscode.Uri.file(minePath), relative);
+    } catch (err) {
+      this.gestureFailed('compare with the copy', err);
+    }
+  }
+
   private hostForGesture(): HostClient | undefined {
     const host = this.getHost();
     if (host?.isRunning) {
@@ -4861,6 +5066,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // The notice of the start, until dismissed: the transcript does not carry it.
     if (this.awayNotice) {
       this.post({ type: 'awayNotice', notice: this.awayNotice });
+    }
+    // Nor the card of a run on a copy, which the host holds until the person applies or discards it.
+    if (this.copyCard) {
+      this.post({ type: 'copyCard', card: this.copyCard });
     }
     // The transcript carries no card and the webview just rebuilt from it: a card still waiting
     // would vanish while the host keeps waiting for its answer, with no timeout.

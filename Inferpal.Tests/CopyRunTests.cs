@@ -188,6 +188,22 @@ public sealed class CopyRunTests : IDisposable
     }
 
     [Fact]
+    public async Task AFileChangedWithoutALineToKeep_IsSaid_NeverOfferedWithNothingToTick()
+    {
+        Commit();
+        var (run, _) = await CopyRun.StartAsync(_repo.FullName, CancellationToken.None);
+        File.WriteAllText(Path.Combine(run!.Copy.Folder, "__init__.py"), "");                        // an empty file created
+        File.WriteAllText(Path.Combine(run.Copy.Folder, "Pay.cs"), "class Pay { }\n");
+
+        var review = await run.ReviewAsync(CancellationToken.None);
+
+        Assert.Equal(["Pay.cs"], review.Files.Select(f => f.Path));
+        Assert.Contains("without a line to keep or drop", review.Problem);
+        Assert.Contains("__init__.py", review.Problem);
+        await run.DiscardAsync(CancellationToken.None);
+    }
+
+    [Fact]
     public async Task ACopyAQuestionIsAnsweredIn_IsNeverDiscarded()
     {
         Commit();

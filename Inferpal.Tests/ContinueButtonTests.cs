@@ -77,9 +77,11 @@ public sealed class ContinueButtonTests
         var provider = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
             File.ReadAllText(Path.Combine(root, "vscode", "src", "chatViewProvider.ts")));
         Assert.Matches(new Regex(@"case 'continue':\s*await this\.continueTurn\(\);"), provider);
-        // Replayed (no prompt history, no slash reading), a code action as one, none of the composer's chips.
-        Assert.Contains("await this.send(prompt, false, { prompt, codeAction: this.lastSent?.codeAction === true, query: prompt });",
-                        provider, StringComparison.Ordinal);
+        // Replayed (no prompt history, no slash reading), a code action as one, none of the composer's chips — and a run on a
+        // copy continued in the copy, under its command (RunCopyFrontEndTests).
+        Assert.Matches(new Regex(@"await this\.send\(inCopy \? `/run-copy \$\{prompt\}` : prompt, false,\s*"
+                                 + @"\{ prompt, codeAction: !inCopy && this\.lastSent\?\.codeAction === true, query: prompt, inCopy \}\);"),
+                       provider);
         Assert.Contains("this.continuing ? [] : this.pendingAttachments", provider, StringComparison.Ordinal);
         // A refused send keeps the button: only the turn's start takes it off. Drawn from the item, a redraw keeps it.
         Assert.Contains("go.addEventListener('click', () => post({ type: 'continue' }));", webview, StringComparison.Ordinal);

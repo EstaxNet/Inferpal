@@ -2391,4 +2391,56 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="CopyLeftNotInReview" xml:space="preserve"><value>nie ma go w ostatnim przeglądzie kopii: przejrzyj ją ponownie</value></data>
   <data name="CopyReviewChanged" xml:space="preserve"><value>Kopia zmieniła się od tego przeglądu: przejrzyj ją ponownie przed zastosowaniem.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>W kopii trwa odpowiedź na pytanie: odrzuć ją, gdy odpowiedź się skończy.</value></data>
+  <data name="SlashHintRunCopy" xml:space="preserve"><value>uruchomić agenta na kopii repozytorium, a potem zachować lub odrzucić każdą zmianę (`/run-copy &lt;pytanie&gt;`)</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>To polecenie nie jest jeszcze dostępne w tym edytorze — użyj go w VS Code.</value></data>
+  <data name="CopyStartTitle" xml:space="preserve"><value>Praca na kopii repozytorium</value></data>
+  <data name="CopyStartLead" xml:space="preserve"><value>Twoje pliki zostają bez zmian, gdy agent pracuje</value></data>
+  <data name="CopyStartOfLabel" xml:space="preserve"><value>Kopia</value></data>
+  <data name="CopyStartOf" xml:space="preserve"><value>`{0}` w ostatnim commicie, `{1}`</value></data>
+  <data name="CopyStartOfDetached" xml:space="preserve"><value>ostatni commit, `{0}`</value></data>
+  <data name="CopyStartBranchLabel" xml:space="preserve"><value>Na gałęzi</value></data>
+  <data name="CopyStartBranchNew" xml:space="preserve"><value>nowa gałąź `inferpal/`, utworzona dla tego uruchomienia</value></data>
+  <data name="CopyStartBranchHeld" xml:space="preserve"><value>`{0}`, tak jak zostawiło ją ostatnie pytanie na kopii</value></data>
+  <data name="CopyStartBranchLeft" xml:space="preserve"><value>`{0}`, pozostawiona przez edytor zamknięty w trakcie uruchomienia</value></data>
+  <data name="CopyStartKeptLabel" xml:space="preserve"><value>Przechowywana w</value></data>
+  <data name="CopyStartKeptValue" xml:space="preserve"><value>własnym folderze Inferpal, poza repozytorium</value></data>
+  <data name="CopyStartUncommitted" xml:space="preserve"><value>{0} {0:niezatwierdzona zmiana nie trafia|niezatwierdzone zmiany nie trafiają|niezatwierdzonych zmian nie trafia} do kopii</value></data>
+  <data name="CopyStartUncommittedUnknown" xml:space="preserve"><value>git nie mógł wyświetlić niezatwierdzonych zmian: żadna z nich nie trafia do kopii</value></data>
+  <data name="CopyStartUncommittedHint" xml:space="preserve"><value>Agent pracuje od ostatniego commitu. Najpierw je zatwierdź, jeśli ma je widzieć.</value></data>
+  <data name="CopyStartMore" xml:space="preserve"><value>…i {0} więcej</value></data>
+  <data name="CopyStartRules" xml:space="preserve"><value>Reguły odrzucające polecenia i pliki ukryte przed modelem są w kopii takie same jak w tym repozytorium. „Zawsze” udzielone tutaj nie przechodzi na kopię: kopia zapyta ponownie.</value></data>
+  <data name="CopyStartGo" xml:space="preserve"><value>Zacznij na kopii</value></data>
+  <data name="CopyStartGoHeld" xml:space="preserve"><value>Kontynuuj na kopii</value></data>
+  <data name="CopyStartMine" xml:space="preserve"><value>Pracuj zamiast tego w moich plikach</value></data>
+  <data name="CopyReviewTitle" xml:space="preserve"><value>Przejrzyj zmiany — zachowaj lub odrzuć każdą</value></data>
+  <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:plik|pliki|plików} · {1} {1:zmiana|zmiany|zmian} · zachowane: {2}</value></data>
+  <data name="CopyReviewFileKept" xml:space="preserve"><value>zachowane {0} z {1}</value></data>
+  <data name="CopyReviewNewFile" xml:space="preserve"><value>nowy plik</value></data>
+  <data name="CopyReviewDeletedFile" xml:space="preserve"><value>usunięty</value></data>
+  <data name="CopyReviewLines" xml:space="preserve"><value>Wiersze {0}–{1}</value></data>
+  <data name="CopyReviewLine" xml:space="preserve"><value>Wiersz {0}</value></data>
+  <data name="CopyReviewKeep" xml:space="preserve"><value>Zachowaj</value></data>
+  <data name="CopyReviewDrop" xml:space="preserve"><value>Odrzuć</value></data>
+  <data name="CopyReviewDropped" xml:space="preserve"><value>Odrzucona</value></data>
+  <data name="CopyReviewShow" xml:space="preserve"><value>Pokaż</value></data>
+  <data name="CopyReviewHide" xml:space="preserve"><value>Ukryj</value></data>
+  <data name="CopyReviewApply" xml:space="preserve"><value>Zastosuj {0} {0:zmianę|zmiany|zmian} do moich plików</value></data>
+  <data name="CopyReviewPartial" xml:space="preserve"><value>Zastosowanie {0} z {1} zmian to połączenie, którego uruchomienie nigdy nie miało: po zastosowaniu zbuduj lub przetestuj ponownie.</value></data>
+  <data name="CopyReviewDiscard" xml:space="preserve"><value>Odrzuć kopię</value></data>
+  <data name="CopyReviewNothing" xml:space="preserve"><value>Uruchomienie niczego w kopii nie zmieniło.</value></data>
+  <data name="CopyReviewLeftOut" xml:space="preserve"><value>Poza tym przeglądem — {0}.</value></data>
+  <data name="CopyAppliedTitle" xml:space="preserve"><value>Zastosowano do twoich plików: {0} z {1}</value></data>
+  <data name="CopyAppliedUndo" xml:space="preserve"><value>`/undo-run` je przywróci</value></data>
+  <data name="CopyNotApplied" xml:space="preserve"><value>Nie zastosowano zmian: {0} — {1}</value></data>
+  <data name="CopyNotAppliedNote" xml:space="preserve"><value>Twoja wersja pozostaje bez zmian. Zmiana z kopii jest nadal na gałęzi `{0}`.</value></data>
+  <data name="CopyLinesShort" xml:space="preserve"><value>wiersze {0}–{1}</value></data>
+  <data name="CopyLineShort" xml:space="preserve"><value>wiersz {0}</value></data>
+  <data name="CopyCompare" xml:space="preserve"><value>Porównaj z moją wersją</value></data>
+  <data name="CopyMerge" xml:space="preserve"><value>Poproś agenta o scalenie</value></data>
+  <data name="CopyMergePrompt" xml:space="preserve"><value>Przenieś zmianę, którą kopia wprowadziła w `{0}` (na gałęzi `{1}`), do mojej wersji pliku, zachowując moje własne zmiany.</value></data>
+  <data name="CopyKeepForNow" xml:space="preserve"><value>Na razie zachowaj kopię</value></data>
+  <data name="CopyDiscarded" xml:space="preserve"><value>Kopia i jej gałąź `{0}` zostały usunięte.</value></data>
+  <data name="CopyDiscardedBut" xml:space="preserve"><value>Kopia została odrzucona, ale: {0}.</value></data>
+  <data name="CopyKeptForNow" xml:space="preserve"><value>Kopia zostaje na gałęzi `{0}`: samo `/run-copy` znów pokaże jej zmiany, `/run-copy &lt;pytanie&gt;` kontynuuje na niej.</value></data>
+  <data name="CopyStartOfCommit" xml:space="preserve"><value>commit `{0}`</value></data>
 </root>

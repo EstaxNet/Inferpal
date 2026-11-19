@@ -637,6 +637,22 @@ internal sealed partial class HostServer
                 case SlashCommandId.Setup when s.Editor.HasEditor:
                     return new SlashCommandResult(true, null, [new SlashEffectDto("openSetup")]);
 
+                // The editor shows the start card (copy/prepare) before anything is made: the question waits for its answer.
+                // Without a question, the editor shows the review of the copy held — the way back to it after "Keep the
+                // copy for now", a reload, or an editor that closed during its run.
+                case SlashCommandId.RunCopy when s.Editor.HasEditor:
+                {
+                    var typed = p.Text.Trim();
+                    var at = typed.AsSpan().IndexOfAny([' ', '\t', '\r', '\n']);
+                    var question = at > 0 ? typed[at..].Trim() : "";
+                    if (question.Length == 0
+                        && (s.Copy is { Discarded: false } ? s.Copy : s.Copy = await Services.Execution.CopyRun.FindLeftAsync(s.RootDir, cts.Token)) is null)
+                        return new SlashCommandResult(true, Strings.CopyNoneOpen + " " + Strings.SlashUsage("/run-copy <question>"));
+                    return new SlashCommandResult(true, null, [new SlashEffectDto("runCopy", question)]);
+                }
+                case SlashCommandId.RunCopy:
+                    return new SlashCommandResult(true, Strings.RunCopyNotHereYet);
+
                 // Not portable yet (VS-only UX or planned for a later phase): a deterministic
                 // localized answer beats falling through to the model with a raw "/command".
                 case SlashCommandId.FixBuild:

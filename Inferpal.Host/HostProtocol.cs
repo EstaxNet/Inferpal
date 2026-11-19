@@ -223,21 +223,28 @@ internal sealed record ChatSendResult(
 /// is made.</param>
 /// <param name="LeftBefore">The branch of the copy an earlier session left (the editor closed or the host stopped while it was
 /// held), taken up now; <c>null</c> otherwise.</param>
+/// <param name="Card">The start card's texts; <c>null</c> when <paramref name="Refusal"/> says no copy can be made.</param>
+/// <param name="RefusalText">The refusal as the conversation says it, translated around its English detail.</param>
 internal sealed record CopyPrepareResult(string? Refusal, string? Commit, string? Branch, List<string>? Uncommitted, bool Held,
-                                         string? LeftBefore = null);
+                                         string? LeftBefore = null, Services.Presentation.CopyStartCardModel? Card = null,
+                                         string? RefusalText = null);
 
 /// <summary>What a run left in its copy, for the review: the copy's branch, and each changed file with its hunks.</summary>
 /// <param name="Id">The review's number: <c>copy/apply</c> names it, and is refused once the copy was read again since.</param>
-internal sealed record CopyReviewDto(int Id, string Branch, List<CopyReviewFileDto> Files, string? Problem)
+/// <param name="Texts">The review card's texts, counted ones for every number of kept changes.</param>
+internal sealed record CopyReviewDto(int Id, string Branch, List<CopyReviewFileDto> Files, string? Problem,
+                                     Services.Presentation.CopyReviewTexts? Texts = null)
 {
     public static CopyReviewDto Of(Services.Execution.CopyReview r) =>
         new(r.Id, r.Branch, [.. r.Files.Select(f => new CopyReviewFileDto(f.Path, f.Created, f.Deleted,
-                [.. f.Hunks.Select(h => new CopyHunkDto(h.Index, h.OldStart, h.NewStart, [.. h.OldLines], [.. h.NewLines]))]))],
-            r.Problem);
+                [.. f.Hunks.Select(h => new CopyHunkDto(h.Index, h.OldStart, h.NewStart, [.. h.OldLines], [.. h.NewLines]))],
+                Services.Presentation.CopyCards.File(f)))],
+            r.Problem, Services.Presentation.CopyCards.Review(r));
 }
 
 /// <summary>One changed file of a copy: created or deleted by the run, and its hunks.</summary>
-internal sealed record CopyReviewFileDto(string Path, bool Created, bool Deleted, List<CopyHunkDto> Hunks);
+internal sealed record CopyReviewFileDto(string Path, bool Created, bool Deleted, List<CopyHunkDto> Hunks,
+                                         Services.Presentation.CopyReviewFileTexts? Texts = null);
 
 /// <summary>One hunk the person keeps or drops: its lines removed and added, at 0-based lines of the old and new text.</summary>
 internal sealed record CopyHunkDto(int Index, int OldStart, int NewStart, List<string> Removed, List<string> Added);
@@ -248,14 +255,17 @@ internal sealed record CopyApplyParams(int ReviewId, Dictionary<string, List<int
 
 /// <summary>What applying did: the files written, the files left and why (a code the adapter translates), or why nothing
 /// was applied.</summary>
-internal sealed record CopyApplyResult(List<string> Written, List<CopyLeftDto> Left, string? Error = null, string? RunId = null);
+/// <param name="Card">The card after the apply: what was written, what was not and why.</param>
+internal sealed record CopyApplyResult(List<string> Written, List<CopyLeftDto> Left, string? Error = null, string? RunId = null,
+                                       Services.Presentation.CopyAppliedCardModel? Card = null);
 
 /// <summary>A file whose kept hunks were not written: <paramref name="Reason"/> is a <c>CopyLeftReason</c> name,
 /// <paramref name="Text"/> says it in the person's language.</summary>
 internal sealed record CopyLeftDto(string Path, string Reason, string Text);
 
 /// <summary><c>copy/discard</c>: what could not be removed, in English; <c>null</c> when the copy and its branch went.</summary>
-internal sealed record CopyDiscardResult(string? Problem, string? Error = null);
+/// <param name="Message">What the conversation says of it, translated.</param>
+internal sealed record CopyDiscardResult(string? Problem, string? Error = null, string? Message = null);
 
 /// <summary>Under the cause of a turn cut at its bound (<see cref="Services.Presentation.CutCard"/>): what it wrote, and the
 /// way to the time limits.</summary>

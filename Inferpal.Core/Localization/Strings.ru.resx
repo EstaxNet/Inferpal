@@ -2391,4 +2391,56 @@
   <data name="CopyLeftNotInReview" xml:space="preserve"><value>его нет в последнем просмотре копии: просмотрите её снова</value></data>
   <data name="CopyReviewChanged" xml:space="preserve"><value>Копия изменилась после этого просмотра: просмотрите её снова перед применением.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>В копии сейчас отвечают на вопрос: удалите её, когда ответ будет готов.</value></data>
+  <data name="SlashHintRunCopy" xml:space="preserve"><value>запустить агента на копии репозитория, затем сохранить или отбросить каждое изменение (`/run-copy &lt;вопрос&gt;`)</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Эта команда пока недоступна в этом редакторе — используйте её в VS Code.</value></data>
+  <data name="CopyStartTitle" xml:space="preserve"><value>Работать с копией репозитория</value></data>
+  <data name="CopyStartLead" xml:space="preserve"><value>Ваши файлы остаются как есть, пока агент работает</value></data>
+  <data name="CopyStartOfLabel" xml:space="preserve"><value>Копия</value></data>
+  <data name="CopyStartOf" xml:space="preserve"><value>`{0}` на последнем коммите, `{1}`</value></data>
+  <data name="CopyStartOfDetached" xml:space="preserve"><value>последний коммит, `{0}`</value></data>
+  <data name="CopyStartBranchLabel" xml:space="preserve"><value>Ветка</value></data>
+  <data name="CopyStartBranchNew" xml:space="preserve"><value>новая ветка `inferpal/`, созданная для этого запуска</value></data>
+  <data name="CopyStartBranchHeld" xml:space="preserve"><value>`{0}`, в том виде, в каком её оставил ваш последний вопрос по копии</value></data>
+  <data name="CopyStartBranchLeft" xml:space="preserve"><value>`{0}`, оставлена редактором, закрытым во время запуска</value></data>
+  <data name="CopyStartKeptLabel" xml:space="preserve"><value>Хранится в</value></data>
+  <data name="CopyStartKeptValue" xml:space="preserve"><value>собственной папке Inferpal, вне репозитория</value></data>
+  <data name="CopyStartUncommitted" xml:space="preserve"><value>{0} {0:незакоммиченное изменение не попадает|незакоммиченных изменения не попадают|незакоммиченных изменений не попадают} в копию</value></data>
+  <data name="CopyStartUncommittedUnknown" xml:space="preserve"><value>git не смог перечислить незакоммиченные изменения: ни одно из них не попадает в копию</value></data>
+  <data name="CopyStartUncommittedHint" xml:space="preserve"><value>Агент работает от последнего коммита. Сначала закоммитьте их, если он должен их видеть.</value></data>
+  <data name="CopyStartMore" xml:space="preserve"><value>…и ещё {0}</value></data>
+  <data name="CopyStartRules" xml:space="preserve"><value>Правила, запрещающие команды, и файлы, скрытые от модели, в копии те же, что в этом репозитории. Данное здесь «Всегда» не переносится: копия спросит снова.</value></data>
+  <data name="CopyStartGo" xml:space="preserve"><value>Начать на копии</value></data>
+  <data name="CopyStartGoHeld" xml:space="preserve"><value>Продолжить на копии</value></data>
+  <data name="CopyStartMine" xml:space="preserve"><value>Работать в моих файлах</value></data>
+  <data name="CopyReviewTitle" xml:space="preserve"><value>Просмотрите изменения — сохраните или отбросьте каждое</value></data>
+  <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:файл|файла|файлов} · {1} {1:изменение|изменения|изменений} · сохранено: {2}</value></data>
+  <data name="CopyReviewFileKept" xml:space="preserve"><value>сохранено {0} из {1}</value></data>
+  <data name="CopyReviewNewFile" xml:space="preserve"><value>новый файл</value></data>
+  <data name="CopyReviewDeletedFile" xml:space="preserve"><value>удалён</value></data>
+  <data name="CopyReviewLines" xml:space="preserve"><value>Строки {0}–{1}</value></data>
+  <data name="CopyReviewLine" xml:space="preserve"><value>Строка {0}</value></data>
+  <data name="CopyReviewKeep" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="CopyReviewDrop" xml:space="preserve"><value>Отбросить</value></data>
+  <data name="CopyReviewDropped" xml:space="preserve"><value>Отброшено</value></data>
+  <data name="CopyReviewShow" xml:space="preserve"><value>Показать</value></data>
+  <data name="CopyReviewHide" xml:space="preserve"><value>Скрыть</value></data>
+  <data name="CopyReviewApply" xml:space="preserve"><value>Применить {0} {0:изменение|изменения|изменений} к моим файлам</value></data>
+  <data name="CopyReviewPartial" xml:space="preserve"><value>Применение {0} из {1} изменений — сочетание, которого у запуска не было: после применения соберите или протестируйте снова.</value></data>
+  <data name="CopyReviewDiscard" xml:space="preserve"><value>Удалить копию</value></data>
+  <data name="CopyReviewNothing" xml:space="preserve"><value>Запуск ничего не изменил в копии.</value></data>
+  <data name="CopyReviewLeftOut" xml:space="preserve"><value>Не вошло в этот просмотр — {0}.</value></data>
+  <data name="CopyAppliedTitle" xml:space="preserve"><value>Применено к вашим файлам: {0} из {1}</value></data>
+  <data name="CopyAppliedUndo" xml:space="preserve"><value>`/undo-run` вернёт их</value></data>
+  <data name="CopyNotApplied" xml:space="preserve"><value>Не применено изменений: {0} — {1}</value></data>
+  <data name="CopyNotAppliedNote" xml:space="preserve"><value>Ваша версия остаётся как есть. Изменение копии по-прежнему на ветке `{0}`.</value></data>
+  <data name="CopyLinesShort" xml:space="preserve"><value>строки {0}–{1}</value></data>
+  <data name="CopyLineShort" xml:space="preserve"><value>строка {0}</value></data>
+  <data name="CopyCompare" xml:space="preserve"><value>Сравнить с моей версией</value></data>
+  <data name="CopyMerge" xml:space="preserve"><value>Попросить агента объединить</value></data>
+  <data name="CopyMergePrompt" xml:space="preserve"><value>Перенеси изменение, сделанное копией в `{0}` (на ветке `{1}`), в мою версию файла, сохранив мои собственные изменения.</value></data>
+  <data name="CopyKeepForNow" xml:space="preserve"><value>Пока оставить копию</value></data>
+  <data name="CopyDiscarded" xml:space="preserve"><value>Копия и её ветка `{0}` удалены.</value></data>
+  <data name="CopyDiscardedBut" xml:space="preserve"><value>Копия удалена, но: {0}.</value></data>
+  <data name="CopyKeptForNow" xml:space="preserve"><value>Копия остаётся на ветке `{0}`: `/run-copy` без вопроса снова покажет её изменения, `/run-copy &lt;вопрос&gt;` продолжит работу на ней.</value></data>
+  <data name="CopyStartOfCommit" xml:space="preserve"><value>коммит `{0}`</value></data>
 </root>

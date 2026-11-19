@@ -2391,4 +2391,56 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="CopyLeftNotInReview" xml:space="preserve"><value>il n'est pas dans la dernière relecture de la copie : relisez-la de nouveau</value></data>
   <data name="CopyReviewChanged" xml:space="preserve"><value>La copie a changé depuis cette relecture : relisez-la de nouveau avant d'appliquer.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>Une question est en cours dans la copie : jetez-la une fois la réponse finie.</value></data>
+  <data name="SlashHintRunCopy" xml:space="preserve"><value>lancer l'agent sur une copie du dépôt, puis garder ou écarter chaque changement (`/run-copy &lt;question&gt;`)</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Cette commande n'est pas encore disponible dans cet éditeur — utilisez-la depuis VS Code.</value></data>
+  <data name="CopyStartTitle" xml:space="preserve"><value>Travailler sur une copie du dépôt</value></data>
+  <data name="CopyStartLead" xml:space="preserve"><value>Vos fichiers restent tels quels pendant que l'agent travaille</value></data>
+  <data name="CopyStartOfLabel" xml:space="preserve"><value>Copie de</value></data>
+  <data name="CopyStartOf" xml:space="preserve"><value>`{0}` à son dernier commit, `{1}`</value></data>
+  <data name="CopyStartOfDetached" xml:space="preserve"><value>le dernier commit, `{0}`</value></data>
+  <data name="CopyStartBranchLabel" xml:space="preserve"><value>Sur la branche</value></data>
+  <data name="CopyStartBranchNew" xml:space="preserve"><value>une nouvelle branche `inferpal/`, créée pour ce run</value></data>
+  <data name="CopyStartBranchHeld" xml:space="preserve"><value>`{0}`, telle que votre dernière question sur la copie l'a laissée</value></data>
+  <data name="CopyStartBranchLeft" xml:space="preserve"><value>`{0}`, laissée par un éditeur fermé pendant son run</value></data>
+  <data name="CopyStartKeptLabel" xml:space="preserve"><value>Conservée dans</value></data>
+  <data name="CopyStartKeptValue" xml:space="preserve"><value>le dossier d'Inferpal, hors du dépôt</value></data>
+  <data name="CopyStartUncommitted" xml:space="preserve"><value>{0} {0:modification non commitée ne part|modifications non commitées ne partent} pas avec elle</value></data>
+  <data name="CopyStartUncommittedUnknown" xml:space="preserve"><value>git n'a pas pu lister vos modifications non commitées : aucune ne part avec elle</value></data>
+  <data name="CopyStartUncommittedHint" xml:space="preserve"><value>L'agent part du dernier commit. Commitez-les d'abord s'il doit les voir.</value></data>
+  <data name="CopyStartMore" xml:space="preserve"><value>…et {0} de plus</value></data>
+  <data name="CopyStartRules" xml:space="preserve"><value>Les règles qui refusent une commande, et les fichiers tenus à l'écart du modèle, sont ceux de ce dépôt dans la copie aussi. Un « Toujours » donné ici ne s'y reporte pas : la copie redemande.</value></data>
+  <data name="CopyStartGo" xml:space="preserve"><value>Démarrer sur la copie</value></data>
+  <data name="CopyStartGoHeld" xml:space="preserve"><value>Continuer sur la copie</value></data>
+  <data name="CopyStartMine" xml:space="preserve"><value>Travailler plutôt dans mes fichiers</value></data>
+  <data name="CopyReviewTitle" xml:space="preserve"><value>Relisez les changements — gardez ou écartez chacun</value></data>
+  <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:fichier|fichiers} · {1} {1:changement|changements} · {2} {2:gardé|gardés}</value></data>
+  <data name="CopyReviewFileKept" xml:space="preserve"><value>{0} sur {1} {0:gardé|gardés}</value></data>
+  <data name="CopyReviewNewFile" xml:space="preserve"><value>nouveau fichier</value></data>
+  <data name="CopyReviewDeletedFile" xml:space="preserve"><value>supprimé</value></data>
+  <data name="CopyReviewLines" xml:space="preserve"><value>Lignes {0}–{1}</value></data>
+  <data name="CopyReviewLine" xml:space="preserve"><value>Ligne {0}</value></data>
+  <data name="CopyReviewKeep" xml:space="preserve"><value>Garder</value></data>
+  <data name="CopyReviewDrop" xml:space="preserve"><value>Écarter</value></data>
+  <data name="CopyReviewDropped" xml:space="preserve"><value>Écarté</value></data>
+  <data name="CopyReviewShow" xml:space="preserve"><value>Afficher</value></data>
+  <data name="CopyReviewHide" xml:space="preserve"><value>Masquer</value></data>
+  <data name="CopyReviewApply" xml:space="preserve"><value>Appliquer {0} {0:changement|changements} à mes fichiers</value></data>
+  <data name="CopyReviewPartial" xml:space="preserve"><value>Appliquer {0} {0:changement|changements} sur {1} donne une combinaison que le run n'a jamais eue : relancez le build ou les tests une fois appliqué.</value></data>
+  <data name="CopyReviewDiscard" xml:space="preserve"><value>Jeter la copie</value></data>
+  <data name="CopyReviewNothing" xml:space="preserve"><value>Le run n'a rien changé dans la copie.</value></data>
+  <data name="CopyReviewLeftOut" xml:space="preserve"><value>Hors de cette relecture — {0}.</value></data>
+  <data name="CopyAppliedTitle" xml:space="preserve"><value>{0} {0:changement|changements} sur {1} {0:appliqué|appliqués} à vos fichiers</value></data>
+  <data name="CopyAppliedUndo" xml:space="preserve"><value>`/undo-run` les rend</value></data>
+  <data name="CopyNotApplied" xml:space="preserve"><value>{0} {0:changement n'a|changements n'ont} pas été {0:appliqué|appliqués} : {1}</value></data>
+  <data name="CopyNotAppliedNote" xml:space="preserve"><value>Votre version reste telle quelle. Le changement de la copie est toujours sur la branche `{0}`.</value></data>
+  <data name="CopyLinesShort" xml:space="preserve"><value>lignes {0}–{1}</value></data>
+  <data name="CopyLineShort" xml:space="preserve"><value>ligne {0}</value></data>
+  <data name="CopyCompare" xml:space="preserve"><value>Comparer avec ma version</value></data>
+  <data name="CopyMerge" xml:space="preserve"><value>Demander à l'agent de le fusionner</value></data>
+  <data name="CopyMergePrompt" xml:space="preserve"><value>Reporte dans ma version de `{0}` le changement que la copie y a fait (sur la branche `{1}`), en gardant mes propres modifications.</value></data>
+  <data name="CopyKeepForNow" xml:space="preserve"><value>Garder la copie pour l'instant</value></data>
+  <data name="CopyDiscarded" xml:space="preserve"><value>La copie et sa branche `{0}` ont été retirées.</value></data>
+  <data name="CopyDiscardedBut" xml:space="preserve"><value>La copie a été jetée, mais : {0}.</value></data>
+  <data name="CopyKeptForNow" xml:space="preserve"><value>La copie reste sur la branche `{0}` : `/run-copy` seul réaffiche ses changements, `/run-copy &lt;question&gt;` continue dessus.</value></data>
+  <data name="CopyStartOfCommit" xml:space="preserve"><value>le commit `{0}`</value></data>
 </root>

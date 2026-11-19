@@ -127,7 +127,7 @@ public partial class HostServerTests
     public void TheExtension_FollowsTheSavedSettings_WhenACommandSavedThem()
     {
         var provider = WebviewRebuildTests.TsCode("chatViewProvider.ts");
-        var effects  = WebviewRebuildTests.Body(provider, "dropHostMarkdown: boolean }> ");
+        var effects  = WebviewRebuildTests.Body(provider, "dropHostMarkdown: boolean; copyQuestion: string | null }> ");
         Assert.Contains("case 'openFile':", effects, StringComparison.Ordinal);   // WITNESS: the switch is read
         var saved = effects[effects.IndexOf("case 'configSaved':", StringComparison.Ordinal)..];
         saved = saved[..saved.IndexOf("break;", StringComparison.Ordinal)];

@@ -35,7 +35,8 @@ public sealed class RegenerateReplaysACodeActionTests
         Assert.Contains("sent && { prompt: sent.text, codeAction: sent.codeAction, query: sent.query }", regenerate, StringComparison.Ordinal);
 
         var send = WebviewRebuildTests.Body(Provider(), "private async send(");
-        var replay = send.IndexOf("await this.chatTurn(replay.prompt, host, replay.codeAction, replay.query);", StringComparison.Ordinal);
+        var replay = send.IndexOf("await this.chatTurn(replay.prompt, host, replay.codeAction, replay.query, replay.inCopy === true);",
+                                  StringComparison.Ordinal);
         var dispatch = send.IndexOf("const codeAction = ChatViewProvider.codeActionKind(prompt);", StringComparison.Ordinal);
         Assert.True(dispatch > 0, "send() no longer dispatches on the words: the order is not measured.");   // WITNESS
         Assert.True(replay > 0 && replay < dispatch, "a regenerated question is dispatched again from its words");

@@ -2391,4 +2391,56 @@
   <data name="CopyLeftNotInReview" xml:space="preserve"><value>它不在副本的最近一次审阅中：请重新审阅</value></data>
   <data name="CopyReviewChanged" xml:space="preserve"><value>此次审阅后副本已更改：应用前请重新审阅。</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>副本中正在回答问题：请在回答结束后再丢弃。</value></data>
+  <data name="SlashHintRunCopy" xml:space="preserve"><value>在仓库副本上运行代理，然后逐一保留或丢弃每处更改 (`/run-copy &lt;问题&gt;`)</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>此命令在此编辑器中尚不可用，请在 VS Code 中使用。</value></data>
+  <data name="CopyStartTitle" xml:space="preserve"><value>在仓库副本上工作</value></data>
+  <data name="CopyStartLead" xml:space="preserve"><value>代理工作期间，您的文件保持不变</value></data>
+  <data name="CopyStartOfLabel" xml:space="preserve"><value>副本来源</value></data>
+  <data name="CopyStartOf" xml:space="preserve"><value>`{0}` 的最新提交 `{1}`</value></data>
+  <data name="CopyStartOfDetached" xml:space="preserve"><value>最新提交 `{0}`</value></data>
+  <data name="CopyStartBranchLabel" xml:space="preserve"><value>分支</value></data>
+  <data name="CopyStartBranchNew" xml:space="preserve"><value>为本次运行新建的 `inferpal/` 分支</value></data>
+  <data name="CopyStartBranchHeld" xml:space="preserve"><value>`{0}`，保持您上次在副本上提问后的状态</value></data>
+  <data name="CopyStartBranchLeft" xml:space="preserve"><value>`{0}`，由运行期间关闭的编辑器留下</value></data>
+  <data name="CopyStartKeptLabel" xml:space="preserve"><value>保存位置</value></data>
+  <data name="CopyStartKeptValue" xml:space="preserve"><value>仓库之外的 Inferpal 专用文件夹</value></data>
+  <data name="CopyStartUncommitted" xml:space="preserve"><value>{0} 处未提交的更改不会进入副本</value></data>
+  <data name="CopyStartUncommittedUnknown" xml:space="preserve"><value>git 无法列出未提交的更改：它们都不会进入副本</value></data>
+  <data name="CopyStartUncommittedHint" xml:space="preserve"><value>代理从最新提交开始工作。如需让它看到这些更改，请先提交。</value></data>
+  <data name="CopyStartMore" xml:space="preserve"><value>…还有 {0} 个</value></data>
+  <data name="CopyStartRules" xml:space="preserve"><value>拒绝命令的规则以及对模型隐藏的文件，在副本中同样沿用本仓库的设置。您在此处给出的“始终允许”不会延续：副本会再次询问。</value></data>
+  <data name="CopyStartGo" xml:space="preserve"><value>在副本上开始</value></data>
+  <data name="CopyStartGoHeld" xml:space="preserve"><value>在副本上继续</value></data>
+  <data name="CopyStartMine" xml:space="preserve"><value>改为在我的文件中工作</value></data>
+  <data name="CopyReviewTitle" xml:space="preserve"><value>审阅更改：逐一保留或丢弃</value></data>
+  <data name="CopyReviewCount" xml:space="preserve"><value>{0} 个文件 · {1} 处更改 · 保留 {2} 处</value></data>
+  <data name="CopyReviewFileKept" xml:space="preserve"><value>保留 {0}/{1}</value></data>
+  <data name="CopyReviewNewFile" xml:space="preserve"><value>新文件</value></data>
+  <data name="CopyReviewDeletedFile" xml:space="preserve"><value>已删除</value></data>
+  <data name="CopyReviewLines" xml:space="preserve"><value>第 {0}–{1} 行</value></data>
+  <data name="CopyReviewLine" xml:space="preserve"><value>第 {0} 行</value></data>
+  <data name="CopyReviewKeep" xml:space="preserve"><value>保留</value></data>
+  <data name="CopyReviewDrop" xml:space="preserve"><value>丢弃</value></data>
+  <data name="CopyReviewDropped" xml:space="preserve"><value>已丢弃</value></data>
+  <data name="CopyReviewShow" xml:space="preserve"><value>显示</value></data>
+  <data name="CopyReviewHide" xml:space="preserve"><value>隐藏</value></data>
+  <data name="CopyReviewApply" xml:space="preserve"><value>将 {0} 处更改应用到我的文件</value></data>
+  <data name="CopyReviewPartial" xml:space="preserve"><value>只应用 {1} 处中的 {0} 处，是这次运行从未有过的组合：应用后请重新构建或测试。</value></data>
+  <data name="CopyReviewDiscard" xml:space="preserve"><value>丢弃副本</value></data>
+  <data name="CopyReviewNothing" xml:space="preserve"><value>此次运行未更改副本中的任何内容。</value></data>
+  <data name="CopyReviewLeftOut" xml:space="preserve"><value>未包含在此次审阅中：{0}。</value></data>
+  <data name="CopyAppliedTitle" xml:space="preserve"><value>已将 {1} 处更改中的 {0} 处应用到您的文件</value></data>
+  <data name="CopyAppliedUndo" xml:space="preserve"><value>`/undo-run` 可将其恢复</value></data>
+  <data name="CopyNotApplied" xml:space="preserve"><value>有 {0} 处更改未应用：{1}</value></data>
+  <data name="CopyNotAppliedNote" xml:space="preserve"><value>您的版本保持不变。副本的更改仍在分支 `{0}` 上。</value></data>
+  <data name="CopyLinesShort" xml:space="preserve"><value>第 {0}–{1} 行</value></data>
+  <data name="CopyLineShort" xml:space="preserve"><value>第 {0} 行</value></data>
+  <data name="CopyCompare" xml:space="preserve"><value>与我的版本比较</value></data>
+  <data name="CopyMerge" xml:space="preserve"><value>让代理合并</value></data>
+  <data name="CopyMergePrompt" xml:space="preserve"><value>把副本对 `{0}` 所做的更改（位于分支 `{1}`）合并到我的文件版本中，并保留我自己的更改。</value></data>
+  <data name="CopyKeepForNow" xml:space="preserve"><value>暂时保留副本</value></data>
+  <data name="CopyDiscarded" xml:space="preserve"><value>副本及其分支 `{0}` 已移除。</value></data>
+  <data name="CopyDiscardedBut" xml:space="preserve"><value>副本已丢弃，但：{0}。</value></data>
+  <data name="CopyKeptForNow" xml:space="preserve"><value>副本保留在分支 `{0}` 上：只输入 `/run-copy` 会再次显示其更改，`/run-copy &lt;问题&gt;` 会在其上继续。</value></data>
+  <data name="CopyStartOfCommit" xml:space="preserve"><value>提交 `{0}`</value></data>
 </root>

@@ -2,7 +2,7 @@
 // chat webview (src/webview/main.ts). Both sides are bundled from this repo, so the
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
 import type {
-  ApprovalCard, AwayNotice, CutCard, ImportCard, InputCard, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunSummary,
+  ApprovalCard, AwayNotice, CopyAppliedCard, CopyReview, CopyStartCard, CutCard, ImportCard, InputCard, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunSummary,
   SavedMessage, ServerInstallCard, ServerInstallReport, SetupPlace,
   SetupPlan,
   XRayPanel,
@@ -13,6 +13,13 @@ import type {
  * sent. `searching`: the places being looked at; `found`: a server answers, with its proposal; `nothing`: what each place
  * answered, and an address to type; `noModel`: a server without a chat model, with what to download.
  */
+/** The card of a run on a copy, one at a time: its start, the review of what the run left, or what the apply did. */
+export type WvCopyCard =
+  | { kind: 'start'; question: string; card: CopyStartCard }
+  /** `dropped`: the changes the person dropped, by path — kept by the extension, so a redraw never puts them back. */
+  | { kind: 'review'; review: CopyReview; dropped: Record<string, number[]> }
+  | { kind: 'applied'; card: CopyAppliedCard };
+
 export interface WvSetupView {
   phase: 'searching' | 'found' | 'nothing' | 'noModel';
   /** The card's fixed labels, from the host (`setup/strings`). */
@@ -295,6 +302,8 @@ export type ExtToWebview =
   | { type: 'queue'; items: string[] }
   /** Text given back to the input box, in front of what is typed there. */
   | { type: 'restoreDraft'; text: string }
+  /** The card of a run on a copy (`/run-copy`), at the end of the thread; `card: null` takes it away. */
+  | { type: 'copyCard'; card: WvCopyCard | null }
   /** The model picker's list, re-read from the server when the menu opened; `model`: the window's model, when its
    *  setting changed outside the picker. */
   | { type: 'models'; models: string[]; model?: string; onlyOtherModels?: boolean }
@@ -338,6 +347,19 @@ export type WebviewToExt =
   | { type: 'rewind'; ordinal: number; question: string; conversationOnly: boolean; expectedRuns: string[] }
   /** The result bar's "Review changes". */
   | { type: 'runReview'; runId: string }
+  /** The start card's answer: the question goes to the copy, to the person's files, or back to the input box. */
+  | { type: 'copyStart'; question: string; choice: 'copy' | 'mine' | 'cancel' }
+  /** The review card's Apply: the hunks kept of review `reviewId`, by path. */
+  | { type: 'copyApply'; reviewId: number; kept: Record<string, number[]> }
+  /** A change kept or dropped on the review card: every dropped change, by path. */
+  | { type: 'copyChoice'; dropped: Record<string, number[]> }
+  | { type: 'copyDiscard' }
+  /** "Keep the copy for now": the card goes, `said` stays in the thread. */
+  | { type: 'copyKeep'; said: string }
+  /** A file not applied, beside the person's version. */
+  | { type: 'copyCompare'; copyPath: string; minePath: string; path: string }
+  /** "Ask the agent to merge it": the question goes in the input box, for the person to send. */
+  | { type: 'copyMerge'; prompt: string }
   /** One file of a run's review undone, redone or kept — or, with `piece` (1-based), one change of it. */
   | { type: 'runFile'; runId: string; path: string; action: 'undo' | 'redo' | 'keep'; piece?: number }
   | { type: 'copyText'; text: string }

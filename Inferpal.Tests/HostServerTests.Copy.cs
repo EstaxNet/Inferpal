@@ -54,6 +54,8 @@ public partial class HostServerTests
         Assert.Null(card.Refusal);
         Assert.Contains("Notes.txt", card.Uncommitted!);
         Assert.False(card.Held);
+        Assert.Equal(Strings.CopyStartTitle, card.Card!.Title);                                       // the start card's texts
+        Assert.Contains("`Notes.txt`", card.Card.UncommittedFiles);
 
         string? root = null;
         h.Fake.OnAgentRun = async (history, tools, _, ct) =>
@@ -74,6 +76,8 @@ public partial class HostServerTests
             Assert.False(PathComparer.SameDirectory(root, h.RootDir));                                // the turn ran in the copy
             var file = Assert.Single(sent.Copy!.Files);
             Assert.Equal("Pay.cs", file.Path);
+            Assert.Equal(Strings.CopyReviewApply(1), sent.Copy.Texts!.Apply[1]);                     // the review card's texts
+            Assert.Equal(Strings.CopyReviewFileKept(0, 1), file.Texts!.Kept[0]);
             Assert.Contains("    int A() => 2;", Assert.Single(file.Hunks).Added);
             Assert.Contains("int A() => 1;", File.ReadAllText(pay));                                 // the person's file as it was
             Assert.True((await CopyCall<CopyPrepareResult>(h, "copy/prepare")).Held);
@@ -83,6 +87,7 @@ public partial class HostServerTests
 
             Assert.Null(applied.Error);
             Assert.Equal(["Pay.cs"], applied.Written);
+            Assert.Equal(Strings.CopyAppliedTitle(1, 1), applied.Card!.Title);
             Assert.False(string.IsNullOrEmpty(applied.RunId));
             Assert.Contains("int A() => 2;", File.ReadAllText(pay));
         }
@@ -91,6 +96,9 @@ public partial class HostServerTests
             var discarded = await CopyCall<CopyDiscardResult>(h, "copy/discard");
             Assert.Null(discarded.Problem);
             Assert.Null(discarded.Error);
+            Assert.Matches("^" + System.Text.RegularExpressions.Regex.Escape(Strings.CopyDiscarded("BRANCH"))
+                               .Replace("BRANCH", System.Text.RegularExpressions.Regex.Escape(WorkCopy.BranchPrefix) + @"\d+") + "$",
+                           discarded.Message);
         }
         Assert.False((await CopyCall<CopyPrepareResult>(h, "copy/prepare")).Held);
         Assert.Equal(Strings.CopyNoneOpen, (await CopyCall<CopyDiscardResult>(h, "copy/discard")).Error);
@@ -196,6 +204,30 @@ public partial class HostServerTests
         Assert.False(Directory.Exists(left.Copy.Folder));
     }
 
+    /// <summary>`/run-copy` in an editor opens the start card with the question; nothing is made before the person answers
+    /// it. Without a question, its usage; without an editor, a deterministic message — never the raw command to the model.</summary>
+    [Fact]
+    public async Task Slash_RunCopy_OpensTheStartCard_WithTheQuestion_AndMakesNothing()
+    {
+        using var h = CreateHarness();
+        await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var asked = await CopyCall<Host.SlashCommandResult>(h, "command/slash", new { text = "/run-copy Rework  the payment module" });
+        var bare = await CopyCall<Host.SlashCommandResult>(h, "command/slash", new { text = "/run-copy" });
+
+        using var headless = CreateHarness();
+        await headless.Client.InvokeWithParameterObjectAsync<InitializeResult>(
+            "initialize", new { rootDir = headless.RootDir, editorSurface = false }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
+        var withoutEditor = await CopyCall<Host.SlashCommandResult>(headless, "command/slash", new { text = "/run-copy Rework it" });
+
+        var effect = Assert.Single(asked.Effects!);
+        Assert.Equal("runCopy", effect.Kind);
+        Assert.Equal("Rework  the payment module", effect.Value);                                    // as typed
+        // Alone, it shows the copy held: with none held or left, it says so and how to start one.
+        Assert.Equal(Strings.CopyNoneOpen + " " + Strings.SlashUsage("/run-copy <question>"), bare.Markdown);
+        Assert.Equal(Strings.RunCopyNotHereYet, withoutEditor.Markdown);
+        Assert.False(Directory.Exists(Path.Combine(WorkCopy.Home, FileHistoryService.FolderNameOf(Path.GetFullPath(h.RootDir)))));
+    }
+
     [Fact]
     public async Task Copy_AnApplyWithoutItsHunks_IsToldWhatIsMissing()
     {
@@ -219,6 +251,9 @@ public partial class HostServerTests
 
         Assert.Contains("a copy starts from the last commit", card.Refusal);
         Assert.Equal(Strings.CopyNotMade("this folder is not a git repository with a commit: a copy starts from the last commit"), sent.Error);
+        Assert.Equal(Strings.CopyNotMade(card.Refusal!), card.RefusalText);
+        Assert.Null(card.Card);
         Assert.Null(sent.Copy);
+        Assert.False(sent.QuestionKept);                       // never in the history: Regenerate takes back nothing before it
     }
 }

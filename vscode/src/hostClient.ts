@@ -8,6 +8,10 @@ import type { DebugDelegate } from './debugBridge';
 import {
   ActiveDocumentDto,
   AwayNotice,
+  CopyApplyResult,
+  CopyDiscardResult,
+  CopyPrepareResult,
+  CopyReview,
   ApprovalNote,
   ApprovalRuleTable,
   McpCardsResult,
@@ -510,6 +514,26 @@ export class HostClient {
   /** Takes the last question and everything after it out of the host history (regenerate). */
   chatRollbackLastTurn(): Promise<boolean> {
     return this.connection().sendRequest<boolean>('chat/rollbackLastTurn');
+  }
+
+  /** The start card of a run on a copy (`/run-copy`), or why none can be made: nothing is made yet. */
+  copyPrepare(): Promise<CopyPrepareResult> {
+    return this.connection().sendRequest<CopyPrepareResult>('copy/prepare');
+  }
+
+  /** What the copy this window holds left, read again; `null` when it holds none. */
+  copyReview(): Promise<CopyReview | null> {
+    return this.connection().sendRequest<CopyReview | null>('copy/review');
+  }
+
+  /** Writes the kept changes of review `reviewId` into the person's files, by path. */
+  copyApply(reviewId: number, kept: Record<string, number[]>): Promise<CopyApplyResult> {
+    return this.connection().sendRequest<CopyApplyResult>('copy/apply', { reviewId, kept });
+  }
+
+  /** Removes the copy this window holds, and its branch. */
+  copyDiscard(): Promise<CopyDiscardResult> {
+    return this.connection().sendRequest<CopyDiscardResult>('copy/discard');
   }
 
   /** Releases a step-mode pause (the agent proceeds to its next action). */

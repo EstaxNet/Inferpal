@@ -3,12 +3,13 @@
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
 import type {
-  ApprovalCard, AwayNotice, CutCard, InputCard, InputCardField, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunReviewLine,
+  ApprovalCard, AwayNotice, CopyAppliedCard, CopyReview, CopyStartCard, CutCard, InputCard, InputCardField, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunReviewLine,
   RunSummary, SetupPlace, SetupPlan, ImageNotSeenCard,
 } from '../protocol';
 import type {
   ExtToWebview,
   WebviewToExt,
+  WvCopyCard,
   WvBackendStatus,
   WvBuildBanner,
   WvChip,
@@ -952,6 +953,290 @@ function addUser(item: WvTranscriptItem): void {
 /** The question a row shows, as saved: the extension and the host check it is still the one at that place. */
 function questionOf(row: Element): string {
   return (row as HTMLElement).dataset.question ?? '';
+}
+
+/** Text with identifiers in backticks, drawn as code: what the Core writes in the copy cards' sentences — never a file's
+ *  lines or a path, which are drawn as they are. */
+function withCode<T extends HTMLElement>(target: T, text: string): T {
+  text.split('`').forEach((part, i) => {
+    if (!part) {
+      return;
+    }
+    if (i % 2 === 1) {
+      const code = document.createElement('code');
+      code.textContent = part;
+      target.appendChild(code);
+    } else {
+      target.appendChild(document.createTextNode(part));
+    }
+  });
+  return target;
+}
+
+/** A part of a copy card; `text` is a sentence of the Core, its backticks drawn as code. */
+function copyPart<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text?: string): HTMLElementTagNameMap[K] {
+  const part = document.createElement(tag);
+  part.className = className;
+  if (text !== undefined) {
+    withCode(part, text);
+  }
+  return part;
+}
+
+/** A part holding text exactly as it is: a line of a file, a path. */
+function copyLiteral<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text: string): HTMLElementTagNameMap[K] {
+  const part = document.createElement(tag);
+  part.className = className;
+  part.textContent = text;
+  return part;
+}
+
+/** A button of a copy card; every button of the card is off once one is pressed — the extension draws it again if the
+ *  host refuses. */
+function copyButton(card: HTMLElement, label: string, primary: boolean, act: () => void): HTMLButtonElement {
+  const button = document.createElement('button');
+  if (primary) {
+    button.className = 'primary';
+  }
+  button.textContent = label;
+  button.addEventListener('click', () => {
+    card.querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.disabled = true));
+    act();
+  });
+  return button;
+}
+
+/** The card of a run on a copy (`/run-copy`), at the end of the thread: its start, its review, or what the apply did. */
+function renderCopyCard(card: WvCopyCard | null): void {
+  messagesEl.querySelector('.copy-card')?.remove();
+  if (!card) {
+    return;
+  }
+  const el = document.createElement('section');
+  el.className = 'approval copy-card';
+  el.setAttribute('role', 'group');
+  if (card.kind === 'start') {
+    renderCopyStart(el, card.question, card.card);
+  } else if (card.kind === 'review') {
+    renderCopyReview(el, card.review, card.dropped ?? {});
+  } else {
+    renderCopyApplied(el, card.card);
+  }
+  messagesEl.appendChild(el);
+  scrollToBottom();
+}
+
+/** The start card: what the copy starts from, and what does not go with it. */
+function renderCopyStart(el: HTMLElement, question: string, card: CopyStartCard): void {
+  el.setAttribute('aria-label', card.title);
+  const head = copyPart('div', 'copy-head');
+  const glyph = copyPart('span', 'copy-glyph');
+  glyph.append(icon('copy', 16));
+  const titles = copyPart('div', 'copy-titles');
+  titles.append(copyPart('span', 'copy-title', card.title), copyPart('span', 'copy-lead', card.lead));
+  head.append(glyph, titles);
+  const rows = copyPart('dl', 'copy-rows');
+  for (const row of card.rows) {
+    rows.append(copyPart('dt', '', row.label), copyPart('dd', '', row.value));
+  }
+  el.append(head, rows);
+  if (card.uncommitted) {
+    const warn = copyPart('div', 'copy-warn');
+    warn.setAttribute('role', 'note');
+    warn.append(copyPart('span', 'copy-warn-title', card.uncommitted));
+    if (card.uncommittedFiles.length > 0) {
+      const list = copyPart('ul', 'copy-files');
+      for (const file of card.uncommittedFiles) {
+        list.append(copyPart('li', '', file));
+      }
+      warn.append(list);
+    }
+    if (card.uncommittedHint) {
+      warn.append(copyPart('span', 'copy-small', card.uncommittedHint));
+    }
+    el.append(warn);
+  }
+  el.append(copyPart('p', 'copy-small', card.rules));
+  const actions = copyPart('div', 'approval-actions copy-actions');
+  actions.append(
+    copyButton(el, card.go, true, () => post({ type: 'copyStart', question, choice: 'copy' })),
+    copyButton(el, card.mine, false, () => post({ type: 'copyStart', question, choice: 'mine' })),
+    copyButton(el, card.cancel, false, () => post({ type: 'copyStart', question, choice: 'cancel' })),
+  );
+  el.append(actions);
+}
+
+/** How many files are drawn open; the others show their head and a Show button. */
+const COPY_FILES_OPEN = 2;
+
+/**
+ * The review card: each change of each file kept or dropped, then applied or the copy discarded. `dropped`: what the
+ * person dropped before this redraw, kept by the extension — a redraw never puts a dropped change back.
+ */
+function renderCopyReview(el: HTMLElement, review: CopyReview, dropped: Record<string, number[]>): void {
+  const texts = review.texts;
+  if (!texts) {
+    return;
+  }
+  el.setAttribute('aria-label', texts.title);
+  const kept = new Map<string, Set<number>>(review.files.map((f) => [
+    f.path, new Set(f.hunks.map((h) => h.index).filter((i) => !(dropped[f.path] ?? []).includes(i))),
+  ]));
+  const keptCount = () => [...kept.values()].reduce((n, s) => n + s.size, 0);
+  const tellChoices = () => {
+    const now: Record<string, number[]> = {};
+    for (const f of review.files) {
+      const gone = f.hunks.map((h) => h.index).filter((i) => !kept.get(f.path)!.has(i));
+      if (gone.length > 0) {
+        now[f.path] = gone;
+      }
+    }
+    post({ type: 'copyChoice', dropped: now });
+  };
+  const head = copyPart('div', 'copy-titles');
+  const count = copyPart('span', 'copy-lead');
+  head.append(copyPart('span', 'copy-title', texts.title), count);
+  el.append(head);
+  if (texts.nothing) {
+    el.append(copyPart('p', 'copy-small', texts.nothing));
+  }
+  const refreshers: (() => void)[] = [];
+  review.files.forEach((file, at) => {
+    const box = copyPart('div', 'copy-file');
+    const fileHead = copyPart('div', 'copy-file-head');
+    fileHead.append(copyLiteral('code', '', file.path));
+    if (file.texts?.tag) {
+      fileHead.append(copyPart('span', 'copy-tag', file.texts.tag));
+    }
+    const fileKept = copyPart('span', 'copy-kept');
+    fileHead.append(fileKept);
+    const body = copyPart('div', 'copy-hunks');
+    body.id = `copy-file-${at}`;
+    if (at >= COPY_FILES_OPEN) {
+      body.hidden = true;
+      const toggle = copyPart('button', 'copy-link', texts.show);
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-controls', body.id);
+      toggle.addEventListener('click', () => {
+        body.hidden = !body.hidden;
+        toggle.textContent = body.hidden ? texts.show : texts.hide;
+        toggle.setAttribute('aria-expanded', String(!body.hidden));
+      });
+      fileHead.append(toggle);
+    }
+    file.hunks.forEach((hunk, n) => {
+      const label = file.texts?.hunkLabels[n] ?? '';
+      const one = copyPart('div', 'copy-hunk');
+      one.setAttribute('role', 'group');
+      one.setAttribute('aria-label', `${file.path} · ${label}`);
+      const bar = copyPart('div', 'copy-hunk-head');
+      const keep = copyPart('button', 'copy-choice', texts.keep);
+      const drop = copyPart('button', 'copy-choice');
+      // The same name pressed or not: the state is aria-pressed's, the visible "Dropped" is for the eye.
+      keep.setAttribute('aria-label', `${texts.keep}: ${file.path} · ${label}`);
+      drop.setAttribute('aria-label', `${texts.drop}: ${file.path} · ${label}`);
+      bar.append(copyPart('span', '', label), keep, drop);
+      const lines = copyPart('pre', 'copy-lines');
+      for (const line of hunk.removed) {
+        lines.append(copyLiteral('span', 'diff-del', `− ${line}`));
+      }
+      for (const line of hunk.added) {
+        lines.append(copyLiteral('span', 'diff-add', `+ ${line}`));
+      }
+      one.append(bar, lines);
+      const set = kept.get(file.path)!;
+      refreshers.push(() => {
+        const on = set.has(hunk.index);
+        keep.setAttribute('aria-pressed', String(on));
+        drop.setAttribute('aria-pressed', String(!on));
+        drop.textContent = on ? texts.drop : texts.dropped;
+        one.classList.toggle('dropped', !on);
+      });
+      keep.addEventListener('click', () => { set.add(hunk.index); refresh(); tellChoices(); });
+      drop.addEventListener('click', () => { set.delete(hunk.index); refresh(); tellChoices(); });
+      body.append(one);
+    });
+    refreshers.push(() => {
+      const k = kept.get(file.path)!.size;
+      fileKept.textContent = file.texts?.kept[k] ?? '';
+      fileKept.classList.toggle('none', k === 0);
+    });
+    box.append(fileHead, body);
+    el.append(box);
+  });
+  const partial = copyPart('p', 'copy-small');
+  if (texts.leftOut) {
+    el.append(copyPart('p', 'copy-small', texts.leftOut));
+  }
+  const actions = copyPart('div', 'approval-actions copy-actions');
+  const apply = copyButton(el, '', true, () => {
+    const chosen: Record<string, number[]> = {};
+    for (const [path, set] of kept) {
+      if (set.size > 0) {
+        chosen[path] = [...set];
+      }
+    }
+    post({ type: 'copyApply', reviewId: review.id, kept: chosen });
+  });
+  actions.append(apply, copyButton(el, texts.discard, false, () => post({ type: 'copyDiscard' })));
+  el.append(partial, actions);
+  function refresh(): void {
+    const k = keptCount();
+    count.textContent = texts!.counts[k] ?? '';
+    apply.textContent = texts!.apply[k] ?? '';
+    apply.disabled = k === 0;
+    partial.textContent = texts!.partial[k] ?? '';
+    partial.hidden = !partial.textContent;
+    refreshers.forEach((r) => r());
+  }
+  refresh();
+}
+
+/** The card after an apply: what was written, what was not and why. */
+function renderCopyApplied(el: HTMLElement, card: CopyAppliedCard): void {
+  el.setAttribute('aria-label', card.title);
+  const head = copyPart('div', 'copy-head');
+  const glyph = copyPart('span', 'copy-glyph done');
+  glyph.append(icon('check', 16));
+  const titles = copyPart('div', 'copy-titles');
+  titles.append(copyPart('span', 'copy-title', card.title));
+  if (card.undo) {
+    titles.append(copyPart('span', 'copy-lead', card.undo));
+  }
+  head.append(glyph, titles);
+  el.append(head);
+  for (const group of card.notApplied) {
+    const warn = copyPart('div', 'copy-warn');
+    warn.setAttribute('role', 'note');
+    warn.append(copyPart('span', 'copy-warn-title', group.title));
+    for (const file of group.files) {
+      const row = copyPart('div', 'copy-file-head');
+      row.append(copyLiteral('code', '', file.path));
+      if (file.lines) {
+        row.append(copyPart('span', 'copy-kept', file.lines));
+      }
+      warn.append(row);
+      if (file.canMerge) {
+        const choices = copyPart('div', 'approval-actions copy-actions');
+        const compare = copyPart('button', '', card.compare);
+        compare.addEventListener('click', () => post({ type: 'copyCompare', copyPath: file.copyPath, minePath: file.minePath, path: file.path }));
+        const merge = copyPart('button', '', card.merge);
+        merge.addEventListener('click', () => post({ type: 'copyMerge', prompt: file.mergePrompt }));
+        choices.append(compare, merge);
+        warn.append(choices);
+      }
+    }
+    if (group.note) {
+      warn.append(copyPart('span', 'copy-small', group.note));
+    }
+    el.append(warn);
+  }
+  const actions = copyPart('div', 'approval-actions copy-actions');
+  actions.append(
+    copyButton(el, card.discard, false, () => post({ type: 'copyDiscard' })),
+    copyButton(el, card.keepForNow, false, () => post({ type: 'copyKeep', said: card.keptSaid })),
+  );
+  el.append(actions);
 }
 
 /** The refused "Go back here" card that asked for a run's review: where its card goes when the run's bar is not on
@@ -4078,6 +4363,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'rewindCard':
       renderRewindCard(msg.ordinal, msg.card, msg.message);
+      break;
+    case 'copyCard':
+      renderCopyCard(msg.card);
       break;
     case 'runReview':
       renderRunReview(msg.runId, msg.review, msg.message);
