@@ -642,12 +642,10 @@ internal sealed partial class HostServer
                 // copy for now", a reload, or an editor that closed during its run.
                 case SlashCommandId.RunCopy when s.Editor.HasEditor:
                 {
-                    var typed = p.Text.Trim();
-                    var at = typed.AsSpan().IndexOfAny([' ', '\t', '\r', '\n']);
-                    var question = at > 0 ? typed[at..].Trim() : "";
+                    var question = RunCopyCommandHandler.Question(p.Text);
                     if (question.Length == 0
-                        && (s.Copy is { Discarded: false } ? s.Copy : s.Copy = await Services.Execution.CopyRun.FindLeftAsync(s.RootDir, cts.Token)) is null)
-                        return new SlashCommandResult(true, Strings.CopyNoneOpen + " " + Strings.SlashUsage("/run-copy <question>"));
+                        && (s.Copy = await RunCopyCommandHandler.HeldOrLeftAsync(s.Copy, s.RootDir, cts.Token)) is null)
+                        return new SlashCommandResult(true, RunCopyCommandHandler.NoneOpen);
                     return new SlashCommandResult(true, null, [new SlashEffectDto("runCopy", question)]);
                 }
                 case SlashCommandId.RunCopy:

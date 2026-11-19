@@ -21,7 +21,8 @@ public class RegenerateKeepsQueuedChipsTests
     {
         var regenerate = WebviewRebuildTests.Body(Provider(), "private async regenerate(");
         var flag = regenerate.IndexOf("this.regenerating = true;", StringComparison.Ordinal);
-        var send = regenerate.IndexOf("await this.send(", StringComparison.Ordinal);
+        // The ordinary resend, the last one: a question asked on a copy goes through its start card before, its chips untouched.
+        var send = regenerate.LastIndexOf("await this.send(", StringComparison.Ordinal);
         Assert.True(send > 0, "Regenerate no longer resends: the rule reads nothing");   // WITNESS
         Assert.True(flag >= 0 && flag < send, "Regenerate takes the chips queued for the next question");
 

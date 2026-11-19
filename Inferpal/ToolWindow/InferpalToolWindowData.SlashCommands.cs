@@ -64,6 +64,11 @@ internal partial class InferpalToolWindowData
                     await RunCodeActionCommandAsync(code.Kind, code.Request, ct);
                     break;
 
+                // The question as typed, its line breaks and indentation kept: the split the router gives would lose them.
+                case SlashDelegatedAction { Id: SlashCommandId.RunCopy }:
+                    await HandleRunCopyCommandAsync(Services.Commands.RunCopyCommandHandler.Question(prompt), ct);
+                    break;
+
                 case SlashDelegatedAction delegated:
                     await RunDelegatedCommandAsync(delegated.Id, delegated.Parts, ct);
                     break;
@@ -231,7 +236,6 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.Branch:     await HandleBranchCommandAsync(parts, ct);                    break;
             case SlashCommandId.UndoRun:    await HandleUndoRunCommandAsync(parts, ct);                   break;
             case SlashCommandId.PHistory:   await HandlePHistoryCommandAsync(parts, ct);                  break;
-            case SlashCommandId.RunCopy:    await ShowInfoAsync(Strings.RunCopyNotHereYet);              break;
             case SlashCommandId.Models:     await RunOwnedCommandAsync(tok => HandleModelsCommandAsync(parts, tok), ct); break;
             case SlashCommandId.Hardware:   await HandleHardwareCommandAsync(parts, ct);                  break;
             case SlashCommandId.Setup:      await RunOwnedCommandAsync(tok => HandleSetupCommandAsync(parts, tok), ct); break;

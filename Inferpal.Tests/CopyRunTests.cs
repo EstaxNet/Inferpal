@@ -204,6 +204,36 @@ public sealed class CopyRunTests : IDisposable
     }
 
     [Fact]
+    public async Task WithNoFolderOpen_NoCopyIsMade_NorLookedFor()
+    {
+        var start = await CopyRun.PrepareAsync("", CancellationToken.None);
+        var (made, refusal) = await CopyRun.StartAsync("", CancellationToken.None);
+
+        Assert.Contains("no folder is open", start.Refusal);
+        Assert.Null(made);
+        Assert.Contains("no folder is open", refusal);
+        Assert.Null(await CopyRun.FindLeftAsync("", CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData("/run-copy Rework it", "Rework it")]
+    [InlineData("/run-copy rewrite:\n    if (x)\n        y();", "rewrite:\n    if (x)\n        y();")]
+    [InlineData("/run-copy\nRework  it", "Rework  it")]
+    [InlineData("/run-copy", "")]
+    [InlineData("  /run-copy   ", "")]
+    public void TheQuestion_IsKeptAsTyped(string typed, string question) =>
+        Assert.Equal(question, Inferpal.Services.Commands.RunCopyCommandHandler.Question(typed));
+
+    [Theory]
+    [InlineData("/run-copy Rework it", true)]
+    [InlineData("/RUN-COPY\nRework it", true)]
+    [InlineData("/run-copy", false)]
+    [InlineData("/run-copyist Rework", false)]
+    [InlineData("Rework it", false)]
+    public void ACopyQuestion_IsKnownByItsCommand(string text, bool copy) =>
+        Assert.Equal(copy, Inferpal.Services.Commands.RunCopyCommandHandler.IsCopyQuestion(text));
+
+    [Fact]
     public async Task ACopyAQuestionIsAnsweredIn_IsNeverDiscarded()
     {
         Commit();

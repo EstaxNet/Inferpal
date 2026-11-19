@@ -2396,7 +2396,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="CopyReviewChanged" xml:space="preserve"><value>The copy changed since this review: review it again before applying.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>A question is being answered in the copy: discard it once the answer ends.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>run the agent on a copy of the repository, then keep or drop each change (`/run-copy &lt;question&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>This command is not available in this editor yet — use it from VS Code.</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>This command is not available in this editor yet — use it from Visual Studio or VS Code.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>Work on a copy of the repository</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>Your files stay as they are while the agent works</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>Copy of</value></data>
@@ -2447,4 +2447,6 @@ What you save there applies from your next question, in this thread and the othe
   <data name="CopyDiscardedBut" xml:space="preserve"><value>The copy was discarded, but {0}.</value></data>
   <data name="CopyKeptForNow" xml:space="preserve"><value>The copy stays on the branch `{0}`: `/run-copy` alone shows its changes again, `/run-copy &lt;question&gt;` continues on it.</value></data>
   <data name="CopyStartOfCommit" xml:space="preserve"><value>the commit `{0}`</value></data>
+  <data name="CopyWhileBusy" xml:space="preserve"><value>A turn is still running: wait for it to finish, then try again.</value></data>
+  <data name="CopyCompareUnavailable" xml:space="preserve"><value>Visual Studio's comparison tool was not found: the copy's file is `{0}`, yours is `{1}`.</value></data>
 </root>

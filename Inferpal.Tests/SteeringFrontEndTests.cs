@@ -144,7 +144,11 @@ public class SteeringFrontEndTests
     {
         var regenerate = WebviewRebuildTests.Body(Cs("Inferpal", "ToolWindow", "InferpalToolWindowData.ToolInvocation.cs"),
                                                   "private async Task RegenerateAsync()");
-        Assert.Contains("Messages[i].Role == \"user\" && !Messages[i].IsNote", regenerate, StringComparison.Ordinal);
+        // The question, found by the one reader Continue reads it with too: a note is not one.
+        var lastQuestion = WebviewRebuildTests.Body(Cs("Inferpal", "ToolWindow", "InferpalToolWindowData.Copy.cs"),
+                                                    "private ChatMessageItem? LastQuestion()");
+        Assert.Contains("var lastUserItem = LastQuestion();", regenerate, StringComparison.Ordinal);
+        Assert.Contains("Messages[i].Role == \"user\" && !Messages[i].IsNote", lastQuestion, StringComparison.Ordinal);
         Assert.Contains("notes: notes", regenerate, StringComparison.Ordinal);
     }
 

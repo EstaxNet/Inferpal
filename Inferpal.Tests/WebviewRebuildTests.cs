@@ -520,7 +520,8 @@ public class WebviewRebuildTests
         var guard    = regenerate.IndexOf("connected === false", StringComparison.Ordinal);
         var rollback = regenerate.IndexOf("host.chatRollbackLastTurn()", StringComparison.Ordinal);
         var splice   = regenerate.IndexOf("this.transcript.splice(", StringComparison.Ordinal);
-        var resend   = regenerate.IndexOf("this.send(", StringComparison.Ordinal);
+        // The ordinary resend, the last one: a question asked on a copy goes through its start card before, taking nothing back.
+        var resend   = regenerate.LastIndexOf("this.send(", StringComparison.Ordinal);
 
         Assert.True(rollback >= 0 && splice >= 0, "regenerate resends the question on top of the previous exchange.");
         Assert.True(guard >= 0 && guard < rollback, "with the backend down, the exchange is gone before the resend is refused.");

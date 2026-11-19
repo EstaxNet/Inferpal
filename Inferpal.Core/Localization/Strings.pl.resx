@@ -2392,7 +2392,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="CopyReviewChanged" xml:space="preserve"><value>Kopia zmieniła się od tego przeglądu: przejrzyj ją ponownie przed zastosowaniem.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>W kopii trwa odpowiedź na pytanie: odrzuć ją, gdy odpowiedź się skończy.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>uruchomić agenta na kopii repozytorium, a potem zachować lub odrzucić każdą zmianę (`/run-copy &lt;pytanie&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>To polecenie nie jest jeszcze dostępne w tym edytorze — użyj go w VS Code.</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>To polecenie nie jest jeszcze dostępne w tym edytorze — użyj go w Visual Studio lub VS Code.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>Praca na kopii repozytorium</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>Twoje pliki zostają bez zmian, gdy agent pracuje</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>Kopia</value></data>
@@ -2443,4 +2443,6 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="CopyDiscardedBut" xml:space="preserve"><value>Kopia została odrzucona, ale: {0}.</value></data>
   <data name="CopyKeptForNow" xml:space="preserve"><value>Kopia zostaje na gałęzi `{0}`: samo `/run-copy` znów pokaże jej zmiany, `/run-copy &lt;pytanie&gt;` kontynuuje na niej.</value></data>
   <data name="CopyStartOfCommit" xml:space="preserve"><value>commit `{0}`</value></data>
+  <data name="CopyWhileBusy" xml:space="preserve"><value>Tura jeszcze trwa: poczekaj, aż się zakończy, i spróbuj ponownie.</value></data>
+  <data name="CopyCompareUnavailable" xml:space="preserve"><value>Nie znaleziono narzędzia porównywania Visual Studio: plik kopii to `{0}`, twój to `{1}`.</value></data>
 </root>

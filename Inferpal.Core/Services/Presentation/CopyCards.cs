@@ -32,7 +32,10 @@ internal sealed record CopyReviewTexts(string Title, string Keep, string Drop, s
 /// <param name="Tag">"new file" or "deleted"; <c>null</c> for a changed file.</param>
 /// <param name="Kept">"2 of 2 kept", at index = its changes kept.</param>
 /// <param name="HunkLabels">Each change's place ("Lines 12–15"), in the order of its hunks.</param>
-internal sealed record CopyReviewFileTexts(string? Tag, IReadOnlyList<string> Kept, IReadOnlyList<string> HunkLabels);
+/// <param name="HunkKeys">Each change by what it is (<see cref="CopyCards.HunkKey"/>), in the order of its hunks: what a
+/// choice is kept under across a review read again.</param>
+internal sealed record CopyReviewFileTexts(string? Tag, IReadOnlyList<string> Kept, IReadOnlyList<string> HunkLabels,
+                                           IReadOnlyList<string> HunkKeys);
 
 /// <summary>A file whose kept changes were not applied, on the applied card.</summary>
 /// <param name="Lines">Where its kept changes are ("lines 40–52").</param>
@@ -120,8 +123,17 @@ internal static class CopyCards
         var kept = Enumerable.Range(0, file.Hunks.Count + 1).Select(k => Strings.CopyReviewFileKept(k, file.Hunks.Count)).ToList();
         var labels = file.Hunks.Select(h => Place(h, Strings.CopyReviewLines, Strings.CopyReviewLine)).ToList();
         return new CopyReviewFileTexts(file.Created ? Strings.CopyReviewNewFile : file.Deleted ? Strings.CopyReviewDeletedFile : null,
-                                       kept, labels);
+                                       kept, labels, [.. file.Hunks.Select(h => HunkKey(file.Path, h))]);
     }
+
+    /// <summary>
+    /// A change by what it is: its file, where it starts in the commit the copy started from (which never moves), and its
+    /// lines. ⚠ Never its number: a review read again after the run went on numbers its changes anew, and a choice kept by
+    /// number would drop a change the person never saw.
+    /// </summary>
+    public static string HunkKey(string path, DiffHunk hunk) =>
+        string.Join("\n", [path, hunk.OldStart.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            .. hunk.OldLines, "\u241E", .. hunk.NewLines]);
 
     /// <summary>
     /// The card after an apply: <paramref name="kept"/> the hunks the person kept, by path in the repository, of

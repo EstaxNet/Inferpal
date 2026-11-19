@@ -353,7 +353,7 @@ internal sealed partial class HostServer : IDisposable
             // Neither reached the history: a Regenerate must not take back the exchange before it.
             catch (OperationCanceledException) { return new ChatSendResult(string.Empty, true, 0, 0, QuestionKept: false); }   // Stop while it was made
             if (made.Copy is null)
-                return new ChatSendResult(string.Empty, false, 0, 0, Error: Strings.CopyNotMade(made.Refusal ?? "git gave no reason"),
+                return new ChatSendResult(string.Empty, false, 0, 0, Error: made.Refusal ?? Strings.CopyNotMade("git gave no reason"),
                                           QuestionKept: false);
             copy = made.Copy;
         }
@@ -403,10 +403,9 @@ internal sealed partial class HostServer : IDisposable
     /// is taken up only by <c>copy/prepare</c>, whose card says so before any question goes to it.</summary>
     private static async Task<(Services.Execution.CopyRun? Copy, string? Refusal)> HeldOrNewCopyAsync(HostSession s, CancellationToken ct)
     {
-        if (s.Copy is { Discarded: false } held) return (held, null);
-        var (made, refusal) = await Services.Execution.CopyRun.StartAsync(s.RootDir, ct);
-        if (made is not null) s.Copy = made;
-        return (made, refusal);
+        var (copy, refusal) = await Services.Commands.RunCopyCommandHandler.HeldOrNewAsync(s.Copy, s.RootDir, ct);
+        if (copy is not null) s.Copy = copy;
+        return (copy, refusal);
     }
 
     /// <summary>The copy this session holds; <c>null</c> when none. ⚠ Review, apply and discard reach this one only — never a
@@ -421,7 +420,7 @@ internal sealed partial class HostServer : IDisposable
         {
             var s = Session();
             // A copy an earlier session left (its holder gone) is taken up here, and the card says so.
-            var held = HeldCopy(s) ?? (s.Copy = await Services.Execution.CopyRun.FindLeftAsync(s.RootDir, token));
+            var held = HeldCopy(s) ?? (s.Copy = await Services.Commands.RunCopyCommandHandler.HeldOrLeftAsync(null, s.RootDir, token));
             var start = await Services.Execution.CopyRun.PrepareAsync(s.RootDir, token);
             // A question goes to the held copy: the card names the commit IT started from, not the workspace's.
             var commit = held?.StartCommit ?? start.Commit;

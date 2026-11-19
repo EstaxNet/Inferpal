@@ -3841,7 +3841,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       // What the run left in its copy, stopped or failed too: the person keeps or drops it.
       if (result.copy) {
-        this.copyCard = { kind: 'review', review: result.copy, dropped: {} };
+        this.copyCard = { kind: 'review', review: result.copy, dropped: this.copyCard?.kind === 'review' ? this.copyCard.dropped : [] };
       }
       this.busy = false;
       this.lastTokens = result.tokensUsed;
@@ -3964,6 +3964,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const last = [...this.transcript].reverse().find((m) => ChatViewProvider.isModelQuestion(m));
     const inCopy = !!last && ChatViewProvider.isCopyQuestion(last.text);
     try {
+      // ⚠ Continued in the copy it ran in — never in a new one without a word: discarded meanwhile (or the host restarted
+      // and nothing took it up), the next copy starts from the last commit without the run's work, and its card says so.
+      const host = inCopy ? this.getHost() : undefined;
+      if (host?.isRunning && !(await host.copyPrepare()).held) {
+        await this.openCopyStart(prompt);
+        return;
+      }
       await this.send(inCopy ? `/run-copy ${prompt}` : prompt, false,
                       { prompt, codeAction: !inCopy && this.lastSent?.codeAction === true, query: prompt, inCopy });
     } finally {
@@ -3993,6 +4000,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // ⚠ The last question meant for the MODEL: the last user bubble may be a slash command shown as typed, and
     // resending it ran it again — a second /note, a /commit-exec repeated.
     const question = [...this.transcript].reverse().find((m) => ChatViewProvider.isModelQuestion(m));
+    // ⚠ A question asked on a copy is asked again through its start card — never in the person's files — and its exchange
+    // stays: taken back first, a Cancel on the card lost it.
+    if (question && !this.busy && ChatViewProvider.isCopyQuestion(question.text)) {
+      await this.send(question.text);
+      return;
+    }
     if (this.busy || !question) {
       return;
     }
@@ -4187,7 +4200,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
    * `/run-copy <question>`: the start card, or why no copy can be made of this folder — nothing is made before the person
    * answers. `/run-copy` alone: the review of the copy held (the host took up a copy left behind), the way back to it.
    */
-  private async openCopyStart(question: string, echo: WvTranscriptItem): Promise<void> {
+  private async openCopyStart(question: string, echo?: WvTranscriptItem): Promise<void> {
     const host = this.hostForGesture();
     if (!host) {
       return;
@@ -4196,7 +4209,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (!question) {
         const review = await host.copyReview();
         if (review) {
-          this.showCopyCard({ kind: 'review', review, dropped: {} });
+          this.showCopyCard({ kind: 'review', review, dropped: [] });
         }
         return;
       }
@@ -4282,7 +4295,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       const review = await this.getHost()?.copyReview();
       if (review !== undefined) {
-        this.showCopyCard(review ? { kind: 'review', review, dropped: this.copyCard?.kind === 'review' ? this.copyCard.dropped : {} } : null);
+        this.showCopyCard(review ? { kind: 'review', review, dropped: this.copyCard?.kind === 'review' ? this.copyCard.dropped : [] } : null);
         return;
       }
     } catch (err) {

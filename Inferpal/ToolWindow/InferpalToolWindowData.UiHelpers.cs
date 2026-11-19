@@ -419,6 +419,8 @@ internal partial class InferpalToolWindowData
             DiffLine.ApplyTheme(f.Lines, p);
             foreach (var piece in f.Pieces) DiffLine.ApplyTheme(piece.Lines, p);
         }
+        foreach (var f in item.CopyFiles)
+            foreach (var hunk in f.Hunks) DiffLine.ApplyTheme(hunk.Lines, p);
         // Every item shown passes here: a question's "Go back here" is wired with its colours.
         item.HookRewind(question => _ = RewindPlanAsync(question));
     }

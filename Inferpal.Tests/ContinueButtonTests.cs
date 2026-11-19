@@ -48,9 +48,10 @@ public sealed class ContinueButtonTests
         Assert.Contains("if (agentOffersContinue && !agentFailed) MarkContinuable(endNotice);", turn, StringComparison.Ordinal);
 
         var invocation = File.ReadAllText(Path.Combine(ConventionCoverageTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowData.ToolInvocation.cs"));
-        Assert.Matches(new Regex(@"await SendCoreAsync\(Strings\.ContinueQuestion, oneTimeModel, attachments: \[\],"), invocation);
+        // A run on a copy continues in its copy, with the chat's model (RunCopyVsTests).
+        Assert.Matches(new Regex(@"await SendCoreAsync\(Strings\.ContinueQuestion, onCopy \? null : oneTimeModel, attachments: \[\],"), invocation);
         Assert.Contains("oneTimeModel = _lastSent?.Model;", invocation, StringComparison.Ordinal);   // a code action continues as one
-        Assert.Contains("clearPrompt: false, typed: false);", invocation, StringComparison.Ordinal);   // not typed: no prompt history
+        Assert.Contains("clearPrompt: false, typed: false, copy: copy);", invocation, StringComparison.Ordinal);   // not typed: no prompt history
         Assert.Contains("if (_sendStarting || IsLoading || _currentCts is not null || _lastContinuableMsg is null) return;", invocation,
                         StringComparison.Ordinal);
 

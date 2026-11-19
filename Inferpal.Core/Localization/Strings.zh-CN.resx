@@ -2392,7 +2392,7 @@
   <data name="CopyReviewChanged" xml:space="preserve"><value>此次审阅后副本已更改：应用前请重新审阅。</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>副本中正在回答问题：请在回答结束后再丢弃。</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>在仓库副本上运行代理，然后逐一保留或丢弃每处更改 (`/run-copy &lt;问题&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>此命令在此编辑器中尚不可用，请在 VS Code 中使用。</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>此命令在此编辑器中尚不可用，请在 Visual Studio 或 VS Code 中使用。</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>在仓库副本上工作</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>代理工作期间，您的文件保持不变</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>副本来源</value></data>
@@ -2443,4 +2443,6 @@
   <data name="CopyDiscardedBut" xml:space="preserve"><value>副本已丢弃，但：{0}。</value></data>
   <data name="CopyKeptForNow" xml:space="preserve"><value>副本保留在分支 `{0}` 上：只输入 `/run-copy` 会再次显示其更改，`/run-copy &lt;问题&gt;` 会在其上继续。</value></data>
   <data name="CopyStartOfCommit" xml:space="preserve"><value>提交 `{0}`</value></data>
+  <data name="CopyWhileBusy" xml:space="preserve"><value>仍有一轮正在进行：请等待其完成后再试。</value></data>
+  <data name="CopyCompareUnavailable" xml:space="preserve"><value>未找到 Visual Studio 的比较工具：副本的文件为 `{0}`，您的文件为 `{1}`。</value></data>
 </root>

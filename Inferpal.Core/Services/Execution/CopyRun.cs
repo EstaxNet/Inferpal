@@ -85,6 +85,9 @@ internal sealed class CopyRun
     /// <summary>What the start card says for <paramref name="workspace"/>; nothing is made.</summary>
     internal static async Task<CopyStart> PrepareAsync(string workspace, CancellationToken ct)
     {
+        // ⚠ No folder open: git would run where the process happens to be, and copy THAT repository.
+        if (string.IsNullOrWhiteSpace(workspace))
+            return new CopyStart("no folder is open: a copy is made of the folder open in the editor", null, null, null);
         var head = await GitProcess.CaptureBytesAsync(["rev-parse", "--verify", "--short", "HEAD"], workspace, ct, WorkCopy.MaxFileBytes);
         if (head.Output is null)
         {
@@ -105,6 +108,7 @@ internal sealed class CopyRun
     /// <summary>Makes the copy of <paramref name="workspace"/>'s repository; the refusal says why when it cannot.</summary>
     internal static async Task<(CopyRun? Run, string? Refusal)> StartAsync(string workspace, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(workspace)) return (null, "no folder is open: a copy is made of the folder open in the editor");
         var (copy, refusal) = await WorkCopy.CreateAsync(workspace, ct);
         return copy is null ? (null, refusal) : (new CopyRun(copy, workspace, leftBefore: false), null);
     }
@@ -115,6 +119,7 @@ internal sealed class CopyRun
     /// </summary>
     internal static async Task<CopyRun?> FindLeftAsync(string workspace, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(workspace)) return null;
         if ((await WorkCopy.FindAsync(workspace, ct)).FirstOrDefault() is not { } copy) return null;
         await copy.TakeOverAsync(ct);
         return new CopyRun(copy, workspace, leftBefore: true);

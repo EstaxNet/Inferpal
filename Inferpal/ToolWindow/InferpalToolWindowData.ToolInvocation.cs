@@ -144,9 +144,13 @@ internal partial class InferpalToolWindowData
     {
         var claim = 0;
         string? oneTimeModel = null;
+        Services.Execution.CopyRun? copy = null;
+        var onCopy = false;
         await RunOnVMContextAsync(() =>
         {
             if (_sendStarting || IsLoading || _currentCts is not null || _lastContinuableMsg is null) return;
+            // ⚠ A run on a copy continues in the copy: sent as an ordinary question, its next steps wrote in the person's files.
+            onCopy = LastQuestion() is { } asked && Services.Commands.RunCopyCommandHandler.IsCopyQuestion(asked.Content);
             // A code action's answer continues as one — its model, without tools — as Regenerate replays it.
             oneTimeModel = _lastSent?.Model;
             if (!_isBackendReachable)
@@ -162,8 +166,19 @@ internal partial class InferpalToolWindowData
         if (claim == 0) return;
         try
         {
-            await SendCoreAsync(Strings.ContinueQuestion, oneTimeModel, attachments: [], CancellationToken.None,
-                                clearPrompt: false, typed: false);
+            if (onCopy)
+            {
+                // ⚠ Continued in the copy it ran in — never in a new one without a word: discarded meanwhile, the next copy
+                // starts from the last commit without the run's work, and its start card says so.
+                if (HeldCopy is not { } held)
+                {
+                    await HandleRunCopyCommandAsync(Strings.ContinueQuestion, CancellationToken.None);
+                    return;
+                }
+                copy = held;
+            }
+            await SendCoreAsync(Strings.ContinueQuestion, onCopy ? null : oneTimeModel, attachments: [], CancellationToken.None,
+                                clearPrompt: false, typed: false, copy: copy);
         }
         finally
         {
@@ -188,15 +203,18 @@ internal partial class InferpalToolWindowData
             return;
         }
 
-        // Find the last user message in the visible list (before the two anchors at the end)
-        ChatMessageItem? lastUserItem = null;
-        var lastUserIdx = -1;
-        for (var i = Messages.Count - 3; i >= 0; i--)
-        {
-            // A note typed during the run is not the question: the question is above it.
-            if (Messages[i].Role == "user" && !Messages[i].IsNote) { lastUserItem = Messages[i]; lastUserIdx = i; break; }
-        }
+        // The last question in the visible list — a note typed during the run is not the question: it is above it.
+        var lastUserItem = LastQuestion();
         if (lastUserItem is null) return;
+        var lastUserIdx = Messages.IndexOf(lastUserItem);
+
+        // ⚠ A question asked on a copy is asked again through its start card — never in the person's files — and its exchange
+        // stays: taken back first, a Cancel on the card lost it, and the notes its run read with it.
+        if (Services.Commands.RunCopyCommandHandler.IsCopyQuestion(lastUserItem.Content))
+        {
+            await HandleRunCopyCommandAsync(Services.Commands.RunCopyCommandHandler.Question(lastUserItem.Content), CancellationToken.None);
+            return;
+        }
         // The notes its run read are part of the question in the history: asked again, it carries them.
         List<string> notes = [..Messages.Skip(lastUserIdx + 1).Where(m => m.IsNote && m.NoteRead).Select(m => m.Content)];
 

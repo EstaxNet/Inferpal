@@ -1018,7 +1018,7 @@ function renderCopyCard(card: WvCopyCard | null): void {
   if (card.kind === 'start') {
     renderCopyStart(el, card.question, card.card);
   } else if (card.kind === 'review') {
-    renderCopyReview(el, card.review, card.dropped ?? {});
+    renderCopyReview(el, card.review, card.dropped ?? []);
   } else {
     renderCopyApplied(el, card.card);
   }
@@ -1073,23 +1073,26 @@ const COPY_FILES_OPEN = 2;
  * The review card: each change of each file kept or dropped, then applied or the copy discarded. `dropped`: what the
  * person dropped before this redraw, kept by the extension — a redraw never puts a dropped change back.
  */
-function renderCopyReview(el: HTMLElement, review: CopyReview, dropped: Record<string, number[]>): void {
+function renderCopyReview(el: HTMLElement, review: CopyReview, dropped: string[]): void {
   const texts = review.texts;
   if (!texts) {
     return;
   }
   el.setAttribute('aria-label', texts.title);
+  // A change's key is what it is: a review read again never drops a change the person did not.
+  const keyOf = (f: CopyReview['files'][number], n: number) => f.texts?.hunkKeys[n] ?? `${f.path}#${n}`;
   const kept = new Map<string, Set<number>>(review.files.map((f) => [
-    f.path, new Set(f.hunks.map((h) => h.index).filter((i) => !(dropped[f.path] ?? []).includes(i))),
+    f.path, new Set(f.hunks.map((h, n) => (dropped.includes(keyOf(f, n)) ? -1 : h.index)).filter((i) => i >= 0)),
   ]));
   const keptCount = () => [...kept.values()].reduce((n, s) => n + s.size, 0);
   const tellChoices = () => {
-    const now: Record<string, number[]> = {};
+    const now: string[] = [];
     for (const f of review.files) {
-      const gone = f.hunks.map((h) => h.index).filter((i) => !kept.get(f.path)!.has(i));
-      if (gone.length > 0) {
-        now[f.path] = gone;
-      }
+      f.hunks.forEach((h, n) => {
+        if (!kept.get(f.path)!.has(h.index)) {
+          now.push(keyOf(f, n));
+        }
+      });
     }
     post({ type: 'copyChoice', dropped: now });
   };

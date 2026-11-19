@@ -233,8 +233,9 @@ export interface CopyPrepareResult {
 /** One change the person keeps or drops: its lines removed and added, at 0-based lines. */
 export interface CopyHunk { index: number; oldStart: number; newStart: number; removed: string[]; added: string[] }
 
-/** One file's texts on the review card: `kept` and the apply texts are indexed by the number of changes kept. */
-export interface CopyReviewFileTexts { tag?: string | null; kept: string[]; hunkLabels: string[] }
+/** One file's texts on the review card: `kept` is indexed by the number of changes kept; `hunkKeys` names each change
+ *  by what it is, never by its number — what a choice is kept under across a review read again. */
+export interface CopyReviewFileTexts { tag?: string | null; kept: string[]; hunkLabels: string[]; hunkKeys: string[] }
 
 /** One file the run changed in the copy. */
 export interface CopyReviewFile { path: string; created: boolean; deleted: boolean; hunks: CopyHunk[]; texts?: CopyReviewFileTexts | null }

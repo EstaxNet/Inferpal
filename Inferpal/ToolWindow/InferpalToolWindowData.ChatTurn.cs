@@ -144,12 +144,17 @@ internal partial class InferpalToolWindowData
         CancellationToken    ct,
         bool                 clearPrompt = true,
         IReadOnlyList<string>? notes = null,
-        bool                 typed = true)
+        bool                 typed = true,
+        Services.Execution.CopyRun? copy = null)
     {
         // Every turn can reach the file tools: never before the workspace root is pinned.
         PinWorkspaceRoot();
         // What another editor saved since: this question answers with it.
         await FollowSettingsFileAsync();
+        // A question for a copy (/run-copy): the whole turn — its system prompt, tools and approvals — works in the copy,
+        // which no discard removes meanwhile; its bubble keeps the command, so Regenerate asks again through the card.
+        using var inCopy = copy?.Enter();
+        using var copyInUse = copy?.Use();
 
         // ── Pre-flight: heartbeat says Ollama is offline → fail immediately ────────
         // This avoids the 30-minute HTTP timeout; the prompt stays in the input box
@@ -230,7 +235,7 @@ internal partial class InferpalToolWindowData
                 // session handed the model "explain this" without what "this" refers to
                 // (Services/Agent/ChatTurnPolicy.BuildBubbleText).
                 var userItem  = ChatMessageItem.UserMsg(Services.Agent.ChatTurnPolicy.BuildBubbleText(
-                    userText, attachments.Select(a => a.Label).ToList()));
+                    copy is null ? userText : "/run-copy " + userText, attachments.Select(a => a.Label).ToList()));
                 ApplyItemTheme(userItem);
                 // The images it carries, drawn small under it (this session only: a saved conversation names them).
                 foreach (var image in attachments.Where(a => a.ImageFile is not null)) userItem.ImageFiles.Add(image.ImageFile!);
@@ -350,6 +355,9 @@ internal partial class InferpalToolWindowData
 
             await RunOnVMContextAsync(() =>
             {
+                // ⚠ In the copy again: the window's context runs this without the flow's RunRoot, and the system prompt named
+                // the person's folder as the workspace root of a run that works in the copy.
+                using var inCopyHere = copy?.Enter();
                 // Stopped during the build: the question stays on screen and never reaches the history.
                 localCts!.Token.ThrowIfCancellationRequested();
                 // ⚠ The system prompt is re-read for EVERY question, as the host does. It carries files
@@ -394,8 +402,10 @@ internal partial class InferpalToolWindowData
         }
         catch (OperationCanceledException) when (localCts is { IsCancellationRequested: true })
         {
+            var stoppedCopyCard = await CopyReviewCardAsync(copy, CancellationToken.None);
             await RunOnVMContextAsync(() =>
             {
+                if (stoppedCopyCard is not null) ShowCopyCard(stoppedCopyCard);
                 // Stopped before the question entered the history: a notice in the user's place, as VS Code marks it.
                 // Saved as a question, the model never had it, and a kept summary counted from the first question is
                 // placed a turn early on restore. Regenerate still finds it (by role).
@@ -413,8 +423,10 @@ internal partial class InferpalToolWindowData
             // The turn may already be taken (instant-feedback block above): release it here — this
             // catch is outside the main finally that normally does.
             var msg = ex.Message;
+            var failedCopyCard = await CopyReviewCardAsync(copy, CancellationToken.None);
             await RunOnVMContextAsync(() =>
             {
+                if (failedCopyCard is not null) ShowCopyCard(failedCopyCard);
                 // Failed before the question entered the history: a notice, as a Stop there (above).
                 if (_lastSent?.Question is { } asked && !ReferenceEquals(_questionInHistory, asked))
                     asked.ToolName = SessionManager.NoticeMarker;
@@ -971,8 +983,12 @@ internal partial class InferpalToolWindowData
             speeds.Dispose();
             // Background RAG indexing resumes automatically when RunAgentAsync releases its
             // GpuScheduler chat lease — no manual gate balancing needed here anymore.
+            // What the run left in its copy, stopped or failed too: read before the turn is let go, so a message queued after
+            // the turn (a /run-copy follow-up and its card) comes after it, never under it.
+            var copyCard = await CopyReviewCardAsync(copy, CancellationToken.None);
             await RunOnVMContextAsync(() =>
             {
+                if (copyCard is not null) ShowCopyCard(copyCard);
                 // Safety-net: remove any leftover status bubble in case the main path
                 // or the catch handlers didn't reach the removal code.
                 RemoveStatusBubble();

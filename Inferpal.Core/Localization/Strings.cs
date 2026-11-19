@@ -3024,4 +3024,6 @@ internal static class Strings
     public static string CopyDiscardedBut(string detail) => Format(Get(nameof(CopyDiscardedBut)), detail);
     public static string CopyKeptForNow(string branch) => Format(Get(nameof(CopyKeptForNow)), branch);
     public static string CopyStartOfCommit(string commit) => Format(Get(nameof(CopyStartOfCommit)), commit);
+    public static string CopyWhileBusy => Get(nameof(CopyWhileBusy));
+    public static string CopyCompareUnavailable(string copyPath, string minePath) => Format(Get(nameof(CopyCompareUnavailable)), copyPath, minePath);
 }

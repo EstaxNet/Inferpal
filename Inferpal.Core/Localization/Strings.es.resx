@@ -2392,7 +2392,7 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="CopyReviewChanged" xml:space="preserve"><value>La copia cambió desde esta revisión: revísela de nuevo antes de aplicar.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>Se está respondiendo una pregunta en la copia: descártela cuando termine la respuesta.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>ejecutar el agente en una copia del repositorio y luego conservar o descartar cada cambio (`/run-copy &lt;pregunta&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Este comando aún no está disponible en este editor: úselo desde VS Code.</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Este comando aún no está disponible en este editor: úselo desde Visual Studio o VS Code.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>Trabajar en una copia del repositorio</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>Sus archivos se quedan como están mientras el agente trabaja</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>Copia de</value></data>
@@ -2443,4 +2443,6 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="CopyDiscardedBut" xml:space="preserve"><value>La copia se descartó, pero: {0}.</value></data>
   <data name="CopyKeptForNow" xml:space="preserve"><value>La copia sigue en la rama `{0}`: `/run-copy` solo vuelve a mostrar sus cambios, `/run-copy &lt;pregunta&gt;` continúa en ella.</value></data>
   <data name="CopyStartOfCommit" xml:space="preserve"><value>el commit `{0}`</value></data>
+  <data name="CopyWhileBusy" xml:space="preserve"><value>Todavía hay un turno en curso: espere a que termine y vuelva a intentarlo.</value></data>
+  <data name="CopyCompareUnavailable" xml:space="preserve"><value>No se encontró la herramienta de comparación de Visual Studio: el archivo de la copia es `{0}` y el suyo `{1}`.</value></data>
 </root>

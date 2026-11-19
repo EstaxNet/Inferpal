@@ -16,8 +16,9 @@ import type {
 /** The card of a run on a copy, one at a time: its start, the review of what the run left, or what the apply did. */
 export type WvCopyCard =
   | { kind: 'start'; question: string; card: CopyStartCard }
-  /** `dropped`: the changes the person dropped, by path — kept by the extension, so a redraw never puts them back. */
-  | { kind: 'review'; review: CopyReview; dropped: Record<string, number[]> }
+  /** `dropped`: the changes the person dropped, by their key (`hunkKeys`) — kept by the extension, so a redraw never puts
+   *  them back, and a review read again never drops a change the person did not. */
+  | { kind: 'review'; review: CopyReview; dropped: string[] }
   | { kind: 'applied'; card: CopyAppliedCard };
 
 export interface WvSetupView {
@@ -351,8 +352,8 @@ export type WebviewToExt =
   | { type: 'copyStart'; question: string; choice: 'copy' | 'mine' | 'cancel' }
   /** The review card's Apply: the hunks kept of review `reviewId`, by path. */
   | { type: 'copyApply'; reviewId: number; kept: Record<string, number[]> }
-  /** A change kept or dropped on the review card: every dropped change, by path. */
-  | { type: 'copyChoice'; dropped: Record<string, number[]> }
+  /** A change kept or dropped on the review card: every dropped change, by its key. */
+  | { type: 'copyChoice'; dropped: string[] }
   | { type: 'copyDiscard' }
   /** "Keep the copy for now": the card goes, `said` stays in the thread. */
   | { type: 'copyKeep'; said: string }

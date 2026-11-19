@@ -55,7 +55,8 @@ public class RunCopyFrontEndTests
         ready = ready[..ready.IndexOf("host.setChatEvents(", StringComparison.Ordinal)];
 
         Assert.Contains("this.copyCard.dropped = msg.dropped;", code);                               // the extension keeps them
-        Assert.Contains("renderCopyReview(el, card.review, card.dropped ?? {})", main);               // a redraw draws them
+        Assert.Contains("renderCopyReview(el, card.review, card.dropped ?? [])", main);               // a redraw draws them
+        Assert.Contains("f.texts?.hunkKeys[n]", main);                                               // by what they are
         Assert.Contains("post({ type: 'copyChoice', dropped: now })", main);
         Assert.Contains("this.showCopyCard(null);", ready);
     }
@@ -66,6 +67,19 @@ public class RunCopyFrontEndTests
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md")))
             dir = dir.Parent;
         return Path.Combine(dir!.FullName, "vscode", "src", "chatViewProvider.ts");
+    }
+
+    [Fact]
+    public void RegenerateOnACopyQuestion_TakesNothingBack_AndContinueWithoutACopyGoesThroughTheCard()
+    {
+        var code = Provider();
+        var regenerate = code[code.IndexOf("private async regenerate(): Promise<void> {", StringComparison.Ordinal)..];
+        var rollback = regenerate.IndexOf("chatRollbackLastTurn", StringComparison.Ordinal);
+        var copy = regenerate.IndexOf("ChatViewProvider.isCopyQuestion(question.text)", StringComparison.Ordinal);
+        var cont = code[code.IndexOf("private async continueTurn(): Promise<void> {", StringComparison.Ordinal)..];
+
+        Assert.True(copy > 0 && copy < rollback, "a copy question is taken back before its card asks it again");
+        Assert.Matches(new Regex(@"!\(await host\.copyPrepare\(\)\)\.held\)\s*\{\s*await this\.openCopyStart\(prompt\);"), cont);
     }
 
     [Fact]

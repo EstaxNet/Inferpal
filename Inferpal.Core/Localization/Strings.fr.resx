@@ -2392,7 +2392,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="CopyReviewChanged" xml:space="preserve"><value>La copie a changé depuis cette relecture : relisez-la de nouveau avant d'appliquer.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>Une question est en cours dans la copie : jetez-la une fois la réponse finie.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>lancer l'agent sur une copie du dépôt, puis garder ou écarter chaque changement (`/run-copy &lt;question&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Cette commande n'est pas encore disponible dans cet éditeur — utilisez-la depuis VS Code.</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Cette commande n'est pas encore disponible dans cet éditeur — utilisez-la depuis Visual Studio ou VS Code.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>Travailler sur une copie du dépôt</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>Vos fichiers restent tels quels pendant que l'agent travaille</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>Copie de</value></data>
@@ -2443,4 +2443,6 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="CopyDiscardedBut" xml:space="preserve"><value>La copie a été jetée, mais : {0}.</value></data>
   <data name="CopyKeptForNow" xml:space="preserve"><value>La copie reste sur la branche `{0}` : `/run-copy` seul réaffiche ses changements, `/run-copy &lt;question&gt;` continue dessus.</value></data>
   <data name="CopyStartOfCommit" xml:space="preserve"><value>le commit `{0}`</value></data>
+  <data name="CopyWhileBusy" xml:space="preserve"><value>Un tour est encore en cours : attendez qu'il se termine, puis réessayez.</value></data>
+  <data name="CopyCompareUnavailable" xml:space="preserve"><value>L'outil de comparaison de Visual Studio est introuvable : le fichier de la copie est `{0}`, le vôtre `{1}`.</value></data>
 </root>

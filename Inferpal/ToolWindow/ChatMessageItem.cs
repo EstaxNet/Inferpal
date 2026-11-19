@@ -8,7 +8,7 @@ using Inferpal.Services;
 namespace Inferpal.ToolWindow;
 
 [DataContract]
-internal class ChatMessageItem : NotifyPropertyChangedObject
+internal partial class ChatMessageItem : NotifyPropertyChangedObject
 {
     private string          _content          = string.Empty;
     private string          _label            = string.Empty;

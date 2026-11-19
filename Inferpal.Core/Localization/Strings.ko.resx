@@ -2392,7 +2392,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="CopyReviewChanged" xml:space="preserve"><value>이 검토 이후 복사본이 바뀌었습니다. 적용하기 전에 다시 검토하세요.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>복사본에서 질문에 답하는 중입니다. 답변이 끝난 뒤 버리세요.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>저장소 복사본에서 에이전트를 실행한 뒤 변경마다 유지하거나 버리기 (`/run-copy &lt;질문&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>이 명령은 이 편집기에서 아직 사용할 수 없습니다. VS Code에서 사용하세요.</value></data>
+  <data name="RunCopyNotHereYet" xml:space="preserve"><value>이 명령은 이 편집기에서 아직 사용할 수 없습니다. Visual Studio 또는 VS Code에서 사용하세요.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>저장소 복사본에서 작업</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>에이전트가 작업하는 동안 파일은 그대로 유지됩니다</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>복사 대상</value></data>
@@ -2443,4 +2443,6 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="CopyDiscardedBut" xml:space="preserve"><value>복사본을 버렸지만 다음 문제가 있습니다: {0}.</value></data>
   <data name="CopyKeptForNow" xml:space="preserve"><value>복사본은 브랜치 `{0}`에 남습니다. `/run-copy`만 입력하면 변경을 다시 보여 주고, `/run-copy &lt;질문&gt;`으로 이어서 작업합니다.</value></data>
   <data name="CopyStartOfCommit" xml:space="preserve"><value>커밋 `{0}`</value></data>
+  <data name="CopyWhileBusy" xml:space="preserve"><value>아직 턴이 실행 중입니다. 끝날 때까지 기다린 뒤 다시 시도하세요.</value></data>
+  <data name="CopyCompareUnavailable" xml:space="preserve"><value>Visual Studio 비교 도구를 찾을 수 없습니다. 복사본 파일은 `{0}`, 내 파일은 `{1}`입니다.</value></data>
 </root>

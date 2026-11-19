@@ -122,6 +122,25 @@ public sealed class CopyCardsTests
     }
 
     [Fact]
+    public void AChangesKey_IsWhatItIs_NeverItsNumber()
+    {
+        var one = InlineDiffPlanner.Plan(Lines, Lines.Replace("line 20\n", "line twenty\n")).Hunks.Single();
+        // The run went on: a change above it now comes first, and this one is numbered anew.
+        var two = InlineDiffPlanner.Plan(Lines, Lines.Replace("line 3\n", "x\n").Replace("line 20\n", "line twenty\n")).Hunks;
+
+        Assert.NotEqual(one.Index, two[1].Index);
+        Assert.Equal(CopyCards.HunkKey("A.cs", one), CopyCards.HunkKey("A.cs", two[1]));
+        Assert.NotEqual(CopyCards.HunkKey("A.cs", one), CopyCards.HunkKey("A.cs", two[0]));
+        Assert.NotEqual(CopyCards.HunkKey("A.cs", one), CopyCards.HunkKey("B.cs", one));
+        Assert.Equal(CopyCards.HunkKey("A.cs", two[1]), CopyCards.File(Changed("A.cs", Lines, Lines.Replace("line 3\n", "x\n")
+                                                                       .Replace("line 20\n", "line twenty\n"))).HunkKeys[1]);
+    }
+
+    [Fact]
+    public void TheCardOfACopy_IsNeverSavedWithTheConversation() =>
+        Assert.Contains("copy", Inferpal.Services.Persistence.SessionManager.ScreenOnlyRoles);
+
+    [Fact]
     public void AChangesPlace_IsItsLinesInTheNewText_OrTheLinesItRemoves()
     {
         var after = Lines.Replace("line 12\n", "line twelve\nline twelve and a half\n").Replace("line 25\n", "");
