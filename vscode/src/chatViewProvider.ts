@@ -101,6 +101,12 @@ const IMAGE_FILE = /\.(png|jpg|jpeg|webp|gif|bmp|heic|heif|tif|tiff)$/i;
 
 /** An SVG: drawn for a model that sees images, its markup otherwise (the host's `svg/read`, pari 111). */
 const SVG_FILE = /\.svg$/i;
+
+/** A question's typed @-mentions, expanded: the text to send, the files sent whole, the lines said under the question,
+ *  and the images typed as @file. */
+type MentionsExpanded = {
+  text: string; paths: string[]; labels: string[]; images: { image: ImageDto; thumbnail?: string; token: string }[];
+};
 /** A regenerated question's turn, as it was sent: the prompt, whether it was a code action, the relevant-code query. */
 type TurnReplay = { prompt: string; codeAction: boolean; query?: string };
 
@@ -2597,9 +2603,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** `typedImages`: whether an image typed as @file goes as an image (a question), or not at all (a code action's excerpt
    *  quoting a path); `chipImages`: the chips' images, counted against the per-question limit and never sent twice. */
   private async expandMentions(prompt: string, host: HostClient, typedImages = false,
-                               chipImages: string[] = []): Promise<{
-    text: string; paths: string[]; labels: string[]; images: { image: ImageDto; thumbnail?: string; token: string }[];
-  }> {
+                               chipImages: string[] = []): Promise<MentionsExpanded> {
     const folders = (vscode.workspace.workspaceFolders ?? []).map((f) => ({ name: f.name, target: f.uri }));
     const images: { image: ImageDto; thumbnail?: string; token: string }[] = [];
     if (folders.length === 0 || !prompt.includes('@')) {

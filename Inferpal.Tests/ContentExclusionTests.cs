@@ -956,7 +956,7 @@ public sealed class ContentExclusionAdapterTests
         var turn = WebviewRebuildTests.Body(provider, "private async chatTurn(");
         Assert.Contains("ChatViewProvider.excluded(host, chips.map((a) => a.origin ?? ''))", turn, StringComparison.Ordinal);
         var expand = WebviewRebuildTests.Body(provider,
-            "private async expandMentions(prompt: string, host: HostClient): Promise<{ text: string; paths: string[]; labels: string[] }>");
+            "private async expandMentions(");
         Assert.Contains("ChatViewProvider.excluded(host, [uri.fsPath])", expand, StringComparison.Ordinal);
         Assert.True(expand.IndexOf("ChatViewProvider.excluded(", StringComparison.Ordinal)
                     < expand.IndexOf("this.readAttachable(uri)", StringComparison.Ordinal), "asked BEFORE the file is read");
