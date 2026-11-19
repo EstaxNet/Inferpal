@@ -58,9 +58,10 @@ public class PromisedDurationTextsTests
         var root = ConventionCoverageTests.RepoRoot();
         var approvals = ConventionCoverageTests.CodeOnly(
             System.IO.Path.Combine(root, "Inferpal.Core", "Services", "Execution", "ApprovalServiceBase.cs"));
-        // Read under the root open now, kept per root: never another workspace's, found again on coming back.
+        // Read under the root open now, kept per root: never another workspace's, found again on coming back — and in a
+        // run on a copy, under that run's own scope (pari 106).
         var granted = approvals[approvals.IndexOf("private bool Granted(", StringComparison.Ordinal)..];
-        Assert.Contains("GrantsKey(_rootDir())", granted[..granted.IndexOf("}", StringComparison.Ordinal)], StringComparison.Ordinal);
+        Assert.Contains("GrantsKey(RunRoot.GrantsScope ?? _rootDir())", granted[..granted.IndexOf("}", StringComparison.Ordinal)], StringComparison.Ordinal);
         Assert.Contains("Dictionary<string, HashSet<string>> _sessionAllowed = new(PathComparer.Default)", approvals, StringComparison.Ordinal);
 
         var consent = ConventionCoverageTests.CodeOnly(

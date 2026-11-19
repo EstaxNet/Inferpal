@@ -39,6 +39,9 @@ internal sealed class SemanticSearchTool : ITool
     internal const int MaxTopK = 20;
 
     public string Name => "search_codebase";
+
+    /// <inheritdoc/>
+    public bool ActsOnTheEditorOrIndex => true;
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 

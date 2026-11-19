@@ -136,6 +136,9 @@ internal static class ContentExclusions
         string full;
         try { full = Path.GetFullPath(path); }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException) { return null; }
+        // ⚠ A run on a copy (RunRoot) reads the person's files under another root, which no ignore file is declared for —
+        // and the copy holds only what was committed: judged as the file it copies, by the person's own folder.
+        if (Execution.RunRoot.InOrigin(full) is { } original) full = original;
 
         // ⚠ Inferpal's backups hold copies of workspace files — of excluded ones too (a command that changed one, a backup
         // older than the rule) — under a name that keeps only a hash of the original path: no rule can judge them, so

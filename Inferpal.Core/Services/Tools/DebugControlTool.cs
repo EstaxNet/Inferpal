@@ -41,6 +41,9 @@ internal sealed class DebugControlTool(
     public const string ToolName = "debug_control";
 
     public string Name => ToolName;
+
+    /// <inheritdoc/>
+    public bool ActsOnTheEditorOrIndex => true;
     /// <inheritdoc/>
     /// <remarks>Listing the breakpoints reads; setting or clearing one changes the debugger; starting, resuming, stepping
     /// and stopping run the program — and so does a breakpoint with a condition or a message, whose expressions the

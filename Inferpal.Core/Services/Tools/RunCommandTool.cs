@@ -115,7 +115,14 @@ internal sealed class RunCommandTool : ITool, IDisposable
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         if (args.Keyword("action") is { } action)
+        {
+            // A run on a copy reaches the jobs it started there only: one started in the person's folder is theirs.
+            if (Execution.RunRoot.Copy is { } inCopy && action != "list" && GetId(args) is { } jobId
+                && _background.FolderOf(jobId) is { } jobFolder && !Execution.RunRoot.Holds(inCopy, jobFolder))
+                return $"Error: background job '{jobId}' runs in the user's own folder, and this run works in a copy of the "
+                     + "repository — not available here.";
             return action == "wait" ? await WaitAsync(args, ct) : HandleAction(action, args);
+        }
 
         if (args.Str("command") is not { Length: > 0 } command)
             return "Error: 'command' is required (or use action='poll'/'stop'/'list').";
@@ -140,6 +147,16 @@ internal sealed class RunCommandTool : ITool, IDisposable
         if (repeat is not null && args.Bool("background", false))
             return "Error: 'repeat' measures a command that ends; a background job does not — nothing ran.";
         var runIn   = _session.StartDirectory(workDir).Directory;
+        // A run on a copy writes nothing in the person's own folder before they apply it: a command runs inside the copy,
+        // and one that names their folder is refused — a guard against a slip, not a boundary (a relative path can still
+        // climb out; the card shows the command).
+        if (Execution.RunRoot.Copy is { } copy)
+        {
+            if (!PathSanitizer.IsUnderRoot(runIn, copy))
+                return $"Error: this run works in a copy of the repository ({copy}); a command runs inside it, not in {runIn} "
+                     + "— nothing ran.";
+            if (Execution.RunRoot.CommandRefusal(command) is { } refused) return refused;
+        }
         var details = ShellSession.SameFolder(runIn, _session.WorkspaceRoot) ? command : $"{command}\n[cwd: {runIn}]";
         // One card for every run of a measure: it says how many.
         if (repeat is { } times) details += "\n" + Strings.MeasureRunsOnCard(times.Item1 + 1);
@@ -151,10 +168,11 @@ internal sealed class RunCommandTool : ITool, IDisposable
         var declinedCheck = false;
         if (PackageCheck.IsThePersonsOwnCall)
         {
-            if (RunsACheck(command)) WorkspaceCodeConsent.NoteThePersonsRun(_session.WorkspaceRoot);
+            if (RunsACheck(command)) WorkspaceCodeConsent.NoteThePersonsRun(Execution.RunRoot.Origin ?? _session.WorkspaceRoot);
         }
         else
-            declinedCheck = WorkspaceCodeConsent.Declined(_session.WorkspaceRoot) && RunsACheck(command);
+            // A copy runs the person's code: their "No" holds in it.
+            declinedCheck = WorkspaceCodeConsent.Declined(Execution.RunRoot.Origin ?? _session.WorkspaceRoot) && RunsACheck(command);
         if (!await _approval.RequestApprovalAsync("run_command", details, ct, subject: command, forcePrompt: outside || declinedCheck))
             return Strings.RunCancelled;
 
@@ -256,7 +274,11 @@ internal sealed class RunCommandTool : ITool, IDisposable
             }
             case "list":
             {
-                var jobs = _background.List();
+                // In a run on a copy, the jobs it started there: the person's own are not its to read or stop.
+                var jobs = _background.List()
+                    .Where(j => Execution.RunRoot.Copy is not { } inCopy
+                                || _background.FolderOf(j.Id) is not { } folder || Execution.RunRoot.Holds(inCopy, folder))
+                    .ToList();
                 if (jobs.Count == 0) return "No background jobs.";
                 var sb = new StringBuilder("Background jobs:\n");
                 foreach (var (jid, cmd, running) in jobs)

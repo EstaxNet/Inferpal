@@ -19,6 +19,9 @@ internal class ReplaceSelectionTool : ITool
     }
 
     public string Name => "replace_selection";
+
+    /// <inheritdoc/>
+    public bool ActsOnTheEditorOrIndex => true;
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Writes;
 

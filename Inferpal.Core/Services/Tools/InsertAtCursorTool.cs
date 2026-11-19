@@ -19,6 +19,9 @@ internal class InsertAtCursorTool : ITool
     }
 
     public string Name => "insert_at_cursor";
+
+    /// <inheritdoc/>
+    public bool ActsOnTheEditorOrIndex => true;
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Writes;
 

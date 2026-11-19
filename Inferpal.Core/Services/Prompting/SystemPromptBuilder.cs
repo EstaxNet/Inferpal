@@ -87,7 +87,10 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         var (dialect, fileName) = Shell.ShellLauncher.Resolve();
         var shell = Shell.ShellLauncher.SpokenName(dialect, fileName);
         var editor = string.IsNullOrWhiteSpace(editorName) ? string.Empty : $"Editor: {editorName}. ";
-        var root = string.IsNullOrWhiteSpace(workspaceRoot) ? string.Empty : $" The workspace root is {workspaceRoot}.";
+        // ⚠ The root the tools work in: a run on a copy (RunRoot, entered before its prompt is built) states the copy, or
+        // every absolute path the model writes from it names the person's folder and is refused.
+        var stated = Execution.RunRoot.Copy ?? workspaceRoot;
+        var root = string.IsNullOrWhiteSpace(stated) ? string.Empty : $" The workspace root is {stated}.";
         if (root.Length > 0 && foldersOutOfReach is { Count: > 0 })
             root += $" Other folders open in the editor are outside it, so the tools cannot read, search or edit them: "
                   + $"{string.Join(", ", foldersOutOfReach)}.";

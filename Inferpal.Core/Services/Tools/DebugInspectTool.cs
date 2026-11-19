@@ -19,6 +19,9 @@ internal sealed class DebugInspectTool(IDebugSession session, IApprovalService a
     public const string ToolName = "debug_inspect";
 
     public string Name => ToolName;
+
+    /// <inheritdoc/>
+    public bool ActsOnTheEditorOrIndex => true;
     /// <inheritdoc/>
     /// <remarks>Evaluating an expression runs the debuggee's code; reading the state does not.</remarks>
     public ToolEffect EffectOf(JsonElement args) => args.Keyword("action") == "evaluate" ? ToolEffect.Runs : ToolEffect.Reads;

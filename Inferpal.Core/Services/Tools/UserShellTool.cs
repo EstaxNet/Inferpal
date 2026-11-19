@@ -55,6 +55,8 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
         var fullCmd = Expand(command, extra);
         // Like run_command: without a workspace there is no folder to run in, and the card would name none.
         if (string.IsNullOrEmpty(getRoot())) throw new NoWorkspaceRootException();
+        // Like run_command in a run on a copy: nothing written in the person's own folder before they apply.
+        if (Execution.RunRoot.CommandRefusal(fullCmd) is { } refused) return refused;
 
         // ⚠ The arguments are written INTO the script: a `;`, a `|` or a `$(…)` among them adds a command the tool's name
         // never said, which an "Always" or an allow rule given to the tool would carry. Such a call is asked every time.

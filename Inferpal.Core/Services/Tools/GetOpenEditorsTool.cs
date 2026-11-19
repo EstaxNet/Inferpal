@@ -13,6 +13,9 @@ internal class GetOpenEditorsTool : ITool
         => _editor = editor;
 
     public string Name => "get_open_editors";
+
+    /// <inheritdoc/>
+    public bool ActsOnTheEditorOrIndex => true;
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 

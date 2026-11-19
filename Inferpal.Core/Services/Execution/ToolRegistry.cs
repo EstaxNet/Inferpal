@@ -64,7 +64,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <inheritdoc/>
     public void ForgetWholeRead(string path)
     {
-        try { _fileHistory.ForgetRead(PathSanitizer.Sanitize(path, _indexService.RootDir)); }
+        try { _fileHistory.ForgetRead(PathSanitizer.Sanitize(path, Root)); }
         catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or IOException or NotSupportedException)
         {
             Diagnostics.Swallow("ToolRegistry.ForgetWholeRead", ex);   // a path the read itself would have refused
@@ -104,9 +104,12 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // The MCP tools a turned-off switch leaves out never reach the split: they weigh nothing in its budget, and
         // tool_search neither names nor loads them.
         _onDemand    = onDemand ?? new OnDemandTools(McpToolsOn, () => WindowInUse?.Invoke() ?? 0, TurnedOffOnDemand);
+        // The root every tool works in: the run's copy when it works in one (RunRoot), else the workspace's. ⚠ One
+        // function for all: a tool given the workspace's root alone would work in the person's folder during a copy run.
+        Func<string> root = () => Root;
         _fileHistory = fileHistory ?? new();
         // Outside a git repository the history lives at the workspace root — one folder, the one restore_file searches.
-        _fileHistory.WorkspaceRoot ??= () => indexService.RootDir;
+        _fileHistory.WorkspaceRoot ??= root;
         // Read at each snapshot, from the file: a setting saved mid-session — in this editor or the other — decides where
         // the next backup goes.
         _fileHistory.OutsideProject ??= () => config.SharedHistoryOutsideProject;
@@ -125,46 +128,47 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // The approval service is passed so a build command coming from the workspace's
         // `.inferpal/validators.json` — i.e. written by the repository — is shown to the user
         // before it runs, instead of running by itself after a write.
-        // One agreement for the builds and the test runs of a workspace.
+        // One agreement for the builds and the test runs of a workspace — the person's: a copy runs the same code, and a
+        // "No" they gave holds in it.
         var codeConsent = new WorkspaceCodeConsent(approval, () => indexService.RootDir);
-        var smartFix = new SmartFixValidator(config, () => indexService.RootDir, approval, codeConsent);
+        var smartFix = new SmartFixValidator(config, root, approval, codeConsent);
         var setDiff  = (DiffInfo? d) => { _pendingDiff = d; };
 
-        Register(new ReadFileTool(() => indexService.RootDir, overlay, history, approval, _readImages));
-        Register(new WriteFileTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay));
-        Register(new ListFilesTool(() => indexService.RootDir));
-        Register(new SearchInFilesTool(() => indexService.RootDir, overlay));
-        var runCommand = new RunCommandTool(approval, config, () => indexService.RootDir);
+        Register(new ReadFileTool(root, overlay, history, approval, _readImages));
+        Register(new WriteFileTool(approval, history, root, smartFix, setDiff, overlay));
+        Register(new ListFilesTool(root));
+        Register(new SearchInFilesTool(root, overlay));
+        var runCommand = new RunCommandTool(approval, config, root);
         Register(runCommand);
         Register(new ViewWindowTool(runCommand.Background, _readImages));
-        Register(new ApplyDiffTool(approval, history, () => indexService.RootDir, smartFix, setDiff, overlay) { RenameOffered = RenameOffered });
-        Register(new ApplyEditsTool(approval, history, () => indexService.RootDir, smartFix, overlay) { RenameOffered = RenameOffered });
-        Register(new RestoreFileTool(approval, history, () => indexService.RootDir, overlay));
-        Register(new DeleteFileTool(approval, history, () => indexService.RootDir, overlay));
-        Register(new GetDiagnosticsTool(editor, () => indexService.RootDir, codeConsent));
+        Register(new ApplyDiffTool(approval, history, root, smartFix, setDiff, overlay) { RenameOffered = RenameOffered });
+        Register(new ApplyEditsTool(approval, history, root, smartFix, overlay) { RenameOffered = RenameOffered });
+        Register(new RestoreFileTool(approval, history, root, overlay));
+        Register(new DeleteFileTool(approval, history, root, overlay));
+        Register(new GetDiagnosticsTool(editor, root, codeConsent));
         Register(new GetActiveDocumentTool(editor));
-        Register(new MsbuildPropertyTool(codeConsent, () => indexService.RootDir));
-        Register(new OcrTool(() => indexService.RootDir));
-        Register(new EditNotebookTool(approval, history, () => indexService.RootDir, overlay, setDiff));
-        Register(new RunNotebookTool(codeConsent, () => indexService.RootDir, overlay));
+        Register(new MsbuildPropertyTool(codeConsent, root));
+        Register(new OcrTool(root));
+        Register(new EditNotebookTool(approval, history, root, overlay, setDiff));
+        Register(new RunNotebookTool(codeConsent, root, overlay));
         Register(new FetchUrlTool(approval));
         Register(new HttpRequestTool(approval));
-        Register(new ViewPageTool(approval, () => indexService.RootDir, _readImages));
+        Register(new ViewPageTool(approval, root, _readImages));
         Register(new WebSearchTool(approval));
-        Register(new GetSolutionInfoTool(editor, () => indexService.RootDir));
+        Register(new GetSolutionInfoTool(editor, root));
         Register(new GetOpenEditorsTool(editor));
-        Register(new GetGitStatusTool(editor, () => indexService.RootDir));
-        Register(new GitHistoryTool(() => indexService.RootDir));
-        Register(new QueryDataTool(() => indexService.RootDir));
-        Register(new RunTestsTool(() => indexService.RootDir, codeConsent));
+        Register(new GetGitStatusTool(editor, root));
+        Register(new GitHistoryTool(root));
+        Register(new QueryDataTool(root));
+        Register(new RunTestsTool(root, codeConsent));
         Register(new InsertAtCursorTool(editor, approval, _fileHistory));
         Register(new ReplaceSelectionTool(editor, approval, _fileHistory));
-        Register(new UpdateMemoryTool(approval, _fileHistory, () => indexService.RootDir));
+        Register(new UpdateMemoryTool(approval, _fileHistory, root));
         // trace_dependency / analyze_impact / trace_nexus are unified behind one analyze_code(mode=…)
         // facade to keep the per-request tool list small (the three strategies live inside it).
-        Register(new AnalyzeCodeTool(() => indexService.RootDir));
-        Register(new RenameSymbolTool(approval, history, () => indexService.RootDir, overlay));
-        Register(new ReplaceInFilesTool(approval, history, () => indexService.RootDir, overlay));
+        Register(new AnalyzeCodeTool(root));
+        Register(new RenameSymbolTool(approval, history, root, overlay));
+        Register(new ReplaceInFilesTool(approval, history, root, overlay));
         Register(new AskQuestionTool(approval));
         // A query is embedded by the server its index was: the embedding server's, when code search runs elsewhere.
         Register(new SemanticSearchTool(indexService, () => indexService.SearchClient, config));
@@ -179,12 +183,12 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         if (_debug is not null)
         {
             var budget = new DebugStepBudget();
-            Register(new DebugControlTool(_debug, approval, budget, () => indexService.RootDir));
-            Register(new DebugInspectTool(_debug, approval, () => indexService.RootDir));
+            Register(new DebugControlTool(_debug, approval, budget, root));
+            Register(new DebugInspectTool(_debug, approval, root));
             // Same gate, and it was missing here. `get_debugger_state` was registered
             // unconditionally, ten lines above the comment forbidding exactly that: with no
             // debugger of any kind its every answer is "no paused debug session".
-            Register(new GetDebuggerStateTool(_debug, () => indexService.RootDir));
+            Register(new GetDebuggerStateTool(_debug, root));
         }
 
         // Last of the built-ins: offered or not, it never moves the definitions sent before it.
@@ -229,6 +233,15 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             RulesFrom           = _rules,
         };
 
+    /// <summary>The root the tools work in: the run's copy when it works in one (<see cref="RunRoot"/>), else the workspace's.</summary>
+    private string Root => RunRoot.Copy ?? _indexService.RootDir;
+
+    /// <summary>Whether <paramref name="tool"/> is out of reach of a run on a copy: it acts on the person's editor,
+    /// debugger or index, or it is an MCP server's — started in the person's folder, it reads and writes there — or it
+    /// serves only those (tool_search).</summary>
+    private static bool OutOfTheCopy(ITool tool) =>
+        RunRoot.Copy is not null && (tool.ActsOnTheEditorOrIndex || tool is McpTool || tool is ToolSearchTool);
+
     /// <summary>Sets whose rules a sibling keeps (<see cref="WithApprovalService"/>).</summary>
     private IApprovalService RulesFrom { init => _rules = value; }
 
@@ -257,7 +270,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <remarks>⚠ One root for the catalog and the tool: the prompt advertised the repository's skills while the tool,
     /// reading the empty pinned root, found none of them — the model was told to load what could not be loaded.</remarks>
     public string? SkillsRoot() =>
-        string.IsNullOrEmpty(_indexService.RootDir) ? ProjectRootFallback?.Invoke() : _indexService.RootDir;
+        string.IsNullOrEmpty(Root) ? ProjectRootFallback?.Invoke() : Root;
 
     /// <summary>
     /// The shell tools the user declared in <c>CustomTools</c>, one <c>name=command</c> per line.
@@ -341,7 +354,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                 // remove the earlier declaration and this line works, put it back and the clash
                 // returns — silently, for the life of the process, without this.
                 Diagnostics.Forget("CustomTools", line);
-                tools.Add(new UserShellTool(name, cmd, _approval, _config, () => _indexService.RootDir));
+                tools.Add(new UserShellTool(name, cmd, _approval, _config, () => Root));
             }
 
             return tools;
@@ -530,9 +543,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         {
             var switches = Switches;
             return _registered
-                .Where(t => t.IsOffered && !TurnedOff(t, switches))
+                .Where(t => t.IsOffered && !TurnedOff(t, switches) && !OutOfTheCopy(t))
                 .Concat(UserTools.Where(t => !TurnedOff(t, switches)))
-                .Concat(DeclaredMcpTools)
+                .Concat(DeclaredMcpTools.Where(t => !OutOfTheCopy(t)))
                 .Select(t => new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters)))
                 .ToList();
         }
@@ -596,10 +609,18 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             return _mcp.DescribeMissingTool(name) ?? UnknownTool(name, Definitions);
         }
 
+        // A name read earlier in the conversation, in a run on a copy: refused, never run on the person's own files.
+        if (OutOfTheCopy(tool))
+        {
+            _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
+            return $"Error: {name} acts on the user's editor, debugger or index, or on their own folder (an MCP server), "
+                 + "and this run works in a copy of the repository — not available here. The call was NOT executed.";
+        }
+
         // ⚠ A built-in tool never reaches another machine through a path the model wrote: refused before anything asks the
         // disk about it (asking is a connection). An MCP or the person's shell tool is not refused — its card decides, and
         // nothing before the card asks the disk either (NamedFiles, ExcludedNamedFile).
-        if (builtIn && NetworkArgument(args, _indexService.RootDir) is { } network)
+        if (builtIn && NetworkArgument(args, Root) is { } network)
         {
             _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
             return NetworkRefusal(network);
@@ -608,13 +629,13 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // An editor that answers on demand (Visual Studio) is asked now which buffers hold unsaved changes: what the
         // tool reads, and what it refuses to write over, is the state of the editor at this call. One that can only be
         // asked about a given file (an Agent Client Protocol client) is asked about the files this call names.
-        var named = NamedFiles(args, _indexService.RootDir);
+        var named = NamedFiles(args, Root);
         if (_overlay is not null) await _overlay.RefreshAsync(ct, named);
 
         // ⚠ A file the workspace keeps out of AI tools (its ignore files: ContentExclusions) is neither read nor changed by
         // any call that names it — built-in, MCP or the user's shell tool — and the refusal says by which file and line:
         // an empty answer would read "this file does not exist".
-        if (ExcludedNamedFile(args, _indexService.RootDir) is var (excludedFile, excluded))
+        if (ExcludedNamedFile(args, Root) is var (excludedFile, excluded))
         {
             _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
             return excluded.ForModel(Shown(excludedFile));
@@ -623,7 +644,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // card, and the refusal offers the names that exist. Anything less certain than "absent" lets the call through.
         // ⚠ Not for a call the person's rules refuse: the name would leave for a public registry, then the card refuse it.
         if (_config.SharedPackageCheckEnabled
-            && await _packageCheck.RefusalAsync(name, args, _indexService.RootDir, () => ShellStateOf(tool), ct, _rules.Refuses) is { } absent)
+            && await _packageCheck.RefusalAsync(name, args, Root, () => ShellStateOf(tool), ct, _rules.Refuses) is { } absent)
         {
             _fileHistory.RecordToolCall(name, ExtractSubject(args), durationMs: 0, error: true);
             return absent;
@@ -642,7 +663,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // Every call ToolCeilings does not declare as leaving the files alone, so a tool added tomorrow is watched without being named — but
             // one that backs up its own writes or writes the editor's buffer says so (NeedsWorkTreeWatch), and is spared it.
             if (!ToolCeilings.LeavesTrackedFilesAlone(name) && tool.NeedsWorkTreeWatchFor(args) && _fileHistory.IsTracking)
-                WorkTreeBracket.Enter(watch = await WorkTreeBracket.OpenAsync(_indexService.RootDir, UnsavedNow(), ct));
+                WorkTreeBracket.Enter(watch = await WorkTreeBracket.OpenAsync(Root, UnsavedNow(), ct));
             var result = await tool.ExecuteAsync(args, ct);
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: false);
             // Called by its exact name — read in tool_search's description — a tool on demand that ran is loaded. A call
@@ -696,7 +717,19 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // is ToolCeilings.LeavesTrackedFilesAlone, so a tool it does not declare (a new one, a user shell tool, an MCP tool)
             // costs a rescan, never a stale map. In `finally`: a write that failed halfway wrote halfway.
             // tool_search changes definitions, never the workspace.
-            if (!ToolCeilings.LeavesTrackedFilesAlone(name) && tool is not ToolSearchTool) _mapService.Invalidate();
+            if (!ToolCeilings.LeavesTrackedFilesAlone(name) && tool is not ToolSearchTool)
+            {
+                _mapService.Invalidate();
+                // No watcher follows a copy: its C# index learns what the call wrote, or a rename would plan on the code
+                // before it — file by file when the call backed up what it wrote, whole when it was watched (a command).
+                // shortcut: a watched call that wrote nothing (`git status`) also costs the next semantic call a rebuild;
+                // read the bracket's changed files instead if runs alternate commands and renames on a large solution.
+                if (RunRoot.Copy is { } copy)
+                {
+                    if (watch is not null) Lsp.CSharpSemanticIndex.Forget(copy);
+                    else foreach (var written in writes.Paths) Lsp.CSharpSemanticIndex.NotifyFileChanged(written);
+                }
+            }
         }
     }
 
@@ -712,7 +745,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     }
 
     /// <summary>A path as the model names it: relative to the workspace when it is under it.</summary>
-    private string Shown(string path) => Governance.ContentExclusions.Shown(path, _indexService.RootDir);
+    private string Shown(string path) => Governance.ContentExclusions.Shown(path, Root);
 
     /// <summary>The files the editor holds unsaved changes for, as the overlay was just refreshed.</summary>
     private IReadOnlyCollection<string>? UnsavedNow() =>

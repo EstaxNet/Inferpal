@@ -132,6 +132,9 @@ public class SolutionFallbackTests : IDisposable
         // Witness: the tool is still registered there.
         Assert.Contains("Register(new GetSolutionInfoTool(", registry, StringComparison.Ordinal);
 
-        Assert.Matches(@"new GetSolutionInfoTool\(editor,\s*\(\)\s*=>\s*indexService\.RootDir\)", registry);
+        // The registry's one root: the run's copy first (pari 106), else the workspace's root.
+        Assert.Contains("Func<string> root = () => Root;", registry, StringComparison.Ordinal);
+        Assert.Contains("private string Root => RunRoot.Copy ?? _indexService.RootDir;", registry, StringComparison.Ordinal);
+        Assert.Matches(@"new GetSolutionInfoTool\(editor,\s*root\)", registry);
     }
 }

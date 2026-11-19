@@ -17,6 +17,9 @@ internal sealed class GetDebuggerStateTool(IDebugSession? session = null, Func<s
     public const string ToolName = "get_debugger_state";
 
     public string Name => ToolName;
+
+    /// <inheritdoc/>
+    public bool ActsOnTheEditorOrIndex => true;
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 

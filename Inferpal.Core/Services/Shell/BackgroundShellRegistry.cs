@@ -27,6 +27,8 @@ internal sealed class BackgroundShellRegistry : IDisposable
         public required int Sequence;
         public required Process Process;
         public required string Command;
+        /// <summary>The folder the job was started in.</summary>
+        public required string Folder;
         public readonly StringBuilder Buffer = new();
         public int ReadOffset;
         public volatile bool Exited;
@@ -77,7 +79,7 @@ internal sealed class BackgroundShellRegistry : IDisposable
             sequence = ++_seq;
             id = "bg" + sequence;
         }
-        var job = new Job { Id = id, Sequence = sequence, Process = process, Command = command };
+        var job = new Job { Id = id, Sequence = sequence, Process = process, Command = command, Folder = workingDirectory };
 
         process.OutputDataReceived += (_, e) =>
         {
@@ -202,6 +204,12 @@ internal sealed class BackgroundShellRegistry : IDisposable
             else
                 try { return job.Process.Id; }
                 catch (InvalidOperationException) { return null; }
+    }
+
+    /// <summary>The folder job <paramref name="id"/> was started in; <c>null</c> for an unknown job.</summary>
+    public string? FolderOf(string id)
+    {
+        lock (_lock) return _jobs.TryGetValue(id, out var job) ? job.Folder : null;
     }
 
     /// <summary>Snapshot of the currently tracked job ids and their running state (for diagnostics).</summary>

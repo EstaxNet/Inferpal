@@ -51,6 +51,13 @@ internal interface ITool
     bool IsOffered => true;
 
     /// <summary>
+    /// Whether the tool acts on the person's editor, debugger or index rather than on files under its root: never offered
+    /// to a run that works in a copy of the repository (<see cref="Inferpal.Services.Execution.RunRoot"/>), whose root
+    /// those do not follow.
+    /// </summary>
+    bool ActsOnTheEditorOrIndex => false;
+
+    /// <summary>
     /// Whether what the tool changes on disk has to be watched (<see cref="Inferpal.Services.Execution.WorkTreeBracket"/>)
     /// to enter the run: <c>false</c> for a tool that backs up each file before writing it (its writes are in the run
     /// already) and for one that writes only the editor's buffer.

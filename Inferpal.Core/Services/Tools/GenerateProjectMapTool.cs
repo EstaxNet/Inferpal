@@ -15,6 +15,9 @@ internal sealed class GenerateProjectMapTool : ITool
         _mapService = mapService;
 
     public string Name => "generate_project_map";
+
+    /// <inheritdoc/>
+    public bool ActsOnTheEditorOrIndex => true;
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 

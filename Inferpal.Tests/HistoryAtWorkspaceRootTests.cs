@@ -100,6 +100,8 @@ public sealed class HistoryAtWorkspaceRootTests : IDisposable
         var code = ConventionCoverageTests.CodeOnly(Path.Combine(dir!.FullName, "Inferpal.Core", "Services", "Execution", "ToolRegistry.cs"));
 
         Assert.Contains("_fileHistory = fileHistory ?? new();", code, StringComparison.Ordinal);   // witness
-        Assert.Contains("_fileHistory.WorkspaceRoot ??= () => indexService.RootDir;", code, StringComparison.Ordinal);
+        Assert.Contains("Func<string> root = () => Root;", code, StringComparison.Ordinal);
+        Assert.Contains("private string Root => RunRoot.Copy ?? _indexService.RootDir;", code, StringComparison.Ordinal);
+        Assert.Contains("_fileHistory.WorkspaceRoot ??= root;", code, StringComparison.Ordinal);
     }
 }

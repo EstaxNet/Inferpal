@@ -21,6 +21,8 @@ internal abstract class ApprovalServiceBase : IApprovalService
 {
     private readonly InferpalConfig _config;
     private readonly Func<string?>  _rootDir;
+    /// <summary>The person's own folder, a run on a copy or not: where the rules they wrote live.</summary>
+    private readonly Func<string?>  _rulesRoot;
 
     /// <summary>
     /// Tool names the user chose to "always allow" via the approval prompt, by the workspace root they were given under
@@ -60,7 +62,12 @@ internal abstract class ApprovalServiceBase : IApprovalService
     protected ApprovalServiceBase(InferpalConfig config, Func<string?> rootDir)
     {
         _config  = config;
-        _rootDir = rootDir;
+        // A run on a copy asks, and files its agreements, under the copy (RunRoot): nothing agreed in the person's own
+        // folder holds there.
+        _rootDir = () => RunRoot.Copy ?? rootDir();
+        // ⚠ The deny rules the person wrote are read in THEIR folder: the copy holds only what was committed, and an
+        // uncommitted or ignored .inferpal/permissions.json would drop every one of them for the run.
+        _rulesRoot = rootDir;
     }
 
     /// <summary>Shows the editor-specific approval prompt and returns the user's decision.</summary>
@@ -231,6 +238,8 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // The workspace the card is asked in: an "Always" answered after another solution opened is trust given to this
         // one, never to the next.
         var cardRoot = _rootDir();
+        // In a run on a copy, this run's alone: the copy's folder serves later runs too.
+        var grantsUnder = RunRoot.GrantsScope ?? cardRoot;
         // A narrow rule to offer beside "Always this session" — never for a call the prompt is forced for: the rule
         // would not apply to it, and the card would promise what the next identical call does not get.
         var rule = opaque ? null : ApprovalRuleProposal.For(toolName, matchOn, cardRoot);
@@ -254,7 +263,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
         // ⚠ A forced card grants nothing beyond this call: the next identical call is asked again anyway, and a grant would
         // open the tool without a card on everything else. "Always" there is a Yes — from any front-end, an old one included.
         if (promptDecision == ApprovalDecision.Always && !opaque)
-            Grant(grantKey, cardRoot);
+            Grant(grantKey, grantsUnder);
         if (promptDecision == ApprovalDecision.Rule)
         {
             // ⚠ Offered by this card only: a Rule answer to a card that offered none comes from a peer that answers what
@@ -481,7 +490,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
     private bool Granted(string toolName)
     {
         lock (_grantsLock)
-            return _sessionAllowed.TryGetValue(GrantsKey(_rootDir()), out var tools) && tools.Contains(toolName);
+            return _sessionAllowed.TryGetValue(GrantsKey(RunRoot.GrantsScope ?? _rootDir()), out var tools) && tools.Contains(toolName);
     }
 
     /// <summary>The key a workspace's grants are filed under: its folder, without a trailing separator; empty for none.</summary>
@@ -585,7 +594,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
 
     private string? OverlayPath()
     {
-        var root = _rootDir();
+        var root = _rulesRoot();
         return string.IsNullOrEmpty(root) ? null : Path.Combine(root, ".inferpal", "permissions.json");
     }
 

@@ -287,7 +287,8 @@ internal class GetDiagnosticsTool : ITool
         // warning in an open file), so treating "has lines" as "has problems" meant the build
         // never ran at all. Such a panel is kept for when there is nothing to compile.
         string? panel = null;
-        if (_editor is not null && string.IsNullOrWhiteSpace(rawPath))
+        // Never in a run on a copy: the editor's panel reports the person's files, the copy is built instead.
+        if (_editor is not null && string.IsNullOrWhiteSpace(rawPath) && Execution.RunRoot.Copy is null)
         {
             var live = await _editor.GetEditorDiagnosticsAsync(ct);
             if (!string.IsNullOrWhiteSpace(live))

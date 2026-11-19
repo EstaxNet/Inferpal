@@ -12,6 +12,9 @@ internal class GetActiveDocumentTool : ITool
     public GetActiveDocumentTool(IEditorSurface editor) => _editor = editor;
 
     public string Name => "get_active_document";
+
+    /// <inheritdoc/>
+    public bool ActsOnTheEditorOrIndex => true;
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 

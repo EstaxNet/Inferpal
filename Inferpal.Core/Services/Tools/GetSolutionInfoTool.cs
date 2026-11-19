@@ -211,7 +211,9 @@ internal class GetSolutionInfoTool : ITool
         // 0. Authoritative: the in-process package reports the actually-open solution. This is the
         //    only source that follows solution open/close in an OOP extension, so it wins, and it
         //    carries the exact .sln path (correct even when a directory holds several .sln files).
-        var active = ActiveSolutionSignal.TryReadSolutionPath();
+        //    Never in a run on a copy: the open solution is the person's, the copy has its own.
+        var inCopy = Execution.RunRoot.Copy is not null;
+        var active = inCopy ? null : ActiveSolutionSignal.TryReadSolutionPath();
         if (active is not null) return active;
 
         // 1. Live probes via the shared, unit-tested locator: walk up from each open editor file,
@@ -224,7 +226,7 @@ internal class GetSolutionInfoTool : ITool
         //    project's solution, and the workspace block hands that project to the model as this one.
         var root    = _workspaceRoot();
         var liveDir = new ProjectRootLocator().LocateReliable(
-            _editor.GetOpenDocumentPaths(),
+            inCopy ? [] : _editor.GetOpenDocumentPaths(),
             activeSolutionDir: null,                 // step 0 already handled the signal above
             string.IsNullOrWhiteSpace(root) ? Directory.GetCurrentDirectory() : root);
         if (liveDir is not null && SolutionFiles.FirstIn(liveDir) is { } liveSln && BelongsToWorkspace(liveSln, root))
