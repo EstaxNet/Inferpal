@@ -14,15 +14,11 @@ namespace Inferpal.Tests;
 public sealed class WorkCopyTests : IDisposable
 {
     private readonly DirectoryInfo _repo = Directory.CreateTempSubdirectory("inferpal-workcopy-repo-");
-    private readonly DirectoryInfo _home = Directory.CreateTempSubdirectory("inferpal-workcopy-home-");
-    private readonly string _homeBefore = WorkCopy.Home;
-
-    public WorkCopyTests() => WorkCopy.Home = _home.FullName;
+    private readonly DirectoryInfo _scratch = Directory.CreateTempSubdirectory("inferpal-workcopy-scratch-");
 
     public void Dispose()
     {
-        WorkCopy.Home = _homeBefore;
-        foreach (var dir in new[] { _repo, _home })
+        foreach (var dir in new[] { _repo, _scratch })
             try { Clear(dir.FullName); dir.Delete(recursive: true); } catch { }
     }
 
@@ -77,7 +73,7 @@ public sealed class WorkCopyTests : IDisposable
         var (copy, refusal) = await WorkCopy.CreateAsync(_repo.FullName, CancellationToken.None);
 
         Assert.Null(refusal);
-        Assert.StartsWith(_home.FullName, copy!.Folder, StringComparison.OrdinalIgnoreCase);
+        Assert.StartsWith(WorkCopy.Home, copy!.Folder, StringComparison.OrdinalIgnoreCase);
         Assert.Equal("inferpal/1", copy.Branch);
         // From the last commit: the person's uncommitted change is not in the copy.
         Assert.Equal("class Pay\n{\n    int A() => 1;\n    int B() => 2;\n}\n", File.ReadAllText(Path.Combine(copy.Folder, "Pay.cs")).Replace("\r\n", "\n"));
@@ -158,9 +154,10 @@ public sealed class WorkCopyTests : IDisposable
                 history, CancellationToken.None);
 
         Assert.Empty(applied.Written);
-        var (path, why) = Assert.Single(applied.Left);
-        Assert.Equal("Pay.cs", path);
-        Assert.Contains("you changed it since the copy was made", why);
+        var left = Assert.Single(applied.Left);
+        Assert.Equal("Pay.cs", left.Path);
+        Assert.Equal(CopyLeftReason.ChangedSince, left.Reason);
+        Assert.Equal(Inferpal.Localization.Strings.CopyLeftChangedSince, left.Why);
         Assert.Equal("the person's own edit\n", File.ReadAllText(Repo("Pay.cs")));
         await copy.DiscardAsync(CancellationToken.None);
     }
@@ -202,7 +199,7 @@ public sealed class WorkCopyTests : IDisposable
     public async Task WhatADiscardRemovesItself_RemovesALink_NeverWhatItLeadsTo()
     {
         var outside = Directory.CreateTempSubdirectory("inferpal-workcopy-outside-");
-        var left = Path.Combine(_home.FullName, "left");
+        var left = Path.Combine(_scratch.FullName, "left");
         try
         {
             var kept = Path.Combine(outside.FullName, "kept.txt");
@@ -243,7 +240,7 @@ public sealed class WorkCopyTests : IDisposable
     }
 }
 
-/// <summary>The tests that repoint <see cref="WorkCopy.Home"/>, which is static.</summary>
+/// <summary>The tests that make copies of repositories: one at a time, as git's worktrees of one repository are.</summary>
 [CollectionDefinition(Name, DisableParallelization = true)]
 public sealed class WorkCopyCollection
 {

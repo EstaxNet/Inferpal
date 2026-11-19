@@ -23,18 +23,13 @@ namespace Inferpal.Tests;
 public sealed class RunInACopyTests : IDisposable
 {
     private readonly DirectoryInfo _repo = Directory.CreateTempSubdirectory("inferpal-runcopy-repo-");
-    private readonly DirectoryInfo _home = Directory.CreateTempSubdirectory("inferpal-runcopy-home-");
-    private readonly string _homeBefore = WorkCopy.Home;
     private readonly List<IDisposable> _owned = [];
-
-    public RunInACopyTests() => WorkCopy.Home = _home.FullName;
 
     public void Dispose()
     {
         foreach (var owned in _owned) try { owned.Dispose(); } catch { }
         Services.Governance.ContentExclusions.ForgetForTests(_repo.FullName);
-        WorkCopy.Home = _homeBefore;
-        foreach (var dir in new[] { _repo, _home })
+        foreach (var dir in new[] { _repo })
             try
             {
                 foreach (var file in Directory.EnumerateFiles(dir.FullName, "*", SearchOption.AllDirectories))
@@ -487,5 +482,42 @@ public sealed class RunInACopyTests : IDisposable
 
         Assert.True(File.Exists(Path.Combine(_repo.FullName, "New.cs")), answer);
         Assert.False(File.Exists(Path.Combine(copy.Folder, "New.cs")));
+    }
+
+    [Fact]
+    public void AFolderOpenedThroughALink_IsPlacedInTheRepositoryGitNames_AndBothSpellingsAreTheOrigin()
+    {
+        // git names the repository with its links resolved (macOS's /var is /private/var); the editor names the folder as
+        // it was opened. Compared as written, the two shared no prefix, and every question for a copy failed.
+        var real = Directory.CreateTempSubdirectory("inferpal-runroot-real-").FullName;
+        var link = real + "-link";
+        var copyTop = Directory.CreateTempSubdirectory("inferpal-runroot-copy-").FullName;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(real, "app"));
+            if (OperatingSystem.IsWindows())
+            {
+                using var mklink = Process.Start(new ProcessStartInfo("cmd.exe", $"/c mklink /J \"{link}\" \"{real}\"")
+                    { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true })!;
+                mklink.WaitForExit();
+            }
+            else Directory.CreateSymbolicLink(link, real);
+            Assert.True(Directory.Exists(Path.Combine(link, "app")), "the link was not made: this test is UNDECIDED, not green.");
+
+            using (RunRoot.Enter(copyTop, real, Path.Combine(link, "app")))
+            {
+                Assert.Equal(Path.Combine(copyTop, "app"), RunRoot.Copy);
+                Assert.Equal(Path.Combine(link, "app", "x.txt"), RunRoot.InOrigin(Path.Combine(copyTop, "app", "x.txt")));
+                Assert.True(RunRoot.ReachesOrigin($"cat \"{Path.Combine(real, "app", "x.txt")}\""));
+                Assert.True(RunRoot.ReachesOrigin($"cat \"{Path.Combine(link, "app", "x.txt")}\""));
+                Assert.False(RunRoot.ReachesOrigin($"cat \"{Path.Combine(copyTop, "app", "x.txt")}\""));   // reference arm
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(link); } catch { }
+            try { Directory.Delete(real, recursive: true); } catch { }
+            try { Directory.Delete(copyTop, recursive: true); } catch { }
+        }
     }
 }

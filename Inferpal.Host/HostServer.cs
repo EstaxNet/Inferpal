@@ -331,7 +331,48 @@ internal sealed partial class HostServer : IDisposable
         var notes  = new TurnNotes();
         // How fast each model wrote during the turn: the header shows the figure of the model that answered.
         using var speeds = GenerationMeter.Open();
-        var result = await SendTurnAsync(p, ct, notes);
+        // A question for a copy (pari 106): the copy this session holds, or one made now at the last commit. The turn runs
+        // inside it — tools, approvals and the system prompt — and its review comes back with the answer.
+        Services.Execution.CopyRun? copy = null;
+        IDisposable? inUse = null;
+        if (p.InCopy)
+        {
+            // ⚠ Made in the turn slot: two questions for a copy at once, or one while a turn runs, would each make one — the
+            // second held, the first left in the repository with no gesture to reach it. Marked in use before the slot is let
+            // go: no discard between here and the turn.
+            (Services.Execution.CopyRun? Copy, string? Refusal) made;
+            try
+            {
+                made = await WithTurnSlotAsync("chat/send (copy)", ct, async token =>
+                {
+                    var (c, why) = await HeldOrNewCopyAsync(Session(), token);
+                    inUse = c?.Use();
+                    return (c, why);
+                });
+            }
+            catch (OperationCanceledException) { return new ChatSendResult(string.Empty, true, 0, 0); }   // Stop while it was made
+            if (made.Copy is null) return new ChatSendResult(string.Empty, false, 0, 0, Error: Strings.CopyNotMade(made.Refusal ?? "git gave no reason"));
+            copy = made.Copy;
+        }
+        ChatSendResult result;
+        CopyReviewDto? review = null;
+        try
+        {
+            using (copy?.Enter())
+                result = await SendTurnAsync(p, ct, notes);
+            // Read after the turn, stopped or failed too: what the run left is the person's to keep or discard. A read that
+            // fails is said in the review, never thrown over the turn's answer.
+            if (copy is not null)
+            {
+                try { review = CopyReviewDto.Of(await copy.ReviewAsync(CancellationToken.None)); }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    Diagnostics.Swallow("HostServer.CopyReview", ex);
+                    review = new CopyReviewDto(0, copy.Copy.Branch, [], "the copy's changes could not be read: " + Diagnostics.RootMessage(ex));
+                }
+            }
+        }
+        finally { inUse?.Dispose(); }
         // Every way out of the turn reports what the NEXT question will send: the context gauge shows it, and it is the
         // figure of the X-Ray the gauge opens. The turn's own prompt measure includes the run's internal transcript, which
         // the next question does not carry — read as the fill, the gauge said 88 % where the X-Ray said 56 %.
@@ -347,8 +388,85 @@ internal sealed partial class HostServer : IDisposable
             AnnounceEnd = Services.Agent.ChatTurnPolicy.AnnouncesEnd(s.Config, clock.Elapsed),
             AppliedNotes = notes.Applied.Count > 0 ? [.. notes.Applied.Select(n => new TurnNoteDto(n.Id, n.Text, n.AfterCalls))] : null,
             UnappliedNotes = notes.Unapplied.Count > 0 ? [.. notes.Unapplied.Select(n => new TurnNoteDto(n.Id, n.Text))] : null,
+            Copy = review,
         };
     }
+
+    // ── Run on a copy (pari 106) ───────────────────────────────────────────────
+
+    /// <summary>The copy this session holds, or a new one at the last commit. ⚠ Never one an earlier session left: that one
+    /// is taken up only by <c>copy/prepare</c>, whose card says so before any question goes to it.</summary>
+    private static async Task<(Services.Execution.CopyRun? Copy, string? Refusal)> HeldOrNewCopyAsync(HostSession s, CancellationToken ct)
+    {
+        if (s.Copy is { Discarded: false } held) return (held, null);
+        var (made, refusal) = await Services.Execution.CopyRun.StartAsync(s.RootDir, ct);
+        if (made is not null) s.Copy = made;
+        return (made, refusal);
+    }
+
+    /// <summary>The copy this session holds; <c>null</c> when none. ⚠ Review, apply and discard reach this one only — never a
+    /// copy another session holds or left, which nothing the person saw named.</summary>
+    private static Services.Execution.CopyRun? HeldCopy(HostSession s) => s.Copy is { Discarded: false } held ? held : null;
+
+    /// <summary>What the start card of a run on a copy says; nothing is made. A copy an earlier session left is taken up and
+    /// said (<see cref="CopyPrepareResult.LeftBefore"/>).</summary>
+    [JsonRpcMethod("copy/prepare")]
+    public Task<CopyPrepareResult> CopyPrepareAsync(CancellationToken ct) =>
+        WithTurnSlotAsync("copy/prepare", ct, async token =>
+        {
+            var s = Session();
+            // A copy an earlier session left (its holder gone) is taken up here, and the card says so.
+            var held = HeldCopy(s) ?? (s.Copy = await Services.Execution.CopyRun.FindLeftAsync(s.RootDir, token));
+            var start = await Services.Execution.CopyRun.PrepareAsync(s.RootDir, token);
+            // A question goes to the held copy: the card names the commit IT started from, not the workspace's.
+            var commit = held is null ? start.Commit : held.Copy.BaseCommit[..Math.Min(7, held.Copy.BaseCommit.Length)];
+            return new CopyPrepareResult(start.Refusal, commit, start.Branch, start.Uncommitted?.ToList(), held is not null,
+                                         held?.LeftBefore == true ? held.Copy.Branch : null);
+        });
+
+    /// <summary>The copy's changes read again (a follow-up may have changed them), for the review. In the turn slot: reading
+    /// takes the copy's git index, which a run working there holds.</summary>
+    [JsonRpcMethod("copy/review")]
+    public Task<CopyReviewDto?> CopyReviewAsync(CancellationToken ct) =>
+        WithTurnSlotAsync("copy/review", ct, async token =>
+            HeldCopy(Session()) is { } copy ? CopyReviewDto.Of(await copy.ReviewAsync(token)) : null);
+
+    /// <summary>
+    /// Writes the kept hunks into the person's files, in a run of their history of its own (<c>/undo-run</c> gives them back);
+    /// a file they changed since the copy was made is left and named. Never while a turn runs: it writes their files.
+    /// </summary>
+    [JsonRpcMethod("copy/apply", UseSingleObjectParameterDeserialization = true)]
+    public Task<CopyApplyResult> CopyApplyAsync(CopyApplyParams p, CancellationToken ct)
+    {
+        // From the protocol: a client that sends no hunks is told so, never a bare null reference.
+        if (p?.Kept is null) return Task.FromResult(new CopyApplyResult([], [], "'kept' is required: the hunks kept, by path"));
+        // ⚠ In the turn slot: applying opens a run of the history, which a turn starting meanwhile would share — and close.
+        return WithTurnSlotAsync("copy/apply", ct, async token =>
+        {
+            var s = Session();
+            if (HeldCopy(s) is not { } copy) return new CopyApplyResult([], [], Strings.CopyNoneOpen);
+            var kept = p.Kept.ToDictionary(k => k.Key, k => (IReadOnlyCollection<int>)k.Value);
+            // A buffer the person has not saved is theirs: the file is left and named.
+            var outcome = await copy.ApplyAsync(p.ReviewId, kept, s.Tools.History, token, path => s.Overlay.TryGetUnsaved(path, out _));
+            if (outcome.Applied is not { } applied) return new CopyApplyResult([], [], outcome.Refusal);
+            return new CopyApplyResult([.. applied.Written],
+                [.. applied.Left.Select(l => new CopyLeftDto(l.Path, l.Reason.ToString(), l.Why))], RunId: outcome.RunId);
+        });
+    }
+
+    /// <summary>Removes the copy and its branch; the session holds no copy afterwards. In the turn slot: never while a run
+    /// works in it.</summary>
+    [JsonRpcMethod("copy/discard")]
+    public Task<CopyDiscardResult> CopyDiscardAsync(CancellationToken ct) =>
+        WithTurnSlotAsync("copy/discard", ct, async token =>
+        {
+            var s = Session();
+            if (HeldCopy(s) is not { } copy) return new CopyDiscardResult(null, Strings.CopyNoneOpen);
+            var (done, problem) = await copy.DiscardAsync(token);
+            if (!done) return new CopyDiscardResult(null, problem);
+            s.Copy = null;
+            return new CopyDiscardResult(problem);
+        });
 
     /// <summary>The notes of one turn, as its end left them: read by the model, or for the adapter to send next.</summary>
     private sealed class TurnNotes

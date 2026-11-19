@@ -2380,4 +2380,15 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>L'agente viene informato che l'archivio è rimasto chiuso e prosegue senza</value></data>
   <data name="AskReceiptNote" xml:space="preserve"><value>Ha scritto una nota all'agente invece di rispondere</value></data>
   <data name="AskReceiptStopped" xml:space="preserve"><value>L'esecuzione si è fermata prima della sua risposta</value></data>
+  <data name="CopyNotMade" xml:space="preserve"><value>Non è stato possibile creare una copia del repository — {0}.</value></data>
+  <data name="CopyNoneOpen" xml:space="preserve"><value>Nessuna copia del repository è aperta.</value></data>
+  <data name="CopyLeftChangedSince" xml:space="preserve"><value>hai modificato questo file da quando è stata fatta la copia</value></data>
+  <data name="CopyLeftDeletedSince" xml:space="preserve"><value>hai eliminato questo file da quando è stata fatta la copia</value></data>
+  <data name="CopyLeftCreatedSince" xml:space="preserve"><value>hai creato un file con quel nome da quando è stata fatta la copia</value></data>
+  <data name="CopyLeftNotBackedUp" xml:space="preserve"><value>non è stato possibile salvarlo prima, quindi non è stato scritto</value></data>
+  <data name="CopyLeftWriteFailed" xml:space="preserve"><value>la scrittura non è riuscita: {0}</value></data>
+  <data name="CopyLeftUnsaved" xml:space="preserve"><value>ha modifiche non salvate nell'editor: salvalo o chiudilo, poi applica di nuovo</value></data>
+  <data name="CopyLeftNotInReview" xml:space="preserve"><value>non è nell'ultima revisione della copia: rivedila di nuovo</value></data>
+  <data name="CopyReviewChanged" xml:space="preserve"><value>La copia è cambiata da questa revisione: rivedila prima di applicare.</value></data>
+  <data name="CopyInUse" xml:space="preserve"><value>Nella copia si sta rispondendo a una domanda: scartala quando la risposta è finita.</value></data>
 </root>

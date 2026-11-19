@@ -274,6 +274,9 @@ internal sealed class HostSession : IDisposable
     /// <summary>The notes of the turn running now (<c>chat/steer</c>); null when no turn with steps runs.</summary>
     public volatile RunSteering? Steering;
 
+    /// <summary>The copy this session's questions for a copy go to (pari 106), until it is discarded; null when none.</summary>
+    public volatile Services.Execution.CopyRun? Copy;
+
     private BackgroundTaskQueue? _tasks;
 
     /// <summary>

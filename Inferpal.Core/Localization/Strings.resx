@@ -2384,4 +2384,15 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>The agent is told the archive stayed closed, and goes on without it</value></data>
   <data name="AskReceiptNote" xml:space="preserve"><value>You wrote the agent a note instead of answering</value></data>
   <data name="AskReceiptStopped" xml:space="preserve"><value>The run stopped before you answered</value></data>
+  <data name="CopyNotMade" xml:space="preserve"><value>No copy of the repository could be made — {0}.</value></data>
+  <data name="CopyNoneOpen" xml:space="preserve"><value>No copy of the repository is open.</value></data>
+  <data name="CopyLeftChangedSince" xml:space="preserve"><value>you changed this file since the copy was made</value></data>
+  <data name="CopyLeftDeletedSince" xml:space="preserve"><value>you deleted this file since the copy was made</value></data>
+  <data name="CopyLeftCreatedSince" xml:space="preserve"><value>you created a file of that name since the copy was made</value></data>
+  <data name="CopyLeftNotBackedUp" xml:space="preserve"><value>it could not be backed up first, so it was not written</value></data>
+  <data name="CopyLeftWriteFailed" xml:space="preserve"><value>writing it failed: {0}</value></data>
+  <data name="CopyLeftUnsaved" xml:space="preserve"><value>it has unsaved changes in the editor: save or close it, then apply again</value></data>
+  <data name="CopyLeftNotInReview" xml:space="preserve"><value>it is not in the copy's last review: review it again</value></data>
+  <data name="CopyReviewChanged" xml:space="preserve"><value>The copy changed since this review: review it again before applying.</value></data>
+  <data name="CopyInUse" xml:space="preserve"><value>A question is being answered in the copy: discard it once the answer ends.</value></data>
 </root>

@@ -2380,4 +2380,15 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>Agent dowiaduje się, że archiwum pozostało zamknięte, i kontynuuje bez niego</value></data>
   <data name="AskReceiptNote" xml:space="preserve"><value>Zamiast odpowiedzieć, napisałeś agentowi notatkę</value></data>
   <data name="AskReceiptStopped" xml:space="preserve"><value>Przebieg zatrzymał się przed Twoją odpowiedzią</value></data>
+  <data name="CopyNotMade" xml:space="preserve"><value>Nie udało się utworzyć kopii repozytorium — {0}.</value></data>
+  <data name="CopyNoneOpen" xml:space="preserve"><value>Żadna kopia repozytorium nie jest otwarta.</value></data>
+  <data name="CopyLeftChangedSince" xml:space="preserve"><value>zmieniono ten plik od czasu utworzenia kopii</value></data>
+  <data name="CopyLeftDeletedSince" xml:space="preserve"><value>usunięto ten plik od czasu utworzenia kopii</value></data>
+  <data name="CopyLeftCreatedSince" xml:space="preserve"><value>utworzono plik o tej nazwie od czasu utworzenia kopii</value></data>
+  <data name="CopyLeftNotBackedUp" xml:space="preserve"><value>nie udało się najpierw utworzyć kopii zapasowej, więc go nie zapisano</value></data>
+  <data name="CopyLeftWriteFailed" xml:space="preserve"><value>zapis się nie powiódł: {0}</value></data>
+  <data name="CopyLeftUnsaved" xml:space="preserve"><value>ma niezapisane zmiany w edytorze: zapisz go lub zamknij, a potem zastosuj ponownie</value></data>
+  <data name="CopyLeftNotInReview" xml:space="preserve"><value>nie ma go w ostatnim przeglądzie kopii: przejrzyj ją ponownie</value></data>
+  <data name="CopyReviewChanged" xml:space="preserve"><value>Kopia zmieniła się od tego przeglądu: przejrzyj ją ponownie przed zastosowaniem.</value></data>
+  <data name="CopyInUse" xml:space="preserve"><value>W kopii trwa odpowiedź na pytanie: odrzuć ją, gdy odpowiedź się skończy.</value></data>
 </root>

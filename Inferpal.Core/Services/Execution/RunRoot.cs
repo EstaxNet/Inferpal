@@ -17,9 +17,10 @@ internal static class RunRoot
     /// <param name="Root">The copy of the folder the person opened: the tools' root.</param>
     /// <param name="Origin">The folder the person opened.</param>
     /// <param name="CopyTop">The copy's top: the whole repository, wherever the person's folder sits in it.</param>
-    /// <param name="OriginTop">The person's repository: the top of their git work tree.</param>
+    /// <param name="OriginTop">The person's repository, spelled as the folder they opened is: its ancestor at the same depth.</param>
+    /// <param name="Repository">The same repository as git spells it (its links resolved).</param>
     /// <param name="Scope">What this entry's agreements are filed under: one copy folder serves later runs too.</param>
-    private sealed record State(string Root, string Origin, string CopyTop, string OriginTop, string Scope);
+    private sealed record State(string Root, string Origin, string CopyTop, string OriginTop, string Repository, string Scope);
 
     private static readonly AsyncLocal<State?> _current = new();
 
@@ -42,24 +43,41 @@ internal static class RunRoot
     internal static IDisposable Enter(WorkCopy copy, string workspace) =>
         Enter(copy.Folder, copy.Repository, workspace);
 
+    /// <summary>
+    /// The same for a copy someone holds across several runs (<see cref="CopyRun"/>): every entry files its agreements under
+    /// <paramref name="scope"/>, and the copy's C# index is the holder's to forget — a follow-up question keeps both.
+    /// </summary>
+    internal static IDisposable Enter(WorkCopy copy, string workspace, string scope) =>
+        Enter(copy.Folder, copy.Repository, workspace, scope);
+
     /// <summary>The same, from the copy's folder and the repository it copies.</summary>
-    internal static IDisposable Enter(string copyTop, string repository, string workspace)
+    internal static IDisposable Enter(string copyTop, string repository, string workspace, string? scope = null)
     {
         var top = Path.GetFullPath(copyTop);
-        var originTop = Path.GetFullPath(repository);
+        var repo = Path.GetFullPath(repository);
         var origin = Path.GetFullPath(workspace);
-        var inside = Path.GetRelativePath(originTop, origin);
-        if (!Holds(originTop, origin))
+        // ⚠ The workspace's place in the repository, judged on the paths links lead to: git gives the repository resolved
+        // (macOS's /var is /private/var), the editor gives the workspace as it was opened — compared as written, the two
+        // never shared a prefix there, and every question for a copy failed.
+        var inside = Path.GetRelativePath(Tools.PathSanitizer.Canonical(repo), Tools.PathSanitizer.Canonical(origin));
+        if (inside == ".." || inside.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) || Path.IsPathRooted(inside))
             throw new ArgumentException($"{workspace} is not in the repository {repository}.", nameof(workspace));
         var root = inside == "." ? top : Path.GetFullPath(Path.Join(top, inside));
+        // The repository spelled as the workspace is — what its ignore files are declared under.
+        var originTop = origin;
+        if (inside != ".")
+            foreach (var _ in inside.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+                originTop = Path.GetDirectoryName(originTop) ?? originTop;
 
         var before = _current.Value;
         // Entered again in the same copy (a run inside a run): the same agreements, and its index kept.
         var again = before is not null && string.Equals(before.CopyTop, top, PathComparer.Comparison);
-        // The copy's C# index is built from its own files: one left from an earlier copy in the same folder is old code.
-        if (!again) Lsp.CSharpSemanticIndex.Forget(top);
-        _current.Value = new State(root, origin, top, originTop, again ? before!.Scope : $"{top}#{Guid.NewGuid():N}");
-        return new Leave(before, top);
+        // The copy's C# index is built from its own files: one left from an earlier copy in the same folder is old code. A
+        // holder that gives the scope keeps the index across its runs, and forgets it itself.
+        var owns = scope is null;
+        if (!again && owns) Lsp.CSharpSemanticIndex.Forget(top);
+        _current.Value = new State(root, origin, top, originTop, repo, scope ?? (again ? before!.Scope : $"{top}#{Guid.NewGuid():N}"));
+        return new Leave(before, top, owns);
     }
 
     /// <summary>
@@ -75,7 +93,9 @@ internal static class RunRoot
     /// <summary>Whether <paramref name="command"/>, run in the current copy, names the person's repository (see the
     /// overload); <c>false</c> for an ordinary run.</summary>
     internal static bool ReachesOrigin(string command) =>
-        _current.Value is { } s && ReachesOrigin(command, s.CopyTop, s.OriginTop);
+        _current.Value is { } s && (ReachesOrigin(command, s.CopyTop, s.OriginTop)
+                                    || !string.Equals(s.Repository, s.OriginTop, PathComparer.Comparison)
+                                       && ReachesOrigin(command, s.CopyTop, s.Repository));
 
     /// <summary>
     /// Whether <paramref name="command"/> names a path in <paramref name="origin"/> that is not in <paramref name="copy"/>:
@@ -193,7 +213,7 @@ internal static class RunRoot
         return r[^1] is '\\' or '/' || p[r.Length] is '\\' or '/';
     }
 
-    private sealed class Leave(State? before, string copyTop) : IDisposable
+    private sealed class Leave(State? before, string copyTop, bool ownsIndex) : IDisposable
     {
         private bool _done;
 
@@ -203,7 +223,7 @@ internal static class RunRoot
             _done = true;
             _current.Value = before;
             // Left for good, not back to the same copy: its index goes with it.
-            if (before is null || !string.Equals(before.CopyTop, copyTop, PathComparer.Comparison))
+            if (ownsIndex && (before is null || !string.Equals(before.CopyTop, copyTop, PathComparer.Comparison)))
                 Lsp.CSharpSemanticIndex.Forget(copyTop);
         }
     }

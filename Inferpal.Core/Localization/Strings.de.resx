@@ -2380,4 +2380,15 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>Der Agent erfährt, dass das Archiv geschlossen blieb, und macht ohne es weiter</value></data>
   <data name="AskReceiptNote" xml:space="preserve"><value>Sie haben dem Agenten statt einer Antwort eine Notiz geschrieben</value></data>
   <data name="AskReceiptStopped" xml:space="preserve"><value>Der Lauf wurde vor Ihrer Antwort beendet</value></data>
+  <data name="CopyNotMade" xml:space="preserve"><value>Es konnte keine Kopie des Repositorys erstellt werden — {0}.</value></data>
+  <data name="CopyNoneOpen" xml:space="preserve"><value>Keine Kopie des Repositorys ist offen.</value></data>
+  <data name="CopyLeftChangedSince" xml:space="preserve"><value>Sie haben diese Datei seit dem Erstellen der Kopie geändert</value></data>
+  <data name="CopyLeftDeletedSince" xml:space="preserve"><value>Sie haben diese Datei seit dem Erstellen der Kopie gelöscht</value></data>
+  <data name="CopyLeftCreatedSince" xml:space="preserve"><value>Sie haben seit dem Erstellen der Kopie eine Datei mit diesem Namen angelegt</value></data>
+  <data name="CopyLeftNotBackedUp" xml:space="preserve"><value>sie konnte vorher nicht gesichert werden und wurde daher nicht geschrieben</value></data>
+  <data name="CopyLeftWriteFailed" xml:space="preserve"><value>das Schreiben ist fehlgeschlagen: {0}</value></data>
+  <data name="CopyLeftUnsaved" xml:space="preserve"><value>sie hat ungespeicherte Änderungen im Editor: Speichern oder schließen Sie sie und übernehmen Sie erneut</value></data>
+  <data name="CopyLeftNotInReview" xml:space="preserve"><value>sie ist nicht in der letzten Durchsicht der Kopie: Sehen Sie sie erneut durch</value></data>
+  <data name="CopyReviewChanged" xml:space="preserve"><value>Die Kopie hat sich seit dieser Durchsicht geändert: Sehen Sie sie vor dem Übernehmen erneut durch.</value></data>
+  <data name="CopyInUse" xml:space="preserve"><value>In der Kopie wird gerade eine Frage beantwortet: Verwerfen Sie sie, sobald die Antwort fertig ist.</value></data>
 </root>

@@ -2380,4 +2380,15 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>L'agent apprend que l'archive est restée fermée, et continue sans elle</value></data>
   <data name="AskReceiptNote" xml:space="preserve"><value>Vous avez écrit une note à l'agent au lieu de répondre</value></data>
   <data name="AskReceiptStopped" xml:space="preserve"><value>Le run s'est arrêté avant votre réponse</value></data>
+  <data name="CopyNotMade" xml:space="preserve"><value>Aucune copie du dépôt n'a pu être faite — {0}.</value></data>
+  <data name="CopyNoneOpen" xml:space="preserve"><value>Aucune copie du dépôt n'est ouverte.</value></data>
+  <data name="CopyLeftChangedSince" xml:space="preserve"><value>vous avez modifié ce fichier depuis que la copie a été faite</value></data>
+  <data name="CopyLeftDeletedSince" xml:space="preserve"><value>vous avez supprimé ce fichier depuis que la copie a été faite</value></data>
+  <data name="CopyLeftCreatedSince" xml:space="preserve"><value>vous avez créé un fichier de ce nom depuis que la copie a été faite</value></data>
+  <data name="CopyLeftNotBackedUp" xml:space="preserve"><value>il n'a pas pu être sauvegardé d'abord, il n'a donc pas été écrit</value></data>
+  <data name="CopyLeftWriteFailed" xml:space="preserve"><value>son écriture a échoué : {0}</value></data>
+  <data name="CopyLeftUnsaved" xml:space="preserve"><value>il a des modifications non enregistrées dans l'éditeur : enregistrez-le ou fermez-le, puis appliquez de nouveau</value></data>
+  <data name="CopyLeftNotInReview" xml:space="preserve"><value>il n'est pas dans la dernière relecture de la copie : relisez-la de nouveau</value></data>
+  <data name="CopyReviewChanged" xml:space="preserve"><value>La copie a changé depuis cette relecture : relisez-la de nouveau avant d'appliquer.</value></data>
+  <data name="CopyInUse" xml:space="preserve"><value>Une question est en cours dans la copie : jetez-la une fois la réponse finie.</value></data>
 </root>

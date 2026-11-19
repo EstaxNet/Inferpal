@@ -2961,4 +2961,15 @@ internal static class Strings
     public static string MermaidUnavailable => Get(nameof(MermaidUnavailable));
     public static string MermaidTooLarge(int width, int height, int max) => Format(Get(nameof(MermaidTooLarge)), width, height, max);
     public static string MermaidTooSlow(int seconds) => Format(Get(nameof(MermaidTooSlow)), seconds);
+    public static string CopyNotMade(string detail) => Format(Get(nameof(CopyNotMade)), detail);
+    public static string CopyNoneOpen => Get(nameof(CopyNoneOpen));
+    public static string CopyLeftChangedSince => Get(nameof(CopyLeftChangedSince));
+    public static string CopyLeftDeletedSince => Get(nameof(CopyLeftDeletedSince));
+    public static string CopyLeftCreatedSince => Get(nameof(CopyLeftCreatedSince));
+    public static string CopyLeftNotBackedUp => Get(nameof(CopyLeftNotBackedUp));
+    public static string CopyLeftWriteFailed(string cause) => Format(Get(nameof(CopyLeftWriteFailed)), cause);
+    public static string CopyLeftUnsaved => Get(nameof(CopyLeftUnsaved));
+    public static string CopyLeftNotInReview => Get(nameof(CopyLeftNotInReview));
+    public static string CopyReviewChanged => Get(nameof(CopyReviewChanged));
+    public static string CopyInUse => Get(nameof(CopyInUse));
 }

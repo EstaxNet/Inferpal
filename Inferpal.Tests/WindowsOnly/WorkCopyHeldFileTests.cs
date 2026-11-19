@@ -14,15 +14,10 @@ namespace Inferpal.Tests;
 public sealed class WorkCopyHeldFileTests : IDisposable
 {
     private readonly DirectoryInfo _repo = Directory.CreateTempSubdirectory("inferpal-workcopy-held-repo-");
-    private readonly DirectoryInfo _home = Directory.CreateTempSubdirectory("inferpal-workcopy-held-home-");
-    private readonly string _homeBefore = WorkCopy.Home;
-
-    public WorkCopyHeldFileTests() => WorkCopy.Home = _home.FullName;
 
     public void Dispose()
     {
-        WorkCopy.Home = _homeBefore;
-        foreach (var dir in new[] { _repo, _home })
+        foreach (var dir in new[] { _repo })
             try
             {
                 foreach (var file in Directory.EnumerateFiles(dir.FullName, "*", SearchOption.AllDirectories))

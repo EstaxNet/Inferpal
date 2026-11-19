@@ -39,6 +39,18 @@ internal static class TestConfigIsolation
         // would wait for the developer's chat to end (GpuScheduler.WaitForChatIdleAsync yields to another process).
         Inferpal.Services.Signals.SignalFile._directoryOverride = Path.Combine(root, $"signals-{Environment.ProcessId}");
 
+        // And for the copies a run works in (pari 106): one folder for the whole suite, set once — a test class repointing
+        // the static would move another class's copy under its feet, and the developer's own copies stay out of reach.
+        Inferpal.Services.Execution.WorkCopy.Home = Path.Combine(root, $"copies-{Environment.ProcessId}");
+        // A copy is a whole work tree: one a failed test left would pile up run after run. Those of runs over a day old go.
+        try
+        {
+            foreach (var old in Directory.EnumerateDirectories(root, "copies-*"))
+                if (Directory.GetLastWriteTimeUtc(old) < DateTime.UtcNow.AddDays(-1))
+                    try { Directory.Delete(old, recursive: true); } catch { }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+
         // And for the grace a wait for a person keeps the GPU: a test that looks at the scheduler during a card sees the
         // lease let go at once instead of ten seconds later (GpuSchedulerTests sets it back to measure the grace).
         Inferpal.Services.Hardware.GpuScheduler.PauseGrace = TimeSpan.Zero;

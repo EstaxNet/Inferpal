@@ -2380,4 +2380,15 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>エージェントはアーカイブが閉じたままであることを知り、それなしで続行します</value></data>
   <data name="AskReceiptNote" xml:space="preserve"><value>回答の代わりにエージェントへメモを書きました</value></data>
   <data name="AskReceiptStopped" xml:space="preserve"><value>回答の前に実行が停止しました</value></data>
+  <data name="CopyNotMade" xml:space="preserve"><value>リポジトリのコピーを作成できませんでした — {0}。</value></data>
+  <data name="CopyNoneOpen" xml:space="preserve"><value>開いているリポジトリのコピーはありません。</value></data>
+  <data name="CopyLeftChangedSince" xml:space="preserve"><value>コピー作成後にこのファイルを変更しています</value></data>
+  <data name="CopyLeftDeletedSince" xml:space="preserve"><value>コピー作成後にこのファイルを削除しています</value></data>
+  <data name="CopyLeftCreatedSince" xml:space="preserve"><value>コピー作成後に同じ名前のファイルを作成しています</value></data>
+  <data name="CopyLeftNotBackedUp" xml:space="preserve"><value>先にバックアップできなかったため、書き込みませんでした</value></data>
+  <data name="CopyLeftWriteFailed" xml:space="preserve"><value>書き込みに失敗しました: {0}</value></data>
+  <data name="CopyLeftUnsaved" xml:space="preserve"><value>エディターに未保存の変更があります。保存するか閉じてから、もう一度適用してください</value></data>
+  <data name="CopyLeftNotInReview" xml:space="preserve"><value>コピーの最後のレビューに含まれていません。もう一度レビューしてください</value></data>
+  <data name="CopyReviewChanged" xml:space="preserve"><value>このレビュー以降にコピーが変更されました。適用する前にもう一度レビューしてください。</value></data>
+  <data name="CopyInUse" xml:space="preserve"><value>コピーで質問に回答中です。回答が終わってから破棄してください。</value></data>
 </root>

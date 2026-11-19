@@ -2380,4 +2380,15 @@
   <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>智能体会得知归档保持关闭，并在没有它的情况下继续</value></data>
   <data name="AskReceiptNote" xml:space="preserve"><value>你给智能体写了一条备注，而不是回答</value></data>
   <data name="AskReceiptStopped" xml:space="preserve"><value>运行在你回答前已停止</value></data>
+  <data name="CopyNotMade" xml:space="preserve"><value>无法创建仓库的副本 — {0}。</value></data>
+  <data name="CopyNoneOpen" xml:space="preserve"><value>没有打开的仓库副本。</value></data>
+  <data name="CopyLeftChangedSince" xml:space="preserve"><value>副本创建后您修改了此文件</value></data>
+  <data name="CopyLeftDeletedSince" xml:space="preserve"><value>副本创建后您删除了此文件</value></data>
+  <data name="CopyLeftCreatedSince" xml:space="preserve"><value>副本创建后您创建了同名文件</value></data>
+  <data name="CopyLeftNotBackedUp" xml:space="preserve"><value>无法先行备份，因此未写入</value></data>
+  <data name="CopyLeftWriteFailed" xml:space="preserve"><value>写入失败：{0}</value></data>
+  <data name="CopyLeftUnsaved" xml:space="preserve"><value>编辑器中有未保存的更改：请保存或关闭后再应用</value></data>
+  <data name="CopyLeftNotInReview" xml:space="preserve"><value>它不在副本的最近一次审阅中：请重新审阅</value></data>
+  <data name="CopyReviewChanged" xml:space="preserve"><value>此次审阅后副本已更改：应用前请重新审阅。</value></data>
+  <data name="CopyInUse" xml:space="preserve"><value>副本中正在回答问题：请在回答结束后再丢弃。</value></data>
 </root>

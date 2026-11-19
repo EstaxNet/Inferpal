@@ -2380,4 +2380,15 @@
   <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>Агент узнаёт, что архив остался закрытым, и продолжает без него</value></data>
   <data name="AskReceiptNote" xml:space="preserve"><value>Вместо ответа вы написали агенту заметку</value></data>
   <data name="AskReceiptStopped" xml:space="preserve"><value>Выполнение остановлено до вашего ответа</value></data>
+  <data name="CopyNotMade" xml:space="preserve"><value>Не удалось создать копию репозитория — {0}.</value></data>
+  <data name="CopyNoneOpen" xml:space="preserve"><value>Копия репозитория не открыта.</value></data>
+  <data name="CopyLeftChangedSince" xml:space="preserve"><value>вы изменили этот файл после создания копии</value></data>
+  <data name="CopyLeftDeletedSince" xml:space="preserve"><value>вы удалили этот файл после создания копии</value></data>
+  <data name="CopyLeftCreatedSince" xml:space="preserve"><value>вы создали файл с таким именем после создания копии</value></data>
+  <data name="CopyLeftNotBackedUp" xml:space="preserve"><value>не удалось сначала сделать резервную копию, поэтому файл не записан</value></data>
+  <data name="CopyLeftWriteFailed" xml:space="preserve"><value>запись не удалась: {0}</value></data>
+  <data name="CopyLeftUnsaved" xml:space="preserve"><value>в редакторе есть несохранённые изменения: сохраните или закройте файл и примените снова</value></data>
+  <data name="CopyLeftNotInReview" xml:space="preserve"><value>его нет в последнем просмотре копии: просмотрите её снова</value></data>
+  <data name="CopyReviewChanged" xml:space="preserve"><value>Копия изменилась после этого просмотра: просмотрите её снова перед применением.</value></data>
+  <data name="CopyInUse" xml:space="preserve"><value>В копии сейчас отвечают на вопрос: удалите её, когда ответ будет готов.</value></data>
 </root>

@@ -2380,4 +2380,15 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="ArchivePasswordLeaveClosedTip" xml:space="preserve"><value>El agente sabe que el archivo quedó cerrado y sigue sin él</value></data>
   <data name="AskReceiptNote" xml:space="preserve"><value>Escribió una nota al agente en lugar de responder</value></data>
   <data name="AskReceiptStopped" xml:space="preserve"><value>La ejecución se detuvo antes de su respuesta</value></data>
+  <data name="CopyNotMade" xml:space="preserve"><value>No se pudo hacer ninguna copia del repositorio — {0}.</value></data>
+  <data name="CopyNoneOpen" xml:space="preserve"><value>No hay ninguna copia del repositorio abierta.</value></data>
+  <data name="CopyLeftChangedSince" xml:space="preserve"><value>ha modificado este archivo desde que se hizo la copia</value></data>
+  <data name="CopyLeftDeletedSince" xml:space="preserve"><value>ha eliminado este archivo desde que se hizo la copia</value></data>
+  <data name="CopyLeftCreatedSince" xml:space="preserve"><value>ha creado un archivo con ese nombre desde que se hizo la copia</value></data>
+  <data name="CopyLeftNotBackedUp" xml:space="preserve"><value>no se pudo hacer primero una copia de seguridad, así que no se escribió</value></data>
+  <data name="CopyLeftWriteFailed" xml:space="preserve"><value>no se pudo escribir: {0}</value></data>
+  <data name="CopyLeftUnsaved" xml:space="preserve"><value>tiene cambios sin guardar en el editor: guárdelo o ciérrelo y vuelva a aplicar</value></data>
+  <data name="CopyLeftNotInReview" xml:space="preserve"><value>no está en la última revisión de la copia: revísela de nuevo</value></data>
+  <data name="CopyReviewChanged" xml:space="preserve"><value>La copia cambió desde esta revisión: revísela de nuevo antes de aplicar.</value></data>
+  <data name="CopyInUse" xml:space="preserve"><value>Se está respondiendo una pregunta en la copia: descártela cuando termine la respuesta.</value></data>
 </root>

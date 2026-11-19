@@ -98,7 +98,8 @@ internal sealed record ChatSendParams(
     string? Query = null,
     bool ModelOverridesRoles = false,
     List<string>? Notes = null,
-    List<ImageDto>? Images = null);
+    List<ImageDto>? Images = null,
+    bool InCopy = false);
 
 /// <summary>An image the question carries, as <c>image/read</c> gave it: its name, its type, its bytes in base64.</summary>
 internal sealed record ImageDto(string Name, string MediaType, string Data);
@@ -210,7 +211,51 @@ internal sealed record ChatSendResult(
     string? RunId = null,
     CutCardDto? Cut = null,
     string? Rate = null,
-    string? RateDetail = null);
+    string? RateDetail = null,
+    CopyReviewDto? Copy = null);
+
+/// <summary><c>copy/prepare</c>: what the start card of a run on a copy says (pari 106); nothing is made.</summary>
+/// <param name="Refusal">Why no copy can be made of this folder, in English (the card names it); <c>null</c> when one can.</param>
+/// <param name="Commit">The commit the copy starts from, short.</param>
+/// <param name="Branch">The person's branch at that commit; <c>null</c> on a detached HEAD.</param>
+/// <param name="Uncommitted">The changes that do not go into the copy; <c>null</c> when git could not list them.</param>
+/// <param name="Held">A copy is open — this session's, or one an earlier session left: the question goes to it, no new copy
+/// is made.</param>
+/// <param name="LeftBefore">The branch of the copy an earlier session left (the editor closed or the host stopped while it was
+/// held), taken up now; <c>null</c> otherwise.</param>
+internal sealed record CopyPrepareResult(string? Refusal, string? Commit, string? Branch, List<string>? Uncommitted, bool Held,
+                                         string? LeftBefore = null);
+
+/// <summary>What a run left in its copy, for the review: the copy's branch, and each changed file with its hunks.</summary>
+/// <param name="Id">The review's number: <c>copy/apply</c> names it, and is refused once the copy was read again since.</param>
+internal sealed record CopyReviewDto(int Id, string Branch, List<CopyReviewFileDto> Files, string? Problem)
+{
+    public static CopyReviewDto Of(Services.Execution.CopyReview r) =>
+        new(r.Id, r.Branch, [.. r.Files.Select(f => new CopyReviewFileDto(f.Path, f.Created, f.Deleted,
+                [.. f.Hunks.Select(h => new CopyHunkDto(h.Index, h.OldStart, h.NewStart, [.. h.OldLines], [.. h.NewLines]))]))],
+            r.Problem);
+}
+
+/// <summary>One changed file of a copy: created or deleted by the run, and its hunks.</summary>
+internal sealed record CopyReviewFileDto(string Path, bool Created, bool Deleted, List<CopyHunkDto> Hunks);
+
+/// <summary>One hunk the person keeps or drops: its lines removed and added, at 0-based lines of the old and new text.</summary>
+internal sealed record CopyHunkDto(int Index, int OldStart, int NewStart, List<string> Removed, List<string> Added);
+
+/// <summary><c>copy/apply</c>: the hunks kept of review <paramref name="ReviewId"/>, by path (the indexes of
+/// <see cref="CopyHunkDto.Index"/>).</summary>
+internal sealed record CopyApplyParams(int ReviewId, Dictionary<string, List<int>> Kept);
+
+/// <summary>What applying did: the files written, the files left and why (a code the adapter translates), or why nothing
+/// was applied.</summary>
+internal sealed record CopyApplyResult(List<string> Written, List<CopyLeftDto> Left, string? Error = null, string? RunId = null);
+
+/// <summary>A file whose kept hunks were not written: <paramref name="Reason"/> is a <c>CopyLeftReason</c> name,
+/// <paramref name="Text"/> says it in the person's language.</summary>
+internal sealed record CopyLeftDto(string Path, string Reason, string Text);
+
+/// <summary><c>copy/discard</c>: what could not be removed, in English; <c>null</c> when the copy and its branch went.</summary>
+internal sealed record CopyDiscardResult(string? Problem, string? Error = null);
 
 /// <summary>Under the cause of a turn cut at its bound (<see cref="Services.Presentation.CutCard"/>): what it wrote, and the
 /// way to the time limits.</summary>
