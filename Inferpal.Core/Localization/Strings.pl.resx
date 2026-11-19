@@ -2392,7 +2392,6 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="CopyReviewChanged" xml:space="preserve"><value>Kopia zmieniła się od tego przeglądu: przejrzyj ją ponownie przed zastosowaniem.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>W kopii trwa odpowiedź na pytanie: odrzuć ją, gdy odpowiedź się skończy.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>uruchomić agenta na kopii repozytorium, a potem zachować lub odrzucić każdą zmianę (`/run-copy &lt;pytanie&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>To polecenie nie jest jeszcze dostępne w tym edytorze — użyj go w Visual Studio lub VS Code.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>Praca na kopii repozytorium</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>Twoje pliki zostają bez zmian, gdy agent pracuje</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>Kopia</value></data>
@@ -2414,6 +2413,8 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="CopyStartMine" xml:space="preserve"><value>Pracuj zamiast tego w moich plikach</value></data>
   <data name="CopyReviewTitle" xml:space="preserve"><value>Przejrzyj zmiany — zachowaj lub odrzuć każdą</value></data>
   <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:plik|pliki|plików} · {1} {1:zmiana|zmiany|zmian} · zachowane: {2}</value></data>
+  <data name="CopyReviewAllTitle" xml:space="preserve"><value>Przejrzyj zmiany, które uruchomienie wprowadziło w kopii</value></data>
+  <data name="CopyReviewAllCount" xml:space="preserve"><value>{0} {0:plik|pliki|plików} · {1} {1:zmiana|zmiany|zmian}</value></data>
   <data name="CopyReviewFileKept" xml:space="preserve"><value>zachowane {0} z {1}</value></data>
   <data name="CopyReviewNewFile" xml:space="preserve"><value>nowy plik</value></data>
   <data name="CopyReviewDeletedFile" xml:space="preserve"><value>usunięty</value></data>

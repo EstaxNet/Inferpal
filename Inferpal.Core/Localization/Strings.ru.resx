@@ -2392,7 +2392,6 @@
   <data name="CopyReviewChanged" xml:space="preserve"><value>Копия изменилась после этого просмотра: просмотрите её снова перед применением.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>В копии сейчас отвечают на вопрос: удалите её, когда ответ будет готов.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>запустить агента на копии репозитория, затем сохранить или отбросить каждое изменение (`/run-copy &lt;вопрос&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Эта команда пока недоступна в этом редакторе — используйте её в Visual Studio или VS Code.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>Работать с копией репозитория</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>Ваши файлы остаются как есть, пока агент работает</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>Копия</value></data>
@@ -2414,6 +2413,8 @@
   <data name="CopyStartMine" xml:space="preserve"><value>Работать в моих файлах</value></data>
   <data name="CopyReviewTitle" xml:space="preserve"><value>Просмотрите изменения — сохраните или отбросьте каждое</value></data>
   <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:файл|файла|файлов} · {1} {1:изменение|изменения|изменений} · сохранено: {2}</value></data>
+  <data name="CopyReviewAllTitle" xml:space="preserve"><value>Просмотрите изменения, которые запуск внёс в копию</value></data>
+  <data name="CopyReviewAllCount" xml:space="preserve"><value>{0} {0:файл|файла|файлов} · {1} {1:изменение|изменения|изменений}</value></data>
   <data name="CopyReviewFileKept" xml:space="preserve"><value>сохранено {0} из {1}</value></data>
   <data name="CopyReviewNewFile" xml:space="preserve"><value>новый файл</value></data>
   <data name="CopyReviewDeletedFile" xml:space="preserve"><value>удалён</value></data>

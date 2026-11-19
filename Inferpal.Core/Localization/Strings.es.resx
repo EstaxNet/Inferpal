@@ -2392,7 +2392,6 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="CopyReviewChanged" xml:space="preserve"><value>La copia cambió desde esta revisión: revísela de nuevo antes de aplicar.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>Se está respondiendo una pregunta en la copia: descártela cuando termine la respuesta.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>ejecutar el agente en una copia del repositorio y luego conservar o descartar cada cambio (`/run-copy &lt;pregunta&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Este comando aún no está disponible en este editor: úselo desde Visual Studio o VS Code.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>Trabajar en una copia del repositorio</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>Sus archivos se quedan como están mientras el agente trabaja</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>Copia de</value></data>
@@ -2414,6 +2413,8 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="CopyStartMine" xml:space="preserve"><value>Trabajar en mis archivos</value></data>
   <data name="CopyReviewTitle" xml:space="preserve"><value>Revise los cambios: conserve o descarte cada uno</value></data>
   <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:archivo|archivos} · {1} {1:cambio|cambios} · {2} {2:conservado|conservados}</value></data>
+  <data name="CopyReviewAllTitle" xml:space="preserve"><value>Revise los cambios que la ejecución hizo en la copia</value></data>
+  <data name="CopyReviewAllCount" xml:space="preserve"><value>{0} {0:archivo|archivos} · {1} {1:cambio|cambios}</value></data>
   <data name="CopyReviewFileKept" xml:space="preserve"><value>{0} de {1} {0:conservado|conservados}</value></data>
   <data name="CopyReviewNewFile" xml:space="preserve"><value>archivo nuevo</value></data>
   <data name="CopyReviewDeletedFile" xml:space="preserve"><value>eliminado</value></data>

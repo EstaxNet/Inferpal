@@ -2396,7 +2396,6 @@ What you save there applies from your next question, in this thread and the othe
   <data name="CopyReviewChanged" xml:space="preserve"><value>The copy changed since this review: review it again before applying.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>A question is being answered in the copy: discard it once the answer ends.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>run the agent on a copy of the repository, then keep or drop each change (`/run-copy &lt;question&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>This command is not available in this editor yet — use it from Visual Studio or VS Code.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>Work on a copy of the repository</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>Your files stay as they are while the agent works</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>Copy of</value></data>
@@ -2418,6 +2417,8 @@ What you save there applies from your next question, in this thread and the othe
   <data name="CopyStartMine" xml:space="preserve"><value>Work in my files instead</value></data>
   <data name="CopyReviewTitle" xml:space="preserve"><value>Review the changes — keep or drop each one</value></data>
   <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:file|files} · {1} {1:change|changes} · {2} kept</value></data>
+  <data name="CopyReviewAllTitle" xml:space="preserve"><value>Review the changes the run made in the copy</value></data>
+  <data name="CopyReviewAllCount" xml:space="preserve"><value>{0} {0:file|files} · {1} {1:change|changes}</value></data>
   <data name="CopyReviewFileKept" xml:space="preserve"><value>{0} of {1} kept</value></data>
   <data name="CopyReviewNewFile" xml:space="preserve"><value>new file</value></data>
   <data name="CopyReviewDeletedFile" xml:space="preserve"><value>deleted</value></data>

@@ -2392,7 +2392,6 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="CopyReviewChanged" xml:space="preserve"><value>La copia è cambiata da questa revisione: rivedila prima di applicare.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>Nella copia si sta rispondendo a una domanda: scartala quando la risposta è finita.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>eseguire l'agente su una copia del repository, poi tenere o scartare ogni modifica (`/run-copy &lt;domanda&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Questo comando non è ancora disponibile in questo editor: usalo da Visual Studio o VS Code.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>Lavorare su una copia del repository</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>I tuoi file restano come sono mentre l'agente lavora</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>Copia di</value></data>
@@ -2414,6 +2413,8 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="CopyStartMine" xml:space="preserve"><value>Lavora invece nei miei file</value></data>
   <data name="CopyReviewTitle" xml:space="preserve"><value>Rivedi le modifiche: tieni o scarta ciascuna</value></data>
   <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:file|file} · {1} {1:modifica|modifiche} · {2} {2:tenuta|tenute}</value></data>
+  <data name="CopyReviewAllTitle" xml:space="preserve"><value>Rivedi le modifiche dell'esecuzione nella copia</value></data>
+  <data name="CopyReviewAllCount" xml:space="preserve"><value>{0} {0:file|file} · {1} {1:modifica|modifiche}</value></data>
   <data name="CopyReviewFileKept" xml:space="preserve"><value>{0} su {1} {0:tenuta|tenute}</value></data>
   <data name="CopyReviewNewFile" xml:space="preserve"><value>nuovo file</value></data>
   <data name="CopyReviewDeletedFile" xml:space="preserve"><value>eliminato</value></data>

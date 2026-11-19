@@ -700,6 +700,7 @@ internal sealed class AcpSession : IAsyncDisposable
         {
             switch (e.Kind)
             {
+                case "runCopy":          return await RunCopyAsync(typed, e.Value ?? string.Empty, content);
                 case "sendAsPrompt":     sendAsPrompt = e.Value; break;
                 case "setPrompt":        if (!string.IsNullOrEmpty(e.Value)) notes.Add(CopyBlock(Strings.AcpPasteThis, e.Value)); break;
                 case "copyToClipboard":  if (!string.IsNullOrEmpty(e.Value)) notes.Add(CopyBlock(Strings.AcpCopyThis, e.Value)); break;
@@ -755,6 +756,162 @@ internal sealed class AcpSession : IAsyncDisposable
         return SayNotice(typed, said);
     }
 
+    /// <summary>
+    /// <c>/run-copy</c> in an ACP client, which draws no card: the start card asked as a permission request — start on the
+    /// copy, work in my files instead, cancel —, then the question on the copy and its review (<see cref="ReviewCopyAsync"/>).
+    /// <c>/run-copy</c> alone: the review of the copy held or left (the host took it up). Keeping or dropping each change
+    /// stays the editors': here the run's changes are applied together, or the copy kept or discarded.
+    /// </summary>
+    private async Task<string> RunCopyAsync(string typed, string question, AcpPromptContent content)
+    {
+        try
+        {
+            if (question.Length == 0)
+            {
+                var held = await _link.InvokeAsync<CopyReviewDto?>("copy/review");
+                if (held is null) return SayNotice(typed, Strings.CopyNoneOpen);
+                lock (_gate) _transcript.Add(new SavedMessageDto("user", typed, SessionManager.NoticeMarker, Now()));
+                await ReviewCopyAsync(held);
+                await SaveAsync();
+                return "end_turn";
+            }
+            var prepared = await _link.InvokeAsync<CopyPrepareResult>("copy/prepare");
+            if (prepared.Card is not { } card) return SayNotice(typed, prepared.RefusalText ?? prepared.Refusal ?? Strings.CopyNoneOpen);
+            var start = new StringBuilder(card.Lead).Append("\n\n");
+            foreach (var row in card.Rows) start.Append("- **").Append(row.Label).Append("** ").Append(row.Value).Append('\n');
+            if (card.Uncommitted is { } uncommitted)
+            {
+                start.Append("\n**").Append(uncommitted).Append("**\n");
+                foreach (var file in card.UncommittedFiles) start.Append("- ").Append(file).Append('\n');
+                if (card.UncommittedHint is { } hint) start.Append('\n').Append(hint).Append('\n');
+            }
+            start.Append('\n').Append(card.Rules);
+            var choice = await AskCopyAsync(card.Title, [TextContent(start.ToString())],
+                [("copy", card.Go, "allow_once"), ("mine", card.Mine, "allow_once"), ("cancel", card.Cancel, "reject_once")]);
+            return choice switch
+            {
+                "copy" => await ChatAsync(question, content, inCopy: true),
+                "mine" => await ChatAsync(question, content),
+                // Stopped on the card: the command stays in the thread, as any prompt stopped before the host.
+                _ when StoppedBeforeTheHost(typed) => "cancelled",
+                _ => SayNotice(typed, Strings.MsgCancelled),
+            };
+        }
+        catch (RemoteInvocationException ex)
+        {
+            // The host refused (a turn holding it, the copy unreadable): its sentence, never a protocol error.
+            return SayNotice(typed, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// What a run left in its copy, as the client draws it: each change a diff of the person's file it would go to, then a
+    /// permission request — apply them all (backed up: <c>/undo-run</c> gives them back), discard the copy, or keep it for
+    /// now. What was done is said and kept with the conversation; no answer keeps the copy, as "keep" does.
+    /// </summary>
+    /// <remarks>⚠ "Keep", which does nothing, comes first: a client that answers on its own (auto-approve) picks the first
+    /// "allow" option, and the person who typed <c>/run-copy</c> asked that nothing reach their files unseen. No option is a
+    /// "reject" (a reject shortcut would discard the run's work) nor an "always" (a client could keep it for the next
+    /// copy).</remarks>
+    private async Task ReviewCopyAsync(CopyReviewDto review)
+    {
+        if (review.Texts is not { } texts) return;
+        var total = review.Files.Sum(f => f.Hunks.Count);
+        // Nothing is kept or dropped one by one here: the count and title the editors' cards word otherwise.
+        var content = new List<object> { TextContent(Strings.CopyReviewAllCount(review.Files.Count, total)) };
+        if (review.Problem is { Length: > 0 } problem) content.Add(TextContent(problem));
+        foreach (var file in review.Files)
+        {
+            // The person's file: an ACP path is absolute, and the review's are the repository's.
+            var mine = Path.GetFullPath(Path.Combine(Cwd, file.Path[Math.Min(review.Inside.Length, file.Path.Length)..]));
+            if (file.Texts?.Tag is { } tag) content.Add(TextContent("`" + Relative(mine) + "` — " + tag));
+            // ⚠ A null old text is a new file in ACP: only for a file the run created.
+            foreach (var hunk in file.Hunks)
+                content.Add(new { type = "diff", path = mine, oldText = file.Created ? null : string.Join('\n', hunk.Removed),
+                                  newText = string.Join('\n', hunk.Added) });
+        }
+        if (texts.Nothing is { } nothing) content.Add(TextContent(nothing));
+        if (texts.LeftOut is { } leftOut) content.Add(TextContent(leftOut));
+        var options = new List<(string, string, string)> { ("keep", Strings.CopyKeepForNow, "allow_once") };
+        if (total > 0) options.Add(("apply", texts.Apply[total], "allow_once"));
+        options.Add(("discard", texts.Discard, "allow_once"));
+        var choice = await AskCopyAsync(Strings.CopyReviewAllTitle, content, [.. options]);
+
+        string said;
+        string? runId = null;
+        try
+        {
+            if (choice == "apply")
+            {
+                var kept = review.Files.ToDictionary(f => f.Path, f => f.Hunks.Select(h => h.Index).ToList());
+                var applied = await _link.InvokeWithParameterObjectAsync<CopyApplyResult>("copy/apply", new { reviewId = review.Id, kept },
+                                                                                           CancellationToken.None);
+                // The copy outlives an apply (the editors' card offers its discard): said, with the way back to it.
+                said = applied.Card is { } card ? AppliedText(card) + "\n\n" + Strings.CopyKeptForNow(review.Branch)
+                     : applied.Error ?? Strings.CopyNoneOpen;
+                runId = applied.RunId;
+            }
+            else if (choice == "discard")
+            {
+                var discarded = await _link.InvokeAsync<CopyDiscardResult>("copy/discard");
+                said = discarded.Message ?? discarded.Error ?? Strings.CopyNoneOpen;
+            }
+            else said = Strings.CopyKeptForNow(review.Branch);
+        }
+        catch (RemoteInvocationException ex)
+        {
+            said = ex.Message;
+        }
+        Say("\n\n" + said);
+        lock (_gate)
+            // The apply's run goes with the message that says it, as a turn's run does: /undo-run finds it there.
+            _transcript.Add(new SavedMessageDto("assistant", said, SessionManager.NoticeMarker, Now()) { Run = runId });
+    }
+
+    /// <summary>The card after an apply, as text: what was written, what was not and why, where the copy's change still is.</summary>
+    private static string AppliedText(Services.Presentation.CopyAppliedCardModel card)
+    {
+        var text = new StringBuilder("**").Append(card.Title).Append("**");
+        if (card.Undo is { } undo) text.Append(" — ").Append(undo);
+        foreach (var group in card.NotApplied)
+        {
+            text.Append("\n\n").Append(group.Title);
+            foreach (var file in group.Files)
+                text.Append("\n- `").Append(file.Path).Append('`').Append(file.Lines.Length > 0 ? " — " + file.Lines : string.Empty);
+            if (group.Note is { } note) text.Append("\n\n").Append(note);
+        }
+        return text.ToString();
+    }
+
+    /// <summary>A copy's card asked as <c>session/request_permission</c>, under an id of its own (a client keys its cards by
+    /// id); the option chosen, <c>null</c> when none was (the request cancelled, the client gone, or the prompt stopped).</summary>
+    /// <remarks>⚠ Never asked after a Stop: a client owes an answer only to the requests pending when it cancelled, and a
+    /// request left unanswered would hold the prompt — and every later one in the thread — for good.</remarks>
+    private async Task<string?> AskCopyAsync(string title, List<object> content, (string Id, string Name, string Kind)[] options)
+    {
+        if (CancelRequested) return null;
+        var id = "copy_" + Interlocked.Increment(ref _approvals).ToString(CultureInfo.InvariantCulture);
+        try
+        {
+            var answer = await _agent.RequestAsync<PermissionAnswer>("session/request_permission", new
+            {
+                sessionId = Id,
+                toolCall  = new { toolCallId = id, title, kind = "other", status = "pending", content },
+                options   = options.Select(o => new { optionId = o.Id, name = o.Name, kind = o.Kind }).ToArray(),
+            });
+            if (answer?.Outcome is not { Outcome: "selected" } o) return null;
+            // Answered: the card is done, never left in progress.
+            Update(new { sessionUpdate = "tool_call_update", toolCallId = id, status = "completed" });
+            return o.OptionId;
+        }
+        catch (OperationCanceledException) { return null; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("AcpSession.Copy", ex);
+            return null;
+        }
+    }
+
     /// <summary>Tells the host <paramref name="model"/> is the thread's own, kept with its conversation. A refusal (a turn
     /// holding the host) is traced, never thrown into the reply of the command that changed the model.</summary>
     private async Task KeepThreadModelAsync(string model)
@@ -787,9 +944,12 @@ internal sealed class AcpSession : IAsyncDisposable
         }
     }
 
-    private async Task<string> ChatAsync(string typed, AcpPromptContent content)
+    /// <param name="inCopy">The question goes to the copy of the repository this thread holds, or a new one (<c>/run-copy</c>):
+    /// its bubble keeps the command, and what its run left is reviewed after the answer.</param>
+    private async Task<string> ChatAsync(string typed, AcpPromptContent content, bool inCopy = false)
     {
         var (promptText, labels, attachedPaths) = await BuildPromptAsync(typed, content);
+        var asked = inCopy ? "/run-copy " + typed : typed;
         // Images go with the question when the model that answers sees them. An ACP client has no card to ask on: a model
         // that does not see them is said to the person, and the model reads that they were left out.
         var images = content.Images ?? [];
@@ -809,7 +969,7 @@ internal sealed class AcpSession : IAsyncDisposable
             catch (OperationCanceledException) when (CancelRequested)
             {
                 // Stopped while the images were read: nothing goes to the host.
-                StoppedBeforeTheHost(ChatTurnPolicy.BuildBubbleText(typed, labels));
+                StoppedBeforeTheHost(ChatTurnPolicy.BuildBubbleText(asked, labels));
                 return "cancelled";
             }
             finally
@@ -840,11 +1000,11 @@ internal sealed class AcpSession : IAsyncDisposable
         // ⚠ A Stop that comes while the prompt is being built (attachments read, the host asked for each excerpt, a slash
         // command answered) finds no turn on the host to stop: chat/cancel does nothing there, and sent now, the whole
         // turn would run after it — tools and writes included — under a response that says "cancelled".
-        if (StoppedBeforeTheHost(ChatTurnPolicy.BuildBubbleText(typed, labels))) return "cancelled";
+        if (StoppedBeforeTheHost(ChatTurnPolicy.BuildBubbleText(asked, labels))) return "cancelled";
         lock (_gate)
         {
-            _prompts.Add(typed);
-            _transcript.Add(new SavedMessageDto("user", ChatTurnPolicy.BuildBubbleText(typed, labels), Timestamp: Now()));
+            _prompts.Add(asked);
+            _transcript.Add(new SavedMessageDto("user", ChatTurnPolicy.BuildBubbleText(asked, labels), Timestamp: Now()));
         }
 
         _provisional = _mode == AcpModes.Agent;
@@ -860,6 +1020,7 @@ internal sealed class AcpSession : IAsyncDisposable
             agentMode     = _mode == AcpModes.Agent,
             attachedPaths = attachedPaths.Count > 0 ? attachedPaths : null,
             images        = images.Count > 0 ? images : null,
+            inCopy,
         }, CancellationToken.None);
         await DrainLinkAsync();
         Interlocked.Add(ref _sessionTokens, result.TokensUsed);
@@ -872,6 +1033,8 @@ internal sealed class AcpSession : IAsyncDisposable
             var shown = _provisional ? string.Empty : _stream.Sent.Trim();
             if (shown.Length > 0) RecordAnswer(shown, notice: true);
             RecordAnswer(error, notice: true);
+            // The run may have changed its copy before it failed: what it left is still the person's to apply or discard.
+            if (result.Copy is { } failedReview) await ReviewCopyAsync(failedReview);
             await SaveAsync();
             throw AcpRpc.Error(AcpRpc.InternalError, error);
         }
@@ -906,6 +1069,8 @@ internal sealed class AcpSession : IAsyncDisposable
         if (!result.Cancelled && _agent.TakeLimitsNotice() is { } limits) Notice("info", limits, "\n\n---\n" + limits);
         if (result.ContextWindow > 0)
             Update(new { sessionUpdate = "usage_update", used = Math.Max(0, result.NextTurnTokens), size = result.ContextWindow });
+        // What the run left in its copy, stopped too: the person applies it, keeps the copy for now, or discards it.
+        if (result.Copy is { } review) await ReviewCopyAsync(review);
         await SaveAsync();
 
         return result.Cancelled ? "cancelled"

@@ -232,14 +232,16 @@ internal sealed record CopyPrepareResult(string? Refusal, string? Commit, string
 /// <summary>What a run left in its copy, for the review: the copy's branch, and each changed file with its hunks.</summary>
 /// <param name="Id">The review's number: <c>copy/apply</c> names it, and is refused once the copy was read again since.</param>
 /// <param name="Texts">The review card's texts, counted ones for every number of kept changes.</param>
+/// <param name="Inside">The opened folder in the repository (<c>sub/</c>, empty at its root): every path of
+/// <paramref name="Files"/> starts with it.</param>
 internal sealed record CopyReviewDto(int Id, string Branch, List<CopyReviewFileDto> Files, string? Problem,
-                                     Services.Presentation.CopyReviewTexts? Texts = null)
+                                     Services.Presentation.CopyReviewTexts? Texts = null, string Inside = "")
 {
-    public static CopyReviewDto Of(Services.Execution.CopyReview r) =>
+    public static CopyReviewDto Of(Services.Execution.CopyReview r, string inside) =>
         new(r.Id, r.Branch, [.. r.Files.Select(f => new CopyReviewFileDto(f.Path, f.Created, f.Deleted,
                 [.. f.Hunks.Select(h => new CopyHunkDto(h.Index, h.OldStart, h.NewStart, [.. h.OldLines], [.. h.NewLines]))],
                 Services.Presentation.CopyCards.File(f)))],
-            r.Problem, Services.Presentation.CopyCards.Review(r));
+            r.Problem, Services.Presentation.CopyCards.Review(r), inside);
 }
 
 /// <summary>One changed file of a copy: created or deleted by the run, and its hunks.</summary>

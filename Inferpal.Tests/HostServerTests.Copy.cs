@@ -225,7 +225,7 @@ public partial class HostServerTests
         Assert.Equal("Rework  the payment module", effect.Value);                                    // as typed
         // Alone, it shows the copy held: with none held or left, it says so and how to start one.
         Assert.Equal(Strings.CopyNoneOpen + " " + Strings.SlashUsage("/run-copy <question>"), bare.Markdown);
-        Assert.Equal(Strings.RunCopyNotHereYet, withoutEditor.Markdown);
+        Assert.Equal("runCopy", Assert.Single(withoutEditor.Effects!).Kind);                    // an ACP client asks it too
         Assert.False(Directory.Exists(Path.Combine(WorkCopy.Home, FileHistoryService.FolderNameOf(Path.GetFullPath(h.RootDir)))));
     }
 

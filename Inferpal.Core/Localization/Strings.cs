@@ -2973,7 +2973,6 @@ internal static class Strings
     public static string CopyReviewChanged => Get(nameof(CopyReviewChanged));
     public static string CopyInUse => Get(nameof(CopyInUse));
     public static string SlashHintRunCopy => Get(nameof(SlashHintRunCopy));
-    public static string RunCopyNotHereYet => Get(nameof(RunCopyNotHereYet));
     public static string CopyStartTitle => Get(nameof(CopyStartTitle));
     public static string CopyStartLead => Get(nameof(CopyStartLead));
     public static string CopyStartOfLabel => Get(nameof(CopyStartOfLabel));
@@ -2995,6 +2994,8 @@ internal static class Strings
     public static string CopyStartMine => Get(nameof(CopyStartMine));
     public static string CopyReviewTitle => Get(nameof(CopyReviewTitle));
     public static string CopyReviewCount(int files, int changes, int kept) => Format(Get(nameof(CopyReviewCount)), files, changes, kept);
+    public static string CopyReviewAllTitle => Get(nameof(CopyReviewAllTitle));
+    public static string CopyReviewAllCount(int files, int changes) => Format(Get(nameof(CopyReviewAllCount)), files, changes);
     public static string CopyReviewFileKept(int kept, int total) => Format(Get(nameof(CopyReviewFileKept)), kept, total);
     public static string CopyReviewNewFile => Get(nameof(CopyReviewNewFile));
     public static string CopyReviewDeletedFile => Get(nameof(CopyReviewDeletedFile));

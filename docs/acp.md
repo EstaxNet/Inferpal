@@ -351,6 +351,11 @@ editor says so, once:
 Two commands answer in the thread instead of a panel or a file: `/xray` gives the context breakdown as text, and
 `/export` the conversation as Markdown, to copy.
 
+`/run-copy <question>` runs the agent on a copy of the repository, as in the editors, but an ACP client draws no card:
+the start card and the review come as permission requests. The review shows the run's changes as diffs, then applies
+them all together — keeping or dropping each change one by one stays in Visual Studio and VS Code —, keeps the copy for
+now (`/run-copy` alone brings it back), or discards it.
+
 `/fix-build` is Visual Studio's alone, and `/setup` draws a card in the editor's chat: both are in the command list and
 answer that they are not available here (the first setup of an ACP client is `Inferpal.Host --acp --setup`).
 

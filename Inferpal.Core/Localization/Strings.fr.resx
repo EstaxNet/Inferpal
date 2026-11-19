@@ -2392,7 +2392,6 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="CopyReviewChanged" xml:space="preserve"><value>La copie a changé depuis cette relecture : relisez-la de nouveau avant d'appliquer.</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>Une question est en cours dans la copie : jetez-la une fois la réponse finie.</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>lancer l'agent sur une copie du dépôt, puis garder ou écarter chaque changement (`/run-copy &lt;question&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>Cette commande n'est pas encore disponible dans cet éditeur — utilisez-la depuis Visual Studio ou VS Code.</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>Travailler sur une copie du dépôt</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>Vos fichiers restent tels quels pendant que l'agent travaille</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>Copie de</value></data>
@@ -2414,6 +2413,8 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="CopyStartMine" xml:space="preserve"><value>Travailler plutôt dans mes fichiers</value></data>
   <data name="CopyReviewTitle" xml:space="preserve"><value>Relisez les changements — gardez ou écartez chacun</value></data>
   <data name="CopyReviewCount" xml:space="preserve"><value>{0} {0:fichier|fichiers} · {1} {1:changement|changements} · {2} {2:gardé|gardés}</value></data>
+  <data name="CopyReviewAllTitle" xml:space="preserve"><value>Relisez les changements du run dans la copie</value></data>
+  <data name="CopyReviewAllCount" xml:space="preserve"><value>{0} {0:fichier|fichiers} · {1} {1:changement|changements}</value></data>
   <data name="CopyReviewFileKept" xml:space="preserve"><value>{0} sur {1} {0:gardé|gardés}</value></data>
   <data name="CopyReviewNewFile" xml:space="preserve"><value>nouveau fichier</value></data>
   <data name="CopyReviewDeletedFile" xml:space="preserve"><value>supprimé</value></data>

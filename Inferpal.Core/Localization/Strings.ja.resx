@@ -2392,7 +2392,6 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="CopyReviewChanged" xml:space="preserve"><value>このレビュー以降にコピーが変更されました。適用する前にもう一度レビューしてください。</value></data>
   <data name="CopyInUse" xml:space="preserve"><value>コピーで質問に回答中です。回答が終わってから破棄してください。</value></data>
   <data name="SlashHintRunCopy" xml:space="preserve"><value>リポジトリのコピーでエージェントを実行し、変更ごとに残すか破棄するかを選ぶ (`/run-copy &lt;質問&gt;`)</value></data>
-  <data name="RunCopyNotHereYet" xml:space="preserve"><value>このコマンドはこのエディターではまだ使えません。Visual Studio または VS Code から使ってください。</value></data>
   <data name="CopyStartTitle" xml:space="preserve"><value>リポジトリのコピーで作業する</value></data>
   <data name="CopyStartLead" xml:space="preserve"><value>エージェントの作業中もあなたのファイルはそのままです</value></data>
   <data name="CopyStartOfLabel" xml:space="preserve"><value>コピー元</value></data>
@@ -2414,6 +2413,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="CopyStartMine" xml:space="preserve"><value>自分のファイルで作業する</value></data>
   <data name="CopyReviewTitle" xml:space="preserve"><value>変更を確認し、一つずつ残すか破棄するかを選んでください</value></data>
   <data name="CopyReviewCount" xml:space="preserve"><value>ファイル {0} 件 · 変更 {1} 件 · 残す {2} 件</value></data>
+  <data name="CopyReviewAllTitle" xml:space="preserve"><value>実行がコピーに加えた変更を確認してください</value></data>
+  <data name="CopyReviewAllCount" xml:space="preserve"><value>ファイル {0} 件 · 変更 {1} 件</value></data>
   <data name="CopyReviewFileKept" xml:space="preserve"><value>{1} 件中 {0} 件を残す</value></data>
   <data name="CopyReviewNewFile" xml:space="preserve"><value>新規ファイル</value></data>
   <data name="CopyReviewDeletedFile" xml:space="preserve"><value>削除</value></data>

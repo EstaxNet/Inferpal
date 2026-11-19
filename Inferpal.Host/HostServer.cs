@@ -367,13 +367,13 @@ internal sealed partial class HostServer : IDisposable
             // fails is said in the review, never thrown over the turn's answer.
             if (copy is not null)
             {
-                try { review = CopyReviewDto.Of(await copy.ReviewAsync(CancellationToken.None)); }
+                try { review = CopyReviewDto.Of(await copy.ReviewAsync(CancellationToken.None), copy.Inside); }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     Diagnostics.Swallow("HostServer.CopyReview", ex);
                     // Its card still offers the discard: the copy is held, and nothing else reaches it.
                     review = CopyReviewDto.Of(new Services.Execution.CopyReview(0, copy.Copy.Branch, [],
-                        "the copy's changes could not be read: " + Diagnostics.RootMessage(ex)));
+                        "the copy's changes could not be read: " + Diagnostics.RootMessage(ex)), copy.Inside);
                 }
             }
         }
@@ -438,7 +438,7 @@ internal sealed partial class HostServer : IDisposable
     [JsonRpcMethod("copy/review")]
     public Task<CopyReviewDto?> CopyReviewAsync(CancellationToken ct) =>
         WithTurnSlotAsync("copy/review", ct, async token =>
-            HeldCopy(Session()) is { } copy ? CopyReviewDto.Of(await copy.ReviewAsync(token)) : null);
+            HeldCopy(Session()) is { } copy ? CopyReviewDto.Of(await copy.ReviewAsync(token), copy.Inside) : null);
 
     /// <summary>
     /// Writes the kept hunks into the person's files, in a run of their history of its own (<c>/undo-run</c> gives them back);

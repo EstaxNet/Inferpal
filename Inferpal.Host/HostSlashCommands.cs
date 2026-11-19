@@ -637,19 +637,17 @@ internal sealed partial class HostServer
                 case SlashCommandId.Setup when s.Editor.HasEditor:
                     return new SlashCommandResult(true, null, [new SlashEffectDto("openSetup")]);
 
-                // The editor shows the start card (copy/prepare) before anything is made: the question waits for its answer.
-                // Without a question, the editor shows the review of the copy held — the way back to it after "Keep the
-                // copy for now", a reload, or an editor that closed during its run.
-                case SlashCommandId.RunCopy when s.Editor.HasEditor:
+                // The client shows the start card (copy/prepare) before anything is made — VS Code a card, an ACP client a
+                // permission request —: the question waits for its answer. Without a question, the review of the copy held —
+                // the way back to it after "Keep the copy for now", a reload, or an editor that closed during its run.
+                case SlashCommandId.RunCopy:
                 {
                     var question = RunCopyCommandHandler.Question(p.Text);
                     if (question.Length == 0
-                        && (s.Copy = await RunCopyCommandHandler.HeldOrLeftAsync(s.Copy, s.RootDir, cts.Token, ConversationStore.VsCodeSlot)) is null)
+                        && (s.Copy = await RunCopyCommandHandler.HeldOrLeftAsync(s.Copy, s.RootDir, cts.Token, CopyEditor(s))) is null)
                         return new SlashCommandResult(true, RunCopyCommandHandler.NoneOpen);
                     return new SlashCommandResult(true, null, [new SlashEffectDto("runCopy", question)]);
                 }
-                case SlashCommandId.RunCopy:
-                    return new SlashCommandResult(true, Strings.RunCopyNotHereYet);
 
                 // Not portable yet (VS-only UX or planned for a later phase): a deterministic
                 // localized answer beats falling through to the model with a raw "/command".

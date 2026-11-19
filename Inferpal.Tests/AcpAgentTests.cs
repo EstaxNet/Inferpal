@@ -21,7 +21,7 @@ namespace Inferpal.Tests;
 /// <remarks>The conformance kit and the official client measure the real binary (docs/probes/acp/); these hold the
 /// properties those runs showed, on every build.</remarks>
 [Collection(SignalCollection.Name)]
-public sealed class AcpAgentTests : IDisposable
+public sealed partial class AcpAgentTests : IDisposable
 {
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(30);
 
