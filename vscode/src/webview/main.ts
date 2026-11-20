@@ -22,7 +22,7 @@ import type {
   WvSlashCommand,
   WvTranscriptItem,
 } from '../webviewMessages';
-import { t } from './l10n';
+import { PAGE_LOCALE, t } from './l10n';
 import { renderMarkdownInto, setCopySink, stripThinkTags } from './markdown';
 import { setDiagramOpenSink } from './mermaid';
 import { renderXray, setXraySink } from './xray';
@@ -696,8 +696,8 @@ function updateGauge(promptTokens: number, lastTokens: number): void {
     : pct < 95 ? 'var(--vscode-charts-orange)'
     : 'var(--vscode-charts-red)';
   ringText.textContent = `${pct.toFixed(0)}%`;
-  ring.title = t('contextRingTip', pct.toFixed(0), contextWindow.toLocaleString())
-    + (lastTokens > 0 ? ' · ' + t('tokensInfo', lastTokens.toLocaleString()) : '');
+  ring.title = t('contextRingTip', pct.toFixed(0), contextWindow.toLocaleString(PAGE_LOCALE))
+    + (lastTokens > 0 ? ' · ' + t('tokensInfo', lastTokens.toLocaleString(PAGE_LOCALE)) : '');
   ring.setAttribute('aria-label', ring.title);
   ring.hidden = false;
 }
@@ -2533,6 +2533,10 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
       more.textContent = '  ' + card.more;
       preview.appendChild(more);
     }
+  } else if (facts.length > 0) {
+    // The facts are the card (a database's tables asked for, no query to show): its raw text says them again, in the
+    // tool's own words, under the rows that already say them.
+    preview = document.createElement('div');
   } else {
     preview = renderApprovalMessage(card ? card.message : message);
   }

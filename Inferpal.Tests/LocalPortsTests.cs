@@ -76,4 +76,15 @@ public sealed class LocalPortsTests
         Assert.False(LocalPorts.Served([new Listener(10, T.AddMinutes(1))], [5], Tree));   // the socket predates process 10
         Assert.True(LocalPorts.Served([new Listener(10, T.AddMinutes(5))], [5], Tree));    // reference arm
     }
+
+    /// <summary>Windows dates a socket to the second, a process to the tick: a server listening within its first second
+    /// (a socket at hh:mm:25, its process at hh:mm:25.84) owns its socket. A time given with its fraction keeps no slack.</summary>
+    [Fact]
+    public void ASocketDatedToTheSecond_BelongsToTheProcessThatStartedWithinIt()
+    {
+        var tree = new Dictionary<int, ProcessEntry>(Tree) { [10] = new(5, T.AddMinutes(2).AddMilliseconds(840)) };
+        Assert.True(LocalPorts.Served([new Listener(10, T.AddMinutes(2))], [5], tree));
+        Assert.False(LocalPorts.Served([new Listener(10, T.AddMinutes(2).AddSeconds(-1))], [5], tree));   // a second earlier: another's
+        Assert.False(LocalPorts.Served([new Listener(10, T.AddMinutes(2).AddMilliseconds(100))], [5], tree));   // exact, and before it
+    }
 }

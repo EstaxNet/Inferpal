@@ -30,9 +30,10 @@ internal static class ToolHints
     /// <summary>The block's heading.</summary>
     public const string Header = "## Tool hint";
 
-    /// <summary>The repeated measure, for a question that asks for speed.</summary>
+    /// <summary>The repeated measure, for a question that asks for speed or for how long a program takes.</summary>
     internal static readonly string Measure =
-        $"To compare the program's speed before and after a change, run it with run_command's `repeat` parameter "
+        $"To measure how long the program takes, or compare its speed before and after a change, run it with "
+        + $"run_command's `repeat` parameter "
         + $"({RepeatedRun.MinRepeat} to {RepeatedRun.MaxRepeat} runs after a warm-up): it reports the median and the "
         + "spread of the runs. One run alone is noise.";
 
@@ -57,6 +58,24 @@ internal static class ToolHints
         + @"|szybc|\bwoln|przyspiesz|optymaliz"
         + @"|更快|加快|加速|慢|优化|性能",
         Options, RegexBudget.Default);
+
+    /// <summary>Asks how long a program takes, in the ten languages: a duration to measure, not only a speed to gain.
+    /// ⚠ Never "runtime" or "Laufzeit" alone (a runtime error), "measure" without time (a panel's width), "time it" (every
+    /// time it crashes), "response time" (a timeout to set) or a project named Benchmark. Read across line breaks: a
+    /// pasted question breaks lines anywhere.</summary>
+    private static readonly Regex Duration = new(
+        @"\bhow long (does|do|did|will|would)\b.{0,60}\btake|\bhow long it takes|\bhow much time\b|\bhow fast (does|do|is|will)\b"
+        + @"|\bbenchmark (it|this|that|the|my|our)\b|\b(execution|running) time\b|\bmeasur\w*\b.{0,30}\b(time|duration|how long|how fast)\b"
+        + @"|combien (de temps|dure)|temps d.ex[ée]cution|dur[ée]e d.ex[ée]cution|chronom[eè]tr|mesur\w*\b.{0,30}\b(temps|dur[ée]e)\b"
+        + @"|wie (lange|viel zeit)|ausf[üu]hrungszeit|zeit (messen|stoppen)|dauer messen"
+        + @"|cu[aá]nto (tarda|tiempo|dura)|tiempo de ejecuci[oó]n|medir el tiempo"
+        + @"|quanto (tempo|dura|ci mette)|tempo di esecuzione|misura\w*\b.{0,20}\btempo\b"
+        + @"|сколько времени|как долго|время выполнения|замер\w* врем"
+        + @"|(どのくらい|どれくらい|どれだけ)(の)?時間|実行時間|所要時間|時間を(計|測)"
+        + @"|얼마나 걸|실행 시간|소요 시간|시간을 측정"
+        + @"|ile czasu|jak d[łl]ugo|czas wykonania|zmierz czas"
+        + @"|多长时间|多久|耗时|执行时间|运行时间|测量时间",
+        Options | RegexOptions.Singleline, RegexBudget.Default);
 
     /// <summary>Errors or warnings: what a log filter by level selects.</summary>
     private static readonly Regex Errors = new(
@@ -98,7 +117,8 @@ internal static class ToolHints
         var lines = new List<string>(2);
         try
         {
-            if (RegexBudget.IsMatch(Speed, question) && offered("run_command")) lines.Add(Measure);
+            if ((RegexBudget.IsMatch(Speed, question) || RegexBudget.IsMatch(Duration, question)) && offered("run_command"))
+                lines.Add(Measure);
             if (RegexBudget.IsMatch(Errors, question) && RegexBudget.IsMatch(LogOrTime, question) && offered("read_file"))
                 lines.Add(LogFilter);
         }

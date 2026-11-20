@@ -39,6 +39,32 @@ public class ToolHintsTests
     public void AQuestionForSpeed_CarriesTheMeasure(string question) =>
         Assert.Equal(ToolHints.Header + "\n\n" + ToolHints.Measure, ToolHints.For(question, All));
 
+    /// <summary>A duration to measure, not only a speed to gain: without the hint, the model times the program once, by
+    /// hand.</summary>
+    [Theory]
+    [InlineData("How long does the nightly job in OrderLoop take to run? Measure it reliably.")]
+    [InlineData("Benchmark the export.")]
+    [InlineData("Measure the execution time of Report.")]
+    [InlineData("Combien de temps prend le job de nuit ?")]
+    [InlineData("Mesure le temps d'exécution de Report.")]
+    [InlineData("Wie lange braucht der Export?")]
+    [InlineData("¿Cuánto tarda el informe?")]
+    [InlineData("Quanto tempo ci vuole per il report?")]
+    [InlineData("Сколько времени занимает отчёт?")]
+    [InlineData("このレポートの実行時間を測って。")]
+    [InlineData("보고서 실행 시간을 측정해 줘.")]
+    [InlineData("Ile czasu trwa raport?")]
+    [InlineData("How fast does the export run?")]
+    [InlineData("Combien dure l'export ?")]
+    [InlineData("¿Cuánto dura el informe?")]
+    [InlineData("Quanto dura l'export?")]
+    [InlineData("Wie viel Zeit braucht der Export?")]
+    [InlineData("この処理はどれだけ時間がかかる？")]
+    [InlineData("How long does the nightly job\ntake to run?")]                // a pasted question breaks lines anywhere
+    [InlineData("这个报告运行时间是多少？")]
+    public void AQuestionForADuration_CarriesTheMeasure(string question) =>
+        Assert.Equal(ToolHints.Header + "\n\n" + ToolHints.Measure, ToolHints.For(question, All));
+
     [Theory]
     [InlineData("Quelles erreurs depuis 10 h 30 ?")]
     [InlineData("Y a-t-il eu des erreurs dans app.log depuis 10h30 ?")]
@@ -62,6 +88,12 @@ public class ToolHintsTests
     [InlineData("Implement optimistic concurrency on Order.")]
     [InlineData("Cette méthode est trop longue, découpe-la.")]
     [InlineData("Add a keyboard accelerator to the Save button.")]
+    [InlineData("Fix the runtime error in Report.")]                      // the runtime, not a duration
+    [InlineData("Measure the width of the panel.")]                       // a measure, no time
+    [InlineData("Behebe den Laufzeitfehler.")]
+    [InlineData("Every time it starts, show the splash screen.")]          // "time it", no measure
+    [InlineData("Fix the Benchmark project's build.")]                     // a project's name
+    [InlineData("Return a 504 when the response time exceeds 5 s.")]      // a timeout to set
     [InlineData("このプログラムのエラーを直して。")]                       // ログ inside プログラム
     [InlineData("프로그램 오류를 고쳐 줘.")]                               // 로그 inside 프로그램
     [InlineData("Ошибка в диалоге настроек.")]                            // лог inside диалог

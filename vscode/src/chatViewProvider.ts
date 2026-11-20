@@ -6,7 +6,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import { droppedFileLimit } from './droppedFiles';
-import { t } from './i18n';
+import { t, uiLocale } from './i18n';
 import type { CancellationToken } from 'vscode-jsonrpc';
 import { HostClient } from './hostClient';
 import { ApprovalDiffContent } from './approvalDiffContent';
@@ -2293,7 +2293,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   /** "big.cs (first 60,000 of 183,402 characters)", in the interface language. */
   private static cutLabel(name: string, capped: CappedText): string {
-    const n = (value: number): string => value.toLocaleString(vscode.env.language);
+    const n = (value: number): string => value.toLocaleString(uiLocale());
     return t('{0} (first {1} of {2} characters)', name, n(capped.shown), n(capped.total));
   }
 
@@ -5311,7 +5311,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private static now(): string {
-    return new Date().toLocaleTimeString(vscode.env.language, { hour: '2-digit', minute: '2-digit' });
+    return new Date().toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' });
   }
 
   /** Localized strings injected into the webview (window.__l10n). Templates keep their

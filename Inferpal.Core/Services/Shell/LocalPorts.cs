@@ -56,9 +56,13 @@ internal static class LocalPorts
         listeners.Count > 0 && listeners.All(l => l.Pid > 0 && Owns(l, processes) && Descends(l.Pid, roots, processes));
 
     /// <summary>Whether the process now under the listener's id existed when the socket was created.</summary>
+    /// <remarks>⚠ Windows gives a socket's creation to the second, a process's start to the tick: a server that listens
+    /// within its first second reads as created before it started. A time cut to the second holds for its whole second;
+    /// a time with its fraction holds as given — the slack never reaches a process the guard would otherwise refuse.</remarks>
     private static bool Owns(Listener listener, IReadOnlyDictionary<int, ProcessEntry> processes) =>
         listener.Created is not { } created || !processes.TryGetValue(listener.Pid, out var owner)
-        || owner.Started is not { } started || started <= created;
+        || owner.Started is not { } started
+        || started <= (created.Ticks % TimeSpan.TicksPerSecond == 0 ? created.AddSeconds(1).AddTicks(-1) : created);
 
     /// <summary>Whether <paramref name="pid"/> is one of the <paramref name="roots"/> or under one, stepping only to a parent
     /// the list holds and that started before its child.</summary>

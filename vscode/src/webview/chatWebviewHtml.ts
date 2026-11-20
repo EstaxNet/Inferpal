@@ -3,7 +3,7 @@
 // were 150 lines of the class.
 import * as crypto from 'crypto';
 import * as vscode from 'vscode';
-import { t } from '../i18n';
+import { t, uiLocale } from '../i18n';
 
 /** Localized strings injected into the chat webview as `window.__l10n`. */
 export function webviewStrings(): Record<string, string> {
@@ -141,8 +141,10 @@ export function renderChatHtml(webview: vscode.Webview, extensionUri: vscode.Uri
   // </script> inside a translation would close the tag early — escape all '<'.
   const l10n = JSON.stringify(webviewStrings()).replace(/</g, '\\u003c');
   // CSP: no inline scripts except the nonce'd l10n bootstrap; assets restricted to media/.
+  // The page's language is the interface's: the webview writes its numbers in it (toLocaleString), as the words.
+  const lang = uiLocale().replace(/[^A-Za-z0-9-]/g, '') || 'en';
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${lang}">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy"

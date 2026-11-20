@@ -2,7 +2,7 @@
 // State lives host-side — this only renders the pushed panel model; expansion state
 // survives toggle-driven re-renders.
 import type { XRayPanel } from '../protocol';
-import { t } from './l10n';
+import { PAGE_LOCALE, t } from './l10n';
 import { setIcon } from './icons';
 
 const xrayEl = document.createElement('div');
@@ -24,7 +24,7 @@ export function renderXray(panel: XRayPanel): void {
   header.className = 'xray-header';
   const title = document.createElement('span');
   title.className = 'xray-title';
-  setIcon(title, 'xray', t('xrayTitle', panel.totalTokens.toLocaleString()), 14);
+  setIcon(title, 'xray', t('xrayTitle', panel.totalTokens.toLocaleString(PAGE_LOCALE)), 14);
   const copyBtn = document.createElement('button');
   copyBtn.textContent = t('xrayCopyPrompt');
   copyBtn.title = t('xrayCopyPromptTitle');
@@ -58,7 +58,7 @@ export function renderXray(panel: XRayPanel): void {
     label.textContent = s.label;
     const tokens = document.createElement('span');
     tokens.className = 'xray-tokens';
-    tokens.textContent = '~' + s.tokens.toLocaleString();
+    tokens.textContent = '~' + s.tokens.toLocaleString(PAGE_LOCALE);
     const chevron = document.createElement('button');
     chevron.className = 'xray-chevron';
     setIcon(chevron, expanded.has(s.id) ? 'chevronDown' : 'chevronRight', undefined, 13);
@@ -101,8 +101,8 @@ export function renderXray(panel: XRayPanel): void {
     footer.appendChild(warn);
   }
   const info = document.createElement('div');
-  info.textContent = t('xrayHistory', panel.historyTokens.toLocaleString())
-    + (panel.toolTokens > 0 ? ' · ' + t('xrayTools', panel.toolTokens.toLocaleString()) : '')
+  info.textContent = t('xrayHistory', panel.historyTokens.toLocaleString(PAGE_LOCALE))
+    + (panel.toolTokens > 0 ? ' · ' + t('xrayTools', panel.toolTokens.toLocaleString(PAGE_LOCALE)) : '')
     + (panel.contextWindow > 0 ? ' · ' + t('xrayWindow', panel.fillPercent.toFixed(0)) : '');
   footer.appendChild(info);
   if (panel.toolsOnDemand) {

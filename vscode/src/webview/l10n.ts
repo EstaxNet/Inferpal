@@ -17,3 +17,15 @@ export function fill(text: string, ...args: (string | number)[]): string {
   }
   return text;
 }
+
+/** The interface's language, as the extension wrote it on the page (`<html lang>`): numbers are written in it, as the
+ *  words are. Without it, toLocaleString() follows the browser's own locale — "32,664" under French words. A tag the page
+ *  could not use as a locale is dropped: toLocaleString would throw on it. */
+export const PAGE_LOCALE: string | undefined = (() => {
+  const lang = document.documentElement.lang;
+  try {
+    return lang ? Intl.getCanonicalLocales(lang)[0] : undefined;
+  } catch {
+    return undefined;
+  }
+})();

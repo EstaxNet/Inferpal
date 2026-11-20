@@ -37,6 +37,21 @@ export function setLanguage(language: string | undefined, extensionUri: vscode.U
   return true;
 }
 
+/** The language the interface speaks — the words' own: Inferpal's choice when its bundle loaded, else VS Code's. Numbers and
+ * times are written in it, beside the words; without it, French words carry "32,664". ⚠ A code with no bundle leaves the
+ * words in VS Code's language, so the numbers follow them; a code that is no locale tag ("fr_FR") would make
+ * toLocaleString throw, so it is never returned. */
+export function uiLocale(): string {
+  if (current && bundle !== undefined) {
+    try {
+      return Intl.getCanonicalLocales(current)[0] ?? vscode.env.language;
+    } catch {
+      // Not a locale tag: the editor's language, as the words would fall back to.
+    }
+  }
+  return vscode.env.language;
+}
+
 /** Same contract as vscode.l10n.t: the English source string is the key, {0}-style arguments. */
 export function t(message: string, ...args: Array<string | number | boolean>): string {
   if (bundle === undefined) {
