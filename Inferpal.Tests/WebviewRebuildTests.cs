@@ -42,7 +42,8 @@ public class WebviewRebuildTests
         var path = Path.Combine(RepoRoot(), "vscode", "src",
                                 relative.Replace('/', Path.DirectorySeparatorChar));
         Assert.True(File.Exists(path), $"vscode/src/{relative} a disparu.");
-        return SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(path));
+        // Line endings folded: a Windows checkout (CI) has the sources in CRLF, and a test may cut on "\n  }\n".
+        return SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(path)).Replace("\r\n", "\n");
     }
 
     // The settings panel sends back the WHOLE object it opened: without that starting JSON the host

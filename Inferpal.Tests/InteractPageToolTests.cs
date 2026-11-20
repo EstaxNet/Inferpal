@@ -252,6 +252,14 @@ public sealed class InteractPageToolTests : IDisposable
         </script></body></html>
         """;
 
+    /// <summary>A page whose button keeps its script busy for three seconds: slow, not stuck.</summary>
+    private const string Busy = """
+        <!doctype html><html><head><title>Busy</title></head><body>
+        <button id="work" onclick="setTimeout(() => { const end = Date.now() + 3000; while (Date.now() < end) {} document.title = 'Done'; }, 0)">Work</button>
+        <p id="state">Ready</p>
+        </body></html>
+        """;
+
     /// <summary>The tool's result, or <c>null</c> when no Chromium browser starts here (the test is then undecided).</summary>
     private static async Task<string?> Played(InteractPageTool tool, object args)
     {
@@ -294,6 +302,20 @@ public sealed class InteractPageToolTests : IDisposable
         var image = Assert.Single(images.Take());
         Assert.Equal(PageSession.Width, image.Width);
         Assert.Equal(PageSession.Height, image.Height);
+    }
+
+    /// <summary>A page whose script is busy a few seconds (a machine under load runs it as late) is slow, not looping: it is
+    /// kept, with the state the calls brought it to, for the next call.</summary>
+    [Fact]
+    public async Task APageBusyForAFewSeconds_IsKeptForTheNextCall()
+    {
+        File.WriteAllText(Path.Combine(_root, "busy.html"), Busy);
+        var tool = Tool(() => "run-1");
+        var said = await Played(tool, new { path = "busy.html", steps = new object[] { new { action = "click", selector = "#work" } } });
+        if (said is null) return;
+
+        Assert.DoesNotContain("stopped answering", said, StringComparison.Ordinal);
+        Assert.Contains("1. wait_for: done", await Call(tool, new { steps = new object[] { new { action = "wait_for", text = "Ready", timeout_ms = 1000 } } }));
     }
 
     [Fact]

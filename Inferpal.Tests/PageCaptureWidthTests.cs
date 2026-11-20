@@ -32,7 +32,7 @@ public sealed class PageCaptureWidthTests : IDisposable
         // product hands over to the next one (ViewPageToolTests holds that hand-over).
         foreach (var browser in PageCapture.FindAll().Where(b => b.Engine == CaptureEngine.Chromium))
         {
-            var (png, _) = await PageCapture.CaptureAsync(browser, pages.UrlOf("page.html"), width, CancellationToken.None);
+            var (png, _, _) = await PageCapture.CaptureAsync(browser, pages.UrlOf("page.html"), width, CancellationToken.None);
             if (png is null) continue;
             var image = StbImageSharp.ImageResult.FromMemory(png, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
             Assert.Equal(width, image.Width);
@@ -47,6 +47,51 @@ public sealed class PageCaptureWidthTests : IDisposable
     {
         if (await PixelAtAsync(ViewPageTool.DefaultNarrow) is not { } phone) return;   // undecided: no Chromium browser starts here
         Assert.Equal(((byte)0xff, (byte)0, (byte)0), phone);
+    }
+
+    [Fact]
+    public void ABrowserWhosePortDidNotOpen_IsCapturedFromItsCommandLine_ForAWhile_AndDrivenWhenItOpens()
+    {
+        // A busy machine is late for a while; a policy that turns the protocol off never opens it. A key of this test's own.
+        const string browser = "late-browser-of-this-test";
+        var at = new DateTime(2026, 11, 20, 12, 0, 0, DateTimeKind.Utc);
+        ChromiumDevTools.PortTimedOut(browser, at);
+        Assert.True(ChromiumDevTools.NoProtocol(browser, at.AddMinutes(1)));
+        Assert.False(ChromiumDevTools.NoProtocol(browser, at + ChromiumDevTools.NoProtocolFor));   // driven again afterwards
+        ChromiumDevTools.PortTimedOut(browser, at);
+        ChromiumDevTools.PortOpened(browser);
+        Assert.False(ChromiumDevTools.NoProtocol(browser, at.AddMinutes(1)));                       // a port that opens clears it
+    }
+
+    [Fact]
+    public async Task APhoneCapture_ThatCannotBeLaidOutNarrow_SaysSo()
+    {
+        File.WriteAllText(Path.Combine(_dir.FullName, "page.html"), Page);
+        using var pages = WorkspacePages.Start(_dir.FullName);
+        foreach (var found in PageCapture.FindAll().Where(b => b.Engine == CaptureEngine.Chromium))
+        {
+            // The same browser under a path of its own: the protocol memory the other captures read is not touched.
+            var browser = found with { Executable = Path.Combine(Path.GetDirectoryName(found.Executable)!, ".", Path.GetFileName(found.Executable)) };
+            ChromiumDevTools.PortTimedOut(browser.Executable);
+            try
+            {
+                var (narrow, _, note) = await PageCapture.CaptureAsync(browser, pages.UrlOf("page.html"), ViewPageTool.DefaultNarrow, CancellationToken.None);
+                if (narrow is null) continue;   // this one does not start here: the next is tried
+                var image = StbImageSharp.ImageResult.FromMemory(narrow, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
+                var centre = (image.Height / 2 * image.Width + image.Width / 2) * 4;
+                // What the note says is what the picture shows: the wide layout (blue), cut at the width asked.
+                Assert.Equal(((byte)0, (byte)0, (byte)0xff), (image.Data[centre], image.Data[centre + 1], image.Data[centre + 2]));
+                Assert.Contains($"at least about {PageCapture.CommandLineNarrowest} px wide", note);
+                var (wide, _, wideNote) = await PageCapture.CaptureAsync(browser, pages.UrlOf("page.html"), ViewPageTool.DefaultWide, CancellationToken.None);
+                if (wide is not null) Assert.Null(wideNote);   // reference arm: a width the command line lays out as asked
+                return;
+            }
+            finally
+            {
+                ChromiumDevTools.PortOpened(browser.Executable);
+            }
+        }
+        // Undecided: no Chromium browser starts here.
     }
 
     [Fact]

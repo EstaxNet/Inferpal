@@ -254,8 +254,8 @@ public sealed class ViewPageToolTests : IDisposable
 
     private static async Task CapturesAsExpected(CaptureBrowser browser, string url, bool mustStart)
     {
-        var (wide, whyWide) = await PageCapture.CaptureAsync(browser, url, 1280, default);
-        var (narrow, whyNarrow) = await PageCapture.CaptureAsync(browser, url, 390, default);
+        var (wide, whyWide, _) = await PageCapture.CaptureAsync(browser, url, 1280, default);
+        var (narrow, whyNarrow, _) = await PageCapture.CaptureAsync(browser, url, 390, default);
         if (!mustStart && wide is null && narrow is null) return;
         Assert.True(wide is not null, $"{browser.Name} at 1280: {whyWide}");
         Assert.True(narrow is not null, $"{browser.Name} at 390: {whyNarrow}");

@@ -14,8 +14,9 @@ namespace Inferpal.Services.Documents;
 /// phone's own breakage never shown. The protocol's <c>Emulation.setDeviceMetricsOverride</c> lays the page out at the width
 /// asked, as a browser window that wide would (not a phone's zoomed-out view of a page with no viewport meta tag, which
 /// hides what overflows). The page is given the command line's time: <see cref="SettleMilliseconds"/> of virtual time that
-/// waits for its requests. A browser whose protocol is turned off (a machine's policy) is remembered, and captured from the
-/// command line from then on.
+/// waits for its requests. A browser whose port does not open in time (a machine's policy turns the protocol off, or the
+/// machine is busy) is captured from the command line for <see cref="NoProtocolFor"/>, then driven again: a busy stretch
+/// does not lay every later phone capture out wide, and a policy costs one wait each time it is tried.
 /// </remarks>
 internal static class ChromiumDevTools
 {
@@ -24,11 +25,25 @@ internal static class ChromiumDevTools
 
     /// <summary>The longest wait for the browser to open its DevTools port before a capture: a policy that turns it off
     /// never opens it, and the capture goes on from the command line.</summary>
-    internal static readonly TimeSpan CapturePortWait = TimeSpan.FromSeconds(8);
+    internal static readonly TimeSpan CapturePortWait = TimeSpan.FromSeconds(15);
 
-    /// <summary>The browsers whose DevTools port did not open in time while they ran, in this process: captured from the
-    /// command line. Only the capture reads it — a browser that was slow once is still driven by <c>interact_page</c>.</summary>
-    private static readonly ConcurrentDictionary<string, bool> NoProtocol = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>When each browser's DevTools port last did not open in time, in this process: for
+    /// <see cref="NoProtocolFor"/> after it, the browser is captured from the command line. Only the capture reads it — a
+    /// browser that was slow is still driven by <c>interact_page</c>, and its port opening clears the time.</summary>
+    private static readonly ConcurrentDictionary<string, DateTime> PortTimeouts = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>How long a browser whose port did not open is captured from the command line before it is driven again.</summary>
+    internal static readonly TimeSpan NoProtocolFor = TimeSpan.FromMinutes(10);
+
+    /// <summary>Whether <paramref name="executable"/> is captured from the command line now (<see cref="PortTimeouts"/>).</summary>
+    internal static bool NoProtocol(string executable, DateTime? now = null) =>
+        PortTimeouts.TryGetValue(executable, out var at) && (now ?? DateTime.UtcNow) - at < NoProtocolFor;
+
+    /// <summary><paramref name="executable"/>'s port did not open in time.</summary>
+    internal static void PortTimedOut(string executable, DateTime? now = null) => PortTimeouts[executable] = now ?? DateTime.UtcNow;
+
+    /// <summary><paramref name="executable"/>'s port opened: its protocol answers, whatever came before.</summary>
+    internal static void PortOpened(string executable) => PortTimeouts.TryRemove(executable, out _);
 
     /// <summary>
     /// The page at <paramref name="url"/> as a PNG of <paramref name="width"/> × <paramref name="height"/>, or <c>null</c> with
@@ -39,15 +54,16 @@ internal static class ChromiumDevTools
                                                                         string url, int width, int height, TimeSpan budget,
                                                                         CancellationToken ct)
     {
-        if (NoProtocol.ContainsKey(executable)) return (null, "its DevTools port did not open earlier in this session");
+        if (NoProtocol(executable)) return (null, "its DevTools port did not open, a few minutes ago");
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(budget);
         try
         {
             var (browser, why, portTimedOut) = await LaunchAsync(executable, flags, profile, width, height, CapturePortWait,
                                                                  ["Emulation.virtualTimeBudgetExpired"], null, deadline.Token).ConfigureAwait(false);
-            if (portTimedOut) NoProtocol[executable] = true;
+            if (portTimedOut) PortTimedOut(executable);
             if (browser is null) return (null, why);
+            PortOpened(executable);
             using (browser)
             {
                 var page = browser.Page;

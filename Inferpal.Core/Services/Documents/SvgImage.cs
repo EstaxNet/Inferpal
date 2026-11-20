@@ -155,7 +155,7 @@ internal static class SvgImage
                 byte[]? png;
                 string? why;
                 // A browser that cannot start (blocked, removed since it was found) is one failure: the next is tried.
-                try { (png, why) = await PageCapture.CaptureAsync(browser, pages.UrlOf("page.html"), width, ct, height).ConfigureAwait(false); }
+                try { (png, why, _) = await PageCapture.CaptureAsync(browser, pages.UrlOf("page.html"), width, ct, height).ConfigureAwait(false); }
                 catch (Exception ex) when (ex is not OperationCanceledException) { (png, why) = (null, browser.Name + ": " + ex.Message); }
                 if (png is not null)
                     return IsBlank(png) ? (null, 0, 0, "the drawing shows nothing") : (png, width, height, null);

@@ -160,22 +160,25 @@ internal sealed class ViewPageTool : ITool
     {
         var taken = new List<string>();
         var failed = new List<string>();
+        var notes = new List<string>();
         var stem = Path.GetFileNameWithoutExtension(new Uri(target).Segments.LastOrDefault()?.Trim('/') is { Length: > 0 } s ? s : "page");
         var next = 0;
         CaptureBrowser? browser = null;
         foreach (var width in widths)
         {
             byte[]? png = null;
+            string? note = null;
             while (png is null && next < browsers.Count)
             {
                 browser = browsers[next];
-                (png, var why) = await PageCapture.CaptureAsync(browser, target, width, ct);
+                (png, var why, note) = await PageCapture.CaptureAsync(browser, target, width, ct);
                 if (png is null) { failed.Add($"by {browser.Name} at {width} px: {why}"); next++; }
             }
             if (png is null || browser is null) break;
             var read = ChatImages.Read(png, $"{stem}-{width}px.png");
             if (read.Image is not { } image) { failed.Add($"at {width} px: {read.Refusal}"); continue; }
             _images.Put(image);
+            if (note is not null) notes.Add($"At {width} px: {note}");   // said with a picture that is sent, never without
             taken.Add($"{width}×{PageCapture.HeightFor(width).ToString(CultureInfo.InvariantCulture)}");
         }
 
@@ -186,6 +189,7 @@ internal sealed class ViewPageTool : ITool
                       $"the picture{(taken.Count > 1 ? "s follow" : " follows")} this result. Only the first screen of the page " +
                       "is captured; what the page loads from anywhere but its own address (the Internet, another port of " +
                       "this machine) is missing on purpose.");
+        lines.AddRange(notes);
         lines.AddRange(failed.Select(f => $"Not captured {f}"));
         if (taken.Count == 0) lines.Add("If the page is served by an app that is starting, wait for it (run_command action='wait') and call again.");
         return string.Join("\n", lines);

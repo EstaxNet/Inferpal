@@ -19,8 +19,9 @@ public class RunCopyFrontEndTests
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "README.md")))
             dir = dir.Parent;
         Assert.NotNull(dir);
+        // Line endings folded: a Windows checkout (CI) has this file in CRLF, and the cuts below end on "\n  }\n".
         return SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
-            File.ReadAllText(Path.Combine(dir!.FullName, "vscode", "src", "chatViewProvider.ts")));
+            File.ReadAllText(Path.Combine(dir!.FullName, "vscode", "src", "chatViewProvider.ts"))).Replace("\r\n", "\n");
     }
 
     [Fact]
@@ -50,7 +51,7 @@ public class RunCopyFrontEndTests
     {
         var code = Provider();
         var main = SettingsSchemaDriftTests.NeutralizeTypeScriptComments(File.ReadAllText(Path.Combine(
-            Path.GetDirectoryName(ProviderPath())!, "webview", "main.ts")));
+            Path.GetDirectoryName(ProviderPath())!, "webview", "main.ts"))).Replace("\r\n", "\n");
         var ready = code[code.IndexOf("private async onHostReady(): Promise<void> {", StringComparison.Ordinal)..];
         ready = ready[..ready.IndexOf("host.setChatEvents(", StringComparison.Ordinal)];
 

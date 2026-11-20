@@ -126,6 +126,7 @@ internal sealed class PageSession : IDisposable
                 served?.Dispose();
                 return (null, why);
             }
+            ChromiumDevTools.PortOpened(browser.Executable);   // its protocol answers: a capture drives it again
             var session = new PageSession(driven, work, events, OriginOf(origin), subject, browser.Name, runId, served, servedRoot);
             try
             {
@@ -239,12 +240,18 @@ internal sealed class PageSession : IDisposable
         }
     }
 
-    /// <summary>Whether the page answers a script within two seconds: a page whose script loops never does.</summary>
+    /// <summary>How long the page has to answer a script before it is taken for one whose script loops.</summary>
+    /// <remarks>⚠ Seconds, not a few: a busy machine (a model answering on the same processor, a build) runs a script late,
+    /// and a page wrongly taken for looping is closed with the state the calls brought it to. A page that loops never
+    /// answers: a longer wait only delays its close.</remarks>
+    internal static readonly TimeSpan AnswerBudget = TimeSpan.FromSeconds(10);
+
+    /// <summary>Whether the page answers a script within <see cref="AnswerBudget"/>: a page whose script loops never does.</summary>
     internal async Task<bool> AnswersAsync(CancellationToken ct)
     {
         if (!Alive) return false;
         using var wait = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        wait.CancelAfter(TimeSpan.FromSeconds(2));
+        wait.CancelAfter(AnswerBudget);
         try
         {
             await _browser.Page.CallAsync("Runtime.evaluate", new { expression = "1", returnByValue = true }, wait.Token);

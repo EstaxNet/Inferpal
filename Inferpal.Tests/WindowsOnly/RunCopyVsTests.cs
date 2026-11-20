@@ -98,14 +98,17 @@ public sealed class RunCopyVsTests
         await vs.AskAsync("/run-copy Look at Pay");
         await VsWindowHarness.UntilAsync(() => Card(vs, m => m.IsCopyStart) is not null);
         await ClickAsync(Card(vs, m => m.IsCopyStart)!.CopyGoCommand);
+        // ⚠ The turn ENDED, not only its last bubble drawn: Continue and Regenerate are ignored while it still runs, and
+        // a slow machine (CI) clicks in that gap.
         await VsWindowHarness.UntilAsync(() => Card(vs, m => m.IsCopyReview) is not null
-                                               && vs.Window.Messages.Any(m => m.IsContinuable));
+                                               && vs.Window.Messages.Any(m => m.IsContinuable) && !vs.Window.IsLoading);
         Assert.Single(roots);
 
         // Continue: the next steps in the copy, under the command.
         await ClickAsync(vs.Window.Messages.Last(m => m.IsContinuable).ContinueCommand);
         await VsWindowHarness.UntilAsync(() => roots.Count == 2);
-        await VsWindowHarness.UntilAsync(() => Card(vs, m => m.IsCopyReview) is not null && vs.Window.Messages.Any(m => m.IsRegeneratable));
+        await VsWindowHarness.UntilAsync(() => Card(vs, m => m.IsCopyReview) is not null && vs.Window.Messages.Any(m => m.IsRegeneratable)
+                                               && !vs.Window.IsLoading);
         Assert.All(roots, r => Assert.False(r is null || PathComparer.SameDirectory(r, vs.Root)));
         Assert.Contains(vs.Window.Messages, m => m.Role == "user" && m.Content.StartsWith("/run-copy ", StringComparison.Ordinal)
                                                  && m.Content != "/run-copy Look at Pay");

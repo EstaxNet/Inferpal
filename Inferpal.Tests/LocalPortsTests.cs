@@ -25,10 +25,11 @@ public sealed class LocalPortsTests
             Assert.Contains(listeners, l => l.Pid == Environment.ProcessId);
 
             Assert.True(await LocalPorts.ServedByAsync(port, [Environment.ProcessId], default));
-            // An ancestor of the listener: the app under the job's shell.
+            Assert.False(await LocalPorts.ServedByAsync(port, [int.MaxValue - 7], default));   // reference arm, end to end
+            // An ancestor of the listener (the app under the job's shell), judged on the snapshot already taken: each new
+            // one is a system query, slow on a busy machine.
             if (processes.TryGetValue(Environment.ProcessId, out var self) && self.Parent > 0 && processes.ContainsKey(self.Parent))
-                Assert.True(await LocalPorts.ServedByAsync(port, [self.Parent], default));
-            Assert.False(await LocalPorts.ServedByAsync(port, [int.MaxValue - 7], default));   // reference arm
+                Assert.True(LocalPorts.Served(listeners, [self.Parent], processes));
             Assert.False(await LocalPorts.ServedByAsync(port, [], default));
         }
         finally { listener.Stop(); }
