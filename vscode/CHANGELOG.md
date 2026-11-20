@@ -3,6 +3,28 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.9.2
+
+The agent uses what it builds: it clicks through the page or the desktop app it launched, reads the data behind it, and
+can do it all on a copy of your repository.
+
+- **It uses the page and the app it builds**: it clicks, types and chooses in the page your app serves or in the
+  desktop app it launched, then captures the state reached (`interact_page`, `interact_window`), each step on the status
+  line; it saves the capture into your project on the usual write card. Using the app it started itself asks nothing.
+- **A run on a copy of your repository**: `/run-copy <question>` builds, tests and edits on a branch of its own while
+  your files stay as they are; you keep or drop each change, then apply the kept ones or discard the copy.
+- **Your development database**: found where your project declares it, read-only on PostgreSQL, SQL Server, MySQL or
+  MariaDB (`query_database`); Inferpal stores no connection string and asks before each read (*Always* for a database
+  on this machine).
+- **Excel and JSON with SQL**, **test reports** (`.trx`, JUnit), **Windows event logs** on any system, **draw.io and
+  Visio diagrams**, **7z and RAR archives**, **iPhone photos** (by the system's decoder) **and TIFF images**.
+- **Small graphics cards**: at an 8,192-token window (Ollama's setting, or reported by the server), only the tools the
+  agent uses most are offered, with your MCP servers and your own tools, so questions fit again; name a tool to keep it. LM Studio models loaded with a small window are reloaded at the one Inferpal needs.
+- **Each answer shows its speed** (`21 s · 38 tok/s`); **conditional breakpoints and tracepoints**; up to **40 steps**
+  per request.
+- **Fixed**: a page is looked at at a phone's real width; numbers in the chat follow the language chosen in Inferpal;
+  a build's `bin/` and `obj/` files are no longer listed as changed by the agent.
+
 ## 1.9.1
 
 It looks, it measures, it checks: the agent looks at the page and the app it builds, calls your API, measures before it

@@ -325,6 +325,11 @@ look at what the code produces, measure it, and read the files developers deal w
 - **Long logs, data files, archives** — `read_file` filters a log by level and time (`level`, `since`, `until`), each
   entry with its stack trace; `query_data` answers one read-only SQL query on a CSV, TSV, JSON, Excel or SQLite file
   too large to read; a zip, NuGet or tar archive is listed and read in place, never extracted.
+- **Your development database** — `query_database` finds the connection where your project declares it
+  (`appsettings.Development.json`, `.env`, an environment variable, user secrets), lists the tables, reads a table's
+  columns, keys and indexes, and runs reads on PostgreSQL, SQL Server, MySQL or MariaDB, in a transaction that keeps
+  nothing. Inferpal stores no connection string; a card asks before each read (*Always* for a database on this machine), and a server on another machine
+  is asked about before anything connects to it.
 - **Notebooks** — `edit_notebook` changes one cell, `run_notebook` runs the notebook on a copy and reads the traceback.
 - **Where a setting comes from, and why a line is there** — `msbuild_property` finds the file that sets a build
   property, so a build error that comes from a setting is fixed where the setting is defined; `git_history` reads the
@@ -341,6 +346,7 @@ look at what the code produces, measure it, and read the files developers deal w
 | Fix an error your web service returns | Start the service and call it, before and after the fix (`run_command` in the background, `http_request`) |
 | Make something faster | Measure it over several runs, before and after the change (`run_command` with `repeat`) |
 | Answer a question about a large data file | Query it with SQL instead of reading it (`query_data`) |
+| Find why a record looks wrong | Read it in your development database (`query_database`) |
 
 Every tool and its parameters: [tools.md](tools.md); every format they read: [File formats](file-formats.md).
 
@@ -491,6 +497,12 @@ a shell might read the line.
 
 Before the agent changes a file, Inferpal keeps a copy of it. So a run can be undone whole, file by file, or together
 with the conversation that led to it — and even what a command or a test run changed is put back.
+
+- **A run on a copy of your repository** — `/run-copy <question>` lets the agent build, test and edit in a copy at your
+  last commit, on a branch of its own, while your files stay as they are. When the run ends, you keep or drop each
+  change, then apply the kept ones (`/undo-run` gives them back) or discard the copy. A file you changed meanwhile is
+  left as it is and named. In Visual Studio, VS Code and ACP clients (there, the changes are applied all
+  together or not at all).
 
 ```mermaid
 %%{init: {"sequence": {"mirrorActors": false}}}%%
