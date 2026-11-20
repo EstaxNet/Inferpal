@@ -1119,15 +1119,15 @@ internal sealed partial class HostServer : IDisposable
         return new PinsResult(Services.Prompting.PinnedFilesPolicy.ParseActive(s.Config.PinnedContextFiles), notice);
     }
 
+    /// <summary>This session holds a copy of the repository (a run on a copy, kept or not reviewed yet): its record is owned by
+    /// this process, so a session closed while it held one would leave it unreachable until the process ends.</summary>
+    internal bool HoldsCopy => _session is { } s && HeldCopy(s) is not null;
+
     /// <summary>
     /// What this host runs beyond a turn — background tasks, background commands, a documentation indexing pass — as the
     /// notice the adapter shows once it has stopped the host (<see cref="StoppedWork"/>). Asked just before a restart:
     /// all three die with this process, and nothing else would say so.
     /// </summary>
-    /// <summary>This session holds a copy of the repository (a run on a copy, kept or not reviewed yet): its record is owned by
-    /// this process, so a session closed while it held one would leave it unreachable until the process ends.</summary>
-    internal bool HoldsCopy => _session is { } s && HeldCopy(s) is not null;
-
     [JsonRpcMethod("host/runningWork")]
     public RunningWorkResult RunningWork() => _session is not { } s
         ? new RunningWorkResult(null)
