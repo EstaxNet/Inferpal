@@ -758,6 +758,8 @@
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>«Всегда» открывает только этот адрес и порт, до закрытия редактора. Другой порт этого компьютера — база данных, Docker, прокси — снова запросит разрешение.</value></data>
   <data name="ApprovalActInPage" xml:space="preserve"><value>Агент хочет действовать на странице этого компьютера</value></data>
   <data name="InteractPageCard" xml:space="preserve"><value>Нажимать, вводить и выбирать в {0} (interact_page), в браузере, отключённом от сети. Этот адрес не обслуживает ни одно приложение, запущенное агентом: это может быть другое ваше приложение — блокнот, который выполняет введённое, страница администрирования.</value></data>
+  <data name="ToolStepProgress" xml:space="preserve"><value>{0} — шаг {1} из {2}: {3}</value></data>
+  <data name="ToolStepNotDone" xml:space="preserve"><value>{0} — шаг {1} из {2} не выполнен: {3}</value></data>
   <data name="ApprovalActInPageNote" xml:space="preserve"><value>«Всегда» открывает только этот адрес и порт, до закрытия редактора. Страницы приложения, которое агент запустил сам, никогда не спрашивают.</value></data>
   <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>Нажатия и ввод в {0} выполняются без карточки до закрытия редактора. Другой порт спросит снова.</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>Агент хочет отправить запрос на другой компьютер</value></data>

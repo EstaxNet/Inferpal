@@ -760,6 +760,8 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>「常に許可」はこのアドレスとポートだけを、エディターを閉じるまで開きます。このマシンの別のポート（データベース、Docker、プロキシ）は再度確認します。</value></data>
   <data name="ApprovalActInPage" xml:space="preserve"><value>エージェントがこのマシンのページで操作しようとしています</value></data>
   <data name="InteractPageCard" xml:space="preserve"><value>{0} でクリック、入力、選択を行います（interact_page）。ネットワークから切り離されたブラウザーを使います。このアドレスはエージェントが起動したアプリが提供しているものではありません。入力した内容を実行するノートブックや管理ページなど、別のアプリの可能性があります。</value></data>
+  <data name="ToolStepProgress" xml:space="preserve"><value>{0} — ステップ {1}/{2}: {3}</value></data>
+  <data name="ToolStepNotDone" xml:space="preserve"><value>{0} — ステップ {1}/{2} は未完了: {3}</value></data>
   <data name="ApprovalActInPageNote" xml:space="preserve"><value>「常に許可」はこのアドレスとポートだけを、エディターを閉じるまで開きます。エージェント自身が起動したアプリのページは確認しません。</value></data>
   <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>{0} でのクリックと入力は、エディターを閉じるまでカードなしで行われます。別のポートは再度確認します。</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>エージェントが別のマシンにリクエストを送ろうとしています</value></data>

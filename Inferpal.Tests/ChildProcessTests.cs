@@ -55,6 +55,31 @@ public class ChildProcessTests
         Assert.True(proc.HasExited);
     }
 
+    /// <summary>A caller that reports what the child does hears each line while it runs — the first before the child ends —
+    /// the last one without its line break too, and the captured output stays the same.</summary>
+    [Fact]
+    public async Task EachLineOfTheOutput_IsHeardWhileTheChildRuns()
+    {
+        var heard = new List<(string Line, TimeSpan At)>();
+        var psi = OperatingSystem.IsWindows()
+            ? new ProcessStartInfo("powershell.exe")
+              {
+                  ArgumentList = { "-NoProfile", "-NonInteractive", "-Command",
+                                   "[Console]::Out.WriteLine('one'); [Console]::Out.Flush(); Start-Sleep -Milliseconds 1500; [Console]::Out.Write('two')" },
+              }
+            : new ProcessStartInfo("/bin/sh") { ArgumentList = { "-c", "echo one; sleep 1.5; printf two" } };
+        var watch = Stopwatch.StartNew();
+        var result = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(30), CancellationToken.None,
+                                                 line => heard.Add((line, watch.Elapsed)));
+
+        Assert.Equal(["one", "two"], heard.Select(h => h.Line));
+        // Judged on the gap the child leaves between its lines, never on how fast it started: heard at the end only, both
+        // lines would come together.
+        Assert.True(heard[1].At - heard[0].At > TimeSpan.FromSeconds(1), $"the lines came {heard[1].At - heard[0].At} apart: only once the child had ended");
+        Assert.Contains("one", result.Stdout);
+        Assert.Contains("two", result.Stdout);
+    }
+
     // ── RunAsync: the two properties seven private copies did not agree on ──────────
 
     [Fact]

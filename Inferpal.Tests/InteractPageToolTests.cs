@@ -315,6 +315,25 @@ public sealed class InteractPageToolTests : IDisposable
     }
 
     [Fact]
+    public async Task EachStep_IsSaidOnTheRunsStatusLine_AsItEnds()
+    {
+        File.WriteAllText(Path.Combine(_root, "shop.html"), Shop);
+        var said = new List<string>();
+        string? report;
+        using (ToolProgress.Route(said.Add))
+            report = await Played(Tool(() => "run-1"), new { path = "shop.html", steps = new object[]
+            {
+                new { action = "click", selector = "#add-green" },
+                new { action = "click", selector = "#nothing-here" },
+            } });
+        if (report is null) return;   // undecided: no Chromium browser starts here
+
+        Assert.Equal(2, said.Count);
+        Assert.StartsWith(Localization.Strings.ToolStepProgress("interact_page", 1, 2, ""), said[0]);
+        Assert.StartsWith(Localization.Strings.ToolStepNotDone("interact_page", 2, 2, ""), said[1]);
+    }
+
+    [Fact]
     public async Task ThePage_StaysOpenForTheNextCallOfTheRun_AndAnotherRunOpensAFreshOne()
     {
         File.WriteAllText(Path.Combine(_root, "shop.html"), Shop);

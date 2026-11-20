@@ -762,6 +762,8 @@ Type `/setup` to try again.</value></data>
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>“Always” opens this address and port only, until the editor closes. Another port on this machine — a database, Docker, a proxy — asks again.</value></data>
   <data name="ApprovalActInPage" xml:space="preserve"><value>The agent wants to act in a page of this machine</value></data>
   <data name="InteractPageCard" xml:space="preserve"><value>Click, type and choose in {0} (interact_page), in a browser cut off from the network. No app the agent started serves this address: it may be another app of yours — a notebook that runs what is typed in it, an admin page.</value></data>
+  <data name="ToolStepProgress" xml:space="preserve"><value>{0} — step {1} of {2}: {3}</value></data>
+  <data name="ToolStepNotDone" xml:space="preserve"><value>{0} — step {1} of {2} not done: {3}</value></data>
   <data name="ApprovalActInPageNote" xml:space="preserve"><value>“Always” opens this address and port only, until the editor closes. The pages of an app the agent started itself never ask.</value></data>
   <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>Clicks and typing in {0} go without a card until the editor closes. Another port still asks.</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>The agent wants to send a request to another machine</value></data>

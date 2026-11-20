@@ -760,6 +760,8 @@ Geben Sie `/setup` ein, um es erneut zu versuchen.</value></data>
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>„Immer“ öffnet nur diese Adresse und diesen Port, bis der Editor geschlossen wird. Ein anderer Port dieses Rechners — eine Datenbank, Docker, ein Proxy — fragt erneut.</value></data>
   <data name="ApprovalActInPage" xml:space="preserve"><value>Der Agent möchte auf einer Seite dieses Rechners handeln</value></data>
   <data name="InteractPageCard" xml:space="preserve"><value>In {0} klicken, tippen und auswählen (interact_page), in einem vom Netzwerk getrennten Browser. Keine vom Agenten gestartete App bedient diese Adresse: Es kann eine andere Ihrer Apps sein — ein Notebook, das ausführt, was eingegeben wird, eine Admin-Seite.</value></data>
+  <data name="ToolStepProgress" xml:space="preserve"><value>{0} — Schritt {1} von {2}: {3}</value></data>
+  <data name="ToolStepNotDone" xml:space="preserve"><value>{0} — Schritt {1} von {2} nicht ausgeführt: {3}</value></data>
   <data name="ApprovalActInPageNote" xml:space="preserve"><value>„Immer“ öffnet nur diese Adresse und diesen Port, bis der Editor geschlossen wird. Seiten einer App, die der Agent selbst gestartet hat, fragen nie.</value></data>
   <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>Klicks und Eingaben in {0} erfolgen ohne Karte, bis der Editor geschlossen wird. Ein anderer Port fragt erneut.</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>Der Agent möchte eine Anfrage an einen anderen Rechner senden</value></data>

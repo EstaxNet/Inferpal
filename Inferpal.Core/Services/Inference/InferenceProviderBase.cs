@@ -669,6 +669,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         // the tool calls between them. Disposed on every exit path. Each SendChatAsync also holds its
         // own (re-entrant) lease, which is what covers the callers that never enter this loop.
         using var gpuLease = GpuScheduler.AcquireChatLease();
+        // What a tool says while it runs (each action interact_window plays) goes to this run's status line.
+        using var progress = ToolProgress.Route(onStep);
 
         var messages          = new List<ChatMessageDto>(history);
         var executions        = new List<ToolExecution>();

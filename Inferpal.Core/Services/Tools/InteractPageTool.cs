@@ -300,6 +300,8 @@ internal sealed class InteractPageTool : ITool, IDisposable
                     result = new(false, ex.Message);
                 }
                 lines.Add($"{i + 1}. {step.Action}: {(result.Done ? "done" : "NOT DONE")} — {result.Detail}");
+                // On the run's status line as it ends: the person sees the page being used, not a call that waits.
+                ToolProgress.Step(Name, i + 1, steps.Count, result.Done, result.Detail);
                 if (!result.Done)
                 {
                     // ⚠ The capture still shows the model where the page stands; it is never saved as the state asked for.

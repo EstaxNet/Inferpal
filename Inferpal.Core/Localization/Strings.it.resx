@@ -760,6 +760,8 @@ Digita `/setup` per riprovare.</value></data>
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>«Sempre» apre solo questo indirizzo e questa porta, finché l’editor non viene chiuso. Un’altra porta di questa macchina — un database, Docker, un proxy — chiede di nuovo.</value></data>
   <data name="ApprovalActInPage" xml:space="preserve"><value>L’agente vuole agire in una pagina di questa macchina</value></data>
   <data name="InteractPageCard" xml:space="preserve"><value>Fare clic, digitare e scegliere in {0} (interact_page), in un browser isolato dalla rete. Nessuna app avviata dall’agente serve questo indirizzo: può essere un’altra delle tue app — un notebook che esegue ciò che vi si digita, una pagina di amministrazione.</value></data>
+  <data name="ToolStepProgress" xml:space="preserve"><value>{0} — passaggio {1} di {2}: {3}</value></data>
+  <data name="ToolStepNotDone" xml:space="preserve"><value>{0} — passaggio {1} di {2} non eseguito: {3}</value></data>
   <data name="ApprovalActInPageNote" xml:space="preserve"><value>«Sempre» apre solo questo indirizzo e questa porta, finché l’editor non viene chiuso. Le pagine di un’app avviata dall’agente stesso non chiedono mai.</value></data>
   <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>Clic e digitazioni in {0} avvengono senza scheda finché l’editor non viene chiuso. Un’altra porta chiede di nuovo.</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>L’agente vuole inviare una richiesta a un’altra macchina</value></data>

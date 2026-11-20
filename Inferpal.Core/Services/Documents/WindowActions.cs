@@ -42,9 +42,19 @@ internal static class WindowActions
     internal static readonly string[] Actions = ["type", "select", "click", "toggle", "wait_for"];
 
     /// <summary>Plays <paramref name="steps"/> in the windows of <paramref name="rootPid"/>'s process tree, waiting up to
-    /// <paramref name="wait"/> for a first window.</summary>
-    internal static async Task<WindowActing> PlayAsync(int rootPid, IReadOnlyList<WindowStep> steps, TimeSpan wait, CancellationToken ct)
+    /// <paramref name="wait"/> for a first window; <paramref name="onStep"/> hears each step (its number from 1) as it ends.</summary>
+    internal static async Task<WindowActing> PlayAsync(int rootPid, IReadOnlyList<WindowStep> steps, TimeSpan wait, CancellationToken ct,
+                                                       Action<int, WindowStepResult>? onStep = null)
     {
+        var playing = 0;
+        void Line(string line)
+        {
+            switch (Classify(line))
+            {
+                case (Kind.Play, var n, _): playing = n; break;
+                case (Kind.Step, _, { } step) when playing > 0: onStep?.Invoke(playing, step); break;
+            }
+        }
         var dir = Directory.CreateTempSubdirectory("inferpal-act-").FullName;
         try
         {
@@ -64,7 +74,7 @@ internal static class WindowActions
                 await File.WriteAllTextAsync(script, WindowsScript, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true), ct);
                 run = await ChildProcess.RunAsync(WindowCapture.Start(Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                     "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script,
-                    "-RootPid", root, "-StepsFile", stepsFile, "-WaitSeconds", waitSeconds), budget, ct);
+                    "-RootPid", root, "-StepsFile", stepsFile, "-WaitSeconds", waitSeconds), budget, ct, Line);
             }
             else if (OperatingSystem.IsLinux())
             {
@@ -72,14 +82,14 @@ internal static class WindowActions
                     return new([], "python3 is not installed: the window's controls cannot be reached (python3, python3-gi, gir1.2-atspi-2.0)");
                 var script = Path.Combine(dir, "act.py");
                 await File.WriteAllTextAsync(script, LinuxScript, ct);
-                run = await ChildProcess.RunAsync(WindowCapture.Start(python, script, root, stepsFile, waitSeconds), budget, ct);
+                run = await ChildProcess.RunAsync(WindowCapture.Start(python, script, root, stepsFile, waitSeconds), budget, ct, Line);
             }
             else if (OperatingSystem.IsMacOS())
             {
                 var script = Path.Combine(dir, "act.js");
                 await File.WriteAllTextAsync(script, MacScript, ct);
                 run = await ChildProcess.RunAsync(WindowCapture.Start("/usr/bin/osascript", "-l", "JavaScript", script, root, stepsFile, waitSeconds),
-                                                  budget, ct);
+                                                  budget, ct, Line);
             }
             else return new([], "this system has no way to act in a window");
             return Read(run);
@@ -109,12 +119,15 @@ internal static class WindowActions
         var ended = false;
         var begun = 0;
         string? refused = null;
-        foreach (var line in run.Stdout.Split('\n').Select(l => l.Trim()))
+        foreach (var line in run.Stdout.Split('\n'))
         {
-            if (line.StartsWith("REFUSED ", StringComparison.Ordinal)) refused ??= line["REFUSED ".Length..];
-            else if (line == "END") ended = true;
-            else if (line.StartsWith("PLAY ", StringComparison.Ordinal)) begun++;
-            else if (line.StartsWith("STEP ", StringComparison.Ordinal) && StepOf(line["STEP ".Length..]) is { } step) steps.Add(step);
+            switch (Classify(line))
+            {
+                case (Kind.Refused, _, _): refused ??= line.Trim()["REFUSED ".Length..]; break;
+                case (Kind.End, _, _): ended = true; break;
+                case (Kind.Play, _, _): begun++; break;
+                case (Kind.Step, _, { } step): steps.Add(step); break;
+            }
         }
         if (refused is not null) return new(steps, refused);
         if (ended) return new(steps, null);
@@ -122,6 +135,20 @@ internal static class WindowActions
         var why = run.TimedOut ? "the steps did not finish in time and were stopped"
                 : "the steps stopped before their end" + (said.Length > 0 ? ": " + SafeTruncate.Truncate(said, 400) : "");
         return new(steps, why, MayHavePlayed: begun > steps.Count);
+    }
+
+    private enum Kind { None, Play, Step, End, Refused }
+
+    /// <summary>One line of a script's report, as both of its readers (the live one, the final one) read it.</summary>
+    private static (Kind Kind, int Play, WindowStepResult? Step) Classify(string raw)
+    {
+        var line = raw.Trim();
+        if (line == "END") return (Kind.End, 0, null);
+        if (line.StartsWith("REFUSED ", StringComparison.Ordinal)) return (Kind.Refused, 0, null);
+        if (line.StartsWith("PLAY ", StringComparison.Ordinal) && int.TryParse(line["PLAY ".Length..], NumberStyles.None, CultureInfo.InvariantCulture, out var n))
+            return (Kind.Play, n, null);
+        if (line.StartsWith("STEP ", StringComparison.Ordinal) && StepOf(line["STEP ".Length..]) is { } step) return (Kind.Step, 0, step);
+        return (Kind.None, 0, null);
     }
 
     private static WindowStepResult? StepOf(string json)
@@ -161,6 +188,8 @@ internal static class WindowActions
             return $parts -join ' '
         }
         function Say($line) { [Console]::Out.WriteLine($line); [Console]::Out.Flush() }
+        # A field's text said back at most 200 characters long: a step's line stays one a status can show.
+        function Short([string]$s) { if ($s.Length -gt 200) { return $s.Substring(0, 200) + '...' }; return $s }
         # The app's windows now, and the file dialogs among them. A window that closes while it is looked at (a splash
         # screen) is passed over.
         function Look {
@@ -294,7 +323,7 @@ internal static class WindowActions
                     if (-not $v -or $v.Current.IsReadOnly) { $done.ok = $false; $done.detail = "$(Said $el) does not take text" }
                     elseif (Bounded $v 'SetValue' @([string]$s.text)) {
                         $shown = [string]$v.Current.Value
-                        $done.detail = "typed into $(Said $el)" + $(if ($shown -cne [string]$s.text) { ', which now shows "' + (Flat $shown) + '"' } else { '' })
+                        $done.detail = "typed into $(Said $el)" + $(if ($shown -cne [string]$s.text) { ', which now shows "' + (Short (Flat $shown)) + '"' } else { '' })
                     } else { $done.detail = "typed into $(Said $el)" + $Waiting }
                 } elseif ($s.action -eq 'select') {
                     $expand = Pattern $el ([System.Windows.Automation.ExpandCollapsePattern]::Pattern)
@@ -757,7 +786,7 @@ internal static class WindowActions
                 else if (val(() => e.enabled()) === 'false') { done.ok = false; done.detail = said(e) + ' is disabled'; }
                 else if (s.action === 'type') {
                   e.value = s.text || '';
-                  done.detail = 'typed into ' + said(e) + (val(() => e.value()) === (s.text || '') ? '' : ', which now shows "' + flat(val(() => e.value())) + '"');
+                  done.detail = 'typed into ' + said(e) + (val(() => e.value()) === (s.text || '') ? '' : ', which now shows "' + flat(val(() => e.value())).slice(0, 200) + '"');
                 }
                 else if (s.action === 'select') {
                   const role = val(() => e.role());

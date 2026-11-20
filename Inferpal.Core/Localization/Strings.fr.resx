@@ -760,6 +760,8 @@ Tapez `/setup` pour réessayer.</value></data>
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>« Toujours » n’ouvre que cette adresse et ce port, jusqu’à la fermeture de l’éditeur. Un autre port de cette machine — une base, Docker, un proxy — redemande.</value></data>
   <data name="ApprovalActInPage" xml:space="preserve"><value>L’agent veut agir dans une page de cette machine</value></data>
   <data name="InteractPageCard" xml:space="preserve"><value>Cliquer, saisir et choisir dans {0} (interact_page), dans un navigateur coupé du réseau. Aucune app lancée par l’agent ne sert cette adresse : c’est peut-être une autre de vos apps — un notebook qui exécute ce qu’on y tape, une page d’administration.</value></data>
+  <data name="ToolStepProgress" xml:space="preserve"><value>{0} — étape {1} sur {2} : {3}</value></data>
+  <data name="ToolStepNotDone" xml:space="preserve"><value>{0} — étape {1} sur {2} non faite : {3}</value></data>
   <data name="ApprovalActInPageNote" xml:space="preserve"><value>« Toujours » n’ouvre que cette adresse et ce port, jusqu’à la fermeture de l’éditeur. Les pages d’une app que l’agent a lancée lui-même ne demandent jamais.</value></data>
   <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>Les clics et saisies dans {0} se font sans carte jusqu’à la fermeture de l’éditeur. Un autre port redemande.</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>L’agent veut envoyer une requête à une autre machine</value></data>

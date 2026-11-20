@@ -1151,6 +1151,14 @@ internal static class Strings
     public static string ApprovalActInPageNote => Get(nameof(ApprovalActInPageNote));
     public static string ApprovalActAlwaysTooltip(string where) => Format(Get(nameof(ApprovalActAlwaysTooltip)), where);
     public static string InteractPageCard(string where) => Format(Get(nameof(InteractPageCard)), where);
+    /// <summary>The status line while a tool plays its steps: the tool, the step, how many, what it did (said in English by
+    /// the tool).</summary>
+    public static string ToolStepProgress(string tool, int step, int of, string detail) =>
+        Format(Get(nameof(ToolStepProgress)), tool, step, of, detail);
+    /// <summary>The status line of a step a tool could not do: the tool, the step, how many, why (said in English by the
+    /// tool).</summary>
+    public static string ToolStepNotDone(string tool, int step, int of, string detail) =>
+        Format(Get(nameof(ToolStepNotDone)), tool, step, of, detail);
     public static string ApprovalReadDatabase(string name) => Format(Get(nameof(ApprovalReadDatabase)), name);
     public static string ApprovalDatabaseQuery => Get(nameof(ApprovalDatabaseQuery));
     public static string ApprovalDatabaseTables => Get(nameof(ApprovalDatabaseTables));

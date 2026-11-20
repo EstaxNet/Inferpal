@@ -1015,6 +1015,8 @@ internal sealed class AgentOrchestrator
         // background embedding loops keep the GPU busy and the cross-process FIM never yields
         // during an orchestrated (Agent mode) run. Re-entrant, so nesting under RunAgentAsync is safe.
         using var gpuLease = GpuScheduler.AcquireChatLease();
+        // What a tool says while it runs (each action interact_window plays) goes to this run's status line.
+        using var progress = ToolProgress.Route(onStep);
         // One effort for every call of the run — plan, actions, synthesis: a model that carries the effort in its system
         // message (gpt-oss, Gemma 4) rewrites the head of its prompt when it changes, and the server reads the run again.
         var runEffort = ReasoningEffortSetting.Agent(_config);

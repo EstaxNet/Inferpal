@@ -48,7 +48,12 @@ public sealed class InteractWindowToolTests : IDisposable
     private InteractWindowTool Tool(Func<IReadOnlyList<WindowStep>, WindowActing> play, IApprovalService? approval = null,
                                     WindowReading? reading = null, FileHistoryService? history = null) =>
         new(_jobs, new ToolImageInbox(), approval ?? new Rules(), () => _root, history ?? new FileHistoryService(),
-            (_, steps, _, _) => Task.FromResult(play(steps)),
+            (_, steps, _, report, _) =>
+            {
+                var acting = play(steps);
+                for (var i = 0; i < acting.Steps.Count; i++) report(i + 1, acting.Steps[i]);
+                return Task.FromResult(acting);
+            },
             (_, _, _) => Task.FromResult(reading ?? new WindowReading([new CapturedWindow("Order form", 7, Png, 1, 1, ["Window \"Order form\""])], null, [])));
 
     private static WindowActing NeverPlayed(IReadOnlyList<WindowStep> _) => throw new InvalidOperationException("never played");
@@ -101,6 +106,26 @@ public sealed class InteractWindowToolTests : IDisposable
         Assert.Contains("1. type nameBox: done — typed into nameBox", said);
         Assert.Contains("2. click Order: done — clicked Order", said);
         Assert.Contains("## Window \"Order form\" — process 7", said);   // what the steps left
+    }
+
+    [Fact]
+    public async Task EachStep_IsSaidOnTheRunsStatusLine_AsItEnds()
+    {
+        var job = LongJob();
+        var said = new List<string>();
+        var tool = Tool(_ => new([new(true, "typed into Edit #nameBox"), new(false, "Button \"Order\" is disabled")], null));
+        using (ToolProgress.Route(said.Add))
+            await Call(tool, new { job, steps = new object[]
+            {
+                new { action = "type", control = "nameBox", text = "Ada" },
+                new { action = "click", control = "Order" },
+            } });
+
+        Assert.Equal([Localization.Strings.ToolStepProgress("interact_window", 1, 2, "typed into Edit #nameBox"),
+                      Localization.Strings.ToolStepNotDone("interact_window", 2, 2, "Button \"Order\" is disabled")], said);
+        // Outside a run, nothing is said anywhere.
+        ToolProgress.Say("nobody hears this");
+        Assert.Equal(2, said.Count);
     }
 
     [Fact]

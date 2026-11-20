@@ -760,6 +760,8 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>‘항상’은 편집기를 닫을 때까지 이 주소와 포트만 엽니다. 이 컴퓨터의 다른 포트(데이터베이스, Docker, 프록시)는 다시 묻습니다.</value></data>
   <data name="ApprovalActInPage" xml:space="preserve"><value>에이전트가 이 컴퓨터의 페이지에서 작업하려고 합니다</value></data>
   <data name="InteractPageCard" xml:space="preserve"><value>{0}에서 클릭, 입력, 선택을 합니다(interact_page). 네트워크와 분리된 브라우저를 사용합니다. 이 주소는 에이전트가 시작한 앱이 제공하는 것이 아닙니다. 입력한 내용을 실행하는 노트북이나 관리 페이지 등 다른 앱일 수 있습니다.</value></data>
+  <data name="ToolStepProgress" xml:space="preserve"><value>{0} — {2}단계 중 {1}단계: {3}</value></data>
+  <data name="ToolStepNotDone" xml:space="preserve"><value>{0} — {2}단계 중 {1}단계 미완료: {3}</value></data>
   <data name="ApprovalActInPageNote" xml:space="preserve"><value>‘항상’은 편집기를 닫을 때까지 이 주소와 포트만 엽니다. 에이전트가 직접 시작한 앱의 페이지는 묻지 않습니다.</value></data>
   <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>{0}에서의 클릭과 입력은 편집기를 닫을 때까지 카드 없이 진행됩니다. 다른 포트는 다시 묻습니다.</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>에이전트가 다른 컴퓨터로 요청을 보내려고 합니다</value></data>

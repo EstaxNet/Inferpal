@@ -303,7 +303,7 @@ look at what the code produces, measure it, and read the files developers deal w
 - **The page in the state you want** — `interact_page` uses the page as you would: it clicks, types, chooses in a list
   and waits, then captures the state reached — a cart with two items, a form filled in, the confirmation after an
   order — for a README or to check what the source cannot show, and saves it where you ask (`docs/images/cart.png`) on
-  the usual write card, the picture on it. Each step it plays is in the run, and the page stays
+  the usual write card, the picture on it. Each step it plays shows on the status line as it happens, and the page stays
   open for its next call. It asks nothing in the app it started itself; another service of your machine asks once.
   Pages of this machine only, in a fresh browser that reaches nothing else.
   Needs Chrome, Edge or Chromium.

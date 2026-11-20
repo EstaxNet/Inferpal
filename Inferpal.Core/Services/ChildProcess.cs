@@ -92,8 +92,10 @@ internal static class ChildProcess
     /// reports the lines it produced. A bounded wait covers the child that refuses to die.
     /// </para>
     /// </remarks>
+    /// <param name="onStdoutLine">Each line of the standard output as it arrives, for a caller that reports what the child
+    /// does while it runs; the captured output is the same with or without it.</param>
     public static async Task<ChildProcessResult> RunAsync(
-        ProcessStartInfo psi, TimeSpan? timeout, CancellationToken ct)
+        ProcessStartInfo psi, TimeSpan? timeout, CancellationToken ct, Action<string>? onStdoutLine = null)
     {
         psi.RedirectStandardOutput = true;
         psi.RedirectStandardError  = true;
@@ -106,7 +108,7 @@ internal static class ChildProcess
         using var proc = Start(psi);
 
         // No token on the reads: the pipes end when the child does, including when we kill it.
-        var stdout = new PipeCapture(proc.StandardOutput);
+        var stdout = new PipeCapture(proc.StandardOutput, onStdoutLine);
         var stderr = new PipeCapture(proc.StandardError);
 
         try
@@ -241,7 +243,17 @@ internal static class ChildProcess
         private readonly System.Text.StringBuilder _tail = new();
         private long _dropped;
 
-        public PipeCapture(StreamReader reader) => Completion = DrainAsync(reader);
+        /// <summary>The longest line handed to the caller in one piece.</summary>
+        private const int MaxLineChars = 16 * 1024;
+
+        private readonly Action<string>? _onLine;
+        private readonly System.Text.StringBuilder _line = new();
+
+        public PipeCapture(StreamReader reader, Action<string>? onLine = null)
+        {
+            _onLine = onLine;
+            Completion = DrainAsync(reader);
+        }
 
         /// <summary>Completes at the end of the stream — which a background grandchild can delay indefinitely.</summary>
         public Task Completion { get; }
@@ -265,9 +277,29 @@ internal static class ChildProcess
             while (true)
             {
                 var n = await reader.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                if (n == 0) return;
+                if (n == 0)
+                {
+                    if (_line.Length > 0) Line(_line.ToString().TrimEnd('\r'));
+                    return;
+                }
                 lock (_gate) Append(buffer, n);
+                if (_onLine is null) continue;
+                for (var i = 0; i < n; i++)
+                {
+                    // A line too long for a status (output with no line break) is handed over in pieces, never held whole.
+                    if (buffer[i] != '\n' && _line.Length < MaxLineChars) { _line.Append(buffer[i]); continue; }
+                    if (buffer[i] != '\n') { Line(_line.ToString()); _line.Clear(); _line.Append(buffer[i]); continue; }
+                    Line(_line.ToString().TrimEnd('\r'));
+                    _line.Clear();
+                }
             }
+        }
+
+        /// <summary>A line to the caller: one that throws never stops the capture.</summary>
+        private void Line(string line)
+        {
+            try { _onLine?.Invoke(line); }
+            catch (Exception ex) { Diagnostics.Swallow("ChildProcess.OnLine", ex); }
         }
 
         private void Append(char[] buffer, int n)

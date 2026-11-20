@@ -760,6 +760,8 @@ Wpisz `/setup`, aby spróbować ponownie.</value></data>
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>„Zawsze” otwiera tylko ten adres i port, do zamknięcia edytora. Inny port tego komputera — baza danych, Docker, proxy — zapyta ponownie.</value></data>
   <data name="ApprovalActInPage" xml:space="preserve"><value>Agent chce działać na stronie tego komputera</value></data>
   <data name="InteractPageCard" xml:space="preserve"><value>Klikać, wpisywać i wybierać w {0} (interact_page), w przeglądarce odciętej od sieci. Tego adresu nie obsługuje żadna aplikacja uruchomiona przez agenta: może to być inna Twoja aplikacja — notatnik, który wykonuje to, co się w nim wpisze, strona administracyjna.</value></data>
+  <data name="ToolStepProgress" xml:space="preserve"><value>{0} — krok {1} z {2}: {3}</value></data>
+  <data name="ToolStepNotDone" xml:space="preserve"><value>{0} — krok {1} z {2} niewykonany: {3}</value></data>
   <data name="ApprovalActInPageNote" xml:space="preserve"><value>„Zawsze” otwiera tylko ten adres i port, do zamknięcia edytora. Strony aplikacji uruchomionej przez samego agenta nigdy nie pytają.</value></data>
   <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>Kliknięcia i wpisywanie w {0} odbywają się bez karty do zamknięcia edytora. Inny port zapyta ponownie.</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>Agent chce wysłać żądanie do innego komputera</value></data>

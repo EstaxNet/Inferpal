@@ -32,14 +32,14 @@ internal sealed class InteractWindowTool : ITool
     private readonly IApprovalService _approval;
     private readonly Func<string> _getWorkspaceRoot;
     private readonly FileHistoryService? _history;
-    private readonly Func<int, IReadOnlyList<WindowStep>, TimeSpan, CancellationToken, Task<WindowActing>> _play;
+    private readonly Func<int, IReadOnlyList<WindowStep>, TimeSpan, Action<int, WindowStepResult>, CancellationToken, Task<WindowActing>> _play;
     private readonly Func<int, TimeSpan, CancellationToken, Task<WindowReading>> _read;
 
     /// <param name="history">The run's history, which backs a saved picture up first; without it, <c>save_to</c> is
     /// refused.</param>
     public InteractWindowTool(BackgroundShellRegistry jobs, ToolImageInbox images, IApprovalService approval,
                               Func<string> getWorkspaceRoot, FileHistoryService? history = null,
-                              Func<int, IReadOnlyList<WindowStep>, TimeSpan, CancellationToken, Task<WindowActing>>? play = null,
+                              Func<int, IReadOnlyList<WindowStep>, TimeSpan, Action<int, WindowStepResult>, CancellationToken, Task<WindowActing>>? play = null,
                               Func<int, TimeSpan, CancellationToken, Task<WindowReading>>? read = null)
     {
         _jobs = jobs;
@@ -47,7 +47,7 @@ internal sealed class InteractWindowTool : ITool
         _approval = approval;
         _getWorkspaceRoot = getWorkspaceRoot;
         _history = history;
-        _play = play ?? WindowActions.PlayAsync;
+        _play = play ?? ((pid, steps, wait, onStep, ct) => WindowActions.PlayAsync(pid, steps, wait, ct, onStep));
         _read = read ?? WindowCapture.ReadAsync;
     }
 
@@ -128,7 +128,10 @@ internal sealed class InteractWindowTool : ITool
 
         var lines = new List<string>(notes);
         var saveName = saveTo is null ? null : Path.GetRelativePath(root, saveTo).Replace('\\', '/');
-        var acting = await _play(pid, steps!, TimeSpan.FromSeconds(wait), ct);
+        // Each step on the run's status line as it ends: the person sees the app being used, not a call that waits.
+        var acting = await _play(pid, steps!, TimeSpan.FromSeconds(wait),
+            (i, step) => ToolProgress.Step(Name, i, steps!.Count, step.Done, step.Detail),
+            ct);
         if (acting.Refusal is { } refusal && !acting.MayHavePlayed && acting.Steps.Count == 0)
         {
             lines.Add($"The steps could not be played in the windows of {job}: {refusal}.");
