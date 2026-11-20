@@ -81,6 +81,12 @@ internal static class AgentLoopPolicy
     /// mutation's own count in the call that records it, and its verbatim repeat would never stop the run.</remarks>
     private const string ReadOnlyKey = "\u0001ro\u0001";
 
+    /// <summary>Key prefix of a failed batch's retry state, in the counts — a control character no tool name holds.</summary>
+    private const string FailedKey = "\u0002failed\u0002";
+
+    /// <summary>A failed batch's retry: waiting for a batch that does its work, armed by one, used once tried again.</summary>
+    private const int Waiting = 1, Armed = 2, Used = 3;
+
     /// <summary>
     /// Records <paramref name="calls"/> in <paramref name="counts"/> and returns <c>true</c> when
     /// the batch has repeated often enough to be treated as a loop. Mutating batches abort on the
@@ -92,6 +98,15 @@ internal static class AgentLoopPolicy
     internal static bool IsLoop(Dictionary<string, int> counts, IReadOnlyList<ToolCallDto> calls)
     {
         if (Key(calls) is not { } sig) return false;
+        // ⚠ A failed batch tried again once a batch that DID its work ran since is a retry: its failed try is forgotten
+        // and the retry counted as a first occurrence — a failure often asks for a step first (the launch.json written
+        // before debug_control start, the file read before write_file). Once per batch: two failures taking turns, or a
+        // failure retried twice, are counted as ever and stop the run.
+        if (counts.GetValueOrDefault(FailedKey + sig) == Armed)
+        {
+            counts[FailedKey + sig] = Used;
+            counts[sig] = 0;
+        }
         bool readOnlyBatch = sig.StartsWith(ReadOnlyKey, StringComparison.Ordinal);
         int seen = counts[sig] = counts.GetValueOrDefault(sig) + 1;
 
@@ -108,13 +123,33 @@ internal static class AgentLoopPolicy
     /// its pass, refused one of them (<paramref name="results"/>): the refusal asks for the same edit again when the edit
     /// is meant as it is, and that repeat, stopped as a loop before it ran, would never be written.
     /// </summary>
-    /// <remarks>Never a loop for all that: within a run the guard lets an edit through once it was refused, so the repeat
+    /// <remarks>
+    /// <para>Never a loop for all that: within a run the guard lets an edit through once it was refused, so the repeat
     /// is written or refused for another reason, and a third identical batch counts as a repeat again. ⚠ Only a refusal
     /// that OFFERS the pass is forgiven: outside a run (a <c>/task</c>) the same edit is refused every time, and forgiven
-    /// it would never be counted — the task would run to its iteration limit holding the GPU.</remarks>
+    /// it would never be counted — the task would run to its iteration limit holding the GPU.</para>
+    /// <para>And records how the batch went, for <see cref="IsLoop"/>: one whose every call failed waits for a retry; one
+    /// that did its work arms the failed ones waiting. A call the person refused is no failure to retry — the same card
+    /// would come back — and arms nothing; neither does a call that is not counted (a poll, a debugger step).</para>
+    /// </remarks>
     internal static void Forgive(Dictionary<string, int> counts, IReadOnlyList<ToolCallDto> calls, IEnumerable<string> results)
     {
-        if (results.Any(SyntaxGuard.OffersPass) && Key(calls) is { } sig) counts.Remove(sig);
+        var all = results.ToList();
+        if (Key(calls) is not { } sig) return;
+        if (all.Any(SyntaxGuard.OffersPass)) counts.Remove(sig);
+        // The counted calls' outcomes only, in call order: a poll that answered beside them is no work done.
+        var outputs = calls.Zip(all).Where(p => !Advances(p.First)).Select(p => p.Second).ToList();
+        var marker = FailedKey + sig;
+        var used = counts.GetValueOrDefault(marker) == Used;
+        if (outputs.Count > 0 && outputs.All(r => ToolFailure.IsFailure(r) && !ToolFailure.IsRefusal(r)))
+        {
+            if (!used) counts[marker] = Waiting;
+            return;
+        }
+        if (!used) counts.Remove(marker);
+        if (outputs.Count == 0 || outputs.All(ToolFailure.IsFailure)) return;
+        foreach (var waiting in counts.Where(k => k.Key.StartsWith(FailedKey, StringComparison.Ordinal) && k.Value == Waiting).Select(k => k.Key).ToList())
+            counts[waiting] = Armed;
     }
 
     /// <summary>The batch's key in the counts — <c>null</c> when every call advances.</summary>

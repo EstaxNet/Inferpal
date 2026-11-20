@@ -177,6 +177,7 @@ public class DebugToolsTests
 
         Assert.Equal(0, session.Starts);          // the point: nothing ran
         Assert.Equal(Strings.DebugStartCancelled, result);
+        Assert.True(ToolFailure.IsFailure(result) && ToolFailure.IsRefusal(result));   // read as the person's refusal
         Assert.Equal(1, approval.Calls);
         Assert.Equal("debug_control", approval.LastTool);
         Assert.Equal(TestPaths.P(@"C:\ws"), approval.LastSubject);   // matchable by permission rules
@@ -209,6 +210,8 @@ public class DebugToolsTests
 
         Assert.Contains("did not start", result);
         Assert.Contains("No launch configuration", result);
+        // A failure every reader reads as one: the loop lets it be retried once the configuration is written.
+        Assert.True(ToolFailure.IsFailure(result) && !ToolFailure.IsRefusal(result));
         Assert.DoesNotContain("ran to completion", result);
     }
 

@@ -305,7 +305,7 @@ internal sealed class DebugControlTool(
         // "your breakpoint was never reached", which would send the agent hunting a bug in code that
         // never ran.
         if (result.Failure is { } failure)
-            return "The debugging session did not start. " + failure;
+            return ToolFailure.Said("The debugging session did not start. " + failure);
 
         if (result.StillRunning)
             return await WithTraceAsync(
