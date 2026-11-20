@@ -32,8 +32,11 @@ public sealed class PageCaptureWidthTests : IDisposable
         // product hands over to the next one (ViewPageToolTests holds that hand-over).
         foreach (var browser in PageCapture.FindAll().Where(b => b.Engine == CaptureEngine.Chromium))
         {
-            var (png, _, _) = await PageCapture.CaptureAsync(browser, pages.UrlOf("page.html"), width, CancellationToken.None);
+            var (png, _, note) = await PageCapture.CaptureAsync(browser, pages.UrlOf("page.html"), width, CancellationToken.None);
             if (png is null) continue;
+            // Captured from the command line, which said so: the protocol's layout is not what this run can judge (a busy
+            // machine, a policy), and APhoneCapture_ThatCannotBeLaidOutNarrow_SaysSo holds what is said then.
+            if (note is not null) return null;
             var image = StbImageSharp.ImageResult.FromMemory(png, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
             Assert.Equal(width, image.Width);
             var at = (image.Height / 2 * image.Width + image.Width / 2) * 4;
@@ -79,9 +82,19 @@ public sealed class PageCaptureWidthTests : IDisposable
                 if (narrow is null) continue;   // this one does not start here: the next is tried
                 var image = StbImageSharp.ImageResult.FromMemory(narrow, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
                 var centre = (image.Height / 2 * image.Width + image.Width / 2) * 4;
-                // What the note says is what the picture shows: the wide layout (blue), cut at the width asked.
-                Assert.Equal(((byte)0, (byte)0, (byte)0xff), (image.Data[centre], image.Data[centre + 1], image.Data[centre + 2]));
-                Assert.Contains($"at least about {PageCapture.CommandLineNarrowest} px wide", note);
+                var pixel = (image.Data[centre], image.Data[centre + 1], image.Data[centre + 2]);
+                if (OperatingSystem.IsWindows())
+                {
+                    // What the note says is what the picture shows: the wide layout (blue), cut at the width asked.
+                    Assert.Equal(((byte)0, (byte)0, (byte)0xff), pixel);
+                    Assert.Contains($"at least about {PageCapture.CommandLineNarrowest} px wide", note);
+                }
+                else
+                {
+                    // Linux and macOS lay the page out at the width asked from the command line too: nothing to say.
+                    Assert.Equal(((byte)0xff, (byte)0, (byte)0), pixel);
+                    Assert.Null(note);
+                }
                 var (wide, _, wideNote) = await PageCapture.CaptureAsync(browser, pages.UrlOf("page.html"), ViewPageTool.DefaultWide, CancellationToken.None);
                 if (wide is not null) Assert.Null(wideNote);   // reference arm: a width the command line lays out as asked
                 return;

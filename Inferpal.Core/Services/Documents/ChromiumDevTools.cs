@@ -9,7 +9,7 @@ namespace Inferpal.Services.Documents;
 /// size asked, as the DevTools' device toolbar sets it.
 /// </summary>
 /// <remarks>
-/// ⚠ A headless Chromium keeps its window at least about 520 px wide whatever <c>--window-size</c> asks: from the command
+/// ⚠ On Windows, a headless Chromium keeps its window at least about 520 px wide whatever <c>--window-size</c> asks: from the command
 /// line, a phone's 390 px is laid out at 496 and the picture cut at 390 — elements shown cut that a phone shows whole, a
 /// phone's own breakage never shown. The protocol's <c>Emulation.setDeviceMetricsOverride</c> lays the page out at the width
 /// asked, as a browser window that wide would (not a phone's zoomed-out view of a page with no viewport meta tag, which
@@ -25,7 +25,7 @@ internal static class ChromiumDevTools
 
     /// <summary>The longest wait for the browser to open its DevTools port before a capture: a policy that turns it off
     /// never opens it, and the capture goes on from the command line.</summary>
-    internal static readonly TimeSpan CapturePortWait = TimeSpan.FromSeconds(15);
+    internal static readonly TimeSpan CapturePortWait = TimeSpan.FromSeconds(8);
 
     /// <summary>When each browser's DevTools port last did not open in time, in this process: for
     /// <see cref="NoProtocolFor"/> after it, the browser is captured from the command line. Only the capture reads it — a

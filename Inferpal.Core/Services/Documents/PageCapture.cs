@@ -42,13 +42,14 @@ internal static class PageCapture
     /// <summary>The longest one capture may take — a browser's first start on a cold disk included.</summary>
     internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(60);
 
-    /// <summary>About the narrowest window a headless Chromium keeps from the command line, whatever width it is asked
-    /// (<see cref="ChromiumDevTools"/>): a capture narrower than this, taken that way, says so.</summary>
+    /// <summary>About the narrowest window a headless Chromium keeps from the command line on Windows, whatever width it is
+    /// asked (<see cref="ChromiumDevTools"/>): a capture narrower than this, taken that way, says so. Linux and macOS lay the
+    /// page out at the width asked.</summary>
     internal const int CommandLineNarrowest = 520;
 
     /// <summary>The part of <see cref="Budget"/> a Chromium capture through its DevTools protocol may take before the command
     /// line takes over with the rest.</summary>
-    private static readonly TimeSpan ProtocolBudget = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan ProtocolBudget = TimeSpan.FromSeconds(25);
 
     /// <summary>The viewport's height for a width: a phone's for a narrow one, a laptop's otherwise (the measured pair: 390 ×
     /// 844 and 1280 × 900).</summary>
@@ -134,8 +135,8 @@ internal static class PageCapture
     /// <summary>
     /// Renders <paramref name="url"/> — an http page of this machine — at <paramref name="width"/> pixels by
     /// <paramref name="browser"/>: the PNG, or why there is none (said in English, to the model), and what a PNG drawn
-    /// otherwise than asked should say (<c>Note</c>): a Chromium captured from its command line lays a page narrower than
-    /// <see cref="CommandLineNarrowest"/> out at that width, so a phone's layout may not be the one shown.
+    /// otherwise than asked should say (<c>Note</c>): on Windows, a Chromium captured from its command line lays a page
+    /// narrower than <see cref="CommandLineNarrowest"/> out at that width, so a phone's layout may not be the one shown.
     /// </summary>
     /// <remarks>
     /// ⚠ The page reaches its OWN origin and nothing else: not the Internet, and not the other ports of this machine either —
@@ -165,7 +166,7 @@ internal static class PageCapture
             {
                 case CaptureEngine.Chromium:
                     // The page laid out at the exact width asked (ChromiumDevTools); a browser whose protocol does not
-                    // answer is captured from the command line, whose window cannot be narrower than about 520 px.
+                    // answer is captured from the command line, whose window on Windows cannot be narrower than about 520 px.
                     var devTools = Directory.CreateDirectory(Path.Combine(work, "profile-devtools")).FullName;
                     // One budget for the capture: the protocol gets part of it, the command line what is left.
                     var started = Stopwatch.StartNew();
@@ -173,7 +174,7 @@ internal static class PageCapture
                                                                            url, width, viewport, ProtocolBudget, ct);
                     if (drawn is not null) return (drawn, null, null);
                     Diagnostics.Record("PageCapture.DevTools", $"{browser.Name}: {why}; captured from the command line instead");
-                    if (width < CommandLineNarrowest)
+                    if (OperatingSystem.IsWindows() && width < CommandLineNarrowest)
                         note = $"{browser.Name} could not be driven to lay the page out at {width} px ({why}), so it was " +
                                $"captured from its command line, whose window is at least about {CommandLineNarrowest} px wide: " +
                                $"the picture is cut at {width}, and what a {width} px screen lays out differently (a phone's " +
