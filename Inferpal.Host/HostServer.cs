@@ -1124,6 +1124,10 @@ internal sealed partial class HostServer : IDisposable
     /// notice the adapter shows once it has stopped the host (<see cref="StoppedWork"/>). Asked just before a restart:
     /// all three die with this process, and nothing else would say so.
     /// </summary>
+    /// <summary>This session holds a copy of the repository (a run on a copy, kept or not reviewed yet): its record is owned by
+    /// this process, so a session closed while it held one would leave it unreachable until the process ends.</summary>
+    internal bool HoldsCopy => _session is { } s && HeldCopy(s) is not null;
+
     [JsonRpcMethod("host/runningWork")]
     public RunningWorkResult RunningWork() => _session is not { } s
         ? new RunningWorkResult(null)

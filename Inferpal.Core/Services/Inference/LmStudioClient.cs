@@ -458,7 +458,10 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     // ── The window a model is loaded with (pari 127) ────────────────────────────────
 
     /// <summary>A model Inferpal loaded through the native API: its name and the instance the server named.</summary>
-    internal sealed record OwnedLoad(string Model, string Instance);
+    /// <param name="Model">The model Inferpal loaded.</param>
+    /// <param name="Instance">The instance the server named it.</param>
+    /// <param name="Window">The window Inferpal loaded it at; <c>0</c> when not known (a record written before it was kept).</param>
+    internal sealed record OwnedLoad(string Model, string Instance, int Window = 0);
 
     /// <summary>
     /// The model each server has loaded by Inferpal's hand, shared by every Inferpal process of the account (both editors,
@@ -526,11 +529,19 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             var owned = new Dictionary<string, OwnedLoad>(OwnedFile.Load(new()), StringComparer.OrdinalIgnoreCase);
             if (owned.TryGetValue(server, out var mine) && !IdMatches(mine.Model, model))
             {
-                await UnloadModelAsync(mine.Instance, ct);
-                ForgetLoadedWindow();
-                // Forgotten only once gone: an unload refused or cut leaves it Inferpal's, and nothing is loaded beside it.
-                var gone = await LoadedNowAsync(mine.Model, ct);
-                if (!gone.Read || gone.Instance is not null) return null;
+                // ⚠ Gone by another hand (unloaded in LM Studio, or from the loaded-models card), or loaded again by the person
+                // at another window under the same id: no longer Inferpal's, forgotten — never unloaded from under them.
+                var before = await LoadedNowAsync(mine.Model, ct);
+                var stillOurs = !before.Read
+                                || before.Instance is not null && (mine.Window <= 0 || before.Window is not { } w || w == mine.Window);
+                if (stillOurs)
+                {
+                    await UnloadModelAsync(mine.Instance, ct);
+                    ForgetLoadedWindow();
+                    // Forgotten only once gone: an unload refused or cut leaves it Inferpal's, and nothing is loaded beside it.
+                    var gone = await LoadedNowAsync(mine.Model, ct);
+                    if (!gone.Read || gone.Instance is not null) return null;
+                }
                 owned.Remove(server);
                 OwnedFile.Save(owned);
             }
@@ -554,14 +565,14 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
 
             onStep?.Invoke(Localization.Strings.StatusLoadingModelWindow(model, target));
             if (now.Instance is { } instance) await UnloadModelAsync(instance, ct);
-            owned[server] = new OwnedLoad(model, model);
+            owned[server] = new OwnedLoad(model, model, target);
             OwnedFile.Save(owned);
             var (loaded, outcome, why) = await LoadAsync(model, target, ct);
             ForgetLoadedWindow();
             switch (outcome)
             {
                 case LoadOutcome.Loaded:
-                    owned[server] = new OwnedLoad(model, loaded ?? model);
+                    owned[server] = new OwnedLoad(model, loaded ?? model, target);
                     OwnedFile.Save(owned);
                     return new WindowLoad(target, null);
                 case LoadOutcome.Unfinished:

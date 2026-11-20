@@ -160,7 +160,8 @@ internal sealed class WorkCopy
         var dir = Path.Combine(Home, FileHistoryService.FolderNameOf(root));
         if (!Directory.Exists(dir)) return [];
         var found = new List<(WorkCopy, Record)>();
-        foreach (var file in Directory.EnumerateFiles(dir, "*.json").Order(StringComparer.Ordinal))
+        // By number (2 before 10): the names are the copies' numbers.
+        foreach (var file in Directory.EnumerateFiles(dir, "*.json").OrderBy(f => Path.GetFileName(f).Length).ThenBy(f => f, StringComparer.Ordinal))
         {
             Record? record;
             try { record = System.Text.Json.JsonSerializer.Deserialize<Record>(await File.ReadAllTextAsync(file, ct)); }

@@ -130,8 +130,9 @@ internal sealed class AcpSession : IAsyncDisposable
     public bool Busy { get { lock (_gate) return _turnOpen; } }
 
     /// <summary>A turn is running, or work that runs beyond one — a <c>/task</c>, a command in the background, an
-    /// <c>@Docs</c> crawl —, which dies with this session's host (<c>host/runningWork</c>, the one reader).</summary>
-    public bool Working => Busy || _host.RunningWork().Notice is not null;
+    /// <c>@Docs</c> crawl —, which dies with this session's host (<c>host/runningWork</c>, the one reader); or a copy of the
+    /// repository it holds, which a reopened session could not reach (its record is owned by this live process).</summary>
+    public bool Working => Busy || _host.RunningWork().Notice is not null || _host.HoldsCopy;
 
     /// <summary>Completed when no turn runs; replaced at each turn's start.</summary>
     private TaskCompletionSource _idle = Completed();

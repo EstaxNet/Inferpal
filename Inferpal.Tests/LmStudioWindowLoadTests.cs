@@ -143,6 +143,22 @@ public sealed class LmStudioWindowLoadTests : IDisposable
         Assert.Equal(["unload small/model", "request big/model"], lms.Calls);
     }
 
+    [Theory]
+    [InlineData(true)]    // unloaded in LM Studio, then loaded again by the person at its own window, under the same id
+    [InlineData(false)]   // unloaded in LM Studio, and nothing loaded since
+    public async Task TheModelInferpalLoaded_ThatLeftByAnotherHand_IsForgotten_NeverUnloadedFromThePerson(bool loadedAgainByHand)
+    {
+        using var lms = new FakeLmStudio { LoadedModel = "small/model", LoadedWindow = 8192, JitWindow = m => m == "big/model" ? 55296 : 8192 };
+        var client = lms.Client();
+        await client.EnsureWindowAsync("small/model", 16384, null, CancellationToken.None);
+        (lms.LoadedModel, lms.LoadedWindow) = loadedAgainByHand ? ("small/model", 4096) : (null, 0);
+        lms.Calls.Clear();
+
+        Assert.Null(await client.EnsureWindowAsync("big/model", 16384, null, CancellationToken.None));
+        Assert.DoesNotContain(lms.Calls, c => c.StartsWith("unload", StringComparison.Ordinal));
+        Assert.Contains("request big/model", lms.Calls);
+    }
+
     [Fact]
     public async Task ARefusedLoad_IsSaidWithItsCause_AndNotTriedAgain()
     {

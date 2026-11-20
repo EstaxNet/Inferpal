@@ -3970,7 +3970,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // ⚠ Continued in the copy it ran in — never in a new one without a word: discarded meanwhile (or the host restarted
       // and nothing took it up), the next copy starts from the last commit without the run's work, and its card says so.
       const host = inCopy ? this.getHost() : undefined;
-      if (host?.isRunning && !(await host.copyPrepare()).held) {
+      // ⚠ A copy copy/prepare just took up (left by another editor or an earlier session) is not the one this run worked
+      // in: its card names it, as for a typed question.
+      const prepared = host?.isRunning ? await host.copyPrepare() : undefined;
+      if (prepared && (!prepared.held || prepared.leftBefore)) {
         await this.openCopyStart(prompt);
         return;
       }

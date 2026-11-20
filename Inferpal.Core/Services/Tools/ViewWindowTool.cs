@@ -87,14 +87,16 @@ internal sealed class ViewWindowTool : ITool
         return sb.ToString().TrimEnd();
     }
 
+    /// <summary>A background job this run may treat as the app it started: in a run on a copy, only one started there — one
+    /// started in the person's folder is theirs (as <c>run_command</c>). One reader for windows and pages.</summary>
+    internal static bool Ours(BackgroundShellRegistry jobs, string id) =>
+        Execution.RunRoot.Copy is not { } inCopy || jobs.FolderOf(id) is not { } folder || Execution.RunRoot.Holds(inCopy, folder);
+
     /// <summary>The process of a running background job, or what to say when there is none — one reader for looking at a
     /// window and acting in it.</summary>
     internal static (int Pid, string? Missing) Locate(BackgroundShellRegistry jobs, string job)
     {
-        // A run on a copy reaches the apps it started there only: one started in the person's folder is theirs (as run_command).
-        bool Ours(string id) => Execution.RunRoot.Copy is not { } inCopy
-                                || jobs.FolderOf(id) is not { } folder || Execution.RunRoot.Holds(inCopy, folder);
-        if (!Ours(job))
+        if (!Ours(jobs, job))
             return (0, $"Error: background job '{job}' runs in the user's own folder, and this run works in a copy of the "
                      + "repository — not available here.");
         if (jobs.ProcessIdOf(job) is { } pid) return (pid, null);
@@ -104,7 +106,7 @@ internal sealed class ViewWindowTool : ITool
             return (0, $"The shell of {job} has ended: if it started the app, the app was detached from it, and this tool only looks "
                      + "at the processes of the job. Launch the app so it stays the job's child — in PowerShell `& .\\App.exe | Out-Null`, "
                      + "in a POSIX shell `./app` without `&`, `dotnet run` as it is — then try again.");
-        var running = jobs.List().Where(j => j.Running && Ours(j.Id)).Select(j => $"{j.Id} ({j.Command})").ToList();
+        var running = jobs.List().Where(j => j.Running && Ours(jobs, j.Id)).Select(j => $"{j.Id} ({j.Command})").ToList();
         return (0, $"No running background job '{job}'. " + (running.Count == 0
             ? "Launch the app with run_command and background: true, then try again."
             : "Running: " + string.Join(", ", running) + "."));

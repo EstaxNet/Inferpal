@@ -50,8 +50,13 @@ internal static class SqlGuard
         @"pg_reload_conf|pg_rotate_logfile|pg_switch_wal|pg_create_\w+|pg_drop_\w+|pg_promote|pg_logical_\w+|pg_advisory_\w+|" +
         @"pg_try_advisory_\w+|pg_stat_reset\w*|pg_stat_statements_reset|pg_notify|pg_start_backup|pg_stop_backup|pg_backup_\w+|" +
         @"pg_wal_\w+|pg_replication_\w+|pg_log_\w+|lo_\w+|setval|nextval|set_config|dblink\w*|query_to_xml\w*|cursor_to_xml\w*|" +
-        @"load_file|get_lock|release_lock|release_all_locks|sys_exec|sys_eval|xp_\w+|sp_\w+)\s*\(",
+        @"load_file|get_lock|release_lock|release_all_locks|sys_exec|sys_eval|xp_\w+|sp_\w+|" +
+        // SQL Server's readers of the server's trace, event and audit files: a UNC path among their arguments connects out.
+        @"fn_trace_\w+|fn_xe_\w+|fn_get_audit_file|fn_dblog|fn_dump_dblog)\s*\(",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, MatchTimeout);
+
+    // SQL Server's four-part name (server.database.schema.object, a part maybe empty): a linked server, another server.
+    private static readonly Regex FourPartName = new(@"\w+\s*\.\s*\w*\s*\.\s*\w*\s*\.\s*\w+", RegexOptions.CultureInvariant, MatchTimeout);
 
     private static readonly Regex Word = new(@"[A-Za-z_][A-Za-z0-9_$]*", RegexOptions.CultureInvariant, MatchTimeout);
 
@@ -100,6 +105,7 @@ internal static class SqlGuard
                 return $"it is not a read: it starts with {first ?? "no keyword"}";
             if (words.FirstOrDefault(Denied.Contains) is { } denied) return $"it contains {denied.ToUpperInvariant()}";
             if (DeniedFunction.Match(statement) is { Success: true } f) return $"it calls {f.Groups[1].Value}, which acts beyond a read";
+            if (engine == DatabaseEngine.SqlServer && FourPartName.IsMatch(statement)) return "it names an object of another server (a four-part name)";
             return null;
         }
         catch (RegexMatchTimeoutException)
@@ -207,6 +213,10 @@ internal static class SqlGuard
             };
             if (close != '\0')
             {
+                // ⚠ PostgreSQL's U&"…" name decodes its escapes (U&"\0070g_read_file" is pg_read_file): what it names is not
+                // what is written, so no check could read it.
+                if (d == DatabaseEngine.Postgres && c == '"' && i >= 2 && sql[i - 1] == '&' && (sql[i - 2] is 'U' or 'u'))
+                    return ("", "it holds a Unicode-escaped name (U&\"…\"), which hides what it names");
                 var start = i;
                 if (!Skip(sql, ref i, close, escapes: false)) return ("", "it holds an unterminated quoted name");
                 // ⚠ A quoted name called as a function ("pg_read_file"(…)) is that function: written out, for the checks to

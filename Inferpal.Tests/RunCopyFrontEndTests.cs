@@ -80,7 +80,8 @@ public class RunCopyFrontEndTests
         var cont = code[code.IndexOf("private async continueTurn(): Promise<void> {", StringComparison.Ordinal)..];
 
         Assert.True(copy > 0 && copy < rollback, "a copy question is taken back before its card asks it again");
-        Assert.Matches(new Regex(@"!\(await host\.copyPrepare\(\)\)\.held\)\s*\{\s*await this\.openCopyStart\(prompt\);"), cont);
+        // A copy copy/prepare has just taken up (left by another editor) goes through the card too: never continued in unseen.
+        Assert.Matches(new Regex(@"if \(prepared && \(!prepared\.held \|\| prepared\.leftBefore\)\)\s*\{\s*await this\.openCopyStart\(prompt\);"), cont);
     }
 
     [Fact]

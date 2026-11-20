@@ -157,7 +157,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // A page an app the agent started serves (a background job of run_command) is its own work: looked at and used
         // without a card. Any other address of this machine is another app of the person's.
         Task<bool> ServedByAgent(int port, CancellationToken ct) => Shell.LocalPorts.ServedByAsync(port,
-            [.. runCommand.Background.List().Where(j => j.Running).Select(j => runCommand.Background.ProcessIdOf(j.Id)).OfType<int>()], ct);
+            [.. runCommand.Background.List().Where(j => j.Running && ViewWindowTool.Ours(runCommand.Background, j.Id))
+                                            .Select(j => runCommand.Background.ProcessIdOf(j.Id)).OfType<int>()], ct);
         Register(new ViewPageTool(approval, root, _readImages, servedByAgent: ServedByAgent));
         Register(new InteractPageTool(approval, root, _readImages, () => history.CurrentRunId, ServedByAgent, history: history));
         Register(new WebSearchTool(approval));

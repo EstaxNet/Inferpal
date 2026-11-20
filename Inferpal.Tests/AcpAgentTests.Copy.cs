@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
+using Inferpal.Host.Acp;
 using Inferpal.Models;
 using Inferpal.Services;
 using Inferpal.Services.Execution;
@@ -137,6 +138,31 @@ public sealed partial class AcpAgentTests
         Assert.Equal(2, Permissions(h).Count());                                                      // WITNESS: the review was asked
         Assert.Contains("int A() => 1;", File.ReadAllText(pay));
         Assert.True(Directory.Exists(copy));
+    }
+
+    /// <summary>A thread holding a copy is never closed to make room: reopened, it could not reach the copy any more (its
+    /// record is owned by this live process), and the run's work would be out of reach until the agent exits.</summary>
+    [Fact]
+    public async Task RunCopy_AThreadThatHoldsACopy_IsNotClosedToMakeRoom()
+    {
+        Assert.True(CommittedRoot(), "git is needed: this test is UNDECIDED, not green.");
+        await using var h = await StartAsync(fake: f => f.OnChatRequest = (_, _, _, _) =>
+        {
+            if (RunRoot.Copy is { } inCopy) File.WriteAllText(Path.Combine(inCopy, "Pay.cs"), "class Pay\n{\n    int A() => 2;\n}\n");
+            return Task.FromResult(new ChatTurnResult("Changed A.", null, 0, 0));
+        });
+        await h.Client.RequestAsync("initialize", Init());
+        var holding = await NewSessionAsync(h);
+        h.Client.Answer = (method, p) => method != "session/request_permission" ? null
+            : IsStartCard(p) ? new { outcome = (object)new { outcome = "selected", optionId = "copy" } }
+            : new { outcome = (object)new { outcome = "cancelled" } };
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, holding, "/run-copy Make A return 2")));
+        var idle = await NewSessionAsync(h);
+        Assert.Equal("end_turn", StopReason(await PromptAsync(h, idle, "hello")));
+
+        for (var i = 0; i < AcpAgent.MaxLiveSessions - 1; i++) await NewSessionAsync(h);   // one past the cap
+        Assert.True(h.Agent.IsLive(holding), "the thread holding a copy was closed to make room");
+        Assert.False(h.Agent.IsLive(idle));   // WITNESS: a thread was closed — the idle one
     }
 
     /// <summary>A client owes no answer to a request sent after it cancelled: asked, the review would hold the prompt.</summary>

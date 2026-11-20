@@ -198,7 +198,9 @@ internal partial class InferpalToolWindowData
     private Task ApplyCopyAsync(CopyRun copy, int reviewId, IReadOnlyDictionary<string, IReadOnlyCollection<int>> kept) =>
         CopyGestureAsync(async () =>
         {
-            if (copy.Discarded)
+            // ⚠ A card left on screen after a switch to another solution: applied now, it would write with that solution's
+            // history and root (its edits refused, its new files written). Back in the copy's solution, it shows again.
+            if (copy.Discarded || !ReferenceEquals(HeldCopy, copy))
             {
                 await RunOnVMContextAsync(() => { RemoveCopyCard(); InsertThemed(ChatMessageItem.NoticeMsg(Strings.CopyNoneOpen)); });
                 return;
