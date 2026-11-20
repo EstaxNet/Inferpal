@@ -3,7 +3,7 @@
 // destroyed on hide: everything re-renders from the 'hydrate' message.
 // No literal user-visible English here — strings go through t() (window.__l10n).
 import type {
-  ApprovalCard, AwayNotice, CopyAppliedCard, CopyReview, CopyStartCard, CutCard, InputCard, InputCardField, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunReviewLine,
+  ApprovalCard, AwayNotice, CopyAppliedCard, CopyReview, CopyStartCard, CutCard, InputCard, InputCardField, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunReviewFile, RunReviewLine,
   RunSummary, SetupPlace, SetupPlan, ImageNotSeenCard,
 } from '../protocol';
 import type {
@@ -1593,6 +1593,55 @@ function queryRows(output: string): string | undefined {
   return !m ? undefined : m[1] !== undefined ? m[1] : m[2] + '+';
 }
 
+/**
+ * A file's line counts, `+3` `−1` — or, for a binary file, its kind and size in their place ("PNG image · 1280 × 800 · 48
+ * KB"): read as text, its "lines" meant nothing. `addedOnly` leaves out a removed count of 0 (the away notice).
+ */
+function lineCounts(f: { added: number; removed: number; binary?: string | null }, addedOnly = false): HTMLElement[] {
+  if (f.binary) {
+    const kind = document.createElement('span');
+    kind.className = 'binary';
+    kind.textContent = f.binary;
+    return [kind];
+  }
+  const plus = document.createElement('span');
+  plus.className = 'plus';
+  plus.textContent = `+${f.added}`;
+  if (addedOnly && f.removed === 0) {
+    return [plus];
+  }
+  const minus = document.createElement('span');
+  minus.className = 'minus';
+  minus.textContent = `−${f.removed}`;
+  return [plus, minus];
+}
+
+/** A binary image of a run's review: itself, before and after when it was replaced; nothing for another binary file. */
+function binaryPictures(f: RunReviewFile): HTMLElement {
+  const box = document.createElement('div');
+  box.className = 'run-review-pictures';
+  const figure = (src: string, caption: string) => {
+    const fig = document.createElement('figure');
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = caption;
+    const cap = document.createElement('figcaption');
+    cap.textContent = caption;
+    fig.append(img, cap);
+    return fig;
+  };
+  if (f.imageBefore) {
+    box.appendChild(figure(f.imageBefore, f.beforeCaption ?? ''));
+  }
+  if (f.imageBefore && f.imageAfter) {
+    box.appendChild(icon('arrowRight', 14));
+  }
+  if (f.imageAfter) {
+    box.appendChild(figure(f.imageAfter, f.afterCaption ?? ''));
+  }
+  return box;
+}
+
 /** What a step acted on: the path, command, query or address its arguments name. */
 function stepSubject(input: string | undefined): string {
   if (!input) {
@@ -1926,13 +1975,7 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     file.append(icon('file', 13));
     const label = document.createElement('span');
     label.textContent = f.name;
-    const plus = document.createElement('span');
-    plus.className = 'plus';
-    plus.textContent = `+${f.added}`;
-    const minus = document.createElement('span');
-    minus.className = 'minus';
-    minus.textContent = `−${f.removed}`;
-    file.append(label, plus, minus);
+    file.append(label, ...lineCounts(f));
     if (!f.gone) {
       file.addEventListener('click', () => post({ type: 'openFile', path: f.path }));
     }
@@ -2042,16 +2085,7 @@ function renderAwayNotice(notice: AwayNotice): void {
       const name = document.createElement('span');
       name.textContent = f.path;
       li.appendChild(name);
-      const plus = document.createElement('span');
-      plus.className = 'plus';
-      plus.textContent = `+${f.added}`;
-      li.appendChild(plus);
-      if (f.removed > 0) {
-        const minus = document.createElement('span');
-        minus.className = 'minus';
-        minus.textContent = `−${f.removed}`;
-        li.appendChild(minus);
-      }
+      li.append(...lineCounts(f, true));
       files.appendChild(li);
     }
     const warning = document.createElement('p');
@@ -2208,13 +2242,7 @@ function renderRunReview(runId: string, review: RunReview | null | undefined, me
     name.className = 'run-review-name';
     name.textContent = f.name;
     toggle.append(chevron, name);
-    const plus = document.createElement('span');
-    plus.className = 'plus';
-    plus.textContent = `+${f.added}`;
-    const minus = document.createElement('span');
-    minus.className = 'minus';
-    minus.textContent = `−${f.removed}`;
-    line.append(toggle, plus, minus);
+    line.append(toggle, ...lineCounts(f));
     if (f.created) {
       const tag = document.createElement('span');
       tag.className = 'run-review-tag';
@@ -2318,6 +2346,8 @@ function renderRunReview(runId: string, review: RunReview | null | undefined, me
         piece.append(pieceHead, diffOf(p.diff));
         diff.appendChild(piece);
       }
+    } else if (f.binary) {
+      diff = binaryPictures(f);
     } else {
       diff = diffOf(f.diff);
     }
@@ -2327,8 +2357,15 @@ function renderRunReview(runId: string, review: RunReview | null | undefined, me
       setIcon(chevron, shown ? 'chevronDown' : 'chevronRight', undefined, 13);
       toggle.setAttribute('aria-expanded', String(shown));
     };
-    show(open.has(f.path));
-    toggle.addEventListener('click', () => show(diff.hidden));
+    // A binary file with no picture has nothing under its line: it does not unfold.
+    const unfolds = !f.binary || !!(f.imageBefore || f.imageAfter);
+    show(unfolds && open.has(f.path));
+    if (unfolds) {
+      toggle.addEventListener('click', () => show(diff.hidden));
+    } else {
+      chevron.style.visibility = 'hidden';
+      toggle.removeAttribute('aria-expanded');
+    }
     row.appendChild(diff);
     card.appendChild(row);
   }

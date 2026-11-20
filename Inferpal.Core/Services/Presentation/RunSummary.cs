@@ -18,7 +18,9 @@ internal enum RunCheck { None, BuildPassed, BuildFailed, TestsPassed, TestsFaile
 /// <param name="Added">Lines added since the run's backup — an estimate, never a promise of git's count.</param>
 /// <param name="Created">The run created the file (undoing the run deletes it).</param>
 /// <param name="Gone">The file no longer exists.</param>
-internal sealed record RunFileLine(string Path, string Name, int Added, int Removed, bool Created, bool Gone);
+/// <param name="Binary">A binary file's kind and size, said in place of its line counts (which stay 0); <c>null</c> for
+/// a text file.</param>
+internal sealed record RunFileLine(string Path, string Name, int Added, int Removed, bool Created, bool Gone, string? Binary = null);
 
 /// <summary>
 /// The run of one agent turn, as the chat shows it under the answer: one collapsible line for its steps ("3 steps ·
@@ -181,7 +183,11 @@ internal static class RunSummary
             var path    = change.OriginalPath;
             var exists  = File.Exists(path);
             var created = change.SnapshotPath is null && !change.SnapshotFailed;
-            var before  = change.SnapshotPath is { } snap && File.Exists(snap) ? Read(snap) : string.Empty;
+            var copy    = change.SnapshotPath is { } snap && File.Exists(snap) ? snap : null;
+            // A binary file is said by its kind and size: read as text, its "lines" mean nothing.
+            if (RunBinary.Of(copy, exists ? path : null, created, pictures: false) is { } binary)
+                return new RunFileLine(path, System.IO.Path.GetFileName(path), 0, 0, created, !exists, binary.Label);
+            var before  = copy is not null ? Read(copy) : string.Empty;
             var after   = exists ? Read(path) : string.Empty;
             var (added, removed) = LineDelta(before, after);
             return new RunFileLine(path, System.IO.Path.GetFileName(path), added, removed, created, !exists);

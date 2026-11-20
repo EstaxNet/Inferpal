@@ -2025,6 +2025,15 @@
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>отменён</value></data>
   <data name="RunUndoneBar" xml:space="preserve"><value>Запуск отменён</value></data>
   <data name="RunUndoneBarKept" xml:space="preserve"><value>Запуск отменён · сохранено изменений: {0}</value></data>
+  <data name="RunBinaryImageNew" xml:space="preserve"><value>изображение {0} · {1} × {2} · {3}</value></data>
+  <data name="RunBinaryImageChanged" xml:space="preserve"><value>изображение {0} · {1} → {2}</value></data>
+  <data name="RunBinaryImageOne" xml:space="preserve"><value>изображение {0} · {1}</value></data>
+  <data name="RunBinaryFileChanged" xml:space="preserve"><value>двоичный файл · {0} → {1} · без построчного просмотра</value></data>
+  <data name="RunBinaryFileOne" xml:space="preserve"><value>двоичный файл · {0}</value></data>
+  <data name="RunBinaryBefore" xml:space="preserve"><value>до · {0} × {1}</value></data>
+  <data name="RunBinaryNow" xml:space="preserve"><value>сейчас · {0} × {1}</value></data>
+  <data name="SizeKilobytes" xml:space="preserve"><value>{0} КБ</value></data>
+  <data name="SizeMegabytes" xml:space="preserve"><value>{0} МБ</value></data>
   <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>отменён, кроме сохранённых изменений: {0}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>сохранён</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Отмена возвращает файл к состоянию до этого запуска. Заменяемое содержимое сначала сохраняется, поэтому саму отмену тоже можно отменить.</value></data>

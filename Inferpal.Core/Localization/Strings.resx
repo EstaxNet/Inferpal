@@ -2029,6 +2029,15 @@ What you save there applies from your next question, in this thread and the othe
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>undone</value></data>
   <data name="RunUndoneBar" xml:space="preserve"><value>Run undone</value></data>
   <data name="RunUndoneBarKept" xml:space="preserve"><value>Run undone · {0} {0:change|changes} kept</value></data>
+  <data name="RunBinaryImageNew" xml:space="preserve"><value>{0} image · {1} × {2} · {3}</value></data>
+  <data name="RunBinaryImageChanged" xml:space="preserve"><value>{0} image · {1} → {2}</value></data>
+  <data name="RunBinaryImageOne" xml:space="preserve"><value>{0} image · {1}</value></data>
+  <data name="RunBinaryFileChanged" xml:space="preserve"><value>binary file · {0} → {1} · no line view</value></data>
+  <data name="RunBinaryFileOne" xml:space="preserve"><value>binary file · {0}</value></data>
+  <data name="RunBinaryBefore" xml:space="preserve"><value>before · {0} × {1}</value></data>
+  <data name="RunBinaryNow" xml:space="preserve"><value>now · {0} × {1}</value></data>
+  <data name="SizeKilobytes" xml:space="preserve"><value>{0} KB</value></data>
+  <data name="SizeMegabytes" xml:space="preserve"><value>{0} MB</value></data>
   <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>undone, but {0} kept {0:change|changes}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>kept</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Undo puts a file back as it was before this run. What it replaces is saved first, so an undo can itself be undone.</value></data>

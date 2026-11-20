@@ -81,10 +81,16 @@ internal static class ImageCards
         var size = image.Width > 0
             ? string.Create(CultureInfo.InvariantCulture, $"{image.Width} × {image.Height} · ")
             : string.Empty;
-        var kb = Math.Max(1, (int)Math.Round(image.Bytes / 1024.0)).ToString(CultureInfo.CurrentCulture) + " KB";
-        var detail = size + kb + (pasted ? " · " + Strings.ImagePasted : string.Empty);
+        var detail = size + SizeText(image.Bytes) + (pasted ? " · " + Strings.ImagePasted : string.Empty);
         return new ImageChipModel(image.Name, detail, seenBy is null ? string.Empty : Strings.ImageNotSeenChip(seenBy));
     }
+
+    /// <summary>A file's size as the chips and a run's changes say it, in the person's units: whole kilobytes, megabytes
+    /// past ten.</summary>
+    internal static string SizeText(long bytes) =>
+        bytes >= 10L * 1024 * 1024
+            ? Strings.SizeMegabytes((bytes / (1024.0 * 1024)).ToString("0.#", CultureInfo.CurrentCulture))
+            : Strings.SizeKilobytes(Math.Max(1, (long)Math.Round(bytes / 1024.0)).ToString(CultureInfo.CurrentCulture));
 
     /// <summary>The badge beside the model's name: it sees images, it does not, or nothing when the server does not say.</summary>
     public static string Badge(bool? seesImages) => seesImages switch

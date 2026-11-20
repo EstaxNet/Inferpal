@@ -35,10 +35,12 @@ internal sealed record RunReviewPiece(int Number, int Line, int Added, int Remov
 /// <param name="Pieces">Its changes, when it holds two or more that can be given back one by one; empty otherwise.</param>
 /// <param name="WholeOnly">Why a file whose changes are not offered one by one goes back whole only;
 /// <see cref="RunPieces.Whole.None"/> when they are, or when the question does not arise (created, gone, changed since).</param>
+/// <param name="Binary">A binary file: its kind and size in place of the line counts, its pictures in place of a diff;
+/// <c>null</c> for a text file.</param>
 internal sealed record RunReviewFile(
     string Path, string Name, int Added, int Removed, bool Created, bool Gone, RunFileState State, bool CanRedo,
     IReadOnlyList<DiffLineModel> Diff, bool ChangedAfterUndo = false, IReadOnlyList<RunReviewPiece>? Pieces = null,
-    RunPieces.Whole WholeOnly = RunPieces.Whole.None);
+    RunPieces.Whole WholeOnly = RunPieces.Whole.None, RunFileBinary? Binary = null);
 
 /// <summary>A run's review card: each file it changed, against the state before it.</summary>
 /// <param name="Started">When the run began, as the card says it ("before 14:02").</param>
@@ -53,7 +55,8 @@ internal static class RunReview
     /// <summary>Diff lines shown per file: a long rewrite says how much more it holds.</summary>
     internal const int MaxDiffLines = 120;
 
-    public static RunReviewModel Build(FileHistoryService history, HistoryRun run)
+    /// <param name="pictures">Whether a binary image's thumbnails are drawn (the card), or only said (a text).</param>
+    public static RunReviewModel Build(FileHistoryService history, HistoryRun run, bool pictures = true)
     {
         var marks = history.MarksOf(run);
         var later = history.TouchedLater(run);
@@ -63,9 +66,11 @@ internal static class RunReview
             var exists    = File.Exists(path);
             var created   = change.SnapshotPath is null && !change.SnapshotFailed;
             var noCopy    = change.SnapshotFailed || change.SnapshotPath is { } copy && !File.Exists(copy);
-            var before    = !noCopy && change.SnapshotPath is { } snap ? RunSummary.Read(snap) : string.Empty;
-            var after     = exists ? RunSummary.Read(path) : string.Empty;
-            var (added, removed) = RunSummary.LineDelta(before, after);
+            // A binary file: no lines, no diff, no changes one by one — its kind, its size, its pictures.
+            var binary    = RunBinary.Of(noCopy ? null : change.SnapshotPath, exists ? path : null, created, pictures);
+            var before    = binary is null && !noCopy && change.SnapshotPath is { } snap ? RunSummary.Read(snap) : string.Empty;
+            var after     = binary is null && exists ? RunSummary.Read(path) : string.Empty;
+            var (added, removed) = binary is null ? RunSummary.LineDelta(before, after) : (0, 0);
             var givenBack = marks.GivenBack.Contains(path);
             var changedAfterUndo = givenBack && !FileHistoryService.AsTheUndoLeft(change);
             // Undone first: a kept file can still be undone by hand, and then offers its Redo.
@@ -78,14 +83,14 @@ internal static class RunReview
             // ⚠ A kept file is not judged "changed since" above; cut after a hand edit, its "changes" would hold the edit.
             var asTheRunLeft = state is RunFileState.Pending
                             || state is RunFileState.Kept && !history.ChangedSinceRun(run, path, later);
-            var (pieces, whole) = asTheRunLeft && !created && exists
+            var (pieces, whole) = asTheRunLeft && !created && exists && binary is null
                 ? PiecesOf(change.SnapshotPath!, path, pieceMarks)
                 : ([], RunPieces.Whole.None);
             return new RunReviewFile(path, Path.GetFileName(path), added, removed, created, !exists, state,
                                      // Changes given back one by one are given the run's version again together.
                                      givenBack ? !changedAfterUndo && marks.Redoable.Contains(path)
                                                : asTheRunLeft && pieceMarks is { Undone.Count: > 0 } && File.Exists(pieceMarks.RunCopy),
-                                     noCopy ? [] : DiffOf(before, after), changedAfterUndo, pieces, whole);
+                                     noCopy ? [] : DiffOf(before, after), changedAfterUndo, pieces, whole, binary);
         }).ToList();
         var started = run.StartedAt.ToString(run.StartedAt.Date == DateTime.Today ? "HH:mm" : "yyyy-MM-dd HH:mm");
         return new RunReviewModel(run.Id, started, files, run.Undone ? UndoneLine(files) : null);

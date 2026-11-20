@@ -2025,6 +2025,15 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>되돌림</value></data>
   <data name="RunUndoneBar" xml:space="preserve"><value>실행을 되돌림</value></data>
   <data name="RunUndoneBarKept" xml:space="preserve"><value>실행을 되돌림 · 유지한 변경 {0}개</value></data>
+  <data name="RunBinaryImageNew" xml:space="preserve"><value>{0} 이미지 · {1} × {2} · {3}</value></data>
+  <data name="RunBinaryImageChanged" xml:space="preserve"><value>{0} 이미지 · {1} → {2}</value></data>
+  <data name="RunBinaryImageOne" xml:space="preserve"><value>{0} 이미지 · {1}</value></data>
+  <data name="RunBinaryFileChanged" xml:space="preserve"><value>바이너리 파일 · {0} → {1} · 줄 단위 보기 없음</value></data>
+  <data name="RunBinaryFileOne" xml:space="preserve"><value>바이너리 파일 · {0}</value></data>
+  <data name="RunBinaryBefore" xml:space="preserve"><value>이전 · {0} × {1}</value></data>
+  <data name="RunBinaryNow" xml:space="preserve"><value>현재 · {0} × {1}</value></data>
+  <data name="SizeKilobytes" xml:space="preserve"><value>{0} KB</value></data>
+  <data name="SizeMegabytes" xml:space="preserve"><value>{0} MB</value></data>
   <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>되돌림, 유지한 변경 {0}개 제외</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>유지됨</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>되돌리기는 파일을 이 실행 이전 상태로 돌려놓습니다. 대체되는 내용은 먼저 저장되므로 되돌리기 자체도 취소할 수 있습니다.</value></data>

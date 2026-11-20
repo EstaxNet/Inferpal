@@ -243,12 +243,13 @@ internal static class UndoRunCommandHandler
         if ((id is null ? runs.FirstOrDefault(r => r.FileCount > 0) : runs.FirstOrDefault(r => r.Id == id && r.FileCount > 0))
             is not { } run)
             return Strings.UndoRunNone;
-        var review = Presentation.RunReview.Build(history, run);
+        var review = Presentation.RunReview.Build(history, run, pictures: false);
         var sb = new StringBuilder();
         sb.AppendLine(Strings.RunReviewHeader(review.Files.Count, review.Started));
         foreach (var file in review.Files)
         {
-            sb.Append("  - ").Append(Relativise(file.Path, root)).Append($" +{file.Added} −{file.Removed}");
+            sb.Append("  - ").Append(Relativise(file.Path, root))
+              .Append(file.Binary is { } binary ? " · " + binary.Label : $" +{file.Added} −{file.Removed}");
             if (file.Created) sb.Append(" · ").Append(Strings.RunFileNew);
             if (Presentation.RunReview.StateLabel(file) is { Length: > 0 } state) sb.Append(" · ").Append(state);
             if (Presentation.RunReview.WholeOnlyLabel(file) is { Length: > 0 } whole) sb.Append(" · ").Append(whole);

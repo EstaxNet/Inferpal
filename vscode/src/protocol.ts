@@ -730,6 +730,8 @@ export interface RunFileLine {
   removed: number;
   created: boolean;
   gone: boolean;
+  /** A binary file's kind and size, said in place of its line counts; absent for a text file. */
+  binary?: string | null;
 }
 
 /** A turn's run as the chat shows it under the answer (`RunSummary` in the Core). */
@@ -767,6 +769,13 @@ export interface RunReviewFile {
   piecesSummary: string;
   /** Why its changes are not offered one by one; empty when they are, or when it does not arise. */
   wholeOnly: string;
+  /** A binary file's kind and size, said in place of its line counts; absent for a text file. */
+  binary?: string | null;
+  /** An image's thumbnails (PNG data URLs) before the run and now, with their captions; absent for none. */
+  imageBefore?: string | null;
+  imageAfter?: string | null;
+  beforeCaption?: string;
+  afterCaption?: string;
 }
 
 /** One change of a file of a run's review card (`RunReviewPieceDto` in the host). */

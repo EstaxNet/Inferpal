@@ -532,7 +532,8 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
             RunId          = notice.Run?.RunId ?? string.Empty,
             AwayRunText    = Plain(notice.Run?.Text ?? string.Empty),
             AwayRunFiles   = notice.Run is { } run
-                ? string.Join("\n", run.Files.Select(f => f.Removed > 0 ? $"{f.Path}   +{f.Added} −{f.Removed}" : $"{f.Path}   +{f.Added}"))
+                ? string.Join("\n", run.Files.Select(f => f.Binary is { } binary ? $"{f.Path}   {binary}"
+                                                          : f.Removed > 0 ? $"{f.Path}   +{f.Added} −{f.Removed}" : $"{f.Path}   +{f.Added}"))
                 : string.Empty,
             AwayRunWarning = notice.Run?.Warning ?? string.Empty,
             BtnAwayReview  = Strings.RunReviewButton,
@@ -1399,8 +1400,10 @@ internal sealed class ResultFileItem
         _open   = open;
         Name    = file.Name;
         Path    = file.Path;
-        Added   = "+" + file.Added.ToString(System.Globalization.CultureInfo.CurrentCulture);
-        Removed = "−" + file.Removed.ToString(System.Globalization.CultureInfo.CurrentCulture);
+        // A binary file says its kind and size: read as text, its "lines" mean nothing.
+        Binary  = file.Binary ?? string.Empty;
+        Added   = file.Binary is null ? "+" + file.Added.ToString(System.Globalization.CultureInfo.CurrentCulture) : string.Empty;
+        Removed = file.Binary is null ? "−" + file.Removed.ToString(System.Globalization.CultureInfo.CurrentCulture) : string.Empty;
         CanOpen = !file.Gone;
         OpenCommand = new AsyncCommand((_, _) => { if (CanOpen) _open(Path); return Task.CompletedTask; });
     }
@@ -1409,8 +1412,51 @@ internal sealed class ResultFileItem
     [DataMember] public string Path    { get; }
     [DataMember] public string Added   { get; }
     [DataMember] public string Removed { get; }
+    /// <summary>A binary file's kind and size, in place of its line counts; empty for a text file.</summary>
+    [DataMember] public string Binary  { get; }
     public bool CanOpen { get; }
     [DataMember] public AsyncCommand OpenCommand { get; }
+}
+
+/// <summary>One picture of a binary image in a run's review card: the thumbnail file it is drawn from, and its caption.</summary>
+[DataContract]
+internal sealed class ReviewPictureItem(string path, string caption, bool arrow)
+{
+    /// <summary>The thumbnail's own file (<see cref="ThumbnailFiles"/>), never the person's image.</summary>
+    [DataMember] public string Path      { get; } = path;
+    [DataMember] public string Caption   { get; } = caption;
+    /// <summary>The second of two pictures: an arrow leads to it.</summary>
+    [DataMember] public bool   ShowArrow { get; } = arrow;
+}
+
+/// <summary>
+/// The thumbnails of a run's review card as files, for an <c>Image</c> bound to a path: one per content, named by its
+/// hash, in a folder of this process. ⚠ Never the person's file: WPF keeps a file it draws open and caches it by name,
+/// so an Undo writing over it would fail, or the card would show the old picture.
+/// </summary>
+internal static class ThumbnailFiles
+{
+    private static readonly Lazy<string> Folder = new(() => System.IO.Directory.CreateTempSubdirectory("inferpal-thumbnails").FullName);
+
+    /// <summary>The file of a PNG data URL; <c>null</c> for none, or when it cannot be written.</summary>
+    public static string? Of(string? dataUrl)
+    {
+        const string Prefix = "data:image/png;base64,";
+        if (dataUrl is null || !dataUrl.StartsWith(Prefix, StringComparison.Ordinal)) return null;
+        try
+        {
+            var bytes = Convert.FromBase64String(dataUrl[Prefix.Length..]);
+            var name = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes))[..32] + ".png";
+            var path = System.IO.Path.Combine(Folder.Value, name);
+            if (!System.IO.File.Exists(path)) System.IO.File.WriteAllBytes(path, bytes);
+            return path;
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException or FormatException)
+        {
+            Services.Diagnostics.Swallow("ThumbnailFiles.Of", ex);
+            return null;
+        }
+    }
 }
 
 /// <summary>One file of a question's "Go back here" card: what going back does to it.</summary>
@@ -1443,8 +1489,17 @@ internal sealed class ReviewFileItem : NotifyPropertyChangedObject
     {
         Name       = file.Name;
         Path       = file.Path;
-        Added      = "+" + file.Added.ToString(System.Globalization.CultureInfo.CurrentCulture);
-        Removed    = "−" + file.Removed.ToString(System.Globalization.CultureInfo.CurrentCulture);
+        Binary     = file.Binary?.Label ?? string.Empty;
+        Added      = file.Binary is null ? "+" + file.Added.ToString(System.Globalization.CultureInfo.CurrentCulture) : string.Empty;
+        Removed    = file.Binary is null ? "−" + file.Removed.ToString(System.Globalization.CultureInfo.CurrentCulture) : string.Empty;
+        // An image: itself, before and after when it was replaced — in place of a diff. The same thumbnail as VS Code,
+        // drawn from a file of its own: the person's file is never opened by the card (an Undo writes over it).
+        if (ThumbnailFiles.Of(file.Binary?.Before) is { } before) Pictures.Add(new ReviewPictureItem(before, file.Binary!.BeforeCaption, arrow: false));
+        if (ThumbnailFiles.Of(file.Binary?.After) is { } after)
+            Pictures.Add(new ReviewPictureItem(after, file.Binary!.AfterCaption, arrow: Pictures.Count > 0));
+        HasPictures = Pictures.Count > 0;
+        // A binary file with no picture has nothing under its line: it does not unfold.
+        CanExpand  = file.Binary is null || HasPictures;
         NewLabel   = file.Created ? Strings.RunFileNew : string.Empty;
         StateLabel = Services.Presentation.RunReview.StateLabel(file);
         IsChangedSince = file.State == Services.Presentation.RunFileState.ChangedSince;
@@ -1466,7 +1521,7 @@ internal sealed class ReviewFileItem : NotifyPropertyChangedObject
         foreach (var piece in file.Pieces ?? [])
             Pieces.Add(new ReviewPieceItem(piece, action => act(Path, piece.Number, action)));
         CanAct     = true;
-        ToggleCommand = new AsyncCommand((_, _) => { IsExpanded = !IsExpanded; return Task.CompletedTask; });
+        ToggleCommand = new AsyncCommand((_, _) => { if (CanExpand) IsExpanded = !IsExpanded; return Task.CompletedTask; });
         // One action at a time on the card (it disables them all): the card is drawn again from the answer.
         AsyncCommand Act(Services.Commands.UndoRunCommandHandler.RunFileAction action) => new((_, _) =>
         {
@@ -1482,6 +1537,13 @@ internal sealed class ReviewFileItem : NotifyPropertyChangedObject
     [DataMember] public string Path           { get; }
     [DataMember] public string Added          { get; }
     [DataMember] public string Removed        { get; }
+    /// <summary>A binary file's kind and size, in place of its line counts; empty for a text file.</summary>
+    [DataMember] public string Binary         { get; }
+    /// <summary>An image's pictures, before and now, in place of a diff.</summary>
+    [DataMember] public ObservableCollection<ReviewPictureItem> Pictures { get; } = [];
+    [DataMember] public bool   HasPictures    { get; }
+    /// <summary>Whether the file unfolds: a binary file with no picture has nothing under its line.</summary>
+    [DataMember] public bool   CanExpand      { get; }
     [DataMember] public string NewLabel       { get; }
     [DataMember] public string StateLabel     { get; }
     [DataMember] public bool   IsChangedSince { get; }

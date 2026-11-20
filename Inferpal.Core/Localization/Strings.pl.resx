@@ -2025,6 +2025,15 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>cofnięty</value></data>
   <data name="RunUndoneBar" xml:space="preserve"><value>Przebieg cofnięty</value></data>
   <data name="RunUndoneBarKept" xml:space="preserve"><value>Przebieg cofnięty · zachowane zmiany: {0}</value></data>
+  <data name="RunBinaryImageNew" xml:space="preserve"><value>obraz {0} · {1} × {2} · {3}</value></data>
+  <data name="RunBinaryImageChanged" xml:space="preserve"><value>obraz {0} · {1} → {2}</value></data>
+  <data name="RunBinaryImageOne" xml:space="preserve"><value>obraz {0} · {1}</value></data>
+  <data name="RunBinaryFileChanged" xml:space="preserve"><value>plik binarny · {0} → {1} · bez widoku wierszy</value></data>
+  <data name="RunBinaryFileOne" xml:space="preserve"><value>plik binarny · {0}</value></data>
+  <data name="RunBinaryBefore" xml:space="preserve"><value>przed · {0} × {1}</value></data>
+  <data name="RunBinaryNow" xml:space="preserve"><value>teraz · {0} × {1}</value></data>
+  <data name="SizeKilobytes" xml:space="preserve"><value>{0} KB</value></data>
+  <data name="SizeMegabytes" xml:space="preserve"><value>{0} MB</value></data>
   <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>cofnięty, poza zachowanymi zmianami: {0}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>zachowany</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Cofnij przywraca plik do stanu sprzed tego uruchomienia. To, co zostaje zastąpione, jest najpierw zapisywane, więc samo cofnięcie też można cofnąć.</value></data>

@@ -2025,6 +2025,15 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>annulé</value></data>
   <data name="RunUndoneBar" xml:space="preserve"><value>Exécution annulée</value></data>
   <data name="RunUndoneBarKept" xml:space="preserve"><value>Exécution annulée · {0} {0:changement gardé|changements gardés}</value></data>
+  <data name="RunBinaryImageNew" xml:space="preserve"><value>image {0} · {1} × {2} · {3}</value></data>
+  <data name="RunBinaryImageChanged" xml:space="preserve"><value>image {0} · {1} → {2}</value></data>
+  <data name="RunBinaryImageOne" xml:space="preserve"><value>image {0} · {1}</value></data>
+  <data name="RunBinaryFileChanged" xml:space="preserve"><value>fichier binaire · {0} → {1} · pas de vue par ligne</value></data>
+  <data name="RunBinaryFileOne" xml:space="preserve"><value>fichier binaire · {0}</value></data>
+  <data name="RunBinaryBefore" xml:space="preserve"><value>avant · {0} × {1}</value></data>
+  <data name="RunBinaryNow" xml:space="preserve"><value>maintenant · {0} × {1}</value></data>
+  <data name="SizeKilobytes" xml:space="preserve"><value>{0} Ko</value></data>
+  <data name="SizeMegabytes" xml:space="preserve"><value>{0} Mo</value></data>
   <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>annulé, sauf {0} {0:changement gardé|changements gardés}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>gardé</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Annuler remet un fichier tel qu'il était avant ce run. Ce qui est remplacé est d'abord sauvegardé : une annulation s'annule elle-même.</value></data>

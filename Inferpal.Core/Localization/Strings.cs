@@ -1990,6 +1990,15 @@ internal static class Strings
     public static string RunFileUndoneLabel => Get(nameof(RunFileUndoneLabel));
     public static string RunUndoneBar => Get(nameof(RunUndoneBar));
     public static string RunUndoneBarKept(int kept) => Format(Get(nameof(RunUndoneBarKept)), kept);
+    public static string RunBinaryImageNew(string kind, string width, string height, string size) => Format(Get(nameof(RunBinaryImageNew)), kind, width, height, size);
+    public static string RunBinaryImageChanged(string kind, string before, string after) => Format(Get(nameof(RunBinaryImageChanged)), kind, before, after);
+    public static string RunBinaryImageOne(string kind, string size) => Format(Get(nameof(RunBinaryImageOne)), kind, size);
+    public static string RunBinaryFileChanged(string before, string after) => Format(Get(nameof(RunBinaryFileChanged)), before, after);
+    public static string RunBinaryFileOne(string size) => Format(Get(nameof(RunBinaryFileOne)), size);
+    public static string RunBinaryBefore(string width, string height) => Format(Get(nameof(RunBinaryBefore)), width, height);
+    public static string RunBinaryNow(string width, string height) => Format(Get(nameof(RunBinaryNow)), width, height);
+    public static string SizeKilobytes(string count) => Format(Get(nameof(SizeKilobytes)), count);
+    public static string SizeMegabytes(string count) => Format(Get(nameof(SizeMegabytes)), count);
     public static string RunFileUndoneButKeptLabel(int kept) => Format(Get(nameof(RunFileUndoneButKeptLabel)), kept);
     public static string RunFileKeptLabel => Get(nameof(RunFileKeptLabel));
     public static string RunReviewNote => Get(nameof(RunReviewNote));

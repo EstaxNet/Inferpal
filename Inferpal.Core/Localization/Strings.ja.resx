@@ -2025,6 +2025,15 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>元に戻しました</value></data>
   <data name="RunUndoneBar" xml:space="preserve"><value>実行を元に戻しました</value></data>
   <data name="RunUndoneBarKept" xml:space="preserve"><value>実行を元に戻しました · 保持した変更 {0} 件</value></data>
+  <data name="RunBinaryImageNew" xml:space="preserve"><value>{0} 画像 · {1} × {2} · {3}</value></data>
+  <data name="RunBinaryImageChanged" xml:space="preserve"><value>{0} 画像 · {1} → {2}</value></data>
+  <data name="RunBinaryImageOne" xml:space="preserve"><value>{0} 画像 · {1}</value></data>
+  <data name="RunBinaryFileChanged" xml:space="preserve"><value>バイナリ ファイル · {0} → {1} · 行単位の表示なし</value></data>
+  <data name="RunBinaryFileOne" xml:space="preserve"><value>バイナリ ファイル · {0}</value></data>
+  <data name="RunBinaryBefore" xml:space="preserve"><value>変更前 · {0} × {1}</value></data>
+  <data name="RunBinaryNow" xml:space="preserve"><value>現在 · {0} × {1}</value></data>
+  <data name="SizeKilobytes" xml:space="preserve"><value>{0} KB</value></data>
+  <data name="SizeMegabytes" xml:space="preserve"><value>{0} MB</value></data>
   <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>元に戻しました（保持した変更 {0} 件を除く）</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>保持</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>元に戻すと、ファイルはこの実行の前の状態になります。置き換える内容は先に保存されるので、元に戻す操作自体も取り消せます。</value></data>

@@ -2025,6 +2025,15 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>annullato</value></data>
   <data name="RunUndoneBar" xml:space="preserve"><value>Esecuzione annullata</value></data>
   <data name="RunUndoneBarKept" xml:space="preserve"><value>Esecuzione annullata · {0} {0:modifica tenuta|modifiche tenute}</value></data>
+  <data name="RunBinaryImageNew" xml:space="preserve"><value>immagine {0} · {1} × {2} · {3}</value></data>
+  <data name="RunBinaryImageChanged" xml:space="preserve"><value>immagine {0} · {1} → {2}</value></data>
+  <data name="RunBinaryImageOne" xml:space="preserve"><value>immagine {0} · {1}</value></data>
+  <data name="RunBinaryFileChanged" xml:space="preserve"><value>file binario · {0} → {1} · nessuna vista per righe</value></data>
+  <data name="RunBinaryFileOne" xml:space="preserve"><value>file binario · {0}</value></data>
+  <data name="RunBinaryBefore" xml:space="preserve"><value>prima · {0} × {1}</value></data>
+  <data name="RunBinaryNow" xml:space="preserve"><value>ora · {0} × {1}</value></data>
+  <data name="SizeKilobytes" xml:space="preserve"><value>{0} KB</value></data>
+  <data name="SizeMegabytes" xml:space="preserve"><value>{0} MB</value></data>
   <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>annullato, tranne {0} {0:modifica tenuta|modifiche tenute}</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>tenuto</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>Annulla riporta un file com'era prima di questo run. Ciò che viene sostituito è salvato prima, quindi anche un annullamento si può annullare.</value></data>

@@ -170,11 +170,15 @@ internal static class ChatImages
     /// A small PNG of the image (240 × 160 at most), as a data URL, to draw under the question — a full image redrawn with
     /// every refresh of the chat would carry megabytes each time. <c>null</c> when it does not decode here (a WebP).
     /// </summary>
-    internal static string? Thumbnail(ChatImage image)
+    internal static string? Thumbnail(ChatImage image) => ThumbnailOf(Convert.FromBase64String(image.Base64));
+
+    /// <summary><see cref="Thumbnail"/> of an image's bytes. ⚠ The caller has checked its declared size against
+    /// <see cref="MaxPixels"/>: a few kilobytes can declare a picture whose decoding takes gigabytes.</summary>
+    internal static string? ThumbnailOf(byte[] bytes)
     {
         try
         {
-            var decoded = StbImageSharp.ImageResult.FromMemory(Convert.FromBase64String(image.Base64), StbImageSharp.ColorComponents.RedGreenBlueAlpha);
+            var decoded = StbImageSharp.ImageResult.FromMemory(bytes, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
             var (data, _, _, _) = Encode(decoded.Data, decoded.Width, decoded.Height, 240, 160, jpeg: false);
             return "data:image/png;base64," + Convert.ToBase64String(data);
         }

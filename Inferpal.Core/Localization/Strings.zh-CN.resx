@@ -2025,6 +2025,15 @@
   <data name="RunFileUndoneLabel" xml:space="preserve"><value>已撤销</value></data>
   <data name="RunUndoneBar" xml:space="preserve"><value>本次运行已撤销</value></data>
   <data name="RunUndoneBarKept" xml:space="preserve"><value>本次运行已撤销 · 保留 {0} 处更改</value></data>
+  <data name="RunBinaryImageNew" xml:space="preserve"><value>{0} 图像 · {1} × {2} · {3}</value></data>
+  <data name="RunBinaryImageChanged" xml:space="preserve"><value>{0} 图像 · {1} → {2}</value></data>
+  <data name="RunBinaryImageOne" xml:space="preserve"><value>{0} 图像 · {1}</value></data>
+  <data name="RunBinaryFileChanged" xml:space="preserve"><value>二进制文件 · {0} → {1} · 无逐行视图</value></data>
+  <data name="RunBinaryFileOne" xml:space="preserve"><value>二进制文件 · {0}</value></data>
+  <data name="RunBinaryBefore" xml:space="preserve"><value>之前 · {0} × {1}</value></data>
+  <data name="RunBinaryNow" xml:space="preserve"><value>现在 · {0} × {1}</value></data>
+  <data name="SizeKilobytes" xml:space="preserve"><value>{0} KB</value></data>
+  <data name="SizeMegabytes" xml:space="preserve"><value>{0} MB</value></data>
   <data name="RunFileUndoneButKeptLabel" xml:space="preserve"><value>已撤销，保留的 {0} 处更改除外</value></data>
   <data name="RunFileKeptLabel" xml:space="preserve"><value>已保留</value></data>
   <data name="RunReviewNote" xml:space="preserve"><value>撤销会把文件恢复到本次运行之前的状态。被替换的内容会先保存，因此撤销本身也可以撤销。</value></data>

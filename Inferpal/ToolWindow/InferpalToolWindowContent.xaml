@@ -1506,7 +1506,9 @@
                                                         Padding="4,3" Margin="0,0,8,0" Cursor="Hand"
                                                         Command="{Binding OpenCommand}" ToolTip="{Binding Path}"
                                                         AutomationProperties.Name="{Binding Name}">
-                                                    <StackPanel Orientation="Horizontal">
+                                                    <!-- A wrap, not a row: a binary file's kind and size goes under its name when the
+                                                         column beside the buttons is too narrow, never cut -->
+                                                    <WrapPanel>
                                                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8A5;" FontSize="12" VerticalAlignment="Center"
                                                                    Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
                                                         <TextBlock Text="{Binding Name}" FontSize="13" Margin="6,0,0,0" VerticalAlignment="Center"
@@ -1515,7 +1517,10 @@
                                                                    Foreground="{Binding DataContext.ThemeOk, ElementName=root}"/>
                                                         <TextBlock Text="{Binding Removed}" FontSize="13" Margin="4,0,0,0" VerticalAlignment="Center"
                                                                    Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
-                                                    </StackPanel>
+                                                        <!-- A binary file: its kind and size in place of its line counts -->
+                                                        <TextBlock Text="{Binding Binary}" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center"
+                                                                   TextWrapping="Wrap" Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                    </WrapPanel>
                                                 </Button>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -1642,6 +1647,10 @@
                                                                                 <DataTrigger Binding="{Binding IsExpanded}" Value="True">
                                                                                     <Setter Property="Text" Value="&#xE70D;"/>
                                                                                 </DataTrigger>
+                                                                                <!-- A binary file with no picture does not unfold: no chevron -->
+                                                                                <DataTrigger Binding="{Binding CanExpand}" Value="False">
+                                                                                    <Setter Property="Visibility" Value="Hidden"/>
+                                                                                </DataTrigger>
                                                                             </Style.Triggers>
                                                                         </Style>
                                                                     </TextBlock.Style>
@@ -1651,6 +1660,8 @@
                                                                 <TextBlock Text="{Binding Added}" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
                                                                            Foreground="{Binding DataContext.ThemeOk, ElementName=root}"/>
                                                                 <TextBlock Text="{Binding Removed}" FontSize="13" Margin="4,0,0,0" VerticalAlignment="Center"
+                                                                           Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                <TextBlock Text="{Binding Binary}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center"
                                                                            Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
                                                                 <TextBlock Text="{Binding NewLabel}" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"
                                                                            Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
@@ -1687,6 +1698,32 @@
                                                     </TextBlock>
                                                     <!-- A file of several changes: each kept or undone on its own, under a row of its own -->
                                                     <StackPanel Visibility="{Binding IsExpanded, Converter={StaticResource b2v}}">
+                                                        <!-- A binary image: itself, before and now, in place of a diff -->
+                                                        <ItemsControl ItemsSource="{Binding Pictures}" Margin="30,0,12,8" Focusable="False"
+                                                                      Visibility="{Binding HasPictures, Converter={StaticResource b2v}}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE72A;" FontSize="12" Margin="4,0,8,16"
+                                                                                   VerticalAlignment="Center"
+                                                                                   Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                                                   Visibility="{Binding ShowArrow, Converter={StaticResource b2v}}"/>
+                                                                        <StackPanel>
+                                                                            <Border CornerRadius="6" BorderThickness="1" ClipToBounds="True"
+                                                                                    BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                                                                                <Image Source="{Binding Path}" MaxWidth="192" MaxHeight="120" Stretch="Uniform"
+                                                                                       AutomationProperties.Name="{Binding Caption}"/>
+                                                                            </Border>
+                                                                            <TextBlock Text="{Binding Caption}" FontSize="11" Margin="0,3,0,0"
+                                                                                       Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                                        </StackPanel>
+                                                                    </StackPanel>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
                                                         <TextBlock Text="{Binding PiecesSummary}" FontSize="12" Margin="30,0,12,6" TextWrapping="Wrap"
                                                                    Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
                                                                    Visibility="{Binding HasPieces, Converter={StaticResource b2v}}"/>

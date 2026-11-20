@@ -327,9 +327,12 @@ internal sealed record RunFileParams(string RunId, string Path, string Action, i
 /// <param name="Pieces">Its changes, kept or undone one by one, when it holds two or more; empty otherwise.</param>
 /// <param name="PiecesSummary">How many changes, kept and undone; empty without pieces.</param>
 /// <param name="WholeOnly">Why its changes are not offered one by one; empty when they are, or when it does not arise.</param>
+/// <param name="Binary">A binary file's kind and size, said in place of its line counts; <c>null</c> for a text file.</param>
+/// <param name="ImageBefore">An image's thumbnail before the run (a PNG data URL), <c>null</c> for none; <paramref name="ImageAfter"/> now.</param>
 internal sealed record RunReviewFileDto(
     string Path, string Name, int Added, int Removed, bool Created, bool Gone, string State, string StateLabel, bool CanRedo,
-    List<RunReviewLineDto> Diff, List<RunReviewPieceDto> Pieces, string PiecesSummary, string WholeOnly);
+    List<RunReviewLineDto> Diff, List<RunReviewPieceDto> Pieces, string PiecesSummary, string WholeOnly,
+    string? Binary = null, string? ImageBefore = null, string? ImageAfter = null, string BeforeCaption = "", string AfterCaption = "");
 
 /// <summary>One change of a file of a run's review card.</summary>
 /// <param name="State"><c>pending</c>, <c>kept</c> or <c>undone</c>.</param>
@@ -358,7 +361,8 @@ internal sealed record RunReviewDto(
                 p.Number, Localization.Strings.RunPieceTitle(p.Number), Localization.Strings.RunPieceLine(p.Line),
                 p.Added, p.Removed, p.State.ToString().ToLowerInvariant(), Services.Presentation.RunReview.PieceStateLabel(p.State),
                 [.. p.Diff.Select(l => new RunReviewLineDto(l.Prefix, l.Text))]))],
-            Services.Presentation.RunReview.PiecesSummary(f), Services.Presentation.RunReview.WholeOnlyLabel(f)))],
+            Services.Presentation.RunReview.PiecesSummary(f), Services.Presentation.RunReview.WholeOnlyLabel(f),
+            f.Binary?.Label, f.Binary?.Before, f.Binary?.After, f.Binary?.BeforeCaption ?? "", f.Binary?.AfterCaption ?? ""))],
         Localization.Strings.RunFileKeep, Localization.Strings.RunFileUndo, Localization.Strings.RunFileDelete,
         Localization.Strings.RunFileRedo, Localization.Strings.RunFileNew, m.Undone);
 }
