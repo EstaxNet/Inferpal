@@ -115,4 +115,6 @@ internal sealed class SwitchingProvider : IInferenceProvider
     public Task<bool> PullModelAsync(string model, Action<string> onStatus, CancellationToken ct) => Inner.PullModelAsync(model, onStatus, ct);
     public Task<bool> DeleteModelAsync(string model, CancellationToken ct) => Inner.DeleteModelAsync(model, ct);
     public Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct) => Inner.GetLoadedContextWindowAsync(model, ct);
+    public Task<WindowLoad?> EnsureWindowAsync(string model, int target, Action<string>? onStep, CancellationToken ct) =>
+        Inner.EnsureWindowAsync(model, target, onStep, ct);
 }

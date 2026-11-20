@@ -159,7 +159,19 @@ internal interface IInferenceProvider : IChatTurnClient
     /// vLLM (<c>/v1/models</c>) and llama-server (<c>/props</c>).
     /// </summary>
     Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct);
+
+    /// <summary>
+    /// Makes <paramref name="model"/> loaded with at least <paramref name="target"/> tokens of context where the server lets a
+    /// client choose (LM Studio, pari 127): <c>null</c> when nothing had to be done or the server has no such choice, else the
+    /// window the model has now and, when the server refused the load, why. <paramref name="onStep"/> says a load on the
+    /// turn's status line.
+    /// </summary>
+    Task<WindowLoad?> EnsureWindowAsync(string model, int target, Action<string>? onStep, CancellationToken ct);
 }
+
+/// <summary>What <see cref="IInferenceProvider.EnsureWindowAsync"/> did: the window the model was loaded with, or — 0 then
+/// — why the server refused the one asked (the model kept at the server's own window, which the measure reads).</summary>
+internal sealed record WindowLoad(int Window, string? Refusal);
 
 /// <summary>
 /// Optional backend features. The hardware-aware moat (VRAM badge, <c>/hardware</c> auto-seed,

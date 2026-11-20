@@ -183,6 +183,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// <inheritdoc/>
     private protected override async Task<int?> GetLoadedContextLengthAsync(string model, CancellationToken ct)
     {
+        DropCachesIfReloaded();
         lock (_ctxLock)
             if (_ctxCache.Model == model && DateTime.UtcNow < _ctxCache.Until)
                 return _ctxCache.Ctx;
@@ -231,6 +232,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// <summary>The native model list — read now when <paramref name="fresh"/>, else as last read within 30 s.</summary>
     private async Task<List<NativeModel>> NativeSnapshotAsync(CancellationToken ct, bool fresh = false)
     {
+        DropCachesIfReloaded();
         if (!fresh)
             lock (_nativeLock)
                 if (_nativeSnapshot is { } snapshot && DateTime.UtcNow - snapshot.At < TimeSpan.FromSeconds(30))
@@ -451,6 +453,264 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Diagnostics.Swallow("LmStudioClient.UnloadModel", ex); }
+    }
+
+    // ── The window a model is loaded with (pari 127) ────────────────────────────────
+
+    /// <summary>A model Inferpal loaded through the native API: its name and the instance the server named.</summary>
+    internal sealed record OwnedLoad(string Model, string Instance);
+
+    /// <summary>
+    /// The model each server has loaded by Inferpal's hand, shared by every Inferpal process of the account (both editors,
+    /// the agent clients) and kept across their restarts.
+    /// </summary>
+    /// <remarks>⚠ LM Studio never evicts a model loaded through its API, and refuses a <c>ttl</c> on such a load: a model
+    /// remembered by one process alone stays in memory once that process ends, and the next one loads another beside it.</remarks>
+    internal static readonly AppDataJsonFile<Dictionary<string, OwnedLoad>> OwnedFile = new("lmstudio-loaded.json", "LmStudioLoaded");
+
+    /// <summary>The loads a server refused, by server, model and window, and until when they are not tried again: memory
+    /// freed since may let the next one through, a question every turn would not.</summary>
+    private static readonly Dictionary<string, DateTime> RefusedLoads = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The servers without the native load (LM Studio before 0.4): never asked again.</summary>
+    private static readonly HashSet<string> NoNativeLoad = new(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly object RefusedGate = new();
+
+    /// <summary>One model prepared at a time in this process: two turns at once would both unload and both load.</summary>
+    private static readonly SemaphoreSlim EnsureGate = new(1, 1);
+
+    /// <summary>How long a load is given: a large model read from a slow disk takes minutes.</summary>
+    internal static TimeSpan LoadBudget { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>How long a refused load is not tried again.</summary>
+    internal static TimeSpan RefusalLife { get; set; } = TimeSpan.FromMinutes(30);
+
+    /// <summary>Whether a question is being answered anywhere on the account, a person's card included: no model is
+    /// unloaded or loaded under it. A test replaces it.</summary>
+    internal static Func<bool> AnsweringAnywhere { get; set; } =
+        () => GpuScheduler.IsTurnInFlight || ChatBusySignal.IsTurnInFlightElsewhere();
+
+    /// <summary>Bumped by every load or unload this process makes: the windows and lists every client of it cached are
+    /// stale then, not only the caller's.</summary>
+    private static int _reloads;
+    private int _reloadsSeen;
+
+    private enum LoadOutcome { Loaded, Refused, NoNativeLoad, Unfinished }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// <para>⚠ Only a model loaded too small is reloaded. A model LM Studio loads by itself, on a request, keeps the window
+    /// LM Studio gives it — often larger than any target — and stays one LM Studio evicts when another is asked for: a model
+    /// not loaded yet is therefore loaded first as any request loads it, then measured. A loaded model that does not say its
+    /// window, and a model the server does not list (said by <see cref="ModelCatalog"/>), are not judged. The target is
+    /// never above the model's own maximum.</para>
+    /// <para>⚠ A model loaded through the API is never evicted by LM Studio when another is asked for: the one Inferpal
+    /// loaded (<see cref="OwnedFile"/>) is unloaded before another is prepared, and forgotten only once the server no longer
+    /// lists it — never two chat models from Inferpal. Recorded before the load is sent: a load cut by Stop or by its budget
+    /// may still finish on the server. The too-small instance replaced is the same model, larger.</para>
+    /// <para>⚠ Nothing is unloaded or loaded while a question is answered anywhere on the account (another thread of an
+    /// agent client, the other editor, a card waiting for a person): its model would go from under it.</para>
+    /// </remarks>
+    public override async Task<WindowLoad?> EnsureWindowAsync(string model, int target, Action<string>? onStep, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(model) || target <= 0 || AnsweringAnywhere()) return null;
+        var server = HostRoot;
+        lock (RefusedGate)
+            if (NoNativeLoad.Contains(server)) return null;
+        await EnsureGate.WaitAsync(ct);
+        try
+        {
+            // The GPU is the chat's while a model loads: indexing and completions wait, and the machine stays awake.
+            using var lease = GpuScheduler.AcquireChatLease();
+            var owned = new Dictionary<string, OwnedLoad>(OwnedFile.Load(new()), StringComparer.OrdinalIgnoreCase);
+            if (owned.TryGetValue(server, out var mine) && !IdMatches(mine.Model, model))
+            {
+                await UnloadModelAsync(mine.Instance, ct);
+                ForgetLoadedWindow();
+                // Forgotten only once gone: an unload refused or cut leaves it Inferpal's, and nothing is loaded beside it.
+                var gone = await LoadedNowAsync(mine.Model, ct);
+                if (!gone.Read || gone.Instance is not null) return null;
+                owned.Remove(server);
+                OwnedFile.Save(owned);
+            }
+            var key = $"{server}|{model}|{target}";
+            lock (RefusedGate)
+                if (RefusedLoads.TryGetValue(key, out var until) && DateTime.UtcNow < until) return null;
+
+            // A server whose native list cannot be read is not judged: nothing is loaded on a guess.
+            var now = await LoadedNowAsync(model, ct);
+            if (!now.Read || !now.Listed) return null;
+            if (now.Max is > 0 and var max && max < target) target = max;
+            if (now.Instance is null)
+            {
+                onStep?.Invoke(Localization.Strings.WaitLoadingModel + "…");
+                await WarmUpAsync(model, ct);
+                now = await LoadedNowAsync(model, ct);
+                if (!now.Read) return null;
+            }
+            if (now.Instance is not null && now.Window is null) return null;
+            if (now.Window >= target) return null;
+
+            onStep?.Invoke(Localization.Strings.StatusLoadingModelWindow(model, target));
+            if (now.Instance is { } instance) await UnloadModelAsync(instance, ct);
+            owned[server] = new OwnedLoad(model, model);
+            OwnedFile.Save(owned);
+            var (loaded, outcome, why) = await LoadAsync(model, target, ct);
+            ForgetLoadedWindow();
+            switch (outcome)
+            {
+                case LoadOutcome.Loaded:
+                    owned[server] = new OwnedLoad(model, loaded ?? model);
+                    OwnedFile.Save(owned);
+                    return new WindowLoad(target, null);
+                case LoadOutcome.Unfinished:
+                    // Still Inferpal's: the server may finish the load, and the next turn reads the window it has.
+                    Diagnostics.Record("LmStudioClient.EnsureWindow", $"Loading \"{model}\" at {target} tokens did not finish: {why}.");
+                    return null;
+            }
+            owned.Remove(server);
+            OwnedFile.Save(owned);
+            lock (RefusedGate)
+            {
+                if (outcome == LoadOutcome.NoNativeLoad) NoNativeLoad.Add(server);
+                else RefusedLoads[key] = DateTime.UtcNow + RefusalLife;
+            }
+            // Unloaded for nothing: loaded again LM Studio's way, so the turn is measured against the window it has.
+            await WarmUpAsync(model, ct);
+            ForgetLoadedWindow();
+            return outcome == LoadOutcome.Refused ? new WindowLoad(0, why) : null;
+        }
+        finally
+        {
+            EnsureGate.Release();
+        }
+    }
+
+    /// <summary>Whether the native list was read and lists <paramref name="model"/>, the instance it has loaded (<c>null</c>:
+    /// not loaded), the window that instance says (<c>null</c>: not said) and the model's maximum. A window read is kept
+    /// as the measure's.</summary>
+    private async Task<(bool Read, bool Listed, string? Instance, int? Window, int? Max)> LoadedNowAsync(string model, CancellationToken ct)
+    {
+        try
+        {
+            DropCachesIfReloaded();
+            var models = await NativeSnapshotAsync(ct, fresh: true);
+            if (models.Count == 0) return (false, false, null, null, null);
+            var listed = models.Where(m => IdMatches(m.Id, model)).ToList();
+            if (listed.Count == 0) return (true, false, null, null, null);
+            var max = listed.Select(m => m.MaxContextLength).FirstOrDefault(m => m is > 0);
+            var match = listed.FirstOrDefault(m => m.Loaded);
+            if (match.Id is null) return (true, true, null, null, max);
+            if (match.LoadedContextLength is { } window)
+                lock (_ctxLock) _ctxCache = (model, window, DateTime.UtcNow + LoadedWindowLife);
+            // ⚠ The model's key, which LM Studio names its single instance after: a variant asked without its suffix is
+            // unloaded by the key the server lists, never by the name asked.
+            return (true, true, match.Id, match.LoadedContextLength, max);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("LmStudioClient.LoadedNow", ex);
+            return (false, false, null, null, null);
+        }
+    }
+
+    /// <summary>One token asked of <paramref name="model"/>: LM Studio loads it as it loads it for any request.</summary>
+    private async Task WarmUpAsync(string model, CancellationToken ct)
+    {
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(LoadBudget);
+            using var req = new HttpRequestMessage(HttpMethod.Post, $"{HostRoot}/v1/chat/completions")
+            {
+                Content = JsonContent.Create(new { model, messages = new[] { new { role = "user", content = "." } }, max_tokens = 1, stream = false },
+                                             options: _jsonOpts),
+            };
+            AddAuth(req);
+            using var resp = await _http.SendAsync(req, cts.Token);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) { Diagnostics.Swallow("LmStudioClient.WarmUp", ex); }
+    }
+
+    /// <summary>Loads <paramref name="model"/> at <paramref name="window"/> tokens through the native API: the instance the
+    /// server names when it loaded; refused, with the server's words; no native load at all (404); or unfinished (the
+    /// budget, the connection), when the server may still be loading it.</summary>
+    private async Task<(string? Instance, LoadOutcome Outcome, string? Why)> LoadAsync(string model, int window, CancellationToken ct)
+    {
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(LoadBudget);
+            using var req = new HttpRequestMessage(HttpMethod.Post, $"{NativeBase}/models/load")
+            {
+                Content = JsonContent.Create(new { model, context_length = window }, options: _jsonOpts),
+            };
+            AddAuth(req);
+            using var resp = await _http.SendAsync(req, cts.Token);
+            var body = await resp.Content.ReadAsStringAsync(cts.Token);
+            if (resp.IsSuccessStatusCode) return (InstanceOf(body), LoadOutcome.Loaded, null);
+            if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return (null, LoadOutcome.NoNativeLoad, null);
+            return (null, LoadOutcome.Refused, $"HTTP {(int)resp.StatusCode}" + (ErrorMessageOf(body) is { Length: > 0 } said ? ": " + said : ""));
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException)
+        {
+            return (null, LoadOutcome.Unfinished, $"it did not finish within {LoadBudget.TotalMinutes:0} minutes");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException)
+        {
+            return (null, LoadOutcome.Unfinished, Diagnostics.RootMessage(ex));
+        }
+    }
+
+    /// <summary>The <c>instance_id</c> of a load's answer, <c>null</c> when it names none.</summary>
+    private static string? InstanceOf(string body)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            return doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty("instance_id", out var id)
+                   && id.ValueKind == JsonValueKind.String && id.GetString() is { Length: > 0 } named ? named : null;
+        }
+        catch (JsonException) { return null; }
+    }
+
+    /// <summary>The <c>error.message</c> of a server's answer, else its text cut short.</summary>
+    private static string ErrorMessageOf(string body)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty("error", out var e))
+            {
+                if (e.ValueKind == JsonValueKind.String) return SafeTruncate.Truncate(e.GetString() ?? "", 300);
+                if (e.ValueKind == JsonValueKind.Object && e.TryGetProperty("message", out var m) && m.ValueKind == JsonValueKind.String)
+                    return SafeTruncate.Truncate(m.GetString() ?? "", 300);
+            }
+        }
+        catch (JsonException) { /* not JSON: the text itself */ }
+        return SafeTruncate.Truncate(body.Trim(), 300);
+    }
+
+    /// <summary>Forgets every window and list read before a load or an unload — this client's now, every other client's of
+    /// this process at its next read.</summary>
+    private void ForgetLoadedWindow()
+    {
+        Interlocked.Increment(ref _reloads);
+        DropCachesIfReloaded();
+    }
+
+    /// <summary>Drops this client's cached window and list when a load or an unload happened since it read them.</summary>
+    private void DropCachesIfReloaded()
+    {
+        var reloads = Volatile.Read(ref _reloads);
+        if (reloads == _reloadsSeen) return;
+        lock (_ctxLock) _ctxCache = default;
+        lock (_nativeLock) _nativeSnapshot = null;
+        _reloadsSeen = reloads;
     }
 
     /// <inheritdoc/>

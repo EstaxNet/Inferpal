@@ -29,6 +29,11 @@ internal static class TestConfigIsolation
         Inferpal.Services.Inference.PrefillRates.Shared.File.PathOverride =
             Path.Combine(root, $"prefill-rates-{Environment.ProcessId}.json");
 
+        // And for the models Inferpal loaded on an LM Studio server: a test's load against a loopback server would be
+        // remembered in the developer's own file, and their editor would unload a model on its word.
+        Inferpal.Services.Inference.LmStudioClient.OwnedFile.PathOverride =
+            Path.Combine(root, $"lmstudio-loaded-{Environment.ProcessId}.json");
+
         // And for the lock that keeps the machine awake while the model works: every lease of the suite would take the
         // real one — a power request, or a `caffeinate` / `systemd-inhibit` process per lease on the CI legs.
         Inferpal.Services.Hardware.SleepGuard.Shared =

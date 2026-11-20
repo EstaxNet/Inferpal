@@ -173,6 +173,8 @@
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Позволяет серверу повторно использовать кэш. 0 — выключено.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} якорное(ых) сообщение(й) KV сохранено)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Компактизация контекста…</value></data>
+  <data name="StatusLoadingModelWindow" xml:space="preserve"><value>Загрузка {0} с окном в {1} токенов…</value></data>
+  <data name="MsgModelWindowNotLoaded" xml:space="preserve"><value>LM Studio не загрузил {0} с окном в {1} токенов ({2}): он оставляет окно, с которым загружает модель. Если инструменты Inferpal оставляют слишком мало места для вашего вопроса, увеличьте длину контекста модели в LM Studio или освободите память на его сервере.</value></data>
   <data name="StatusCompactingProgress" xml:space="preserve"><value>Компактизация контекста… {0}, пока примерно {1:N0} {1:токен|токена|токенов}</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Контекст сжат: суммировано {0} сообщений — сохранены последние {1} ход(а/ов).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Компактизация контекста истекла — выполнен откат к жёсткому усечению. Если модели нужно больше времени, увеличьте «{0}» ({1}) в настройках.</value></data>

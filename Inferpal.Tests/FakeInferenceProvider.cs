@@ -250,6 +250,16 @@ internal sealed class FakeInferenceProvider : IInferenceProvider
         return LoadedContextWindow;
     }
 
+    /// <summary>What <see cref="EnsureWindowAsync"/> answers; the targets asked, in order.</summary>
+    public WindowLoad? WindowLoadResult { get; set; }
+    public List<(string Model, int Target)> EnsuredWindows { get; } = [];
+
+    public Task<WindowLoad?> EnsureWindowAsync(string model, int target, Action<string>? onStep, CancellationToken ct)
+    {
+        EnsuredWindows.Add((model, target));
+        return Task.FromResult(WindowLoadResult);
+    }
+
     /// <summary>Whether an unload takes the model out of <see cref="Running"/>; by default the list does not move.</summary>
     public Func<string, bool> OnUnload { get; set; } = _ => false;
 

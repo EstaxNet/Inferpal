@@ -173,6 +173,8 @@ Dla każdego problemu podaj wiersz lub symbol, wyjaśnij ryzyko i zaproponuj kon
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>Pozwala serwerowi ponownie użyć pamięci podręcznej. 0: wyłączone.</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} wiadomość(ci) kotwicy KV zachowana(ych))</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>Kompaktowanie kontekstu…</value></data>
+  <data name="StatusLoadingModelWindow" xml:space="preserve"><value>Wczytywanie {0} z oknem {1} tokenów…</value></data>
+  <data name="MsgModelWindowNotLoaded" xml:space="preserve"><value>LM Studio nie wczytało {0} z oknem {1} tokenów ({2}): zachowuje okno, z którym wczytuje model. Jeśli narzędzia Inferpal zostawiają zbyt mało miejsca na Twoje pytanie, zwiększ długość kontekstu modelu w LM Studio albo zwolnij pamięć na jego serwerze.</value></data>
   <data name="StatusCompactingProgress" xml:space="preserve"><value>Kompaktowanie kontekstu… {0}, dotąd mniej więcej {1:N0} {1:token|tokeny|tokenów}</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Kontekst skompaktowany: podsumowano {0} wiadomość(ci) — zachowano ostatnie {1} tur(y).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Kompaktacja kontekstu przekroczyła limit czasu — powrót do twardego obcinania. Jeśli model potrzebuje więcej czasu, zwiększ „{0}” ({1}) w ustawieniach.</value></data>

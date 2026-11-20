@@ -540,6 +540,7 @@ internal partial class InferpalToolWindowData
         {
             var before = ContextWindowInUse;
             _contextWindowInUse = decision.Window;
+            if (decision.WindowNotice is { } loadNotice) InsertThemed(ChatMessageItem.NoticeMsg(loadNotice));
             // The prompt was built at the start of the turn, against the window known then: when this check reveals
             // another one — the first question, a model loaded smaller since — its files are re-budgeted now.
             if (decision.Window > 0 && decision.Window != before)

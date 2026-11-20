@@ -17,8 +17,9 @@ internal sealed record WindowAdvice(int? Tokens, string? Sentence);
 /// <see cref="SmallestWorthwhile"/>, the factory window otherwise.
 /// </summary>
 /// <remarks>
-/// <para>⚠ Ollama only: the window is sized from the model's shape (<c>/api/show</c>), which no other server publishes,
-/// and LM Studio loads a model at its own size whatever the client asks.</para>
+/// <para>⚠ Ollama only: the window is sized from the model's shape (<c>/api/show</c>), which no other server publishes.
+/// LM Studio loads a model on a request at a size of its own; Inferpal reloads one loaded below the window it needs
+/// (<c>IInferenceProvider.EnsureWindowAsync</c>, pari 127).</para>
 /// <para>⚠ Only an AUTOMATIC window is resized (<see cref="IsAutomatic(InferpalConfig)"/>): the one the product last
 /// wrote (<see cref="InferpalConfig.ContextWindowSizeAuto"/>), or the factory value when it never wrote one, judged on
 /// the FILE. Any other value is the person's — a window "Suggest" proposed and the person saved included, and the

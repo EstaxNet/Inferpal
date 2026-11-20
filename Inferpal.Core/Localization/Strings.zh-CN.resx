@@ -176,6 +176,8 @@
   <data name="HintKvCacheAnchor" xml:space="preserve"><value>让服务器复用其缓存。0：关闭。</value></data>
   <data name="MsgKvCacheAnchorNote" xml:space="preserve"><value> (+{0} 条 KV 锚点消息已保留)</value></data>
   <data name="StatusCompacting" xml:space="preserve"><value>正在压缩上下文…</value></data>
+  <data name="StatusLoadingModelWindow" xml:space="preserve"><value>正在以 {1} 个 token 的窗口加载 {0}…</value></data>
+  <data name="MsgModelWindowNotLoaded" xml:space="preserve"><value>LM Studio 未以 {1} 个 token 的窗口加载 {0}（{2}）：它保留加载该模型时的窗口。如果 Inferpal 的工具给你的问题留下的空间太少，请在 LM Studio 中增大模型的上下文长度，或释放其服务器的内存。</value></data>
   <data name="StatusCompactingProgress" xml:space="preserve"><value>正在压缩上下文… {0}，目前约 {1:N0} 个令牌</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 上下文已压缩：{0} 条消息已摘要 — 保留最后 {1} 轮。</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ 上下文压缩超时 — 已回退到硬截断。 如果模型需要更长时间，请在设置中调高“{0}”（{1}）。</value></data>

@@ -39,6 +39,11 @@ internal sealed record ContextDecision(
     ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice, int Window = 0,
     bool SummaryIncomplete = false, string? ShownSummary = null, bool WindowRead = true)
 {
+    /// <summary>The server refused to load the chat model at the window it needs (pari 127): said as a warning by both
+    /// front-ends, again only once the refusal is no longer remembered (<c>LmStudioClient.RefusalLife</c>); <c>null</c>
+    /// otherwise.</summary>
+    public string? WindowNotice { get; init; }
+
     /// <summary>
     /// The conversation lost turns with nothing — or only part of a summary — put in their place: a degraded
     /// result, not the one that was asked for.
@@ -94,6 +99,8 @@ internal static class ContextManager
         string?                       model = null,
         int                           toolTokens = 0)
     {
+        // Only a turn that carries tools: the lever exists because their definitions fill a small window.
+        var windowNotice = toolTokens > 0 ? await EnsureWindowAsync(config, client, model, onStep, ct).ConfigureAwait(false) : null;
         var (window, read) = await MeasureWindowAsync(config, client, model, ct).ConfigureAwait(false);
         // ⚠ The question about to go is already in the history — with its attachments, the auto-context and the
         // workspace block — and not in lastPromptTokens, measured after the previous turn. Decided on that figure alone,
@@ -105,7 +112,7 @@ internal static class ContextManager
             config.ContextWindowKeepTurns, config.KvCacheAnchorMessages, config.CompactionEnabled, toolTokens);
 
         if (plan.Action == CompactionAction.None)
-            return new ContextDecision(ContextOutcome.None, plan, null, string.Empty, window) { WindowRead = read };
+            return new ContextDecision(ContextOutcome.None, plan, null, string.Empty, window) { WindowRead = read, WindowNotice = windowNotice };
 
         // The person reads the conversation's messages, never the head the range holds (a marker, a summary); a plan that
         // replaces only the summary held (over the window) says so.
@@ -113,7 +120,7 @@ internal static class ContextManager
         if (plan.Action == CompactionAction.Truncate)
             return new ContextDecision(ContextOutcome.Truncated, plan, null,
                                        own > 0 ? Strings.MsgContextTruncated(own, plan.KeepTurns)
-                                               : Strings.MsgContextTruncatedSummaryOnly(plan.KeepTurns), window) { WindowRead = read };
+                                               : Strings.MsgContextTruncatedSummaryOnly(plan.KeepTurns), window) { WindowRead = read, WindowNotice = windowNotice };
 
         onStep?.Invoke(Strings.StatusCompacting);
 
@@ -127,7 +134,7 @@ internal static class ContextManager
         // compaction the same way).
         if (string.IsNullOrEmpty(summary))
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
-                                       failure ?? Strings.MsgContextCompactionEmpty, window) { WindowRead = read };
+                                       failure ?? Strings.MsgContextCompactionEmpty, window) { WindowRead = read, WindowNotice = windowNotice };
 
         // ⚠ An incomplete summary is KEPT — dropping it would lose the turns entirely, and the window is fullest
         // exactly when compaction runs — but it is said to both readers: read as whole, the model denies what was said
@@ -151,7 +158,7 @@ internal static class ContextManager
         // Measured as the model keeps it, its notes included.
         if (!FitsAfterSummary(history, plan, kept, toolTokens, window))
             return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
-                                       Strings.MsgContextSummaryTooLong, window) { WindowRead = read };
+                                       Strings.MsgContextSummaryTooLong, window) { WindowRead = read, WindowNotice = windowNotice };
 
         var notice = (own > 0 ? Strings.MsgContextCompacted(own, plan.KeepTurns) : Strings.MsgContextCompactedSummaryOnly(plan.KeepTurns))
                    + (plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty);
@@ -159,7 +166,7 @@ internal static class ContextManager
         else if (lost.Summary) notice += "\n\n" + Strings.MsgContextSummaryEarlierLost;
         if (cut)     notice += "\n\n" + Strings.MsgContextSummaryCut;
         return new ContextDecision(ContextOutcome.Compacted, plan, kept, notice, window,
-                                   SummaryIncomplete: cut || partial, ShownSummary: shown) { WindowRead = read };
+                                   SummaryIncomplete: cut || partial, ShownSummary: shown) { WindowRead = read, WindowNotice = windowNotice };
     }
 
     /// <summary>
@@ -206,8 +213,9 @@ internal static class ContextManager
     /// for another window. At 8K the built-in tools alone take more than half: the conversation and the answer share the
     /// rest, and a run there writes nothing before it is cut — said nowhere but in the X-Ray, which with a window set looks
     /// at the project layers only.
-    /// ⚠ Only Ollama loads the model at the configured window (num_ctx, sent with every request). Elsewhere a window the
-    /// server did not say is the setting standing in — a model not loaded yet is then loaded at the server's own size, often
+    /// ⚠ Only Ollama loads the model at the configured window with every request (num_ctx); LM Studio does when Inferpal
+    /// loads it (<see cref="EnsureWindowAsync"/>, for a model loaded too small). Elsewhere a window the server did not say
+    /// is the setting standing in — a model not loaded yet is then loaded at the server's own size, often
     /// far larger — and the notice would describe a window the model never has, with a remedy that changes nothing: nothing
     /// is said until the window is read (the next question, once the model is loaded). A server that never says its
     /// window is never told it: there the setting is only a guess.</remarks>
@@ -268,6 +276,41 @@ internal static class ContextManager
         : planMode ? [.. tools.TurnedOffKeys().Where(PlanModeToolRegistry.IsAllowed)]
         : mode?.Tools is { } kept ? [.. tools.TurnedOffKeys().Where(kept.AllowsKey)]
         : tools.TurnedOffKeys();
+
+    /// <summary>The window the chat model should have: the person's, or with the automatic window at least the smallest
+    /// where the tools and the files of a real question fit (<see cref="Inference.ContextWindowChoice.SmallestWorthwhile"/>).</summary>
+    internal static int TargetWindow(InferpalConfig config) =>
+        TargetWindow(config.ContextWindowSize, Inference.ContextWindowChoice.IsAutomatic(config));
+
+    /// <summary><see cref="TargetWindow(InferpalConfig)"/> once the window and whether it is automatic are known.</summary>
+    internal static int TargetWindow(int configured, bool automatic) =>
+        automatic ? Math.Max(configured, Inference.ContextWindowChoice.SmallestWorthwhile) : configured;
+
+    /// <summary>
+    /// Has the server load the chat model at <see cref="TargetWindow(InferpalConfig)"/> where it lets a client choose (LM Studio): a model it
+    /// loaded smaller — 8 192 by default for many — leaves no room once Inferpal's tools are in (pari 127). The sentence to
+    /// say when the server refused, else <c>null</c>.
+    /// </summary>
+    /// <remarks>Before the window is measured, so the measure reads the window the model has now. A failure to ask is no
+    /// refusal: the turn goes on with the window the server has.</remarks>
+    private static async Task<string?> EnsureWindowAsync(
+        InferpalConfig config, IInferenceProvider client, string? model, Action<string>? onStep, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(model)) return null;
+        var target = TargetWindow(config);
+        try
+        {
+            return await client.EnsureWindowAsync(model, target, onStep, ct).ConfigureAwait(false) is { Refusal: { } why }
+                ? Strings.MsgModelWindowNotLoaded(model, target, why)
+                : null;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("ContextManager.EnsureWindow", ex);
+            return null;
+        }
+    }
 
     /// <summary>
     /// The window the conversation is measured against: the configured one, or the one the server

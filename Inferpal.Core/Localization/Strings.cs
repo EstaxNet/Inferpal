@@ -840,6 +840,12 @@ internal static class Strings
     public static string DocsNoResults(string query) => Format(Get(nameof(DocsNoResults)), query);
     public static string StatusOodaSummarizing       => Get(nameof(StatusOodaSummarizing));
     public static string StatusCompacting            => Get(nameof(StatusCompacting));
+    /// <summary>The turn's status line while LM Studio loads the chat model at the window it needs.</summary>
+    public static string StatusLoadingModelWindow(string model, int tokens) => Format(Get(nameof(StatusLoadingModelWindow)), model, tokens);
+    /// <summary>LM Studio refused to load the chat model at the window it needs: the model, the window asked, the
+    /// server's reason (its own words).</summary>
+    public static string MsgModelWindowNotLoaded(string model, int asked, string why) =>
+        Format(Get(nameof(MsgModelWindowNotLoaded)), model, asked, why);
     public static string StatusCompactingProgress(string elapsed, int tokens) => Format(Get(nameof(StatusCompactingProgress)), elapsed, tokens);
     public static string OodaSummarizePrompt         => Get(nameof(OodaSummarizePrompt));
 

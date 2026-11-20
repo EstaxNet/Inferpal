@@ -584,6 +584,12 @@ internal abstract class InferenceProviderBase : IInferenceProvider
     public virtual Task<int?> GetLoadedContextWindowAsync(string model, CancellationToken ct) =>
         Task.FromResult<int?>(null);
 
+    /// <inheritdoc/>
+    /// <remarks>Ollama loads at the window every request carries (<c>num_ctx</c>); an OpenAI-compatible server decides
+    /// alone. Only LM Studio lets a client choose.</remarks>
+    public virtual Task<WindowLoad?> EnsureWindowAsync(string model, int target, Action<string>? onStep, CancellationToken ct) =>
+        Task.FromResult<WindowLoad?>(null);
+
     // ── Ollama-only operations (safe no-op defaults; Ollama overrides them) ─────
 
     /// <inheritdoc/>
