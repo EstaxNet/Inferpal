@@ -69,8 +69,10 @@ public sealed class EditsWithoutEffectTests : IDisposable
     [Fact]
     public void EveryToolThatWritesAFile_CountsAsAnEditAttempt()
     {
+        // Tools only: a helper they share (CaptureSaving, which a capture's save_to goes through) names no tool of its own.
         var writers = ConventionCoverageTests.CoreSources(Path.Combine("Services", "Tools"))
             .Select(ConventionCoverageTests.CodeOnly)
+            .Where(code => code.Contains(": ITool", StringComparison.Ordinal))
             .Where(code => code.Contains("BackUpBeforeChangeAsync(", StringComparison.Ordinal))
             .Select(code => System.Text.RegularExpressions.Regex.Match(code, @"string\s+Name\s*=>\s*""([a-z_]+)""").Groups[1].Value)
             .ToList();
