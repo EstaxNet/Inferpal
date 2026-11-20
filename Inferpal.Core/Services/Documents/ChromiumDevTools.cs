@@ -22,10 +22,12 @@ internal static class ChromiumDevTools
     /// <summary>The virtual time a page is given before its picture, by the protocol and by <c>--virtual-time-budget</c>.</summary>
     internal const int SettleMilliseconds = 3000;
 
-    /// <summary>The longest wait for the browser to open its DevTools port: a policy that turns it off never opens it.</summary>
-    private static readonly TimeSpan PortWait = TimeSpan.FromSeconds(8);
+    /// <summary>The longest wait for the browser to open its DevTools port before a capture: a policy that turns it off
+    /// never opens it, and the capture goes on from the command line.</summary>
+    internal static readonly TimeSpan CapturePortWait = TimeSpan.FromSeconds(8);
 
-    /// <summary>The browsers whose DevTools port never opened in this process: captured from the command line.</summary>
+    /// <summary>The browsers whose DevTools port did not open in time while they ran, in this process: captured from the
+    /// command line. Only the capture reads it — a browser that was slow once is still driven by <c>interact_page</c>.</summary>
     private static readonly ConcurrentDictionary<string, bool> NoProtocol = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
@@ -38,6 +40,61 @@ internal static class ChromiumDevTools
                                                                         CancellationToken ct)
     {
         if (NoProtocol.ContainsKey(executable)) return (null, "its DevTools port did not open earlier in this session");
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(budget);
+        try
+        {
+            var (browser, why, portTimedOut) = await LaunchAsync(executable, flags, profile, width, height, CapturePortWait,
+                                                                 ["Emulation.virtualTimeBudgetExpired"], null, deadline.Token).ConfigureAwait(false);
+            if (portTimedOut) NoProtocol[executable] = true;
+            if (browser is null) return (null, why);
+            using (browser)
+            {
+                var page = browser.Page;
+                await page.CallAsync("Page.enable", new { }, deadline.Token).ConfigureAwait(false);
+                // Paused until the navigation starts, then advanced while no request is pending: what --virtual-time-budget does.
+                await page.CallAsync("Emulation.setVirtualTimePolicy", new { policy = "pause" }, deadline.Token).ConfigureAwait(false);
+                var mark = page.Mark;
+                await page.CallAsync("Page.navigate", new { url }, deadline.Token).ConfigureAwait(false);
+                await page.CallAsync("Emulation.setVirtualTimePolicy",
+                    new { policy = "pauseIfNetworkFetchesPending", budget = SettleMilliseconds }, deadline.Token).ConfigureAwait(false);
+                await page.WaitForAsync("Emulation.virtualTimeBudgetExpired", mark, deadline.Token).ConfigureAwait(false);
+                var shot = await page.CallAsync("Page.captureScreenshot", new { format = "png" }, deadline.Token).ConfigureAwait(false);
+                return shot.TryGetProperty("data", out var data) && data.GetString() is { } base64
+                    ? (Convert.FromBase64String(base64), null)
+                    : (null, "the browser returned no picture");
+            }
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return (null, $"the browser did not finish the capture within {budget.TotalSeconds:0} s");
+        }
+        catch (Exception ex) when (IsProtocolFailure(ex) || ex is DevToolsCallException)
+        {
+            return (null, "the browser's DevTools protocol failed: " + ex.Message);
+        }
+    }
+
+    /// <summary>What a driven browser throws when it fails or exits: said, never a crash. An error ANSWER is not one
+    /// (<see cref="DevToolsCallException"/>): the browser that sent it still runs.</summary>
+    internal static bool IsProtocolFailure(Exception ex) =>
+        ex is HttpRequestException or WebSocketException or JsonException or IOException or UnauthorizedAccessException
+           or InvalidOperationException or KeyNotFoundException or FormatException or System.ComponentModel.Win32Exception;
+
+    /// <summary>
+    /// Starts <paramref name="executable"/> headless with <paramref name="flags"/> and connects to its page, its viewport set to
+    /// <paramref name="width"/> × <paramref name="height"/>; <c>null</c> with why when its protocol did not answer.
+    /// </summary>
+    /// <param name="portWait">How long the browser may take to open its DevTools port.</param>
+    /// <param name="watched">The events the connection counts (<see cref="DevToolsConnection.WaitForAsync"/>).</param>
+    /// <param name="onEvent">The page's events, read as they come (<see cref="DevToolsConnection"/>).</param>
+    /// <returns>The browser, or why not — and whether its port did not open within <paramref name="portWait"/> while it ran
+    /// (a policy may have turned the protocol off), as opposed to a browser that exited.</returns>
+    /// <exception cref="OperationCanceledException"><paramref name="ct"/> fired; the browser is gone.</exception>
+    internal static async Task<(ChromiumBrowser? Browser, string? Why, bool PortTimedOut)> LaunchAsync(
+        string executable, IReadOnlyList<string> flags, string profile, int width, int height, TimeSpan portWait,
+        IReadOnlyCollection<string> watched, Action<DevToolsConnection, string, JsonElement>? onEvent, CancellationToken ct)
+    {
         var psi = new System.Diagnostics.ProcessStartInfo(executable)
         {
             UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true,
@@ -47,71 +104,56 @@ internal static class ChromiumDevTools
         psi.ArgumentList.Add("--remote-debugging-port=0");
         psi.ArgumentList.Add($"--window-size={Math.Max(width, 800)},{height}");
         psi.ArgumentList.Add("about:blank");
-        System.Diagnostics.Process? browser = null;
-        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        deadline.CancelAfter(budget);
+        var process = ChildProcess.Start(psi);
+        DevToolsConnection? page = null;
         try
         {
-            browser = ChildProcess.Start(psi);
-            _ = browser.StandardOutput.ReadToEndAsync(CancellationToken.None);
-            _ = browser.StandardError.ReadToEndAsync(CancellationToken.None);
-            var port = await PortAsync(browser, profile, deadline.Token).ConfigureAwait(false);
+            _ = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
+            _ = process.StandardError.ReadToEndAsync(CancellationToken.None);
+            var port = await PortAsync(process, profile, portWait, ct).ConfigureAwait(false);
             if (port is null)
             {
-                NoProtocol[executable] = true;
-                return (null, "the browser did not open its DevTools port");
+                var exited = process.HasExited;
+                Stop(process);
+                return exited
+                    ? (null, "the browser exited as it started", false)
+                    : (null, $"the browser did not open its DevTools port within {portWait.TotalSeconds:0} s", true);
             }
             using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared });
-            var socketUrl = await PageSocketAsync(http, port, deadline.Token).ConfigureAwait(false);
-            if (socketUrl is null) return (null, "the browser listed no page to drive");
-
-            using var socket = new ClientWebSocket();
-            socket.Options.Proxy = null;
-            await socket.ConnectAsync(new Uri(socketUrl), deadline.Token).ConfigureAwait(false);
-            var session = new Session(socket);
-            await session.CallAsync("Emulation.setDeviceMetricsOverride",
-                new { width, height, deviceScaleFactor = 1, mobile = false }, deadline.Token).ConfigureAwait(false);
-            await session.CallAsync("Page.enable", new { }, deadline.Token).ConfigureAwait(false);
-            // Paused until the navigation starts, then advanced while no request is pending: what --virtual-time-budget does.
-            await session.CallAsync("Emulation.setVirtualTimePolicy", new { policy = "pause" }, deadline.Token).ConfigureAwait(false);
-            await session.CallAsync("Page.navigate", new { url }, deadline.Token).ConfigureAwait(false);
-            await session.CallAsync("Emulation.setVirtualTimePolicy",
-                new { policy = "pauseIfNetworkFetchesPending", budget = SettleMilliseconds }, deadline.Token).ConfigureAwait(false);
-            await session.WaitForAsync("Emulation.virtualTimeBudgetExpired", deadline.Token).ConfigureAwait(false);
-            var shot = await session.CallAsync("Page.captureScreenshot", new { format = "png" }, deadline.Token).ConfigureAwait(false);
-            return shot.TryGetProperty("data", out var data) && data.GetString() is { } base64
-                ? (Convert.FromBase64String(base64), null)
-                : (null, "the browser returned no picture");
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-        {
-            return (null, $"the browser did not finish the capture within {budget.TotalSeconds:0} s");
-        }
-        catch (Exception ex) when (ex is HttpRequestException or WebSocketException or JsonException or IOException
-                                   or UnauthorizedAccessException or InvalidOperationException or KeyNotFoundException
-                                   or FormatException or System.ComponentModel.Win32Exception)
-        {
-            return (null, "the browser's DevTools protocol failed: " + ex.Message);
-        }
-        finally
-        {
-            if (browser is not null)
+            var socketUrl = await PageSocketAsync(http, port, ct).ConfigureAwait(false);
+            if (socketUrl is null)
             {
-                // Gone before the caller removes its profile: a browser still exiting holds files in it.
-                try { browser.Kill(entireProcessTree: true); browser.WaitForExit(5000); } catch { /* already gone */ }
-                browser.Dispose();
+                Stop(process);
+                return (null, "the browser listed no page to drive", false);
             }
+            page = await DevToolsConnection.ConnectAsync(socketUrl, watched, onEvent, ct).ConfigureAwait(false);
+            await page.CallAsync("Emulation.setDeviceMetricsOverride",
+                new { width, height, deviceScaleFactor = 1, mobile = false }, ct).ConfigureAwait(false);
+            return (new ChromiumBrowser(process, page), null, false);
+        }
+        catch
+        {
+            page?.Dispose();
+            Stop(process);
+            throw;
         }
     }
 
+    /// <summary>Kills the browser and waits for it: gone before the caller removes its profile, which it holds files in.</summary>
+    internal static void Stop(System.Diagnostics.Process browser)
+    {
+        try { browser.Kill(entireProcessTree: true); browser.WaitForExit(5000); } catch { /* already gone */ }
+        browser.Dispose();
+    }
+
     /// <summary>The port the browser wrote in its profile once its DevTools endpoint listens; <c>null</c> when it exited, or
-    /// did not open it within <see cref="PortWait"/>.</summary>
+    /// did not open it within <paramref name="wait"/>.</summary>
     /// <remarks>The file is written in two lines, the port then the browser's path: read once both are there, never a port
     /// cut while it is written.</remarks>
-    private static async Task<string?> PortAsync(System.Diagnostics.Process browser, string profile, CancellationToken ct)
+    private static async Task<string?> PortAsync(System.Diagnostics.Process browser, string profile, TimeSpan wait, CancellationToken ct)
     {
         var file = Path.Combine(profile, "DevToolsActivePort");
-        var until = DateTime.UtcNow + PortWait;
+        var until = DateTime.UtcNow + wait;
         while (DateTime.UtcNow < until)
         {
             ct.ThrowIfCancellationRequested();
@@ -140,54 +182,22 @@ internal static class ChromiumDevTools
         }
         return null;
     }
+}
 
-    /// <summary>One page's protocol session: calls answered by their id, events kept until waited for.</summary>
-    private sealed class Session(ClientWebSocket socket)
+/// <summary>A headless Chromium and the connection to its page; disposing it kills the browser.</summary>
+internal sealed class ChromiumBrowser(System.Diagnostics.Process process, DevToolsConnection page) : IDisposable
+{
+    public DevToolsConnection Page { get; } = page;
+
+    /// <summary>Whether the browser still runs and its page still answers the connection.</summary>
+    public bool Running
     {
-        private int _next;
-        private readonly HashSet<string> _events = new(StringComparer.Ordinal);
-        private readonly byte[] _buffer = new byte[16 * 1024];
-        private readonly MemoryStream _message = new();
+        get { try { return !process.HasExited && !Page.Lost; } catch (InvalidOperationException) { return false; } }
+    }
 
-        public async Task<JsonElement> CallAsync(string method, object parameters, CancellationToken ct)
-        {
-            var id = ++_next;
-            var request = JsonSerializer.SerializeToUtf8Bytes(new { id, method, @params = parameters });
-            await socket.SendAsync(request, WebSocketMessageType.Text, endOfMessage: true, ct).ConfigureAwait(false);
-            while (true)
-            {
-                using var message = await ReceiveAsync(ct).ConfigureAwait(false);
-                var root = message.RootElement;
-                if (root.TryGetProperty("id", out var answered) && answered.GetInt32() == id)
-                {
-                    if (root.TryGetProperty("error", out var error))
-                        throw new InvalidOperationException($"{method}: {error.GetRawText()}");
-                    return root.TryGetProperty("result", out var result) ? result.Clone() : default;
-                }
-                if (root.TryGetProperty("method", out var name) && name.GetString() is { } eventName) _events.Add(eventName);
-            }
-        }
-
-        public async Task WaitForAsync(string eventName, CancellationToken ct)
-        {
-            while (!_events.Contains(eventName))
-            {
-                using var message = await ReceiveAsync(ct).ConfigureAwait(false);
-                if (message.RootElement.TryGetProperty("method", out var name) && name.GetString() is { } seen) _events.Add(seen);
-            }
-        }
-
-        private async Task<JsonDocument> ReceiveAsync(CancellationToken ct)
-        {
-            _message.SetLength(0);
-            while (true)
-            {
-                var part = await socket.ReceiveAsync(_buffer, ct).ConfigureAwait(false);
-                if (part.MessageType == WebSocketMessageType.Close) throw new WebSocketException("the browser closed its DevTools connection");
-                _message.Write(_buffer, 0, part.Count);
-                if (part.EndOfMessage) break;
-            }
-            return JsonDocument.Parse(_message.ToArray());
-        }
+    public void Dispose()
+    {
+        Page.Dispose();
+        ChromiumDevTools.Stop(process);
     }
 }

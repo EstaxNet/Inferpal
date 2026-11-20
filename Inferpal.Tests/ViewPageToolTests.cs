@@ -87,16 +87,32 @@ public sealed class ViewPageToolTests : IDisposable
     [Fact]
     public async Task APagesCard_IsWrittenInThePersonsLanguage()
     {
-        File.WriteAllText(Path.Combine(_root, "page.html"), "<p>x</p>");
         var previous = Inferpal.Localization.Strings.OverrideCulture?.Name;
         try
         {
             Inferpal.Localization.Strings.ApplyLanguage("fr");
             var card = new Card(ApprovalDecision.Deny);
-            await Call(new { path = "page.html" }, card);
+            await Call(new { url = "http://localhost:5173/" }, card);
             Assert.Contains("navigateur coupé du réseau", Assert.Single(card.Shown).Details);
         }
         finally { Inferpal.Localization.Strings.ApplyLanguage(previous); }
+    }
+
+    /// <summary>The agent's own work asks nothing, as for interact_page: a page an app it started serves, a file of the
+    /// workspace. The browser search follows the decision: no card, a capture tried.</summary>
+    [Fact]
+    public async Task ThePageOfAnAppTheAgentStarted_AndAWorkspaceFile_AskNothing()
+    {
+        File.WriteAllText(Path.Combine(_root, "page.html"), "<p>x</p>");
+        var card = new Card(ApprovalDecision.Deny);
+        var served = new ViewPageTool(card, () => _root, new ToolImageInbox(), () => [NeverRun], (_, _) => Task.FromResult(true));
+        // The browser that does not exist fails the capture: reaching it is what says no card stopped the call.
+        await Record.ExceptionAsync(() => served.ExecuteAsync(JsonSerializer.SerializeToElement(new { url = "http://localhost:5173/" }), default));
+        await Record.ExceptionAsync(() => Call(new { path = "page.html" }, card));
+        Assert.Empty(card.Shown);
+        // Reference arm: an address no app of the agent's serves is asked.
+        await Call(new { url = "http://localhost:5173/" }, card);
+        Assert.Single(card.Shown);
     }
 
     [Fact]

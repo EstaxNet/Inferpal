@@ -3,7 +3,7 @@
 This page shows what the agent can do on your machine and what it must ask you first. In short: reading never asks; a
 write, a command or a web call waits for your answer on a card, unless a rule of yours already decides.
 
-The agent completes tasks by calling tools. There are **42 built-in tools**, plus any
+The agent completes tasks by calling tools. There are **43 built-in tools**, plus any
 **user-defined shell tools** and any tools exposed by connected **[MCP](mcp.md) servers**.
 
 ## What the agent can do, and what asks first
@@ -16,7 +16,8 @@ The agent completes tasks by calling tools. There are **42 built-in tools**, plu
 | Build and test | `get_diagnostics`, `run_tests`, `msbuild_property` | The first time in a workspace |
 | Go online | `fetch_url`, `web_search` | Yes |
 | Call an app or API it runs | `http_request` | Yes; for a local address, once per address if you answer *Always* |
-| Look at the page it builds | `view_page` | Yes; once per local address, the same agreement as `http_request` |
+| Look at the page it builds | `view_page` | Not for the app it started itself, nor an HTML file of the workspace; another address of this machine, once — the same agreement as `http_request` |
+| Use the page it builds (click, type, choose) and capture the state reached | `interact_page` | Not for the app it started itself, nor an HTML file of the workspace; another address of this machine, once (*Always* for that address) |
 | Look at the desktop app it launched | `view_window` | Never: you agreed to the launch |
 | Use the debugger | `get_debugger_state`, `debug_control`, `debug_inspect` | To start your program, and to evaluate an expression |
 | Use tools you added | [Custom shell tools](#custom-shell-tools), [MCP tools](#mcp-tools) | Yes |
@@ -72,8 +73,15 @@ must match all of it). No redirect is followed, and headers that would reroute t
 `Proxy-*`…) are refused.
 
 `view_page` opens a page of this machine in a browser whose network is cut, and its scripts run — they may call your
-app as a request would: it asks like `http_request`, and an *Always* given to one tool for a local address covers the
-other. An HTML file of the workspace is asked once per workspace.
+app as a request would. The pages of an app the agent started itself, and the HTML files of the workspace, are its own
+work: no card. Any other address asks like `http_request`, and an *Always* given to one tool for a local address
+covers the other.
+
+`interact_page` asks nothing in the pages of an app the agent started itself (a background job of `run_command`) or in
+an HTML file of the workspace: that is its own work, and each step it plays is in its result. Any other address of this
+machine is another app of yours — a notebook that runs what is typed in it, an admin page — and asks once, *Always* for
+that address. Either way the browser is fresh and reaches nothing but the page's own address. A `deny interact_page
+<regex>` rule (it reads `GET scheme://host:port`, as for `http_request`, or the file's path) keeps it away from an app.
 
 </details>
 
@@ -511,6 +519,7 @@ app serves, the window of the desktop app it launched, the answer of your API.
 |---|---|
 | Fix an error your web service returns | `run_command` (`background`), then `http_request` |
 | Fix how a web page looks | `view_page`, at desktop and phone widths |
+| Capture a page in a given state for a README (a cart with two items, a filled form) | `interact_page` |
 | Understand what a desktop app shows | `view_window`: the window and every control's state |
 
 <details>
@@ -520,6 +529,7 @@ app serves, the window of the desktop app it launched, the answer of your API.
 |---|---|---|
 | `http_request` | `url`, `method?`, `headers?`, `body?`, `wait_seconds?`, `timeout_seconds?` | Send one HTTP request — any method — and read the status, headers and body (1 MB read at most, the cut said): to call the app you just started and read its 500. **Approval** on every call; *Always* for one local address and port; any other address asked each time unless a rule of yours names it. No redirect followed; `wait_seconds` (local only) keeps trying while the server starts |
 | `view_page` | `url?`, `path?`, `width?` | Look at a page of the app you build as a browser renders it — served on this machine (`http://localhost:5173/cart`) or an HTML file of the workspace — captured at 1280 px and at 390 px (a phone), or at the one width you give: what the source does not show (a button that cannot be seen, a layout that overflows on a phone, an element over another, a total cut off). A model that sees gets the pictures; one that does not gets the text read on them by OCR. The browser: WebKit on macOS (built in), Edge on Windows, Firefox on Linux, else any Chrome, Chromium, Brave or Firefox found; none → it says what to install. The page cannot reach the Internet (its fonts or images from outside are missing on purpose). **Approval**, as `http_request` |
+| `interact_page` | `steps`, `url?`, `path?` | Use a page of the app you build as a person does — served on this machine (`http://localhost:5173/`) or an HTML file of the workspace — and capture the state reached: each step is an `action` (`goto`, `click`, `type`, `select`, `press`, `wait_for`, `capture`) with a CSS `selector` or a visible `text`, a `value` to choose, a `key`, a `url` or a `timeout_ms`. A click is a real mouse click at the element's centre (an element covering it is said), typing goes into the focused field, a click on a list's entry chooses it, a page's `confirm()` is answered OK and said. The steps stop at the first one not done. Returns each step done or why not, the page's address, its visible controls with a selector that finds each one, its console (errors first) and a capture at 1280 × 800. The page stays open for the next call of the same run (without `url`, it continues from there); a call of another run opens a fresh browser, an idle one closes after 10 minutes. Needs Chrome, Edge or Chromium; none → it says what to install. **Approval** only for an address no app the agent started serves, once (*Always* for that address) |
 | `view_window` | `job`, `wait?` | Look at the desktop app launched with `run_command` (`background: true`) — WPF, WinForms, MAUI, WinUI, AppKit, GTK, Qt: a picture of each window of that job and of the processes it started, and their accessibility tree (each control's role, name, value, disabled or not, place in the window) — for what the source does not show: a button greyed out, a field a binding leaves empty, a control outside the window or covered by another. A model that sees gets the picture; one that does not gets the text read on it by OCR, and every model gets the tree. Never a window of another process. Windows: built in. macOS: the app that runs Inferpal needs Screen Recording for the picture and Accessibility for the tree — without them it says so and how to allow them. Linux: X11 or XWayland with `xprop` and `xwd` for the picture, AT-SPI (`python3-gi`) for the tree; a native Wayland window gives its tree only; what is missing is named. Waits up to 20 s (at most 60) for a first window, and says what the job printed when none comes. Offered only while a background job runs |
 
 </details>

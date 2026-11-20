@@ -105,6 +105,28 @@ internal static class PageCapture
             yield return (name, onPath(command), CaptureEngine.Chromium);
     }
 
+    /// <summary>A new folder for a browser's profile and pictures, removed by the caller.</summary>
+    /// <remarks>⚠ A browser installed as a snap sees its own /tmp, not ours: its folder goes where both can reach.</remarks>
+    internal static string WorkFolder(CaptureBrowser browser) =>
+        SnapName(browser.Executable) is { } snap && UserFolders.Of(Environment.SpecialFolder.UserProfile) is { Length: > 0 } home
+            ? Directory.CreateDirectory(Path.Combine(home, "snap", snap, "common", "inferpal-" + Guid.NewGuid().ToString("N"))).FullName
+            : Directory.CreateTempSubdirectory("inferpal-page-").FullName;
+
+    /// <summary>A headless Chromium's flags for a page of this machine: a fresh profile in <paramref name="userData"/>, and
+    /// no network but the page's own origin (<paramref name="host"/>:<paramref name="port"/>).</summary>
+    internal static string[] ChromiumFlags(string userData, string host, string port) =>
+    [
+        "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+        "--disable-background-networking", "--disable-component-update", "--disable-sync",
+        "--disable-extensions", "--disable-breakpad", "--disable-crash-reporter", $"--user-data-dir={userData}",
+        // No such proxy, and the loopback itself sent to it (<-loopback>) but for the page's own origin.
+        "--proxy-server=127.0.0.1:9", $"--proxy-bypass-list=<-loopback>;{host}:{port}",
+        $"--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE {host}",
+        "--force-webrtc-ip-handling-policy=disable_non_proxied_udp", "--webrtc-ip-handling-policy=disable_non_proxied_udp",
+        // A dev server's own certificate (https://localhost:5001): only the page's origin is reachable.
+        "--ignore-certificate-errors", "--hide-scrollbars",
+    ];
+
     /// <summary>
     /// Renders <paramref name="url"/> — an http page of this machine — at <paramref name="width"/> pixels by
     /// <paramref name="browser"/>: the PNG, or why there is none (said in English, to the model).
@@ -124,10 +146,7 @@ internal static class PageCapture
         var host = page.Host;
         var port = page.Port.ToString(CultureInfo.InvariantCulture);
         var viewport = height ?? HeightFor(width);
-        // ⚠ A browser installed as a snap sees its own /tmp, not ours: its profile and its picture go where both can reach.
-        var work = SnapName(browser.Executable) is { } snap && UserFolders.Of(Environment.SpecialFolder.UserProfile) is { Length: > 0 } home
-            ? Directory.CreateDirectory(Path.Combine(home, "snap", snap, "common", "inferpal-" + Guid.NewGuid().ToString("N"))).FullName
-            : Directory.CreateTempSubdirectory("inferpal-page-").FullName;
+        var work = WorkFolder(browser);
         try
         {
             var png = Path.Combine(work, "page.png");
@@ -138,29 +157,17 @@ internal static class PageCapture
             switch (browser.Engine)
             {
                 case CaptureEngine.Chromium:
-                    string[] Flags(string userData) =>
-                    [
-                        "--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check",
-                        "--disable-background-networking", "--disable-component-update", "--disable-sync",
-                        "--disable-extensions", "--disable-breakpad", "--disable-crash-reporter", $"--user-data-dir={userData}",
-                        // No such proxy, and the loopback itself sent to it (<-loopback>) but for the page's own origin.
-                        "--proxy-server=127.0.0.1:9", $"--proxy-bypass-list=<-loopback>;{host}:{port}",
-                        $"--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE {host}",
-                        "--force-webrtc-ip-handling-policy=disable_non_proxied_udp", "--webrtc-ip-handling-policy=disable_non_proxied_udp",
-                        // A dev server's own certificate (https://localhost:5001): only the page's origin is reachable.
-                        "--ignore-certificate-errors", "--hide-scrollbars",
-                    ];
                     // The page laid out at the exact width asked (ChromiumDevTools); a browser whose protocol does not
                     // answer is captured from the command line, whose window cannot be narrower than about 520 px.
                     var devTools = Directory.CreateDirectory(Path.Combine(work, "profile-devtools")).FullName;
                     // One budget for the capture: the protocol gets part of it, the command line what is left.
                     var started = Stopwatch.StartNew();
-                    var (drawn, why) = await ChromiumDevTools.CaptureAsync(browser.Executable, Flags(devTools), devTools, url, width,
-                                                                           viewport, ProtocolBudget, ct);
+                    var (drawn, why) = await ChromiumDevTools.CaptureAsync(browser.Executable, ChromiumFlags(devTools, host, port), devTools,
+                                                                           url, width, viewport, ProtocolBudget, ct);
                     if (drawn is not null) return (drawn, null);
                     Diagnostics.Record("PageCapture.DevTools", $"{browser.Name}: {why}; captured from the command line instead");
                     budget = Budget - started.Elapsed;
-                    foreach (var a in Flags(profile).Concat([$"--virtual-time-budget={ChromiumDevTools.SettleMilliseconds}",
+                    foreach (var a in ChromiumFlags(profile, host, port).Concat([$"--virtual-time-budget={ChromiumDevTools.SettleMilliseconds}",
                                                              $"--screenshot={png}", $"--window-size={size}", url]))
                         psi.ArgumentList.Add(a);
                     break;

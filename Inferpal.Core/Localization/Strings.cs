@@ -165,7 +165,6 @@ internal static class Strings
     public static string ApprovalReadPage => Get(nameof(ApprovalReadPage));
     public static string ApprovalSearchWeb => Get(nameof(ApprovalSearchWeb));
     public static string ApprovalUseTool(string tool) => Format(Get(nameof(ApprovalUseTool)), tool);
-    public static string ViewPageCardFile(string page) => Format(Get(nameof(ViewPageCardFile)), page);
     public static string ViewPageCardServed(string page) => Format(Get(nameof(ViewPageCardServed)), page);
     public static string ApprovalLineCount(int count) => Format(Get(nameof(ApprovalLineCount)), count);
     public static string ApprovalMoreLines(int count) => Format(Get(nameof(ApprovalMoreLines)), count);
@@ -1148,6 +1147,10 @@ internal static class Strings
     public static string ApprovalAlwaysFor(string where) => Format(Get(nameof(ApprovalAlwaysFor)), where);
     public static string ApprovalAlwaysForTooltip(string origin) => Format(Get(nameof(ApprovalAlwaysForTooltip)), origin);
     public static string ApprovalCallAppNote => Get(nameof(ApprovalCallAppNote));
+    public static string ApprovalActInPage => Get(nameof(ApprovalActInPage));
+    public static string ApprovalActInPageNote => Get(nameof(ApprovalActInPageNote));
+    public static string ApprovalActAlwaysTooltip(string where) => Format(Get(nameof(ApprovalActAlwaysTooltip)), where);
+    public static string InteractPageCard(string where) => Format(Get(nameof(InteractPageCard)), where);
     public static string ApprovalReadDatabase(string name) => Format(Get(nameof(ApprovalReadDatabase)), name);
     public static string ApprovalDatabaseQuery => Get(nameof(ApprovalDatabaseQuery));
     public static string ApprovalDatabaseTables => Get(nameof(ApprovalDatabaseTables));

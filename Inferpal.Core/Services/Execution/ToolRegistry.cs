@@ -153,7 +153,12 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new RunNotebookTool(codeConsent, root, overlay));
         Register(new FetchUrlTool(approval));
         Register(new HttpRequestTool(approval));
-        Register(new ViewPageTool(approval, root, _readImages));
+        // A page an app the agent started serves (a background job of run_command) is its own work: looked at and used
+        // without a card. Any other address of this machine is another app of the person's.
+        Task<bool> ServedByAgent(int port, CancellationToken ct) => Shell.LocalPorts.ServedByAsync(port,
+            [.. runCommand.Background.List().Where(j => j.Running).Select(j => runCommand.Background.ProcessIdOf(j.Id)).OfType<int>()], ct);
+        Register(new ViewPageTool(approval, root, _readImages, servedByAgent: ServedByAgent));
+        Register(new InteractPageTool(approval, root, _readImages, () => history.CurrentRunId, ServedByAgent));
         Register(new WebSearchTool(approval));
         Register(new GetSolutionInfoTool(editor, root));
         Register(new GetOpenEditorsTool(editor));

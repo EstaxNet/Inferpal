@@ -758,6 +758,10 @@ Geben Sie `/setup` ein, um es erneut zu versuchen.</value></data>
   <data name="ApprovalAlwaysFor" xml:space="preserve"><value>Immer für {0}</value></data>
   <data name="ApprovalAlwaysForTooltip" xml:space="preserve"><value>Aufrufe an {0} laufen ohne Karte, bis der Editor geschlossen wird. Ein anderer Port oder ein anderer Rechner fragt weiterhin.</value></data>
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>„Immer“ öffnet nur diese Adresse und diesen Port, bis der Editor geschlossen wird. Ein anderer Port dieses Rechners — eine Datenbank, Docker, ein Proxy — fragt erneut.</value></data>
+  <data name="ApprovalActInPage" xml:space="preserve"><value>Der Agent möchte auf einer Seite dieses Rechners handeln</value></data>
+  <data name="InteractPageCard" xml:space="preserve"><value>In {0} klicken, tippen und auswählen (interact_page), in einem vom Netzwerk getrennten Browser. Keine vom Agenten gestartete App bedient diese Adresse: Es kann eine andere Ihrer Apps sein — ein Notebook, das ausführt, was eingegeben wird, eine Admin-Seite.</value></data>
+  <data name="ApprovalActInPageNote" xml:space="preserve"><value>„Immer“ öffnet nur diese Adresse und diesen Port, bis der Editor geschlossen wird. Seiten einer App, die der Agent selbst gestartet hat, fragen nie.</value></data>
+  <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>Klicks und Eingaben in {0} erfolgen ohne Karte, bis der Editor geschlossen wird. Ein anderer Port fragt erneut.</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>Der Agent möchte eine Anfrage an einen anderen Rechner senden</value></data>
   <data name="ApprovalSendElsewhereWhere" xml:space="preserve"><value>{0} — wird jedes Mal gefragt</value></data>
   <data name="ApprovalSendElsewhereWarning" xml:space="preserve"><value>Diese Anfrage verlässt Ihren Rechner mit dem, was Sie oben sehen, einschließlich der Header. Prüfen Sie, ob Sie genau das senden wollen, und wohin.</value></data>
@@ -1489,7 +1493,6 @@ Geben Sie `/setup` ein, um es erneut zu versuchen.</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Im Web suchen</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>{0} verwenden</value></data>
   <data name="ViewPageCardServed" xml:space="preserve"><value>{0} in einem vom Netzwerk getrennten Browser öffnen (view_page) und aufnehmen. Seine Skripte werden ausgeführt.</value></data>
-  <data name="ViewPageCardFile" xml:space="preserve"><value>{0} in einem vom Netzwerk getrennten Browser öffnen und aufnehmen. Seine Skripte werden ausgeführt.</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:Zeile|Zeilen}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:weitere Zeile|weitere Zeilen}</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Erlaubt {0} ohne Nachfrage in diesem Arbeitsbereich bis zu einem Neustart – bleibt erhalten, wenn Sie aus einer anderen Projektmappe zurückkehren.</value></data>

@@ -18,8 +18,10 @@ namespace Inferpal.Services.Tools;
 /// </para>
 /// <para>
 /// ⚠ This machine only, network cut (<see cref="PageCapture"/>): a page of the Internet is <c>fetch_url</c>'s. ⚠ Opening a
-/// page runs its scripts, which may call the app (a GET that changes data): a card first, as <c>http_request</c> asks — one
-/// "Always" per local address, the same agreement for both tools; for a file of the workspace, one per workspace.
+/// page runs its scripts, which may call the app (a GET that changes data). No card for the agent's own work — a page an app
+/// it started serves (a background job of <c>run_command</c>), a file of the workspace — as for <c>interact_page</c>, which
+/// acts where this tool only looks; any other address of this machine asks as <c>http_request</c> does, one "Always" per
+/// address, the same agreement for both tools.
 /// </para>
 /// <para>
 /// ⚠ A file of the workspace is served over the loopback by <see cref="WorkspacePages"/>, never opened as a <c>file:</c> URL:
@@ -34,14 +36,19 @@ internal sealed class ViewPageTool : ITool
     private readonly Func<string> _getWorkspaceRoot;
     private readonly ToolImageInbox _images;
     private readonly Func<IReadOnlyList<CaptureBrowser>> _findBrowsers;
+    private readonly Func<int, CancellationToken, Task<bool>> _servedByAgent;
 
+    /// <param name="servedByAgent">Whether a port of this machine is served by an app the agent started: its pages need no
+    /// card. Without it, every served page asks.</param>
     public ViewPageTool(IApprovalService approval, Func<string> getWorkspaceRoot, ToolImageInbox images,
-                        Func<IReadOnlyList<CaptureBrowser>>? findBrowsers = null)
+                        Func<IReadOnlyList<CaptureBrowser>>? findBrowsers = null,
+                        Func<int, CancellationToken, Task<bool>>? servedByAgent = null)
     {
         _approval = approval;
         _getWorkspaceRoot = getWorkspaceRoot;
         _images = images;
         _findBrowsers = findBrowsers ?? (() => [.. PageCapture.FindAll()]);
+        _servedByAgent = servedByAgent ?? ((_, _) => Task.FromResult(false));
     }
 
     public string Name => "view_page";
@@ -57,7 +64,7 @@ internal sealed class ViewPageTool : ITool
         "(http://localhost:5173/cart) or an HTML file of the workspace — captured at a laptop's width (1280 px) and a phone's " +
         "(390 px), or at the one width you give. Use it for what the source does not show: a button that cannot be seen, a " +
         "layout that overflows on a phone, an element covering another, text cut off. Pages of this machine only; the page " +
-        "reaches nothing but its own address. The person approves the first look at each local address.";
+        "reaches nothing but its own address. The person approves the first look at an address no app you started serves.";
 
     public object Parameters => new
     {
@@ -77,8 +84,9 @@ internal sealed class ViewPageTool : ITool
         if (string.IsNullOrWhiteSpace(url) == string.IsNullOrWhiteSpace(path))
             return "Error: give either url (a page served on this machine) or path (an HTML file of the workspace), not both.";
 
-        string target, shown, subject, grantKey, details, askedAs;
-        string? servedRoot = null;
+        string target, shown, subject;
+        string? servedRoot = null, grantKey = null, details = null, askedAs = null;
+        Uri? servedUrl = null;
         if (!string.IsNullOrWhiteSpace(url))
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
@@ -90,6 +98,7 @@ internal sealed class ViewPageTool : ITool
                        "Read a page of the Internet with fetch_url.";
             target = uri.AbsoluteUri;
             shown = target;
+            servedUrl = uri;
             // The same subject, rules and agreement as http_request's GET: the person said yes (or no) to this app once, for
             // both tools — asked as http_request, after view_page's own rules had their say.
             subject = HttpRequestTool.Subject("GET", uri);
@@ -110,9 +119,6 @@ internal sealed class ViewPageTool : ITool
             shown = Path.GetRelativePath(root, file).Replace('\\', '/');
             target = shown;   // resolved against the server's address once it listens
             subject = file;
-            grantKey = $"{Name} workspace files";
-            askedAs = Name;
-            details = Localization.Strings.ViewPageCardFile(shown);
         }
 
         var widths = new List<int>();
@@ -130,7 +136,9 @@ internal sealed class ViewPageTool : ITool
             return "No browser on this machine can capture a page: install Firefox or Google Chrome, then call view_page again.";
 
         if (_approval.Refuses(Name, subject)) return ToolFailure.CancelledByUser;
-        if (!await _approval.RequestScopedApprovalAsync(askedAs, details, subject, grantKey, ct)) return ToolFailure.CancelledByUser;
+        if (servedUrl is not null && !await _servedByAgent(servedUrl.Port, ct)
+            && !await _approval.RequestScopedApprovalAsync(askedAs!, details!, subject, grantKey!, ct))
+            return ToolFailure.CancelledByUser;
 
         // The root the person approved the page under, never one read again after the card.
         using var served = servedRoot is null ? null : WorkspacePages.Start(servedRoot);

@@ -207,7 +207,7 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
 - **Three modes** — **Chat** (tools, no plan), **Agent** (plan, act, observe) and **Plan** (`/plan`: read-only, it
   proposes and changes nothing). `/plan save` turns a plan into a committable `.inferpal/plans/` file. Beside them,
   the modes found for the workspace: [Modes](configuration.md#modes).
-- **42 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
+- **43 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
   Independent read-only calls run in parallel; `/tools off <tool>` takes one away from the model.
 - **Step by step** — `/agent-step` pauses before each tool call; **▶ Resume** goes on.
 - **Long runs you can leave** — the machine stays awake while the model works, a card left unanswered flashes the
@@ -299,7 +299,13 @@ look at what the code produces, measure it, and read the files developers deal w
 - **The web page it builds** — `view_page` opens a page of your web app, served on this machine or an HTML file, at
   desktop and phone widths in a browser with no network access. Layout and styling problems the source does not show
   — an element that cannot be seen, a layout that breaks on a small screen — are seen rather than guessed. It asks
-  first, like a request to your app.
+  nothing for the app it started itself; another service of your machine asks once, like a request to it.
+- **The page in the state you want** — `interact_page` uses the page as you would: it clicks, types, chooses in a list
+  and waits, then captures the state reached — a cart with two items, a form filled in, the confirmation after an
+  order — for a README or to check what the source cannot show. Each step it plays is in the run, and the page stays
+  open for its next call. It asks nothing in the app it started itself; another service of your machine asks once.
+  Pages of this machine only, in a fresh browser that reaches nothing else.
+  Needs Chrome, Edge or Chromium.
 - **The desktop app it started** — `view_window` shows the window of an app the agent launched in the background, and
   every control's type, text, value, state and position: enough to notice a control left disabled or a field that
   stays empty. A model that does not see images gets the controls too. Windows, macOS (it says which permission to
@@ -326,6 +332,7 @@ look at what the code produces, measure it, and read the files developers deal w
 | When you ask it to | It can |
 |---|---|
 | Fix how a page looks | Look at the page as a browser draws it (`view_page`) |
+| Capture a page in a given state for a README | Click, type and choose in the page, then capture it (`interact_page`) |
 | Fix an error your web service returns | Start the service and call it, before and after the fix (`run_command` in the background, `http_request`) |
 | Make something faster | Measure it over several runs, before and after the change (`run_command` with `repeat`) |
 | Answer a question about a large data file | Query it with SQL instead of reading it (`query_data`) |
@@ -1156,7 +1163,7 @@ the password, and three wrong tries leave the file closed. An archive (`.zip`, `
 place, entry by entry, never extracted.
 
 **The agent also looks at what it builds** — the page your app serves (`view_page`, captured at a laptop's width and a
-phone's) and the desktop app it launched (`view_window`): see
+phone's, or brought into a given state first with `interact_page`) and the desktop app it launched (`view_window`): see
 [It looks, it measures, it checks](#the-agent-at-work).
 
 **Images go as images**, to a model that sees them (Qwen3.8, Ornith, Gemma 4, on LM Studio or Ollama). A large one is

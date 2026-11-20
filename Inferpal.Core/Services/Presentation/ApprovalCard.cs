@@ -101,6 +101,20 @@ internal static class ApprovalCard
                                      Note: Strings.ApprovalSendElsewhereNote(rule), Outbound: true);
     }
 
+    /// <summary><c>interact_page</c>'s card, for an address no app of the agent's serves: the address, what will happen in
+    /// it, and an "Always" for that address only.</summary>
+    private static ApprovalCardModel? ActCard(ApprovalPrompt prompt, List<ApprovalPreviewLine> preview)
+    {
+        var space = prompt.Subject?.IndexOf(' ') ?? -1;
+        if (space < 0 || !Uri.TryCreate(prompt.Subject![(space + 1)..], UriKind.Absolute, out var origin)) return null;
+        var where = $"{origin.Host.ToLowerInvariant()}:{origin.Port}";
+        if (preview.Count == 0) preview.AddRange(prompt.Details.Replace("\r\n", "\n").Split('\n').Select(l => new ApprovalPreviewLine("ctx", l)));
+        return new ApprovalCardModel(Strings.ApprovalActInPage, Strings.ApprovalCallAppWhere(where), string.Empty, preview, string.Empty,
+                                     Strings.ApprovalActAlwaysTooltip(where), prompt.Message, OffersAlways: !prompt.Forced,
+                                     AlwaysLabel: Strings.ApprovalAlwaysFor(where),
+                                     Note: prompt.Forced ? string.Empty : Strings.ApprovalActInPageNote);
+    }
+
     /// <summary>
     /// <c>query_database</c>'s card, read from its details (<see cref="Tools.QueryDatabaseTool.Details"/>): the database, where
     /// the project declares it, its engine, server and account, and the query as it will run. On this machine, "Always" for
@@ -222,6 +236,7 @@ internal static class ApprovalCard
 
         // view_page on a served page asks with http_request's subject and agreement: the same card.
         if (prompt.ToolName is "http_request" or "view_page" && HttpCard(prompt, preview) is { } http) return http;
+        if (prompt.ToolName == "interact_page" && ActCard(prompt, preview) is { } act) return act;
 
         var card = new ApprovalCardModel(title, subject, meta, preview, more > 0 ? Strings.ApprovalMoreLines(more) : string.Empty,
                                      // What "Always" lasts: across solutions in one Visual Studio; until the host restarts elsewhere.

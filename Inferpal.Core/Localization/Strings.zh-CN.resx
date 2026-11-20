@@ -758,6 +758,10 @@
   <data name="ApprovalAlwaysFor" xml:space="preserve"><value>始终允许 {0}</value></data>
   <data name="ApprovalAlwaysForTooltip" xml:space="preserve"><value>对 {0} 的调用在编辑器关闭前无需卡片。其他端口或其他机器仍会询问。</value></data>
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>“始终”只开放此地址和端口，直到编辑器关闭。本机的其他端口（数据库、Docker、代理）会再次询问。</value></data>
+  <data name="ApprovalActInPage" xml:space="preserve"><value>代理想在本机的页面中操作</value></data>
+  <data name="InteractPageCard" xml:space="preserve"><value>在 {0} 中点击、输入和选择（interact_page），使用与网络隔离的浏览器。此地址不是由代理启动的应用提供的：它可能是你的另一个应用——会执行输入内容的笔记本、管理页面。</value></data>
+  <data name="ApprovalActInPageNote" xml:space="preserve"><value>“始终”只开放此地址和端口，直到编辑器关闭。代理自己启动的应用的页面从不询问。</value></data>
+  <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>在 {0} 中的点击和输入在编辑器关闭前无需卡片。其他端口会再次询问。</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>代理想要向另一台机器发送请求</value></data>
   <data name="ApprovalSendElsewhereWhere" xml:space="preserve"><value>{0} — 每次都询问</value></data>
   <data name="ApprovalSendElsewhereWarning" xml:space="preserve"><value>此请求将带着上方显示的内容（包括请求头）离开你的机器。请确认这正是你要发送的内容和目标。</value></data>
@@ -1489,7 +1493,6 @@
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>搜索网络</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>使用 {0}</value></data>
   <data name="ViewPageCardServed" xml:space="preserve"><value>在与网络隔离的浏览器 (view_page) 中打开 {0} 并截图。其脚本会运行。</value></data>
-  <data name="ViewPageCardFile" xml:space="preserve"><value>在与网络隔离的浏览器中打开 {0} 并截图。其脚本会运行。</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} 行</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>…… 另有 {0} 行</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>在此工作区中无需询问即允许 {0}，直到重启——从另一个解决方案返回后仍保留。</value></data>

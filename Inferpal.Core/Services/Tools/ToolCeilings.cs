@@ -53,6 +53,8 @@ internal static class ToolCeilings
         ["http_request"]         = new(N | X),
         // A page's scripts may call the app it is served by, as http_request does.
         ["view_page"]            = new(N | X),
+        // Its clicks may make the app change its data, as a person's would.
+        ["interact_page"]        = new(N | X),
         ["view_window"]          = new(R),
         ["write_file"]           = new(W),
         ["apply_diff"]           = new(W),

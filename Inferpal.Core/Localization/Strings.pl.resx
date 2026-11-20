@@ -758,6 +758,10 @@ Wpisz `/setup`, aby spróbować ponownie.</value></data>
   <data name="ApprovalAlwaysFor" xml:space="preserve"><value>Zawsze dla {0}</value></data>
   <data name="ApprovalAlwaysForTooltip" xml:space="preserve"><value>Wywołania {0} przechodzą bez karty do zamknięcia edytora. Inny port lub inny komputer nadal pyta.</value></data>
   <data name="ApprovalCallAppNote" xml:space="preserve"><value>„Zawsze” otwiera tylko ten adres i port, do zamknięcia edytora. Inny port tego komputera — baza danych, Docker, proxy — zapyta ponownie.</value></data>
+  <data name="ApprovalActInPage" xml:space="preserve"><value>Agent chce działać na stronie tego komputera</value></data>
+  <data name="InteractPageCard" xml:space="preserve"><value>Klikać, wpisywać i wybierać w {0} (interact_page), w przeglądarce odciętej od sieci. Tego adresu nie obsługuje żadna aplikacja uruchomiona przez agenta: może to być inna Twoja aplikacja — notatnik, który wykonuje to, co się w nim wpisze, strona administracyjna.</value></data>
+  <data name="ApprovalActInPageNote" xml:space="preserve"><value>„Zawsze” otwiera tylko ten adres i port, do zamknięcia edytora. Strony aplikacji uruchomionej przez samego agenta nigdy nie pytają.</value></data>
+  <data name="ApprovalActAlwaysTooltip" xml:space="preserve"><value>Kliknięcia i wpisywanie w {0} odbywają się bez karty do zamknięcia edytora. Inny port zapyta ponownie.</value></data>
   <data name="ApprovalSendElsewhere" xml:space="preserve"><value>Agent chce wysłać żądanie do innego komputera</value></data>
   <data name="ApprovalSendElsewhereWhere" xml:space="preserve"><value>{0} — pytanie za każdym razem</value></data>
   <data name="ApprovalSendElsewhereWarning" xml:space="preserve"><value>To żądanie opuszcza Twój komputer z tym, co widzisz powyżej, łącznie z nagłówkami. Sprawdź, czy to właśnie chcesz wysłać, i dokąd.</value></data>
@@ -1489,7 +1493,6 @@ Wpisz `/setup`, aby spróbować ponownie.</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Szukaj w sieci</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>Użyj {0}</value></data>
   <data name="ViewPageCardServed" xml:space="preserve"><value>Otwórz {0} w przeglądarce odciętej od sieci (view_page) i zrób zrzut. Jego skrypty są wykonywane.</value></data>
-  <data name="ViewPageCardFile" xml:space="preserve"><value>Otwórz {0} w przeglądarce odciętej od sieci i zrób zrzut. Jego skrypty są wykonywane.</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>wiersze: {0}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… jeszcze wierszy: {0}</value></data>
   <data name="ApprovalAlwaysTooltip" xml:space="preserve"><value>Zezwala na {0} bez pytania w tym obszarze roboczym do ponownego uruchomienia — zachowane po powrocie z innego rozwiązania.</value></data>
