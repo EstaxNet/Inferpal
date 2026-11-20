@@ -218,7 +218,8 @@ internal partial class InferpalToolWindowData
 
             case SlashCommandId.Tools:
             {
-                var tools = Services.Commands.ToolsCommandHandler.Handle(parts, _tools, _config, _toolsEnabled);
+                var tools = Services.Commands.ToolsCommandHandler.Handle(parts, _tools, _config, _toolsEnabled,
+                    Services.Agent.ContextManager.NextTurnTools(_tools, _planMode, _heldMode), ToolCutWindow, _cutNamedTools);
                 if (tools.SessionTools is { } on) _toolsEnabled = on;
                 if (tools.SaveConfig) _config.Save();
                 await ShowInfoAsync(tools.Message);

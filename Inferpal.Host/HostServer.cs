@@ -521,7 +521,12 @@ internal sealed partial class HostServer : IDisposable
     {
         var s = Session();
         if (s.Steering is { } steering)
-            return steering.TryPush(new UserNote(p.Id, p.Text)) ? new ChatSteerResult(true) : new ChatSteerResult(false, "closed");
+        {
+            if (!steering.TryPush(new UserNote(p.Id, p.Text))) return new ChatSteerResult(false, "closed");
+            // The person's words too: a tool the note names is kept from the next question on.
+            s.CutNamedTools = [.. s.CutNamedTools.Union(SmallWindowToolRegistry.NamedIn(p.Text, s.Tools.BuiltInNames))];
+            return new ChatSteerResult(true);
+        }
         var turnRuns = TurnRuns();
         return new ChatSteerResult(false, turnRuns ? "noBoundary" : "noTurn");
     }
@@ -633,12 +638,31 @@ internal sealed partial class HostServer : IDisposable
             // Same service as the Visual Studio window, same order: after the user message.
             var windowBefore = s.ContextWindowInUse;
             var turnToolTokens = Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, useTools, s.PlanMode, mode);
+            // The question as typed (or a command's prompt): the tools it names are never cut by a small window, for the
+            // rest of the conversation.
+            // ⚠ The typed query when the client sends one, even empty: the prompt then carries the attachments' bodies. A
+            // held mode's instructions are words the person chose too.
+            if (turnToolTokens > 0)
+                s.CutNamedTools = [.. s.CutNamedTools.Union(SmallWindowToolRegistry.NamedIn(
+                    string.Join("\n", [p.Query ?? p.Prompt, .. p.Notes ?? [], mode?.Instructions]), s.Tools.BuiltInNames))];
+            var named = s.CutNamedTools;
             var ctxDecision = await Services.Agent.ContextManager.PrepareAsync(
                 s.History, s.Config, s.Client, s.LastPromptTokens,
                 onStep: Step,
                 ct: cts.Token, model: model,
-                toolTokens: turnToolTokens);
-            s.LastContextWindow = ctxDecision.Window;
+                toolTokens: turnToolTokens,
+                keptToolTokens: () => Services.Agent.ContextManager.NextTurnKeptToolTokens(s.Tools, useTools, s.PlanMode, mode, named));
+            s.LastContextWindow     = ctxDecision.Window;
+            s.LastContextWindowRead = ctxDecision.WindowRead;
+            // The load first, as in Visual Studio: the window it could not have is why the tools are cut.
+            if (ctxDecision.WindowNotice is { } loadNotice) Notify("host/notice", new { text = loadNotice, severity = "warning" });
+            // A window too small for every definition: the turn sends the tools used most, said once.
+            if (ctxDecision.ToolsCut
+                && Services.Agent.ContextManager.ToolsCutNotice(s.RootDir, model, ctxDecision.Window,
+                       Services.Agent.ContextManager.NextTurnTools(s.Tools, s.PlanMode, mode), named,
+                       Services.Agent.ContextManager.ToolsCutModeKey(s.PlanMode, mode), s.Config.Provider, s.Config.ContextWindowSize,
+                       s.HeadShareSaid) is { } cutNotice)
+                Notify("host/notice", new { text = cutNotice, severity = "warning" });
             // The prompt was built above, against the window known then: when this check reveals another one — the
             // first question, a model loaded smaller since — its files are re-budgeted before anything is sent.
             if (ctxDecision.Window > 0 && ctxDecision.Window != windowBefore)
@@ -649,9 +673,10 @@ internal sealed partial class HostServer : IDisposable
 
             // What every request of the turn carries before the conversation, against the window just measured — after
             // the prompt was rebuilt for it (the Visual Studio window says it at the same point, before any compaction).
+            // The tools the turn was planned for: after a cut, the kept ones.
             if (Services.Agent.ContextManager.HeadShareNotice(s.RootDir, model, s.Config.Provider, ctxDecision.Window, s.Config.ContextWindowSize,
                     s.History is [{ Role: "system" } system, ..] ? Services.Agent.AgentOrchestrator.EstimateTokens([system]) : 0,
-                    turnToolTokens, s.HeadShareSaid, ctxDecision.WindowRead) is { } headNotice)
+                    ctxDecision.ToolTokens, s.HeadShareSaid, ctxDecision.WindowRead) is { } headNotice)
                 Notify("host/notice", new { text = headNotice, severity = "warning" });
 
             if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)
@@ -690,8 +715,11 @@ internal sealed partial class HostServer : IDisposable
                 // Plan mode restricts to read-only tools; step mode pauses after each call.
                 IToolRegistry effectiveTools = s.Tools;
                 if (s.PlanMode) effectiveTools = new PlanModeToolRegistry(effectiveTools);
+                if (ctxDecision.ToolsCut) effectiveTools = new SmallWindowToolRegistry(effectiveTools, ctxDecision.Window, named);
                 if (s.ToolEvents) effectiveTools = Announced(effectiveTools, s.Tools);
                 if (s.StepMode) effectiveTools = new StepModeToolRegistry(effectiveTools, tok => PauseForStepAsync(s, tok));
+                // What its plan made room for, cut or not: the loop does not decide the cut again.
+                effectiveTools = SmallWindowToolRegistry.MarkDecided(effectiveTools);
 
                 // Only the question and one answer outlive the run, as in Visual Studio: its internal
                 // transcript (plan prompt, plan JSON, step instructions, tool calls and results) bloats
@@ -764,8 +792,10 @@ internal sealed partial class HostServer : IDisposable
                 // plan. Only `/tools off` and a code action are chat without tools.
                 IToolRegistry chatTools = ChatModes.ToolsFor(s.Tools, mode, RootOf(s));
                 if (s.PlanMode) chatTools = new PlanModeToolRegistry(chatTools);
+                if (ctxDecision.ToolsCut) chatTools = new SmallWindowToolRegistry(chatTools, ctxDecision.Window, named);
                 if (s.ToolEvents) chatTools = Announced(chatTools, s.Tools);
                 if (s.StepMode) chatTools = new StepModeToolRegistry(chatTools, tok => PauseForStepAsync(s, tok));
+                chatTools = SmallWindowToolRegistry.MarkDecided(chatTools);   // as the agent path
 
                 // Same durable history as the agent path: the question and the answer the user saw.
                 var durable = new List<ChatMessageDto>(s.History);
@@ -2147,7 +2177,8 @@ internal sealed partial class HostServer : IDisposable
     /// </summary>
     private static async Task RemeasureWindowAsync(HostSession s, CancellationToken ct)
     {
-        s.LastContextWindow = await Services.Agent.ContextManager.EffectiveWindowAsync(
+        // The flag with the window: one without the other makes the gauge decide a tool cut on a window nobody read.
+        (s.LastContextWindow, s.LastContextWindowRead) = await Services.Agent.ContextManager.MeasureWindowAsync(
             s.Config, s.Client, ModelRouter.Resolve(s.Config, ModelRole.Chat), ct);
         RefreshSystemPrompt(s);
     }
@@ -2264,6 +2295,7 @@ internal sealed partial class HostServer : IDisposable
                     Recap          = state.Recap ?? slot.Recap,
                     RecapInSystem  = state.RecapInSystem ?? slot.RecapInSystem,
                     Model          = state.Model ?? slot.Model,
+                    NamedTools     = state.NamedTools ?? slot.State.NamedTools,
                 };
         }
         // The workspace for every save, not only the auto-save slot's: an Agent Client Protocol client lists the sessions
@@ -2368,7 +2400,8 @@ internal sealed partial class HostServer : IDisposable
     /// the next question, where Visual Studio shows the restored conversation's fill at once.
     /// </summary>
     private static int NextTurnTokens(HostSession s) =>
-        ContextManager.NextTurnLoad(s.LastPromptTokens, ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)));
+        ContextManager.NextTurnLoad(s.LastPromptTokens, ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s),
+                                                                                           s.ToolCutWindow, s.CutNamedTools));
 
     /// <summary>The editor an ACP thread's runs are recorded under: no start of VS Code says them.</summary>
     internal const string AcpRunsEditor = "acp";
@@ -2825,7 +2858,8 @@ internal sealed partial class HostServer : IDisposable
         XRayPanelPresenter.Build(
             BuildPromptSections(s), s.XrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(SnapshotHistory(s)), s.ContextWindowInUse,
-            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)),
+            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s), s.ToolCutWindow,
+                                                          s.CutNamedTools),
             questionLayersInHistory: QuestionLayersInHistory(s),
             toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)),
             turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)));
@@ -2881,6 +2915,8 @@ internal sealed partial class HostServer : IDisposable
         s.ConversationTurnCount = 0;
         s.WorkspaceContextSent  = false;
         s.ModeModelNoticeSaid   = null;
+        s.CutNamedTools         = [];
+        Services.Agent.ContextManager.ForgetCutNotices(s.HeadShareSaid);   // told again in the next conversation
         s.Tools.ForgetLoadedTools();
     }
 

@@ -209,7 +209,7 @@ internal sealed class ReplaceInFilesTool : ITool
         return write.Stuck.Count == 0
             ? $"Error: nothing was replaced: writing {Shown(write.FailedPath!, workspace)} failed ({write.Error}), and every file already written was put back."
             : $"Error: writing {Shown(write.FailedPath!, workspace)} failed ({write.Error}), and "
-              + string.Join(", ", write.Stuck.Select(s => Shown(s, workspace))) + " could not be put back — restore them with restore_file.";
+              + string.Join(", ", write.Stuck.Select(s => Shown(s, workspace))) + " could not be put back — restore them with restore_file when it is offered; otherwise tell the user: /undo-run puts the run's files back.";
     }
 
     private static int Occurrences(string text, string find)

@@ -99,12 +99,12 @@ internal partial class InferpalSettingsData
     }
 
     /// <summary>The colour of a state, from the window's own palette (a theme fix reaches this page with the rest): the
-    /// warning colour for a tool turned off, the link colour on demand.</summary>
+    /// warning colour for a tool turned off, the link colour on demand, the subtle one for a tool not sent now.</summary>
     private string ColorFor(string state) => state switch
     {
         "off" or "offByEntry" => WarningForeground,
         "onDemand"            => LinkForeground,
-        "notOffered"          => SubtleForeground,
+        "notOffered" or "cutByWindow" => SubtleForeground,
         _                     => TextForeground,
     };
 }

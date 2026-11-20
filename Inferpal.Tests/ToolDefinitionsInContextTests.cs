@@ -129,7 +129,8 @@ public class ToolDefinitionsInContextTests
         var at = code.IndexOf("ContextBudgetGauge.Compute(", StringComparison.Ordinal);
         Assert.True(at >= 0, "the gauge moved: the scan reads nothing");                           // WITNESS
 
-        Assert.Contains("NextTurnLoad(_lastPromptTokens, NextTurnToolTokens())", code[at..code.IndexOf(';', at)]);
+        // At the window in use: a window too small for every definition sends the tools used most.
+        Assert.Contains("NextTurnLoad(_lastPromptTokens, NextTurnToolTokens(ToolCutWindow))", code[at..code.IndexOf(';', at)]);
     }
 
     private static string RepoRoot()
@@ -167,7 +168,8 @@ public partial class HostServerTests
             .WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         var s     = h.Server.CurrentSession!;
-        var tools = ContextManager.NextTurnToolTokens(s.Tools, toolsEnabled: true, planMode: false);
+        // The tools the turn carries at this window: the ones used most, every definition being over half of it.
+        var tools = ContextManager.NextTurnToolTokens(s.Tools, toolsEnabled: true, planMode: false, window: 8_192);
         Assert.True(tools > 1_000, $"the harness offers {tools} tokens of tool definitions: nothing to measure");   // witness
         s.ToolsEnabled     = toolsOn;
         s.LastPromptTokens = 8_192 * 8 / 10 - tools / 2;   // under the trigger alone, over it with the tools

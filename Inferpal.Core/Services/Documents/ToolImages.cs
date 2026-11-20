@@ -91,6 +91,6 @@ internal static class ToolImages
         messages.Add(new ChatMessageDto("user",
             $"[Your tool calls gave the image(s) {names}, but they were not sent: {why}. Do not guess what they show. Tell the user: "
           + "they can describe the image, or choose a model that reads images. To read the words written in it (an error, a value), "
-          + "call the ocr tool on it.]") { IsScaffolding = true });
+          + "call the ocr tool on it when it is offered.]") { IsScaffolding = true });
     }
 }

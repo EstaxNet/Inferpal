@@ -178,6 +178,8 @@ Pour chaque problème, cite la ligne ou le symbole, explique le risque et propos
   <data name="StatusCompacting" xml:space="preserve"><value>Compaction du contexte…</value></data>
   <data name="StatusLoadingModelWindow" xml:space="preserve"><value>Chargement de {0} avec une fenêtre de {1} jetons…</value></data>
   <data name="MsgModelWindowNotLoaded" xml:space="preserve"><value>LM Studio n’a pas chargé {0} avec une fenêtre de {1} jetons ({2}) : il garde la fenêtre avec laquelle il charge le modèle. Si les outils d’Inferpal laissent trop peu de place à votre question, augmentez la longueur de contexte du modèle dans LM Studio, ou libérez de la mémoire sur son serveur.</value></data>
+  <data name="MsgToolsCutSmallWindow" xml:space="preserve"><value>Avec une fenêtre de contexte de {0:N0} jetons, Inferpal ne propose que les outils qu’il utilise le plus, pour laisser de la place à votre question : {1} {1:autre outil n’est pas proposé|autres outils ne sont pas proposés} ({2}). Écrivez le nom d’un outil dans votre question pour le garder. {3}</value></data>
+  <data name="MsgToolsCutSmallWindowRun" xml:space="preserve"><value>Avec une fenêtre de contexte de {0:N0} jetons, ce run ne propose que les outils les plus utilisés : {1} {1:autre outil n’est pas proposé|autres outils ne sont pas proposés} ({2}). {3}</value></data>
   <data name="StatusCompactingProgress" xml:space="preserve"><value>Compaction du contexte… {0}, environ {1:N0} {1:jeton|jetons} jusqu'ici</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Contexte compacté : {0} message(s) résumé(s) — conservation des {1} derniers tours.</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ La compaction du contexte a expiré — retour à la troncature forcée. Si votre modèle a besoin de plus de temps, augmentez « {0} » ({1}) dans les réglages.</value></data>
@@ -1869,12 +1871,14 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ToolListSent" xml:space="preserve"><value>{0} {0:outil envoyé|outils envoyés}, ~{1} jetons</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} {0:coupé|coupés}</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>{0} à la demande</value></data>
+  <data name="ToolListCutByWindow" xml:space="preserve"><value>{0} {0:laissé|laissés} de côté (fenêtre de {1:N0} jetons)</value></data>
   <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;outil&gt;` coupe un outil dans toutes les conversations, `/tools on &lt;outil&gt;` le remet. Un outil coupé n'est jamais proposé au modèle ; vos propres commandes qui s'en servent (`/diff`, `@problems`…) continuent de marcher.</value></data>
   <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Intégrés</value></data>
   <data name="ToolGroupCustom" xml:space="preserve"><value>Vos outils</value></data>
   <data name="ToolGroupServer" xml:space="preserve"><value>Serveur MCP {0}</value></data>
   <data name="ToolStateSent" xml:space="preserve"><value>envoyé</value></data>
   <data name="ToolStateOnDemand" xml:space="preserve"><value>à la demande</value></data>
+  <data name="ToolStateCutByWindow" xml:space="preserve"><value>laissé de côté à cette fenêtre</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>coupé</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>coupé par l'entrée de son serveur</value></data>
   <data name="ToolStateNotOffered" xml:space="preserve"><value>non proposé pour l'instant</value></data>

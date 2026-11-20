@@ -347,10 +347,10 @@ disable it.
 ## Turning a tool off
 
 Every tool's definition goes with every request, before the first word of the answer: the built-in ones alone take more
-than half of an 8K window.
+than half of an 8K window, so at such a window only the ones the agent uses most go (see Built-in tools).
 
 `/tools` lists every tool with what its definition weighs and what the next request does
-with it — sent, on demand, turned off; `/tools off <tool>` turns one off in every conversation, `/tools on <tool>` turns
+with it — sent, on demand, turned off, left out at this window; `/tools off <tool>` turns one off in every conversation, `/tools on <tool>` turns
 it back on, and the **Tools** page of the settings has a button per tool.
 
 A built-in or custom tool is named by its own name (`run_command`), an MCP tool as `server/tool` (its name without
@@ -396,6 +396,16 @@ You never pick a tool: you ask in plain words and the agent chooses. This sectio
 kind of tool is for and which tools the agent uses for what you want done, so you know what to expect. Under each family, the exact
 names and parameters, for when you write a rule (`allow run_command ^dotnet test`) or a prompt. A `?` marks an
 optional parameter.
+
+At a small context window — below about 16,000 tokens; Inferpal's default is 8,192 — the definitions of every tool
+would leave no room for your question: when they would take more than half the window, a question (and the run of a command such as `/task`) offers only the
+tools the agent uses most (`read_file`, `search_in_files`, `list_files`, `search_codebase`, `run_command`, `run_tests`,
+`get_diagnostics`, `apply_diff`, `apply_edits`, `write_file`, `rename_symbol`, `ask_question`, and `read_skill_file`
+when you have skills), with your MCP servers and your own tools, and the chat says once which ones are left out (a command's run says it on its status line). A tool
+your question names stays for the rest of the conversation ("capture it with `view_page`"), and so do the ones a command
+such as `/debug` works with. The window counts
+when the server reports it, and always with Ollama, which loads at the window it is sent; a setting that only stands in
+for an unknown window cuts nothing. A larger window brings them back.
 
 ### Read and understand your code
 

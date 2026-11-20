@@ -179,6 +179,8 @@ For each issue cite the line or symbol, explain the risk, and suggest a concrete
   <data name="StatusCompacting" xml:space="preserve"><value>Compacting context…</value></data>
   <data name="StatusLoadingModelWindow" xml:space="preserve"><value>Loading {0} with a {1}-token window…</value></data>
   <data name="MsgModelWindowNotLoaded" xml:space="preserve"><value>LM Studio did not load {0} with a {1}-token window ({2}): it keeps the window it loads the model with. If Inferpal's tools leave too little room for your question, raise the model's context length in LM Studio, or free memory on its server.</value></data>
+  <data name="MsgToolsCutSmallWindow" xml:space="preserve"><value>With a {0:N0}-token context window, Inferpal offers only the tools it uses most, so that your question has room: {1} other {1:tool is|tools are} not offered ({2}). Write a tool's name in your question to keep it. {3}</value></data>
+  <data name="MsgToolsCutSmallWindowRun" xml:space="preserve"><value>With a {0:N0}-token context window, this run offers only the tools used most: {1} other {1:tool is|tools are} not offered ({2}). {3}</value></data>
   <data name="StatusCompactingProgress" xml:space="preserve"><value>Compacting context… {0}, about {1:N0} {1:token|tokens} so far</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Context compacted: {0} message(s) summarized — keeping last {1} turn(s).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Context compaction timed out — fell back to hard truncation. If your model needs longer, raise “{0}” ({1}) in the settings.</value></data>
@@ -1873,12 +1875,14 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ToolListSent" xml:space="preserve"><value>{0} {0:tool|tools} sent, ~{1} tokens</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} turned off</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>{0} on demand</value></data>
+  <data name="ToolListCutByWindow" xml:space="preserve"><value>{0} left out at this {1:N0}-token window</value></data>
   <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;tool&gt;` turns a tool off in every conversation, `/tools on &lt;tool&gt;` turns it back on. A tool turned off is never offered to the model; your own commands that use it (`/diff`, `@problems`…) keep working.</value></data>
   <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Built-in</value></data>
   <data name="ToolGroupCustom" xml:space="preserve"><value>Your tools</value></data>
   <data name="ToolGroupServer" xml:space="preserve"><value>MCP server {0}</value></data>
   <data name="ToolStateSent" xml:space="preserve"><value>sent</value></data>
   <data name="ToolStateOnDemand" xml:space="preserve"><value>on demand</value></data>
+  <data name="ToolStateCutByWindow" xml:space="preserve"><value>left out at this window</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>turned off</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>turned off by its server's entry</value></data>
   <data name="ToolStateNotOffered" xml:space="preserve"><value>not offered now</value></data>

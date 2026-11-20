@@ -846,6 +846,13 @@ internal static class Strings
     /// server's reason (its own words).</summary>
     public static string MsgModelWindowNotLoaded(string model, int asked, string why) =>
         Format(Get(nameof(MsgModelWindowNotLoaded)), model, asked, why);
+    /// <summary>A window too small for every tool definition: the window, how many tools are not offered, their names,
+    /// and where to make the window larger (a <c>HeadShareRemedy*</c> sentence).</summary>
+    public static string MsgToolsCutSmallWindow(int window, int count, string names, string remedy) =>
+        Format(Get(nameof(MsgToolsCutSmallWindow)), window, count, names, remedy);
+    /// <summary>The same cut said by a command's run, on its status line: no question to name a tool in.</summary>
+    public static string MsgToolsCutSmallWindowRun(int window, int count, string names, string remedy) =>
+        Format(Get(nameof(MsgToolsCutSmallWindowRun)), window, count, names, remedy);
     public static string StatusCompactingProgress(string elapsed, int tokens) => Format(Get(nameof(StatusCompactingProgress)), elapsed, tokens);
     public static string OodaSummarizePrompt         => Get(nameof(OodaSummarizePrompt));
 
@@ -1564,6 +1571,8 @@ internal static class Strings
     public static string ToolListSent(int count, string tokens) => Format(Get(nameof(ToolListSent)), count, tokens);
     public static string ToolListTurnedOff(int count) => Format(Get(nameof(ToolListTurnedOff)), count);
     public static string ToolListOnDemand(int count)  => Format(Get(nameof(ToolListOnDemand)), count);
+    /// <summary>How many tools a small window leaves out, and that window.</summary>
+    public static string ToolListCutByWindow(int count, int window) => Format(Get(nameof(ToolListCutByWindow)), count, window);
     public static string ToolListHowTo        => Get(nameof(ToolListHowTo));
     public static string ToolListNoChat       => Get(nameof(ToolListNoChat));
     public static string ToolListColTool      => Get(nameof(ToolListColTool));
@@ -1575,6 +1584,7 @@ internal static class Strings
     public static string ToolGroupNotHere     => Get(nameof(ToolGroupNotHere));
     public static string ToolStateSent        => Get(nameof(ToolStateSent));
     public static string ToolStateOnDemand    => Get(nameof(ToolStateOnDemand));
+    public static string ToolStateCutByWindow => Get(nameof(ToolStateCutByWindow));
     public static string ToolStateOff         => Get(nameof(ToolStateOff));
     public static string ToolStateOffByEntry  => Get(nameof(ToolStateOffByEntry));
     public static string ToolStateNotOffered  => Get(nameof(ToolStateNotOffered));

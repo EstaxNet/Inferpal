@@ -364,6 +364,7 @@ internal partial class InferpalToolWindowData
             _recapInSystem         = string.Empty;
             _summary               = null;
             _conversationModel     = null;
+            _cutNamedTools         = [];      // the tools its questions named go with it
             _conversationTurnCount = 0;
             _currentSessionName    = string.Empty;   // the archived conversation keeps its own file
             _conversationRoot.Discarded();           // the next conversation belongs where it is first saved
@@ -749,13 +750,15 @@ internal partial class InferpalToolWindowData
     {
         try
         {
-            var window = await Services.Agent.ContextManager.EffectiveWindowAsync(
+            // The flag with the window: one without the other makes the gauge decide a tool cut on a window nobody read.
+            var (window, read) = await Services.Agent.ContextManager.MeasureWindowAsync(
                 _config, _client, ModelRouter.Resolve(_config, ModelRole.Chat), CancellationToken.None);
             // ⚠ Not RefreshSystemPrompt: a save can land mid-turn, and rewriting the system message changes the list the
             // agent loop is reading. The prompt is rebuilt at the start of every question anyway.
             await RunOnVMContextAsync(() =>
             {
                 _contextWindowInUse = window;
+                _contextWindowRead  = read;
                 UpdateContextBudget();
             });
         }

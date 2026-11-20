@@ -553,8 +553,9 @@ internal partial class InferpalToolWindowData
             // After the model is known: the context check measures against the window the server
             // really loaded THIS model with, when it counts (ContextManager.EffectiveWindowAsync).
             // A code action (one-time model) sends no tool; every other turn sends the registry chosen below.
-            await CompactOrTruncateAsync(effectiveModel,
-                oneTimeModel is null ? NextTurnToolTokens() : 0, step => UpsertStatusBubble("⏳ " + step), localCts!.Token);
+            var toolsCutAt = await CompactOrTruncateAsync(effectiveModel,
+                oneTimeModel is null ? NextTurnToolTokens() : 0, step => UpsertStatusBubble("⏳ " + step),
+                string.Join("\n", [userText, .. notes ?? []]), localCts!.Token);
             // The compaction is done: its line goes, and its notice stays above everything the run adds after it.
             await RunOnVMContextAsync(() =>
             {
@@ -621,7 +622,11 @@ internal partial class InferpalToolWindowData
                 turnRunId = _tools.History.BeginRun();
                 effectiveTools = ChatModes.ToolsFor(_tools, turnMode, _indexService.RootDir);
                 if (_planMode)      effectiveTools = new Services.Execution.PlanModeToolRegistry(effectiveTools);
+                // A window too small for every definition: the tools used most, as the context check planned.
+                if (toolsCutAt > 0) effectiveTools = new Services.Execution.SmallWindowToolRegistry(effectiveTools, toolsCutAt, _cutNamedTools);
                 if (_agentStepMode) effectiveTools = new Services.Execution.StepModeToolRegistry(effectiveTools, PauseForStepAsync);
+                // What its plan made room for, cut or not: the loops do not decide the cut again.
+                effectiveTools = Services.Execution.SmallWindowToolRegistry.MarkDecided(effectiveTools);
             }
 
             // Common result variables filled by whichever path runs.

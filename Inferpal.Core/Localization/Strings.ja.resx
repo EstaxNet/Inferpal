@@ -175,6 +175,8 @@
   <data name="StatusCompacting" xml:space="preserve"><value>コンテキストを圧縮中…</value></data>
   <data name="StatusLoadingModelWindow" xml:space="preserve"><value>{0} を {1} トークンのウィンドウで読み込み中…</value></data>
   <data name="MsgModelWindowNotLoaded" xml:space="preserve"><value>LM Studio は {0} を {1} トークンのウィンドウで読み込みませんでした ({2})。モデルを読み込む際のウィンドウのままです。Inferpal のツールで質問の余地が足りない場合は、LM Studio でモデルのコンテキスト長を増やすか、サーバーのメモリを空けてください。</value></data>
+  <data name="MsgToolsCutSmallWindow" xml:space="preserve"><value>コンテキストウィンドウが {0:N0} トークンのため、質問の余地を残すよう、Inferpal は最もよく使うツールだけを提供します。ほかの {1} 個のツールは提供されません ({2})。ツールを残すには、質問の中でその名前を書いてください。{3}</value></data>
+  <data name="MsgToolsCutSmallWindowRun" xml:space="preserve"><value>コンテキストウィンドウが {0:N0} トークンのため、この実行は最もよく使うツールだけを提供します。ほかの {1} 個のツールは提供されません ({2})。{3}</value></data>
   <data name="StatusCompactingProgress" xml:space="preserve"><value>コンテキストを圧縮中… {0}、これまでに約 {1:N0} トークン</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 コンテキストを圧縮しました：{0} 件のメッセージを要約 — 最後の {1} ターンを保持。</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ コンテキスト圧縮がタイムアウトしました — ハードトランケーションにフォールバック。 モデルにもっと時間が必要な場合は、設定の「{0}」（{1}）を増やしてください。</value></data>
@@ -1869,12 +1871,14 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ToolListSent" xml:space="preserve"><value>送信するツール {0} 個、約 {1} トークン</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>オフ {0} 個</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>オンデマンド {0} 個</value></data>
+  <data name="ToolListCutByWindow" xml:space="preserve"><value>このウィンドウ ({1:N0} トークン) で除外: {0}</value></data>
   <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;ツール&gt;` はすべての会話でツールをオフにし、`/tools on &lt;ツール&gt;` で元に戻します。オフにしたツールはモデルに提示されません。そのツールを使うご自身のコマンド（`/diff`、`@problems` など）はそのまま動作します。</value></data>
   <data name="ToolGroupBuiltIn" xml:space="preserve"><value>組み込み</value></data>
   <data name="ToolGroupCustom" xml:space="preserve"><value>ユーザー定義ツール</value></data>
   <data name="ToolGroupServer" xml:space="preserve"><value>MCP サーバー {0}</value></data>
   <data name="ToolStateSent" xml:space="preserve"><value>送信</value></data>
   <data name="ToolStateOnDemand" xml:space="preserve"><value>オンデマンド</value></data>
+  <data name="ToolStateCutByWindow" xml:space="preserve"><value>このウィンドウでは除外</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>オフ</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>サーバーのエントリでオフ</value></data>
   <data name="ToolStateNotOffered" xml:space="preserve"><value>現在は提示されません</value></data>

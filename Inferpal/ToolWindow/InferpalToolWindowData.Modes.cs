@@ -230,7 +230,8 @@ internal partial class InferpalToolWindowData
         _heldMode?.Name, _planMode, !_toolsEnabled, _agentStepMode,
         _xrayDisabledSections.Count > 0 ? [.. _xrayDisabledSections.Order(StringComparer.Ordinal)] : null, _activePlan,
         _summary, string.IsNullOrEmpty(_oodaSummary) ? null : _oodaSummary,
-        string.IsNullOrEmpty(_recapInSystem) ? null : _recapInSystem, _conversationModel);
+        string.IsNullOrEmpty(_recapInSystem) ? null : _recapInSystem, _conversationModel,
+        _cutNamedTools.Count > 0 ? [.. _cutNamedTools.Order(StringComparer.Ordinal)] : null);
 
     /// <summary>
     /// Holds <paramref name="state"/> in place of every value the conversation held — a load replaces them all, a value
@@ -250,6 +251,7 @@ internal partial class InferpalToolWindowData
         _oodaSummary          = state.Recap ?? string.Empty;
         _recapInSystem        = state.RecapInSystem ?? string.Empty;
         _conversationModel    = state.Model;
+        _cutNamedTools        = state.NamedTools ?? [];
         IsPlanMode            = state.PlanMode;   // a held mode leaves it, below
         return HoldRestoredMode(state.Mode);
     }

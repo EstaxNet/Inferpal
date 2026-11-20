@@ -184,7 +184,8 @@ internal sealed partial class HostServer
     }
 
     private static ToolListModel ToolList(HostSession s) =>
-        ToolListPresenter.Build(s.Tools);
+        ToolListPresenter.Build(s.Tools, s.ToolsEnabled ? ContextManager.NextTurnTools(s.Tools, s.PlanMode, CurrentMode(s)) : null,
+                                s.ToolCutWindow, s.CutNamedTools);
 }
 
 /// <summary>`settings/tools` and `settings/toolSet` answer. <c>Message</c>: what turning a tool off or on said, if anything.</summary>

@@ -25,7 +25,8 @@ public partial class HostServerTests
             "chat/send", new { prompt = "fix the failing test", agentMode = false }).WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
 
         var s     = h.Server.CurrentSession!;
-        var tools = ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode);
+        var tools = ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, window: 8_192);
+        Assert.True(tools < ContextManager.NextTurnToolTokens(s.Tools, true, false));   // witness: the factory window cuts
         Assert.True(tools > 1_000, "no tool definitions offered: the figure would not discriminate");   // witness
         Assert.Equal(7_201, result.PromptTokens);                                                      // the measure stays
         Assert.Equal(ContextManager.NextTurnLoad(s.LastPromptTokens, tools), result.NextTurnTokens);

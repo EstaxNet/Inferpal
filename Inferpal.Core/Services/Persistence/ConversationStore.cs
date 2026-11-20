@@ -537,13 +537,15 @@ internal record SessionData(
     [property: JsonPropertyName("summary")]         Agent.HistorySummary? Summary = null,
     [property: JsonPropertyName("recap")]           string? Recap = null,
     [property: JsonPropertyName("recap_in_system")] string? RecapInSystem = null,
-    [property: JsonPropertyName("model")]           string? Model = null)
+    [property: JsonPropertyName("model")]           string? Model = null,
+    [property: JsonPropertyName("named_tools")]     List<string>? NamedTools = null)
 {
     /// <summary>The conversation's state this file holds; a new conversation's for what it does not.</summary>
     [JsonIgnore]
     public SessionState State => new(CurrentName, TemplateSuffix, Mode, PlanMode == true, ToolsOff == true,
                                      StepMode == true, XrayOff is { Count: > 0 } off ? off : null, ActivePlan,
-                                     Summary is { Text.Length: > 0 } ? Summary : null, Recap, RecapInSystem, Model);
+                                     Summary is { Text.Length: > 0 } ? Summary : null, Recap, RecapInSystem, Model,
+                                     NamedTools is { Count: > 0 } named ? named : null);
 
     /// <summary>A file of <paramref name="messages"/> holding <paramref name="state"/>, each value written only when it is
     /// not a new conversation's.</summary>
@@ -559,7 +561,8 @@ internal record SessionData(
             state.Summary,
             string.IsNullOrWhiteSpace(state.Recap) ? null : state.Recap,
             string.IsNullOrWhiteSpace(state.RecapInSystem) ? null : state.RecapInSystem,
-            string.IsNullOrWhiteSpace(state.Model) ? null : state.Model);
+            string.IsNullOrWhiteSpace(state.Model) ? null : state.Model,
+            state.NamedToolList.Count > 0 ? [.. state.NamedToolList] : null);
 }
 
 /// <param name="Run">The run of agent changes the turn this message closes made (<c>HistoryRun.Id</c>); absent when it

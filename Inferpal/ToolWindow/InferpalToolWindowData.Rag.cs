@@ -520,27 +520,48 @@ internal partial class InferpalToolWindowData
     // and the chat notices.
     /// <summary>The tool definitions the next chat turn carries — added to the conversation by the pre-send check, the
     /// context gauge and the X-Ray, which otherwise all measured a request half the size of the one sent.</summary>
-    private int NextTurnToolTokens() =>
-        Services.Agent.ContextManager.NextTurnToolTokens(_tools, _toolsEnabled, _planMode, _heldMode);
+    /// <param name="window">The window in use, for what a window too small for every definition sends; 0 = every one.</param>
+    private int NextTurnToolTokens(int window = 0) =>
+        Services.Agent.ContextManager.NextTurnToolTokens(_tools, _toolsEnabled, _planMode, _heldMode, window, _cutNamedTools);
 
     /// <param name="onStep">Where the turn shows its steps (its status bubble).</param>
-    private async Task CompactOrTruncateAsync(string model, int toolTokens, Action<string> onStep, CancellationToken ct)
+    /// <param name="asked">The question as typed (or a command's prompt): the tools it names are never cut, for the rest of
+    /// the conversation.</param>
+    /// <returns>The window the turn's tools are cut at (only the tools used most: too small for every definition), 0 when
+    /// they are not.</returns>
+    private async Task<int> CompactOrTruncateAsync(string model, int toolTokens, Action<string> onStep, string? asked,
+                                                   CancellationToken ct)
     {
         // The decision, the summarising model call and its fuse lived HERE, so on the VS Code side
         // the history was NEVER bounded and three settings of the panel did nothing there. All of
         // that moved into ContextManager; what stays is what cannot move: mutating _history on the
         // VM context (rule 6 - otherwise it is replaced under the turn loop that reads it) and
         // placing the bubbles.
+        // A held mode's instructions are words the person chose too. Only a turn that sends tools collects them (a code
+        // action quotes code), on the VM context, where /clear empties them.
+        if (toolTokens > 0)
+            await RunOnVMContextAsync(() => _cutNamedTools = [.. _cutNamedTools.Union(Services.Execution.SmallWindowToolRegistry.NamedIn(
+                asked + "\n" + _heldMode?.Instructions, _tools.BuiltInNames))]);
+        var named = _cutNamedTools;
         var decision = await Services.Agent.ContextManager.PrepareAsync(
             _history, _config, _client, _lastPromptTokens,
             onStep: onStep,
-            ct: ct, model: model, toolTokens: toolTokens);
+            ct: ct, model: model, toolTokens: toolTokens,
+            keptToolTokens: toolTokens > 0 ? () => Services.Agent.ContextManager.NextTurnKeptToolTokens(_tools, _toolsEnabled, _planMode, _heldMode, named) : null);
 
         await RunOnVMContextAsync(() =>
         {
             var before = ContextWindowInUse;
             _contextWindowInUse = decision.Window;
+            _contextWindowRead  = decision.WindowRead;
             if (decision.WindowNotice is { } loadNotice) InsertThemed(ChatMessageItem.NoticeMsg(loadNotice));
+            // A window too small for every definition: the turn sends the tools used most, said once.
+            if (decision.ToolsCut
+                && Services.Agent.ContextManager.ToolsCutNotice(FindProjectRoot(), model, decision.Window,
+                       Services.Agent.ContextManager.NextTurnTools(_tools, _planMode, _heldMode), named,
+                       Services.Agent.ContextManager.ToolsCutModeKey(_planMode, _heldMode), _config.Provider, _config.ContextWindowSize,
+                       _headShareSaid) is { } cutNotice)
+                InsertThemed(ChatMessageItem.NoticeMsg(cutNotice));
             // The prompt was built at the start of the turn, against the window known then: when this check reveals
             // another one — the first question, a model loaded smaller since — its files are re-budgeted now.
             if (decision.Window > 0 && decision.Window != before)
@@ -550,13 +571,15 @@ internal partial class InferpalToolWindowData
             }
             // What every request of the turn carries before the conversation, against the window just measured — after
             // the prompt was rebuilt for it (the host says it at the same point, for VS Code and ACP).
+            // The tools the turn was planned for: after a cut, the kept ones.
             if (Services.Agent.ContextManager.HeadShareNotice(FindProjectRoot(), model, _config.Provider, decision.Window, _config.ContextWindowSize,
                     _history is [{ Role: "system" } system, ..] ? Services.Agent.AgentOrchestrator.EstimateTokens([system]) : 0,
-                    toolTokens, _headShareSaid, decision.WindowRead) is { } headNotice)
+                    decision.ToolTokens, _headShareSaid, decision.WindowRead) is { } headNotice)
                 InsertThemed(ChatMessageItem.NoticeMsg(headNotice));
         });
 
-        if (decision.Outcome == Services.Agent.ContextOutcome.None) return;
+        var cutAt = decision.ToolsCut ? decision.Window : 0;
+        if (decision.Outcome == Services.Agent.ContextOutcome.None) return cutAt;
 
         await RunOnVMContextAsync(() =>
         {
@@ -580,6 +603,7 @@ internal partial class InferpalToolWindowData
                 : ChatMessageItem.ToolMsg(ToolNoticeTitle.ContextCompact, decision.Notice, _config.ToolBubblesExpanded));
             ScrollToBottom();
         });
+        return cutAt;
     }
 
     // Prompt layering itself lives in SystemPromptBuilder (unit-tested); the VM only

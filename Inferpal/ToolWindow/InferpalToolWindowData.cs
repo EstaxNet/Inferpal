@@ -213,6 +213,12 @@ internal partial class InferpalToolWindowData : NotifyPropertyChangedObject
     private int              _lastPromptTokens;
     /// <summary>The window the last context check measured against (0 until one ran): what the gauge shows.</summary>
     private int              _contextWindowInUse;
+    /// <summary>Whether the server reported <see cref="_contextWindowInUse"/>, rather than the setting standing in for it.</summary>
+    private bool             _contextWindowRead;
+    /// <summary>The tools this conversation's questions named (<c>SmallWindowToolRegistry.NamedIn</c>): a small window keeps
+    /// them. Replaced, never changed in place — the gauge reads it while a turn runs; emptied with the conversation
+    /// (<c>/clear</c>), kept with it (<c>CaptureState</c>).</summary>
+    private IReadOnlyCollection<string> _cutNamedTools = [];
     private int              _conversationTurnCount;
     private bool             _hasContextBudget;
     private string           _baseSystemPrompt = string.Empty;

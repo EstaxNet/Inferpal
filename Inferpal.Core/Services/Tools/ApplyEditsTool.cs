@@ -226,7 +226,7 @@ internal sealed class ApplyEditsTool : ITool
             return write.Stuck.Count == 0
                 ? ToolFailure.Said(Strings.ApplyEditsAborted(reason))
                 : $"Error: {reason}, and {string.Join(", ", write.Stuck.Select(s => RelPath(root, s)))} "
-                  + "could not be put back — restore it with restore_file.";
+                  + "could not be put back — restore it with restore_file when it is offered; otherwise tell the user: /undo-run puts the run's files back.";
         }
 
         // Smart Fix once: building any edited file validates its project (covers same-project edits).

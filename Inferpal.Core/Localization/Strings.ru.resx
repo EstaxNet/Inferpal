@@ -175,6 +175,8 @@
   <data name="StatusCompacting" xml:space="preserve"><value>Компактизация контекста…</value></data>
   <data name="StatusLoadingModelWindow" xml:space="preserve"><value>Загрузка {0} с окном в {1} токенов…</value></data>
   <data name="MsgModelWindowNotLoaded" xml:space="preserve"><value>LM Studio не загрузил {0} с окном в {1} токенов ({2}): он оставляет окно, с которым загружает модель. Если инструменты Inferpal оставляют слишком мало места для вашего вопроса, увеличьте длину контекста модели в LM Studio или освободите память на его сервере.</value></data>
+  <data name="MsgToolsCutSmallWindow" xml:space="preserve"><value>При окне контекста в {0:N0} {0:токен|токена|токенов} Inferpal предлагает только наиболее часто используемые инструменты, чтобы оставить место для вашего вопроса: ещё {1} {1:инструмент не предлагается|инструмента не предлагаются|инструментов не предлагаются} ({2}). Напишите название инструмента в вопросе, чтобы сохранить его. {3}</value></data>
+  <data name="MsgToolsCutSmallWindowRun" xml:space="preserve"><value>При окне контекста в {0:N0} {0:токен|токена|токенов} этот запуск предлагает только наиболее часто используемые инструменты: ещё {1} {1:инструмент не предлагается|инструмента не предлагаются|инструментов не предлагаются} ({2}). {3}</value></data>
   <data name="StatusCompactingProgress" xml:space="preserve"><value>Компактизация контекста… {0}, пока примерно {1:N0} {1:токен|токена|токенов}</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Контекст сжат: суммировано {0} сообщений — сохранены последние {1} ход(а/ов).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Компактизация контекста истекла — выполнен откат к жёсткому усечению. Если модели нужно больше времени, увеличьте «{0}» ({1}) в настройках.</value></data>
@@ -1869,12 +1871,14 @@
   <data name="ToolListSent" xml:space="preserve"><value>Отправляется: {0} {0:инструмент|инструмента|инструментов}, ~{1} токенов</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>Отключено: {0}</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>По запросу: {0}</value></data>
+  <data name="ToolListCutByWindow" xml:space="preserve"><value>Не предлагаются при окне в {1:N0} {1:токен|токена|токенов}: {0}</value></data>
   <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;инструмент&gt;` отключает инструмент во всех беседах, `/tools on &lt;инструмент&gt;` включает его снова. Отключённый инструмент никогда не предлагается модели; ваши собственные команды, которые его используют (`/diff`, `@problems`…), продолжают работать.</value></data>
   <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Встроенные</value></data>
   <data name="ToolGroupCustom" xml:space="preserve"><value>Ваши инструменты</value></data>
   <data name="ToolGroupServer" xml:space="preserve"><value>MCP-сервер {0}</value></data>
   <data name="ToolStateSent" xml:space="preserve"><value>отправляется</value></data>
   <data name="ToolStateOnDemand" xml:space="preserve"><value>по запросу</value></data>
+  <data name="ToolStateCutByWindow" xml:space="preserve"><value>не предлагается при этом окне</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>отключён</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>отключён записью своего сервера</value></data>
   <data name="ToolStateNotOffered" xml:space="preserve"><value>сейчас не предлагается</value></data>

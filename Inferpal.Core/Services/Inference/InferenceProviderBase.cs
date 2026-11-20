@@ -677,6 +677,8 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         using var gpuLease = GpuScheduler.AcquireChatLease();
         // What a tool says while it runs (each action interact_window plays) goes to this run's status line.
         using var progress = ToolProgress.Route(onStep);
+        // A window too small for every definition sends the tools used most — a command's run too, not only a question.
+        tools = await Agent.ContextManager.ToolsForWindowAsync(_config, this, model, tools, onStep, ct).ConfigureAwait(false);
 
         var messages          = new List<ChatMessageDto>(history);
         var executions        = new List<ToolExecution>();

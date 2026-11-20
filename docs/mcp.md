@@ -261,7 +261,8 @@ draw (a nested field). A server is asked only where a card can be drawn: during 
 
 ## Large tool sets: on demand
 
-Every tool's definition is sent with every request, before the first word of the answer. An editor's own server can
+Every tool's definition is sent with every request, before the first word of the answer — below about 16,000
+tokens, only the built-in tools the agent uses most, with every MCP tool declared. An editor's own server can
 weigh more than the whole window: Rider's has 93 tools, about 49,000 tokens as Inferpal counts them, more than a 32K
 window.
 

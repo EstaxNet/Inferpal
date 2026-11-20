@@ -23,6 +23,8 @@ namespace Inferpal.Services.Persistence;
 /// <param name="RecapInSystem">The recap the system message carries: the one written before the last compaction.</param>
 /// <param name="Model">The model the conversation was put on by an editor that picks one per conversation (an Agent
 /// Client Protocol thread). Visual Studio and VS Code answer with their window's model: they keep this one, never use it.</param>
+/// <param name="NamedTools">The tools the conversation's questions named: a small window keeps them
+/// (<c>SmallWindowToolRegistry.NamedIn</c>), a reloaded conversation too.</param>
 internal sealed record SessionState(
     string? CurrentName = null,
     string? TemplateSuffix = null,
@@ -35,7 +37,8 @@ internal sealed record SessionState(
     Agent.HistorySummary? Summary = null,
     string? Recap = null,
     string? RecapInSystem = null,
-    string? Model = null)
+    string? Model = null,
+    IReadOnlyList<string>? NamedTools = null)
 {
     /// <summary>A new conversation's state.</summary>
     public static SessionState New { get; } = new();
@@ -43,11 +46,15 @@ internal sealed record SessionState(
     /// <summary>The sections turned off, never <c>null</c>.</summary>
     public IReadOnlyList<string> XrayOffSections => XrayOff ?? [];
 
+    /// <summary>The tools the questions named, never <c>null</c>.</summary>
+    public IReadOnlyList<string> NamedToolList => NamedTools ?? [];
+
     /// <summary>The state a branch starts with: the conversation's, without what was written of its turns — a summary and
-    /// a recap tell of turns the branch may not have. Its first question measures the branch again.</summary>
+    /// a recap tell of turns the branch may not have, and the tools its questions named may come from them. Its first
+    /// question measures the branch again.</summary>
     /// <remarks>A method: a property returning a state would be printed by the record's <c>ToString</c>, which prints its
     /// own, without end.</remarks>
-    public SessionState ForBranch() => this with { Summary = null, Recap = null, RecapInSystem = null };
+    public SessionState ForBranch() => this with { Summary = null, Recap = null, RecapInSystem = null, NamedTools = null };
 
     /// <inheritdoc/>
     /// <remarks>Compares the sections by content: two captures of one state are equal.</remarks>
@@ -57,10 +64,11 @@ internal sealed record SessionState(
         && PlanMode == other.PlanMode && ToolsOff == other.ToolsOff && StepMode == other.StepMode
         && XrayOffSections.SequenceEqual(other.XrayOffSections, StringComparer.Ordinal)
         && ActivePlan == other.ActivePlan && Summary == other.Summary && Recap == other.Recap
-        && RecapInSystem == other.RecapInSystem && Model == other.Model;
+        && RecapInSystem == other.RecapInSystem && Model == other.Model
+        && NamedToolList.SequenceEqual(other.NamedToolList, StringComparer.Ordinal);
 
     /// <inheritdoc/>
     public override int GetHashCode() => HashCode.Combine(
         HashCode.Combine(CurrentName, TemplateSuffix, Mode, PlanMode, ToolsOff, StepMode, XrayOffSections.Count, ActivePlan),
-        Summary, Recap, RecapInSystem, Model);
+        Summary, Recap, RecapInSystem, Model, NamedToolList.Count);
 }

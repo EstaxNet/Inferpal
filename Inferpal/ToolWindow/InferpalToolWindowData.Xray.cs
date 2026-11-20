@@ -50,7 +50,7 @@ internal partial class InferpalToolWindowData
         return XRayPanelPresenter.Build(
             sections, _xrayDisabledSections,
             AgentOrchestrator.EstimateConversationTokens(_history), ContextWindowInUse,
-            toolTokens: NextTurnToolTokens(),
+            toolTokens: NextTurnToolTokens(ToolCutWindow),
             questionLayersInHistory: ActiveFileContext.ToSend(BuildActiveFileBlock(), _history) is null,
             toolsOnDemand: Services.Agent.ContextManager.NextTurnToolsOnDemand(_tools, _toolsEnabled, _planMode, _heldMode),
             turnedOff: Services.Agent.ContextManager.NextTurnTurnedOff(_tools, _toolsEnabled, _planMode, _heldMode));
@@ -60,7 +60,7 @@ internal partial class InferpalToolWindowData
     private async Task<ToolListModel> CurrentToolListAsync()
     {
         ToolListModel? list = null;
-        await RunOnVMContextAsync(() => list = ToolListPresenter.Build(_tools));
+        await RunOnVMContextAsync(() => list = ToolListPresenter.Build(_tools, NextTurnToolsIfOn(), ToolCutWindow, _cutNamedTools));
         return list!;
     }
 
@@ -81,7 +81,7 @@ internal partial class InferpalToolWindowData
                 if (result.SaveConfig) _config.Save();
                 message = result.Message;
             }
-            list = ToolListPresenter.Build(_tools);
+            list = ToolListPresenter.Build(_tools, NextTurnToolsIfOn(), ToolCutWindow, _cutNamedTools);
         });
         return (list!, message);
     }

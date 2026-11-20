@@ -34,6 +34,14 @@ internal partial class InferpalToolWindowData
     /// </summary>
     private int ContextWindowInUse => _contextWindowInUse > 0 ? _contextWindowInUse : _config.ContextWindowSize;
 
+    /// <summary>The window the next turn's tool cut is decided on (<c>ContextManager.CutWindow</c>): what the gauge and the
+    /// X-Ray count the tools against, so they show what the question sends.</summary>
+    private int ToolCutWindow => Services.Agent.ContextManager.CutWindow(ContextWindowInUse, _contextWindowRead, _config.Provider);
+
+    /// <summary>The registry the next question sends, <c>null</c> with tools off: what <c>/tools</c> decides a cut on.</summary>
+    private IToolRegistry? NextTurnToolsIfOn() =>
+        _toolsEnabled ? Services.Agent.ContextManager.NextTurnTools(_tools, _planMode, _heldMode) : null;
+
     /// <summary>
     /// Recomputes the context-window fill indicator from <see cref="_lastPromptTokens"/> and the window
     /// the last context check measured against — the loaded one when it counts (<c>ContextManager.EffectiveWindowAsync</c>),
@@ -42,7 +50,7 @@ internal partial class InferpalToolWindowData
     private void UpdateContextBudget()
     {
         var budget = Services.Presentation.ContextBudgetGauge.Compute(
-            Services.Agent.ContextManager.NextTurnLoad(_lastPromptTokens, NextTurnToolTokens()), ContextWindowInUse);
+            Services.Agent.ContextManager.NextTurnLoad(_lastPromptTokens, NextTurnToolTokens(ToolCutWindow)), ContextWindowInUse);
         UpdateContextRing(budget);
         HasContextBudget = budget is not null;
     }
@@ -75,6 +83,7 @@ internal partial class InferpalToolWindowData
         TokenInfo          = string.Empty;
         // The MCP tools tool_search loaded belong to the conversation that loaded them.
         _tools.ForgetLoadedTools();
+        Services.Agent.ContextManager.ForgetCutNotices(_headShareSaid);   // told again in the next conversation
         UpdateContextBudget();   // → HasContextBudget = false until a prompt has been measured
     }
 

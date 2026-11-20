@@ -348,8 +348,9 @@ public class SettingsSaveWindowTests
         var handler = connection.IndexOf("Task RemeasureContextWindowAsync(", StringComparison.Ordinal);
         Assert.True(handler >= 0, "the re-measure moved: the scan reads nothing");                  // WITNESS
         var body = connection[handler..connection.IndexOf("catch", handler, StringComparison.Ordinal)];
-        Assert.Contains("ContextManager.EffectiveWindowAsync(", body);
+        Assert.Contains("ContextManager.MeasureWindowAsync(", body);
         Assert.Contains("_contextWindowInUse = window", body);
+        Assert.Contains("_contextWindowRead  = read", body);   // with whether the server said it: the tool cut reads both
     }
 }
 

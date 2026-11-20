@@ -182,7 +182,8 @@ internal sealed partial class HostServer
 
                 case SlashCommandId.Tools:
                 {
-                    var result = ToolsCommandHandler.Handle(parts, s.Tools, s.Config, s.ToolsEnabled);
+                    var result = ToolsCommandHandler.Handle(parts, s.Tools, s.Config, s.ToolsEnabled,
+                        ContextManager.NextTurnTools(s.Tools, s.PlanMode, CurrentMode(s)), s.ToolCutWindow, s.CutNamedTools);
                     // The conversation's switch is the editor's to give back to a host started again: it is said.
                     if (result.SessionTools is { } on)
                     {
@@ -369,7 +370,7 @@ internal sealed partial class HostServer
                         AgentOrchestrator.EstimateConversationTokens(s.History),
                         s.ContextWindowInUse,
                         s.Config,
-                        toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)),
+                        toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s), s.ToolCutWindow, s.CutNamedTools),
                         questionLayersInHistory: QuestionLayersInHistory(s),
                         toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)),
                         turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s))));

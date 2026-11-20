@@ -84,7 +84,12 @@ internal partial class InferpalToolWindowData
             // Drawn before the run can read it, so the note precedes the step it changes.
             InsertThemed(note);
             ScrollToBottom();
-            if (steering.TryPush(new UserNote(id, text))) return true;
+            if (steering.TryPush(new UserNote(id, text)))
+            {
+                // The person's words too: a tool the note names is kept from the next question on.
+                _cutNamedTools = [.. _cutNamedTools.Union(Services.Execution.SmallWindowToolRegistry.NamedIn(text, _tools.BuiltInNames))];
+                return true;
+            }
             Messages.Remove(note);
         }
         Enqueue(new QueuedMessage(text, null, []));

@@ -394,7 +394,7 @@ internal sealed class RenameSymbolTool : ITool
             // The coverage line is already in the header of this same report — saying it twice in
             // the text the model reads is noise, and noise is how a warning stops being read.
         {
-            sb.AppendLine($"✅ Applied to {hits.Count} file(s). Use `restore_file` to undo individual files.");
+            sb.AppendLine($"✅ Applied to {hits.Count} file(s). Use `restore_file` (when it is offered) to undo individual files.");
             // The text-based path has no compiler to find the callers outside a narrowed root: it says where the old
             // name is left (the compiler-resolved path refused above instead).
             if (NarrowerThanWorkspace(root, workspace))
@@ -408,7 +408,7 @@ internal sealed class RenameSymbolTool : ITool
                   + "Every file already written was put back unchanged."
                 : $"❌ Writing {failed} failed ({write.Error}), and "
                   + string.Join(", ", write.Stuck.Select(s => Path.GetRelativePath(root, s)))
-                  + " could not be put back — restore them with `restore_file`.");
+                  + " could not be put back — restore them with `restore_file` when it is offered; otherwise tell the user: /undo-run puts the run's files back.");
         }
 
         return sb.ToString().TrimEnd();

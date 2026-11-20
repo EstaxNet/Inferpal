@@ -1182,7 +1182,7 @@ export interface ToolListRow {
   name: string;
   weight: string;
   /** The colour of its row, never read back from its label. */
-  state: 'sent' | 'onDemand' | 'off' | 'offByEntry' | 'notOffered';
+  state: 'sent' | 'onDemand' | 'off' | 'offByEntry' | 'notOffered' | 'cutByWindow';
   stateLabel: string;
   off: boolean;
   /** A button is offered: never for tool_search, nor for a tool only its server's entry turns off. */

@@ -22,10 +22,15 @@ internal static class ToolsCommandHandler
 
     /// <param name="parts">Tokenised command: <c>/tools</c>, then <c>on</c> or <c>off</c>, then tool names.</param>
     /// <param name="sessionTools">The conversation's switch as it is now.</param>
-    public static ToolsCommandResult Handle(string[] parts, ToolRegistry tools, InferpalConfig config, bool sessionTools)
+    /// <param name="turn">The registry the next question sends (<c>ContextManager.NextTurnTools</c>): a small window's cut
+    /// is decided on it.</param>
+    /// <param name="cutWindow">The window the next question's tools are cut for, 0 when unknown (<c>ContextManager.CutWindow</c>).</param>
+    /// <param name="named">The tools the conversation's questions named: a small window keeps them.</param>
+    public static ToolsCommandResult Handle(string[] parts, ToolRegistry tools, InferpalConfig config, bool sessionTools,
+                                            IToolRegistry? turn = null, int cutWindow = 0, IReadOnlyCollection<string>? named = null)
     {
         if (parts.Length < 2)
-            return new(ToolListPresenter.Markdown(ToolListPresenter.Build(tools),
+            return new(ToolListPresenter.Markdown(ToolListPresenter.Build(tools, sessionTools ? turn : null, cutWindow, named),
                                                   Strings.SlashToolsCurrent(sessionTools ? "on" : "off")));
 
         var verb = parts[1].ToLowerInvariant();

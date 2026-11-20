@@ -955,6 +955,7 @@ table.rules tr.status-unreadable td {
 .toolrow.state-offByEntry .toolstate { color: var(--vscode-editorWarning-foreground, #e3b341); }
 .toolrow.state-onDemand .toolstate   { color: var(--vscode-textLink-foreground, #3794ff); }
 .toolrow.state-notOffered .toolstate { color: var(--ip-muted); }
+.toolrow.state-cutByWindow .toolstate { color: var(--ip-muted); }
 
 .usage {
   display: flex;

@@ -39,6 +39,14 @@ internal sealed record ContextDecision(
     ContextOutcome Outcome, CompactionPlan Plan, string? Summary, string Notice, int Window = 0,
     bool SummaryIncomplete = false, string? ShownSummary = null, bool WindowRead = true)
 {
+    /// <summary>The turn sends only the tools used most (<see cref="Execution.SmallWindowToolRegistry"/>): the window is too
+    /// small for every definition. Both front-ends wrap the turn's registry by it, and say it once.</summary>
+    public bool ToolsCut { get; init; }
+
+    /// <summary>The tool definitions the turn was planned for: every one, or the kept ones when <see cref="ToolsCut"/> —
+    /// what the head-share notice weighs.</summary>
+    public int ToolTokens { get; init; }
+
     /// <summary>The server refused to load the chat model at the window it needs (pari 127): said as a warning by both
     /// front-ends, again only once the refusal is no longer remembered (<c>LmStudioClient.RefusalLife</c>); <c>null</c>
     /// otherwise.</summary>
@@ -89,6 +97,8 @@ internal static class ContextManager
     /// <param name="toolTokens">The tool definitions the turn about to go will carry (<see cref="NextTurnToolTokens"/>).
     /// ⚠ Not optional in effect: every turn with tools sends them, and they weigh about half of an 8 192-token window,
     /// so a decision without them compacts only after the backend has already refused the request.</param>
+    /// <param name="keptToolTokens">What the turn carries instead when its window is too small for every definition
+    /// (<see cref="NextTurnKeptToolTokens"/>), asked only then; <c>null</c> = a turn whose tools are never cut.</param>
     internal static async Task<ContextDecision> PrepareAsync(
         IReadOnlyList<ChatMessageDto> history,
         InferpalConfig                config,
@@ -97,11 +107,20 @@ internal static class ContextManager
         Action<string>?               onStep,
         CancellationToken             ct,
         string?                       model = null,
-        int                           toolTokens = 0)
+        int                           toolTokens = 0,
+        Func<int>?                    keptToolTokens = null)
     {
         // Only a turn that carries tools: the lever exists because their definitions fill a small window.
         var windowNotice = toolTokens > 0 ? await EnsureWindowAsync(config, client, model, onStep, ct).ConfigureAwait(false) : null;
         var (window, read) = await MeasureWindowAsync(config, client, model, ct).ConfigureAwait(false);
+        // ⚠ Decided on the window just measured, before the plan: what the turn sends is what the plan makes room for —
+        // planned for every definition, the conversation would be compacted for tools never sent.
+        var toolsCut = keptToolTokens is not null
+                       && Execution.SmallWindowToolRegistry.Cuts(CutWindow(window, read, config.Provider), toolTokens);
+        if (toolsCut) toolTokens = keptToolTokens!();
+        // Every way out carries what was measured and decided: a decision without them makes neither front-end cut.
+        ContextDecision Done(ContextDecision d) =>
+            d with { WindowRead = read, WindowNotice = windowNotice, ToolsCut = toolsCut, ToolTokens = toolTokens };
         // ⚠ The question about to go is already in the history — with its attachments, the auto-context and the
         // workspace block — and not in lastPromptTokens, measured after the previous turn. Decided on that figure alone,
         // a large attachment sent near the trigger goes out over the window: Ollama drops the head of the conversation
@@ -112,15 +131,15 @@ internal static class ContextManager
             config.ContextWindowKeepTurns, config.KvCacheAnchorMessages, config.CompactionEnabled, toolTokens);
 
         if (plan.Action == CompactionAction.None)
-            return new ContextDecision(ContextOutcome.None, plan, null, string.Empty, window) { WindowRead = read, WindowNotice = windowNotice };
+            return Done(new ContextDecision(ContextOutcome.None, plan, null, string.Empty, window));
 
         // The person reads the conversation's messages, never the head the range holds (a marker, a summary); a plan that
         // replaces only the summary held (over the window) says so.
         var own = HistoryCompaction.ConversationMessages(history, plan);
         if (plan.Action == CompactionAction.Truncate)
-            return new ContextDecision(ContextOutcome.Truncated, plan, null,
+            return Done(new ContextDecision(ContextOutcome.Truncated, plan, null,
                                        own > 0 ? Strings.MsgContextTruncated(own, plan.KeepTurns)
-                                               : Strings.MsgContextTruncatedSummaryOnly(plan.KeepTurns), window) { WindowRead = read, WindowNotice = windowNotice };
+                                               : Strings.MsgContextTruncatedSummaryOnly(plan.KeepTurns), window));
 
         onStep?.Invoke(Strings.StatusCompacting);
 
@@ -133,8 +152,8 @@ internal static class ContextManager
         // does nothing for a server that refused the request (a misspelled utilityModel fails every
         // compaction the same way).
         if (string.IsNullOrEmpty(summary))
-            return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
-                                       failure ?? Strings.MsgContextCompactionEmpty, window) { WindowRead = read, WindowNotice = windowNotice };
+            return Done(new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
+                                       failure ?? Strings.MsgContextCompactionEmpty, window));
 
         // ⚠ An incomplete summary is KEPT — dropping it would lose the turns entirely, and the window is fullest
         // exactly when compaction runs — but it is said to both readers: read as whole, the model denies what was said
@@ -157,16 +176,16 @@ internal static class ContextManager
         // conversation over the trigger — the next request is refused, larger at every turn. Truncation at least fits.
         // Measured as the model keeps it, its notes included.
         if (!FitsAfterSummary(history, plan, kept, toolTokens, window))
-            return new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
-                                       Strings.MsgContextSummaryTooLong, window) { WindowRead = read, WindowNotice = windowNotice };
+            return Done(new ContextDecision(ContextOutcome.CompactionFellBack, plan, null,
+                                       Strings.MsgContextSummaryTooLong, window));
 
         var notice = (own > 0 ? Strings.MsgContextCompacted(own, plan.KeepTurns) : Strings.MsgContextCompactedSummaryOnly(plan.KeepTurns))
                    + (plan.KvAnchor > 0 ? Strings.MsgKvCacheAnchorNote(plan.KvAnchor) : string.Empty);
         if (lost.Messages > 0) notice += "\n\n" + Strings.MsgContextSummaryPartial(lost.Messages, own);
         else if (lost.Summary) notice += "\n\n" + Strings.MsgContextSummaryEarlierLost;
         if (cut)     notice += "\n\n" + Strings.MsgContextSummaryCut;
-        return new ContextDecision(ContextOutcome.Compacted, plan, kept, notice, window,
-                                   SummaryIncomplete: cut || partial, ShownSummary: shown) { WindowRead = read, WindowNotice = windowNotice };
+        return Done(new ContextDecision(ContextOutcome.Compacted, plan, kept, notice, window,
+                                   SummaryIncomplete: cut || partial, ShownSummary: shown));
     }
 
     /// <summary>
@@ -210,9 +229,8 @@ internal static class ContextManager
     /// <param name="said">What this session said already; the key is added when the notice is returned.</param>
     /// <param name="windowRead">The server said the window it loaded the model with (<see cref="ContextDecision.WindowRead"/>).</param>
     /// <remarks>⚠ After the window is measured AND the prompt rebuilt for it: measured before, it reads a prompt budgeted
-    /// for another window. At 8K the built-in tools alone take more than half: the conversation and the answer share the
-    /// rest, and a run there writes nothing before it is cut — said nowhere but in the X-Ray, which with a window set looks
-    /// at the project layers only.
+    /// for another window. It weighs the tools the turn was planned for (<see cref="ContextDecision.ToolTokens"/>): after
+    /// a small window's cut, the kept ones, whose own notice says what was left out.
     /// ⚠ Only Ollama loads the model at the configured window with every request (num_ctx); LM Studio does when Inferpal
     /// loads it (<see cref="EnsureWindowAsync"/>, for a model loaded too small). Elsewhere a window the server did not say
     /// is the setting standing in — a model not loaded yet is then loaded at the server's own size, often
@@ -230,15 +248,7 @@ internal static class ContextManager
         if (share <= HeadSharePercent || head > window) return null;
         if (!said.Add($"{root}|{model}|{window}|{toolTokens > 0}")) return null;
 
-        var remedy = provider switch
-        {
-            InferenceProviderFactory.Ollama   => Strings.HeadShareRemedyOllama,
-            // ⚠ LM Studio loads a model at a window of its own: when that is the limit, a larger setting changes nothing.
-            InferenceProviderFactory.LmStudio => window < configuredWindow ? Strings.HeadShareRemedyLmStudioLoaded(window)
-                                                                           : Strings.HeadShareRemedyLmStudio,
-            _                                 => Strings.HeadShareRemedyServer,
-        };
-        return Strings.MsgHeadShare(share, window, window - head, remedy,
+        return Strings.MsgHeadShare(share, window, window - head, LargerWindowRemedy(provider, window, configuredWindow),
                                     toolTokens >= systemTokens ? Strings.ContextPartTools(toolTokens) : Strings.ContextPartSystem(systemTokens));
     }
 
@@ -247,8 +257,85 @@ internal static class ContextManager
     /// mode, the mode's tools in a mode the person picked, every offered tool otherwise (MCP and custom tools included) —
     /// the registry each front-end then sends.
     /// </summary>
-    internal static int NextTurnToolTokens(IToolRegistry tools, bool toolsEnabled, bool planMode, Governance.ChatMode? mode = null) =>
-        !toolsEnabled ? 0 : RequestSize.ToolTokens(NextTurnTools(tools, planMode, mode).Definitions);
+    /// <param name="window">The window the tools are cut for (<see cref="CutWindow"/>): when the definitions take more
+    /// than half of it, the tools the turn then sends (<see cref="Execution.SmallWindowToolRegistry"/>); 0 = every one.</param>
+    /// <param name="named">The tools the conversation's questions named: a cut keeps them.</param>
+    internal static int NextTurnToolTokens(IToolRegistry tools, bool toolsEnabled, bool planMode, Governance.ChatMode? mode = null,
+                                           int window = 0, IReadOnlyCollection<string>? named = null)
+    {
+        if (!toolsEnabled) return 0;
+        // Weighed once when nothing is cut: the gauge asks while an answer streams.
+        var turn = NextTurnTools(tools, planMode, mode);
+        var all = RequestSize.ToolTokens(turn.Definitions);
+        return Execution.SmallWindowToolRegistry.Cuts(window, all)
+            ? RequestSize.ToolTokens(new Execution.SmallWindowToolRegistry(turn, window, named).Definitions)
+            : all;
+    }
+
+    /// <summary>The tool definitions the next turn sends if its window is too small for every one: the tools used most and
+    /// the ones the conversation's questions <paramref name="named"/> (<see cref="Execution.SmallWindowToolRegistry"/>) —
+    /// what <see cref="PrepareAsync"/> plans for when it cuts.</summary>
+    internal static int NextTurnKeptToolTokens(IToolRegistry tools, bool toolsEnabled, bool planMode, Governance.ChatMode? mode,
+                                               IReadOnlyCollection<string> named) =>
+        !toolsEnabled ? 0
+        : RequestSize.ToolTokens(new Execution.SmallWindowToolRegistry(NextTurnTools(tools, planMode, mode), 0, named).Definitions);
+
+    /// <summary>
+    /// What a turn that sends only the tools used most says, once per workspace, model, window and mode
+    /// (<paramref name="said"/>): which ones it leaves out and how to have them back. <c>null</c> when already said.
+    /// </summary>
+    /// <param name="modeKey">The mode the tools were cut in (plan, a custom mode, none): another mode leaves other tools
+    /// out, and says so. Never the count left out — a question that names a tool would bring the notice back.</param>
+    /// <param name="provider">The server kind, and <paramref name="configuredWindow"/> the setting: where a larger window
+    /// is made (<see cref="LargerWindowRemedy"/>).</param>
+    /// <param name="configuredWindow">The window the settings ask for.</param>
+    internal static string? ToolsCutNotice(string? root, string model, int window, IToolRegistry turnTools,
+                                           IReadOnlyCollection<string> named, string modeKey, string provider, int configuredWindow,
+                                           ISet<string> said)
+    {
+        var (count, text) = ToolsCutText(new Execution.SmallWindowToolRegistry(turnTools, window, named).LeftOut(turnTools), window,
+                                         LargerWindowRemedy(provider, window, configuredWindow));
+        // The mode is in the key: another mode at the same window leaves other tools out, and says so; the server too, whose
+        // remedy is another.
+        return count == 0 || !said.Add($"{CutNoticeKey}{root}|{model}|{provider}|{window}|{modeKey}") ? null : text;
+    }
+
+    private const string CutNoticeKey = "cut|";
+
+    /// <summary>Forgets the cut notices <paramref name="said"/> holds: a new conversation is told again what a small window
+    /// leaves out, and how to keep a tool.</summary>
+    internal static void ForgetCutNotices(HashSet<string> said) =>
+        said.RemoveWhere(k => k.StartsWith(CutNoticeKey, StringComparison.Ordinal));
+
+    /// <summary>The key a cut notice is said once under for this mode (<see cref="ToolsCutNotice"/>).</summary>
+    internal static string ToolsCutModeKey(bool planMode, Governance.ChatMode? mode) =>
+        planMode ? "\u0001plan" : mode?.Name ?? string.Empty;
+
+    /// <summary>The sentence that names the tools <paramref name="left"/> out, and how many: a question's, said once and
+    /// naming every one (the person keeps one by writing its name), or a command run's (<paramref name="forRun"/>), a
+    /// status line with no question, naming the first few.</summary>
+    private static (int Count, string Text) ToolsCutText(IReadOnlyList<string> left, int window, string remedy, bool forRun = false)
+    {
+        const int shownOnALine = 6;
+        var names = !forRun || left.Count <= shownOnALine
+            ? string.Join(", ", left)
+            : string.Join(", ", left.Take(shownOnALine)) + ", …";
+        return (left.Count, left.Count == 0 ? string.Empty
+                            : forRun ? Strings.MsgToolsCutSmallWindowRun(window, left.Count, names, remedy)
+                            : Strings.MsgToolsCutSmallWindow(window, left.Count, names, remedy));
+    }
+
+    /// <summary>Where a larger window is made, by server: Ollama (the card's memory, <c>/hardware</c>), LM Studio (the
+    /// settings, or LM Studio itself when it loaded the model smaller), any other server (its own setting).</summary>
+    internal static string LargerWindowRemedy(string provider, int window, int configuredWindow) =>
+        InferenceProviderFactory.KindOf(provider) switch
+    {
+        InferenceProviderFactory.Ollama   => Strings.HeadShareRemedyOllama,
+        // ⚠ LM Studio loads a model at a window of its own: when that is the limit, a larger setting changes nothing.
+        InferenceProviderFactory.LmStudio => window < configuredWindow ? Strings.HeadShareRemedyLmStudioLoaded(window)
+                                                                       : Strings.HeadShareRemedyLmStudio,
+        _                                 => Strings.HeadShareRemedyServer,
+    };
 
     /// <summary>The registry the next turn sends when its tools are on: Plan's read-only one, or the held mode's. One
     /// answer for what the gauge measures and for what the question's hints may name (<c>ToolHints.OfferedBy</c>).</summary>
@@ -355,6 +442,40 @@ internal static class ContextManager
         return (Inference.ContextWindowChoice.IsAutomatic(configured, config.ContextWindowSizeAuto)
             ? Math.Max(configured, Math.Min(loaded.Value, Inference.ContextWindowChoice.MeasuredCeiling))
             : configured, true);
+    }
+
+    /// <summary>
+    /// The window a tool cut is decided on (<see cref="Execution.SmallWindowToolRegistry"/>): one the server reported, or
+    /// Ollama's setting, which every request carries as <c>num_ctx</c>; 0 otherwise. A setting that only stands in for a
+    /// window nobody could read never cuts the tools of a model that may well have far more.
+    /// </summary>
+    internal static int CutWindow(int window, bool read, string provider) =>
+        read || InferenceProviderFactory.KindOf(provider) == InferenceProviderFactory.Ollama ? window : 0;
+
+    /// <summary>
+    /// The registry an agent run sends: <paramref name="tools"/>, or the tools used most when every definition would take
+    /// more than half the window (<see cref="CutWindow"/>). The funnel of both agent
+    /// loops, so the run of a command (<c>/task</c>, <c>/tdd</c>, <c>/fix-build</c>) fits where a question does, and says
+    /// what it leaves out on the run's status line; a question's registry, decided with its plan, cut or not
+    /// (<see cref="Execution.SmallWindowToolRegistry.MarkDecided"/>), is left as it is.
+    /// </summary>
+    internal static async Task<IToolRegistry> ToolsForWindowAsync(
+        InferpalConfig config, IInferenceProvider? client, string model, IToolRegistry tools,
+        Action<string>? onStep, CancellationToken ct)
+    {
+        // A question decided its tools with its plan (and kept the ones it named): its runs send exactly that.
+        if (tools.Definitions.Count == 0 || Execution.SmallWindowToolRegistry.IsDecided(tools)) return tools;
+        var (window, read) = client is null ? (config.ContextWindowSize, false)
+                                            : await MeasureWindowAsync(config, client, model, ct).ConfigureAwait(false);
+        var at = CutWindow(window, read, config.Provider);
+        // ⚠ No question here: a command's prompt quotes code and build output, where tool names abound, and the tools a
+        // command works with are kept ones.
+        var sent = Execution.SmallWindowToolRegistry.For(tools, at, null);
+        if (sent is Execution.SmallWindowToolRegistry cut
+            && ToolsCutText(cut.LeftOut(tools), at, LargerWindowRemedy(config.Provider, at, config.ContextWindowSize), forRun: true)
+               is { Count: > 0 } said)
+            onStep?.Invoke(said.Text);
+        return sent;
     }
 
     /// <summary>The summarising call, with its own deadline. <c>Text</c> null on any failure, with <c>Failure</c> the

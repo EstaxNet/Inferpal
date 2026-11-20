@@ -178,6 +178,8 @@ Para cada problema, cita la línea o el símbolo, explica el riesgo y sugiere un
   <data name="StatusCompacting" xml:space="preserve"><value>Compactando contexto…</value></data>
   <data name="StatusLoadingModelWindow" xml:space="preserve"><value>Cargando {0} con una ventana de {1} tokens…</value></data>
   <data name="MsgModelWindowNotLoaded" xml:space="preserve"><value>LM Studio no cargó {0} con una ventana de {1} tokens ({2}): mantiene la ventana con la que carga el modelo. Si las herramientas de Inferpal dejan poco espacio para su pregunta, aumente la longitud de contexto del modelo en LM Studio o libere memoria en su servidor.</value></data>
+  <data name="MsgToolsCutSmallWindow" xml:space="preserve"><value>Con una ventana de contexto de {0:N0} tokens, Inferpal solo ofrece las herramientas que más usa, para dejar sitio a su pregunta: {1} {1:herramienta más no se ofrece|herramientas más no se ofrecen} ({2}). Escriba el nombre de una herramienta en su pregunta para conservarla. {3}</value></data>
+  <data name="MsgToolsCutSmallWindowRun" xml:space="preserve"><value>Con una ventana de contexto de {0:N0} tokens, este run solo ofrece las herramientas más usadas: {1} {1:herramienta más no se ofrece|herramientas más no se ofrecen} ({2}). {3}</value></data>
   <data name="StatusCompactingProgress" xml:space="preserve"><value>Compactando contexto… {0}, unos {1:N0} {1:token|tokens} hasta ahora</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Contexto compactado: {0} mensaje(s) resumido(s) — conservando los últimos {1} turno(s).</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ La compactación de contexto superó el tiempo límite — se usa el truncado forzado. Si su modelo necesita más tiempo, aumente «{0}» ({1}) en los ajustes.</value></data>
@@ -1869,12 +1871,14 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="ToolListSent" xml:space="preserve"><value>{0} {0:herramienta enviada|herramientas enviadas}, ~{1} tokens</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} {0:desactivada|desactivadas}</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>{0} bajo demanda</value></data>
+  <data name="ToolListCutByWindow" xml:space="preserve"><value>{0} {0:omitida|omitidas} (ventana de {1:N0} tokens)</value></data>
   <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;herramienta&gt;` desactiva una herramienta en todas las conversaciones, `/tools on &lt;herramienta&gt;` la reactiva. Una herramienta desactivada nunca se ofrece al modelo; sus propios comandos que la usan (`/diff`, `@problems`…) siguen funcionando.</value></data>
   <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Integradas</value></data>
   <data name="ToolGroupCustom" xml:space="preserve"><value>Sus herramientas</value></data>
   <data name="ToolGroupServer" xml:space="preserve"><value>Servidor MCP {0}</value></data>
   <data name="ToolStateSent" xml:space="preserve"><value>enviada</value></data>
   <data name="ToolStateOnDemand" xml:space="preserve"><value>bajo demanda</value></data>
+  <data name="ToolStateCutByWindow" xml:space="preserve"><value>omitida con esta ventana</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>desactivada</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>desactivada por la entrada de su servidor</value></data>
   <data name="ToolStateNotOffered" xml:space="preserve"><value>no ofrecida por ahora</value></data>

@@ -175,6 +175,8 @@ Nenne für jedes Problem die Zeile oder das Symbol, erkläre das Risiko und schl
   <data name="StatusCompacting" xml:space="preserve"><value>Kontext wird komprimiert…</value></data>
   <data name="StatusLoadingModelWindow" xml:space="preserve"><value>{0} wird mit einem Fenster von {1} Token geladen…</value></data>
   <data name="MsgModelWindowNotLoaded" xml:space="preserve"><value>LM Studio hat {0} nicht mit einem Fenster von {1} Token geladen ({2}): Es behält das Fenster, mit dem es das Modell lädt. Wenn die Werkzeuge von Inferpal zu wenig Platz für Ihre Frage lassen, erhöhen Sie die Kontextlänge des Modells in LM Studio oder geben Sie Speicher auf seinem Server frei.</value></data>
+  <data name="MsgToolsCutSmallWindow" xml:space="preserve"><value>Bei einem Kontextfenster von {0:N0} Token bietet Inferpal nur die meistgenutzten Werkzeuge an, damit Ihre Frage Platz hat: {1} {1:weiteres Werkzeug wird|weitere Werkzeuge werden} nicht angeboten ({2}). Schreiben Sie den Namen eines Werkzeugs in Ihre Frage, um es zu behalten. {3}</value></data>
+  <data name="MsgToolsCutSmallWindowRun" xml:space="preserve"><value>Bei einem Kontextfenster von {0:N0} Token bietet dieser Lauf nur die meistgenutzten Werkzeuge an: {1} {1:weiteres Werkzeug wird|weitere Werkzeuge werden} nicht angeboten ({2}). {3}</value></data>
   <data name="StatusCompactingProgress" xml:space="preserve"><value>Kontext wird komprimiert… {0}, bisher etwa {1:N0} {1:Token|Token}</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 Kontext komprimiert: {0} Nachricht(en) zusammengefasst – letzte {1} Runde(n) behalten.</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ Kontextkomprimierung abgelaufen – auf harte Kürzung zurückgefallen. Wenn Ihr Modell länger braucht, erhöhen Sie „{0}“ ({1}) in den Einstellungen.</value></data>
@@ -1869,12 +1871,14 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ToolListSent" xml:space="preserve"><value>{0} {0:Tool|Tools} gesendet, ~{1} Tokens</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>{0} abgeschaltet</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>{0} auf Abruf</value></data>
+  <data name="ToolListCutByWindow" xml:space="preserve"><value>{0} ausgelassen (Fenster von {1:N0} Token)</value></data>
   <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;Tool&gt;` schaltet ein Tool in allen Unterhaltungen ab, `/tools on &lt;Tool&gt;` wieder ein. Ein abgeschaltetes Tool wird dem Modell nie angeboten; Ihre eigenen Befehle, die es nutzen (`/diff`, `@problems`…), funktionieren weiter.</value></data>
   <data name="ToolGroupBuiltIn" xml:space="preserve"><value>Integriert</value></data>
   <data name="ToolGroupCustom" xml:space="preserve"><value>Ihre Tools</value></data>
   <data name="ToolGroupServer" xml:space="preserve"><value>MCP-Server {0}</value></data>
   <data name="ToolStateSent" xml:space="preserve"><value>gesendet</value></data>
   <data name="ToolStateOnDemand" xml:space="preserve"><value>auf Abruf</value></data>
+  <data name="ToolStateCutByWindow" xml:space="preserve"><value>bei diesem Fenster ausgelassen</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>abgeschaltet</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>vom Eintrag seines Servers abgeschaltet</value></data>
   <data name="ToolStateNotOffered" xml:space="preserve"><value>derzeit nicht angeboten</value></data>

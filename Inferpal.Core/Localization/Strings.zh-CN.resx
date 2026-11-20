@@ -178,6 +178,8 @@
   <data name="StatusCompacting" xml:space="preserve"><value>正在压缩上下文…</value></data>
   <data name="StatusLoadingModelWindow" xml:space="preserve"><value>正在以 {1} 个 token 的窗口加载 {0}…</value></data>
   <data name="MsgModelWindowNotLoaded" xml:space="preserve"><value>LM Studio 未以 {1} 个 token 的窗口加载 {0}（{2}）：它保留加载该模型时的窗口。如果 Inferpal 的工具给你的问题留下的空间太少，请在 LM Studio 中增大模型的上下文长度，或释放其服务器的内存。</value></data>
+  <data name="MsgToolsCutSmallWindow" xml:space="preserve"><value>上下文窗口为 {0:N0} 个 token，为给你的问题留出空间，Inferpal 只提供最常用的工具：另外 {1} 个工具未提供（{2}）。在问题中写出工具名称即可保留它。{3}</value></data>
+  <data name="MsgToolsCutSmallWindowRun" xml:space="preserve"><value>上下文窗口为 {0:N0} 个 token，此次运行只提供最常用的工具：另外 {1} 个工具未提供（{2}）。{3}</value></data>
   <data name="StatusCompactingProgress" xml:space="preserve"><value>正在压缩上下文… {0}，目前约 {1:N0} 个令牌</value></data>
   <data name="MsgContextCompacted" xml:space="preserve"><value>📦 上下文已压缩：{0} 条消息已摘要 — 保留最后 {1} 轮。</value></data>
   <data name="MsgContextCompactionFallback" xml:space="preserve"><value>⚠ 上下文压缩超时 — 已回退到硬截断。 如果模型需要更长时间，请在设置中调高“{0}”（{1}）。</value></data>
@@ -1869,12 +1871,14 @@
   <data name="ToolListSent" xml:space="preserve"><value>发送 {0} 个工具，约 {1} 个 token</value></data>
   <data name="ToolListTurnedOff" xml:space="preserve"><value>已关闭 {0} 个</value></data>
   <data name="ToolListOnDemand" xml:space="preserve"><value>按需 {0} 个</value></data>
+  <data name="ToolListCutByWindow" xml:space="preserve"><value>此窗口（{1:N0} 个 token）下未提供：{0}</value></data>
   <data name="ToolListHowTo" xml:space="preserve"><value>`/tools off &lt;工具&gt;` 在所有对话中关闭某个工具，`/tools on &lt;工具&gt;` 将其重新打开。已关闭的工具绝不会提供给模型；使用它的您自己的命令（`/diff`、`@problems` 等）仍可正常使用。</value></data>
   <data name="ToolGroupBuiltIn" xml:space="preserve"><value>内置</value></data>
   <data name="ToolGroupCustom" xml:space="preserve"><value>您的工具</value></data>
   <data name="ToolGroupServer" xml:space="preserve"><value>MCP 服务器 {0}</value></data>
   <data name="ToolStateSent" xml:space="preserve"><value>发送</value></data>
   <data name="ToolStateOnDemand" xml:space="preserve"><value>按需</value></data>
+  <data name="ToolStateCutByWindow" xml:space="preserve"><value>此窗口下未提供</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>已关闭</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>已由其服务器条目关闭</value></data>
   <data name="ToolStateNotOffered" xml:space="preserve"><value>当前未提供</value></data>

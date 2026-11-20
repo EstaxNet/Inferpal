@@ -18,6 +18,9 @@ internal enum ToolState
     OffByEntry,
     /// <summary>Not offered now: it has nothing to work on (no documentation indexed, no server on demand).</summary>
     NotOffered,
+    /// <summary>Left out at a small window: every definition would take more than half of it
+    /// (<see cref="SmallWindowToolRegistry"/>).</summary>
+    CutByWindow,
 }
 
 /// <summary>One tool as <c>/tools</c> and the Tools page list it (<see cref="ToolRegistry.Profile"/>).</summary>

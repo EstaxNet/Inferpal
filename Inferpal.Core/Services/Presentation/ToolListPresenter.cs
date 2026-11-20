@@ -6,8 +6,8 @@ namespace Inferpal.Services.Presentation;
 /// <summary>One tool as <c>/tools</c> and the Tools page list it.</summary>
 /// <param name="Key">The name it is turned off and on by, as a person types it (<see cref="ToolSwitches.Typed"/>).</param>
 /// <param name="Weight">What its definition weighs in a request, as a person reads it ("312", "1.4k").</param>
-/// <param name="State"><c>sent</c>, <c>onDemand</c>, <c>off</c>, <c>offByEntry</c> or <c>notOffered</c> — the colour of
-/// its row, never read back from its label.</param>
+/// <param name="State"><c>sent</c>, <c>onDemand</c>, <c>off</c>, <c>offByEntry</c>, <c>notOffered</c> or
+/// <c>cutByWindow</c> — the colour of its row, never read back from its label.</param>
 /// <param name="Off">The user turned it off: its button turns it back on.</param>
 /// <param name="CanToggle">A button is offered: never for <c>tool_search</c>, nor for a tool only its server's entry turns
 /// off (that entry is where it is turned back on — <paramref name="StateLabel"/> says so).</param>
@@ -32,14 +32,31 @@ internal static class ToolListPresenter
     /// <remarks>⚠ Not the next turn's count (<c>ContextManager.NextTurnToolTokens</c>): with tools off for the conversation
     /// or in plan mode, that one weighs another set than the rows — "32 tools sent, ~0 tokens". The list says what a
     /// request with tools declares; the conversation's switch is said on its own line.</remarks>
-    public static ToolListModel Build(ToolRegistry tools) =>
-        Build(tools.Profile(), RequestSize.ToolTokens(tools.Definitions), tools.TurnedOffElsewhere());
+    /// <param name="turn">The registry the next question sends (<c>ContextManager.NextTurnTools</c>: plan mode's, a held
+    /// mode's), on which a small window's cut is decided as the turn decides it; <c>null</c> = no cut (tools off).</param>
+    /// <param name="cutWindow">The window the next question's tools are cut for (<c>ContextManager.CutWindow</c>), 0 when
+    /// unknown: the tools a small window leaves out are listed as such, and the total weighs what is still sent.</param>
+    /// <param name="named">The tools the conversation's questions named: a small window keeps them.</param>
+    public static ToolListModel Build(ToolRegistry tools, IToolRegistry? turn = null, int cutWindow = 0,
+                                      IReadOnlyCollection<string>? named = null)
+    {
+        var profile = tools.Profile();
+        var sent = tools.Definitions;
+        if (turn is not null && SmallWindowToolRegistry.For(turn, cutWindow, named) is SmallWindowToolRegistry cut)
+        {
+            var left = cut.LeftOut(turn).ToHashSet(StringComparer.Ordinal);
+            profile = [.. profile.Select(e => e.State == ToolState.Sent && left.Contains(e.Tool.Name) ? e with { State = ToolState.CutByWindow } : e)];
+            sent = [.. sent.Where(d => !left.Contains(d.Function.Name))];
+        }
+        return Build(profile, RequestSize.ToolTokens(sent), tools.TurnedOffElsewhere(), cutWindow);
+    }
 
     /// <param name="sentTokens">What the definitions of the rows in the <c>sent</c> state weigh in a request.</param>
     /// <param name="elsewhere">The lines of the setting that name no tool served here (<c>ToolRegistry.TurnedOffElsewhere</c>):
     /// a group of their own, each turned back on by its text.</param>
+    /// <param name="cutWindow">The window the rows in the <c>CutByWindow</c> state are left out at.</param>
     public static ToolListModel Build(IReadOnlyList<ToolProfileEntry> profile, int sentTokens,
-                                      IReadOnlyList<string>? elsewhere = null)
+                                      IReadOnlyList<string>? elsewhere = null, int cutWindow = 0)
     {
         var groups = profile
             .GroupBy(e => (e.Source, e.Server))
@@ -55,6 +72,8 @@ internal static class ToolListPresenter
             parts.Add(Strings.ToolListTurnedOff(off));
         if (profile.Count(e => e.State == ToolState.OnDemand) is > 0 and var onDemand)
             parts.Add(Strings.ToolListOnDemand(onDemand));
+        if (profile.Count(e => e.State == ToolState.CutByWindow) is > 0 and var cut)
+            parts.Add(Strings.ToolListCutByWindow(cut, cutWindow));
         return new(string.Join(" · ", parts), groups, Strings.ToolListHowTo);
     }
 
@@ -73,6 +92,7 @@ internal static class ToolListPresenter
             ToolState.OnDemand   => ("onDemand",   Strings.ToolStateOnDemand),
             ToolState.OffByUser  => ("off",        Strings.ToolStateOff),
             ToolState.OffByEntry => ("offByEntry", Strings.ToolStateOffByEntry),
+            ToolState.CutByWindow => ("cutByWindow", Strings.ToolStateCutByWindow),
             _                    => ("notOffered", Strings.ToolStateNotOffered),
         };
         var off = e.State == ToolState.OffByUser;

@@ -66,7 +66,7 @@ public class ModeSelectorTests
         // Its instructions, and what its tools weigh.
         var rag = Code("InferpalToolWindowData.Rag.cs");
         Assert.Contains("_heldMode);", rag);
-        Assert.Contains("NextTurnToolTokens(_tools, _toolsEnabled, _planMode, _heldMode)", rag);
+        Assert.Contains("NextTurnToolTokens(_tools, _toolsEnabled, _planMode, _heldMode,", rag);
         // /task and /tdd keep their own tools: the mode's instructions never steer them, as in the host.
         var slash = Code("InferpalToolWindowData.SlashCommands.cs");
         Assert.Equal(2, slash.Split("SystemPromptWithoutMode()").Length - 1);

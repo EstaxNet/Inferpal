@@ -1017,6 +1017,10 @@ internal sealed class AgentOrchestrator
         using var gpuLease = GpuScheduler.AcquireChatLease();
         // What a tool says while it runs (each action interact_window plays) goes to this run's status line.
         using var progress = ToolProgress.Route(onStep);
+        // A question arrives decided with its plan and passes as it is; any other registry is cut here when the window is
+        // too small for every definition — the same funnel as the basic loop's.
+        tools = await ContextManager.ToolsForWindowAsync(_config, _client as IInferenceProvider, model, tools, onStep, ct)
+            .ConfigureAwait(false);
         // One effort for every call of the run — plan, actions, synthesis: a model that carries the effort in its system
         // message (gpt-oss, Gemma 4) rewrites the head of its prompt when it changes, and the server reads the run again.
         var runEffort = ReasoningEffortSetting.Agent(_config);

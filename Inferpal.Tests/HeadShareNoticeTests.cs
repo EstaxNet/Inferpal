@@ -110,5 +110,7 @@ public sealed class HeadShareNoticeTests
         Assert.Contains("ContextManager.PrepareAsync(", code);                                     // WITNESS
         Assert.Contains("ContextManager.HeadShareNotice(", code);
         Assert.Contains(".WindowRead)", code);   // the notice is told whether the window was read
+        var at = code.IndexOf("ContextManager.HeadShareNotice(", StringComparison.Ordinal);
+        Assert.Contains(".ToolTokens, ", code[at..code.IndexOf(';', at)]);   // and weighs the tools the turn was planned for
     }
 }

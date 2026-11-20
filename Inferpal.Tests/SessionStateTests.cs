@@ -79,7 +79,7 @@ public sealed class SessionStateTests : IDisposable
         await store.SaveAsync("plain", [new("user", "q")], CancellationToken.None, workspaceRoot: null, state: SessionState.New);
         var json = await File.ReadAllTextAsync(Path.Combine(_dir, "plain.json"));
         foreach (var key in new[] { "plan_mode", "tools_off", "step_mode", "xray_off", "active_plan", "mode", "template_suffix",
-                                    "summary", "recap", "recap_in_system", "model" })
+                                    "summary", "recap", "recap_in_system", "model", "named_tools" })
             Assert.DoesNotContain($"\"{key}\"", json, StringComparison.Ordinal);
     }
 

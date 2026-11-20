@@ -651,7 +651,7 @@ the 2024 models (Llama 3.1 8B, Codestral 22B, Qwen2.5 Coder 7B as an agent) are 
   same time at 8K as at 32K (24.8 s, in one pass, against 24.7 s).
 - For Gemma 4 12B the runs were too noisy to conclude (30 to 55 s at 8K against 24 s at 32K).
 - If your card has the memory, a 32K window keeps the agent faster; at 8K, the tools' descriptions take more than
-  half the window.
+  half the window, so only the tools the agent uses most are sent.
 
 On real projects the difference is larger. Questions about tablib, js-yaml and scriban in the default setup
 (Ollama, Chat mode): at 8K, 15 of 24 answers by Granite 4.2 8B and Gemma 4 12B ended on "the request is larger than

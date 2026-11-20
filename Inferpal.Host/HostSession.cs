@@ -137,6 +137,19 @@ internal sealed class HostSession : IDisposable
     /// <summary>The window the last context check measured against (0 until one ran).</summary>
     public int LastContextWindow { get; set; }
 
+    /// <summary>The tools this conversation's questions named (<c>SmallWindowToolRegistry.NamedIn</c>): a small window keeps
+    /// them, so Continue and a follow-up still have them. Replaced, never changed in place — the X-Ray reads it while a turn
+    /// runs; emptied with the conversation, kept with it (<see cref="CaptureState"/>).</summary>
+    public IReadOnlyCollection<string> CutNamedTools { get; set; } = [];
+
+    /// <summary>Whether the server reported <see cref="LastContextWindow"/>, rather than the setting standing in for it.</summary>
+    public bool LastContextWindowRead { get; set; }
+
+    /// <summary>The window the next turn's tool cut is decided on (<c>ContextManager.CutWindow</c>): what the gauge and the
+    /// X-Ray count the tools against, so they show what the question sends.</summary>
+    public int ToolCutWindow =>
+        Services.Agent.ContextManager.CutWindow(ContextWindowInUse, LastContextWindowRead, Config.Provider);
+
     /// <summary>
     /// The window every fill indicator shows (X-Ray, the gauge): the one the last turn was measured
     /// against (<c>ContextManager.EffectiveWindowAsync</c>: the loaded one when it counts) — else the configured one.
@@ -236,7 +249,8 @@ internal sealed class HostSession : IDisposable
         CurrentSessionName, TemplateSuffix, ModeName, PlanMode, !ToolsEnabled, StepMode,
         XrayDisabledSections.Count > 0 ? [.. XrayDisabledSections.Order(StringComparer.Ordinal)] : null, ActivePlan,
         Summary, string.IsNullOrEmpty(OodaSummary) ? null : OodaSummary,
-        string.IsNullOrEmpty(RecapInSystem) ? null : RecapInSystem, ConversationModel);
+        string.IsNullOrEmpty(RecapInSystem) ? null : RecapInSystem, ConversationModel,
+        CutNamedTools.Count > 0 ? [.. CutNamedTools.Order(StringComparer.Ordinal)] : null);
 
     /// <summary>Holds <paramref name="state"/> in place of every value the conversation held — a load replaces them all.</summary>
     public void ApplyState(SessionState state)
@@ -254,6 +268,7 @@ internal sealed class HostSession : IDisposable
         OodaSummary        = state.Recap;
         RecapInSystem      = state.RecapInSystem;
         ConversationModel  = state.Model;
+        CutNamedTools      = state.NamedTools ?? [];
     }
 
     /// <summary>What the history holds in place of the conversation's first turns, once compacted
