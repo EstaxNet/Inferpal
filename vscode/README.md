@@ -31,7 +31,7 @@ With [Ollama](https://ollama.com), [LM Studio](https://lmstudio.ai), llama.cpp, 
 
 **Plan → Read → Change → Run your app → Look at it → Check, then answer.**
 
-Up to 40 steps on one request, in Agent mode or in the background while you keep coding (`/task`). On a copy of your repository if you prefer (`/run-copy`), and **Undo run** puts every file back in one click.
+Up to 40 steps on one request (*Steps per request* in the settings), in Agent mode or in the background while you keep coding (`/task`). On a copy of your repository if you prefer (`/run-copy`), and **Undo run** puts every file back in one click.
 
 ## Your code stays here
 
