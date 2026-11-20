@@ -9,7 +9,7 @@ namespace Inferpal.Services.Documents;
 /// size asked, as the DevTools' device toolbar sets it.
 /// </summary>
 /// <remarks>
-/// ⚠ On Windows, a headless Chromium keeps its window at least about 520 px wide whatever <c>--window-size</c> asks: from the command
+/// ⚠ On Windows and macOS, a headless Chromium keeps its window at least about 520 px wide whatever <c>--window-size</c> asks: from the command
 /// line, a phone's 390 px is laid out at 496 and the picture cut at 390 — elements shown cut that a phone shows whole, a
 /// phone's own breakage never shown. The protocol's <c>Emulation.setDeviceMetricsOverride</c> lays the page out at the width
 /// asked, as a browser window that wide would (not a phone's zoomed-out view of a page with no viewport meta tag, which

@@ -83,7 +83,7 @@ public sealed class PageCaptureWidthTests : IDisposable
                 var image = StbImageSharp.ImageResult.FromMemory(narrow, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
                 var centre = (image.Height / 2 * image.Width + image.Width / 2) * 4;
                 var pixel = (image.Data[centre], image.Data[centre + 1], image.Data[centre + 2]);
-                if (OperatingSystem.IsWindows())
+                if (!OperatingSystem.IsLinux())
                 {
                     // What the note says is what the picture shows: the wide layout (blue), cut at the width asked.
                     Assert.Equal(((byte)0, (byte)0, (byte)0xff), pixel);
@@ -91,7 +91,7 @@ public sealed class PageCaptureWidthTests : IDisposable
                 }
                 else
                 {
-                    // Linux and macOS lay the page out at the width asked from the command line too: nothing to say.
+                    // Linux lays the page out at the width asked from the command line too: nothing to say.
                     Assert.Equal(((byte)0xff, (byte)0, (byte)0), pixel);
                     Assert.Null(note);
                 }
