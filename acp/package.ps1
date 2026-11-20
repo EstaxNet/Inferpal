@@ -55,9 +55,11 @@ try {
     $executable = if ($Target -eq 'win32-x64') { 'Inferpal.Host.exe' } else { 'Inferpal.Host' }
     $sqlite = @{ 'win32-x64' = 'e_sqlite3.dll'; 'linux-x64' = 'libe_sqlite3.so'; 'darwin-arm64' = 'libe_sqlite3.dylib'; 'darwin-x64' = 'libe_sqlite3.dylib' }[$Target]
     $published = (@(Get-ChildItem $stage -Recurse -File | ForEach-Object { [IO.Path]::GetRelativePath($stage, $_.FullName) }) | Sort-Object) -join '|'
-    $expected  = (@($executable, $sqlite) | Sort-Object) -join '|'
+    # On Windows, SQL Server's client (query_database) ships its native network layer beside the executable.
+    $natives   = @($sqlite) + @(if ($Target -eq 'win32-x64') { 'Microsoft.Data.SqlClient.SNI.dll' })
+    $expected  = (@($executable) + $natives | Sort-Object) -join '|'
     if ($published -ne $expected) {
-        throw "The publish holds $($published.Replace('|', ', ')) instead of $executable and $sqlite alone."
+        throw "The publish holds $($published.Replace('|', ', ')) instead of $executable and $($natives -join ', ') alone."
     }
     # What the executable must carry inside: the form, and the framework's names (without them the C# analysis binds no
     # .NET type). The bundle is not compressed, so the resource names read in its bytes — by blocks that overlap by more
