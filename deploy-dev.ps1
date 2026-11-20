@@ -583,6 +583,31 @@ function Invoke-VsDeployCore([string]$VsPath) {
         Write-Host "   Inferpal.pkgdef : OK" -ForegroundColor Green
     }
 
+    # ⚠ A per-user VSIX install (double-click without /a) puts a second copy in the main hive's
+    # Extensions\, and the running VS loads THAT one: deploying only into Program Files leaves it
+    # on the old code without a word. Every such copy gets the same files; its install manifests
+    # (manifest.json, catalog.json, extension.vsixmanifest) are its own and stay as they are.
+    $ownManifests = @('manifest.json', 'catalog.json', 'extension.vsixmanifest')
+    foreach ($userCopy in @(Get-ChildItem "$env:LOCALAPPDATA\Microsoft\VisualStudio" -Directory -ErrorAction SilentlyContinue |
+                            Where-Object { $_.Name -match '^18\.0_[0-9a-f]{8}$' } |
+                            ForEach-Object { Get-ChildItem "$($_.FullName)\Extensions" -Recurse -Filter 'Inferpal.dll' -ErrorAction SilentlyContinue } |
+                            Select-Object -ExpandProperty DirectoryName -Unique |
+                            Where-Object { $_ -ne $InstalledDir })) {
+        $mirrored = 0; $locked = 0
+        foreach ($file in @(Get-ChildItem $InstalledDir -Recurse -File -ErrorAction SilentlyContinue |
+                            Where-Object { $_.Name -notin $ownManifests -and $_.Extension -ne '.stale' })) {
+            $dest = Join-Path $userCopy $file.FullName.Substring($InstalledDir.Length).TrimStart('\')
+            $destDir = Split-Path $dest -Parent
+            if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+            try { Copy-Item $file.FullName $dest -Force -ErrorAction Stop; $mirrored++ } catch { $locked++ }
+        }
+        if ($locked -gt 0) {
+            Write-Host "   Per-user copy $userCopy : $locked files LOCKED - close Visual Studio and rerun" -ForegroundColor Red
+        } else {
+            Write-Host "   Per-user copy $userCopy : $mirrored files mirrored" -ForegroundColor Green
+        }
+    }
+
     # -- This script writes NOTHING to the registry any more --------------------
     #
     # ⚠ Measured. There used to be two registry-writing blocks here, and the second one was
