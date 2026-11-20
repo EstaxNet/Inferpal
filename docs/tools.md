@@ -3,7 +3,7 @@
 This page shows what the agent can do on your machine and what it must ask you first. In short: reading never asks; a
 write, a command or a web call waits for your answer on a card, unless a rule of yours already decides.
 
-The agent completes tasks by calling tools. There are **43 built-in tools**, plus any
+The agent completes tasks by calling tools. There are **44 built-in tools**, plus any
 **user-defined shell tools** and any tools exposed by connected **[MCP](mcp.md) servers**.
 
 ## What the agent can do, and what asks first
@@ -19,6 +19,7 @@ The agent completes tasks by calling tools. There are **43 built-in tools**, plu
 | Look at the page it builds | `view_page` | Not for the app it started itself, nor an HTML file of the workspace; another address of this machine, once — the same agreement as `http_request` |
 | Use the page it builds (click, type, choose) and capture the state reached | `interact_page` | Not for the app it started itself, nor an HTML file of the workspace; another address of this machine, once (*Always* for that address) |
 | Look at the desktop app it launched | `view_window` | Never: you agreed to the launch |
+| Use the desktop app it launched (type, click, choose, tick) | `interact_window` | Never: you agreed to the launch; saving its picture asks like any write |
 | Use the debugger | `get_debugger_state`, `debug_control`, `debug_inspect` | To start your program, and to evaluate an expression |
 | Use tools you added | [Custom shell tools](#custom-shell-tools), [MCP tools](#mcp-tools) | Yes |
 
@@ -82,6 +83,11 @@ an HTML file of the workspace: that is its own work, and each step it plays is i
 machine is another app of yours — a notebook that runs what is typed in it, an admin page — and asks once, *Always* for
 that address. Either way the browser is fresh and reaches nothing but the page's own address. A `deny interact_page
 <regex>` rule (it reads `GET scheme://host:port`, as for `http_request`, or the file's path) keeps it away from an app.
+
+`interact_window` asks nothing either: it acts only in the windows of the app the agent launched (you agreed to the
+launch), through the system's accessibility, never your mouse or keyboard. A file dialog the app opens is neither
+shown nor acted in — its contents are your folders. A `deny interact_window <regex>` rule (it reads the job's command)
+keeps it away from an app.
 
 </details>
 
@@ -521,6 +527,7 @@ app serves, the window of the desktop app it launched, the answer of your API.
 | Fix how a web page looks | `view_page`, at desktop and phone widths |
 | Capture a page in a given state for a README (a cart with two items, a filled form) | `interact_page` |
 | Understand what a desktop app shows | `view_window`: the window and every control's state |
+| Bring a desktop app into a given state, or capture it for a README | `interact_window` |
 
 <details>
 <summary>The tools that look at your app and their parameters</summary>
@@ -531,6 +538,7 @@ app serves, the window of the desktop app it launched, the answer of your API.
 | `view_page` | `url?`, `path?`, `width?` | Look at a page of the app you build as a browser renders it — served on this machine (`http://localhost:5173/cart`) or an HTML file of the workspace — captured at 1280 px and at 390 px (a phone), or at the one width you give: what the source does not show (a button that cannot be seen, a layout that overflows on a phone, an element over another, a total cut off). A model that sees gets the pictures; one that does not gets the text read on them by OCR. The browser: WebKit on macOS (built in), Edge on Windows, Firefox on Linux, else any Chrome, Chromium, Brave or Firefox found; none → it says what to install. The page cannot reach the Internet (its fonts or images from outside are missing on purpose). **Approval**, as `http_request` |
 | `interact_page` | `steps`, `url?`, `path?`, `save_to?` | Use a page of the app you build as a person does — served on this machine (`http://localhost:5173/`) or an HTML file of the workspace — and capture the state reached: each step is an `action` (`goto`, `click`, `type`, `select`, `press`, `wait_for`, `capture`) with a CSS `selector` or a visible `text`, a `value` to choose, a `key`, a `url` or a `timeout_ms`. A click is a real mouse click at the element's centre (an element covering it is said), typing goes into the focused field, a click on a list's entry chooses it, a page's `confirm()` is answered OK and said. The steps stop at the first one not done. Returns each step done or why not, the page's address, its visible controls with a selector that finds each one, its console (errors first) and a capture at 1280 × 800; with `save_to` (a `.png` of the project), the capture is written there on the usual write card, its picture on it and the image it replaces beside it (*Undo run* takes it back). The page stays open for the next call of the same run (without `url`, it continues from there); a call of another run opens a fresh browser, an idle one closes after 10 minutes. Needs Chrome, Edge or Chromium; none → it says what to install. **Approval** only for an address no app the agent started serves, once (*Always* for that address); `save_to` asks on the write card |
 | `view_window` | `job`, `wait?` | Look at the desktop app launched with `run_command` (`background: true`) — WPF, WinForms, MAUI, WinUI, AppKit, GTK, Qt: a picture of each window of that job and of the processes it started, and their accessibility tree (each control's role, name, value, disabled or not, place in the window) — for what the source does not show: a button greyed out, a field a binding leaves empty, a control outside the window or covered by another. A model that sees gets the picture; one that does not gets the text read on it by OCR, and every model gets the tree. Never a window of another process. Windows: built in. macOS: the app that runs Inferpal needs Screen Recording for the picture and Accessibility for the tree — without them it says so and how to allow them. Linux: X11 or XWayland with `xprop` and `xwd` for the picture, AT-SPI (`python3-gi`) for the tree; a native Wayland window gives its tree only; what is missing is named. Waits up to 20 s (at most 60) for a first window, and says what the job printed when none comes. Offered only while a background job runs |
+| `interact_window` | `job`, `steps`, `save_to?`, `wait?` | Use the desktop app launched with `run_command` (`background: true`) as a person does: type in a field, click a button, choose in a list or a drop-down, tick a box, wait for a control — each control named by its id or its name in `view_window`'s tree — then see its windows as `view_window` does. Each step is said, done or why not (a control disabled, not found, an entry the list lacks); the steps stop at the first one not done. Through the system's accessibility — UI Automation on Windows, AT-SPI (`python3-gi`) on Linux, Accessibility on macOS — never the mouse or the keyboard, and only in the windows of that job and the processes it started. A file dialog is named by its title alone, never shown nor acted in. `save_to` writes the picture of its window into the project as a PNG on the usual write card. Offered only while a background job runs |
 
 </details>
 

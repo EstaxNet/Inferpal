@@ -40,7 +40,7 @@ internal sealed class ModeTools
             "write_file", "apply_diff", "apply_edits", "delete_file", "rename_symbol", "replace_in_files", "edit_notebook", "insert_at_cursor", "replace_selection",
             "restore_file", "update_memory",
         ],
-        ["execute"] = ["run_command", "run_tests", "debug_control", "debug_inspect", "run_notebook", "view_window"],
+        ["execute"] = ["run_command", "run_tests", "debug_control", "debug_inspect", "run_notebook", "view_window", "interact_window"],
         ["web"]     = ["fetch_url", "web_search", "http_request", "view_page", "interact_page"],
     };
 
@@ -194,7 +194,7 @@ internal sealed class ModeTools
     /// <summary>The file a tool outside the edit family writes through one of its arguments — a capture saved by
     /// <c>save_to</c> — or <c>null</c> for a call that writes none: for a mode, that call is an edit.</summary>
     internal static string? SavedFile(string toolName, JsonElement args) =>
-        toolName is "interact_page" && args.ValueKind == JsonValueKind.Object && args.Str("save_to") is { Length: > 0 } path ? path : null;
+        toolName is "interact_page" or "interact_window" && args.ValueKind == JsonValueKind.Object && args.Str("save_to") is { Length: > 0 } path ? path : null;
 
     /// <summary>Copilot's <c>tools</c> (a list, or one string with commas).</summary>
     public static ModeTools FromCopilot(IEnumerable<string> names)

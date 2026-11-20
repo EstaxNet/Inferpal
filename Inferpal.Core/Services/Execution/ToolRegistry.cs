@@ -141,6 +141,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         var runCommand = new RunCommandTool(approval, config, root);
         Register(runCommand);
         Register(new ViewWindowTool(runCommand.Background, _readImages));
+        Register(new InteractWindowTool(runCommand.Background, _readImages, approval, root, history));
         Register(new ApplyDiffTool(approval, history, root, smartFix, setDiff, overlay) { RenameOffered = RenameOffered });
         Register(new ApplyEditsTool(approval, history, root, smartFix, overlay) { RenameOffered = RenameOffered });
         Register(new RestoreFileTool(approval, history, root, overlay));

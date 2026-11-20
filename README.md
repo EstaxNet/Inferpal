@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-9649%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-9673%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
   <a href="https://open-vsx.org/extension/EstaxNet/inferpal-vscode"><img src="https://img.shields.io/badge/Open%20VSX-install-C160EF" alt="Install from Open VSX"></a>
@@ -105,7 +105,7 @@ Measured on our own bench. Any model that calls tools works. [All measurements](
 
 ## Learn more
 
-[Feature tour](docs/features.md) — 43 built-in tools and any MCP server, more than 50 slash commands, `/check` reviews,
+[Feature tour](docs/features.md) — 44 built-in tools and any MCP server, more than 50 slash commands, `/check` reviews,
 commit messages, background tasks, modes, your repository's `AGENTS.md`, an interface in 10 languages.
 
 | Use it | Set it up | Under the hood |

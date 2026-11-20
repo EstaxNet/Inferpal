@@ -146,6 +146,8 @@ internal sealed class InteractPageTool : ITool, IDisposable
         var (saveTo, saveRefusal) = CaptureSaving.Target(args.Str("save_to"), _getWorkspaceRoot());
         if (saveRefusal is not null) return saveRefusal;
         if (saveTo is not null && _history is null) return "Error: save_to is not available here: the capture cannot be saved.";
+        if (saveTo is not null && CaptureSaving.Unseen(_history!, _getWorkspaceRoot(), saveTo) is { } unseen)
+            return "Error: save_to: " + unseen + " Nothing was played.";
         // The person's write rules too, before any click: a capture they refuse to have written is no reason to act.
         if (saveTo is not null && _approval.Refuses("write_file", saveTo))
             return $"Error: save_to: the person's rules refuse writing '{saveTo}'. Nothing was played.";

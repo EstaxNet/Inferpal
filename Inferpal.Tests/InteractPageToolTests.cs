@@ -464,8 +464,8 @@ public sealed class InteractPageToolTests : IDisposable
             throw new InvalidOperationException("the card path asks");
     }
 
-    /// <summary>An existing picture is replaced only as the card showed it, and only once the run has seen it; a call
-    /// that never captured says nothing was saved.</summary>
+    /// <summary>An existing picture is replaced only as the card showed it, and only once the run has seen it (refused
+    /// before any step otherwise); a call that never captured says nothing was saved.</summary>
     [Fact]
     public async Task SaveTo_NeverReplacesAPictureUnseen_OrChangedUnderTheCard_AndSaysWhenNothingWasSaved()
     {
@@ -478,7 +478,9 @@ public sealed class InteractPageToolTests : IDisposable
         var tool = Tool(() => "run-1", approval: card, history: history);
         var unseen = await Played(tool, new { path = "shop.html", save_to = "logo.png", steps = Array.Empty<object>() });
         if (unseen is null) return;   // undecided: no Chromium browser starts here
-        Assert.Contains("The capture was not saved to logo.png: that file already exists and has not been looked at", unseen);
+        // Refused before any step: a call never acts for a capture it cannot save.
+        Assert.Contains("Error: save_to: logo.png: that file already exists and has not been looked at in this run", unseen);
+        Assert.Contains("Nothing was played", unseen);
         Assert.Empty(card.Shown);
         Assert.Equal(8, new FileInfo(logo).Length);
 

@@ -34,6 +34,15 @@ internal static class CaptureSaving
     /// answered at all.</summary>
     internal const string SavedPrefix = "The capture is saved to ", NotSavedPrefix = "The capture was not saved to ";
 
+    /// <summary>Why <paramref name="path"/> is not replaced: an existing file the run has not seen — its picture would go
+    /// behind a write "Always" without anyone looking at it, as write_file refuses it; <c>null</c> when it may be. Asked
+    /// before any step too: a call never acts for a capture it cannot save.</summary>
+    internal static string? Unseen(FileHistoryService history, string root, string path) =>
+        File.Exists(path) && FileTarget.UnreadRefusal(history, path) is not null
+            ? Path.GetRelativePath(root, path).Replace('\\', '/') + ": that file already exists and has not been looked at in this "
+              + "run. Look at it with read_file (it shows the picture), or save to another name."
+            : null;
+
     /// <summary>Asks the write card with the picture on it, then writes <paramref name="png"/> to <paramref name="path"/>,
     /// backed up first; the line said to the model. A failure of the disk is said, never thrown: the page the steps built
     /// stays open.</summary>
@@ -42,11 +51,8 @@ internal static class CaptureSaving
     {
         var shown = Path.GetRelativePath(root, path).Replace('\\', '/');
         var exists = File.Exists(path);
-        // ⚠ As write_file: an existing file the run has not seen is not replaced — its picture would go behind a write
-        // "Always" without anyone looking at it.
-        if (exists && FileTarget.UnreadRefusal(history, path) is not null)
-            return NotSavedPrefix + $"{shown}: that file already exists and has not been looked at in this run. Look at it with "
-                 + "read_file (it shows the picture), or save to another name.";
+        // Asked again here: the file may have been created while the steps played.
+        if (Unseen(history, root, path) is { } unseen) return NotSavedPrefix + unseen;
         var before = exists ? Stamp(path) : default;
         var pending = Directory.CreateTempSubdirectory("inferpal-capture-").FullName;
         try

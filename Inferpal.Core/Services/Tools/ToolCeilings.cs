@@ -56,6 +56,8 @@ internal static class ToolCeilings
         // Its clicks may make the app change its data, as a person's would; save_to writes the capture.
         ["interact_page"]        = new(N | X | W),
         ["view_window"]          = new(R),
+        // Its clicks make the app act as a person's would; save_to writes the picture.
+        ["interact_window"]      = new(X | W),
         ["write_file"]           = new(W),
         ["apply_diff"]           = new(W),
         ["apply_edits"]          = new(W),

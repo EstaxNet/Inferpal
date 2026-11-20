@@ -113,7 +113,9 @@ public sealed class ToolEffectTests : IDisposable
                     || code.Contains("RequestScopedApprovalAsync(", StringComparison.Ordinal)
                     || code.Contains("RequestBatchApprovalAsync(", StringComparison.Ordinal)
                     || code.Contains("EditorWriteGate.AuthorizeAsync(", StringComparison.Ordinal)
-                    || code.Contains("_consent.RefusalAsync(", StringComparison.Ordinal);
+                    || code.Contains("_consent.RefusalAsync(", StringComparison.Ordinal)
+                    // A capture saved by save_to asks on the write card, through the helper the capture tools share.
+                    || code.Contains("CaptureSaving.SaveAsync(", StringComparison.Ordinal);
             bool Says(string effect) => code.Contains("ToolEffect." + effect, StringComparison.Ordinal) || code.Contains("ToolEffect.Unknown", StringComparison.Ordinal);
             var runs = new[] { "ChildProcess.", "new ProcessStartInfo", "ShellSession", "ShellLauncher.", ".EvaluateAsync(" }
                 .Any(s => code.Contains(s, StringComparison.Ordinal));

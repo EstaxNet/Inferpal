@@ -207,7 +207,7 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
 - **Three modes** — **Chat** (tools, no plan), **Agent** (plan, act, observe) and **Plan** (`/plan`: read-only, it
   proposes and changes nothing). `/plan save` turns a plan into a committable `.inferpal/plans/` file. Beside them,
   the modes found for the workspace: [Modes](configuration.md#modes).
-- **43 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
+- **44 built-in tools**, plus your own shell commands and any [MCP](mcp.md) server — [the reference](tools.md).
   Independent read-only calls run in parallel; `/tools off <tool>` takes one away from the model.
 - **Step by step** — `/agent-step` pauses before each tool call; **▶ Resume** goes on.
 - **Long runs you can leave** — the machine stays awake while the model works, a card left unanswered flashes the
@@ -307,6 +307,10 @@ look at what the code produces, measure it, and read the files developers deal w
   open for its next call. It asks nothing in the app it started itself; another service of your machine asks once.
   Pages of this machine only, in a fresh browser that reaches nothing else.
   Needs Chrome, Edge or Chromium.
+- **The desktop app in the state you want** — `interact_window` uses the app the agent launched as you would: it types
+  in a field, clicks, chooses in a list, ticks a box and waits, through the system's accessibility and never your mouse
+  or keyboard, then looks at the window — and saves its picture where you ask, on the usual write card. Only the
+  windows of that app; a file dialog it opens is neither shown nor acted in, since it shows your folders.
 - **The desktop app it started** — `view_window` shows the window of an app the agent launched in the background, and
   every control's type, text, value, state and position: enough to notice a control left disabled or a field that
   stays empty. A model that does not see images gets the controls too. Windows, macOS (it says which permission to
@@ -1164,7 +1168,8 @@ the password, and three wrong tries leave the file closed. An archive (`.zip`, `
 place, entry by entry, never extracted.
 
 **The agent also looks at what it builds** — the page your app serves (`view_page`, captured at a laptop's width and a
-phone's, or brought into a given state first with `interact_page`) and the desktop app it launched (`view_window`): see
+phone's, or brought into a given state first with `interact_page`) and the desktop app it launched (`view_window`, or
+`interact_window` to use it first): see
 [It looks, it measures, it checks](#the-agent-at-work).
 
 **Images go as images**, to a model that sees them (Qwen3.8, Ornith, Gemma 4, on LM Studio or Ollama). A large one is
