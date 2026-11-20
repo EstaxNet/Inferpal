@@ -22,7 +22,11 @@ model:
 - **Ollama** has the full hardware-aware features: `/models` lists, downloads and deletes models, `/hardware` shows the
   memory each loaded model takes, and an idle model can unload by itself.
 - **LM Studio** is a desktop app with its own server. `/models` lists and downloads too; a model is deleted in LM Studio,
-  and the memory of each model is not reported.
+  and the memory of each model is not reported. A chat model LM Studio loaded below the window Inferpal needs (8,192 is
+  common) is reloaded at that window — at least 16,384, or the one you set — and the status line says so; a model loaded
+  larger is left alone. Inferpal unloads a model it reloaded before using another, never while a question is being
+  answered, and a load LM Studio refuses (memory) is said with its reason, then tried again only half an hour later.
+  LM Studio 0.4 or later.
 - **OpenAI-compatible** covers generic servers, with an optional **API key**. `/models` lists what the server serves,
   but cannot download or delete: you manage the models on the server.
 

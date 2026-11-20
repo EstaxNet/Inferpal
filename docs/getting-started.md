@@ -38,7 +38,8 @@ differences. No server yet? On Windows with winget, step 5 can install Ollama fo
   1. Open the **Developer** tab (the server view) and **Start** the server.
   2. **Load** a tool-calling chat model — the one for your card ([By graphics card](models.md#by-graphics-card)) — and,
      optionally, an autocomplete model ([Mellum2](models.md#mellum) measured best) and an embedding model for semantic
-     search.
+     search. If the chat model loads with a window too small for Inferpal's
+     tools, Inferpal reloads it at a larger one before the first question.
   3. Inferpal uses LM Studio's native `/api/v1/*` API for the model list and load/unload, so
      `/models` works here too. Point the **Server address** at `http://localhost:1234`.
 - **OpenAI-compatible** — expose the server's `/v1` endpoint (and an API key if it needs one).

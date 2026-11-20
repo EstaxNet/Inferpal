@@ -324,7 +324,8 @@ look at what the code produces, measure it, and read the files developers deal w
   nothing to install; a model that does not see images gets that text instead of the picture.
 - **Long logs, data files, archives** — `read_file` filters a log by level and time (`level`, `since`, `until`), each
   entry with its stack trace; `query_data` answers one read-only SQL query on a CSV, TSV, JSON, Excel or SQLite file
-  too large to read; a zip, NuGet or tar archive is listed and read in place, never extracted.
+  too large to read; a zip, NuGet, 7z, RAR or tar archive (gz, bz2, xz) is listed and read in place, never extracted, and a
+  lone `app.log.gz`, `.bz2` or `.xz` reads as the file it holds.
 - **Your development database** — `query_database` finds the connection where your project declares it
   (`appsettings.Development.json`, `.env`, an environment variable, user secrets), lists the tables, reads a table's
   columns, keys and indexes, and runs reads on PostgreSQL, SQL Server, MySQL or MariaDB, in a transaction that keeps
@@ -403,8 +404,9 @@ for the model — each exclusion said, never silent. Writing one of these files 
   says so outside the panel: Visual Studio flashes its taskbar button, VS Code shows a notification
   that closes with the answer.
 - **Approval prompts** — every tool that writes (`write_file`, `apply_diff`, `apply_edits`, `replace_in_files`,
-  `delete_file`, `rename_symbol`…), `run_command`, the tools that reach the network or your app (`fetch_url`,
-  `web_search`, `http_request`, `view_page`), custom shell tools and MCP calls each prompt
+  `delete_file`, `rename_symbol`…), `run_command`, the tools that reach the network or another app of your machine (`fetch_url`,
+  `web_search`, `http_request`; `view_page` and `interact_page` except in the app the agent started itself), custom shell
+  tools and MCP calls each prompt
   **Allow once / Always this session / Deny** ("Always" allows the tool for this session in this
   workspace — another solution opened in Visual Studio asks again, and coming back finds it allowed — never written
   to disk). Edit prompts show the **actual diff** before you confirm. A command or a write that
@@ -569,7 +571,10 @@ sequenceDiagram
   recorded is said under the undo: a command run outside a git repository, a background job after
   it started, a file larger than 20 MB or stored with Git LFS. Files git ignores (build output,
   `node_modules`, an ignored `.env`), nested repositories and submodules are never recorded, and an
-  undo gives back files, never a commit, a branch or the index.
+  undo gives back files, never a commit, a branch or the index. A `bin/` or `obj/` folder (a Rust `target/` too) is left
+  out even when no `.gitignore` names it, except the files in it that git tracks.
+- **Images and binary files in a run's changes** — an image reads as its kind, size and dimensions with its thumbnail
+  (before and after when it was replaced), another binary file as its size before → after, never as line counts.
 
 </details>
 
@@ -849,7 +854,10 @@ flowchart LR
 - **`/debug [hypothesis]`** — settle a question about runtime behaviour by observing it: the
   agent starts a **real debug session** (after asking you first), sets breakpoints, steps, and
   reads locals and the call stack through two tools (`debug_control`, `debug_inspect`); evaluating
-  an expression asks you first, since it can call your program's code. Before launching, the target is built through the automation, so a solution
+  an expression asks you first, since it can call your program's code. A breakpoint can stop only when a condition
+  holds (`order.Total == 0`) or at a given pass of a loop, or write a value at each pass without stopping (a tracepoint);
+  what tracepoints wrote comes back to the agent with the debugger's state. A condition or a message is code your program
+  runs at each pass, so it asks you first. Before launching, the target is built through the automation, so a solution
   that does not compile is refused instead of freezing the IDE on a modal. Visual Studio drives
   its own debugger in-process; VS Code goes through a DAP bridge — same command, either editor.
   `/debug` alone reports the current break state; `/debug stop` ends the session.
