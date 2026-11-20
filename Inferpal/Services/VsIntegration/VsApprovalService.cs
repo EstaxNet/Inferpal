@@ -37,7 +37,8 @@ internal class VsApprovalService : ApprovalServiceBase
             {
                 var card = ApprovalCard.Build(prompt, RootDir, keepsGrantsAcrossSolutions: true);
                 // The dialog the card's "Open diff" shows closes when the card is answered from the chat.
-                Func<CancellationToken, Task<ApprovalDecision?>>? openDiff = prompt.Diff is { } d
+                // A binary file (a capture saved as PNG) has no text to diff: its picture is on the card.
+                Func<CancellationToken, Task<ApprovalDecision?>>? openDiff = prompt.Diff is { Binary: null } d
                     ? async answered =>
                     {
                         using var both = CancellationTokenSource.CreateLinkedTokenSource(ct, answered);
@@ -56,7 +57,8 @@ internal class VsApprovalService : ApprovalServiceBase
             }
         }
         // Outside a turn the dialog asks — offering the card's narrow rule too, as VS Code's dialog does.
-        return await AskInDialogAsync(prompt.Message, prompt.Diff, ApprovalCard.Build(prompt, RootDir, keepsGrantsAcrossSolutions: true), ct);
+        return await AskInDialogAsync(prompt.Message, prompt.Diff is { Binary: null } text ? text : null,
+                                      ApprovalCard.Build(prompt, RootDir, keepsGrantsAcrossSolutions: true), ct);
     }
 
     protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct) =>

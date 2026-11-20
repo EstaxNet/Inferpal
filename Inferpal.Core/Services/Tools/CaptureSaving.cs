@@ -1,0 +1,98 @@
+using System.Globalization;
+using Inferpal.Services.Documents;
+
+namespace Inferpal.Services.Tools;
+
+/// <summary>
+/// Saves a capture into the workspace as a PNG (<c>save_to</c>, pari 126): the usual write card, the picture on it and the
+/// one it replaces beside it; a backup first, so Undo run takes it back; confined to the workspace, and the ignore files
+/// hold as for any path a call names (<c>ToolRegistry.ExcludedNamedFile</c>).
+/// </summary>
+/// <remarks>Asked as <c>write_file</c>: the person's write rules and "Always" hold for it, as for any file the agent
+/// writes — it is the one card of the flow.</remarks>
+internal static class CaptureSaving
+{
+    /// <summary>The file <paramref name="saveTo"/> names, or what is wrong with it (said to the model) — checked before any
+    /// step plays, so a call never acts for a capture it cannot save.</summary>
+    internal static (string? Path, string? Refusal) Target(string? saveTo, string root)
+    {
+        if (string.IsNullOrWhiteSpace(saveTo)) return (null, null);
+        string path;
+        try
+        {
+            path = PathSanitizer.Sanitize(saveTo, root);
+            PathSanitizer.AssertUnderRoot(path, root);
+        }
+        catch (ArgumentException ex) { return (null, $"Error: save_to: {ex.Message}"); }
+        if (Directory.Exists(path)) return (null, $"Error: save_to '{saveTo}' is a folder: name a PNG file in it (docs/images/cart.png).");
+        if (!path.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            return (null, $"Error: save_to '{saveTo}' is not a .png file: the capture is saved as a PNG (docs/images/cart.png).");
+        return (path, null);
+    }
+
+    /// <summary>The first words of every line <see cref="SaveAsync"/> says: the caller tells by them whether the save was
+    /// answered at all.</summary>
+    internal const string SavedPrefix = "The capture is saved to ", NotSavedPrefix = "The capture was not saved to ";
+
+    /// <summary>Asks the write card with the picture on it, then writes <paramref name="png"/> to <paramref name="path"/>,
+    /// backed up first; the line said to the model. A failure of the disk is said, never thrown: the page the steps built
+    /// stays open.</summary>
+    internal static async Task<string> SaveAsync(IApprovalService approval, FileHistoryService history, string root, string path,
+                                                 byte[] png, CancellationToken ct)
+    {
+        var shown = Path.GetRelativePath(root, path).Replace('\\', '/');
+        var exists = File.Exists(path);
+        // ⚠ As write_file: an existing file the run has not seen is not replaced — its picture would go behind a write
+        // "Always" without anyone looking at it.
+        if (exists && FileTarget.UnreadRefusal(history, path) is not null)
+            return NotSavedPrefix + $"{shown}: that file already exists and has not been looked at in this run. Look at it with "
+                 + "read_file (it shows the picture), or save to another name.";
+        var before = exists ? Stamp(path) : default;
+        var pending = Directory.CreateTempSubdirectory("inferpal-capture-").FullName;
+        try
+        {
+            var picture = Path.Combine(pending, "capture.png");
+            await File.WriteAllBytesAsync(picture, png, ct);
+            // ⚠ No picture, no card: a binary change without one would be drawn as an empty text, a replacement as a creation.
+            if (Presentation.RunBinary.Of(exists ? path : null, picture, created: !exists, pictures: true) is not { } binary)
+                return NotSavedPrefix + $"{shown}: the capture could not be read back as an image.";
+            var diff = new CodeActions.DiffInfo(string.Empty, string.Empty, path) { Binary = binary, Creates = !exists };
+            // ⚠ Aside from the call's own watch: asked after the steps, the card would restart it on a yes and drop it on a no —
+            // and what the app changed in the repository while the steps played would leave the run, out of Undo run.
+            bool approved;
+            using (Execution.WorkTreeBracket.Aside())
+                approved = await approval.RequestApprovalAsync("write_file", path + "\n" + binary.Label, ct, subject: path, diff: diff);
+            if (!approved) return NotSavedPrefix + $"{shown}: the person declined.";
+            // What the card showed is what is replaced: a file changed or created while it waited is not written over.
+            if (File.Exists(path) != exists || (exists && Stamp(path) != before))
+                return NotSavedPrefix + $"{shown}: the file changed while the card waited. Call again to save over it as it is now.";
+
+            var (saved, _) = await history.BackUpBeforeChangeAsync(path, ct);
+            if (!saved) return history.BackupFailedMessage(path);
+            // Whole or not at all, and never cut by a Stop once begun: a half-written capture is no picture.
+            AtomicFile.WriteAllBytes(path, png);
+            // Its picture is what the model asked for: saving over it again in this run is no blind write.
+            history.NoteRead(path);
+            var read = ChatImages.Read(png, Path.GetFileName(path)).Image;
+            return read is null
+                ? SavedPrefix + $"{shown}."
+                : SavedPrefix + string.Create(CultureInfo.InvariantCulture,
+                    $"{shown} ({read.Width}×{read.Height}, {png.Length / 1024.0:0.#} KB).");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or PermissionDeniedException)
+        {
+            return NotSavedPrefix + $"{shown}: {ex.Message}";
+        }
+        finally
+        {
+            try { Directory.Delete(pending, recursive: true); } catch { /* temp is swept */ }
+        }
+    }
+
+    /// <summary>A file's length and last write: what tells it changed while a card waited.</summary>
+    private static (long Length, DateTime Written) Stamp(string path)
+    {
+        var info = new FileInfo(path);
+        return info.Exists ? (info.Length, info.LastWriteTimeUtc) : default;
+    }
+}

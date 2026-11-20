@@ -58,8 +58,21 @@ internal sealed class ModeToolRegistry(IToolRegistry inner, ChatMode mode, strin
         if (_tools.EditPattern is { } pattern && ModeTools.IsBuiltIn(name) && ModeTools.Families["edit"].Contains(name)
             && OutsidePattern(name, args, pattern) is { } refusal)
             return Task.FromResult(refusal);
+        // A capture saved into the workspace (save_to) is an edit: a mode that edits nothing refuses it, a mode that edits
+        // some files only judges it as one.
+        if (ModeTools.SavedFile(name, args) is { } saved)
+        {
+            if (!_tools.Allows("write_file"))
+                return Task.FromResult($"Error: save_to writes a file, and the '{mode.Name}' mode edits none. Call {name} " +
+                                       "without save_to: the capture still comes back to you.");
+            if (_tools.EditPattern is { } savePattern && OutsidePattern("write_file", SavedAsWrite(saved), savePattern) is { } outside)
+                return Task.FromResult(outside);
+        }
         return inner.ExecuteAsync(name, args, ct);
     }
+
+    /// <summary>A saved file as the write it is, for the mode's pattern.</summary>
+    private static JsonElement SavedAsWrite(string path) => JsonSerializer.SerializeToElement(new { path });
 
     /// <summary>Why this edit is refused under the mode's pattern; <c>null</c> when every file it writes matches.</summary>
     private string? OutsidePattern(string name, JsonElement args, System.Text.RegularExpressions.Regex pattern)

@@ -2344,6 +2344,33 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                                <!-- A binary file the card writes (a capture saved as PNG): its picture, the one it replaces first -->
+                                <ItemsControl ItemsSource="{Binding CardPictures}" Margin="12,0,12,8" Focusable="False"
+                                              Visibility="{Binding HasCardPictures, Converter={StaticResource b2v}}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE72A;" FontSize="12" Margin="4,0,8,16"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                           Visibility="{Binding ShowArrow, Converter={StaticResource b2v}}"/>
+                                                <StackPanel>
+                                                    <Border CornerRadius="6" BorderThickness="1" ClipToBounds="True"
+                                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                                                        <!-- Two side by side, and the arrow, in the narrowest chat panel -->
+                                                        <Image Source="{Binding Path}" MaxWidth="168" MaxHeight="105" Stretch="Uniform"
+                                                               AutomationProperties.Name="{Binding Caption}"/>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Caption}" FontSize="11" Margin="0,3,0,0"
+                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                                 <Border BorderThickness="0,1,0,1" Padding="0,8" Background="{Binding ThemeCodeBg}"
                                         BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
                                         Visibility="{Binding HasCardLines, Converter={StaticResource b2v}}">

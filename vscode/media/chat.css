@@ -1113,13 +1113,21 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  /* Shrinks in a narrow panel (an approval card): the two pictures and their arrow always fit side by side. */
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .run-review-pictures img {
-  max-width: 192px;
+  max-width: min(192px, 100%);
   max-height: 120px;
   border-radius: 6px;
   border: 1px solid var(--ip-line);
+}
+
+/* On a write card (a capture saved as PNG): under the title, as the card's preview. */
+.approval > .run-review-pictures {
+  padding: 4px 12px 10px;
 }
 .result-file .minus { color: var(--ip-muted); }
 

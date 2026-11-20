@@ -313,6 +313,9 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
     /// <summary>The approval card states facts under its title (<see cref="CopyRows"/>: a database's engine, server,
     /// account).</summary>
     [DataMember] public bool HasCardRows      { get; private set; }
+    /// <summary>A binary file the card writes (a capture saved as PNG): its picture, the one it replaces first.</summary>
+    [DataMember] public ObservableCollection<ReviewPictureItem> CardPictures { get; } = [];
+    [DataMember] public bool HasCardPictures  { get; private set; }
     /// <summary>A line under the answers saying what they mean here; empty for none.</summary>
     [DataMember] public string CardNote       { get; private set; } = string.Empty;
     /// <summary>Data may leave the machine: drawn as a warning, Deny its default answer (Enter included).</summary>
@@ -1117,6 +1120,10 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
         item.HasCardLines = item.CardLines.Count > 0;
         foreach (var row in card.Rows ?? []) item.CopyRows.Add(new CopyRowItem(row.Label, row.Value));
         item.HasCardRows = item.CopyRows.Count > 0;
+        if (ThumbnailFiles.Of(card.Binary?.Before) is { } before) item.CardPictures.Add(new ReviewPictureItem(before, card.Binary!.BeforeCaption, arrow: false));
+        if (ThumbnailFiles.Of(card.Binary?.After) is { } after)
+            item.CardPictures.Add(new ReviewPictureItem(after, card.Binary!.AfterCaption, arrow: item.CardPictures.Count > 0));
+        item.HasCardPictures = item.CardPictures.Count > 0;
         return item;
     }
 

@@ -121,6 +121,8 @@ internal sealed class RpcApprovalService : ApprovalServiceBase, IApprovalService
         var list = new List<object>();
         foreach (var d in changes)
         {
+            // A binary file (a capture saved as PNG) has no text to diff: its picture is on the card.
+            if (d.Binary is not null) continue;
             var path = string.IsNullOrWhiteSpace(d.FilePath) ? prompt.Subject : d.FilePath;
             if (string.IsNullOrWhiteSpace(path)) continue;
             list.Add(new { path = Absolute(path), oldText = d.OldText, newText = d.NewText });

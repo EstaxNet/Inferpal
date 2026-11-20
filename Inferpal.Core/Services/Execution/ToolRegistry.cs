@@ -158,7 +158,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Task<bool> ServedByAgent(int port, CancellationToken ct) => Shell.LocalPorts.ServedByAsync(port,
             [.. runCommand.Background.List().Where(j => j.Running).Select(j => runCommand.Background.ProcessIdOf(j.Id)).OfType<int>()], ct);
         Register(new ViewPageTool(approval, root, _readImages, servedByAgent: ServedByAgent));
-        Register(new InteractPageTool(approval, root, _readImages, () => history.CurrentRunId, ServedByAgent));
+        Register(new InteractPageTool(approval, root, _readImages, () => history.CurrentRunId, ServedByAgent, history: history));
         Register(new WebSearchTool(approval));
         Register(new GetSolutionInfoTool(editor, root));
         Register(new GetOpenEditorsTool(editor));

@@ -191,6 +191,11 @@ internal sealed class ModeTools
         }
     }
 
+    /// <summary>The file a tool outside the edit family writes through one of its arguments — a capture saved by
+    /// <c>save_to</c> — or <c>null</c> for a call that writes none: for a mode, that call is an edit.</summary>
+    internal static string? SavedFile(string toolName, JsonElement args) =>
+        toolName is "interact_page" && args.ValueKind == JsonValueKind.Object && args.Str("save_to") is { Length: > 0 } path ? path : null;
+
     /// <summary>Copilot's <c>tools</c> (a list, or one string with commas).</summary>
     public static ModeTools FromCopilot(IEnumerable<string> names)
     {

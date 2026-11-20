@@ -33,11 +33,13 @@ internal sealed record ApprovalPreviewLine(string Kind, string Text);
 /// <param name="Outbound">Data may leave the machine: the card is drawn as a warning, and Deny is its default answer.</param>
 /// <param name="Rows">Facts the card states one per line, label beside value (a database's engine, server and account);
 /// <c>null</c> for none.</param>
+/// <param name="Binary">A binary file to write (a capture saved as PNG): its picture, and the one it replaces, in place of
+/// a preview of lines; <c>null</c> for anything else.</param>
 internal sealed record ApprovalCardModel(
     string Title, string Subject, string Meta, IReadOnlyList<ApprovalPreviewLine> Preview, string More,
     string AlwaysTooltip, string Message, string RuleLabel = "", string RuleTooltip = "", bool OffersAlways = true,
     string AllowLabel = "", string AlwaysLabel = "", string Warning = "", string Note = "", bool Outbound = false,
-    IReadOnlyList<ApprovalCardRow>? Rows = null);
+    IReadOnlyList<ApprovalCardRow>? Rows = null, RunFileBinary? Binary = null);
 
 /// <summary>One fact a card states: <paramref name="Label"/> beside <paramref name="Value"/>.</summary>
 internal sealed record ApprovalCardRow(string Label, string Value);
@@ -175,7 +177,9 @@ internal static class ApprovalCard
             ? written.Split('\n', StringSplitOptions.RemoveEmptyEntries)
             : [];
 
-        var created = prompt.Diff is { OldText.Length: 0 } && prompt.ToolName == "write_file";
+        var created = prompt.Diff is { Binary: not null } binaryDiff
+            ? binaryDiff.Creates
+            : prompt.Diff is { OldText.Length: 0 } && prompt.ToolName == "write_file";
         var title = prompt.ToolName switch
         {
             "write_file" when created => Strings.ApprovalCreateFile,
@@ -194,7 +198,9 @@ internal static class ApprovalCard
         var preview = new List<ApprovalPreviewLine>();
         var more = 0;
 
-        if (prompt.Diff is { } diff)
+        // A binary file has no lines to show: its kind and size are the meta, its picture is on the card (Binary).
+        if (prompt.Diff is { Binary: { } binary }) meta = binary.Label;
+        else if (prompt.Diff is { } diff)
         {
             if (created)
             {
@@ -245,7 +251,7 @@ internal static class ApprovalCard
                                      prompt.Message,
                                      prompt.Rule is { } rule ? Strings.ApprovalAlwaysRule(rule.Describe) : string.Empty,
                                      prompt.Rule is { } spelled ? Strings.ApprovalRuleTooltip(string.Join("\n", spelled.Lines)) : string.Empty,
-                                     OffersAlways: !prompt.Forced);
+                                     OffersAlways: !prompt.Forced, Binary: prompt.Diff?.Binary);
         // edit_notebook: titled by the cell ("Change cell 3 of analysis.ipynb"), its kind beside the count, its note under the
         // answers — sent as the details' three lines (EditNotebookTool); the preview is the CELL's change.
         if (prompt.ToolName == "edit_notebook" && prompt.Details.Split('\n') is [var cellTitle, var cellKind, var cellNote, ..])

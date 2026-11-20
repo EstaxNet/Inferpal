@@ -1727,7 +1727,8 @@ internal sealed class AcpSession : IAsyncDisposable
         // ⚠ In a code block (AcpToolCalls.Block): read as Markdown, the command the person decides on shows otherwise than
         // it runs — "--" becomes a dash, a backslash before a dot disappears.
         // A card that states facts (query_database: where, engine, server, account) asks with them, as the editors draw it.
-        List<object> content = diffs.Count == 0 && note.Card?.Rows is { Count: > 0 } ? FactsContent(note.Card)
+        List<object> content = diffs.Count == 0 && note.Card?.Binary is { } binary ? BinaryContent(binary)
+                             : diffs.Count == 0 && note.Card?.Rows is { Count: > 0 } ? FactsContent(note.Card)
                              : diffs.Count == 0 ? [TextContent(AcpToolCalls.Block(note.Message))]
                              : note.Tool == "delete_file" ? [TextContent(AcpToolCalls.Block(note.Message)), .. diffs]
                              : diffs;
@@ -1761,7 +1762,10 @@ internal sealed class AcpSession : IAsyncDisposable
                 "allow_rule"   => string.IsNullOrEmpty(note.Card?.RuleLabel) ? 0 : 3,
                 _              => 0,
             } : 0;
-            if (decision == 0 && note.CallId is not null && _calls.TryGetValue(note.CallId, out var refused)) refused.Rejected = true;
+            // Refused only when the call's own card was: a "no" to another tool's card under it (a capture's save, Smart
+            // Fix's check) leaves the call's own work standing.
+            if (decision == 0 && note.CallId is not null && _calls.TryGetValue(note.CallId, out var refused) && refused.Name == note.Tool)
+                refused.Rejected = true;
             return decision;
         }
         catch (Exception ex)
@@ -1770,6 +1774,23 @@ internal sealed class AcpSession : IAsyncDisposable
             if (note.CallId is not null && _calls.TryGetValue(note.CallId, out var failed)) failed.Rejected = true;
             return 0;
         }
+    }
+
+    /// <summary>A binary file to write (a capture saved as PNG), as a client reads it: its kind and size, then its pictures —
+    /// the one it replaces first — as image blocks.</summary>
+    private static List<object> BinaryContent(CardBinaryNote binary)
+    {
+        var content = new List<object> { TextContent(binary.Label ?? string.Empty) };
+        foreach (var (picture, caption) in new[] { (binary.Before, binary.BeforeCaption), (binary.After, binary.AfterCaption) })
+        {
+            // A data URL, "data:image/png;base64,…": the block carries its type and its bytes apart.
+            if (picture is not { } url || !url.StartsWith("data:", StringComparison.Ordinal)) continue;
+            var at = url.IndexOf(";base64,", StringComparison.Ordinal);
+            if (at < 0) continue;
+            content.Add(new { type = "content", content = new { type = "image", mimeType = url[5..at], data = url[(at + 8)..] } });
+            if (!string.IsNullOrWhiteSpace(caption)) content.Add(TextContent(caption));
+        }
+        return content;
     }
 
     /// <summary>
@@ -1860,7 +1881,8 @@ internal sealed class AcpSession : IAsyncDisposable
     public sealed record CardNote(string? Title, string? Subject, string? RuleLabel = null, bool OffersAlways = true,
                                   string? AllowLabel = null, string? AlwaysLabel = null, bool Outbound = false,
                                   List<CardRowNote>? Rows = null, List<CardLineNote>? Preview = null, string? Warning = null,
-                                  string? Note = null);
+                                  string? Note = null, CardBinaryNote? Binary = null);
+    public sealed record CardBinaryNote(string? Label, string? Before, string? After, string? BeforeCaption, string? AfterCaption);
     public sealed record CardRowNote(string? Label, string? Value);
     public sealed record CardLineNote(string? Kind, string? Text);
     public sealed record DiffNote(string? Path, string? OldText, string? NewText);

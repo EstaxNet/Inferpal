@@ -57,10 +57,11 @@ public sealed class InteractPageToolTests : IDisposable
     }
 
     private InteractPageTool Tool(Func<string?> runId, ToolImageInbox? images = null, IApprovalService? approval = null,
-                                  Func<IReadOnlyList<CaptureBrowser>>? browsers = null, bool servedByAgent = true)
+                                  Func<IReadOnlyList<CaptureBrowser>>? browsers = null, bool servedByAgent = true,
+                                  FileHistoryService? history = null)
     {
         var tool = new InteractPageTool(approval ?? new NoopApproval(), () => _root, images ?? new ToolImageInbox(), runId,
-                                        (_, _) => Task.FromResult(servedByAgent), browsers);
+                                        (_, _) => Task.FromResult(servedByAgent), browsers, history ?? new FileHistoryService());
         _tools.Add(tool);
         return tool;
     }
@@ -183,6 +184,35 @@ public sealed class InteractPageToolTests : IDisposable
         await Call(Tool(() => "run-1", approval: card, browsers: () => [], servedByAgent: false),
                    new { path = "page.html", steps = Array.Empty<object>() });
         Assert.Empty(card.Shown);
+    }
+
+    [Theory]
+    [InlineData("notes.txt", "is not a .png file")]
+    [InlineData("../outside.png", "")]
+    [InlineData("docs", "is a folder")]
+    public async Task ASaveToItCannotWrite_IsRefusedBeforeAnyStep(string saveTo, string said)
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "docs"));
+        var result = await Call(Tool(() => "run-1", browsers: () => throw new InvalidOperationException("no browser is looked for")),
+                                new { url = "http://localhost:5173/", save_to = saveTo, steps = new[] { new { action = "click", text = "Add" } } });
+        Assert.StartsWith(said.Length == 0 ? "Error: save_to:" : "Error: save_to", result);
+        Assert.Contains(said, result);
+    }
+
+    /// <summary>The person's rules on writing, before any click: a capture they refuse to have written is no reason to act.</summary>
+    private sealed class RefusesWrites : IApprovalService
+    {
+        public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null,
+                                               DiffInfo? diff = null, bool forcePrompt = false) => Task.FromResult(true);
+        public bool Refuses(string toolName, string subject) => toolName == "write_file";
+    }
+
+    [Fact]
+    public async Task ASaveToTheRulesRefuse_IsRefusedBeforeAnyStep()
+    {
+        var said = await Call(Tool(() => "run-1", approval: new RefusesWrites(), browsers: () => throw new InvalidOperationException("no browser is looked for")),
+                              new { url = "http://localhost:5173/", save_to = "docs/cart.png", steps = new[] { new { action = "click", text = "Add" } } });
+        Assert.StartsWith("Error: save_to: the person's rules refuse writing", said);
     }
 
     [Fact]
@@ -384,6 +414,85 @@ public sealed class InteractPageToolTests : IDisposable
         tool.CloseWhenDone();
         run = "run-1";
         Assert.Contains("no page is open in this run", await Call(tool, new { steps = Array.Empty<object>() }));
+    }
+
+    /// <summary>The capture written into the project on the usual write card, its picture on it; the image it replaces
+    /// beside it; a "No" writes nothing.</summary>
+    [Fact]
+    public async Task SaveTo_WritesTheCaptureOnTheWriteCard_WithItsPicture()
+    {
+        File.WriteAllText(Path.Combine(_root, "shop.html"), Shop);
+        var card = new Card(ApprovalDecision.Once);
+        var tool = Tool(() => "run-1", approval: card);
+        var said = await Played(tool, new { path = "shop.html", save_to = "docs/images/cart.png",
+                                            steps = new object[] { new { action = "click", selector = "#add-green" } } });
+        if (said is null) return;   // undecided: no Chromium browser starts here
+
+        var saved = Path.Combine(_root, "docs", "images", "cart.png");
+        Assert.Contains("The capture is saved to docs/images/cart.png (1280×800", said);
+        Assert.Equal(new byte[] { 0x89, (byte)'P', (byte)'N', (byte)'G' }, File.ReadAllBytes(saved)[..4]);
+        var asked = Assert.Single(card.Shown);
+        Assert.Equal("write_file", asked.ToolName);
+        Assert.True(asked.Diff is { Creates: true, Binary.After: not null, Binary.Before: null });
+        var drawn = ApprovalCard.Build(asked, _root);
+        Assert.Equal(Strings.ApprovalCreateFile, drawn.Title);
+        Assert.Equal(asked.Diff!.Binary!.Label, drawn.Meta);
+        Assert.Empty(drawn.Preview);
+
+        // Again over it: the card shows the image it replaces.
+        var again = await Call(tool, new { save_to = "docs/images/cart.png", steps = new object[] { new { action = "click", selector = "#add-black" } } });
+        Assert.Contains("The capture is saved to docs/images/cart.png", again);
+        Assert.True(card.Shown[^1].Diff is { Creates: false, Binary.Before: not null, Binary.After: not null });
+        Assert.Equal(Strings.ApprovalChangeFile, ApprovalCard.Build(card.Shown[^1], _root).Title);
+
+        // Declined: nothing written.
+        var declined = Tool(() => "run-2", approval: new Card(ApprovalDecision.Deny));
+        Assert.Contains("was not saved to docs/other.png: the person declined",
+                        await Call(declined, new { path = "shop.html", save_to = "docs/other.png", steps = Array.Empty<object>() }));
+        Assert.False(File.Exists(Path.Combine(_root, "docs", "other.png")));
+    }
+
+    /// <summary>A card that, while it waits, has the file changed under it — by the person, by a build.</summary>
+    private sealed class ChangedWhileAsked(string path) : ApprovalServiceBase(InferpalConfig.LoadOwnCopy(), () => Path.GetTempPath())
+    {
+        protected override Task<ApprovalDecision> PromptUserAsync(ApprovalPrompt prompt, CancellationToken ct)
+        {
+            File.WriteAllBytes(path, [1, 2, 3, 4, 5, 6, 7]);
+            return Task.FromResult(ApprovalDecision.Once);
+        }
+        protected override Task<ApprovalDecision> PromptUserAsync(string message, DiffInfo? diff, CancellationToken ct) =>
+            throw new InvalidOperationException("the card path asks");
+    }
+
+    /// <summary>An existing picture is replaced only as the card showed it, and only once the run has seen it; a call
+    /// that never captured says nothing was saved.</summary>
+    [Fact]
+    public async Task SaveTo_NeverReplacesAPictureUnseen_OrChangedUnderTheCard_AndSaysWhenNothingWasSaved()
+    {
+        File.WriteAllText(Path.Combine(_root, "shop.html"), Shop);
+        var logo = Path.Combine(_root, "logo.png");
+        File.WriteAllBytes(logo, [0x89, (byte)'P', (byte)'N', (byte)'G', 0, 0, 0, 0]);
+        var card = new Card(ApprovalDecision.Once);
+        var history = new FileHistoryService();
+        history.BeginRun();   // as the agent's loop does: what the run has seen is known only inside one
+        var tool = Tool(() => "run-1", approval: card, history: history);
+        var unseen = await Played(tool, new { path = "shop.html", save_to = "logo.png", steps = Array.Empty<object>() });
+        if (unseen is null) return;   // undecided: no Chromium browser starts here
+        Assert.Contains("The capture was not saved to logo.png: that file already exists and has not been looked at", unseen);
+        Assert.Empty(card.Shown);
+        Assert.Equal(8, new FileInfo(logo).Length);
+
+        // Seen in the run, then changed while the card waits: not written over.
+        history.NoteRead(logo);
+        var changed = Tool(() => "run-1", approval: new ChangedWhileAsked(logo), history: history);
+        Assert.Contains("the file changed while the card waited",
+                        await Call(changed, new { path = "shop.html", save_to = "logo.png", steps = Array.Empty<object>() }));
+        Assert.Equal(7, new FileInfo(logo).Length);
+
+        // A page that does not open captures nothing, and says so for the file it was to write.
+        var nothing = await Call(Tool(() => "run-2", approval: card),
+                                 new { path = "shop.html", save_to = "docs/none.png", steps = new object[] { new { action = "goto", url = "http://localhost:9/" } } });
+        Assert.Contains("The capture was not saved to docs/none.png", nothing);
     }
 
     [Fact]

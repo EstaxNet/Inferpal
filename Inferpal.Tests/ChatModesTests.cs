@@ -456,6 +456,7 @@ public sealed class ChatModesTests : IDisposable
         public IReadOnlyList<ToolDefinition> Definitions =>
         [
             Def("read_file"), Def("write_file"), Def("apply_edits"), Def("run_command"), Def("insert_at_cursor"), Def("deploy"),
+            Def("interact_page"),
         ];
 
         public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct)
@@ -474,6 +475,21 @@ public sealed class ChatModesTests : IDisposable
     private ChatMode RooDocs() =>
         new("Docs Writer", "", "", [], ModeTools.FromRoo([("read", null, null, false), ("edit", @"\.(md|mdx)$", "Markdown files only", false)]),
             null, ".roomodes (docs)", ChatModeOrigin.Roo, []);
+
+    /// <summary>A capture saved into the workspace is an edit: a mode that edits nothing refuses it, and the same call
+    /// without save_to still runs.</summary>
+    [Fact]
+    public async Task ACaptureSaved_IsAnEdit_ForAModeThatEditsNothing()
+    {
+        var inner = new FakeRegistry();
+        var research = new ChatMode("Research", "", "", [], ModeTools.FromCopilot(["read", "web"]), null, "research.agent.md",
+                                    ChatModeOrigin.Copilot, []);
+        IToolRegistry mode = new ModeToolRegistry(inner, research, _root);
+        var refused = await mode.ExecuteAsync("interact_page", Args(new { url = "http://localhost:5173/", save_to = "docs/cart.png" }), default);
+        Assert.StartsWith("Error: save_to writes a file, and the 'Research' mode edits none", refused, StringComparison.Ordinal);
+        Assert.Empty(inner.Executed);
+        Assert.Equal("ran:interact_page", await mode.ExecuteAsync("interact_page", Args(new { url = "http://localhost:5173/" }), default));
+    }
 
     [Fact]
     public void AToolOutsideTheMode_IsNeitherOfferedNorRun()

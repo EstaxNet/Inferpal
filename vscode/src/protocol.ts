@@ -720,6 +720,8 @@ export interface ApprovalCard {
   outbound?: boolean;
   /** Facts the card states one per line, label beside value (a database's engine, server and account); absent for none. */
   rows?: { label: string; value: string }[];
+  /** A binary file to write (a capture saved as PNG): its pictures, the one it replaces first; absent for anything else. */
+  binary?: { label: string; before?: string | null; after?: string | null; beforeCaption: string; afterCaption: string } | null;
 }
 
 /** One file a run changed. */

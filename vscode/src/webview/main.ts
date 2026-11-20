@@ -1617,7 +1617,7 @@ function lineCounts(f: { added: number; removed: number; binary?: string | null 
 }
 
 /** A binary image of a run's review: itself, before and after when it was replaced; nothing for another binary file. */
-function binaryPictures(f: RunReviewFile): HTMLElement {
+function binaryPictures(f: Pick<RunReviewFile, 'imageBefore' | 'imageAfter' | 'beforeCaption' | 'afterCaption'>): HTMLElement {
   const box = document.createElement('div');
   box.className = 'run-review-pictures';
   const figure = (src: string, caption: string) => {
@@ -2533,6 +2533,10 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
       more.textContent = '  ' + card.more;
       preview.appendChild(more);
     }
+  } else if (card?.binary) {
+    // A binary file to write (a capture saved as PNG): its picture, and the one it replaces, in place of lines.
+    preview = binaryPictures({ imageBefore: card.binary.before, imageAfter: card.binary.after,
+                               beforeCaption: card.binary.beforeCaption, afterCaption: card.binary.afterCaption });
   } else if (facts.length > 0) {
     // The facts are the card (a database's tables asked for, no query to show): its raw text says them again, in the
     // tool's own words, under the rows that already say them.

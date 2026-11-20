@@ -35,6 +35,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
     private readonly Func<string?> _runId;
     private readonly Func<IReadOnlyList<CaptureBrowser>> _findBrowsers;
     private readonly Func<int, CancellationToken, Task<bool>> _servedByAgent;
+    private readonly FileHistoryService? _history;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly Timer _watch;
     private PageSession? _session;
@@ -46,9 +47,13 @@ internal sealed class InteractPageTool : ITool, IDisposable
 
     /// <param name="servedByAgent">Whether a port of this machine is served by an app the agent started (a background job
     /// of <c>run_command</c>): its pages need no card.</param>
+    /// <param name="history">The run's history, which backs a saved capture up first; without it, <c>save_to</c> is
+    /// refused.</param>
     public InteractPageTool(IApprovalService approval, Func<string> getWorkspaceRoot, ToolImageInbox images, Func<string?> runId,
-                            Func<int, CancellationToken, Task<bool>> servedByAgent, Func<IReadOnlyList<CaptureBrowser>>? findBrowsers = null)
+                            Func<int, CancellationToken, Task<bool>> servedByAgent, Func<IReadOnlyList<CaptureBrowser>>? findBrowsers = null,
+                            FileHistoryService? history = null)
     {
+        _history = history;
         _approval = approval;
         _getWorkspaceRoot = getWorkspaceRoot;
         _images = images;
@@ -61,8 +66,10 @@ internal sealed class InteractPageTool : ITool, IDisposable
     public string Name => "interact_page";
 
     /// <inheritdoc/>
-    /// <remarks>A click may make the app change its data (a Delete button, a form sent): what it changes is beyond the call.</remarks>
-    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Network | ToolEffect.Runs;
+    /// <remarks>A click may make the app change its data (a Delete button, a form sent): what it changes is beyond the call.
+    /// With <c>save_to</c>, it writes the capture into the workspace.</remarks>
+    public ToolEffect EffectOf(JsonElement args) =>
+        ToolEffect.Network | ToolEffect.Runs | (args.Has("save_to") ? ToolEffect.Writes : ToolEffect.None);
 
     internal const int MaxSteps = 25, MaxWaitMs = 10_000, DefaultWaitMs = 5_000;
 
@@ -90,8 +97,8 @@ internal sealed class InteractPageTool : ITool, IDisposable
     public string Description =>
         "Use a page of the app you build as a person does, in a browser cut off from the network: open it, then click, type, " +
         "choose, press keys, wait — and capture the state reached (a cart with two items, a filled form). Returns each step " +
-        "done or why not, the page's controls with a selector each, its console, and the capture. The page stays open for " +
-        "your next call: without url, it continues from there.";
+        "done or why not, the page's controls with a selector each, its console, and the capture; save_to writes the capture " +
+        "into the project as a PNG. The page stays open for your next call: without url, it continues from there.";
 
     public object Parameters => new
     {
@@ -100,6 +107,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
         {
             url   = new { type = "string", description = "The page to open first, served on this machine (http://localhost:5173/cart)." },
             path  = new { type = "string", description = "Or an HTML file of the workspace to open first." },
+            save_to = new { type = "string", description = "A PNG file of the project to save the capture to (docs/images/cart.png)." },
             steps = new
             {
                 type = "array",
@@ -134,6 +142,13 @@ internal sealed class InteractPageTool : ITool, IDisposable
             return "Error: give either url (a page served on this machine) or path (an HTML file of the workspace), not both.";
         var (steps, notes, stepsError) = ReadSteps(args);
         if (stepsError is not null) return "Error: " + stepsError;
+        // Checked before any step plays: a call never acts for a capture it cannot save.
+        var (saveTo, saveRefusal) = CaptureSaving.Target(args.Str("save_to"), _getWorkspaceRoot());
+        if (saveRefusal is not null) return saveRefusal;
+        if (saveTo is not null && _history is null) return "Error: save_to is not available here: the capture cannot be saved.";
+        // The person's write rules too, before any click: a capture they refuse to have written is no reason to act.
+        if (saveTo is not null && _approval.Refuses("write_file", saveTo))
+            return $"Error: save_to: the person's rules refuse writing '{saveTo}'. Nothing was played.";
 
         Target? target = null;
         if (!string.IsNullOrWhiteSpace(url))
@@ -166,7 +181,12 @@ internal sealed class InteractPageTool : ITool, IDisposable
         try
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            var report = await PlayAsync(target, steps!, ct);
+            var report = await PlayAsync(target, steps!, saveTo, ct);
+            // Every exit before the save (a page not opened, no capture, a page that stopped answering) says it.
+            if (saveTo is not null && !report.Contains(CaptureSaving.SavedPrefix, StringComparison.Ordinal)
+                && !report.Contains(CaptureSaving.NotSavedPrefix, StringComparison.Ordinal))
+                report += "\n" + CaptureSaving.NotSavedPrefix + Path.GetRelativePath(_getWorkspaceRoot(), saveTo).Replace('\\', '/')
+                        + ": the call did not reach the state to capture.";
             return notes.Count == 0 ? report : string.Join("\n", notes) + "\n" + report;
         }
         finally
@@ -178,7 +198,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
         }
     }
 
-    private async Task<string> PlayAsync(Target? target, List<PageStep> steps, CancellationToken ct)
+    private async Task<string> PlayAsync(Target? target, List<PageStep> steps, string? saveTo, CancellationToken ct)
     {
         var runId = _runId();
         if (_session is { } open)
@@ -252,7 +272,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
                 var at = session.Served is { } served ? served.UrlOf(target.OpenAt) : target.OpenAt;
                 var opening = await session.PlayAsync(new PageStep("goto", Url: at), budget.Token);
                 lines.Add(opening.Done ? Capitalized(opening.Detail) + "." : "Not opened: " + opening.Detail + ".");
-                if (!opening.Done) return await FinishAsync(session, lines, null, ct);
+                if (!opening.Done) return await FinishAsync(session, lines, null, null, ct);
             }
 
             byte[]? captured = null;
@@ -280,6 +300,13 @@ internal sealed class InteractPageTool : ITool, IDisposable
                 lines.Add($"{i + 1}. {step.Action}: {(result.Done ? "done" : "NOT DONE")} — {result.Detail}");
                 if (!result.Done)
                 {
+                    // ⚠ The capture still shows the model where the page stands; it is never saved as the state asked for.
+                    if (saveTo is not null)
+                    {
+                        lines.Add(CaptureSaving.NotSavedPrefix + Path.GetRelativePath(_getWorkspaceRoot(), saveTo).Replace('\\', '/')
+                                  + $": step {i + 1} was not done, so the page is not in the state asked for.");
+                        saveTo = null;
+                    }
                     if (i + 1 < steps.Count)
                         lines.Add($"Steps {i + 2}-{steps.Count} not played: they were written for a state the page did not reach.");
                     break;
@@ -292,7 +319,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
                 lines.Add("The page stopped answering (its script may loop): it was closed; a next call opens it afresh.");
                 return string.Join("\n", lines);
             }
-            return await FinishAsync(session, lines, captured, ct);
+            return await FinishAsync(session, lines, captured, saveTo, ct);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -337,9 +364,10 @@ internal sealed class InteractPageTool : ITool, IDisposable
         return (null, "No browser could be driven: " + string.Join("; ", failed) + ".");
     }
 
-    /// <summary>The page's address, its controls, its console and the capture: what the steps left. Each part the page
-    /// refuses is said in its place; the others are still given.</summary>
-    private async Task<string> FinishAsync(PageSession session, List<string> lines, byte[]? captured, CancellationToken ct)
+    /// <summary>The page's address, its controls, its console and the capture — saved to <paramref name="saveTo"/> when
+    /// given: what the steps left. Each part the page refuses is said in its place; the others are still given.</summary>
+    private async Task<string> FinishAsync(PageSession session, List<string> lines, byte[]? captured, string? saveTo,
+                                           CancellationToken ct)
     {
         using var finish = CancellationTokenSource.CreateLinkedTokenSource(ct);
         finish.CancelAfter(FinishBudget);
@@ -395,6 +423,8 @@ internal sealed class InteractPageTool : ITool, IDisposable
             _images.Put(image);
             lines.Add(string.Create(CultureInfo.InvariantCulture,
                 $"The capture ({PageSession.Width}×{PageSession.Height}) follows this result."));
+            // The person's answer is waited for with the call's own token: the card is no step of the page.
+            if (saveTo is not null) lines.Add(await CaptureSaving.SaveAsync(_approval, _history!, _getWorkspaceRoot(), saveTo, captured, ct));
         }
         else lines.Add("No capture: the browser returned no picture.");
         return string.Join("\n", lines);
