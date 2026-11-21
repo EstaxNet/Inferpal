@@ -88,21 +88,29 @@ internal static class DocumentText
     /// <summary>The largest file of the kind <paramref name="path"/> names that is read: an event log at Windows' default size
     /// (20 MiB of records and its headers) passes <see cref="MaxBytes"/>, and its text is bounded apart (the newest events).</summary>
     internal static long MaxBytesOf(string path) =>
-        Path.GetExtension(path).Equals(".evtx", StringComparison.OrdinalIgnoreCase) ? 64L * 1024 * 1024 : MaxBytes;
+        Path.GetExtension(path).ToLowerInvariant() is ".evtx" or ".binlog" ? 64L * 1024 * 1024 : MaxBytes;
 
     /// <summary>How long an event log may take: tens of thousands of events at a few per microsecond, read whole for its
     /// newest ones.</summary>
     internal static readonly TimeSpan EventLogDeadline = TimeSpan.FromSeconds(10);
 
     /// <summary>How long reading the file <paramref name="path"/> names may take, without a password.</summary>
-    internal static TimeSpan DeadlineOf(string path) =>
-        Path.GetExtension(path).Equals(".evtx", StringComparison.OrdinalIgnoreCase) ? EventLogDeadline : Deadline;
+    internal static TimeSpan DeadlineOf(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".evtx"   => EventLogDeadline,
+        ".binlog" => BuildLogDeadline,
+        _         => Deadline,
+    };
+
+    /// <summary>How long an MSBuild binary log may take: the .NET SDK replays it whole, a large solution's in tens of
+    /// seconds.</summary>
+    internal static readonly TimeSpan BuildLogDeadline = TimeSpan.FromSeconds(60);
 
     /// <summary>The extensions of the documents this reader extracts text from. ⚠ VS Code sends exactly these to the host
     /// (<c>readAttachable</c>): <c>DocumentTextTests</c> holds the two lists equal.</summary>
     internal static readonly string[] Extensions =
         [".pdf", ".docx", ".xlsx", ".xlsm", ".xlsb", ".xls", ".pptx", ".ipynb", ".odt", ".ods", ".odp", ".rtf", ".eml", ".msg", ".doc",
-         ".evtx", ".drawio", ".vsdx"];
+         ".evtx", ".drawio", ".vsdx", ".binlog"];
 
     /// <summary>Whether <paramref name="path"/> is a document this reader extracts text from, by its extension.</summary>
     internal static bool Handles(string path) => Extensions.Contains(Path.GetExtension(path).ToLowerInvariant());
@@ -160,6 +168,7 @@ internal static class DocumentText
                 ".eml" or ".msg" => EmailText.Extract(bytes, kind, deadline.Token),
                 ".evtx" => EvtxText.Extract(bytes, deadline.Token),
                 ".drawio" or ".vsdx" => DiagramText.Extract(bytes, kind, deadline.Token),
+                ".binlog" => BinlogText.Extract(bytes, deadline.Token),
                 _       => PdfText.Extract(bytes, deadline.Token, password),
             }, limit, ct);
         }

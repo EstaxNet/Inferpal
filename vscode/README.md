@@ -79,7 +79,7 @@ The spec is a PDF, the test data lives in a spreadsheet, the error is on a scree
 | A file protected by a password | Attach it as usual | A card asks you for the password; the model gets the text, never the password |
 | A question about a flow or a design | Ask for a diagram | A Mermaid diagram drawn in the chat, its code one click away |
 
-Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks, e-mails (`.eml`, `.msg`), Windows event logs (`.evtx`) and diagrams (`.drawio`, `.vsdx`) are read too, by you and by the agent's `read_file` and `search_in_files`. Nothing is installed for it and nothing leaves your machine. A scanned PDF is read by OCR; a file too large to read says so instead of sending noise. Every format, in one table: [File formats](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/file-formats.md).
+Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks, e-mails (`.eml`, `.msg`), Windows event logs (`.evtx`), MSBuild binary logs (`.binlog`) and diagrams (`.drawio`, `.vsdx`) are read too, by you and by the agent's `read_file` and `search_in_files`. Nothing is installed for it and nothing leaves your machine. A scanned PDF is read by OCR; a file too large to read says so instead of sending noise. Every format, in one table: [File formats](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/file-formats.md).
 
 When the model that will answer does not see images, the text written in the image goes instead, read on your computer by Inferpal's OCR; only a picture with no text gets a card that offers one of your server that does, or sending without it. A large image is scaled down to 1920 × 1080 first, and said.
 

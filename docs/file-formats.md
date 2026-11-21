@@ -23,6 +23,7 @@ these give the model their **text**.
 | Jupyter notebook | `.ipynb` | Attached: its cells and their outputs, not its JSON. The agent also edits one cell at a time and runs the notebook ([Tools](tools.md#logs-data-files-and-notebooks)) |
 | E-mail | `.eml`, `.msg` | The headers and the body, its attachments named |
 | Windows event log | `.evtx` | Each event as a log entry — its time in your machine's zone, its level, its source and id, then its data as written (a .NET crash: the exception and its stack). Filtered by level and time like any log. A log too long keeps its newest events and says how many older ones are left out. Read on Windows, Linux and macOS |
+| MSBuild binary log | `.binlog` | Replayed by the .NET SDK on your machine: its errors first, its warnings, the projects it built, then the slowest projects, targets and tasks. Without the .NET SDK, it says so |
 | Diagram | `.drawio`, `.vsdx` | Page by page, its shapes (their text) and its links (`A → B: label`); a compressed draw.io page too. Positions, colours and styles are left out |
 
 A notebook, an RTF file and an `.eml` are text files: attached to a question they give their text as above, while the
