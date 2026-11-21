@@ -97,11 +97,11 @@ internal static class HeicImage
              + (windows ? ". A HEIC photo needs both \"HEIF Image Extensions\" and \"HEVC Video Extensions\" from the Microsoft Store" : string.Empty);
     }
 
-    private static string? OnPath(string name) =>
+    internal static string? OnPath(string name) =>
         (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
             .Select(folder => Path.Combine(folder, name)).FirstOrDefault(File.Exists);
 
-    private static ProcessStartInfo Start(string file, params string[] args)
+    internal static ProcessStartInfo Start(string file, params string[] args)
     {
         var psi = new ProcessStartInfo
         {

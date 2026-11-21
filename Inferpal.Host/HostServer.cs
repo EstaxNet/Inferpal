@@ -1773,8 +1773,8 @@ internal sealed partial class HostServer : IDisposable
             name = name.Length > 0 ? name : Path.GetFileName(path);
             if (Services.Governance.ContentExclusions.Of(path) is not null)
                 return new(null, null, MentionController.FileRefusal(path, Session().RootDir), null);
-            if (new FileInfo(path) is { Exists: true, Length: > Services.Documents.ChatImages.MaxBytes })
-                return new(null, null, Strings.ImageTooLarge(name, (int)(Services.Documents.ChatImages.MaxBytes / (1024 * 1024))), null);
+            if (new FileInfo(path) is { Exists: true } file && file.Length > Services.Documents.ChatImages.MaxBytesOf(name))
+                return new(null, null, Strings.ImageTooLarge(name, (int)(Services.Documents.ChatImages.MaxBytesOf(name) / (1024 * 1024))), null);
             bytes = await File.ReadAllBytesAsync(path, ct);
         }
         else

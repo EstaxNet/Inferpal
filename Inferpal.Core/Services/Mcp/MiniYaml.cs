@@ -194,7 +194,7 @@ internal static class MiniYaml
             return node?.DeepClone();
         }
 
-        /// <summary>How many nodes <paramref name=node/> holds, itself included; stops counting past the cap.</summary>
+        /// <summary>How many nodes <paramref name="node"/> holds, itself included; stops counting past the cap.</summary>
         private long Count(JsonNode? node)
         {
             long total = 1;

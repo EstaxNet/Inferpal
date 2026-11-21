@@ -81,7 +81,8 @@ internal static class ImageCards
         var size = image.Width > 0
             ? string.Create(CultureInfo.InvariantCulture, $"{image.Width} × {image.Height} · ")
             : string.Empty;
-        var detail = size + SizeText(image.Bytes) + (pasted ? " · " + Strings.ImagePasted : string.Empty);
+        // A video says what it was, how long, and how many of its pictures go: its sheet's pixels mean nothing to the person.
+        var detail = image.Video ?? size + SizeText(image.Bytes) + (pasted ? " · " + Strings.ImagePasted : string.Empty);
         return new ImageChipModel(image.Name, detail, seenBy is null ? string.Empty : Strings.ImageNotSeenChip(seenBy));
     }
 

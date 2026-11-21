@@ -7,7 +7,9 @@ namespace Inferpal.Services.Documents;
 
 /// <summary>An image the person attached to a question: its name, its bytes as base64, its format and size in pixels.</summary>
 /// <param name="Width">0 when the header could not be read (the image is still sent: the server decodes it).</param>
-internal sealed record ChatImage(string Name, string Base64, string MediaType, int Width, int Height, long Bytes);
+/// <param name="Video">For a video read as its contact sheet (<see cref="VideoFrames"/>): the chip's line, "video · 0:42 · 8
+/// pictures"; <c>null</c> for an image.</param>
+internal sealed record ChatImage(string Name, string Base64, string MediaType, int Width, int Height, long Bytes, string? Video = null);
 
 /// <summary>What reading an image gave: the image, or why it is not attached (in the person's language), and a note when
 /// it is attached but large.</summary>
@@ -43,9 +45,13 @@ internal static class ChatImages
     /// <remarks>Not <c>.svg</c>: an SVG is text, and is attached as its markup.</remarks>
     internal static readonly string[] Extensions = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".heic", ".heif", ".tif", ".tiff"];
 
-    /// <summary>Whether <paramref name="path"/> names an image file, by its extension: what decides to read it as an image
-    /// rather than as a text or a document.</summary>
-    internal static bool Handles(string path) => Extensions.Contains(Path.GetExtension(path).ToLowerInvariant());
+    /// <summary>Whether <paramref name="path"/> names an image file, or a video read as pictures (<see cref="VideoFrames"/>), by
+    /// its extension: what decides to read it as an image rather than as a text or a document.</summary>
+    internal static bool Handles(string path) =>
+        Extensions.Contains(Path.GetExtension(path).ToLowerInvariant()) || VideoFrames.Handles(path);
+
+    /// <summary>The largest file of the kind <paramref name="name"/> names that is read: a video is larger than an image.</summary>
+    internal static long MaxBytesOf(string name) => VideoFrames.Handles(name) ? VideoFrames.MaxBytes : MaxBytes;
 
     /// <summary>The most pixels a converted photo may have: a phone's full resolution (48 MP), scaled down when sent.</summary>
     internal const long MaxConvertedPixels = 64_000_000;
@@ -56,6 +62,11 @@ internal static class ChatImages
     /// </summary>
     internal static async Task<ChatImageRead> ReadAsync(byte[] bytes, string name, CancellationToken ct)
     {
+        if (VideoFrames.Handles(name)) return await VideoAsync(bytes, name, ct).ConfigureAwait(false);
+        // A GIF that moves is a recording: its sheet. One that does not, or whose frames cannot be read, stays an image.
+        if (bytes.LongLength <= MaxBytes && VideoFrames.Layout(bytes) is { Moves: true }
+            && VideoFrames.FromGif(bytes) is ({ Count: > 0 } frames, var length) && VideoFrames.Compose(frames) is { } gif)
+            return Sheet(gif.Image, name, Strings.VideoChip(VideoFrames.Time(length), gif.Frames));
         if (bytes.LongLength > MaxBytes || !HeicImage.Is(bytes)) return Read(bytes, name);
         var (converted, why) = await HeicImage.ConvertAsync(bytes, ct).ConfigureAwait(false);
         if (converted is null) return new(null, Strings.ImageNotDecoded(name, why ?? "it could not be converted"), null);
@@ -78,6 +89,25 @@ internal static class ChatImages
         var scaled = drawn.Width != w0 || drawn.Height != h0;
         return new(new ChatImage(name, Convert.ToBase64String(drawn.Data), drawn.MediaType, drawn.Width, drawn.Height, drawn.Data.LongLength),
                    null, scaled ? Strings.ImageScaledNote(name, w0, h0, drawn.Width, drawn.Height) : null);
+    }
+
+    /// <summary>A video, or a GIF that moves, as its contact sheet: frames at even times, each with its time written on it
+    /// (<see cref="VideoFrames"/>); why it could not be read is said with what installs the decoder.</summary>
+    private static async Task<ChatImageRead> VideoAsync(byte[] bytes, string name, CancellationToken ct)
+    {
+        if (bytes.LongLength > VideoFrames.MaxBytes)
+            return new(null, Strings.ImageTooLarge(name, (int)(VideoFrames.MaxBytes / (1024 * 1024))), null);
+        var (sheet, detail, why) = await VideoFrames.SheetAsync(bytes, name, ct).ConfigureAwait(false);
+        return sheet is null
+            ? new(null, Strings.ImageNotDecoded(name, why ?? "no frame could be read from it"), null)
+            : Sheet(sheet, name, detail);
+    }
+
+    /// <summary>A contact sheet read as the image it is, the chip's line on it.</summary>
+    private static ChatImageRead Sheet(byte[] sheet, string name, string? detail)
+    {
+        var read = Read(sheet, name);
+        return read.Image is { } image ? read with { Image = image with { Video = detail } } : read;
     }
 
     /// <summary>The image in <paramref name="bytes"/>, named <paramref name="name"/>, or why it is not attached.</summary>

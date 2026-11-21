@@ -121,6 +121,7 @@ Esta acción no se puede deshacer.</value></data>
   <data name="ScreenBefore" xml:space="preserve"><value>antes · {0}</value></data>
   <data name="ScreenAfter" xml:space="preserve"><value>después · {0}</value></data>
   <data name="ScreenOpenHint" xml:space="preserve"><value>Haga clic en una imagen para abrirla a tamaño completo.</value></data>
+  <data name="VideoChip" xml:space="preserve"><value>vídeo · {0} · {1} {1:imagen|imágenes}</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} es demasiado grande para leerse (más de {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Ningún cambio sin confirmar bajo `{0}`: nada que revisar.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Revisado: los cambios sin confirmar bajo `{0}`.</value></data>

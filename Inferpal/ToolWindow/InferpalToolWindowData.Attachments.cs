@@ -351,9 +351,9 @@ internal partial class InferpalToolWindowData
                 return;
             }
             var name = Path.GetFileName(path);
-            if (new FileInfo(path).Length > Services.Documents.ChatImages.MaxBytes)
+            if (new FileInfo(path).Length > Services.Documents.ChatImages.MaxBytesOf(name))
             {
-                await NotifyMentionAsync(Strings.ImageTooLarge(name, (int)(Services.Documents.ChatImages.MaxBytes / (1024 * 1024))));
+                await NotifyMentionAsync(Strings.ImageTooLarge(name, (int)(Services.Documents.ChatImages.MaxBytesOf(name) / (1024 * 1024))));
                 return;
             }
             var read = await Services.Documents.ChatImages.ReadAsync(await File.ReadAllBytesAsync(path, ct), name, ct);

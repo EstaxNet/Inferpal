@@ -121,6 +121,7 @@
   <data name="ScreenBefore" xml:space="preserve"><value>修改前 · {0}</value></data>
   <data name="ScreenAfter" xml:space="preserve"><value>修改后 · {0}</value></data>
   <data name="ScreenOpenHint" xml:space="preserve"><value>点击图片可查看原始大小。</value></data>
+  <data name="VideoChip" xml:space="preserve"><value>视频 · {0} · {1} 张</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} 太大，无法读取（超过 {1} MB）。</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>`{0}` 下没有未提交的更改：无需审查。</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>已审查：`{0}` 下未提交的更改。</value></data>

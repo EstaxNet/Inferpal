@@ -118,6 +118,7 @@
   <data name="ScreenBefore" xml:space="preserve"><value>до · {0}</value></data>
   <data name="ScreenAfter" xml:space="preserve"><value>после · {0}</value></data>
   <data name="ScreenOpenHint" xml:space="preserve"><value>Нажмите на изображение, чтобы открыть его в полном размере.</value></data>
+  <data name="VideoChip" xml:space="preserve"><value>видео · {0} · кадров: {1}</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} слишком велик для чтения (больше {1} МБ).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Нет незафиксированных изменений в `{0}`: проверять нечего.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Проверено: незафиксированные изменения в `{0}`.</value></data>

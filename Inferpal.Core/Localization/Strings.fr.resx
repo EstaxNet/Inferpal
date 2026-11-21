@@ -121,6 +121,7 @@ Cette action est irréversible.</value></data>
   <data name="ScreenBefore" xml:space="preserve"><value>avant · {0}</value></data>
   <data name="ScreenAfter" xml:space="preserve"><value>après · {0}</value></data>
   <data name="ScreenOpenHint" xml:space="preserve"><value>Cliquez sur une image pour l'ouvrir en grand.</value></data>
+  <data name="VideoChip" xml:space="preserve"><value>vidéo · {0} · {1} {1:image|images}</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} est trop gros pour être lu (plus de {1} Mo).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Aucun changement non commité sous `{0}` : rien à relire.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Relu : les changements non commités sous `{0}`.</value></data>

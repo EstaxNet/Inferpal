@@ -118,6 +118,7 @@ Questa azione non può essere annullata.</value></data>
   <data name="ScreenBefore" xml:space="preserve"><value>prima · {0}</value></data>
   <data name="ScreenAfter" xml:space="preserve"><value>dopo · {0}</value></data>
   <data name="ScreenOpenHint" xml:space="preserve"><value>Fai clic su un'immagine per aprirla a grandezza piena.</value></data>
+  <data name="VideoChip" xml:space="preserve"><value>video · {0} · {1} {1:immagine|immagini}</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} è troppo grande per essere letto (oltre {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Nessuna modifica non committata sotto `{0}`: niente da revisionare.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Revisionato: le modifiche non committate sotto `{0}`.</value></data>

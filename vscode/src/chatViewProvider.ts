@@ -98,7 +98,8 @@ type PendingAttachment = {
 };
 
 /** The files attached as images (the Core's `ChatImages.Extensions`; the Core says which it refuses). */
-const IMAGE_FILE = /\.(png|jpg|jpeg|webp|gif|bmp|heic|heif|tif|tiff)$/i;
+// A video is read as pictures of it (the Core's VideoFrames): attached as an image is.
+const IMAGE_FILE = /\.(png|jpg|jpeg|webp|gif|bmp|heic|heif|tif|tiff|mp4|mov|m4v|webm|mkv|avi|wmv)$/i;
 
 /** An SVG: drawn for a model that sees images, its markup otherwise (the host's `svg/read`, pari 111). */
 const SVG_FILE = /\.svg$/i;

@@ -122,6 +122,7 @@ This cannot be undone.</value></data>
   <data name="ScreenBefore" xml:space="preserve"><value>before · {0}</value></data>
   <data name="ScreenAfter" xml:space="preserve"><value>after · {0}</value></data>
   <data name="ScreenOpenHint" xml:space="preserve"><value>Click one to open it full size.</value></data>
+  <data name="VideoChip" xml:space="preserve"><value>video · {0} · {1} {1:picture|pictures}</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} is too large to read (more than {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>No uncommitted change under `{0}`: nothing to review.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Reviewed: the uncommitted changes under `{0}`.</value></data>

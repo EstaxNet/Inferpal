@@ -75,7 +75,7 @@ The spec is a PDF, the test data lives in a spreadsheet, the error is on a scree
 | You have | Do | The model gets |
 |---|---|---|
 | A PDF, a Word or Excel file, a deck | `@file`, Browse, or drop it on the chat with Shift held | Its text, read on your machine: each sheet under its name, each slide with its notes |
-| A screenshot of an error, a mock-up or a phone photo (TIFF, and HEIC with your system's decoder) | paste it in the chat, or drop it on the chat | The image itself, for a model that sees images (Qwen3.8, Ornith, Gemma 4) |
+| A screenshot of an error, a mock-up or a phone photo (TIFF, and HEIC with your system's decoder), or a screen recording of the bug (MP4, MOV, WebM: eight frames with their times) | paste it in the chat, or drop it on the chat | The image itself, for a model that sees images (Qwen3.8, Ornith, Gemma 4) |
 | A file protected by a password | Attach it as usual | A card asks you for the password; the model gets the text, never the password |
 | A question about a flow or a design | Ask for a diagram | A Mermaid diagram drawn in the chat, its code one click away |
 

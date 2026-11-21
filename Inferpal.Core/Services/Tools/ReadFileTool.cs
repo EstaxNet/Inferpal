@@ -74,13 +74,15 @@ internal class ReadFileTool : ITool
         if (target is Target.File or Target.Binary && _images is not null && Documents.ChatImages.Handles(path))
         {
             var name = Path.GetFileName(path);
-            if (new FileInfo(path).Length > Documents.ChatImages.MaxBytes)
-                return $"'{name}' is an image larger than {Documents.ChatImages.MaxBytes / (1024 * 1024)} MB: it is not shown.";
+            var kind = Documents.VideoFrames.Handles(path) ? "a video" : "an image";
+            if (new FileInfo(path).Length > Documents.ChatImages.MaxBytesOf(path))
+                return $"'{name}' is {kind} larger than {Documents.ChatImages.MaxBytesOf(path) / (1024 * 1024)} MB: it is not shown.";
             var read = await Documents.ChatImages.ReadAsync(await File.ReadAllBytesAsync(path, ct), name, ct);
-            if (read.Image is not { } image) return $"'{name}' is an image that is not shown: {read.Refusal}";
+            if (read.Image is not { } image) return $"'{name}' is {kind} that is not shown: {read.Refusal}";
             _images.Put(image);
             var size = image.Width > 0 ? $", {image.Width}×{image.Height}" : string.Empty;
-            return $"'{name}' is an image ({image.MediaType}{size}); it follows this result." + (read.Note is { } n ? $" {n}" : string.Empty);
+            var asFrames = image.Video is null ? string.Empty : ", read as one picture of frames at even times, each with its time written on it";
+            return $"'{name}' is {kind} ({image.MediaType}{size}){asFrames}; it follows this result." + (read.Note is { } n ? $" {n}" : string.Empty);
         }
         // ⚠ A PDF or DOCX reads as its extracted text — checked before the binary test, which a PDF whose first bytes hold
         // no NUL passes, and which then decoded it as noise. Paged like any file, at the line numbers search_in_files

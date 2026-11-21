@@ -118,6 +118,7 @@ Tej operacji nie można cofnąć.</value></data>
   <data name="ScreenBefore" xml:space="preserve"><value>przed · {0}</value></data>
   <data name="ScreenAfter" xml:space="preserve"><value>po · {0}</value></data>
   <data name="ScreenOpenHint" xml:space="preserve"><value>Kliknij obraz, aby otworzyć go w pełnym rozmiarze.</value></data>
+  <data name="VideoChip" xml:space="preserve"><value>wideo · {0} · klatki: {1}</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} jest zbyt duży, by go odczytać (ponad {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Brak niezatwierdzonych zmian w `{0}`: nie ma czego przeglądać.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Przejrzano: niezatwierdzone zmiany w `{0}`.</value></data>
