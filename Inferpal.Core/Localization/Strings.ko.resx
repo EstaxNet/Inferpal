@@ -2621,4 +2621,9 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>작업에 포함되지 않음</value></data>
   <data name="AssistRareTools" xml:space="preserve"><value>드물게 쓰는 도구(프로젝트 맵, 솔루션 정보, MSBuild 속성, 커서 위치에 삽입)</value></data>
   <data name="AssistBecauseMcp" xml:space="preserve"><value>MCP 서버</value></data>
+  <data name="ToolOffNoticeText" xml:space="preserve"><value>이 질문에는 설정에서 꺼 둔 도구가 필요할 수 있습니다 — {0}: {1}. 에이전트는 이 도구 없이 답합니다.</value></data>
+  <data name="ToolOffUseOnce" xml:space="preserve"><value>이 질문에 사용</value></data>
+  <data name="ToolOffTurnOn" xml:space="preserve"><value>켜기</value></data>
+  <data name="ToolOffNotNow" xml:space="preserve"><value>나중에</value></data>
+  <data name="ToolOffTurnOnWith" xml:space="preserve"><value>{0}(으)로 켤 수 있습니다.</value></data>
 </root>

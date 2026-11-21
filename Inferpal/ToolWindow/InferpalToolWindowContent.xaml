@@ -1927,6 +1927,47 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- ── The tool-off notice (pari 163): the question calls for tools turned off; use them once, turn them on, not now ── -->
+                        <Border CornerRadius="10" BorderThickness="1" Margin="0,8,0,0" Padding="12,10"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}"
+                                BorderBrush="{Binding DataContext.ThemeWarn, ElementName=root}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="tooloff">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel IsEnabled="{Binding CopyCanAct}" AutomationProperties.LiveSetting="Polite">
+                                <DockPanel LastChildFill="True">
+                                    <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,2,8,0"
+                                               Foreground="{Binding DataContext.ThemeWarn, ElementName=root}" Text="&#xE946;"/>
+                                    <TextBlock Text="{Binding CardTitle}" FontSize="13" TextWrapping="Wrap" Foreground="{Binding ThemeText}"/>
+                                </DockPanel>
+                                <WrapPanel Margin="22,8,0,0">
+                                    <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" Margin="0,0,6,6" BorderThickness="0" Cursor="Hand"
+                                            Background="{Binding DataContext.ThemeAccent, ElementName=root}"
+                                            Command="{Binding ToolOffOnceCommand}" AutomationProperties.Name="{Binding BtnToolOffOnce}">
+                                        <TextBlock Text="{Binding BtnToolOffOnce}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                   Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                    </Button>
+                                    <Button Style="{StaticResource LineBtn}" Margin="0,0,6,6"
+                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding ToolOffOnCommand}" AutomationProperties.Name="{Binding BtnToolOffOn}">
+                                        <TextBlock Text="{Binding BtnToolOffOn}" FontSize="13" Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                    </Button>
+                                    <Button Style="{StaticResource LineBtn}" Margin="0,0,6,6"
+                                            BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                            Command="{Binding ToolOffNotNowCommand}" AutomationProperties.Name="{Binding BtnToolOffNotNow}">
+                                        <TextBlock Text="{Binding BtnToolOffNotNow}" FontSize="13" Foreground="{Binding DataContext.ThemeSubtleText}"/>
+                                    </Button>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
                         <!-- ── A run on a copy (/run-copy): its start, the review of each change kept or dropped, what the apply did ── -->
                         <Border CornerRadius="10" BorderThickness="1" Margin="0,8,0,0" Padding="12,10"
                                 Background="{Binding DataContext.ThemeSurface, ElementName=root}"

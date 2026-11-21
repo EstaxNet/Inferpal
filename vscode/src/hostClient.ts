@@ -104,7 +104,7 @@ import {
   SessionSwitches,
   TypingChip,
   ImageDto,
-  ImageNotSeenCard, ImageText, ImageTextBanner,
+  ImageNotSeenCard, ImageText, ImageTextBanner, ToolOffNotice,
 } from './protocol';
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
@@ -159,6 +159,8 @@ export interface ChatEvents {
   onTaskFinished?(text: string): void;
   /** Something that failed after the fact (the auto-save slot not emptied…), said in the thread. */
   onNotice?(text: string): void;
+  /** The question just sent calls for tools the person turned off: the notice and its gestures (`chat/toolOff`). */
+  onToolOff?(notice: ToolOffNotice): void;
   /** Inline completions paused after repeated failures: said once, in the status bar. */
   onFimNotice?(text: string): void;
   /** An input card was answered (or its turn stopped): the line it leaves where it was. */
@@ -412,6 +414,7 @@ export class HostClient {
     // setBusy(false) — a task finishing while the user looked away left no trace.
     conn.onNotification('task/finished', (n: TextNote) => this.events.onTaskFinished?.(n.text));
     conn.onNotification('host/notice', (n: TextNote) => this.events.onNotice?.(n.text));
+    conn.onNotification('chat/toolOff', (n: ToolOffNotice) => this.events.onToolOff?.(n));
     conn.onNotification('fim/notice', (n: TextNote) => this.events.onFimNotice?.(n.text));
     conn.onNotification('chat/inputReceipt', (n: InputReceiptNote) => this.events.onInputReceipt?.(n));
     conn.onNotification('setup/pullProgress', (n: SetupPullProgress) => this.events.onSetupPullProgress?.(n));

@@ -2621,4 +2621,9 @@
   <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>Не ваша работа</value></data>
   <data name="AssistRareTools" xml:space="preserve"><value>Редко нужные инструменты (карта проекта, сведения о решении, свойства MSBuild, вставка у курсора)</value></data>
   <data name="AssistBecauseMcp" xml:space="preserve"><value>MCP-серверы</value></data>
+  <data name="ToolOffNoticeText" xml:space="preserve"><value>Этому вопросу могут понадобиться инструменты, выключенные в настройках — {0}: {1}. Агент отвечает без них.</value></data>
+  <data name="ToolOffUseOnce" xml:space="preserve"><value>Использовать для этого вопроса</value></data>
+  <data name="ToolOffTurnOn" xml:space="preserve"><value>Включить</value></data>
+  <data name="ToolOffNotNow" xml:space="preserve"><value>Не сейчас</value></data>
+  <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Включите их командой {0}.</value></data>
 </root>

@@ -2621,4 +2621,9 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>Poza twoją pracą</value></data>
   <data name="AssistRareTools" xml:space="preserve"><value>Rzadko potrzebne narzędzia (mapa projektu, dane rozwiązania, właściwości MSBuild, wstawianie przy kursorze)</value></data>
   <data name="AssistBecauseMcp" xml:space="preserve"><value>Serwery MCP</value></data>
+  <data name="ToolOffNoticeText" xml:space="preserve"><value>To pytanie może wymagać narzędzi wyłączonych w ustawieniach — {0}: {1}. Agent odpowiada bez nich.</value></data>
+  <data name="ToolOffUseOnce" xml:space="preserve"><value>Użyj ich do tego pytania</value></data>
+  <data name="ToolOffTurnOn" xml:space="preserve"><value>Włącz je</value></data>
+  <data name="ToolOffNotNow" xml:space="preserve"><value>Nie teraz</value></data>
+  <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Włącz je poleceniem {0}.</value></data>
 </root>

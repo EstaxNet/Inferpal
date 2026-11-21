@@ -43,7 +43,7 @@ internal sealed class SettingsWindowServer : IAsyncDisposable
         "settings/contextUsage", "settings/projectFiles", "settings/repoInstructions", "settings/pinSizes",
         "settings/loadedModels", "settings/unloadModels", "settings/suggestModels",
         // The Tools page: the list, and turning one off — a setting written (disabledTools), never a tool run.
-        "settings/tools", "settings/toolSet",
+        "settings/tools", "settings/toolSet", "settings/toolsAssist", "settings/toolsAssistApply",
     };
 
     /// <summary>The page's one call answered here rather than by the host: open a file the form lists in the system's

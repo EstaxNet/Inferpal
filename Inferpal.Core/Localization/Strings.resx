@@ -2625,4 +2625,9 @@ What you save there applies from your next question, in this thread and the othe
   <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>Not your work</value></data>
   <data name="AssistRareTools" xml:space="preserve"><value>Tools you rarely need (project map, solution info, MSBuild properties, inserting at the cursor)</value></data>
   <data name="AssistBecauseMcp" xml:space="preserve"><value>MCP servers</value></data>
+  <data name="ToolOffNoticeText" xml:space="preserve"><value>This question may need tools your settings keep off — {0}: {1}. The agent answers without them.</value></data>
+  <data name="ToolOffUseOnce" xml:space="preserve"><value>Use them for this question</value></data>
+  <data name="ToolOffTurnOn" xml:space="preserve"><value>Turn them on</value></data>
+  <data name="ToolOffNotNow" xml:space="preserve"><value>Not now</value></data>
+  <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Turn them on with {0}.</value></data>
 </root>

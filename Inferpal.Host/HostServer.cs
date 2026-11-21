@@ -331,6 +331,8 @@ internal sealed partial class HostServer : IDisposable
         var notes  = new TurnNotes();
         // How fast each model wrote during the turn: the header shows the figure of the model that answered.
         using var speeds = GenerationMeter.Open();
+        // The tools the person opened for this question from the tool-off notice: offered to this turn's flow alone.
+        using var opened = ToolSwitches.OpenForThisQuestion(p.OpenTools);
         // A question for a copy (pari 106): the copy this session holds, or one made now at the last commit. The turn runs
         // inside it — tools, approvals and the system prompt — and its review comes back with the answer.
         Services.Execution.CopyRun? copy = null;
@@ -623,6 +625,13 @@ internal sealed partial class HostServer : IDisposable
             var mode      = p.CodeAction ? null : TurnMode(s);
             var agentMode = mode is null && TurnIsAgent(s, p.CodeAction, p.AgentMode);
             var useTools  = !p.CodeAction && s.ToolsEnabled;
+            // A question whose words call for a family the person turned off: said once per conversation, before the
+            // answer, with the gestures (pari 163). Never for a code action, which answers without tools anyway.
+            // Never in plan mode or a held mode: their own tool lists decide, and the gestures would offer nothing there.
+            if (useTools && !s.PlanMode && mode is null
+                && Services.Presentation.ToolOffNotice.For(p.Query ?? p.Prompt, s.Tools.Profile(), s.HeadShareSaid) is { } off)
+                Notify("chat/toolOff", new ToolOffDto(off.Text, off.Label, [.. off.Tools], Strings.ToolOffUseOnce,
+                                                      Strings.ToolOffTurnOn, Strings.ToolOffNotNow));
             // The model picked in the chat is the CHAT model: the agent loop and the code actions still route to their
             // configured model first, as in Visual Studio. Resolved BEFORE the context check, which needs the window
             // the server really loaded this model with.
@@ -645,6 +654,8 @@ internal sealed partial class HostServer : IDisposable
             // rest of the conversation.
             // ⚠ The typed query when the client sends one, even empty: the prompt then carries the attachments' bodies. A
             // held mode's instructions are words the person chose too.
+            // The tools opened for this question are named too: a small window cuts the tools no question named.
+            if (p.OpenTools is { Count: > 0 } opened) s.CutNamedTools = [.. s.CutNamedTools.Union(opened)];
             if (turnToolTokens > 0)
                 s.CutNamedTools = [.. s.CutNamedTools.Union(SmallWindowToolRegistry.NamedIn(
                     string.Join("\n", [p.Query ?? p.Prompt, .. p.Notes ?? [], mode?.Instructions]), s.Tools.BuiltInNames))];
@@ -2924,6 +2935,7 @@ internal sealed partial class HostServer : IDisposable
         s.ModeModelNoticeSaid   = null;
         s.CutNamedTools         = [];
         Services.Agent.ContextManager.ForgetCutNotices(s.HeadShareSaid);   // told again in the next conversation
+        Services.Presentation.ToolOffNotice.Forget(s.HeadShareSaid);
         s.Tools.ForgetLoadedTools();
     }
 

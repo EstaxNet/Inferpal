@@ -3224,4 +3224,9 @@ internal static class Strings
     public static string AssistBecauseNotYourWork => Get(nameof(AssistBecauseNotYourWork));
     public static string AssistRareTools => Get(nameof(AssistRareTools));
     public static string AssistBecauseMcp => Get(nameof(AssistBecauseMcp));
+    public static string ToolOffNoticeText(string family, string tools) => Format(Get(nameof(ToolOffNoticeText)), family, tools);
+    public static string ToolOffUseOnce => Get(nameof(ToolOffUseOnce));
+    public static string ToolOffTurnOn => Get(nameof(ToolOffTurnOn));
+    public static string ToolOffNotNow => Get(nameof(ToolOffNotNow));
+    public static string ToolOffTurnOnWith(string command) => Format(Get(nameof(ToolOffTurnOnWith)), command);
 }

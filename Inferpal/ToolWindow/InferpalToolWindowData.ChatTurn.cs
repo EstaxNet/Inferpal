@@ -155,6 +155,13 @@ internal partial class InferpalToolWindowData
         // which no discard removes meanwhile; its bubble keeps the command, so Regenerate asks again through the card.
         using var inCopy = copy?.Enter();
         using var copyInUse = copy?.Use();
+        // The tools the person opened for this question from the tool-off notice: offered to this turn's flow alone.
+        var openTools = _openToolsOnce;
+        _openToolsOnce = null;
+        using var opened = Services.Execution.ToolSwitches.OpenForThisQuestion(openTools);
+        // Named, as a question that names them: a small window cuts the tools no question named.
+        if (openTools is { Count: > 0 })
+            await RunOnVMContextAsync(() => _cutNamedTools = [.. _cutNamedTools.Union(openTools)]);
 
         // ── Pre-flight: heartbeat says Ollama is offline → fail immediately ────────
         // This avoids the 30-minute HTTP timeout; the prompt stays in the input box

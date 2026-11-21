@@ -112,6 +112,19 @@ export interface ChatSendParams {
   images?: ImageDto[];
   /** The question goes to the copy of the repository this window holds, or a new one (`/run-copy`, pari 106). */
   inCopy?: boolean;
+  /** Tools the person turned off, offered to this question alone (the tool-off notice's "use them for this question"). */
+  openTools?: string[];
+}
+
+/** `chat/toolOff` — the question just sent calls for tools the person turned off (pari 163): the notice, the family's
+ *  name, its tools, and the labels of its three gestures. */
+export interface ToolOffNotice {
+  text: string;
+  family: string;
+  tools: string[];
+  useOnce: string;
+  turnOn: string;
+  notNow: string;
 }
 
 /** An image the question carries: its name, its type, its bytes in base64. */

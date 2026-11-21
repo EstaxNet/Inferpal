@@ -84,6 +84,7 @@ internal partial class InferpalToolWindowData
         // The MCP tools tool_search loaded belong to the conversation that loaded them.
         _tools.ForgetLoadedTools();
         Services.Agent.ContextManager.ForgetCutNotices(_headShareSaid);   // told again in the next conversation
+        Services.Presentation.ToolOffNotice.Forget(_headShareSaid);
         UpdateContextBudget();   // → HasContextBudget = false until a prompt has been measured
     }
 

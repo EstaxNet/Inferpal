@@ -2621,4 +2621,9 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>Nicht Ihre Arbeit</value></data>
   <data name="AssistRareTools" xml:space="preserve"><value>Selten gebrauchte Werkzeuge (Projektkarte, Lösungsinfos, MSBuild-Eigenschaften, Einfügen am Cursor)</value></data>
   <data name="AssistBecauseMcp" xml:space="preserve"><value>MCP-Server</value></data>
+  <data name="ToolOffNoticeText" xml:space="preserve"><value>Diese Frage braucht vielleicht Werkzeuge, die Ihre Einstellungen ausschalten — {0}: {1}. Der Agent antwortet ohne sie.</value></data>
+  <data name="ToolOffUseOnce" xml:space="preserve"><value>Für diese Frage verwenden</value></data>
+  <data name="ToolOffTurnOn" xml:space="preserve"><value>Einschalten</value></data>
+  <data name="ToolOffNotNow" xml:space="preserve"><value>Nicht jetzt</value></data>
+  <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Schalten Sie sie mit {0} ein.</value></data>
 </root>

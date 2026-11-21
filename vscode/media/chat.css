@@ -3216,3 +3216,28 @@ kbd {
   color: var(--vscode-editorWarning-foreground, #cca700);
   flex: none;
 }
+
+/* The tool-off notice (pari 163): a warning-coloured box under the question, three gestures. */
+.tooloff-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--vscode-inputValidation-warningBorder, #b89500);
+  background: var(--vscode-inputValidation-warningBackground, transparent);
+}
+.tooloff-line { display: flex; gap: 8px; align-items: flex-start; }
+.tooloff-glyph { flex: none; margin-top: 2px; color: var(--vscode-editorWarning-foreground); }
+.tooloff-actions { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 24px; }
+.tooloff-actions button {
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--vscode-button-border, transparent);
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  font: inherit;
+  cursor: pointer;
+}
+.tooloff-actions button.primary { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }

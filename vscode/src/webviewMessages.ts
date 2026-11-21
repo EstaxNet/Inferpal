@@ -3,7 +3,7 @@
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
 import type {
   ApprovalCard, AwayNotice, CopyAppliedCard, CopyReview, CopyStartCard, CutCard, ImportCard, InputCard, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunSummary,
-  SavedMessage, ServerInstallCard, ServerInstallReport, SetupPlace,
+  SavedMessage, ServerInstallCard, ServerInstallReport, SetupPlace, ToolOffNotice,
   SetupPlan,
   XRayPanel,
 } from './protocol';
@@ -311,6 +311,8 @@ export type ExtToWebview =
   | { type: 'restoreDraft'; text: string }
   /** The card of a run on a copy (`/run-copy`), at the end of the thread; `card: null` takes it away. */
   | { type: 'copyCard'; card: WvCopyCard | null }
+  /** The tool-off notice under the question, or null to take it away. */
+  | { type: 'toolOffCard'; card: ToolOffNotice | null }
   /** The model picker's list, re-read from the server when the menu opened; `model`: the window's model, when its
    *  setting changed outside the picker. */
   | { type: 'models'; models: string[]; model?: string; onlyOtherModels?: boolean }
@@ -358,6 +360,8 @@ export type WebviewToExt =
   | { type: 'runReview'; runId: string }
   /** The start card's answer: the question goes to the copy, to the person's files, or back to the input box. */
   | { type: 'copyStart'; question: string; choice: 'copy' | 'mine' | 'cancel' }
+  /** A gesture on the tool-off notice. */
+  | { type: 'toolOff'; choice: 'once' | 'on' | 'notNow' }
   /** The review card's Apply: the hunks kept of review `reviewId`, by path. */
   | { type: 'copyApply'; reviewId: number; kept: Record<string, number[]> }
   /** A change kept or dropped on the review card: every dropped change, by its key. */

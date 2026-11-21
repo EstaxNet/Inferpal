@@ -1686,6 +1686,13 @@ internal sealed class AcpSession : IAsyncDisposable
     [JsonRpcMethod("host/notice", UseSingleObjectParameterDeserialization = true)]
     public void HostNotice(TextNote note) => Keep(note, asNotice: !note.Result);
 
+    /// <summary>The tool-off notice (pari 163): an agent client draws no card, so its gesture is the command that turns the
+    /// tools back on, named in the sentence.</summary>
+    [JsonRpcMethod("chat/toolOff", UseSingleObjectParameterDeserialization = true)]
+    public void ToolOff(ToolOffDto notice) =>
+        Keep(new TextNote(notice.Text + " " + Strings.ToolOffTurnOnWith("/tools on " + string.Join(" ", notice.Tools)), "info"),
+             asNotice: true);
+
     /// <summary>A sentence of the host, shown and kept with the thread: a notice when <paramref name="asNotice"/> and the
     /// client shows notices, the answer's text otherwise.</summary>
     private void Keep(TextNote note, bool asNotice)

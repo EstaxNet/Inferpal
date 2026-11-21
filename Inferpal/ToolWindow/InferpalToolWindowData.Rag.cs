@@ -524,6 +524,50 @@ internal partial class InferpalToolWindowData
     private int NextTurnToolTokens(int window = 0) =>
         Services.Agent.ContextManager.NextTurnToolTokens(_tools, _toolsEnabled, _planMode, _heldMode, window, _cutNamedTools);
 
+    /// <summary>The tools "use them for this question" opens: the next question alone, the regenerated one, takes them.</summary>
+    private IReadOnlyCollection<string>? _openToolsOnce;
+
+    /// <summary>The tool-off notice's card: use the tools for this question (the answer asked again with them), turn them
+    /// back on (as <c>/tools on</c> does, then asked again), or not now.</summary>
+    private ChatMessageItem ToolOffCard(Services.Presentation.ToolOffFinding off)
+    {
+        ChatMessageItem? card = null;
+        // The card comes as the answer starts: a gesture before it ends does nothing, and the buttons stay usable.
+        bool Busy() => _sendStarting || IsLoading || _currentCts is not null;
+        void Act(bool turnOn) => Post(() =>
+        {
+            if (Busy()) { if (card is not null) card.CopyCanAct = true; return; }
+            string? said = null;
+            if (turnOn)
+            {
+                var result = Services.Commands.ToolsCommandHandler.Switch([.. off.Tools], off: false, _tools, _config);
+                if (result.SaveConfig) _config.Save();
+                said = result.Message;
+            }
+            // Named for the asked-again question in both cases: a small window cuts the tools it does not name.
+            _openToolsOnce = off.Tools;
+            _ = AskAgainAsync(said);
+        });
+        card = ChatMessageItem.ToolOffMsg(off, once: () => Act(false), on: () => Act(true), notNow: () => { });
+        return card;
+    }
+
+    /// <summary>The answer asked again with the tools of a tool-off gesture; <paramref name="said"/> (what turning them on
+    /// changed) after it — said before, the asked-again question would take the line away with the old answer.</summary>
+    private async Task AskAgainAsync(string? said)
+    {
+        try { await RegenerateAsync(); }
+        finally
+        {
+            // Never left for the next question: a regenerate that did not start leaves the tools to nobody.
+            await RunOnVMContextAsync(() =>
+            {
+                _openToolsOnce = null;
+                if (!string.IsNullOrEmpty(said)) InsertThemed(ChatMessageItem.NoticeMsg(said!));
+            });
+        }
+    }
+
     /// <param name="onStep">Where the turn shows its steps (its status bubble).</param>
     /// <param name="asked">The question as typed (or a command's prompt): the tools it names are never cut, for the rest of
     /// the conversation.</param>
@@ -555,6 +599,12 @@ internal partial class InferpalToolWindowData
             _contextWindowInUse = decision.Window;
             _contextWindowRead  = decision.WindowRead;
             if (decision.WindowNotice is { } loadNotice) InsertThemed(ChatMessageItem.NoticeMsg(loadNotice));
+            // A question whose words call for a family the person turned off: said once per conversation, before the
+            // answer, with the gestures (pari 163). Only a turn that sends tools: a code action answers without them.
+            // Never in plan mode or a held mode: their own tool lists decide, and the gestures would offer nothing there.
+            if (toolTokens > 0 && !_planMode && _heldMode is null
+                && Services.Presentation.ToolOffNotice.For(asked, _tools.Profile(), _headShareSaid) is { } off)
+                InsertThemed(ToolOffCard(off));
             // A window too small for every definition: the turn sends the tools used most, said once.
             if (decision.ToolsCut
                 && Services.Agent.ContextManager.ToolsCutNotice(FindProjectRoot(), model, decision.Window,

@@ -65,9 +65,32 @@ internal sealed class ToolSwitches
         string.Join("\n", (text ?? string.Empty).Replace("\r\n", "\n").Split('\n')
                               .Where(l => l.Trim().Length > 0 && !lines.Contains(l.Trim())).Select(l => l.TrimEnd()));
 
-    /// <summary>Whether the user turned <paramref name="tool"/> off — <c>tool_search</c> never is.</summary>
+    /// <summary>Whether the user turned <paramref name="tool"/> off — <c>tool_search</c> never is, nor a built-in tool the
+    /// person opened for the question being answered (<see cref="OpenForThisQuestion"/>).</summary>
     public bool TurnsOff(ITool tool) =>
-        tool.Name != AlwaysOn && (_names.Contains(KeyOf(tool)) || _names.Contains(tool.Name));
+        tool.Name != AlwaysOn && (_names.Contains(KeyOf(tool)) || _names.Contains(tool.Name))
+        && !(tool is not McpTool && s_openNow.Value is { } open && open.Contains(tool.Name));
+
+    // The flow's own: another editor's turn, or a question asked after this one, never sees it.
+    private static readonly AsyncLocal<IReadOnlySet<string>?> s_openNow = new();
+
+    /// <summary>
+    /// Offers the built-in <paramref name="tools"/> the person turned off, for the flow that runs one question — the
+    /// gesture "use it for this question" of the tool-off notice. Disposing ends it. The setting is never written.
+    /// </summary>
+    /// <remarks>Built-in tools only: the MCP tools on are cached per switches (<c>ToolRegistry.McpToolsOn</c>).</remarks>
+    public static IDisposable OpenForThisQuestion(IReadOnlyCollection<string>? tools)
+    {
+        var before = s_openNow.Value;
+        if (tools is { Count: > 0 }) s_openNow.Value = new HashSet<string>(tools, StringComparer.Ordinal);
+        return new Restore(() => s_openNow.Value = before);
+    }
+
+    private sealed class Restore(Action undo) : IDisposable
+    {
+        private Action? _undo = undo;
+        public void Dispose() => Interlocked.Exchange(ref _undo, null)?.Invoke();
+    }
 
     /// <summary>The setting's text with <paramref name="tools"/> added (<paramref name="off"/>) or removed, the other lines
     /// kept as written.</summary>

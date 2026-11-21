@@ -2621,4 +2621,9 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>作業内容に含まれない</value></data>
   <data name="AssistRareTools" xml:space="preserve"><value>まれに使うツール（プロジェクトマップ、ソリューション情報、MSBuild プロパティ、カーソル位置への挿入）</value></data>
   <data name="AssistBecauseMcp" xml:space="preserve"><value>MCP サーバー</value></data>
+  <data name="ToolOffNoticeText" xml:space="preserve"><value>この質問には、設定でオフにしているツールが必要かもしれません — {0}: {1}。エージェントはそれらなしで回答します。</value></data>
+  <data name="ToolOffUseOnce" xml:space="preserve"><value>この質問で使う</value></data>
+  <data name="ToolOffTurnOn" xml:space="preserve"><value>オンにする</value></data>
+  <data name="ToolOffNotNow" xml:space="preserve"><value>今はしない</value></data>
+  <data name="ToolOffTurnOnWith" xml:space="preserve"><value>{0} でオンにできます。</value></data>
 </root>

@@ -4,7 +4,7 @@
 // No literal user-visible English here — strings go through t() (window.__l10n).
 import type {
   ApprovalCard, AwayNotice, CopyAppliedCard, CopyReview, CopyStartCard, CutCard, InputCard, InputCardField, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunReviewFile, RunReviewLine,
-  RunSummary, RunScreen, SetupPlace, SetupPlan, ImageNotSeenCard,
+  RunSummary, RunScreen, SetupPlace, SetupPlan, ImageNotSeenCard, ToolOffNotice,
 } from '../protocol';
 import type {
   ExtToWebview,
@@ -1012,6 +1012,37 @@ function copyButton(card: HTMLElement, label: string, primary: boolean, act: () 
     act();
   });
   return button;
+}
+
+/** The tool-off notice (pari 163), under the question that called for the tools: use them for it, turn them on, or not now. */
+function renderToolOffCard(card: ToolOffNotice | null): void {
+  messagesEl.querySelector('.tooloff-card')?.remove();
+  if (!card) {
+    return;
+  }
+  const el = document.createElement('section');
+  el.className = 'tooloff-card';
+  el.setAttribute('role', 'status');
+  const line = copyPart('div', 'tooloff-line');
+  const glyph = copyPart('span', 'tooloff-glyph');
+  glyph.append(icon('info', 16));
+  line.append(glyph, copyPart('span', '', card.text));
+  const actions = copyPart('div', 'tooloff-actions');
+  actions.append(
+    copyButton(el, card.useOnce, true, () => post({ type: 'toolOff', choice: 'once' })),
+    copyButton(el, card.turnOn, false, () => post({ type: 'toolOff', choice: 'on' })),
+    copyButton(el, card.notNow, false, () => post({ type: 'toolOff', choice: 'notNow' })),
+  );
+  el.append(line, actions);
+  // Under the last question, before its answer and whatever follows it — live or redrawn.
+  const questions = messagesEl.querySelectorAll(':scope > .user-row');
+  const question = questions.length > 0 ? questions[questions.length - 1] : null;
+  if (question) {
+    question.after(el);
+  } else {
+    messagesEl.appendChild(el);
+  }
+  scrollToBottom();
 }
 
 /** The card of a run on a copy (`/run-copy`), at the end of the thread: its start, its review, or what the apply did. */
@@ -4536,6 +4567,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'copyCard':
       renderCopyCard(msg.card);
+      break;
+    case 'toolOffCard':
+      renderToolOffCard(msg.card);
       break;
     case 'runReview':
       renderRunReview(msg.runId, msg.review, msg.message);

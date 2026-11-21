@@ -355,6 +355,11 @@ saved, which tools it turns off, why, and what each question then carries agains
 you did not pick are turned off; reading files, logs and documents stays whatever you pick, and a tool it does not know (one of
 your own) is left as it is. Nothing is written until **Apply**.
 
+A question that calls for tools you turned off — the release notes of a library with the internet off, a breakpoint with
+the debugger off — says so above the answer, once per conversation: **Use them for this question** asks it again with those
+tools offered to it alone, **Turn them on** turns them back on (as `/tools on` does) and asks again, **Not now** leaves it.
+An agent client (ACP) names the `/tools on` command instead.
+
 Every tool's definition goes with every request, before the first word of the answer: the built-in ones alone take more
 than half of an 8K window, so at such a window only the ones the agent uses most go (see Built-in tools).
 

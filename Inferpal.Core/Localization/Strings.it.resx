@@ -2621,4 +2621,9 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>Fuori dal tuo lavoro</value></data>
   <data name="AssistRareTools" xml:space="preserve"><value>Strumenti usati di rado (mappa del progetto, info della soluzione, proprietà MSBuild, inserimento al cursore)</value></data>
   <data name="AssistBecauseMcp" xml:space="preserve"><value>Server MCP</value></data>
+  <data name="ToolOffNoticeText" xml:space="preserve"><value>Questa domanda può richiedere strumenti che le impostazioni disattivano — {0}: {1}. L'agente risponde senza.</value></data>
+  <data name="ToolOffUseOnce" xml:space="preserve"><value>Usarli per questa domanda</value></data>
+  <data name="ToolOffTurnOn" xml:space="preserve"><value>Riattivarli</value></data>
+  <data name="ToolOffNotNow" xml:space="preserve"><value>Non ora</value></data>
+  <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Riattivali con {0}.</value></data>
 </root>

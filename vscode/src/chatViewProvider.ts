@@ -29,7 +29,7 @@ import { pickSession, toSavedMessages, toTranscript } from './chatSessions';
 import {
   ApprovalCard, ApprovalFileDiff, AwayNotice, CodeActionResult, InputCard, InputFormAnswer, ProblemEntry, GestureQuestion, CommitMessageProposal,
   ModelsByKind, SavedMessage, SessionLoadResult, SessionSwitches, hasSwitches, noSwitches, SlashEffect, TestsGenerateResult, TurnNote, WindowNoticeResult,
-  ConfigReloadResult, ImageDto, ImageNotSeenCard, ImageText, ImageTextBanner,
+  ConfigReloadResult, ImageDto, ImageNotSeenCard, ImageText, ImageTextBanner, ToolOffNotice,
 } from './protocol';
 import {
   WebviewToExt,
@@ -229,6 +229,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** The card of a run on a copy waiting for the person (start, review, applied): the transcript does not carry it, so
    *  every redraw shows it again — the copy is held by the host until it is applied or discarded. */
   private copyCard: WvCopyCard | null = null;
+  /** The tool-off notice of the last question (pari 163), until a gesture or the next question takes it away. */
+  private toolOffCard: ToolOffNotice | null = null;
+  /** The tools "use them for this question" opens: sent with the regenerated question alone (`openTools`). */
+  private openToolsOnce: string[] | undefined;
   /** The bubble of the `/run-copy` that opened the start card: replaced by the question once the person answers. */
   private copyEcho: WvTranscriptItem | undefined;
   /** The chips a regenerated question carries again — never the ones waiting in the composer for the next question. */
@@ -687,6 +691,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // A persistent bubble, like the VS front-end — not an ephemeral status line wiped by the next setBusy.
       onTaskFinished: (text) => this.sayOutOfTurn(text),
       onNotice: (text) => this.sayOutOfTurn(text),
+      onToolOff: (notice) => this.showToolOffCard(notice),
       onFimNotice: (text) => sayInStatusBar(text),
     });
 
@@ -1229,6 +1234,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Empties the conversation: the view, its hidden part and the marker's count, together. */
   private clearTranscript(): void {
     this.transcript.length = 0;
+    this.toolOffCard = null;
     this.hiddenEntries = [];
     this.droppedEntries = 0;
   }
@@ -1944,6 +1950,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
       case 'copyStart':
         await this.answerCopyStart(msg.question, msg.choice);
+        break;
+      case 'toolOff':
+        await this.answerToolOff(msg.choice);
         break;
       case 'copyApply':
         await this.applyCopy(msg.reviewId, msg.kept);
@@ -3648,6 +3657,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // What another editor saved since: this question answers with it (its model and agent mode included).
       await this.followSettings(host);
       const agentMode = this.windowAgentMode();
+      // A notice about the previous question is not about this one.
+      if (this.toolOffCard) {
+        this.showToolOffCard(null);
+      }
+      const openTools = this.openToolsOnce;
+      this.openToolsOnce = undefined;
       const chips = this.regenerating ? this.resendAttachments ?? [] : this.continuing ? [] : this.pendingAttachments;
       const mentions = await this.expandMentions(prompt, host, !codeAction,
                                                  chips.filter((a) => a.image).map((a) => a.origin ?? a.name));
@@ -3810,6 +3825,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         query: query ?? prompt,
         notes: notes.length > 0 ? notes : undefined,
         inCopy: inCopy || undefined,
+        openTools,
       });
       // A stopped turn's partial answer is the host's: empty when nothing visible had come (reasoning only).
       const finalText = result.cancelled ? result.text : result.text || this.streamText;
@@ -4278,6 +4294,60 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
     } catch (err) {
       this.gestureFailed('act on the copy left', err);
+    }
+  }
+
+  private showToolOffCard(card: ToolOffNotice | null): void {
+    this.toolOffCard = card;
+    this.post({ type: 'toolOffCard', card });
+  }
+
+  /**
+   * A gesture on the tool-off notice: the answer asked again with the tools opened for it alone, or once they are turned
+   * back on (as `/tools on` does, said after the answer), or nothing.
+   */
+  private async answerToolOff(choice: 'once' | 'on' | 'notNow'): Promise<void> {
+    const card = this.toolOffCard;
+    if (!card) {
+      return;
+    }
+    // The card comes as the answer starts: a gesture before it ends waits for it, the card drawn again with its buttons.
+    if (this.busy && choice !== 'notNow') {
+      this.showToolOffCard(card);
+      return;
+    }
+    this.showToolOffCard(null);
+    if (choice === 'notNow') {
+      return;
+    }
+    const said: string[] = [];
+    if (choice === 'on') {
+      const host = this.hostForGesture();
+      if (!host) {
+        return;
+      }
+      try {
+        for (const tool of card.tools) {
+          const result = await host.settingsToolSet(tool, false);
+          if (result.message) {
+            said.push(result.message);
+          }
+        }
+      } catch (err) {
+        this.sayOutOfTurn(ChatViewProvider.errorText(err));
+        return;
+      }
+    }
+    // Named for the asked-again question in both cases: a small window cuts the tools it does not name.
+    this.openToolsOnce = card.tools;
+    try {
+      await this.regenerate();
+    } finally {
+      this.openToolsOnce = undefined;
+    }
+    // After the answer: said before it, the asked-again question would take the line away with the old answer.
+    if (said.length > 0) {
+      this.sayOutOfTurn(said.join('\n'));
     }
   }
 
@@ -5140,6 +5210,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // Nor the card of a run on a copy, which the host holds until the person applies or discards it.
     if (this.copyCard) {
       this.post({ type: 'copyCard', card: this.copyCard });
+    }
+    // Nor the tool-off notice, until a gesture or the next question.
+    if (this.toolOffCard) {
+      this.post({ type: 'toolOffCard', card: this.toolOffCard });
     }
     // The transcript carries no card and the webview just rebuilt from it: a card still waiting
     // would vanish while the host keeps waiting for its answer, with no timeout.

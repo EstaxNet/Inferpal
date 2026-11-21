@@ -2621,4 +2621,9 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>Fuera de tu trabajo</value></data>
   <data name="AssistRareTools" xml:space="preserve"><value>Herramientas poco usadas (mapa del proyecto, datos de la solución, propiedades de MSBuild, insertar en el cursor)</value></data>
   <data name="AssistBecauseMcp" xml:space="preserve"><value>Servidores MCP</value></data>
+  <data name="ToolOffNoticeText" xml:space="preserve"><value>Esta pregunta puede necesitar herramientas que su configuración desactiva — {0}: {1}. El agente responde sin ellas.</value></data>
+  <data name="ToolOffUseOnce" xml:space="preserve"><value>Usarlas para esta pregunta</value></data>
+  <data name="ToolOffTurnOn" xml:space="preserve"><value>Activarlas</value></data>
+  <data name="ToolOffNotNow" xml:space="preserve"><value>Ahora no</value></data>
+  <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Actívelas con {0}.</value></data>
 </root>

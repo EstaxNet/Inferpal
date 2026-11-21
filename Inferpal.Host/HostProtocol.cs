@@ -99,7 +99,12 @@ internal sealed record ChatSendParams(
     bool ModelOverridesRoles = false,
     List<string>? Notes = null,
     List<ImageDto>? Images = null,
-    bool InCopy = false);
+    bool InCopy = false,
+    List<string>? OpenTools = null);
+
+/// <summary><c>chat/toolOff</c>: the question just sent calls for tools the person turned off (pari 163) — the notice, the
+/// family's name and the tools its gestures open (<c>chat/send</c>'s <c>openTools</c>) or turn back on.</summary>
+internal sealed record ToolOffDto(string Text, string Family, List<string> Tools, string UseOnce, string TurnOn, string NotNow);
 
 /// <summary>An image the question carries, as <c>image/read</c> gave it: its name, its type, its bytes in base64.</summary>
 internal sealed record ImageDto(string Name, string MediaType, string Data);
