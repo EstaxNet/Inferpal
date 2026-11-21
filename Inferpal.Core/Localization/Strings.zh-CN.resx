@@ -2524,4 +2524,101 @@
   <data name="DatabaseElsewhere" xml:space="preserve"><value>此服务器不在本机：请确认它是开发数据库。规则可以永久拒绝某个服务器（deny query_database prod）。</value></data>
   <data name="DatabaseReadNote" xml:space="preserve"><value>仅读取：一条读取语句，在不保留任何内容的事务中执行，最多 30 秒。这些行会发送给您服务器上的模型。</value></data>
   <data name="DatabaseAlwaysTooltip" xml:space="preserve"><value>在编辑器关闭前，读取 {0} 不再弹出卡片。其他数据库仍会询问。</value></data>
+  <data name="AssistTitle" xml:space="preserve"><value>选择代理的工具</value></data>
+  <data name="AssistSubtitle" xml:space="preserve"><value>三个问题。点“应用”之前不会保存任何内容。</value></data>
+  <data name="AssistStepWork" xml:space="preserve"><value>你的工作</value></data>
+  <data name="AssistStepReach" xml:space="preserve"><value>访问范围</value></data>
+  <data name="AssistStepContext" xml:space="preserve"><value>上下文</value></data>
+  <data name="AssistStepReview" xml:space="preserve"><value>确认</value></data>
+  <data name="AssistWorkQuestion" xml:space="preserve"><value>你和代理一起做什么工作？</value></data>
+  <data name="AssistWorkHint" xml:space="preserve"><value>选择所有适用项。未选工作的工具会被关闭：需要它的问题会提示，并附带开关。</value></data>
+  <data name="AssistWorkCode" xml:space="preserve"><value>编写和修复代码</value></data>
+  <data name="AssistWorkCodeDesc" xml:space="preserve"><value>读取、搜索和编辑文件，运行构建</value></data>
+  <data name="AssistWorkTests" xml:space="preserve"><value>测试</value></data>
+  <data name="AssistWorkTestsDesc" xml:space="preserve"><value>运行、编写新测试、测量覆盖率</value></data>
+  <data name="AssistWorkWebPages" xml:space="preserve"><value>网页和前端</value></data>
+  <data name="AssistWorkWebPagesDesc" xml:space="preserve"><value>查看它提供的页面并点击操作</value></data>
+  <data name="AssistWorkDesktopApps" xml:space="preserve"><value>桌面应用</value></data>
+  <data name="AssistWorkDesktopAppsDesc" xml:space="preserve"><value>查看并操作它启动的应用窗口</value></data>
+  <data name="AssistWorkData" xml:space="preserve"><value>数据库和数据文件</value></data>
+  <data name="AssistWorkDataDesc" xml:space="preserve"><value>读取开发数据库，查询 CSV 和 Excel</value></data>
+  <data name="AssistWorkApis" xml:space="preserve"><value>API</value></data>
+  <data name="AssistWorkApisDesc" xml:space="preserve"><value>向你构建的 API 发送请求</value></data>
+  <data name="AssistWorkRefactoring" xml:space="preserve"><value>大规模重构</value></data>
+  <data name="AssistWorkRefactoringDesc" xml:space="preserve"><value>在整个解决方案中重命名，分析影响</value></data>
+  <data name="AssistWorkDocuments" xml:space="preserve"><value>笔记本、扫描件和文档</value></data>
+  <data name="AssistWorkDocumentsDesc" xml:space="preserve"><value>编辑 Jupyter 单元格，读取图片中的文字</value></data>
+  <data name="AssistWorkNote" xml:space="preserve"><value>读取文件、日志、PDF、崩溃报告和执行计划无需专门工具：无论你怎么选都会保留。</value></data>
+  <data name="AssistReachQuestion" xml:space="preserve"><value>代理可以访问什么？</value></data>
+  <data name="AssistReachHint" xml:space="preserve"><value>无论如何选择，每次修改、命令和外发请求仍会先征求你的同意。</value></data>
+  <data name="AssistCommands" xml:space="preserve"><value>终端命令</value></data>
+  <data name="AssistCommandsFree" xml:space="preserve"><value>构建、测试和命令</value></data>
+  <data name="AssistCommandsFreeDesc" xml:space="preserve"><value>它可以检查自己的工作</value></data>
+  <data name="AssistCommandsBuild" xml:space="preserve"><value>仅构建和测试</value></data>
+  <data name="AssistCommandsBuildDesc" xml:space="preserve"><value>不允许自由命令</value></data>
+  <data name="AssistCommandsNothing" xml:space="preserve"><value>不运行任何东西</value></data>
+  <data name="AssistCommandsNothingDesc" xml:space="preserve"><value>它只读取和编辑；由你构建</value></data>
+  <data name="AssistInternet" xml:space="preserve"><value>互联网</value></data>
+  <data name="AssistInternetSearch" xml:space="preserve"><value>搜索和阅读网页</value></data>
+  <data name="AssistInternetSearchDesc" xml:space="preserve"><value>网页搜索、页面、issue 或 pull request</value></data>
+  <data name="AssistInternetGiven" xml:space="preserve"><value>仅限我给它的页面</value></data>
+  <data name="AssistInternetGivenDesc" xml:space="preserve"><value>你粘贴的 @url，以及用 @Docs 添加的文档</value></data>
+  <data name="AssistInternetNever" xml:space="preserve"><value>从不</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>除模型服务器外，任何内容都不离开本机</value></data>
+  <data name="AssistDebugger" xml:space="preserve"><value>编辑器的调试器</value></data>
+  <data name="AssistDebuggerMay" xml:space="preserve"><value>允许调试</value></data>
+  <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>启动、设置断点、读取变量</value></data>
+  <data name="AssistDebuggerNever" xml:space="preserve"><value>暂不</value></data>
+  <data name="AssistDebuggerNeverDesc" xml:space="preserve"><value>关闭；需要它的问题会提示，并附带开关</value></data>
+  <data name="AssistContextQuestion" xml:space="preserve"><value>每个问题附带什么？</value></data>
+  <data name="AssistContextHint" xml:space="preserve"><value>你的模型一次最多读取 {0} 个 token。问题之前发送的内容越多，留给对话的空间就越少。</value></data>
+  <data name="AssistContextHintUnknown" xml:space="preserve"><value>问题之前发送的内容越多，留给对话的空间就越少。</value></data>
+  <data name="AssistContextLean" xml:space="preserve"><value>精简</value></data>
+  <data name="AssistContextLeanDesc" xml:space="preserve"><value>仅你的问题和打开的文件。代理会自行搜索所需内容。</value></data>
+  <data name="AssistContextBalanced" xml:space="preserve"><value>均衡</value></data>
+  <data name="AssistContextBalancedDesc" xml:space="preserve"><value>另附几段与你问题相关的代码。</value></data>
+  <data name="AssistContextFull" xml:space="preserve"><value>完整</value></data>
+  <data name="AssistContextFullDesc" xml:space="preserve"><value>所有已选工具以及不常用的工具。适合 32K 及以上。</value></data>
+  <data name="AssistMcpTitle" xml:space="preserve"><value>MCP 服务器</value></data>
+  <data name="AssistMcpServer" xml:space="preserve"><value>{0} 个工具 · 约 {1} 个 token</value></data>
+  <data name="AssistOn" xml:space="preserve"><value>开</value></data>
+  <data name="AssistOff" xml:space="preserve"><value>关</value></data>
+  <data name="AssistCarries" xml:space="preserve"><value>每个问题携带的内容</value></data>
+  <data name="AssistToolTokens" xml:space="preserve"><value>工具说明</value></data>
+  <data name="AssistTokensNow" xml:space="preserve"><value>{0} 个 token · 原为 {1}</value></data>
+  <data name="AssistCounts" xml:space="preserve"><value>{0} 个工具开启 · {1} 个关闭</value></data>
+  <data name="AssistShare" xml:space="preserve"><value>占 {1} token 窗口的 {0}%</value></data>
+  <data name="AssistMeasured" xml:space="preserve"><value>工具数据按实际发送的定义测量；窗口为最近读取的模型窗口。</value></data>
+  <data name="AssistReviewTitle" xml:space="preserve"><value>变更内容</value></data>
+  <data name="AssistReviewNone" xml:space="preserve"><value>没有变化：工具已与你的回答一致。</value></data>
+  <data name="AssistColBecomes" xml:space="preserve"><value>变为</value></data>
+  <data name="AssistColTools" xml:space="preserve"><value>工具</value></data>
+  <data name="AssistColBecause" xml:space="preserve"><value>因为你选择了</value></data>
+  <data name="AssistColSaves" xml:space="preserve"><value>节省</value></data>
+  <data name="AssistReviewNote" xml:space="preserve"><value>关闭 — 不再提供给模型。需要它的问题会在聊天中提示：只用于该问题，或重新开启。这些选择适用于本机的所有项目；审批不变。</value></data>
+  <data name="AssistCancel" xml:space="preserve"><value>取消</value></data>
+  <data name="AssistBack" xml:space="preserve"><value>返回</value></data>
+  <data name="AssistNext" xml:space="preserve"><value>下一步</value></data>
+  <data name="AssistSeeChanges" xml:space="preserve"><value>查看变更</value></data>
+  <data name="AssistApply" xml:space="preserve"><value>应用</value></data>
+  <data name="AssistSkip" xml:space="preserve"><value>跳过：逐个选择工具</value></data>
+  <data name="AssistOpen" xml:space="preserve"><value>帮我选择</value></data>
+  <data name="AssistEntry" xml:space="preserve"><value>不确定代理需要哪些工具？三个问题即可设置，并告诉你之后每个问题携带多少内容。</value></data>
+  <data name="AssistApplied" xml:space="preserve"><value>已应用：{0} 个工具开启，{1} 个关闭。</value></data>
+  <data name="AssistBecauseFreeCommands" xml:space="preserve"><value>命令：构建、测试和命令</value></data>
+  <data name="AssistBecauseNoFreeCommands" xml:space="preserve"><value>命令：不允许自由命令</value></data>
+  <data name="AssistBecauseBuildsAndTests" xml:space="preserve"><value>命令：构建和测试</value></data>
+  <data name="AssistBecauseNothingRuns" xml:space="preserve"><value>命令：不运行任何东西</value></data>
+  <data name="AssistBecauseSearchAndRead" xml:space="preserve"><value>互联网：搜索和阅读网页</value></data>
+  <data name="AssistBecauseNoSearch" xml:space="preserve"><value>互联网：不进行网页搜索</value></data>
+  <data name="AssistBecauseGivenPages" xml:space="preserve"><value>互联网：你给它的页面 — 你的 @url 需要它</value></data>
+  <data name="AssistBecauseNoInternet" xml:space="preserve"><value>互联网：从不</value></data>
+  <data name="AssistBecauseDebuggerMay" xml:space="preserve"><value>调试器：允许调试</value></data>
+  <data name="AssistBecauseNoDebugger" xml:space="preserve"><value>调试器：暂不</value></data>
+  <data name="AssistBecauseFull" xml:space="preserve"><value>每个问题附带全部内容</value></data>
+  <data name="AssistBecauseRare" xml:space="preserve"><value>很少需要</value></data>
+  <data name="AssistBecauseYourWork" xml:space="preserve"><value>你的工作</value></data>
+  <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>不在你的工作范围</value></data>
+  <data name="AssistRareTools" xml:space="preserve"><value>很少需要的工具（项目地图、解决方案信息、MSBuild 属性、在光标处插入）</value></data>
+  <data name="AssistBecauseMcp" xml:space="preserve"><value>MCP 服务器</value></data>
 </root>

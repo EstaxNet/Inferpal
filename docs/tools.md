@@ -349,6 +349,12 @@ disable it.
 
 ## Turning a tool off
 
+**Not sure which tools to keep?** On the Tools page, **Help me choose** asks three questions — what you work on with the
+agent, what it may reach (commands, the internet, the debugger), what goes with each question — and shows, before anything is
+saved, which tools it turns off, why, and what each question then carries against your model's window. The tools of a work
+you did not pick are turned off; reading files, logs and documents stays whatever you pick, and a tool it does not know (one of
+your own) is left as it is. Nothing is written until **Apply**.
+
 Every tool's definition goes with every request, before the first word of the answer: the built-in ones alone take more
 than half of an 8K window, so at such a window only the ones the agent uses most go (see Built-in tools).
 

@@ -2524,4 +2524,101 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="DatabaseElsewhere" xml:space="preserve"><value>このサーバーはこのマシン上にありません。開発用データベースであることを確認してください。ルールでサーバーを恒久的に拒否できます（deny query_database prod）。</value></data>
   <data name="DatabaseReadNote" xml:space="preserve"><value>読み取りのみ：読み取る文 1 つを、何も残さないトランザクションで、最大 30 秒。行はあなたのサーバー上のモデルに送られます。</value></data>
   <data name="DatabaseAlwaysTooltip" xml:space="preserve"><value>{0} の読み取りは、エディターを閉じるまでカードなしで行われます。別のデータベースは引き続き確認されます。</value></data>
+  <data name="AssistTitle" xml:space="preserve"><value>エージェントのツールを選ぶ</value></data>
+  <data name="AssistSubtitle" xml:space="preserve"><value>質問は3つ。適用するまで何も保存されません。</value></data>
+  <data name="AssistStepWork" xml:space="preserve"><value>作業内容</value></data>
+  <data name="AssistStepReach" xml:space="preserve"><value>アクセス範囲</value></data>
+  <data name="AssistStepContext" xml:space="preserve"><value>コンテキスト</value></data>
+  <data name="AssistStepReview" xml:space="preserve"><value>確認</value></data>
+  <data name="AssistWorkQuestion" xml:space="preserve"><value>エージェントと何に取り組みますか？</value></data>
+  <data name="AssistWorkHint" xml:space="preserve"><value>当てはまるものをすべて選んでください。選ばなかった作業のツールはオフになります。必要な質問ではその旨とスイッチが表示されます。</value></data>
+  <data name="AssistWorkCode" xml:space="preserve"><value>コードを書く・直す</value></data>
+  <data name="AssistWorkCodeDesc" xml:space="preserve"><value>ファイルの閲覧・検索・編集、ビルド</value></data>
+  <data name="AssistWorkTests" xml:space="preserve"><value>テスト</value></data>
+  <data name="AssistWorkTestsDesc" xml:space="preserve"><value>実行、新規作成、カバレッジ測定</value></data>
+  <data name="AssistWorkWebPages" xml:space="preserve"><value>Web ページとフロントエンド</value></data>
+  <data name="AssistWorkWebPagesDesc" xml:space="preserve"><value>配信したページを見て操作する</value></data>
+  <data name="AssistWorkDesktopApps" xml:space="preserve"><value>デスクトップアプリ</value></data>
+  <data name="AssistWorkDesktopAppsDesc" xml:space="preserve"><value>起動したアプリのウィンドウを見て操作する</value></data>
+  <data name="AssistWorkData" xml:space="preserve"><value>データベースとデータファイル</value></data>
+  <data name="AssistWorkDataDesc" xml:space="preserve"><value>開発用データベースの読み取り、CSV・Excel の照会</value></data>
+  <data name="AssistWorkApis" xml:space="preserve"><value>API</value></data>
+  <data name="AssistWorkApisDesc" xml:space="preserve"><value>開発中の API にリクエストを送る</value></data>
+  <data name="AssistWorkRefactoring" xml:space="preserve"><value>大規模なリファクタリング</value></data>
+  <data name="AssistWorkRefactoringDesc" xml:space="preserve"><value>ソリューション全体での名前変更、影響分析</value></data>
+  <data name="AssistWorkDocuments" xml:space="preserve"><value>ノートブック、スキャン、文書</value></data>
+  <data name="AssistWorkDocumentsDesc" xml:space="preserve"><value>Jupyter セルの編集、画像の文字読み取り</value></data>
+  <data name="AssistWorkNote" xml:space="preserve"><value>ファイル、ログ、PDF、クラッシュレポート、実行計画の読み取りに専用ツールは不要で、何を選んでも残ります。</value></data>
+  <data name="AssistReachQuestion" xml:space="preserve"><value>エージェントは何にアクセスできますか？</value></data>
+  <data name="AssistReachHint" xml:space="preserve"><value>何を選んでも、変更・コマンド・外部へのリクエストは引き続き先に確認されます。</value></data>
+  <data name="AssistCommands" xml:space="preserve"><value>ターミナルのコマンド</value></data>
+  <data name="AssistCommandsFree" xml:space="preserve"><value>ビルド、テスト、コマンド</value></data>
+  <data name="AssistCommandsFreeDesc" xml:space="preserve"><value>自分の作業を確認できます</value></data>
+  <data name="AssistCommandsBuild" xml:space="preserve"><value>ビルドとテストのみ</value></data>
+  <data name="AssistCommandsBuildDesc" xml:space="preserve"><value>自由なコマンドは不可</value></data>
+  <data name="AssistCommandsNothing" xml:space="preserve"><value>何も実行しない</value></data>
+  <data name="AssistCommandsNothingDesc" xml:space="preserve"><value>閲覧と編集のみ。ビルドはあなたが行います</value></data>
+  <data name="AssistInternet" xml:space="preserve"><value>インターネット</value></data>
+  <data name="AssistInternetSearch" xml:space="preserve"><value>検索とページの閲覧</value></data>
+  <data name="AssistInternetSearchDesc" xml:space="preserve"><value>Web 検索、ページ、Issue、プルリクエスト</value></data>
+  <data name="AssistInternetGiven" xml:space="preserve"><value>渡したページのみ</value></data>
+  <data name="AssistInternetGivenDesc" xml:space="preserve"><value>貼り付けた @url、@Docs で追加したドキュメント</value></data>
+  <data name="AssistInternetNever" xml:space="preserve"><value>使わない</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>モデルのサーバー以外へは何も送信しません</value></data>
+  <data name="AssistDebugger" xml:space="preserve"><value>エディターのデバッガー</value></data>
+  <data name="AssistDebuggerMay" xml:space="preserve"><value>デバッグしてよい</value></data>
+  <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>起動、ブレークポイント設定、変数の確認</value></data>
+  <data name="AssistDebuggerNever" xml:space="preserve"><value>今は使わない</value></data>
+  <data name="AssistDebuggerNeverDesc" xml:space="preserve"><value>オフ。必要な質問ではその旨とスイッチが表示されます</value></data>
+  <data name="AssistContextQuestion" xml:space="preserve"><value>各質問に何を付けて送りますか？</value></data>
+  <data name="AssistContextHint" xml:space="preserve"><value>モデルが一度に読めるのは最大 {0} トークンです。質問の前に送る分だけ、会話に使える量が減ります。</value></data>
+  <data name="AssistContextHintUnknown" xml:space="preserve"><value>質問の前に送る分だけ、会話に使える量が減ります。</value></data>
+  <data name="AssistContextLean" xml:space="preserve"><value>最小</value></data>
+  <data name="AssistContextLeanDesc" xml:space="preserve"><value>質問と開いているファイルのみ。必要なものはエージェントが検索します。</value></data>
+  <data name="AssistContextBalanced" xml:space="preserve"><value>標準</value></data>
+  <data name="AssistContextBalancedDesc" xml:space="preserve"><value>さらに、質問に近いコード片をいくつか付けます。</value></data>
+  <data name="AssistContextFull" xml:space="preserve"><value>すべて</value></data>
+  <data name="AssistContextFullDesc" xml:space="preserve"><value>選んだツールすべてと、まれに使うツール。32K 以上向け。</value></data>
+  <data name="AssistMcpTitle" xml:space="preserve"><value>MCP サーバー</value></data>
+  <data name="AssistMcpServer" xml:space="preserve"><value>ツール {0} 個 · 約 {1} トークン</value></data>
+  <data name="AssistOn" xml:space="preserve"><value>オン</value></data>
+  <data name="AssistOff" xml:space="preserve"><value>オフ</value></data>
+  <data name="AssistCarries" xml:space="preserve"><value>各質問が運ぶもの</value></data>
+  <data name="AssistToolTokens" xml:space="preserve"><value>ツールの説明</value></data>
+  <data name="AssistTokensNow" xml:space="preserve"><value>{0} トークン · 変更前 {1}</value></data>
+  <data name="AssistCounts" xml:space="preserve"><value>ツール {0} 個がオン · {1} 個がオフ</value></data>
+  <data name="AssistShare" xml:space="preserve"><value>{1} トークンのウィンドウの {0}%</value></data>
+  <data name="AssistMeasured" xml:space="preserve"><value>ツールの数値は送信される定義で計測しています。ウィンドウは最後に読み取ったモデルのものです。</value></data>
+  <data name="AssistReviewTitle" xml:space="preserve"><value>変更内容</value></data>
+  <data name="AssistReviewNone" xml:space="preserve"><value>変更はありません。ツールはすでに回答どおりです。</value></data>
+  <data name="AssistColBecomes" xml:space="preserve"><value>変更後</value></data>
+  <data name="AssistColTools" xml:space="preserve"><value>ツール</value></data>
+  <data name="AssistColBecause" xml:space="preserve"><value>回答</value></data>
+  <data name="AssistColSaves" xml:space="preserve"><value>削減</value></data>
+  <data name="AssistReviewNote" xml:space="preserve"><value>オフ — モデルには提供しません。必要な質問ではチャットで知らせ、その質問だけ使うか再びオンにできます。この選択はこのマシンのすべてのプロジェクトに適用され、承認は変わりません。</value></data>
+  <data name="AssistCancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="AssistBack" xml:space="preserve"><value>戻る</value></data>
+  <data name="AssistNext" xml:space="preserve"><value>次へ</value></data>
+  <data name="AssistSeeChanges" xml:space="preserve"><value>変更を確認</value></data>
+  <data name="AssistApply" xml:space="preserve"><value>適用</value></data>
+  <data name="AssistSkip" xml:space="preserve"><value>スキップしてツールを個別に選ぶ</value></data>
+  <data name="AssistOpen" xml:space="preserve"><value>選ぶのを手伝う</value></data>
+  <data name="AssistEntry" xml:space="preserve"><value>エージェントに必要なツールが分からない？3 つの質問で設定し、各質問が運ぶ量を示します。</value></data>
+  <data name="AssistApplied" xml:space="preserve"><value>適用しました: ツール {0} 個がオン、{1} 個がオフ。</value></data>
+  <data name="AssistBecauseFreeCommands" xml:space="preserve"><value>コマンド: ビルド、テスト、コマンド</value></data>
+  <data name="AssistBecauseNoFreeCommands" xml:space="preserve"><value>コマンド: 自由なコマンドは不可</value></data>
+  <data name="AssistBecauseBuildsAndTests" xml:space="preserve"><value>コマンド: ビルドとテスト</value></data>
+  <data name="AssistBecauseNothingRuns" xml:space="preserve"><value>コマンド: 何も実行しない</value></data>
+  <data name="AssistBecauseSearchAndRead" xml:space="preserve"><value>インターネット: 検索とページの閲覧</value></data>
+  <data name="AssistBecauseNoSearch" xml:space="preserve"><value>インターネット: Web 検索なし</value></data>
+  <data name="AssistBecauseGivenPages" xml:space="preserve"><value>インターネット: 渡したページ — @url に必要です</value></data>
+  <data name="AssistBecauseNoInternet" xml:space="preserve"><value>インターネット: 使わない</value></data>
+  <data name="AssistBecauseDebuggerMay" xml:space="preserve"><value>デバッガー: デバッグしてよい</value></data>
+  <data name="AssistBecauseNoDebugger" xml:space="preserve"><value>デバッガー: 今は使わない</value></data>
+  <data name="AssistBecauseFull" xml:space="preserve"><value>各質問にすべて付ける</value></data>
+  <data name="AssistBecauseRare" xml:space="preserve"><value>まれにしか使わない</value></data>
+  <data name="AssistBecauseYourWork" xml:space="preserve"><value>作業内容</value></data>
+  <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>作業内容に含まれない</value></data>
+  <data name="AssistRareTools" xml:space="preserve"><value>まれに使うツール（プロジェクトマップ、ソリューション情報、MSBuild プロパティ、カーソル位置への挿入）</value></data>
+  <data name="AssistBecauseMcp" xml:space="preserve"><value>MCP サーバー</value></data>
 </root>

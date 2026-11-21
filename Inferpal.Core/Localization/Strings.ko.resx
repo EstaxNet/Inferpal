@@ -2524,4 +2524,101 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="DatabaseElsewhere" xml:space="preserve"><value>이 서버는 이 컴퓨터에 없습니다. 개발용 데이터베이스인지 확인하세요. 규칙으로 서버를 영구히 거부할 수 있습니다(deny query_database prod).</value></data>
   <data name="DatabaseReadNote" xml:space="preserve"><value>읽기만 합니다: 읽는 문 하나를, 아무것도 남기지 않는 트랜잭션에서, 최대 30초. 행은 사용자 서버의 모델로 전송됩니다.</value></data>
   <data name="DatabaseAlwaysTooltip" xml:space="preserve"><value>{0} 읽기는 편집기를 닫을 때까지 카드 없이 진행됩니다. 다른 데이터베이스는 계속 확인합니다.</value></data>
+  <data name="AssistTitle" xml:space="preserve"><value>에이전트 도구 선택</value></data>
+  <data name="AssistSubtitle" xml:space="preserve"><value>질문 세 가지. 적용하기 전에는 아무것도 저장되지 않습니다.</value></data>
+  <data name="AssistStepWork" xml:space="preserve"><value>작업</value></data>
+  <data name="AssistStepReach" xml:space="preserve"><value>접근 범위</value></data>
+  <data name="AssistStepContext" xml:space="preserve"><value>컨텍스트</value></data>
+  <data name="AssistStepReview" xml:space="preserve"><value>검토</value></data>
+  <data name="AssistWorkQuestion" xml:space="preserve"><value>에이전트와 무엇을 작업하나요?</value></data>
+  <data name="AssistWorkHint" xml:space="preserve"><value>해당하는 항목을 모두 고르세요. 고르지 않은 작업의 도구는 꺼집니다. 도구가 필요한 질문에서는 스위치와 함께 알려 줍니다.</value></data>
+  <data name="AssistWorkCode" xml:space="preserve"><value>코드 작성 및 수정</value></data>
+  <data name="AssistWorkCodeDesc" xml:space="preserve"><value>파일 읽기·검색·편집, 빌드 실행</value></data>
+  <data name="AssistWorkTests" xml:space="preserve"><value>테스트</value></data>
+  <data name="AssistWorkTestsDesc" xml:space="preserve"><value>실행, 새로 작성, 커버리지 측정</value></data>
+  <data name="AssistWorkWebPages" xml:space="preserve"><value>웹 페이지와 프런트엔드</value></data>
+  <data name="AssistWorkWebPagesDesc" xml:space="preserve"><value>제공하는 페이지를 보고 클릭해 보기</value></data>
+  <data name="AssistWorkDesktopApps" xml:space="preserve"><value>데스크톱 앱</value></data>
+  <data name="AssistWorkDesktopAppsDesc" xml:space="preserve"><value>실행한 앱의 창을 보고 조작하기</value></data>
+  <data name="AssistWorkData" xml:space="preserve"><value>데이터베이스와 데이터 파일</value></data>
+  <data name="AssistWorkDataDesc" xml:space="preserve"><value>개발 데이터베이스 읽기, CSV·Excel 조회</value></data>
+  <data name="AssistWorkApis" xml:space="preserve"><value>API</value></data>
+  <data name="AssistWorkApisDesc" xml:space="preserve"><value>만들고 있는 API에 요청 보내기</value></data>
+  <data name="AssistWorkRefactoring" xml:space="preserve"><value>대규모 리팩터링</value></data>
+  <data name="AssistWorkRefactoringDesc" xml:space="preserve"><value>솔루션 전체 이름 변경, 영향 분석</value></data>
+  <data name="AssistWorkDocuments" xml:space="preserve"><value>노트북, 스캔, 문서</value></data>
+  <data name="AssistWorkDocumentsDesc" xml:space="preserve"><value>Jupyter 셀 편집, 이미지 속 텍스트 읽기</value></data>
+  <data name="AssistWorkNote" xml:space="preserve"><value>파일, 로그, PDF, 크래시 보고서, 실행 계획 읽기에는 별도 도구가 필요 없으며 무엇을 고르든 유지됩니다.</value></data>
+  <data name="AssistReachQuestion" xml:space="preserve"><value>에이전트가 무엇에 접근할 수 있나요?</value></data>
+  <data name="AssistReachHint" xml:space="preserve"><value>무엇을 고르든 변경, 명령, 외부 요청은 여전히 먼저 묻습니다.</value></data>
+  <data name="AssistCommands" xml:space="preserve"><value>터미널 명령</value></data>
+  <data name="AssistCommandsFree" xml:space="preserve"><value>빌드, 테스트, 명령</value></data>
+  <data name="AssistCommandsFreeDesc" xml:space="preserve"><value>자기 작업을 확인할 수 있습니다</value></data>
+  <data name="AssistCommandsBuild" xml:space="preserve"><value>빌드와 테스트만</value></data>
+  <data name="AssistCommandsBuildDesc" xml:space="preserve"><value>자유 명령 없음</value></data>
+  <data name="AssistCommandsNothing" xml:space="preserve"><value>아무것도 실행하지 않음</value></data>
+  <data name="AssistCommandsNothingDesc" xml:space="preserve"><value>읽고 편집만 하며 빌드는 직접 합니다</value></data>
+  <data name="AssistInternet" xml:space="preserve"><value>인터넷</value></data>
+  <data name="AssistInternetSearch" xml:space="preserve"><value>검색과 페이지 읽기</value></data>
+  <data name="AssistInternetSearchDesc" xml:space="preserve"><value>웹 검색, 페이지, 이슈, 풀 리퀘스트</value></data>
+  <data name="AssistInternetGiven" xml:space="preserve"><value>내가 준 페이지만</value></data>
+  <data name="AssistInternetGivenDesc" xml:space="preserve"><value>붙여 넣은 @url, @Docs로 추가한 문서</value></data>
+  <data name="AssistInternetNever" xml:space="preserve"><value>사용 안 함</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>모델 서버 외에는 아무것도 이 컴퓨터 밖으로 나가지 않습니다</value></data>
+  <data name="AssistDebugger" xml:space="preserve"><value>편집기 디버거</value></data>
+  <data name="AssistDebuggerMay" xml:space="preserve"><value>디버그 허용</value></data>
+  <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>시작, 중단점 설정, 변수 읽기</value></data>
+  <data name="AssistDebuggerNever" xml:space="preserve"><value>지금은 안 함</value></data>
+  <data name="AssistDebuggerNeverDesc" xml:space="preserve"><value>꺼짐. 필요한 질문에서는 스위치와 함께 알려 줍니다</value></data>
+  <data name="AssistContextQuestion" xml:space="preserve"><value>질문마다 무엇을 함께 보내나요?</value></data>
+  <data name="AssistContextHint" xml:space="preserve"><value>모델은 한 번에 최대 {0}토큰을 읽습니다. 질문 앞에 보내는 만큼 대화에 쓸 공간이 줄어듭니다.</value></data>
+  <data name="AssistContextHintUnknown" xml:space="preserve"><value>질문 앞에 보내는 만큼 대화에 쓸 공간이 줄어듭니다.</value></data>
+  <data name="AssistContextLean" xml:space="preserve"><value>가볍게</value></data>
+  <data name="AssistContextLeanDesc" xml:space="preserve"><value>질문과 열린 파일만 보냅니다. 필요한 것은 에이전트가 찾습니다.</value></data>
+  <data name="AssistContextBalanced" xml:space="preserve"><value>균형</value></data>
+  <data name="AssistContextBalancedDesc" xml:space="preserve"><value>질문과 가까운 코드 조각 몇 개를 더합니다.</value></data>
+  <data name="AssistContextFull" xml:space="preserve"><value>전체</value></data>
+  <data name="AssistContextFullDesc" xml:space="preserve"><value>고른 도구 전부와 드물게 쓰는 도구까지. 32K 이상.</value></data>
+  <data name="AssistMcpTitle" xml:space="preserve"><value>MCP 서버</value></data>
+  <data name="AssistMcpServer" xml:space="preserve"><value>도구 {0}개 · 약 {1}토큰</value></data>
+  <data name="AssistOn" xml:space="preserve"><value>켜짐</value></data>
+  <data name="AssistOff" xml:space="preserve"><value>꺼짐</value></data>
+  <data name="AssistCarries" xml:space="preserve"><value>질문마다 함께 가는 것</value></data>
+  <data name="AssistToolTokens" xml:space="preserve"><value>도구 설명</value></data>
+  <data name="AssistTokensNow" xml:space="preserve"><value>{0}토큰 · 이전 {1}</value></data>
+  <data name="AssistCounts" xml:space="preserve"><value>도구 {0}개 켜짐 · {1}개 꺼짐</value></data>
+  <data name="AssistShare" xml:space="preserve"><value>{1}토큰 창의 {0}%</value></data>
+  <data name="AssistMeasured" xml:space="preserve"><value>도구 수치는 보내는 정의로 측정한 값이며, 창은 마지막으로 읽은 모델의 값입니다.</value></data>
+  <data name="AssistReviewTitle" xml:space="preserve"><value>바뀌는 것</value></data>
+  <data name="AssistReviewNone" xml:space="preserve"><value>바뀌는 것이 없습니다. 도구가 이미 답변과 맞습니다.</value></data>
+  <data name="AssistColBecomes" xml:space="preserve"><value>변경</value></data>
+  <data name="AssistColTools" xml:space="preserve"><value>도구</value></data>
+  <data name="AssistColBecause" xml:space="preserve"><value>답변</value></data>
+  <data name="AssistColSaves" xml:space="preserve"><value>절약</value></data>
+  <data name="AssistReviewNote" xml:space="preserve"><value>꺼짐 — 모델에 제공하지 않습니다. 필요한 질문에서는 채팅에서 알려 주며, 그 질문에만 쓰거나 다시 켤 수 있습니다. 이 선택은 이 컴퓨터의 모든 프로젝트에 적용되며 승인은 바뀌지 않습니다.</value></data>
+  <data name="AssistCancel" xml:space="preserve"><value>취소</value></data>
+  <data name="AssistBack" xml:space="preserve"><value>이전</value></data>
+  <data name="AssistNext" xml:space="preserve"><value>다음</value></data>
+  <data name="AssistSeeChanges" xml:space="preserve"><value>변경 사항 보기</value></data>
+  <data name="AssistApply" xml:space="preserve"><value>적용</value></data>
+  <data name="AssistSkip" xml:space="preserve"><value>건너뛰고 도구별로 선택</value></data>
+  <data name="AssistOpen" xml:space="preserve"><value>선택 도와주기</value></data>
+  <data name="AssistEntry" xml:space="preserve"><value>에이전트에 필요한 도구를 모르겠다면? 질문 세 개로 설정하고, 이후 질문마다 함께 가는 양을 알려 줍니다.</value></data>
+  <data name="AssistApplied" xml:space="preserve"><value>적용됨: 도구 {0}개 켜짐, {1}개 꺼짐.</value></data>
+  <data name="AssistBecauseFreeCommands" xml:space="preserve"><value>명령: 빌드, 테스트, 명령</value></data>
+  <data name="AssistBecauseNoFreeCommands" xml:space="preserve"><value>명령: 자유 명령 없음</value></data>
+  <data name="AssistBecauseBuildsAndTests" xml:space="preserve"><value>명령: 빌드와 테스트</value></data>
+  <data name="AssistBecauseNothingRuns" xml:space="preserve"><value>명령: 아무것도 실행하지 않음</value></data>
+  <data name="AssistBecauseSearchAndRead" xml:space="preserve"><value>인터넷: 검색과 페이지 읽기</value></data>
+  <data name="AssistBecauseNoSearch" xml:space="preserve"><value>인터넷: 웹 검색 없음</value></data>
+  <data name="AssistBecauseGivenPages" xml:space="preserve"><value>인터넷: 내가 준 페이지 — @url에 필요합니다</value></data>
+  <data name="AssistBecauseNoInternet" xml:space="preserve"><value>인터넷: 사용 안 함</value></data>
+  <data name="AssistBecauseDebuggerMay" xml:space="preserve"><value>디버거: 디버그 허용</value></data>
+  <data name="AssistBecauseNoDebugger" xml:space="preserve"><value>디버거: 지금은 안 함</value></data>
+  <data name="AssistBecauseFull" xml:space="preserve"><value>질문마다 전부 보냄</value></data>
+  <data name="AssistBecauseRare" xml:space="preserve"><value>드물게 필요</value></data>
+  <data name="AssistBecauseYourWork" xml:space="preserve"><value>작업</value></data>
+  <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>작업에 포함되지 않음</value></data>
+  <data name="AssistRareTools" xml:space="preserve"><value>드물게 쓰는 도구(프로젝트 맵, 솔루션 정보, MSBuild 속성, 커서 위치에 삽입)</value></data>
+  <data name="AssistBecauseMcp" xml:space="preserve"><value>MCP 서버</value></data>
 </root>

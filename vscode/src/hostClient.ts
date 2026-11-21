@@ -26,6 +26,8 @@ import {
   SettingsDocs,
   SettingsKept,
   SettingsTools,
+  ToolsAssist,
+  ToolsAssistParams,
   SettingsExclusions,
   DebugBreakpointParams,
   DebugCaptureTestParams,
@@ -891,6 +893,16 @@ export class HostClient {
   /** Turns one tool off or back on, as `/tools off|on <tool>` does. */
   settingsToolSet(key: string, off: boolean): Promise<SettingsTools> {
     return this.connection().sendRequest<SettingsTools>('settings/toolSet', { key, off });
+  }
+
+  /** The tools assistant for these answers, or for what the settings describe now (none given); writes nothing. */
+  settingsToolsAssist(answers?: ToolsAssistParams): Promise<ToolsAssist> {
+    return this.connection().sendRequest<ToolsAssist>('settings/toolsAssist', answers ?? {});
+  }
+
+  /** Writes what the assistant's review showed, then applies it as a settings save does. */
+  settingsToolsAssistApply(answers: ToolsAssistParams): Promise<ToolsAssist> {
+    return this.connection().sendRequest<ToolsAssist>('settings/toolsAssistApply', answers);
   }
 
   /** How full the conversation's window is, and with what. */

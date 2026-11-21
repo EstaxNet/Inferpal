@@ -2524,4 +2524,101 @@
   <data name="DatabaseElsewhere" xml:space="preserve"><value>Этот сервер находится не на этом компьютере: убедитесь, что это база для разработки. Правило может навсегда отклонить сервер (deny query_database prod).</value></data>
   <data name="DatabaseReadNote" xml:space="preserve"><value>Только чтение: одна читающая инструкция в транзакции, которая ничего не сохраняет, не более 30 с. Строки отправляются модели на вашем сервере.</value></data>
   <data name="DatabaseAlwaysTooltip" xml:space="preserve"><value>Чтение {0} идёт без карточки до закрытия редактора. Другая база данных по-прежнему спрашивает.</value></data>
+  <data name="AssistTitle" xml:space="preserve"><value>Выбор инструментов агента</value></data>
+  <data name="AssistSubtitle" xml:space="preserve"><value>Три вопроса. Ничего не сохраняется, пока вы не примените.</value></data>
+  <data name="AssistStepWork" xml:space="preserve"><value>Ваша работа</value></data>
+  <data name="AssistStepReach" xml:space="preserve"><value>Доступ</value></data>
+  <data name="AssistStepContext" xml:space="preserve"><value>Контекст</value></data>
+  <data name="AssistStepReview" xml:space="preserve"><value>Проверка</value></data>
+  <data name="AssistWorkQuestion" xml:space="preserve"><value>Над чем вы работаете с агентом?</value></data>
+  <data name="AssistWorkHint" xml:space="preserve"><value>Отметьте всё подходящее. Инструменты того, что вы не выбрали, отключаются: вопрос, которому нужен инструмент, скажет об этом — с переключателем.</value></data>
+  <data name="AssistWorkCode" xml:space="preserve"><value>Писать и исправлять код</value></data>
+  <data name="AssistWorkCodeDesc" xml:space="preserve"><value>Читать, искать и править файлы, запускать сборку</value></data>
+  <data name="AssistWorkTests" xml:space="preserve"><value>Тесты</value></data>
+  <data name="AssistWorkTestsDesc" xml:space="preserve"><value>Запускать, писать новые, измерять покрытие</value></data>
+  <data name="AssistWorkWebPages" xml:space="preserve"><value>Веб-страницы и фронтенд</value></data>
+  <data name="AssistWorkWebPagesDesc" xml:space="preserve"><value>Смотреть отдаваемую страницу, кликать по ней</value></data>
+  <data name="AssistWorkDesktopApps" xml:space="preserve"><value>Настольные приложения</value></data>
+  <data name="AssistWorkDesktopAppsDesc" xml:space="preserve"><value>Смотреть и управлять окном запущенного приложения</value></data>
+  <data name="AssistWorkData" xml:space="preserve"><value>Базы и файлы данных</value></data>
+  <data name="AssistWorkDataDesc" xml:space="preserve"><value>Читать базу разработки, запрашивать CSV и Excel</value></data>
+  <data name="AssistWorkApis" xml:space="preserve"><value>API</value></data>
+  <data name="AssistWorkApisDesc" xml:space="preserve"><value>Отправлять запросы к разрабатываемому API</value></data>
+  <data name="AssistWorkRefactoring" xml:space="preserve"><value>Крупные рефакторинги</value></data>
+  <data name="AssistWorkRefactoringDesc" xml:space="preserve"><value>Переименование по всему решению, анализ влияния</value></data>
+  <data name="AssistWorkDocuments" xml:space="preserve"><value>Ноутбуки, сканы и документы</value></data>
+  <data name="AssistWorkDocumentsDesc" xml:space="preserve"><value>Править ячейки Jupyter, читать текст с изображений</value></data>
+  <data name="AssistWorkNote" xml:space="preserve"><value>Чтению файлов, журналов, PDF, отчётов о сбоях и планов не нужен отдельный инструмент: оно остаётся при любом выборе.</value></data>
+  <data name="AssistReachQuestion" xml:space="preserve"><value>К чему агенту можно обращаться?</value></data>
+  <data name="AssistReachHint" xml:space="preserve"><value>Что бы вы ни выбрали, каждое изменение, команда и исходящий запрос по-прежнему сначала спрашивают вас.</value></data>
+  <data name="AssistCommands" xml:space="preserve"><value>Команды в терминале</value></data>
+  <data name="AssistCommandsFree" xml:space="preserve"><value>Сборки, тесты и команды</value></data>
+  <data name="AssistCommandsFreeDesc" xml:space="preserve"><value>Он может проверять свою работу</value></data>
+  <data name="AssistCommandsBuild" xml:space="preserve"><value>Только сборки и тесты</value></data>
+  <data name="AssistCommandsBuildDesc" xml:space="preserve"><value>Без произвольных команд</value></data>
+  <data name="AssistCommandsNothing" xml:space="preserve"><value>Ничего не запускается</value></data>
+  <data name="AssistCommandsNothingDesc" xml:space="preserve"><value>Он читает и правит; собираете вы</value></data>
+  <data name="AssistInternet" xml:space="preserve"><value>Интернет</value></data>
+  <data name="AssistInternetSearch" xml:space="preserve"><value>Искать и читать страницы</value></data>
+  <data name="AssistInternetSearchDesc" xml:space="preserve"><value>Веб-поиск, страница, задача или pull request</value></data>
+  <data name="AssistInternetGiven" xml:space="preserve"><value>Только страницы, которые я даю</value></data>
+  <data name="AssistInternetGivenDesc" xml:space="preserve"><value>Вставленный @url, документация, добавленная через @Docs</value></data>
+  <data name="AssistInternetNever" xml:space="preserve"><value>Никогда</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>С этой машины ничего не уходит, кроме сервера модели</value></data>
+  <data name="AssistDebugger" xml:space="preserve"><value>Отладчик редактора</value></data>
+  <data name="AssistDebuggerMay" xml:space="preserve"><value>Ему можно отлаживать</value></data>
+  <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>Запуск, точки останова, чтение переменных</value></data>
+  <data name="AssistDebuggerNever" xml:space="preserve"><value>Не сейчас</value></data>
+  <data name="AssistDebuggerNeverDesc" xml:space="preserve"><value>Отключён; вопрос, которому он нужен, скажет об этом — с переключателем</value></data>
+  <data name="AssistContextQuestion" xml:space="preserve"><value>Что отправляется с каждым вопросом?</value></data>
+  <data name="AssistContextHint" xml:space="preserve"><value>Ваша модель читает не больше {0} токенов за раз. Всё, что отправляется до вопроса, оставляет меньше места разговору.</value></data>
+  <data name="AssistContextHintUnknown" xml:space="preserve"><value>Всё, что отправляется до вопроса, оставляет меньше места разговору.</value></data>
+  <data name="AssistContextLean" xml:space="preserve"><value>Минимум</value></data>
+  <data name="AssistContextLeanDesc" xml:space="preserve"><value>Ваш вопрос и открытый файл. Нужное агент найдёт сам.</value></data>
+  <data name="AssistContextBalanced" xml:space="preserve"><value>Сбалансированно</value></data>
+  <data name="AssistContextBalancedDesc" xml:space="preserve"><value>Плюс несколько фрагментов кода, близких к вопросу.</value></data>
+  <data name="AssistContextFull" xml:space="preserve"><value>Полностью</value></data>
+  <data name="AssistContextFullDesc" xml:space="preserve"><value>Все выбранные инструменты и редкие. От 32K.</value></data>
+  <data name="AssistMcpTitle" xml:space="preserve"><value>MCP-серверы</value></data>
+  <data name="AssistMcpServer" xml:space="preserve"><value>{0} {0:инструмент|инструмента|инструментов} · около {1} токенов</value></data>
+  <data name="AssistOn" xml:space="preserve"><value>Вкл.</value></data>
+  <data name="AssistOff" xml:space="preserve"><value>Выкл.</value></data>
+  <data name="AssistCarries" xml:space="preserve"><value>Что несёт каждый вопрос</value></data>
+  <data name="AssistToolTokens" xml:space="preserve"><value>Описания инструментов</value></data>
+  <data name="AssistTokensNow" xml:space="preserve"><value>{0} токенов · было {1}</value></data>
+  <data name="AssistCounts" xml:space="preserve"><value>{0} {0:инструмент включён|инструмента включены|инструментов включено} · {1} {1:выключен|выключены|выключено}</value></data>
+  <data name="AssistShare" xml:space="preserve"><value>{0}% окна в {1} токенов</value></data>
+  <data name="AssistMeasured" xml:space="preserve"><value>Цифры инструментов измерены по отправляемым определениям; окно — последнее прочитанное у модели.</value></data>
+  <data name="AssistReviewTitle" xml:space="preserve"><value>Что меняется</value></data>
+  <data name="AssistReviewNone" xml:space="preserve"><value>Ничего не меняется: инструменты уже соответствуют ответам.</value></data>
+  <data name="AssistColBecomes" xml:space="preserve"><value>Станет</value></data>
+  <data name="AssistColTools" xml:space="preserve"><value>Инструменты</value></data>
+  <data name="AssistColBecause" xml:space="preserve"><value>Потому что вы ответили</value></data>
+  <data name="AssistColSaves" xml:space="preserve"><value>Экономит</value></data>
+  <data name="AssistReviewNote" xml:space="preserve"><value>Выкл. — никогда не предлагается модели. Вопрос, которому он нужен, скажет об этом в чате: использовать для этого вопроса или включить снова. Этот выбор действует на этой машине для всех проектов; подтверждения не меняются.</value></data>
+  <data name="AssistCancel" xml:space="preserve"><value>Отмена</value></data>
+  <data name="AssistBack" xml:space="preserve"><value>Назад</value></data>
+  <data name="AssistNext" xml:space="preserve"><value>Далее</value></data>
+  <data name="AssistSeeChanges" xml:space="preserve"><value>Показать изменения</value></data>
+  <data name="AssistApply" xml:space="preserve"><value>Применить</value></data>
+  <data name="AssistSkip" xml:space="preserve"><value>Пропустить: выбрать по одному</value></data>
+  <data name="AssistOpen" xml:space="preserve"><value>Помочь выбрать</value></data>
+  <data name="AssistEntry" xml:space="preserve"><value>Не уверены, какие инструменты нужны агенту? Три вопроса настроят их и покажут, что затем несёт каждый вопрос.</value></data>
+  <data name="AssistApplied" xml:space="preserve"><value>Применено: {0} {0:инструмент включён|инструмента включены|инструментов включено}, {1} {1:выключен|выключены|выключено}.</value></data>
+  <data name="AssistBecauseFreeCommands" xml:space="preserve"><value>Команды: сборки, тесты и команды</value></data>
+  <data name="AssistBecauseNoFreeCommands" xml:space="preserve"><value>Команды: без произвольных команд</value></data>
+  <data name="AssistBecauseBuildsAndTests" xml:space="preserve"><value>Команды: сборки и тесты</value></data>
+  <data name="AssistBecauseNothingRuns" xml:space="preserve"><value>Команды: ничего не запускается</value></data>
+  <data name="AssistBecauseSearchAndRead" xml:space="preserve"><value>Интернет: искать и читать страницы</value></data>
+  <data name="AssistBecauseNoSearch" xml:space="preserve"><value>Интернет: без веб-поиска</value></data>
+  <data name="AssistBecauseGivenPages" xml:space="preserve"><value>Интернет: страницы, которые вы даёте, — он нужен вашему @url</value></data>
+  <data name="AssistBecauseNoInternet" xml:space="preserve"><value>Интернет: никогда</value></data>
+  <data name="AssistBecauseDebuggerMay" xml:space="preserve"><value>Отладчик: можно отлаживать</value></data>
+  <data name="AssistBecauseNoDebugger" xml:space="preserve"><value>Отладчик: не сейчас</value></data>
+  <data name="AssistBecauseFull" xml:space="preserve"><value>С каждым вопросом отправляется всё</value></data>
+  <data name="AssistBecauseRare" xml:space="preserve"><value>Нужно редко</value></data>
+  <data name="AssistBecauseYourWork" xml:space="preserve"><value>Ваша работа</value></data>
+  <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>Не ваша работа</value></data>
+  <data name="AssistRareTools" xml:space="preserve"><value>Редко нужные инструменты (карта проекта, сведения о решении, свойства MSBuild, вставка у курсора)</value></data>
+  <data name="AssistBecauseMcp" xml:space="preserve"><value>MCP-серверы</value></data>
 </root>

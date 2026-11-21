@@ -129,6 +129,11 @@ internal sealed partial class HostServer
                                         : System.Globalization.CultureInfo.CurrentUICulture));
         strings[nameof(Strings.SettingsApprovalRulesFrom)] = Strings.ByName(nameof(Strings.SettingsApprovalRulesFrom));
 
+        // ── The tools assistant (pari 163): its labels; the sentences with numbers come written in its model ────
+        foreach (var p in typeof(Strings).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+            if (p.Name.StartsWith("Assist", StringComparison.Ordinal) && p.PropertyType == typeof(string))
+                strings[p.Name] = Strings.ByName(p.Name);
+
         // ── Structured editors of the list settings (cards, table, lists) ────
         // Templates ({0}) are served raw: the panel fills them.
         foreach (var name in EditorStrings)

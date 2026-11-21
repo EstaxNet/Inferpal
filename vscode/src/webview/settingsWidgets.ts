@@ -6,7 +6,7 @@ import { fill } from './l10n';
 import { icon, iconButton, setIcon } from './icons';
 import type {
   ApprovalRuleTable, ContextUsage, IndexCard, LoadedModels, ModelSuggestion, ProjectFileRow, RepoInstructionRow, SettingsDocs, SettingsKept,
-  SettingsExclusions, SettingsTools,
+  SettingsExclusions, SettingsTools, ToolsAssist, ToolsAssistParams,
 } from '../protocol';
 
 export interface WidgetHost {
@@ -539,9 +539,35 @@ function keptIndexes(host: WidgetHost): LiveWidget {
 /** Every tool, what it weighs and what the next request does with it, with a button that turns it off or back on —
  * the rows `/tools` prints (the Core's ToolListPresenter). */
 function toolList(host: WidgetHost): LiveWidget {
+  const wrap = el('div', 'toolswrap');
   const block = el('div', 'toollist');
   const message = el('p', 'cardnote');
   message.hidden = true;
+
+  // The tools assistant (pari 163): three questions, a review, nothing written before Apply.
+  let assist: ReturnType<typeof toolsAssistant> | null = null;
+  const entry = el('div', 'assistentry');
+  const openAssist = el('button', 'primary', host.res('AssistOpen'));
+  openAssist.type = 'button';
+  entry.append(el('span', 'assistentrytext', host.res('AssistEntry')), openAssist);
+  const close = (said: string | null): void => {
+    assist?.el.remove();
+    assist = null;
+    entry.hidden = false;
+    block.hidden = false;
+    if (said) {
+      message.textContent = said;
+      message.hidden = false;
+    }
+    host.post({ type: 'toolList' });
+  };
+  openAssist.addEventListener('click', () => {
+    assist = toolsAssistant(host, close);
+    entry.hidden = true;
+    block.hidden = true;
+    wrap.append(assist.el);
+  });
+  wrap.append(entry, block);
 
   const draw = (tools: SettingsTools): void => {
     block.textContent = '';
@@ -565,15 +591,22 @@ function toolList(host: WidgetHost): LiveWidget {
         block.append(row);
       }
     }
-    block.append(el('p', 'hint', tools.list.howTo), message);
+    block.append(el('p', 'hint', tools.list.howTo));
+    // Under the list, apart from it: what a button or the assistant said survives a redraw of the rows.
+    if (!message.isConnected) {
+      wrap.append(message);
+    }
   };
 
   let last: SettingsTools | null = null;
   host.post({ type: 'toolList' });
   return {
-    el: block,
+    el: wrap,
     onShown: () => host.post({ type: 'toolList' }),
     onMessage(msg) {
+      if (msg.type === 'toolsAssist') {
+        return assist?.onMessage(msg) ?? true;
+      }
       if (msg.type === 'savedElsewhere') {
         // A command in the chat saved the settings (`/tools off`): the rows read again. Not consumed — others may follow.
         host.post({ type: 'toolList' });
@@ -595,6 +628,282 @@ function toolList(host: WidgetHost): LiveWidget {
         message.textContent = said;
         message.hidden = false;
       }
+      return true;
+    },
+  };
+}
+
+/** The work families, as the host names them, each with its title and description resources (named whole: a key built
+ *  by concatenation is one no check can find). */
+const ASSIST_WORK: [string, string, string][] = [
+  ['Code', 'AssistWorkCode', 'AssistWorkCodeDesc'],
+  ['Tests', 'AssistWorkTests', 'AssistWorkTestsDesc'],
+  ['WebPages', 'AssistWorkWebPages', 'AssistWorkWebPagesDesc'],
+  ['DesktopApps', 'AssistWorkDesktopApps', 'AssistWorkDesktopAppsDesc'],
+  ['Data', 'AssistWorkData', 'AssistWorkDataDesc'],
+  ['Apis', 'AssistWorkApis', 'AssistWorkApisDesc'],
+  ['Refactoring', 'AssistWorkRefactoring', 'AssistWorkRefactoringDesc'],
+  ['Documents', 'AssistWorkDocuments', 'AssistWorkDocumentsDesc'],
+];
+
+interface AssistState {
+  work: Set<string>;
+  commands: string;
+  internet: string;
+  debugger: string;
+  context: string;
+  servers: Record<string, boolean>;
+  rareTools: boolean | null;
+}
+
+/**
+ * The tools assistant (pari 163): what you work on, what the agent may reach, what goes with each question, then the
+ * review. Every choice asks the host again (`settings/toolsAssist`), so the figures are the Core's, measured; nothing is
+ * written before Apply (`settings/toolsAssistApply`).
+ */
+function toolsAssistant(host: WidgetHost, done: (said: string | null) => void): {
+  el: HTMLElement;
+  onMessage(msg: { type: string; [key: string]: unknown }): boolean;
+} {
+  const root = el('section', 'assist');
+  root.setAttribute('aria-label', host.res('AssistTitle'));
+  let state: AssistState | null = null;
+  let last: ToolsAssist | null = null;
+  let step = 0;
+  let error: string | null = null;
+  let applying = false;
+  // Every request numbered: an answer older than the last one asked is dropped, never shown over a newer one.
+  let seq = 0;
+
+  const params = (s: AssistState): ToolsAssistParams => ({
+    work: [...s.work], commands: s.commands, internet: s.internet, debugger: s.debugger, context: s.context, servers: s.servers,
+    rareTools: s.rareTools,
+  });
+  const ask = (): void => host.post({ type: 'toolsAssist', answers: state ? params(state) : undefined, seq: ++seq });
+
+  const button = (text: string, cls: string, onClick: () => void): HTMLButtonElement => {
+    const b = el('button', cls, text);
+    b.type = 'button';
+    b.addEventListener('click', onClick);
+    return b;
+  };
+
+  /** One choice among several, as radio cards: the title, then what it means. */
+  const choices = (legend: string, name: string, options: [string, string, string][], current: string, pick: (v: string) => void): HTMLElement => {
+    const set = el('fieldset', 'assistgroup');
+    set.append(el('legend', '', legend));
+    const row = el('div', 'assistcards');
+    for (const [value, key, descKey] of options) {
+      const card = el('label', 'assistcard' + (value === current ? ' picked' : ''));
+      const input = el('input');
+      input.type = 'radio';
+      input.name = name;
+      input.checked = value === current;
+      input.addEventListener('change', () => pick(value));
+      const text = el('span', 'assistcardtext');
+      text.append(el('span', 'assistcardtitle', host.res(key)), el('span', 'assistcarddesc', host.res(descKey)));
+      card.append(input, text);
+      row.append(card);
+    }
+    set.append(row);
+    return set;
+  };
+
+  const draw = (): void => {
+    root.textContent = '';
+    const head = el('header', 'assisthead');
+    const titles = el('div', 'assisttitles');
+    titles.append(el('h2', '', host.res('AssistTitle')), el('p', 'hint', host.res('AssistSubtitle')));
+    const steps = el('ol', 'assiststeps');
+    ['AssistStepWork', 'AssistStepReach', 'AssistStepContext', 'AssistStepReview'].forEach((key, i) => {
+      const li = el('li', i === step ? 'current' : i < step ? 'done' : '', host.res(key));
+      if (i === step) {
+        li.setAttribute('aria-current', 'step');
+      }
+      steps.append(li);
+    });
+    head.append(titles, steps);
+    root.append(head);
+    if (!state || !last) {
+      // Before the first answer: what went wrong, if anything, and always a way back to the list.
+      root.append(el('p', error ? 'cardnote' : 'hint', error ?? '…'),
+        button(host.res('AssistCancel'), 'secondary', () => done(null)));
+      return;
+    }
+    const s = state;
+    const m = last.model;
+    const body = el('div', 'assistbody');
+    const main = el('div', 'assistmain');
+
+    if (step === 0) {
+      main.append(el('h3', '', host.res('AssistWorkQuestion')), el('p', 'hint', host.res('AssistWorkHint')));
+      const grid = el('div', 'assistcards grid');
+      for (const [family, titleKey, descKey] of ASSIST_WORK) {
+        const card = el('label', 'assistcard' + (s.work.has(family) ? ' picked' : ''));
+        const input = el('input');
+        input.type = 'checkbox';
+        input.checked = s.work.has(family);
+        input.addEventListener('change', () => {
+          if (input.checked) {
+            s.work.add(family);
+          } else {
+            s.work.delete(family);
+          }
+          ask();
+        });
+        const text = el('span', 'assistcardtext');
+        text.append(el('span', 'assistcardtitle', host.res(titleKey)), el('span', 'assistcarddesc', host.res(descKey)));
+        card.append(input, text);
+        grid.append(card);
+      }
+      main.append(grid, el('p', 'hint', host.res('AssistWorkNote')));
+    } else if (step === 1) {
+      main.append(el('h3', '', host.res('AssistReachQuestion')), el('p', 'hint', host.res('AssistReachHint')),
+        choices(host.res('AssistCommands'), 'assist-cmd',
+          [['Free', 'AssistCommandsFree', 'AssistCommandsFreeDesc'], ['BuildAndTests', 'AssistCommandsBuild', 'AssistCommandsBuildDesc'],
+           ['Nothing', 'AssistCommandsNothing', 'AssistCommandsNothingDesc']],
+          s.commands, (v) => { s.commands = v; ask(); }),
+        choices(host.res('AssistInternet'), 'assist-net',
+          [['SearchAndRead', 'AssistInternetSearch', 'AssistInternetSearchDesc'], ['GivenPages', 'AssistInternetGiven', 'AssistInternetGivenDesc'],
+           ['Never', 'AssistInternetNever', 'AssistInternetNeverDesc']],
+          s.internet, (v) => { s.internet = v; ask(); }),
+        choices(host.res('AssistDebugger'), 'assist-dbg',
+          [['May', 'AssistDebuggerMay', 'AssistDebuggerMayDesc'], ['Never', 'AssistDebuggerNever', 'AssistDebuggerNeverDesc']],
+          s.debugger, (v) => { s.debugger = v; ask(); }));
+    } else if (step === 2) {
+      main.append(el('h3', '', host.res('AssistContextQuestion')), el('p', 'hint', m.texts.contextHint),
+        choices(host.res('AssistStepContext'), 'assist-ctx',
+          [['Lean', 'AssistContextLean', 'AssistContextLeanDesc'], ['Balanced', 'AssistContextBalanced', 'AssistContextBalancedDesc'],
+           ['Full', 'AssistContextFull', 'AssistContextFullDesc']],
+          s.context, (v) => { s.context = v; s.rareTools = v === 'Full'; ask(); }));
+      // The rare tools on their own line: some on and some off reads as neither, and is left as it is.
+      const rare = el('label', 'assistserver');
+      const rareBox = el('input');
+      rareBox.type = 'checkbox';
+      rareBox.checked = s.rareTools === true;
+      rareBox.indeterminate = s.rareTools === null;
+      rareBox.addEventListener('change', () => { s.rareTools = rareBox.checked; ask(); });
+      rare.append(rareBox, el('span', '', host.res('AssistRareTools')));
+      main.append(rare);
+      if (m.servers.length > 0) {
+        const set = el('fieldset', 'assistgroup');
+        set.append(el('legend', '', host.res('AssistMcpTitle')));
+        for (const server of m.servers) {
+          const row = el('label', 'assistserver');
+          const input = el('input');
+          input.type = 'checkbox';
+          input.checked = s.servers[server.name] ?? server.on;
+          input.addEventListener('change', () => { s.servers[server.name] = input.checked; ask(); });
+          row.append(input, el('span', 'assistservername', server.name), el('span', 'hint', server.line));
+          set.append(row);
+        }
+        main.append(set);
+      }
+    } else {
+      main.append(el('h3', '', host.res('AssistReviewTitle')));
+      if (m.rows.length === 0) {
+        main.append(el('p', 'hint', host.res('AssistReviewNone')));
+      } else {
+        const table = el('table', 'assistreview');
+        const hr = el('tr');
+        for (const key of ['AssistColBecomes', 'AssistColTools', 'AssistColBecause', 'AssistColSaves']) {
+          hr.append(el('th', '', host.res(key)));
+        }
+        table.append(hr);
+        for (const row of m.rows) {
+          const tr = el('tr');
+          const badge = el('td');
+          badge.append(el('span', 'assistbadge ' + (row.on ? 'on' : 'off'), host.res(row.on ? 'AssistOn' : 'AssistOff')));
+          const tools = el('td');
+          row.tools.forEach((t, i) => tools.append(...(i > 0 ? [document.createTextNode(' ')] : []), el('code', 'mono', t)));
+          tr.append(badge, tools, el('td', '', row.because), el('td', 'num', row.on ? '' : row.saves));
+          table.append(tr);
+        }
+        main.append(table);
+      }
+      main.append(el('p', 'hint', host.res('AssistReviewNote')));
+    }
+
+    // What each question carries: the Core's figures, measured on the definitions sent.
+    const aside = el('aside', 'assistaside');
+    aside.append(el('h3', '', host.res('AssistCarries')), el('span', 'hint', host.res('AssistToolTokens')),
+      el('p', 'assistfigure', m.texts.tokens), el('p', 'hint', m.texts.counts));
+    if (m.texts.share) {
+      const bar = el('div', 'assistbar');
+      bar.setAttribute('aria-hidden', 'true');
+      const fill = el('span', 'assistbarfill');
+      fill.style.width = `${Math.max(0, Math.min(100, m.window > 0 ? 100 * m.plan.toolTokensAfter / m.window : 0))}%`;
+      bar.append(fill);
+      aside.append(bar, el('p', 'hint', m.texts.share));
+    }
+    aside.append(el('p', 'hint', host.res('AssistMeasured')));
+    body.append(main, aside);
+    root.append(body);
+
+    if (error) {
+      root.append(el('p', 'cardnote', error));
+    }
+    const foot = el('footer', 'assistfoot');
+    foot.append(button(host.res(step === 0 ? 'AssistCancel' : 'AssistBack'), 'secondary', () => {
+      if (step === 0) {
+        done(null);
+      } else {
+        step--;
+        error = null;
+        draw();
+      }
+    }));
+    if (step === 0) {
+      foot.append(link(host.res('AssistSkip'), () => done(null)));
+    }
+    const next = step < 3
+      ? button(host.res(step === 2 ? 'AssistSeeChanges' : 'AssistNext'), 'primary', () => { step++; error = null; draw(); })
+      : button(host.res('AssistApply'), 'primary', () => {
+        applying = true;
+        error = null;
+        draw();
+        host.post({ type: 'toolsAssistApply', answers: params(s), seq: ++seq });
+      });
+    next.disabled = applying;
+    next.classList.add('assistnext');
+    foot.append(next);
+    root.append(foot);
+  };
+
+  ask();
+  draw();
+  return {
+    el: root,
+    onMessage(msg) {
+      // A late answer to an earlier choice: the newer one is on its way.
+      if (typeof msg.seq === 'number' && msg.seq < seq) {
+        return true;
+      }
+      if (typeof msg.error === 'string') {
+        applying = false;
+        error = msg.error;
+        draw();
+        return true;
+      }
+      const assist = msg.assist as ToolsAssist | undefined;
+      if (!assist) {
+        return true;
+      }
+      if (msg.applied === true) {
+        done(assist.message ?? assist.model.texts.applied);
+        return true;
+      }
+      last = assist;
+      if (!state) {
+        // The assistant opens on what the settings describe now.
+        const a = assist.model.answers;
+        state = {
+          work: new Set(a.work.split(',').map((w) => w.trim()).filter((w) => w.length > 0)),
+          commands: a.commands, internet: a.internet, debugger: a.debugger, context: a.context,
+          servers: { ...a.mcpServersOn }, rareTools: a.rareTools,
+        };
+      }
+      draw();
       return true;
     },
   };

@@ -2524,4 +2524,101 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="DatabaseElsewhere" xml:space="preserve"><value>Ce serveur n'est pas sur cette machine : vérifiez que c'est une base de développement. Une règle peut refuser un serveur pour de bon (deny query_database prod).</value></data>
   <data name="DatabaseReadNote" xml:space="preserve"><value>Une lecture seulement : une instruction qui lit, dans une transaction qui ne garde rien, 30 s au plus. Les lignes partent au modèle, sur votre serveur.</value></data>
   <data name="DatabaseAlwaysTooltip" xml:space="preserve"><value>Les lectures de {0} se font sans carte jusqu'à la fermeture de l'éditeur. Une autre base demande encore.</value></data>
+  <data name="AssistTitle" xml:space="preserve"><value>Choisir les outils de l'agent</value></data>
+  <data name="AssistSubtitle" xml:space="preserve"><value>Trois questions. Rien n'est enregistré avant « Appliquer ».</value></data>
+  <data name="AssistStepWork" xml:space="preserve"><value>Votre travail</value></data>
+  <data name="AssistStepReach" xml:space="preserve"><value>Accès</value></data>
+  <data name="AssistStepContext" xml:space="preserve"><value>Contexte</value></data>
+  <data name="AssistStepReview" xml:space="preserve"><value>Relecture</value></data>
+  <data name="AssistWorkQuestion" xml:space="preserve"><value>Sur quoi travaillez-vous avec l'agent ?</value></data>
+  <data name="AssistWorkHint" xml:space="preserve"><value>Cochez tout ce qui s'applique. Les outils de ce que vous laissez de côté sont coupés : une question qui en a besoin le dit, avec l'interrupteur.</value></data>
+  <data name="AssistWorkCode" xml:space="preserve"><value>Écrire et corriger du code</value></data>
+  <data name="AssistWorkCodeDesc" xml:space="preserve"><value>Lire, chercher et modifier des fichiers, lancer le build</value></data>
+  <data name="AssistWorkTests" xml:space="preserve"><value>Tests</value></data>
+  <data name="AssistWorkTestsDesc" xml:space="preserve"><value>Les lancer, en écrire, mesurer la couverture</value></data>
+  <data name="AssistWorkWebPages" xml:space="preserve"><value>Pages web et front-end</value></data>
+  <data name="AssistWorkWebPagesDesc" xml:space="preserve"><value>Regarder la page servie, cliquer dedans</value></data>
+  <data name="AssistWorkDesktopApps" xml:space="preserve"><value>Applications de bureau</value></data>
+  <data name="AssistWorkDesktopAppsDesc" xml:space="preserve"><value>Regarder et piloter la fenêtre de l'appli qu'il lance</value></data>
+  <data name="AssistWorkData" xml:space="preserve"><value>Bases et fichiers de données</value></data>
+  <data name="AssistWorkDataDesc" xml:space="preserve"><value>Lire la base de développement, interroger CSV et Excel</value></data>
+  <data name="AssistWorkApis" xml:space="preserve"><value>API</value></data>
+  <data name="AssistWorkApisDesc" xml:space="preserve"><value>Envoyer des requêtes à l'API que vous construisez</value></data>
+  <data name="AssistWorkRefactoring" xml:space="preserve"><value>Grands refactorings</value></data>
+  <data name="AssistWorkRefactoringDesc" xml:space="preserve"><value>Renommer dans toute la solution, analyser l'impact</value></data>
+  <data name="AssistWorkDocuments" xml:space="preserve"><value>Notebooks, scans et documents</value></data>
+  <data name="AssistWorkDocumentsDesc" xml:space="preserve"><value>Modifier des cellules Jupyter, lire le texte des images</value></data>
+  <data name="AssistWorkNote" xml:space="preserve"><value>Lire des fichiers, journaux, PDF, rapports de plantage et plans ne demande aucun outil à part : cela reste, quoi que vous cochiez.</value></data>
+  <data name="AssistReachQuestion" xml:space="preserve"><value>Qu'est-ce que l'agent peut atteindre ?</value></data>
+  <data name="AssistReachHint" xml:space="preserve"><value>Quoi que vous choisissiez, chaque modification, commande et requête sortante vous est d'abord demandée.</value></data>
+  <data name="AssistCommands" xml:space="preserve"><value>Commandes dans le terminal</value></data>
+  <data name="AssistCommandsFree" xml:space="preserve"><value>Build, tests et commandes</value></data>
+  <data name="AssistCommandsFreeDesc" xml:space="preserve"><value>Il peut vérifier son propre travail</value></data>
+  <data name="AssistCommandsBuild" xml:space="preserve"><value>Build et tests seulement</value></data>
+  <data name="AssistCommandsBuildDesc" xml:space="preserve"><value>Aucune commande libre</value></data>
+  <data name="AssistCommandsNothing" xml:space="preserve"><value>Rien ne tourne</value></data>
+  <data name="AssistCommandsNothingDesc" xml:space="preserve"><value>Il lit et modifie ; vous lancez le build</value></data>
+  <data name="AssistInternet" xml:space="preserve"><value>Internet</value></data>
+  <data name="AssistInternetSearch" xml:space="preserve"><value>Chercher et lire des pages</value></data>
+  <data name="AssistInternetSearchDesc" xml:space="preserve"><value>Recherche web, une page, un ticket ou une pull request</value></data>
+  <data name="AssistInternetGiven" xml:space="preserve"><value>Seulement les pages que je lui donne</value></data>
+  <data name="AssistInternetGivenDesc" xml:space="preserve"><value>Un @url que vous collez, la doc ajoutée avec @Docs</value></data>
+  <data name="AssistInternetNever" xml:space="preserve"><value>Jamais</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Rien ne sort de cette machine, sauf vers le serveur du modèle</value></data>
+  <data name="AssistDebugger" xml:space="preserve"><value>Le débogueur de l'éditeur</value></data>
+  <data name="AssistDebuggerMay" xml:space="preserve"><value>Il peut déboguer</value></data>
+  <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>Démarrer, poser des points d'arrêt, lire les variables</value></data>
+  <data name="AssistDebuggerNever" xml:space="preserve"><value>Pas maintenant</value></data>
+  <data name="AssistDebuggerNeverDesc" xml:space="preserve"><value>Coupé ; une question qui en a besoin le dit, avec l'interrupteur</value></data>
+  <data name="AssistContextQuestion" xml:space="preserve"><value>Qu'est-ce qui part avec chaque question ?</value></data>
+  <data name="AssistContextHint" xml:space="preserve"><value>Votre modèle lit au plus {0} jetons à la fois. Ce qui part avant votre question en laisse moins à la conversation.</value></data>
+  <data name="AssistContextHintUnknown" xml:space="preserve"><value>Ce qui part avant votre question laisse moins de place à la conversation.</value></data>
+  <data name="AssistContextLean" xml:space="preserve"><value>Léger</value></data>
+  <data name="AssistContextLeanDesc" xml:space="preserve"><value>Votre question et le fichier ouvert. L'agent cherche ce qu'il lui faut.</value></data>
+  <data name="AssistContextBalanced" xml:space="preserve"><value>Équilibré</value></data>
+  <data name="AssistContextBalancedDesc" xml:space="preserve"><value>Plus quelques passages de code proches de votre question.</value></data>
+  <data name="AssistContextFull" xml:space="preserve"><value>Complet</value></data>
+  <data name="AssistContextFullDesc" xml:space="preserve"><value>Tous les outils cochés, et les rares. À partir de 32K.</value></data>
+  <data name="AssistMcpTitle" xml:space="preserve"><value>Serveurs MCP</value></data>
+  <data name="AssistMcpServer" xml:space="preserve"><value>{0} {0:outil|outils} · environ {1} jetons</value></data>
+  <data name="AssistOn" xml:space="preserve"><value>Activé</value></data>
+  <data name="AssistOff" xml:space="preserve"><value>Coupé</value></data>
+  <data name="AssistCarries" xml:space="preserve"><value>Ce que chaque question emporte</value></data>
+  <data name="AssistToolTokens" xml:space="preserve"><value>Descriptions des outils</value></data>
+  <data name="AssistTokensNow" xml:space="preserve"><value>{0} jetons · avant {1}</value></data>
+  <data name="AssistCounts" xml:space="preserve"><value>{0} {0:outil activé|outils activés} · {1} {1:coupé|coupés}</value></data>
+  <data name="AssistShare" xml:space="preserve"><value>{0} % de la fenêtre de {1} jetons</value></data>
+  <data name="AssistMeasured" xml:space="preserve"><value>Les chiffres des outils sont mesurés sur les définitions envoyées ; la fenêtre est celle du modèle, lue en dernier.</value></data>
+  <data name="AssistReviewTitle" xml:space="preserve"><value>Ce qui change</value></data>
+  <data name="AssistReviewNone" xml:space="preserve"><value>Rien ne change : les outils correspondent déjà à vos réponses.</value></data>
+  <data name="AssistColBecomes" xml:space="preserve"><value>Devient</value></data>
+  <data name="AssistColTools" xml:space="preserve"><value>Outils</value></data>
+  <data name="AssistColBecause" xml:space="preserve"><value>Parce que vous avez dit</value></data>
+  <data name="AssistColSaves" xml:space="preserve"><value>Économise</value></data>
+  <data name="AssistReviewNote" xml:space="preserve"><value>Coupé — jamais proposé au modèle. Une question qui en a besoin le dit dans le chat : l'utiliser pour cette question, ou le réactiver. Ces choix valent pour cette machine, dans tous les projets ; les approbations ne changent pas.</value></data>
+  <data name="AssistCancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="AssistBack" xml:space="preserve"><value>Retour</value></data>
+  <data name="AssistNext" xml:space="preserve"><value>Suivant</value></data>
+  <data name="AssistSeeChanges" xml:space="preserve"><value>Voir les changements</value></data>
+  <data name="AssistApply" xml:space="preserve"><value>Appliquer</value></data>
+  <data name="AssistSkip" xml:space="preserve"><value>Passer : choisir outil par outil</value></data>
+  <data name="AssistOpen" xml:space="preserve"><value>M'aider à choisir</value></data>
+  <data name="AssistEntry" xml:space="preserve"><value>Pas sûr des outils dont l'agent a besoin ? Trois questions les règlent, et disent ce que chaque question emporte ensuite.</value></data>
+  <data name="AssistApplied" xml:space="preserve"><value>Appliqué : {0} {0:outil activé|outils activés}, {1} {1:coupé|coupés}.</value></data>
+  <data name="AssistBecauseFreeCommands" xml:space="preserve"><value>Commandes : build, tests et commandes</value></data>
+  <data name="AssistBecauseNoFreeCommands" xml:space="preserve"><value>Commandes : aucune commande libre</value></data>
+  <data name="AssistBecauseBuildsAndTests" xml:space="preserve"><value>Commandes : build et tests</value></data>
+  <data name="AssistBecauseNothingRuns" xml:space="preserve"><value>Commandes : rien ne tourne</value></data>
+  <data name="AssistBecauseSearchAndRead" xml:space="preserve"><value>Internet : chercher et lire des pages</value></data>
+  <data name="AssistBecauseNoSearch" xml:space="preserve"><value>Internet : pas de recherche web</value></data>
+  <data name="AssistBecauseGivenPages" xml:space="preserve"><value>Internet : les pages que vous lui donnez — votre @url en a besoin</value></data>
+  <data name="AssistBecauseNoInternet" xml:space="preserve"><value>Internet : jamais</value></data>
+  <data name="AssistBecauseDebuggerMay" xml:space="preserve"><value>Débogueur : il peut déboguer</value></data>
+  <data name="AssistBecauseNoDebugger" xml:space="preserve"><value>Débogueur : pas maintenant</value></data>
+  <data name="AssistBecauseFull" xml:space="preserve"><value>Tout part avec chaque question</value></data>
+  <data name="AssistBecauseRare" xml:space="preserve"><value>Rarement utile</value></data>
+  <data name="AssistBecauseYourWork" xml:space="preserve"><value>Votre travail</value></data>
+  <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>Hors de votre travail</value></data>
+  <data name="AssistRareTools" xml:space="preserve"><value>Outils rarement utiles (carte du projet, infos de la solution, propriétés MSBuild, insertion au curseur)</value></data>
+  <data name="AssistBecauseMcp" xml:space="preserve"><value>Serveurs MCP</value></data>
 </root>

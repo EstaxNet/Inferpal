@@ -1221,6 +1221,42 @@ export interface SettingsTools {
   message?: string | null;
 }
 
+/** The tools assistant's answers (pari 163), as the host names them: the work as comma-separated family names. */
+export interface ToolsAssistAnswers {
+  work: string;
+  commands: string;
+  internet: string;
+  debugger: string;
+  context: string;
+  mcpServersOn: Record<string, boolean>;
+  /** The rarely needed tools on or off; null = some of each, left as they are. */
+  rareTools: boolean | null;
+}
+
+/** `settings/toolsAssist` answer: what the answers change, why, and what each question then carries. */
+export interface ToolsAssist {
+  model: {
+    answers: ToolsAssistAnswers;
+    plan: { toolTokensBefore: number; toolTokensAfter: number; on: number; off: number; autoContext: boolean };
+    window: number;
+    rows: { on: boolean; tools: string[]; because: string; tokens: number; saves: string }[];
+    servers: { name: string; tools: number; tokens: number; on: boolean; line: string }[];
+    texts: { tokens: string; counts: string; share: string; contextHint: string; applied: string };
+  };
+  message?: string | null;
+}
+
+/** What the webview sends: the work by family name, the limits and the context by name, each MCP server on or off. */
+export interface ToolsAssistParams {
+  work: string[];
+  commands: string;
+  internet: string;
+  debugger: string;
+  context: string;
+  servers: Record<string, boolean>;
+  rareTools: boolean | null;
+}
+
 /** One share of the conversation's window. */
 export interface ContextUsagePart {
   key: 'instructions' | 'tools' | 'conversation';

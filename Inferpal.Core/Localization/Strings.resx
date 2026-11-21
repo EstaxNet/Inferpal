@@ -2528,4 +2528,101 @@ What you save there applies from your next question, in this thread and the othe
   <data name="DatabaseElsewhere" xml:space="preserve"><value>This server is not on this machine: check that it is a development database. A rule can refuse a server for good (deny query_database prod).</value></data>
   <data name="DatabaseReadNote" xml:space="preserve"><value>A read only: one statement that reads, in a transaction that keeps nothing, 30 s at most. The rows go to the model on your server.</value></data>
   <data name="DatabaseAlwaysTooltip" xml:space="preserve"><value>Reads of {0} go without a card until the editor closes. Another database still asks.</value></data>
+  <data name="AssistTitle" xml:space="preserve"><value>Choose the agent's tools</value></data>
+  <data name="AssistSubtitle" xml:space="preserve"><value>Three questions. Nothing is saved until you apply.</value></data>
+  <data name="AssistStepWork" xml:space="preserve"><value>Your work</value></data>
+  <data name="AssistStepReach" xml:space="preserve"><value>Reach</value></data>
+  <data name="AssistStepContext" xml:space="preserve"><value>Context</value></data>
+  <data name="AssistStepReview" xml:space="preserve"><value>Review</value></data>
+  <data name="AssistWorkQuestion" xml:space="preserve"><value>What do you work on with the agent?</value></data>
+  <data name="AssistWorkHint" xml:space="preserve"><value>Pick all that apply. The tools of what you leave out are turned off: a question that needs one says so, with the switch.</value></data>
+  <data name="AssistWorkCode" xml:space="preserve"><value>Write and fix code</value></data>
+  <data name="AssistWorkCodeDesc" xml:space="preserve"><value>Read, search and edit files, run builds</value></data>
+  <data name="AssistWorkTests" xml:space="preserve"><value>Tests</value></data>
+  <data name="AssistWorkTestsDesc" xml:space="preserve"><value>Run them, write new ones, measure coverage</value></data>
+  <data name="AssistWorkWebPages" xml:space="preserve"><value>Web pages and front-end</value></data>
+  <data name="AssistWorkWebPagesDesc" xml:space="preserve"><value>Look at the page it serves, click through it</value></data>
+  <data name="AssistWorkDesktopApps" xml:space="preserve"><value>Desktop apps</value></data>
+  <data name="AssistWorkDesktopAppsDesc" xml:space="preserve"><value>Look at and drive the window of the app it starts</value></data>
+  <data name="AssistWorkData" xml:space="preserve"><value>Databases and data files</value></data>
+  <data name="AssistWorkDataDesc" xml:space="preserve"><value>Read the development database, query CSV and Excel</value></data>
+  <data name="AssistWorkApis" xml:space="preserve"><value>APIs</value></data>
+  <data name="AssistWorkApisDesc" xml:space="preserve"><value>Send requests to the API you build</value></data>
+  <data name="AssistWorkRefactoring" xml:space="preserve"><value>Large refactorings</value></data>
+  <data name="AssistWorkRefactoringDesc" xml:space="preserve"><value>Rename across the solution, analyse impact</value></data>
+  <data name="AssistWorkDocuments" xml:space="preserve"><value>Notebooks, scans and documents</value></data>
+  <data name="AssistWorkDocumentsDesc" xml:space="preserve"><value>Edit Jupyter cells, read text from images</value></data>
+  <data name="AssistWorkNote" xml:space="preserve"><value>Reading files, logs, PDFs, crash reports and plans needs no tool of its own: it stays whatever you pick.</value></data>
+  <data name="AssistReachQuestion" xml:space="preserve"><value>What may the agent reach?</value></data>
+  <data name="AssistReachHint" xml:space="preserve"><value>Whatever you choose, each change, command and outbound request still asks you first.</value></data>
+  <data name="AssistCommands" xml:space="preserve"><value>Commands in the terminal</value></data>
+  <data name="AssistCommandsFree" xml:space="preserve"><value>Builds, tests and commands</value></data>
+  <data name="AssistCommandsFreeDesc" xml:space="preserve"><value>It can check its own work</value></data>
+  <data name="AssistCommandsBuild" xml:space="preserve"><value>Builds and tests only</value></data>
+  <data name="AssistCommandsBuildDesc" xml:space="preserve"><value>No free command</value></data>
+  <data name="AssistCommandsNothing" xml:space="preserve"><value>Nothing runs</value></data>
+  <data name="AssistCommandsNothingDesc" xml:space="preserve"><value>It reads and edits; you build</value></data>
+  <data name="AssistInternet" xml:space="preserve"><value>The internet</value></data>
+  <data name="AssistInternetSearch" xml:space="preserve"><value>Search and read pages</value></data>
+  <data name="AssistInternetSearchDesc" xml:space="preserve"><value>Web search, a page, an issue or a pull request</value></data>
+  <data name="AssistInternetGiven" xml:space="preserve"><value>Only pages I give it</value></data>
+  <data name="AssistInternetGivenDesc" xml:space="preserve"><value>An @url you paste, the docs you add with @Docs</value></data>
+  <data name="AssistInternetNever" xml:space="preserve"><value>Never</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Nothing leaves this machine but the model's server</value></data>
+  <data name="AssistDebugger" xml:space="preserve"><value>The debugger of the editor</value></data>
+  <data name="AssistDebuggerMay" xml:space="preserve"><value>It may debug</value></data>
+  <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>Start, set breakpoints, read the variables</value></data>
+  <data name="AssistDebuggerNever" xml:space="preserve"><value>Not now</value></data>
+  <data name="AssistDebuggerNeverDesc" xml:space="preserve"><value>Off; a question that needs it says so, with the switch</value></data>
+  <data name="AssistContextQuestion" xml:space="preserve"><value>What goes with each question?</value></data>
+  <data name="AssistContextHint" xml:space="preserve"><value>Your model reads at most {0} tokens at a time. What is sent before your question leaves less for the conversation.</value></data>
+  <data name="AssistContextHintUnknown" xml:space="preserve"><value>What is sent before your question leaves less room for the conversation.</value></data>
+  <data name="AssistContextLean" xml:space="preserve"><value>Lean</value></data>
+  <data name="AssistContextLeanDesc" xml:space="preserve"><value>Your question and the open file. The agent searches what it needs.</value></data>
+  <data name="AssistContextBalanced" xml:space="preserve"><value>Balanced</value></data>
+  <data name="AssistContextBalancedDesc" xml:space="preserve"><value>Plus a few code passages close to your question.</value></data>
+  <data name="AssistContextFull" xml:space="preserve"><value>Full</value></data>
+  <data name="AssistContextFullDesc" xml:space="preserve"><value>Every tool you picked, and the rare ones. From 32K.</value></data>
+  <data name="AssistMcpTitle" xml:space="preserve"><value>MCP servers</value></data>
+  <data name="AssistMcpServer" xml:space="preserve"><value>{0} {0:tool|tools} · about {1} tokens</value></data>
+  <data name="AssistOn" xml:space="preserve"><value>On</value></data>
+  <data name="AssistOff" xml:space="preserve"><value>Off</value></data>
+  <data name="AssistCarries" xml:space="preserve"><value>What each question carries</value></data>
+  <data name="AssistToolTokens" xml:space="preserve"><value>Tool descriptions</value></data>
+  <data name="AssistTokensNow" xml:space="preserve"><value>{0} tokens · was {1}</value></data>
+  <data name="AssistCounts" xml:space="preserve"><value>{0} {0:tool|tools} on · {1} off</value></data>
+  <data name="AssistShare" xml:space="preserve"><value>{0}% of the window of {1} tokens</value></data>
+  <data name="AssistMeasured" xml:space="preserve"><value>Tool figures are measured on the definitions sent; the window is the model's as last read.</value></data>
+  <data name="AssistReviewTitle" xml:space="preserve"><value>What changes</value></data>
+  <data name="AssistReviewNone" xml:space="preserve"><value>Nothing changes: the tools already match your answers.</value></data>
+  <data name="AssistColBecomes" xml:space="preserve"><value>Becomes</value></data>
+  <data name="AssistColTools" xml:space="preserve"><value>Tools</value></data>
+  <data name="AssistColBecause" xml:space="preserve"><value>Because you said</value></data>
+  <data name="AssistColSaves" xml:space="preserve"><value>Saves</value></data>
+  <data name="AssistReviewNote" xml:space="preserve"><value>Off — never offered to the model. A question that needs one says so in the chat: use it for that question, or turn it back on. These choices are this machine's, for every project; approvals do not change.</value></data>
+  <data name="AssistCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="AssistBack" xml:space="preserve"><value>Back</value></data>
+  <data name="AssistNext" xml:space="preserve"><value>Next</value></data>
+  <data name="AssistSeeChanges" xml:space="preserve"><value>See the changes</value></data>
+  <data name="AssistApply" xml:space="preserve"><value>Apply</value></data>
+  <data name="AssistSkip" xml:space="preserve"><value>Skip: choose tool by tool</value></data>
+  <data name="AssistOpen" xml:space="preserve"><value>Help me choose</value></data>
+  <data name="AssistEntry" xml:space="preserve"><value>Not sure which tools the agent needs? Three questions set them, and say what each question then carries.</value></data>
+  <data name="AssistApplied" xml:space="preserve"><value>Applied: {0} {0:tool|tools} on, {1} off.</value></data>
+  <data name="AssistBecauseFreeCommands" xml:space="preserve"><value>Commands: builds, tests and commands</value></data>
+  <data name="AssistBecauseNoFreeCommands" xml:space="preserve"><value>Commands: no free command</value></data>
+  <data name="AssistBecauseBuildsAndTests" xml:space="preserve"><value>Commands: builds and tests</value></data>
+  <data name="AssistBecauseNothingRuns" xml:space="preserve"><value>Commands: nothing runs</value></data>
+  <data name="AssistBecauseSearchAndRead" xml:space="preserve"><value>Internet: search and read pages</value></data>
+  <data name="AssistBecauseNoSearch" xml:space="preserve"><value>Internet: no web search</value></data>
+  <data name="AssistBecauseGivenPages" xml:space="preserve"><value>Internet: the pages you give it — your @url needs it</value></data>
+  <data name="AssistBecauseNoInternet" xml:space="preserve"><value>Internet: never</value></data>
+  <data name="AssistBecauseDebuggerMay" xml:space="preserve"><value>Debugger: it may debug</value></data>
+  <data name="AssistBecauseNoDebugger" xml:space="preserve"><value>Debugger: not now</value></data>
+  <data name="AssistBecauseFull" xml:space="preserve"><value>Everything goes with each question</value></data>
+  <data name="AssistBecauseRare" xml:space="preserve"><value>Rarely needed</value></data>
+  <data name="AssistBecauseYourWork" xml:space="preserve"><value>Your work</value></data>
+  <data name="AssistBecauseNotYourWork" xml:space="preserve"><value>Not your work</value></data>
+  <data name="AssistRareTools" xml:space="preserve"><value>Tools you rarely need (project map, solution info, MSBuild properties, inserting at the cursor)</value></data>
+  <data name="AssistBecauseMcp" xml:space="preserve"><value>MCP servers</value></data>
 </root>

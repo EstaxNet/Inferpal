@@ -6,7 +6,7 @@
 import type {
   ApprovalRuleTable, ConfigUpdateResult, ConnectionCheckResult, ContextUsage, IndexCard, LoadedModels, McpCardsResult,
   ModelsByKind, ModelSuggestion, PinnedFileSize, ProjectFileRow, RepoInstructionRow, SettingsDocs, SettingsKept, SettingsExclusions, SettingsSchema,
-  SettingsTools,
+  SettingsTools, ToolsAssist, ToolsAssistParams,
   ConfigReloadResult,
 } from './protocol';
 
@@ -32,6 +32,8 @@ export interface SettingsHost {
   settingsDocsAction(verb: 'add' | 'reindex' | 'remove', arg: string): Promise<SettingsDocs>;
   settingsTools(): Promise<SettingsTools>;
   settingsToolSet(key: string, off: boolean): Promise<SettingsTools>;
+  settingsToolsAssist(answers?: ToolsAssistParams): Promise<ToolsAssist>;
+  settingsToolsAssistApply(answers: ToolsAssistParams): Promise<ToolsAssist>;
   settingsContextUsage(): Promise<ContextUsage>;
   settingsProjectFiles(): Promise<ProjectFileRow[]>;
   settingsRepoInstructions(): Promise<RepoInstructionRow[]>;
@@ -79,10 +81,14 @@ export interface SettingsInbound {
     | 'mcpCards' | 'mcpRetry' | 'mcpAuthorize' | 'rulesTable' | 'newRule' | 'browsePinned'
     | 'indexCard' | 'indexRebuild' | 'exclusions' | 'docsSites' | 'docsAction' | 'keptIndexes' | 'keptForget'
     | 'contextUsage' | 'projectFiles'
-    | 'repoInstructions' | 'toolList' | 'toolSet'
+    | 'repoInstructions' | 'toolList' | 'toolSet' | 'toolsAssist' | 'toolsAssistApply'
     | 'pinSizes' | 'openFile' | 'openXray' | 'openDocs' | 'loadedModels' | 'unloadModels' | 'suggestModels';
   /** openDocs: the docs page, with its anchor. */
   page?: string;
+  /** toolsAssist / toolsAssistApply: the assistant's answers; absent = what the settings describe now. */
+  answers?: ToolsAssistParams;
+  /** toolsAssist / toolsAssistApply: the request's number, given back with the answer — the assistant keeps the latest. */
+  seq?: number;
   /** unloadModels: the models to unload; absent = every loaded one. */
   names?: string[];
   /** testConnection / refreshModels: the role whose server is probed or listed (inlineCompletion, ragEmbedding);
@@ -311,13 +317,18 @@ export class SettingsBridge {
       case 'repoInstructions':
       case 'toolList':
       case 'toolSet':
+      case 'toolsAssist':
+      case 'toolsAssistApply':
       case 'pinSizes':
       case 'loadedModels':
       case 'unloadModels':
       case 'suggestModels': {
         // The live blocks of the pages: each asks the host for what it shows, through the Core presenters.
         if (!host?.isRunning) {
-          this.shell.post({ type: 'error', message: this.shell.unavailableMessage() });
+          // The assistant hides the list it opened over: its own message, or it waits on nothing with no way out.
+          this.shell.post(msg.type === 'toolsAssist' || msg.type === 'toolsAssistApply'
+            ? { type: 'toolsAssist', error: this.shell.unavailableMessage(), seq: msg.seq }
+            : { type: 'error', message: this.shell.unavailableMessage() });
           return;
         }
         try {
@@ -342,6 +353,16 @@ export class SettingsBridge {
             case 'toolSet':
               this.shell.post({ type: 'toolList', tools: await host.settingsToolSet(msg.key ?? '', msg.off === true) });
               break;
+            case 'toolsAssist':
+              this.shell.post({ type: 'toolsAssist', assist: await host.settingsToolsAssist(msg.answers), seq: msg.seq });
+              break;
+            case 'toolsAssistApply':
+              if (msg.answers) {
+                this.shell.post({ type: 'toolsAssist', assist: await host.settingsToolsAssistApply(msg.answers), applied: true, seq: msg.seq });
+                // The tool list and the other live blocks read again: the settings changed under them.
+                this.shell.post({ type: 'savedElsewhere' });
+              }
+              break;
             case 'pinSizes':     this.shell.post({ type: 'pinSizes', sizes: await host.settingsPinSizes(msg.pins ?? '') }); break;
             case 'loadedModels': this.shell.post({ type: 'loadedModels', models: await host.settingsLoadedModels() }); break;
             case 'unloadModels': this.shell.post({ type: 'loadedModels', models: await host.settingsUnloadModels(msg.names) }); break;
@@ -358,7 +379,10 @@ export class SettingsBridge {
           }
         } catch (err) {
           this.shell.log(`[settings] ${msg.type} failed: ${String(err)}`);
-          if (msg.type === 'toolSet') {
+          if (msg.type === 'toolsAssist' || msg.type === 'toolsAssistApply') {
+            // To the assistant itself: its Apply button comes back, and why nothing changed is said under it.
+            this.shell.post({ type: 'toolsAssist', error: this.shell.errorText(err), seq: msg.seq });
+          } else if (msg.type === 'toolSet') {
             // To the list itself: it says why nothing changed under it and gives its button back (a reply that is being
             // written holds the turn's slot).
             this.shell.post({ type: 'toolList', error: this.shell.errorText(err) });

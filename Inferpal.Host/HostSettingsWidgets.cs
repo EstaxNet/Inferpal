@@ -183,6 +183,32 @@ internal sealed partial class HostServer
         });
     }
 
+    /// <summary>`settings/toolsAssist` — the tools assistant (pari 163) for the answers given, or for the answers the settings
+    /// describe now (none given): what each tool becomes and why, and what the tool definitions then weigh. Writes nothing.</summary>
+    [JsonRpcMethod("settings/toolsAssist", UseSingleObjectParameterDeserialization = true)]
+    public ToolsAssistDto SettingsToolsAssist(ToolsAssistParams? p) => Assist(Session(), p?.Answers());
+
+    /// <summary>`settings/toolsAssistApply` — writes what the review showed (`disabledTools`, the auto-context), then applies it
+    /// as a settings save does. Inside the turn's slot: the definitions a running turn sends do not change under it.</summary>
+    [JsonRpcMethod("settings/toolsAssistApply", UseSingleObjectParameterDeserialization = true)]
+    public Task<ToolsAssistDto> SettingsToolsAssistApply(ToolsAssistParams p, CancellationToken ct)
+    {
+        var s = Session();
+        return WithTurnSlotAsync("settings/toolsAssistApply", ct, async token =>
+        {
+            var before = Assist(s, p.Answers());
+            s.Config.DisabledTools = before.Model.Plan.DisabledTools;
+            s.Config.RagAutoContextEnabled = before.Model.Plan.AutoContext;
+            await SaveAndApplyAsync(s, (s.Config.McpEnabled, s.Config.McpServersJson), token);
+            var after = Assist(s, p.Answers());
+            return after with { Message = Localization.Strings.AssistApplied(after.Model.Plan.On, after.Model.Plan.Off) };
+        });
+    }
+
+    private static ToolsAssistDto Assist(HostSession s, AssistantAnswers? answers) =>
+        new(ToolsAssistantPresenter.Build(s.Tools.Profile(), s.Config.SharedDisabledTools, s.Config.RagAutoContextEnabled,
+                                          s.LastContextWindow, answers), Message: null);
+
     private static ToolListModel ToolList(HostSession s) =>
         ToolListPresenter.Build(s.Tools, s.ToolsEnabled ? ContextManager.NextTurnTools(s.Tools, s.PlanMode, CurrentMode(s)) : null,
                                 s.ToolCutWindow, s.CutNamedTools);
@@ -190,6 +216,29 @@ internal sealed partial class HostServer
 
 /// <summary>`settings/tools` and `settings/toolSet` answer. <c>Message</c>: what turning a tool off or on said, if anything.</summary>
 internal sealed record SettingsToolsDto(ToolListModel List, string? Message);
+
+/// <summary>`settings/toolsAssist` answer. <c>Message</c>: what applying said, if anything.</summary>
+internal sealed record ToolsAssistDto(ToolsAssistantModel Model, string? Message);
+
+/// <summary>The assistant's answers as the webview sends them: the work by family name (<see cref="AssistantWork"/>), the
+/// three limits and the context by their names, each MCP server on or off. Unknown names are ignored.</summary>
+internal sealed record ToolsAssistParams(List<string>? Work, string? Commands, string? Internet, string? Debugger, string? Context,
+                                         Dictionary<string, bool>? Servers, bool? RareTools = null)
+{
+    /// <summary>The answers, or <c>null</c> when none was sent (the assistant opens on what the settings describe).</summary>
+    public AssistantAnswers? Answers()
+    {
+        if (Work is null && Commands is null && Internet is null && Debugger is null && Context is null) return null;
+        var work = AssistantWork.None;
+        foreach (var w in Work ?? []) if (Enum.TryParse<AssistantWork>(w, ignoreCase: true, out var f)) work |= f;
+        return new AssistantAnswers(work,
+            Enum.TryParse<AssistantCommands>(Commands, true, out var c) ? c : AssistantCommands.Free,
+            Enum.TryParse<AssistantInternet>(Internet, true, out var i) ? i : AssistantInternet.SearchAndRead,
+            Enum.TryParse<AssistantDebugger>(Debugger, true, out var d) ? d : AssistantDebugger.May,
+            Enum.TryParse<AssistantContext>(Context, true, out var x) ? x : AssistantContext.Balanced,
+            Servers ?? [], RareTools);
+    }
+}
 
 /// <summary><c>Key</c>: the tool, as the list names it; <c>Off</c>: turn it off (<c>true</c>) or back on.</summary>
 internal sealed record SettingsToolSetParams(string Key, bool Off);

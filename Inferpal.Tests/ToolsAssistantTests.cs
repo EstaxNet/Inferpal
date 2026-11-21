@@ -64,11 +64,12 @@ public class ToolsAssistantTests
     [Fact]
     public void NothingRuns_TurnsCommandsAndBuildsOff_AndFull_KeepsEveryFamily()
     {
-        var plan = ToolsAssistant.Plan(Mockups with { Commands = AssistantCommands.Nothing, Context = AssistantContext.Full },
+        var plan = ToolsAssistant.Plan(Mockups with { Commands = AssistantCommands.Nothing, Context = AssistantContext.Full, RareTools = true },
                                        Profile(new InferpalConfig()), "");
         Assert.False(On(plan, "run_command"));
         Assert.False(On(plan, "run_tests"));
-        Assert.Null(On(plan, "rename_symbol"));                      // Full: every family on, as it is now
+        Assert.False(On(plan, "rename_symbol"));                     // Full keeps the rare tools, not a work left out
+        Assert.Null(On(plan, "generate_project_map"));
         Assert.True(plan.AutoContext);
     }
 
@@ -81,5 +82,32 @@ public class ToolsAssistantTests
         Assert.Empty(again.Changes);
         Assert.Equal(first.ToolTokensAfter, again.ToolTokensBefore);
         Assert.Equal((first.On, first.Off), (again.On, again.Off));
+    }
+
+    /// <summary>
+    /// ⚠ Every built-in tool is classed in the assistant (Dams, 21/11: it is maintained with each new feature). A new tool
+    /// lands here red until its family, limit or "always on" is written — never exempted.
+    /// </summary>
+    [Fact]
+    public void EveryBuiltInTool_IsClassified()
+    {
+        var builtIns = Profile(new InferpalConfig()).Where(e => e.Source == ToolSource.BuiltIn).Select(e => e.Key).ToList();
+        Assert.True(builtIns.Count >= 30, $"only {builtIns.Count} built-in tools read");   // witness: the walk is alive
+        Assert.Empty(builtIns.Where(t => !ToolsAssistant.Classified(t)));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("rename_symbol\nanalyze_code")]        // a family turned off by hand
+    [InlineData("interact_page")]                      // half a family: left as it is
+    [InlineData("run_tests")]                          // a limit set halfway: commands free, tests off
+    [InlineData("web_search\nrun_command")]            // limits already set
+    [InlineData("generate_project_map\nmy_deploy")]    // a rare tool off, and a custom tool
+    public void OpenedAndAppliedUnchanged_TheAssistantChangesNothing(string disabled)
+    {
+        var profile = Profile(new InferpalConfig { DisabledTools = disabled });
+        var model = ToolsAssistantPresenter.Build(profile, disabled, autoContext: true, window: 16384);
+        Assert.Empty(model.Plan.Changes);
+        Assert.Equal(disabled.Split('\n').Where(l => l.Length > 0).Order(), model.Plan.DisabledTools.Split('\n').Where(l => l.Length > 0).Order());
     }
 }

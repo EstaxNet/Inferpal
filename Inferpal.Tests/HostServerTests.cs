@@ -4953,7 +4953,7 @@ public partial class HostServerTests
         var resources = System.Xml.Linq.XDocument.Load(Path.Combine(dir!.FullName, "Inferpal.Core", "Localization", "Strings.resx"))
             .Root!.Elements("data").Select(d => (string)d.Attribute("name")!).ToHashSet(StringComparer.Ordinal);
 
-        var quoted = new[] { "settings.ts", "settingsEditors.ts" }
+        var quoted = new[] { "settings.ts", "settingsEditors.ts", "settingsWidgets.ts" }
             .Select(f => SettingsSchemaDriftTests.NeutralizeTypeScriptComments(
                 File.ReadAllText(Path.Combine(dir.FullName, "vscode", "src", "webview", f))))
             .SelectMany(code => System.Text.RegularExpressions.Regex.Matches(code, @"['""]([A-Z][A-Za-z]{3,})['""]"))
