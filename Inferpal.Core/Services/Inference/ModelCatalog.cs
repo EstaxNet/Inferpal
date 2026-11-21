@@ -373,7 +373,7 @@ internal static class ModelCatalog
     {
         var sb = new StringBuilder($"{Strings.ModelsRunningHeader}\n\n| {Strings.ModelsTableModel} | {Strings.ModelsTableVram} |\n|---|---|\n");
         foreach (var m in running)
-            sb.AppendLine(m.ReportsVram ? $"| `{m.Name}` | {m.SizeVram / 1024 / 1024:N0} MB |" : $"| `{m.Name}` | — |");
+            sb.AppendLine(m.ReportsVram ? Strings.Ui($"| `{m.Name}` | {m.SizeVram / 1024 / 1024:N0} MB |") : $"| `{m.Name}` | — |");
         return sb.ToString().TrimEnd();
     }
 
@@ -390,7 +390,7 @@ internal static class ModelCatalog
         {
             // A loaded model whose backend does not report its VRAM keeps its 🟢, without a "0 MB".
             var vram = !loaded.TryGetValue(m, out var r) ? "—"
-                     : r.ReportsVram                    ? $"{r.SizeVram / 1024 / 1024:N0} MB 🟢"
+                     : r.ReportsVram                    ? Strings.Ui($"{r.SizeVram / 1024 / 1024:N0} MB 🟢")
                      : "🟢";
             sb.AppendLine($"| `{m}` | {vram} |");
         }

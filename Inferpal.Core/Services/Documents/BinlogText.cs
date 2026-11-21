@@ -13,10 +13,12 @@ namespace Inferpal.Services.Documents;
 /// </summary>
 internal static class BinlogText
 {
-    /// <summary>What is said when no <c>dotnet</c> runs on this machine: the log cannot be replayed without the SDK.</summary>
+    /// <summary>Why a log is not read when no <c>dotnet</c> runs on this machine (<see cref="DocumentProblem.NoReader"/>).</summary>
     internal const string NoSdk =
-        "This MSBuild binary log is read by replaying it with the .NET SDK (`dotnet msbuild`), and `dotnet` does not run on "
-        + "this machine: install the .NET SDK to read it.";
+        "it is read by replaying it with the .NET SDK, and `dotnet` does not run on this machine: install the .NET SDK";
+
+    /// <summary>Why a log is not read when the SDK here would not replay it, followed by what dotnet said.</summary>
+    internal const string NotReplayed = "the .NET SDK on this machine could not replay it (a newer SDK may have written it): ";
 
     /// <summary>The first line of a replayed log: what follows and in which order.</summary>
     internal const string Heading =
@@ -33,24 +35,39 @@ internal static class BinlogText
     private static readonly Regex Output     = new(@"^\s+\S.*\s->\s\S", RegexOptions.None, RegexBudget.Default);
     private static readonly Regex Timed      = new(@"^\s*(\d+)\s+ms\s+(.+?)\s+(\d+)\s+calls?\s*$", RegexOptions.None, RegexBudget.Default);
 
-    /// <summary>The replayed text of the log held in <paramref name="bytes"/>.</summary>
+    /// <summary>The replayed text of the log held in <paramref name="bytes"/> (an entry of an archive): written to a file of
+    /// its own first, the replay reading a file.</summary>
     /// <param name="ct">The reader's deadline or the person's cancel: the replay is killed, its tree with it.</param>
     internal static DocumentExtraction Extract(byte[] bytes, CancellationToken ct, int maxChars = PdfText.MaxChars)
     {
-        // A folder of this read's own (rule 39): the log copied there, the replay's text written beside it.
         var dir = Directory.CreateTempSubdirectory("inferpal-binlog-");
         try
         {
-            var log  = Path.Combine(dir.FullName, "build.binlog");
-            var text = Path.Combine(dir.FullName, "replay.log");
+            var log = Path.Combine(dir.FullName, "build.binlog");
             File.WriteAllBytes(log, bytes);
+            return ExtractFile(log, ct, maxChars);
+        }
+        finally
+        {
+            try { dir.Delete(recursive: true); } catch { /* cleanup */ }
+        }
+    }
+
+    /// <summary>The replayed text of the log at <paramref name="path"/>, read where it is: never copied, never held whole.</summary>
+    /// <param name="ct">The reader's deadline or the person's cancel: the replay is killed, its tree with it.</param>
+    internal static DocumentExtraction ExtractFile(string path, CancellationToken ct, int maxChars = PdfText.MaxChars)
+    {
+        // A folder of this read's own (rule 39) for the replay's text.
+        var dir = Directory.CreateTempSubdirectory("inferpal-binlog-");
+        try
+        {
+            var text = Path.Combine(dir.FullName, "replay.log");
             var psi = new ProcessStartInfo
             {
-                FileName = "dotnet", WorkingDirectory = dir.FullName, UseShellExecute = false, CreateNoWindow = true,
-                RedirectStandardOutput = true, RedirectStandardError = true,
+                FileName = "dotnet", WorkingDirectory = dir.FullName,
                 StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8,
             };
-            foreach (var arg in new[] { "msbuild", log, "-noconlog", "-nologo",
+            foreach (var arg in new[] { "msbuild", path, "-noconlog", "-nologo",
                                         $"-flp:v=minimal;performancesummary;encoding=utf-8;logfile={text}" })
                 psi.ArgumentList.Add(arg);
             // The replay's own words in English, as every dotnet the agent reads; the log's messages stay as written.
@@ -59,32 +76,25 @@ internal static class BinlogText
             psi.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
             psi.Environment["DOTNET_NOLOGO"] = "1";
 
-            Process process;
-            try { process = ChildProcess.Start(psi); }
-            catch (Win32Exception) { return new(NoSdk, 0, 0, DocumentProblem.None); }
-            string stderr;
-            using (process)
+            ChildProcessResult run;
+            // ⚠ Through ChildProcess.RunAsync, never a loop of its own: it drains both pipes before it returns and bounds the
+            // wait on a child that refuses to die. Waited for here, on the document reader's own thread (no synchronization
+            // context), which DocumentText's deadline bounds and its cancel ends.
+            try { run = ChildProcess.RunAsync(psi, null, ct).GetAwaiter().GetResult(); }
+            catch (Win32Exception) { return new(NoSdk, 0, 0, DocumentProblem.NoReader); }
+            ct.ThrowIfCancellationRequested();
+
+            var written = File.Exists(text) ? File.ReadAllText(text, Encoding.UTF8) : string.Empty;
+            // ⚠ A replay that read the log always writes its performance summary. One that could not (a damaged file, a log
+            // from a newer MSBuild) EXITS 0, says why on the console — stdout, not stderr — and leaves an empty log: read as a
+            // summary, that is "no error, no warning", a clean build that never was.
+            if (!written.Contains("Performance Summary:", StringComparison.Ordinal))
             {
-                // No token on the reads: the pipes end when the process does, killed or not.
-                _ = process.StandardOutput.ReadToEndAsync();
-                var err = process.StandardError.ReadToEndAsync();
-                while (!process.WaitForExit(100))
-                {
-                    if (!ct.IsCancellationRequested) continue;
-                    try { process.Kill(entireProcessTree: true); } catch { /* already gone */ }
-                    break;
-                }
-                process.WaitForExit();
-                ct.ThrowIfCancellationRequested();
-                // The process has exited: the read is complete, nothing waits.
-                stderr = err.IsCompletedSuccessfully ? err.Result : string.Empty;
+                var said = (run.Stdout.Trim() + "\n" + run.Stderr.Trim()).Trim();
+                return new(NotReplayed + (said.Length == 0 ? $"exit code {run.ExitCode}" : said.Length > 2000 ? said[..2000] : said),
+                           0, 0, DocumentProblem.NoReader);
             }
-            // An SDK older than the one that wrote the log, or a damaged file: dotnet says why on its own error stream.
-            if (!File.Exists(text) || new FileInfo(text).Length == 0)
-                return string.IsNullOrWhiteSpace(stderr)
-                    ? new(string.Empty, 0, 0, DocumentProblem.Unreadable)
-                    : new("The .NET SDK on this machine could not replay this binary log: " + stderr.Trim(), 0, 0, DocumentProblem.None);
-            return Summarize(File.ReadAllText(text, Encoding.UTF8), maxChars);
+            return Summarize(written, maxChars);
         }
         finally
         {

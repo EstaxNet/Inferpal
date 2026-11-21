@@ -84,5 +84,5 @@ internal static class ReplayCommandHandler
     }
 
     private static string FormatDuration(long ms) =>
-        ms < 1000 ? $"{ms} ms" : $"{ms / 1000.0:0.0} s";
+        ms < 1000 ? $"{ms} ms" : Strings.Ui($"{ms / 1000.0:0.0} s");
 }

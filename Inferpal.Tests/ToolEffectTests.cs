@@ -75,6 +75,8 @@ public sealed class ToolEffectTests : IDisposable
     {
         var tools = Registry();
         Assert.Equal(ToolEffect.Reads, tools.EffectOf("read_file", Args(new { path = "a.cs" })));
+        // A .binlog too: its replay is Inferpal reading the log (as the OCR reads a PDF), no program of the repository runs.
+        Assert.Equal(ToolEffect.Reads, tools.EffectOf("read_file", Args(new { path = "out/build.binlog" })));
         Assert.Equal(ToolEffect.Writes, tools.EffectOf("write_file", Args(new { path = "a.cs", content = "x" })));
         Assert.Equal(ToolEffect.Runs, tools.EffectOf("run_command", Args(new { command = "dotnet test" })));
         Assert.Equal(ToolEffect.Reads, tools.EffectOf("run_command", Args(new { action = "poll", id = "1" })));

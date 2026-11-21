@@ -100,4 +100,53 @@ public class BinlogTextTests
             try { Directory.Delete(dir, recursive: true); } catch { /* cleanup */ }
         }
     }
+    [Fact]
+    public void ADamagedLog_IsNoCleanBuild_ItSaysWhyAndIsReadAgainNextTime()
+    {
+        // dotnet exits 0 on a log it cannot read, says why on stdout and leaves an empty log: never "no error, no warning".
+        var dir = Directory.CreateTempSubdirectory("inferpal-binlog-test-").FullName;
+        try
+        {
+            var path = Path.Combine(dir, "damaged.binlog");
+            var noise = new byte[5000];
+            new Random(7).NextBytes(noise);
+            File.WriteAllBytes(path, noise);
+
+            var read = AttachedDocuments.Read(path);
+
+            Assert.Equal(DocumentProblem.NoReader, read.Problem);
+            Assert.StartsWith(BinlogText.NotReplayed, read.Text);
+            Assert.DoesNotContain("## Errors", read.Text);
+            Assert.False(AttachedDocuments.IsRead(path));                   // never kept: the next read tries again
+            Assert.Equal(read.Text, AttachedDocuments.WhyNoText(path));      // the model hears the cause
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { /* cleanup */ }
+        }
+    }
+    [Fact]
+    public async Task ASearch_NeverReplaysALog_ItNamesTheOnesNotRead()
+    {
+        // A replay is a dotnet run of up to a minute: a search over a tree of CI artifacts would wait on each.
+        var dir = Directory.CreateTempSubdirectory("inferpal-binlog-test-").FullName;
+        try
+        {
+            File.WriteAllBytes(Path.Combine(dir, "msbuild.binlog"), new byte[64]);
+            File.WriteAllText(Path.Combine(dir, "notes.txt"), "nothing here\n");
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var report = await new Inferpal.Services.Tools.SearchInFilesTool(() => dir).ExecuteAsync(
+                System.Text.Json.JsonSerializer.SerializeToElement(new { path = dir, pattern = "CS0103" }), CancellationToken.None);
+
+            Assert.Contains("1 MSBuild binary log(s) (.binlog) were not searched", report);
+            Assert.Contains("read_file on one replays it", report);
+            Assert.False(AttachedDocuments.IsRead(Path.Combine(dir, "msbuild.binlog")));   // nothing was replayed
+            Assert.True(watch.Elapsed < TimeSpan.FromSeconds(30), "the search waited on a replay");
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { /* cleanup */ }
+        }
+    }
 }

@@ -113,6 +113,7 @@
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} открывается только с паролем: его текст прочитать нельзя.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>Не удалось прочитать {0}: файл повреждён или в формате, который Inferpal не читает.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} читался слишком долго (больше {1} с): его текст не прикреплён.</value></data>
+  <data name="AttachDocumentNoReader" xml:space="preserve"><value>{0} не прочитан: {1}.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} слишком велик для чтения (больше {1} МБ).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Нет незафиксированных изменений в `{0}`: проверять нечего.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Проверено: незафиксированные изменения в `{0}`.</value></data>

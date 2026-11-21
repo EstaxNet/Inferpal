@@ -120,9 +120,16 @@ public sealed class EnvironmentRefusedBuildTests
     {
         var expected = Strings.SmartFixCouldNotRun(SmartFixValidator.EnvironmentRefusedCause);
 
-        Assert.Equal(expected, SmartFixValidator.Interpret(1, TargetNotSupported + "\n", dotnetFilter: true));
-        Assert.Equal(expected, SmartFixValidator.Interpret(1, NotRestoredLine + "\n" + WorkloadMissing + "\n", dotnetFilter: true));
-        Assert.Equal(expected, SmartFixValidator.Interpret(155, SdkNotFound, dotnetFilter: true));
+        // The cause, then what clears it — the third reader says it as get_diagnostics and run_tests do.
+        var sdk = SmartFixValidator.Interpret(1, TargetNotSupported + "\n", dotnetFilter: true);
+        Assert.StartsWith(expected, sdk);
+        Assert.Contains("never edit global.json", sdk);
+        var workload = SmartFixValidator.Interpret(1, NotRestoredLine + "\n" + WorkloadMissing + "\n", dotnetFilter: true);
+        Assert.StartsWith(expected, workload);
+        Assert.Contains("dotnet workload restore", workload);
+        var globalJson = SmartFixValidator.Interpret(155, SdkNotFound, dotnetFilter: true);
+        Assert.StartsWith(expected, globalJson);
+        Assert.Contains("https://dotnet.microsoft.com/download", globalJson);
         // The reference: a real compilation error is still one.
         Assert.Equal(Strings.SmartFixBuildErrors(1, RealError), SmartFixValidator.Interpret(1, RealError + "\n", dotnetFilter: true));
     }

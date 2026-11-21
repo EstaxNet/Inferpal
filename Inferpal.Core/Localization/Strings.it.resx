@@ -113,6 +113,7 @@ Questa azione non può essere annullata.</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} si apre solo con una password: il suo testo non può essere letto.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>Impossibile leggere {0}: è danneggiato o in un formato che Inferpal non legge.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>La lettura di {0} ha richiesto troppo tempo (oltre {1} s): il suo testo non è allegato.</value></data>
+  <data name="AttachDocumentNoReader" xml:space="preserve"><value>{0} non è stato letto: {1}.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} è troppo grande per essere letto (oltre {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Nessuna modifica non committata sotto `{0}`: niente da revisionare.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Revisionato: le modifiche non committate sotto `{0}`.</value></data>

@@ -29,11 +29,20 @@ internal static class AttachedDocuments
         if (Known.TryGetValue(path, out var known) && known.Written == info.LastWriteTimeUtc && known.Length == info.Length)
             return known.Result;
         var result = DocumentText.Extract(path, ct, Passwords.GetValueOrDefault(path));
-        // A read that ran out of time on a busy machine is tried again next time, never kept as the file's answer.
-        if (result.Problem == DocumentProblem.TooSlow) return result;
+        // A read that ran out of time on a busy machine, or found no program to read it, is tried again next time — never
+        // kept as the file's answer: the machine is less busy, or the program installed, by then.
+        if (result.Problem is DocumentProblem.TooSlow or DocumentProblem.NoReader) return result;
         if (Known.Count > 16) Known.Clear();   // a handful of documents in use at once; never a growing cache
         Known[path] = (info.LastWriteTimeUtc, info.Length, result);
         return result;
+    }
+
+    /// <summary>Whether the document at <paramref name="path"/> was read already, as it is now: its text is at hand.</summary>
+    public static bool IsRead(string path)
+    {
+        var info = new FileInfo(path);
+        return info.Exists && Known.TryGetValue(path, out var known)
+            && known.Written == info.LastWriteTimeUtc && known.Length == info.Length;
     }
 
     /// <summary>A PDF or DOCX that opens only with a password the person has not given yet in this process.</summary>
@@ -167,6 +176,7 @@ internal static class AttachedDocuments
                                   : "it holds no text: a scan, or images",
         DocumentProblem.Encrypted => "it opens only with a password",
         DocumentProblem.TooSlow => "it took too long to read",
+        DocumentProblem.NoReader => Read(path).Text,
         DocumentProblem.TooLarge => string.Create(CultureInfo.InvariantCulture, $"it is larger than {DocumentText.MaxBytesOf(path) / (1024 * 1024)} MB"),
         _ => "it could not be read: damaged, or in a form Inferpal does not read",
     };

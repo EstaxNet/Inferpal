@@ -516,6 +516,7 @@ internal static class Strings
     public static string AttachDocumentLocked(string name) => Format(Get(nameof(AttachDocumentLocked)), name);
     public static string AttachDocumentUnreadable(string name) => Format(Get(nameof(AttachDocumentUnreadable)), name);
     public static string AttachDocumentTooSlow(string name, int seconds) => Format(Get(nameof(AttachDocumentTooSlow)), name, seconds);
+    public static string AttachDocumentNoReader(string name, string why) => Format(Get(nameof(AttachDocumentNoReader)), name, why);
     public static string AttachDocumentTooLarge(string name, int megabytes) => Format(Get(nameof(AttachDocumentTooLarge)), name, megabytes);
     /// <summary>The Explorer's "Explain" — {0}=the file's or the folder's name.</summary>
     public static string ExplainFileQuestion(string name)   => Format(Get(nameof(ExplainFileQuestion)), name);

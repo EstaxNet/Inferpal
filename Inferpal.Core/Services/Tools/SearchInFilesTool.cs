@@ -91,6 +91,7 @@ internal class SearchInFilesTool : ITool
         var documentsWithoutText = 0;
         var documentsInPart = new List<string>();
         var documentsNotSearched = 0;
+        var buildLogsNotReplayed = 0;
         foreach (var file in files)
         {
             if (ct.IsCancellationRequested) break;
@@ -115,6 +116,10 @@ internal class SearchInFilesTool : ITool
                     // A PDF or DOCX is searched in its extracted text — read_file's, so a line reported here is the line it
                     // shows. Extraction is bounded per search: past its time, the rest are counted and said, never "no match".
                     if (documentWatch.Elapsed > DocumentSearchBudget) { documentsNotSearched++; continue; }
+                    // An MSBuild binary log is read by replaying it (a dotnet run of up to a minute): a search never starts one,
+                    // it searches a log already read and names the others.
+                    if (file.EndsWith(".binlog", StringComparison.OrdinalIgnoreCase) && !Documents.AttachedDocuments.IsRead(file))
+                    { buildLogsNotReplayed++; continue; }
                     documentWatch.Start();
                     var extracted = Documents.AttachedDocuments.ForModel(file, ct);
                     documentWatch.Stop();
@@ -201,6 +206,9 @@ internal class SearchInFilesTool : ITool
         if (documentsWithoutText > 0)
             notes.Append($"\n({documentsWithoutText} PDF/DOCX file(s) give no text to search (a scan, images, a password, or "
                        + "too large): read_file on one says which.)");
+        if (buildLogsNotReplayed > 0)
+            notes.Append($"\n({buildLogsNotReplayed} MSBuild binary log(s) (.binlog) were not searched: a search does not replay "
+                       + "them — read_file on one replays it, and a search after that includes it. This is NOT \"absent from them\".)");
         if (documentsNotSearched > 0)
             notes.Append($"\n({documentsNotSearched} PDF/DOCX file(s) were not searched: reading documents stopped after "
                        + $"{DocumentSearchBudget.TotalSeconds:0} s — search one by its path, or narrow file_pattern. This is NOT "

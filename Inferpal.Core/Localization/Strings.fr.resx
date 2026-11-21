@@ -116,6 +116,7 @@ Cette action est irréversible.</value></data>
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} ne s'ouvre qu'avec un mot de passe : son texte ne peut pas être lu.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} n'a pas pu être lu : il est endommagé, ou dans une forme qu'Inferpal ne lit pas.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} a été trop long à lire (plus de {1} s) : son texte n'est pas joint.</value></data>
+  <data name="AttachDocumentNoReader" xml:space="preserve"><value>{0} n'a pas été lu : {1}.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} est trop gros pour être lu (plus de {1} Mo).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Aucun changement non commité sous `{0}` : rien à relire.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Relu : les changements non commités sous `{0}`.</value></data>

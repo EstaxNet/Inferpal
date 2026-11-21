@@ -108,6 +108,9 @@ internal sealed class BackgroundTaskQueue : IDisposable
         public string? Error;
         public readonly List<string> Steps = [];
         public int StepsTaken;
+        /// <summary>A "Thinking…" came since the last line journaled: the next line is a step of its own, never the last
+        /// one said again (two waits a turn apart stay two).</summary>
+        public bool AfterNoStep;
         public CancellationTokenSource? Cts;
         public TaskEndCause Cause;
         /// <summary>Its report was opened.</summary>
@@ -688,18 +691,21 @@ internal sealed class BackgroundTaskQueue : IDisposable
 
     private void AppendStep(Job job, string step)
     {
-        // "Thinking…" says the model is at work, not what was done: journaled, it reads as a step and is counted as one.
-        if (string.IsNullOrWhiteSpace(step) || StepLines.IsNoStep(step)) return;
+        if (string.IsNullOrWhiteSpace(step)) return;
         bool persist;
         lock (_lock)
         {
+            // "Thinking…" says the model is at work, not what was done: journaled, it reads as a step and is counted as one.
+            // It still separates what comes before it from what comes after.
+            if (StepLines.IsNoStep(step)) { job.AfterNoStep = true; return; }
             // A line said again in place — a wait, a summary's progress — replaces the one it continues: one step, never
             // one every beat (StepLines).
-            if (job.Steps.Count > 0 && StepLines.SaysAgain(job.Steps[^1], step))
+            if (job.Steps.Count > 0 && !job.AfterNoStep && StepLines.SaysAgain(job.Steps[^1], step))
             {
                 job.Steps[^1] = step;
                 return;
             }
+            job.AfterNoStep = false;
             job.StepsTaken++;
             job.Steps.Add(step);
             // Keep the tail: on a long run the recent steps explain where it got to.

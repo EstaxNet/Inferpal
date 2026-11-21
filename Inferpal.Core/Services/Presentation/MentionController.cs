@@ -531,6 +531,7 @@ internal static class MentionController
             Documents.DocumentProblem.Encrypted => Strings.AttachDocumentLocked(name),
             Documents.DocumentProblem.TooSlow   => Strings.AttachDocumentTooSlow(name, (int)Documents.DocumentText.DeadlineOf(filePath).TotalSeconds),
             Documents.DocumentProblem.TooLarge  => Strings.AttachDocumentTooLarge(name, (int)(Documents.DocumentText.MaxBytesOf(filePath) / (1024 * 1024))),
+            Documents.DocumentProblem.NoReader  => Strings.AttachDocumentNoReader(name, Documents.AttachedDocuments.Read(filePath).Text),
             _                                   => Strings.AttachDocumentUnreadable(name),
         };
     }
@@ -641,12 +642,12 @@ internal static class MentionController
         // without splitting the folder.
         var notes = new List<string>(4);
         if (listed < files.Count)
-            notes.Add($"(the list stops at {listed} of {files.Count} files: the {maxChars:N0}-character budget — the rest are "
+            notes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"(the list stops at {listed} of {files.Count} files: the {maxChars:N0}-character budget — the rest are ")
                     + "NOT named above)");
         if (files.Count > MaxFiles)
             notes.Add($"(bodies: the first {MaxFiles} of {files.Count} listed files — the rest are named above but NOT included)");
         if (budgetStop)
-            notes.Add($"(stopped at the {maxChars:N0}-character budget: {attempted - included - unreadable} more listed file(s) not included)");
+            notes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"(stopped at the {maxChars:N0}-character budget: {attempted - included - unreadable} more listed file(s) not included)"));
         if (unreadable > 0)
             notes.Add($"({unreadable} file(s) could not be read and are not included)");
         if (limits.FileCapHit)

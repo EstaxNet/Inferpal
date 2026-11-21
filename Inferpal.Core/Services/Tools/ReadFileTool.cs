@@ -32,6 +32,8 @@ internal class ReadFileTool : ITool
 
     public string Name => "read_file";
     /// <inheritdoc/>
+    // Reading only, a .binlog too: its replay (dotnet msbuild, in a folder of its own) is Inferpal reading the log, as the
+    // OCR reads a PDF — no build, no program of the repository runs.
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
         "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg, .evtx event logs, MSBuild .binlog build logs, .drawio/.vsdx diagrams); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +

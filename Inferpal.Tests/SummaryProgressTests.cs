@@ -193,4 +193,28 @@ public class SummaryProgressTests
         Assert.Contains(Strings.StatusCompacting, steps);
         Assert.Contains(steps, s => IsProgress(s, 100));
     }
+    [Fact]
+    public async Task TwoWaitsATurnApart_StayTwoSteps_ThoughTheThinkingBetweenThemIsNotJournaled()
+    {
+        var first  = new ModelWait(30_000, TimeSpan.FromSeconds(8), null, TimeSpan.FromMinutes(5)).Short;
+        var second = new ModelWait(30_000, TimeSpan.FromSeconds(3), null, TimeSpan.FromMinutes(5)).Short;
+        using var queue = new Inferpal.Services.Tasks.BackgroundTaskQueue((_, onStep, _) =>
+        {
+            onStep(first);
+            onStep(Strings.StatusThinking);   // the model at work between them: no step, but a separation
+            onStep(second);
+            return Task.FromResult(Inferpal.Services.Tasks.BackgroundTaskQueue.TaskRunOutcome.Of("done"));
+        });
+        var id = queue.Submit("audit")!;
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        while (queue.Get(id)?.IsFinished != true)
+        {
+            Assert.True(DateTime.UtcNow < deadline, "the task did not finish");
+            await Task.Delay(10);
+        }
+
+        var task = queue.Get(id)!;
+        Assert.Equal(2, task.StepsTaken);
+        Assert.Equal(new[] { first, second }, task.Steps);
+    }
 }

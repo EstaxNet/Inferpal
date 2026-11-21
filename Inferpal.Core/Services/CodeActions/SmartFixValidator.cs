@@ -316,7 +316,8 @@ internal sealed class SmartFixValidator
             return GetDiagnosticsTool.StopOf(errors) switch
             {
                 GetDiagnosticsTool.BuildStop.NotRestored => Strings.SmartFixCouldNotRun(NotRestoredCause),
-                GetDiagnosticsTool.BuildStop.Environment => Strings.SmartFixCouldNotRun(EnvironmentRefusedCause),
+                // What clears it follows, as get_diagnostics and run_tests say it: the third reader of the same refusal.
+                GetDiagnosticsTool.BuildStop.Environment => GetDiagnosticsTool.WithRemedy(Strings.SmartFixCouldNotRun(EnvironmentRefusedCause), string.Join("\n", errors)),
                 GetDiagnosticsTool.BuildStop.CommandLine => Strings.SmartFixCouldNotRun(CommandLineRefusedCause),
                 _                                        => Strings.SmartFixBuildErrors(errors.Count, Listed(errors)),
             };
@@ -325,7 +326,7 @@ internal sealed class SmartFixValidator
         // The exit code is the reliable failure signal across toolchains.
         if (exitCode == 0) return Strings.SmartFixBuildOk;
         // The host refused the global.json before MSBuild started: no error line, and nothing compiled.
-        if (dotnetFilter && GetDiagnosticsTool.IsSdkNotFound(output)) return Strings.SmartFixCouldNotRun(EnvironmentRefusedCause);
+        if (dotnetFilter && GetDiagnosticsTool.IsSdkNotFound(output)) return GetDiagnosticsTool.WithRemedy(Strings.SmartFixCouldNotRun(EnvironmentRefusedCause), output);
         if (IsToolMissing(exitCode, output)) return null;   // toolchain absent → stay silent
 
         var lines = ExtractErrorLines(output);

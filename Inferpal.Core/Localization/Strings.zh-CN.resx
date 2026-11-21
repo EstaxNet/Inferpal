@@ -116,6 +116,7 @@
   <data name="AttachDocumentLocked" xml:space="preserve"><value>{0} 需要密码才能打开：无法读取其文本。</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>无法读取 {0}：文件已损坏，或格式是 Inferpal 无法读取的。</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>读取 {0} 用时过长（超过 {1} 秒）：未附加其文本。</value></data>
+  <data name="AttachDocumentNoReader" xml:space="preserve"><value>未读取 {0}：{1}。</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} 太大，无法读取（超过 {1} MB）。</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>`{0}` 下没有未提交的更改：无需审查。</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>已审查：`{0}` 下未提交的更改。</value></data>

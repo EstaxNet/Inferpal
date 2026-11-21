@@ -15,6 +15,9 @@ internal enum DocumentProblem
     TooSlow,
     /// <summary>Larger than <see cref="DocumentText.MaxBytes"/>: not read.</summary>
     TooLarge,
+    /// <summary>The program that reads it is not on this machine, or would not read it (an MSBuild binary log without the .NET
+    /// SDK): the extraction's text says why, in English. Never kept: installing it makes the next read work.</summary>
+    NoReader,
 }
 
 /// <summary>A document that would take more than a reader may spend — memory, a page count, a text length: reading
@@ -127,6 +130,13 @@ internal static class DocumentText
     /// <param name="password">The password the person typed for a protected PDF or DOCX.</param>
     internal static DocumentExtraction Extract(string path, CancellationToken ct = default, string? password = null)
     {
+        if (Path.GetExtension(path).Equals(".binlog", StringComparison.OrdinalIgnoreCase))
+        {
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            deadline.CancelAfter(BuildLogDeadline);
+            try { return RunWithin(() => BinlogText.ExtractFile(path, deadline.Token), BuildLogDeadline, ct); }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested) { return new(string.Empty, 0, 0, DocumentProblem.TooSlow); }
+        }
         byte[] bytes;
         try { bytes = File.ReadAllBytes(path); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return new(string.Empty, 0, 0, DocumentProblem.Unreadable); }
