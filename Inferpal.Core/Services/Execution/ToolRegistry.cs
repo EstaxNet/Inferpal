@@ -153,7 +153,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new OcrTool(root));
         Register(new EditNotebookTool(approval, history, root, overlay, setDiff));
         Register(new RunNotebookTool(codeConsent, root, overlay));
-        Register(new FetchUrlTool(approval));
+        Register(new FetchUrlTool(approval, _readImages));
         Register(new HttpRequestTool(approval));
         // A page an app the agent started serves (a background job of run_command) is its own work: looked at and used
         // without a card. Any other address of this machine is another app of the person's.

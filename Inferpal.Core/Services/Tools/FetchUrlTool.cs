@@ -14,7 +14,11 @@ internal class FetchUrlTool : ITool
 
     private readonly IApprovalService _approval;
 
-    public FetchUrlTool(IApprovalService approval) => _approval = approval;
+    private readonly Documents.ToolImageInbox? _images;
+
+    /// <param name="approval">The card a fetch asks first.</param>
+    /// <param name="images">Where a ticket's pictures go to the model (<see cref="TicketReader"/>); <c>null</c>: named only.</param>
+    public FetchUrlTool(IApprovalService approval, Documents.ToolImageInbox? images = null) => (_approval, _images) = (approval, images);
 
     private static readonly HttpClient _http = CreateClient();
 
@@ -41,7 +45,8 @@ internal class FetchUrlTool : ITool
     public string Name        => "fetch_url";
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Network;
-    public string Description => "Fetches the readable text content of a web page. Use this to read documentation, articles, or any web page whose URL you already know.";
+    public string Description => "Fetches the readable text content of a web page. Use this to read documentation, articles, or any web page whose URL you already know. "
+                                + "An issue or pull request of GitHub, GitLab, Gitea or Codeberg reads as its title, description, comments in order and changed files, with its images.";
     public object Parameters  => new
     {
         type = "object",
@@ -78,8 +83,29 @@ internal class FetchUrlTool : ITool
         if (!await _approval.RequestApprovalAsync("fetch_url", url, ct))
             return Execution.ToolFailure.CancelledByUser;
 
+        // An issue or a pull request reads as what it is, by its forge's API; refused, it is said and the page read instead.
+        // The person's rules judge every address the ticket's reader derives, as they judged this one.
+        bool Denied(string address) => _approval.Refuses("fetch_url", address);
+        var note = string.Empty;
+        if (await TicketReader.ReadAsync(url, TicketReader.Network, Denied, ct) is { } ticket)
+        {
+            if (ticket.Text is { } text)
+            {
+                // Its pictures once, with the first window, and outside it: every window counts the same text.
+                var images = start == 0 && _images is not null ? await TicketReader.ShowImagesAsync(ticket.Images, url, Denied, _images, ct) : string.Empty;
+                return Window(text, start, maxChars) + images;
+            }
+            if (ticket.Refused is { } refusedApi)
+            {
+                // ⚠ A later window counts characters of the TICKET's text: never applied to the web page instead.
+                if (start > 0)
+                    return refusedApi + $"\n[start_char {start} counts characters of the ticket's text, which could not be read again: "
+                         + "read it from start_char=0 later.]";
+                note = refusedApi + "\n\n";
+            }
+        }
         var page = await GetStringCheckingRedirectsAsync(url, ct);
-        return Window(Readable(page), start, maxChars);
+        return note + Window(Readable(page), start, maxChars);
     }
 
     /// <summary>
@@ -123,7 +149,18 @@ internal class FetchUrlTool : ITool
     /// GETs <paramref name="url"/>, following up to <see cref="MaxRedirects"/> redirects
     /// manually and re-validating EVERY hop against <see cref="IsPrivateOrLoopback"/>.
     /// </summary>
-    private static async Task<WebPage.WebText> GetStringCheckingRedirectsAsync(string url, CancellationToken ct)
+    private static Task<WebPage.WebText> GetStringCheckingRedirectsAsync(string url, CancellationToken ct) =>
+        GetCheckingRedirectsAsync(url, null, WebPage.ReadAsync, ct);
+
+    /// <summary>The response at <paramref name="url"/> by this tool's network path (every hop re-checked), asked for as
+    /// <paramref name="accept"/> (the page types when <c>null</c>), read by <paramref name="read"/>: a ticket's API, an
+    /// image. No approval card: the caller's own call was approved, or was the person's.</summary>
+    /// <param name="userAgent">The client name sent instead of the browser's, for an API; <c>null</c>: the browser's.</param>
+    /// <param name="allowHop">Whether a redirect may go to an address (a ticket's image stays on its forge); <c>null</c>:
+    /// any public address.</param>
+    internal static async Task<T> GetCheckingRedirectsAsync<T>(string url, string? accept,
+        Func<HttpContent, CancellationToken, Task<T>> read, CancellationToken ct, string? userAgent = null,
+        Func<string, bool>? allowHop = null)
     {
         var current = url;
         for (int hop = 0; ; hop++)
@@ -150,7 +187,14 @@ internal class FetchUrlTool : ITool
                     + $"the host '{HostOf(current)}' could not be resolved — the name does not exist, or this "
                     + "machine has no DNS or network access. Nothing was fetched.");
 
-            using var response = await _http.GetAsync(current, ct);
+            using var request = new HttpRequestMessage(HttpMethod.Get, current);
+            if (accept is not null)
+            {
+                request.Headers.Accept.Clear();
+                request.Headers.TryAddWithoutValidation("Accept", accept);
+            }
+            if (userAgent is not null) request.Headers.TryAddWithoutValidation("User-Agent", userAgent);
+            using var response = await _http.SendAsync(request, ct);
 
             if ((int)response.StatusCode is >= 300 and < 400 && response.Headers.Location is { } location)
             {
@@ -159,11 +203,13 @@ internal class FetchUrlTool : ITool
                 current = location.IsAbsoluteUri
                     ? location.ToString()
                     : new Uri(new Uri(current), location).ToString();
+                if (allowHop is not null && !allowHop(current))
+                    throw new ArgumentException($"The address redirected to {current}, which is not where it may go: not fetched.");
                 continue;
             }
 
             response.EnsureSuccessStatusCode();
-            return await WebPage.ReadAsync(response.Content, ct);
+            return await read(response.Content, ct);
         }
     }
 

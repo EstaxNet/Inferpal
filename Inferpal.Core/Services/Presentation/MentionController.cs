@@ -190,6 +190,21 @@ internal static class MentionController
         if (FetchUrlTool.Refusal(url) is { } refused) return new(null, null, Strings.MentionUrlUnavailable(refused));
         if (notAllowed(url) is { } off) return new(null, null, off);
 
+        var shown = Uri.TryCreate(url, UriKind.Absolute, out var u) ? u.Host + u.AbsolutePath.TrimEnd('/') : url;
+        // An issue or a pull request: read by its forge's API (its images named with their addresses); refused, said above
+        // the page read instead.
+        var note = string.Empty;
+        try
+        {
+            if (await TicketReader.ReadAsync(url, TicketReader.Network, address => notAllowed(address) is not null, ct) is { } ticket)
+            {
+                if (ticket.Text is { } read) return new("🌐 " + ChatTurnPolicy.OneLinePreview(shown, 48), $"{url}\n\n{read}", null);
+                if (ticket.Refused is { } refusedApi) note = refusedApi + "\n\n";
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) { Diagnostics.Swallow("MentionController.Ticket", ex); }
+
         WebPage.WebText page;
         try { page = await FetchUrlTool.FetchAsync(url, ct); }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
@@ -198,8 +213,7 @@ internal static class MentionController
         var text = FetchUrlTool.Readable(page);
         if (page.Binary) return new(null, null, Strings.MentionUrlUnavailable(text));
         if (string.IsNullOrWhiteSpace(text)) return new(null, null, Strings.MentionUrlEmpty(url));
-        var shown = Uri.TryCreate(url, UriKind.Absolute, out var u) ? u.Host + u.AbsolutePath.TrimEnd('/') : url;
-        return new("🌐 " + ChatTurnPolicy.OneLinePreview(shown, 48), $"{url}\n\n{text}", null);
+        return new("🌐 " + ChatTurnPolicy.OneLinePreview(shown, 48), $"{url}\n\n{note}{text}", null);
     }
 
     /// <summary>

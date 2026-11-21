@@ -67,6 +67,8 @@ trifecta*; `fetch_url` additionally passes a hardened SSRF guard (IPv4-mapped IP
 loopback/private ranges, the resolved address checked too — best-effort against DNS rebinding, the approval card
 being the boundary — with a ReDoS-safe timeout).
 
+**An issue or a pull request reads as what it is.** A link to a GitHub, GitLab (any instance), Gitea, Forgejo or Codeberg ticket — fetched by the agent or attached with `@url` — is read through the forge's public API: its number, title, state, author, date and labels, its description, its comments oldest first, and for a pull request its changed files. The text is marked as written by the ticket's authors, to read as data, not instructions. The agent is shown up to four of the ticket's images when they are held by the forge itself; others are only named. A private repository, or GitHub's limit of 60 calls an hour without an account, is said, and the page is read as before.
+
 `http_request` asks on every call. For a local address (`localhost`, `127.0.0.1`, `::1`) *Always* opens that address
 and port only — another local port is asked again — and the connection itself is held to this machine. Any other
 address, your local network included, is asked call by call with no *Always*, unless one of your own rules names it in
