@@ -10,7 +10,7 @@ namespace Inferpal.Services.Documents;
 
 /// <summary>
 /// A screen recording of a bug read as pictures the model can see: <see cref="Count"/> frames at even times, laid out on
-/// one contact sheet, each with its time written on it, so the model says WHEN ("at 0:30"). Decoded by the system it runs
+/// one contact sheet, each with its time written above it, so the model says WHEN ("at 0:30"). Decoded by the system it runs
 /// on — Windows' own media stack (WinRT), ffmpeg on macOS and Linux — and a GIF that moves by Inferpal itself.
 /// </summary>
 /// <remarks>⚠ The decoder may be missing (a .webm on Windows without the VP9 extension, ffmpeg absent): said with what installs
@@ -34,10 +34,21 @@ internal static class VideoFrames
 
     /// <summary>The width of one frame on the sheet: four to a row and their gaps are 1916 px, under what an image is scaled
     /// to (1920).</summary>
-    private const int CellWidth = 476;
+    internal const int CellWidth = 476;
 
-    /// <summary>The tallest a frame may be on the sheet: a frame of an extreme shape is fitted, never drawn its full height.</summary>
-    private const int CellMaxHeight = CellWidth * 2;
+    /// <summary>The size of the time's glyphs (a 5 × 7 font, three pixels a dot) and of the box around them.</summary>
+    private const int LabelScale = 3, LabelPad = 4, LabelHeight = 7 * LabelScale + LabelPad * 2;
+
+    /// <summary>The band above each frame that holds its time: the label's box and a margin, the wider one above it, so a
+    /// time reads with the frame BELOW it, never the row above. Never over the frame: an app's title or menu is there.</summary>
+    internal const int Band = LabelHeight + 9;
+
+    /// <summary>The space between two frames.</summary>
+    private const int Gap = 4;
+
+    /// <summary>The tallest a frame may be on the sheet: two rows of frames and their bands fit the height an image is sent at
+    /// (1080), so the times are never scaled down; a taller frame (a phone's recording) is fitted, narrower.</summary>
+    private const int CellMaxHeight = (ChatImages.LargeHeight - Gap) / 2 - Band;
 
     internal static bool Handles(string name) => Extensions.Contains(Path.GetExtension(name).ToLowerInvariant());
 
@@ -291,29 +302,30 @@ internal static class VideoFrames
 
     // ── The contact sheet ──
 
-    /// <summary>The frames side by side, four to a row, each with its OWN time written in its corner, as one JPEG, and how
+    /// <summary>The frames side by side, four to a row, each with its OWN time written in a band above it, as one JPEG, and how
     /// many it holds; <c>null</c> when none decodes.</summary>
     internal static (byte[] Image, int Frames)? Compose(IReadOnlyList<Frame> frames)
     {
         // Each cell keeps the time of the frame it shows: a frame that does not decode is dropped WITH its time.
         var cells = frames.Select(f => (f.At, Cell: Decode(f))).Where(c => c.Cell.Pixels is not null).ToList();
+        const int gap = Gap;
         if (cells.Count == 0) return null;
         var tenths = cells.Zip(cells.Skip(1)).Any(p => (p.Second.At - p.First.At).TotalSeconds < 2);
         var columns = Math.Min(4, cells.Count);
         var rows = (cells.Count + columns - 1) / columns;
         var cellHeight = cells.Max(c => c.Cell.Height);
-        const int gap = 4;
         var width = columns * CellWidth + (columns - 1) * gap;
-        var height = rows * cellHeight + (rows - 1) * gap;
+        var height = rows * (Band + cellHeight) + (rows - 1) * gap;
         var sheet = new byte[checked((long)width * height * 4)];
         for (var p = 0; p < sheet.Length; p += 4) { sheet[p] = 40; sheet[p + 1] = 40; sheet[p + 2] = 44; sheet[p + 3] = 255; }
         for (var i = 0; i < cells.Count; i++)
         {
-            var (x0, y0) = (i % columns * (CellWidth + gap), i / columns * (cellHeight + gap));
+            var (x0, y0) = (i % columns * (CellWidth + gap), i / columns * (Band + cellHeight + gap));
             var c = cells[i].Cell;
             for (var y = 0; y < c.Height; y++)
-                Buffer.BlockCopy(c.Pixels!, y * c.Width * 4, sheet, ((y0 + y) * width + x0) * 4, c.Width * 4);
-            Label(sheet, width, x0 + 6, y0 + 6, Time(cells[i].At, tenths));
+                Buffer.BlockCopy(c.Pixels!, y * c.Width * 4, sheet, ((y0 + Band + y) * width + x0) * 4, c.Width * 4);
+            // Over the picture it times (a narrow frame is centred in its cell), against the band's bottom.
+            Label(sheet, width, x0 + c.Left, y0 + Band - LabelHeight - 2, Time(cells[i].At, tenths));
         }
         using var output = new MemoryStream();
         new ImageWriter().WriteJpg(sheet, width, height, StbImageWriteSharp.ColorComponents.RedGreenBlueAlpha, output, 85);
@@ -322,7 +334,8 @@ internal static class VideoFrames
 
     /// <summary>A frame as RGBA fitted in a <see cref="CellWidth"/> × <see cref="CellMaxHeight"/> box; <c>null</c> pixels when
     /// it does not decode or is larger than an image may be.</summary>
-    private static (byte[]? Pixels, int Width, int Height) Decode(Frame frame)
+    /// <returns>The cell, and where the picture starts in it (<c>Left</c>, more than 0 for a frame narrower than a cell).</returns>
+    private static (byte[]? Pixels, int Width, int Height, int Left) Decode(Frame frame)
     {
         byte[] rgba; int w, h;
         try
@@ -332,27 +345,27 @@ internal static class VideoFrames
             {
                 // Its size from its header first: a frame that declares more pixels than an image may have is not decoded.
                 var header = ImageInfo.FromStream(new MemoryStream(frame.Image));
-                if (header is not { } info || (long)info.Width * info.Height > ChatImages.MaxPixels) return (null, 0, 0);
+                if (header is not { } info || (long)info.Width * info.Height > ChatImages.MaxPixels) return (null, 0, 0, 0);
                 var image = ImageResult.FromMemory(frame.Image, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
                 (rgba, w, h) = (image.Data, image.Width, image.Height);
             }
-            if (w <= 0 || h <= 0) return (null, 0, 0);
+            if (w <= 0 || h <= 0) return (null, 0, 0, 0);
             var scale = Math.Min((double)CellWidth / w, (double)CellMaxHeight / h);
             var (cw, ch) = (Math.Max(1, (int)Math.Round(w * scale)), Math.Max(1, (int)Math.Round(h * scale)));
             var fitted = new byte[cw * ch * 4];
             StbImageResize.stbir_resize_uint8(rgba, w, h, w * 4, fitted, cw, ch, cw * 4, 4);
-            if (cw == CellWidth) return (fitted, cw, ch);
+            if (cw == CellWidth) return (fitted, cw, ch, 0);
             // Narrower than a cell (a tall frame): centred on the sheet's ground.
             var cell = new byte[CellWidth * ch * 4];
             for (var p = 0; p < cell.Length; p += 4) { cell[p] = 40; cell[p + 1] = 40; cell[p + 2] = 44; cell[p + 3] = 255; }
             var left = (CellWidth - cw) / 2;
             for (var y = 0; y < ch; y++) Buffer.BlockCopy(fitted, y * cw * 4, cell, (y * CellWidth + left) * 4, cw * 4);
-            return (cell, CellWidth, ch);
+            return (cell, CellWidth, ch, left);
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or IndexOutOfRangeException or OverflowException)
         {
             Diagnostics.Swallow("VideoFrames.Decode", ex);
-            return (null, 0, 0);
+            return (null, 0, 0, 0);
         }
     }
 
@@ -363,7 +376,7 @@ internal static class VideoFrames
         (t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture) : $"{(int)t.TotalMinutes}:{t.Seconds:00}")
         + (tenths ? "." + (t.Milliseconds / 100).ToString(CultureInfo.InvariantCulture) : string.Empty);
 
-    // A 5 × 7 font for the digits, the colon and the dot: the time drawn on each frame, readable by the model, no font shipped.
+    // A 5 × 7 font for the digits, the colon and the dot: the time drawn above each frame, readable by the model, no font shipped.
     private static readonly Dictionary<char, string[]> Glyphs = new()
     {
         ['0'] = ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
@@ -383,9 +396,9 @@ internal static class VideoFrames
     /// <summary>Writes <paramref name="text"/> in white on a dark box at <paramref name="x"/>, <paramref name="y"/>.</summary>
     private static void Label(byte[] sheet, int width, int x, int y, string text)
     {
-        const int scale = 3, pad = 4;
+        const int scale = LabelScale, pad = LabelPad;
         var boxW = text.Length * 6 * scale + pad * 2 - scale;
-        var boxH = 7 * scale + pad * 2;
+        const int boxH = LabelHeight;
         void Paint(int px, int py, byte r, byte g, byte b)
         {
             if (px < 0 || py < 0 || px >= width) return;

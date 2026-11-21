@@ -36,7 +36,7 @@ internal static class ChatImages
     internal const int MaxPerQuestion = 4;
 
     /// <summary>The box a large image is reduced to fit.</summary>
-    private const int LargeWidth = 1920, LargeHeight = 1080;
+    internal const int LargeWidth = 1920, LargeHeight = 1080;
 
     /// <summary>The most pixels an image may declare: past it, nothing decodes it (4 bytes each, decoded).</summary>
     internal const long MaxPixels = 40_000_000;
@@ -91,7 +91,7 @@ internal static class ChatImages
                    null, scaled ? Strings.ImageScaledNote(name, w0, h0, drawn.Width, drawn.Height) : null);
     }
 
-    /// <summary>A video, or a GIF that moves, as its contact sheet: frames at even times, each with its time written on it
+    /// <summary>A video, or a GIF that moves, as its contact sheet: frames at even times, each with its time written above it
     /// (<see cref="VideoFrames"/>); why it could not be read is said with what installs the decoder.</summary>
     private static async Task<ChatImageRead> VideoAsync(byte[] bytes, string name, CancellationToken ct)
     {

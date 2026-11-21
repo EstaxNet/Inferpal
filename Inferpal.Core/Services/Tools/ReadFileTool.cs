@@ -81,7 +81,7 @@ internal class ReadFileTool : ITool
             if (read.Image is not { } image) return $"'{name}' is {kind} that is not shown: {read.Refusal}";
             _images.Put(image);
             var size = image.Width > 0 ? $", {image.Width}×{image.Height}" : string.Empty;
-            var asFrames = image.Video is null ? string.Empty : ", read as one picture of frames at even times, each with its time written on it";
+            var asFrames = image.Video is null ? string.Empty : ", read as one picture of frames at even times, each with its time written above it";
             return $"'{name}' is {kind} ({image.MediaType}{size}){asFrames}; it follows this result." + (read.Note is { } n ? $" {n}" : string.Empty);
         }
         // ⚠ A PDF or DOCX reads as its extracted text — checked before the binary test, which a PDF whose first bytes hold

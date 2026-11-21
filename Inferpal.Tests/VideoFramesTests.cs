@@ -122,23 +122,46 @@ public class VideoFramesTests
     [Fact]
     public void AFrameOfAnExtremeShape_IsFitted_NeverDrawnItsFullHeight()
     {
-        var sheet = VideoFrames.Compose([new VideoFrames.Frame(TimeSpan.Zero, ChatImagesTests.Png(2, 4000))])!.Value;
+        var sheet = VideoFrames.Compose([new VideoFrames.Frame(TimeSpan.Zero, Grey(20, 4000))])!.Value;
         var image = StbImageSharp.ImageResult.FromMemory(sheet.Image, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
-        Assert.Equal(476 * 2, image.Height);
-        Assert.Equal(476, image.Width);
+        Assert.Equal(VideoFrames.CellWidth, image.Width);
+        // Two rows of frames and their bands fit the height an image is sent at: never scaled down, nor its times.
+        Assert.True(2 * image.Height + 4 <= ChatImages.LargeHeight, $"{image.Height} px tall");
+        // The narrow frame is centred, and its time is over IT, not over the empty side of the cell.
+        int Px(int x, int y) => image.Data[(y * image.Width + x) * 4];
+        Assert.InRange(Px(VideoFrames.CellWidth / 2, VideoFrames.Band + 10), 180, 220);
+        Assert.InRange(Px(2, VideoFrames.Band + 10), 30, 50);
+        Assert.InRange(Px(VideoFrames.CellWidth / 2 + 2, VideoFrames.Band - 6), 0, 20);   // the box over the frame
+        Assert.InRange(Px(2, VideoFrames.Band - 6), 30, 50);                              // the band empty at the cell edge
+    }
+
+    /// <summary>A light grey PNG: unlike a black one, it tells a frame apart from the sheet's ground and the time's box.</summary>
+    private static byte[] Grey(int width, int height)
+    {
+        var rgb = Enumerable.Repeat((byte)200, width * height * 3).ToArray();
+        using var output = new MemoryStream();
+        new StbImageWriteSharp.ImageWriter().WritePng(rgb, width, height, StbImageWriteSharp.ColorComponents.RedGreenBlue, output);
+        return output.ToArray();
     }
 
     [Fact]
     public void TheSheet_WritesEachFramesTime_AndLaysThemFourToARow()
     {
-        var frames = Enumerable.Range(0, 8).Select(i => new VideoFrames.Frame(TimeSpan.FromSeconds(i * 5 + 3), ChatImagesTests.Png(64, 36))).ToList();
+        var frames = Enumerable.Range(0, 8).Select(i => new VideoFrames.Frame(TimeSpan.FromSeconds(i * 5 + 3), Grey(64, 36))).ToList();
         var sheet = VideoFrames.Compose(frames)!.Value;
         Assert.Equal(8, sheet.Frames);
         var image = StbImageSharp.ImageResult.FromMemory(sheet.Image, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
         Assert.Equal(4 * 476 + 3 * 4, image.Width);
-        Assert.Equal(2 * 268 + 4, image.Height);
-        // The time's box is drawn in the top-left corner of each frame: black around white strokes.
-        Assert.True(image.Data[(8 * image.Width + 8) * 4] < 40, "no time box on the first frame");
+        Assert.Equal(2 * (VideoFrames.Band + 268) + 4, image.Height);
+        int Px(int x, int y) => image.Data[(y * image.Width + x) * 4];
+        // Each time's box in the band above its frame (black), the band's ground beside it, and the frame untouched below:
+        // its top-left corner is the frame's own grey, never the box.
+        foreach (var (x0, y0) in new[] { (0, 0), (VideoFrames.CellWidth + 4, 0), (0, VideoFrames.Band + 268 + 4) })
+        {
+            Assert.InRange(Px(x0 + 1, y0 + VideoFrames.Band - 4), 0, 20);
+            Assert.InRange(Px(x0 + 300, y0 + 4), 30, 50);
+            Assert.InRange(Px(x0 + 2, y0 + VideoFrames.Band + 2), 180, 220);
+        }
     }
 
     [Theory]
