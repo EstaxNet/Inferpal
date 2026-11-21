@@ -688,7 +688,8 @@ internal sealed class BackgroundTaskQueue : IDisposable
 
     private void AppendStep(Job job, string step)
     {
-        if (string.IsNullOrWhiteSpace(step)) return;
+        // "Thinking…" says the model is at work, not what was done: journaled, it reads as a step and is counted as one.
+        if (string.IsNullOrWhiteSpace(step) || StepLines.IsNoStep(step)) return;
         bool persist;
         lock (_lock)
         {

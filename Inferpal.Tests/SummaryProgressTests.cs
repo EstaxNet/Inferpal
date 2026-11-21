@@ -102,7 +102,7 @@ public class SummaryProgressTests
             onStep(wait.Short);
             onStep((wait with { Elapsed = TimeSpan.FromSeconds(13) }).Short);
             onStep(last);
-            onStep(Strings.StatusThinking);
+            onStep("→ read_file");          // the next step, a line of its own
             return Task.FromResult(Inferpal.Services.Tasks.BackgroundTaskQueue.TaskRunOutcome.Of("done"));
         });
         var id = queue.Submit("audit")!;
@@ -115,7 +115,7 @@ public class SummaryProgressTests
 
         var task = queue.Get(id)!;
         Assert.Equal(2, task.StepsTaken);
-        Assert.Equal(new[] { last, Strings.StatusThinking }, task.Steps);
+        Assert.Equal(new[] { last, "→ read_file" }, task.Steps);
     }
 
     [Fact]

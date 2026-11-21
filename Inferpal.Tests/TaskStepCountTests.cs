@@ -13,11 +13,16 @@ namespace Inferpal.Tests;
 [Collection(CultureSerialCollection.Name)]
 public class TaskStepCountTests
 {
-    private static async Task<string> ReportOf(int steps, string language)
+    private static async Task<string> ReportOf(int steps, string language, bool thinksBetween = false)
     {
         using var queue = new BackgroundTaskQueue((_, onStep, _) =>
         {
-            for (var i = 1; i <= steps; i++) onStep($"step {i}");
+            for (var i = 1; i <= steps; i++)
+            {
+                if (thinksBetween) onStep(Strings.StatusThinking);
+                onStep($"step {i}");
+            }
+            if (thinksBetween) onStep(Strings.StatusThinking);
             return Task.FromResult(BackgroundTaskQueue.TaskRunOutcome.Of("done"));
         });
         var id = queue.Submit("audit")!;
@@ -55,6 +60,10 @@ public class TaskStepCountTests
         var report = await ReportOf(3, "en");
 
         Assert.Contains("**Steps (3)**", report);
+        // The model at work between steps is no step: two tool calls are two steps, not five lines of "Thinking…".
+        var thinking = await ReportOf(2, "en", thinksBetween: true);
+        Assert.Contains("**Steps (2)**", thinking);
+        Assert.DoesNotContain("Thinking", thinking);
         // Plain Markdown: both chats neutralize raw HTML, which would show as markup.
         Assert.DoesNotContain("<details>", report);
         Assert.DoesNotContain("<summary>", report);

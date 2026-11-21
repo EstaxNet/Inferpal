@@ -44,7 +44,15 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
     /// (<see cref="ToolNoticeTitle"/>) — computed, so a reloaded conversation shows it too.</summary>
     [DataMember] public string ToolTitle => ToolNoticeTitle.For(ToolName);
     [DataMember] public string Timestamp { get; set; } = string.Empty;
-    [DataMember] public string Content          { get => _content;          set => SetProperty(ref _content,          value); }
+    [DataMember] public string Content
+    {
+        get => _content;
+        set
+        {
+            // An answer is drawn as Markdown while it streams, as VS Code draws it, not as raw text until its end.
+            if (SetProperty(ref _content, value) && _isStreaming && Role == "assistant") RefreshWhileStreaming();
+        }
+    }
     [DataMember] public string Label            { get => _label;            set => SetProperty(ref _label,            value); }
     [DataMember] public string BtnFixWithAi     { get => _btnFixWithAi;     set => SetProperty(ref _btnFixWithAi,     value); }
     [DataMember] public bool   HasBlocks        { get => _hasBlocks;        set => SetProperty(ref _hasBlocks,        value); }
@@ -937,22 +945,59 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
         }
     }
 
+    /// <summary>How often a streaming answer is parsed again: each parse crosses to Visual Studio's process.</summary>
+    internal static readonly TimeSpan StreamParseEvery = TimeSpan.FromMilliseconds(250);
+
+    private DateTime _lastStreamParse;
+
+    /// <summary>The blocks the bubble shows, one key each (<see cref="BlockKey"/>), so a parse replaces only what changed.</summary>
+    private readonly List<string> _blockKeys = [];
+
+    private void RefreshWhileStreaming()
+    {
+        var now = DateTime.UtcNow;
+        if (now - _lastStreamParse < StreamParseEvery) return;
+        _lastStreamParse = now;
+        ParseMarkdown();
+    }
+
     private void ParseMarkdown()
     {
-        Blocks.Clear();
         // The item knows its theme only by the colours it was given: the dark palette's code ground says which.
         var palette        = ThemePalette.WithCodeBg(_themeCodeBg);
         var tableBorder    = palette.Border;
         var tableHeaderBg  = palette.Surface;
 
-        foreach (var model in MarkdownParser.Parse(Content))
+        var models = MarkdownParser.Parse(Content);
+        var keys   = models.Select(BlockKey).ToList();
+        // The blocks already shown stay: while an answer streams only its tail changes, and a block re-sent at every
+        // parse would cross to Visual Studio again for nothing.
+        var same = 0;
+        while (same < keys.Count && same < _blockKeys.Count && same < Blocks.Count && keys[same] == _blockKeys[same]) same++;
+        while (Blocks.Count > same) Blocks.RemoveAt(Blocks.Count - 1);
+        for (var i = same; i < models.Count; i++)
         {
             // Map the neutral parse result to the Remote-UI observable block, then theme it.
-            var b = MarkdownBlock.FromModel(model);
+            var b = MarkdownBlock.FromModel(models[i]);
             b.ApplyTheme(_themeText, _themeCodeText, _themeCodeBg, _themeCodeBorder, _themeLinkText, tableBorder, tableHeaderBg);
             Blocks.Add(b);
         }
+        _blockKeys.Clear();
+        _blockKeys.AddRange(keys);
         HasBlocks = Blocks.Count > 0;
+    }
+
+    /// <summary>Everything a block shows, as one string: two blocks with the same key are drawn the same.</summary>
+    internal static string BlockKey(MarkdownBlockModel m)
+    {
+        var sb = new System.Text.StringBuilder()
+            .Append(m.Type).Append('\u0001').Append(m.Language).Append('\u0001').Append(m.IsClosedFence)
+            .Append('\u0001').Append(m.Marker).Append('\u0001').Append(m.Text);
+        foreach (var r in m.Inlines)
+            sb.Append('\u0002').Append(r.Text).Append(r.IsBold).Append(r.IsItalic).Append(r.IsCode).Append(r.Url);
+        foreach (var c in m.Cells)
+            sb.Append('\u0003').Append(c.Text).Append(c.IsHeader);
+        return sb.ToString();
     }
 
     private static string Now() => DateTime.Now.ToString("t", System.Globalization.CultureInfo.CurrentCulture);

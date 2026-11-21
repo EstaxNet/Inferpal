@@ -10,6 +10,9 @@ namespace Inferpal.Services.Presentation;
 /// </summary>
 internal static class StepLines
 {
+    /// <summary>Whether <paramref name="line"/> only says the model is at work ("Thinking…"), not a step it took.</summary>
+    public static bool IsNoStep(string line) => line == Strings.StatusThinking;
+
     /// <summary>Whether <paramref name="next"/> says again what <paramref name="previous"/> said: the same wait, or the
     /// same compaction, a moment later.</summary>
     public static bool SaysAgain(string previous, string next) =>
