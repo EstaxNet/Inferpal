@@ -660,6 +660,10 @@ internal partial class InferpalToolWindowData
                 toolItem.StepSubject = Services.Presentation.RunSummary.Subject(exec.Input);
                 if (Services.Presentation.RunSummary.StepStatus(exec.Name, exec.Output) is { } status)
                     (toolItem.StepStatus, toolItem.StepStatusFailed) = status;
+                // Auto mode let it through without a card: said on the step.
+                if (exec.Auto) (toolItem.StepAuto, toolItem.StepAutoTip) = (Strings.StepAuto, Strings.StepAutoTip);
+                // Approvals are decided on the file at every call: the badge follows it at every step, not only at the next save.
+                AutoMode = _config.SharedSecurityAlertsDisabled;
                 toolItem.HasErrors   = exec.HasErrors;
                 if (exec.Diff is not null)
                     toolItem.InitDiff(exec.Diff);
@@ -898,8 +902,10 @@ internal partial class InferpalToolWindowData
 
                 // The run line says what the run did; its result bar names the files it changed, its last check, and
                 // offers Undo — what the multi-file recap used to say for two files or more, for every run.
+                // A bug report's fix says whether a check showed the bug first (proven or guessed), read on the typed question.
                 var summary = Services.Presentation.RunSummary.Build(agentExecutions,
-                    turnRunId is null ? null : _tools.History.Runs.LastOrDefault(r => r.Id == turnRunId));
+                    turnRunId is null ? null : _tools.History.Runs.LastOrDefault(r => r.Id == turnRunId),
+                    ToolHints.IsBugReport(userText));
                 _runLine?.EndRun(summary);
                 // Ended, the run folds into its line — unless the user keeps tool calls open, or a step failed (its
                 // red output is the point).

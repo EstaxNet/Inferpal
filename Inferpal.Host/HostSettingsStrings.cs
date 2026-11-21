@@ -112,6 +112,15 @@ internal sealed partial class HostServer
         strings[nameof(Strings.SettingsCancel)]             = Strings.SettingsCancel;
         strings[nameof(Strings.SettingsApprovalRulesCount)] = Strings.SettingsApprovalRulesCountTemplate;
         strings[nameof(Strings.SettingsEditRules)]          = Strings.SettingsEditRules;
+
+        // ── Auto mode: the two cards, the risks, the confirmation on Save ────
+        foreach (var key in (string[])[nameof(Strings.ApprovalsAskTitle), nameof(Strings.ApprovalsAskText), nameof(Strings.ApprovalsAutoTitle),
+                     nameof(Strings.ApprovalsAutoText), nameof(Strings.AutoRisksTitle), nameof(Strings.AutoRiskMistake),
+                     nameof(Strings.AutoRiskSteered), nameof(Strings.AutoRiskOutside), nameof(Strings.AutoRiskSmallModel),
+                     nameof(Strings.AutoStillProtectedTitle), nameof(Strings.AutoStillProtected), nameof(Strings.AutoConfirmTitle),
+                     nameof(Strings.AutoConfirmBody), nameof(Strings.AutoConfirmCheck), nameof(Strings.AutoConfirmKeep),
+                     nameof(Strings.AutoConfirmTurnOff)])
+            strings[key] = Strings.ByName(key);
         strings[nameof(Strings.BtnTest)]                    = Strings.BtnTest;
         strings[nameof(Strings.BtnSave)]                    = Strings.BtnSave;
         // "Automatic" names the language it resolves to: the editor's, or English when it is not one of ours.

@@ -989,4 +989,5 @@ internal record ToolExecution(
     bool      HasErrors = false,
     DiffInfo? Diff      = null,
     bool?     Wrote     = null,
-    bool?     Unseen    = null);
+    bool?     Unseen    = null,
+    bool      Auto      = false);

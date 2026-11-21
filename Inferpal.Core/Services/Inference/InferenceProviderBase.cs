@@ -795,12 +795,14 @@ internal abstract class InferenceProviderBase : IInferenceProvider
 
                     var wroteBefore = tools.WritesInRun;
                     var unseenBefore = tools.UnseenCallsInRun;
+                    var autoBefore = tools.AutoApprovals;
                     var result    = await AgentOrchestrator.ExecuteToolSafeAsync(tools, call.Function, turn.CutAtLimit, ct);
                     var diff      = tools.ConsumeDiff();
                     var hasErrors = toolName == GetDiagnosticsTool.ToolName && GetDiagnosticsTool.OutputHasErrors(result);
                     var exec      = new ToolExecution(toolName, call.Function.WrittenArguments, result, hasErrors, diff,
                                                       ChatTurnPolicy.WroteAFile(toolName, wroteBefore, tools.WritesInRun),
-                                                      ChatTurnPolicy.UnseenCall(unseenBefore, tools.UnseenCallsInRun));
+                                                      ChatTurnPolicy.UnseenCall(unseenBefore, tools.UnseenCallsInRun),
+                                                      tools.AutoApprovals > autoBefore);
                     executions.Add(exec);
                     onToolExecuted?.Invoke(exec);   // render the tool bubble live (full output)
                     // Size-capped copy for the model context; the UI bubble keeps the full output.

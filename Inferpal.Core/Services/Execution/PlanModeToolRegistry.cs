@@ -41,6 +41,9 @@ internal sealed class PlanModeToolRegistry(IToolRegistry inner) : IToolRegistry
 
     public bool Knows(string name) => inner.Knows(name);
 
+    // Plan allows the network tools: what auto mode let through there is said too.
+    public int? AutoApprovals => inner.AutoApprovals;
+
     // ⚠ The mode's check comes first: a name it refuses never reaches the registry it wraps, known or not.
     public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct) =>
         IsAllowed(name)

@@ -109,7 +109,15 @@ const moreMenu = document.createElement('div');
 moreMenu.id = 'moremenu';
 moreMenu.className = 'menu';
 moreMenu.hidden = true;
-topbarEl.append(modelBtn, newBtn, historyBtn, moreBtn);
+// Approvals off (auto mode): a badge that stays in the header while they are, and opens the settings.
+const autoBadge = document.createElement('button');
+autoBadge.className = 'auto-badge';
+autoBadge.hidden = true;
+autoBadge.title = t('autoBadgeTip');
+autoBadge.setAttribute('aria-label', t('autoBadgeTip'));
+setIcon(autoBadge, 'bolt', t('autoBadge'), 12);
+autoBadge.addEventListener('click', () => post({ type: 'openSettingsPage', page: 'agent', section: 'SettingsSectionApprovals' }));
+topbarEl.append(autoBadge, modelBtn, newBtn, historyBtn, moreBtn);
 document.body.append(modelPop, moreMenu);
 
 function placeMenu(menu: HTMLElement, anchor: HTMLElement, alignRight: boolean): void {
@@ -1649,6 +1657,12 @@ function stepSubject(input: string | undefined): string {
   }
   try {
     const args = JSON.parse(input) as Record<string, unknown>;
+    // A script of the agent's (run_command's 'script'): its language and length, as RunSummary.Subject in the Core.
+    if (typeof args.script === 'string' && args.script) {
+      const language = typeof args.language === 'string' && args.language ? args.language : 'script';
+      const lines = args.script.replace(/\r\n/g, '\n').replace(/\n+$/, '').split('\n').length;
+      return lines === 1 ? t('stepScriptOne', language) : t('stepScriptMany', language, lines);
+    }
     for (const key of ['path', 'file_path', 'command', 'query', 'url', 'symbol', 'pattern', 'sql', 'table']) {
       let value = args[key];
       if (typeof value === 'string' && value) {
@@ -1751,6 +1765,14 @@ function addToolBubble(item: WvTranscriptItem, expanded: boolean): void {
     chip.className = 'http-status' + (status.failed ? ' failed' : '');
     chip.textContent = status.code;
     line.appendChild(chip);
+  }
+  // Auto mode let it through without a card: said on the step, never hidden among the others.
+  if (item.toolAuto) {
+    const auto = document.createElement('span');
+    auto.className = 'step-auto';
+    auto.textContent = t('stepAuto');
+    auto.title = t('stepAutoTip');
+    line.appendChild(auto);
   }
   // A change too large to show comes as one line that says so: no count, no button that would open only that line.
   const changed = item.toolDiff !== undefined && item.toolDiff.split('\n').some((l) => diffLineKind(l) !== 'other');
@@ -1958,7 +1980,7 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     const unproven = run.check === 'unproven';
     const failed = run.check === 'buildFailed' || run.check === 'testsFailed' || ((run.check === 'none' || unproven) && stepFailed);
     // A green last check followed by edits nothing checked is no check mark either, and no failed step turns it red.
-    const info = unproven || run.check === 'passedThenEdited';
+    const info = unproven || run.check === 'passedThenEdited' || run.check === 'passedUnreproduced';
     setIcon(target.runGlyph, failed ? 'failed' : info ? 'info' : 'check', undefined, 13);
     target.runGlyph.classList.toggle('ok', !failed && !info);
     target.runGlyph.classList.toggle('failed', failed);
@@ -1986,7 +2008,10 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     const failed = run.check === 'buildFailed' || run.check === 'testsFailed';
     check.className = 'result-check' + (failed ? ' failed' : '');
     // A green last check followed by edits nothing checked: the info mark, never the check mark.
-    setIcon(check, failed ? 'failed' : run.check === 'unproven' || run.check === 'passedThenEdited' ? 'info' : 'check', run.checkText, 13);
+    setIcon(check, failed ? 'failed' : run.check === 'unproven' || run.check === 'passedThenEdited' || run.check === 'passedUnreproduced' ? 'info' : 'check', run.checkText, 13);
+    if (run.checkTip) {
+      check.title = run.checkTip;
+    }
     bar.appendChild(check);
   }
   if (run.runId) {
@@ -2557,6 +2582,14 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
     openDiff.textContent = t('approvalOpenDiff');
     openDiff.addEventListener('click', () => post({ type: 'openApprovalDiff', text: card?.message ?? message, id }));
     head.append(openDiff);
+  } else if (card?.openPath) {
+    // A script of the agent's: its copy opens in an editor tab — an edit there never changes what runs.
+    const openPath = card.openPath;
+    const openScript = document.createElement('button');
+    openScript.className = 'linkbtn';
+    openScript.textContent = t('approvalOpenScript');
+    openScript.addEventListener('click', () => post({ type: 'openFile', path: openPath }));
+    head.append(openScript);
   }
   el.setAttribute('aria-label', [card?.title, card?.subject].filter((p) => p).join(' — ') || message);
 
@@ -4392,6 +4425,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       slashCommands = msg.commands ?? [];
       toolBubblesExpanded = msg.toolBubblesExpanded === true;
       document.body.classList.toggle('ip-compact', msg.compact === true);
+      autoBadge.hidden = msg.autoMode !== true;
       contextWindow = msg.contextWindow ?? 0;
       historyEntries = msg.history ?? [];
       currentModel = msg.model ?? '';
@@ -4473,6 +4507,7 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
           toolInput: msg.input,
           toolOutput: msg.output,
           toolDiff: msg.diff,
+          toolAuto: msg.auto,
           hasErrors: msg.hasErrors,
           timestamp: msg.timestamp,
         },
@@ -4545,6 +4580,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'density':
       document.body.classList.toggle('ip-compact', msg.compact);
+      break;
+    case 'autoMode':
+      autoBadge.hidden = !msg.on;
       break;
     case 'modes':
       foundModes = msg.modes;

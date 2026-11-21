@@ -148,12 +148,13 @@ internal class ReadFileTool : ITool
 
         if (Filtered(args)) return LogPage(content, Path.GetFileName(path), args);
         // A test report reads first as its result, a draw.io diagram as its shapes and links, an API specification as its
-        // operations and a network capture as its requests; asked for lines, each is the
+        // operations, a network capture as its requests and a SARIF report as its findings; asked for lines, each is the
         // text it holds.
         if (args.Int("start_line", 0) == 0 && args.Int("end_line", 0) == 0
             && (Documents.TestReportText.Summarize(Path.GetFileName(path), content, PageChars)
                 ?? Documents.DiagramText.ForRead(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.ApiText.Summarize(Path.GetFileName(path), content, PageChars, ct)) is { } first)
+                ?? Documents.ApiText.Summarize(Path.GetFileName(path), content, PageChars, ct)
+                ?? Documents.SarifText.Summarize(Path.GetFileName(path), content, PageChars, ct)) is { } first)
             return first;
         var shown = PageOf(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
         // ⚠ What the model has SEEN, not what it asked for: a first page or a range is not the file, and write_file lets
@@ -221,7 +222,8 @@ internal class ReadFileTool : ITool
         // A test report or a diagram in a CI artifact reads as it does on disk.
         if (args.Int("start_line", 0) == 0 && args.Int("end_line", 0) == 0
             && (Documents.TestReportText.Summarize(inner, text, PageChars) ?? Documents.DiagramText.ForRead(inner, text, PageChars, ct)
-                ?? Documents.ApiText.Summarize(inner, text, PageChars, ct)) is { } first)
+                ?? Documents.ApiText.Summarize(inner, text, PageChars, ct)
+                ?? Documents.SarifText.Summarize(inner, text, PageChars, ct)) is { } first)
             return first;
         var page = PageOf(text, shown, args.Int("start_line", 0), args.Int("end_line", 0));
         return page.Text.Length > MaxChars ? Cap(page.Text, shown) : page.Text;

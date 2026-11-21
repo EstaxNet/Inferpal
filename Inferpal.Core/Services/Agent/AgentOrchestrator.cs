@@ -1299,6 +1299,7 @@ internal sealed class AgentOrchestrator
                     DiffInfo? diff;
                     bool?     wroteAFile = null;
                     bool?     unseen     = null;
+                    var       auto       = false;
                     if (fromCache)
                     {
                         result = cached!;
@@ -1308,7 +1309,9 @@ internal sealed class AgentOrchestrator
                     {
                         var wroteBefore = tools.WritesInRun;
                         var unseenBefore = tools.UnseenCallsInRun;
+                        var autoBefore = tools.AutoApprovals;
                         result = await ExecuteToolSafeAsync(tools, call.Function, turn.CutAtLimit, ct);
+                        auto = tools.AutoApprovals > autoBefore;
                         diff   = tools.ConsumeDiff();
                         wroteAFile = ChatTurnPolicy.WroteAFile(toolName, wroteBefore, tools.WritesInRun);
                         unseen = ChatTurnPolicy.UnseenCall(unseenBefore, tools.UnseenCallsInRun);
@@ -1319,7 +1322,7 @@ internal sealed class AgentOrchestrator
                     var hasErrors = toolName == GetDiagnosticsTool.ToolName
                                     && GetDiagnosticsTool.OutputHasErrors(result);
 
-                    var exec = new ToolExecution(toolName, call.Function.WrittenArguments, result, hasErrors, diff, wroteAFile, unseen);
+                    var exec = new ToolExecution(toolName, call.Function.WrittenArguments, result, hasErrors, diff, wroteAFile, unseen, auto);
                     iterExecs.Add(exec);
                     executions.Add(exec);
                     onToolExecuted?.Invoke(exec);   // render the tool bubble live (full, un-capped output)

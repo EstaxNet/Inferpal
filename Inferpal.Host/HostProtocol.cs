@@ -290,18 +290,20 @@ internal sealed record CutCardDto(string? Note, string OpenLimits, string Page, 
 
 /// <summary>One agent run as the chat shows it (<see cref="Services.Presentation.RunSummaryModel"/>).</summary>
 /// <param name="Check"><c>none</c>, <c>buildPassed</c>, <c>buildFailed</c>, <c>testsPassed</c>, <c>testsFailed</c>,
-/// <c>testsPassedPart</c>, <c>unproven</c>, or <c>passedThenEdited</c> (a green last check, then files changed that
-/// nothing checked: never drawn with the check mark).</param>
+/// <c>testsPassedPart</c>, <c>unproven</c>, <c>passedThenEdited</c> (a green last check, then files changed that
+/// nothing checked: never drawn with the check mark), or <c>passedUnreproduced</c> (a bug report's fix whose checks pass,
+/// none of which failed on the bug first: the info mark too).</param>
 /// <param name="RunId">What <c>/undo-run</c> takes; empty when the run changed no file.</param>
 /// <param name="Screen">What the app showed before the run's first write and after its last, as the agent looked at it
 /// (<see cref="Services.Documents.ScreenLooks"/>); <c>null</c> when it did not look on both sides.</param>
+/// <param name="CheckTip">What the check's words mean, on hover; empty when they need none.</param>
 internal sealed record RunSummaryDto(
     int Steps, string Title, string Detail, List<Services.Presentation.RunFileLine> Files, string Check, string CheckText,
-    string RunId, Services.Documents.RunScreen? Screen = null)
+    string RunId, Services.Documents.RunScreen? Screen = null, string CheckTip = "")
 {
     public static RunSummaryDto? Of(Services.Presentation.RunSummaryModel? m) => m is null ? null : new(
         m.Steps, m.Title, m.Detail, [.. m.Files],
-        char.ToLowerInvariant(m.Check.ToString()[0]) + m.Check.ToString()[1..], m.CheckText, m.RunId, m.Screen);
+        char.ToLowerInvariant(m.Check.ToString()[0]) + m.Check.ToString()[1..], m.CheckText, m.RunId, m.Screen, m.CheckTip);
 }
 
 /// <summary>`chat/wait` — the card of a request waiting on a server that reads its prompt (<see cref="ModelWait"/>).</summary>
@@ -376,11 +378,14 @@ internal sealed record RunFileResult(string Message, RunReviewDto? Review);
 /// <param name="Diff">The change a writing call made, in the lines the approval card showed (<c>+ - …</c> prefixes,
 /// context collapsed) — what Visual Studio draws in its tool bubble; null when the call wrote nothing.</param>
 /// <param name="Effect">What the call declares it does (<see cref="Services.Tools.ToolEffects.Name"/>), which a client draws.</param>
-internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors, string? Diff = null, string? Effect = null)
+/// <param name="Auto">The call would have asked, and auto mode (approvals off) let it through without a card.</param>
+internal sealed record ToolNotice(string Name, string Input, string Output, bool HasErrors, string? Diff = null, string? Effect = null,
+                                  bool Auto = false)
 {
     /// <summary>The notice of an executed call, its diff rendered as the approval card renders it, every line kept.</summary>
     public static ToolNotice Of(ToolExecution te) => new(te.Name, te.Input, te.Output, te.HasErrors,
-        te.Diff is { } d ? Services.CodeActions.DiffComputer.ComputeText(d.OldText, d.NewText, maxLines: int.MaxValue) : null);
+        te.Diff is { } d ? Services.CodeActions.DiffComputer.ComputeText(d.OldText, d.NewText, maxLines: int.MaxValue) : null,
+        Auto: te.Auto);
 
     /// <summary>What a saved session keeps of the output: what Visual Studio's bubble keeps
     /// (<see cref="ChatTurnPolicy.BuildToolPreview"/>); <c>null</c> when that is the whole output, sent once.</summary>

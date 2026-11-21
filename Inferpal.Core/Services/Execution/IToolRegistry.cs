@@ -41,6 +41,10 @@ internal interface IToolRegistry
     /// </summary>
     int? UnseenCallsInRun => null;
 
+    /// <summary>How many calls auto mode let through without a card (<see cref="IApprovalService.AutoApprovals"/>);
+    /// <c>null</c> for a registry that cannot say. Read before and after a call, like <see cref="UnseenCallsInRun"/>.</summary>
+    int? AutoApprovals => null;
+
     /// <summary>
     /// The model no longer has <paramref name="path"/> (as a call wrote it) whole in front of it — its read was cut or elided
     /// to leave the answer room: it is no longer "read" for a whole-file rewrite. Nothing when this registry tracks no reads.

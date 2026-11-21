@@ -119,6 +119,40 @@ Questa azione non può essere annullata.</value></data>
   <data name="ScreenAfter" xml:space="preserve"><value>dopo · {0}</value></data>
   <data name="ScreenOpenHint" xml:space="preserve"><value>Fai clic su un'immagine per aprirla a grandezza piena.</value></data>
   <data name="VideoChip" xml:space="preserve"><value>video · {0} · {1} {1:immagine|immagini}</value></data>
+  <data name="RunReproducedThenFixed" xml:space="preserve"><value>riprodotto, poi corretto · {0}</value></data>
+  <data name="RunFixedWithoutReproducing" xml:space="preserve"><value>corretto senza riprodurlo · {0}</value></data>
+  <data name="RunReproducedTestsStillFail" xml:space="preserve"><value>riprodotto · i test falliscono ancora</value></data>
+  <data name="RunReproducedBuildStillFails" xml:space="preserve"><value>riprodotto · la build fallisce ancora</value></data>
+  <data name="RunReproducedThenFixedTip" xml:space="preserve"><value>Un controllo è fallito prima della prima modifica e passa dopo l'ultima.</value></data>
+  <data name="RunReproducedStillFailsTip" xml:space="preserve"><value>Un controllo è fallito prima della prima modifica e fallisce ancora dopo l'ultima.</value></data>
+  <data name="RunFixedWithoutReproducingTip" xml:space="preserve"><value>Niente ha mostrato il bug prima della modifica: i controlli passano, ma nessuno falliva per esso.</value></data>
+  <data name="ApprovalRunScript" xml:space="preserve"><value>Eseguire uno script scritto dall'agente</value></data>
+  <data name="ApprovalScriptWhere" xml:space="preserve"><value>{0} · {1:riga|righe} · eseguito in {2}</value></data>
+  <data name="ApprovalScriptNote" xml:space="preserve"><value>Scritto fuori dal repository: lì non cambia nulla, a meno che lo script non vi scriva. Le regole dei comandi valgono anche per lui.</value></data>
+  <data name="ApprovalOpenScript" xml:space="preserve"><value>Apri in un editor</value></data>
+  <data name="StepScript" xml:space="preserve"><value>script {0} · {1:riga|righe}</value></data>
+  <data name="ApprovalsAskTitle" xml:space="preserve"><value>Chiedimi</value></data>
+  <data name="ApprovalsAskText" xml:space="preserve"><value>Una scheda prima di ogni modifica, comando o richiesta in uscita: vedete prima il diff o il comando esatto. Consigliato.</value></data>
+  <data name="ApprovalsAutoTitle" xml:space="preserve"><value>Auto · approvazioni disattivate</value></data>
+  <data name="ApprovalsAutoText" xml:space="preserve"><value>L'agente modifica file, esegue comandi e va online senza chiedere. Per uno spazio usa e getta, un container o una copia (/run-copy).</value></data>
+  <data name="AutoRisksTitle" xml:space="preserve"><value>Cosa rischia la modalità auto</value></data>
+  <data name="AutoRiskMistake" xml:space="preserve"><value>Un errore passa: una modifica sbagliata, un git reset, una cartella eliminata — nessuno la legge prima. Undo run ripristina i file scritti dall'agente, non ciò che ha fatto un comando (un push, una migrazione, un ramo eliminato).</value></data>
+  <data name="AutoRiskSteered" xml:space="preserve"><value>Ciò che legge può guidarlo: una pagina web, una issue o un file del repository possono contenere istruzioni per il modello; senza scheda può seguirle — eseguire ciò che dicono o inviare il vostro codice o un segreto all'indirizzo indicato.</value></data>
+  <data name="AutoRiskOutside" xml:space="preserve"><value>Può uscire dal progetto: un comando o uno script gira con i diritti del vostro account — altre cartelle, chiavi SSH e token, la rete.</value></data>
+  <data name="AutoRiskSmallModel" xml:space="preserve"><value>Un modello piccolo sbaglia di più: con 8-16 GB l'agente fraintende un comando o va in loop più spesso di uno grande, e la modalità auto fa andare a segno ogni passo falso.</value></data>
+  <data name="AutoStillProtectedTitle" xml:space="preserve"><value>Protetto anche in modalità auto</value></data>
+  <data name="AutoStillProtected" xml:space="preserve"><value>Le vostre regole deny e l'elenco integrato dei comandi catastrofici · le scritture nelle istruzioni e nei permessi dell'agente (contesto, memoria, note e regole) · i comandi il cui effetto non si legge (codificati, scaricati ed eseguiti).</value></data>
+  <data name="AutoConfirmTitle" xml:space="preserve"><value>Disattivare le approvazioni?</value></data>
+  <data name="AutoConfirmBody" xml:space="preserve"><value>D'ora in poi l'agente modifica file, esegue comandi e va online senza mostrarvelo prima, in ogni spazio, finché non riattivate le approvazioni. Undo run non annulla ciò che fa un comando, e una pagina, una issue o un file può guidarlo. Le regole deny e l'elenco dei comandi catastrofici restano valide.</value></data>
+  <data name="AutoConfirmCheck" xml:space="preserve"><value>Ho capito: agire senza chiedermi</value></data>
+  <data name="AutoConfirmKeep" xml:space="preserve"><value>Continua a chiedermi</value></data>
+  <data name="AutoConfirmTurnOff" xml:space="preserve"><value>Disattiva le approvazioni</value></data>
+  <data name="AutoBadge" xml:space="preserve"><value>Auto</value></data>
+  <data name="AutoBadgeTip" xml:space="preserve"><value>Approvazioni disattivate: l'agente agisce senza chiedere. Fate clic per riattivarle.</value></data>
+  <data name="StepAuto" xml:space="preserve"><value>auto</value></data>
+  <data name="StepAutoTip" xml:space="preserve"><value>Approvazioni disattivate: eseguito senza scheda</value></data>
+  <data name="RunAutoSteps" xml:space="preserve"><value>{0:passo|passi} senza chiedere</value></data>
+  <data name="AcpAutoNotice" xml:space="preserve"><value>Le approvazioni sono disattivate nelle impostazioni di Inferpal: questo agente modifica file, esegue comandi e va online senza chiedere. Le regole deny restano valide.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} è troppo grande per essere letto (oltre {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Nessuna modifica non committata sotto `{0}`: niente da revisionare.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Revisionato: le modifiche non committate sotto `{0}`.</value></data>

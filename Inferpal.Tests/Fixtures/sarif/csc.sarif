@@ -1,0 +1,209 @@
+{
+ "$schema": "http://json.schemastore.org/sarif-2.1.0",
+ "version": "2.1.0",
+ "runs": [
+  {
+   "results": [
+    {
+     "ruleId": "CS8602",
+     "ruleIndex": 337,
+     "level": "warning",
+     "message": {
+      "text": "D\u00e9r\u00e9f\u00e9rencement d'une \u00e9ventuelle r\u00e9f\u00e9rence null."
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "file:///C:/src/sarifproj/Program.cs"
+        },
+        "region": {
+         "startLine": 8,
+         "startColumn": 27,
+         "endLine": 8,
+         "endColumn": 28
+        }
+       }
+      }
+     ],
+     "properties": {
+      "warningLevel": 1
+     }
+    },
+    {
+     "ruleId": "CS0168",
+     "ruleIndex": 338,
+     "level": "warning",
+     "message": {
+      "text": "La variable 'unused' est d\u00e9clar\u00e9e, mais jamais utilis\u00e9e"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "file:///C:/src/sarifproj/Program.cs"
+        },
+        "region": {
+         "startLine": 6,
+         "startColumn": 13,
+         "endLine": 6,
+         "endColumn": 19
+        }
+       }
+      }
+     ],
+     "properties": {
+      "warningLevel": 3
+     }
+    },
+    {
+     "ruleId": "CS0219",
+     "ruleIndex": 339,
+     "level": "warning",
+     "message": {
+      "text": "La variable 'kept' est assign\u00e9e, mais sa valeur n'est jamais utilis\u00e9e"
+     },
+     "suppressions": [
+      {
+       "kind": "inSource",
+       "properties": {
+        "suppressionType": "Pragma Directive"
+       }
+      }
+     ],
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "file:///C:/src/sarifproj/Program.cs"
+        },
+        "region": {
+         "startLine": 10,
+         "startColumn": 13,
+         "endLine": 10,
+         "endColumn": 17
+        }
+       }
+      }
+     ],
+     "properties": {
+      "warningLevel": 3
+     }
+    },
+    {
+     "ruleId": "CA1852",
+     "ruleIndex": 135,
+     "level": "warning",
+     "message": {
+      "text": "Le type \u00abP\u00bb peut \u00eatre scell\u00e9, car il n\u2019a aucun sous-type dans son assembly conteneur et n\u2019est pas visible en externe"
+     },
+     "locations": [
+      {
+       "physicalLocation": {
+        "artifactLocation": {
+         "uri": "file:///C:/src/sarifproj/Program.cs"
+        },
+        "region": {
+         "startLine": 2,
+         "startColumn": 7,
+         "endLine": 2,
+         "endColumn": 8
+        }
+       }
+      }
+     ],
+     "properties": {
+      "warningLevel": 1
+     }
+    }
+   ],
+   "tool": {
+    "driver": {
+     "name": "Compilateur Microsoft (R) Visual C#",
+     "version": "5.12.0-1.26529.118 (297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f)",
+     "dottedQuadFileVersion": "5.12.0.0",
+     "semanticVersion": "5.12.0",
+     "language": "fr-FR",
+     "rules": [
+      {
+       "id": "CA1852",
+       "shortDescription": {
+        "text": "Sceller les types internes"
+       },
+       "fullDescription": {
+        "text": "Lorsqu\u2019un type n\u2019est pas accessible en dehors de son assembly et qu\u2019il n\u2019a aucun sous-type dans son assembly conteneur, il peut \u00eatre scell\u00e9 en toute s\u00e9curit\u00e9. Les types de scellage peuvent am\u00e9liorer les performances."
+       },
+       "defaultConfiguration": {
+        "level": "note"
+       },
+       "helpUri": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1852",
+       "properties": {
+        "category": "Performance",
+        "executionTimeInSeconds": "<0,001",
+        "executionTimeInPercentage": "1",
+        "tags": [
+         "Telemetry",
+         "EnabledRuleInAggressiveMode",
+         "CompilationEnd"
+        ]
+       }
+      },
+      {
+       "id": "CS8602",
+       "shortDescription": {
+        "text": "D\u00e9r\u00e9f\u00e9rencement d'une \u00e9ventuelle r\u00e9f\u00e9rence null."
+       },
+       "helpUri": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS8602)",
+       "properties": {
+        "category": "Compiler",
+        "executionTimeInSeconds": "<0,001",
+        "executionTimeInPercentage": "<1",
+        "tags": [
+         "Compiler",
+         "Telemetry"
+        ]
+       }
+      },
+      {
+       "id": "CS0168",
+       "shortDescription": {
+        "text": "La variable est d\u00e9clar\u00e9e mais jamais utilis\u00e9e"
+       },
+       "helpUri": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0168)",
+       "properties": {
+        "category": "Compiler",
+        "executionTimeInSeconds": "<0,001",
+        "executionTimeInPercentage": "<1",
+        "tags": [
+         "Compiler",
+         "Telemetry"
+        ]
+       }
+      },
+      {
+       "id": "CS0219",
+       "shortDescription": {
+        "text": "La variable est assign\u00e9e mais sa valeur n'est jamais utilis\u00e9e"
+       },
+       "helpUri": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0219)",
+       "properties": {
+        "category": "Compiler",
+        "isEverSuppressed": "true",
+        "suppressionKinds": [
+         "inSource"
+        ],
+        "executionTimeInSeconds": "<0,001",
+        "executionTimeInPercentage": "<1",
+        "tags": [
+         "Compiler",
+         "Telemetry"
+        ]
+       }
+      }
+     ]
+    }
+   },
+   "columnKind": "utf16CodeUnits"
+  }
+ ]
+}

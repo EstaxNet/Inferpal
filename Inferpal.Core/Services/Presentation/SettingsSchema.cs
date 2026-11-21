@@ -357,7 +357,9 @@ internal static class SettingsSchema
             ]),
             new("SettingsSectionApprovals",
             [
-                new("securityAlertsDisabled", SettingKind.Bool, "LabelAskBeforeActions", "HintAskBeforeActions", Inverted: true),
+                // Drawn as two cards, Ask me and Auto, and what auto mode risks: "approvalMode" (pari of 21/11).
+                new("securityAlertsDisabled", SettingKind.Bool, "LabelAskBeforeActions", "HintAskBeforeActions", Inverted: true,
+                    Editor: "approvalMode"),
                 new("packageCheckEnabled",    SettingKind.Bool, "LabelPackageCheck",     "HintPackageCheck"),
             ],
             Widget: "approvalRules"),

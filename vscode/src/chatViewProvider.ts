@@ -654,6 +654,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           toolOutput: tool.output,
           toolKept: tool.kept ?? undefined,
           toolDiff: tool.diff ?? undefined,
+          toolAuto: tool.auto === true ? true : undefined,
           hasErrors: tool.hasErrors,
           timestamp: ChatViewProvider.now(),
         };
@@ -665,6 +666,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           output: tool.output,
           hasErrors: tool.hasErrors,
           diff: item.toolDiff,
+          auto: item.toolAuto,
           timestamp: item.timestamp!,
           expanded: this.toolBubblesExpanded,
         });
@@ -746,7 +748,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       const cfg = JSON.parse(await host.configGet()) as {
         contextWindowSize?: number; toolBubblesExpanded?: boolean; defaultModel?: string; agentModeEnabled?: boolean;
-        chatDensity?: string; runEndSoundEnabled?: boolean;
+        chatDensity?: string; runEndSoundEnabled?: boolean; securityAlertsDisabled?: boolean;
       };
       // The window the host measures against (the loaded one when smaller), not the setting: read from the
       // configuration, the ring fell back to the configured window after every save.
@@ -754,6 +756,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.toolBubblesExpanded = cfg.toolBubblesExpanded === true;
       this.runEndNotice = cfg.runEndSoundEnabled !== false;
       this.compact = cfg.chatDensity === 'compact';
+      this.autoMode = cfg.securityAlertsDisabled === true;
       this.sharedEcho = { defaultModel: cfg.defaultModel, agentModeEnabled: cfg.agentModeEnabled };
     } catch (err) {
       this.log(`[chat] config/get failed: ${String(err)}`);
@@ -934,7 +937,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     try {
       const cfg = JSON.parse(await host.configGet()) as {
         contextWindowSize?: number; toolBubblesExpanded?: boolean; defaultModel?: string; agentModeEnabled?: boolean;
-        chatDensity?: string; runEndSoundEnabled?: boolean;
+        chatDensity?: string; runEndSoundEnabled?: boolean; securityAlertsDisabled?: boolean;
       };
       // The window the host measures against (the loaded one when smaller), not the setting: read from the
       // configuration, the ring fell back to the configured window after every save.
@@ -944,6 +947,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // The open conversation follows a new density at once.
       this.compact = cfg.chatDensity === 'compact';
       this.post({ type: 'density', compact: this.compact });
+      // Approvals turned off or back on: the header's Auto badge follows at once.
+      this.autoMode = cfg.securityAlertsDisabled === true;
+      this.post({ type: 'autoMode', on: this.autoMode });
       // The chat sends its own model and agent mode on every turn (this window's): what the settings panel CHANGED
       // is adopted here, or it changed nothing. Only a change is adopted, so a model picked for this workspace
       // survives a save that did not touch it.
@@ -2825,6 +2831,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private pendingAgentModePush: boolean | undefined;
   /** The shared config's chat model and agent mode as this view last knew them: what a settings save changed. */
   private sharedEcho: { defaultModel?: string; agentModeEnabled?: boolean } = {};
+  /** Approvals are off (auto mode): the chat's header shows the Auto badge. */
+  private autoMode = false;
 
   /**
    * Pushes the picked model into the host's shared config: without it `/model` kept answering the
@@ -5116,6 +5124,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       history: this.historyEntries(),
       toolBubblesExpanded: this.toolBubblesExpanded,
       compact: this.compact,
+      autoMode: this.autoMode,
       mentionCategories: this.mentionCats,
       chips: this.chipsShown(),
       pins: this.pins,

@@ -37,12 +37,17 @@ internal interface IApprovalService
     /// </param>
     Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false);
 
+    /// <summary>How many calls auto mode (approvals off) let through without a card so far: read before and after a call,
+    /// it marks the step as run without asking. 0 for an implementation that never auto-approves.</summary>
+    int AutoApprovals => 0;
+
     /// <summary>
     /// <see cref="RequestApprovalAsync"/>, whose "Always" opens <paramref name="grantKey"/> only — one origin of
     /// <c>http_request</c>, never the whole tool.
     /// </summary>
     /// <remarks>An implementation that cannot keep such a grant asks every time (forced): never a grant wider than asked.</remarks>
-    Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct) =>
+    Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct,
+                                          bool forcePrompt = false) =>
         RequestApprovalAsync(toolName, details, ct, subject: subject, forcePrompt: true);
 
     /// <summary>

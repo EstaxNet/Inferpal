@@ -10,6 +10,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 /** Each icon: the children of a 24×24 viewBox — `p` a path, `c` a circle (cx cy r), `r` a rect (x y w h rx). */
 const DRAWINGS = {
   plus: [['p', 'M12 5v14M5 12h14']],
+  bolt: [['p', 'M13 2L4 14h7l-1 8 9-12h-7z']],
   close: [['p', 'M6 6l12 12M18 6L6 18']],
   search: [['c', '11 11 7'], ['p', 'M20 20l-4-4']],
   retry: [['p', 'M20 11a8 8 0 1 0-2.3 5.7'], ['p', 'M20 4v7h-7']],

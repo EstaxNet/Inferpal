@@ -108,7 +108,71 @@ public class ToolHintsTests
     [InlineData("Не надо оптимизма, исправь тест.")]                       // оптимизм
     [InlineData("Error at line 12: 34 is not a valid value.")]
     [InlineData("")]
-    public void AnyOtherQuestion_CarriesNone(string question) => Assert.Null(ToolHints.For(question, All));
+    public void AnyOtherQuestion_CarriesNone(string question)
+    {
+        // Neither the measure nor the log filter. A bug report among them carries its own hint (pari 148), nothing else:
+        // which ones are reports is what IsBugReport's own tests say.
+        var hint = ToolHints.For(question, All) ?? "";
+        Assert.DoesNotContain(ToolHints.Measure, hint);
+        Assert.DoesNotContain(ToolHints.LogFilter, hint);
+        Assert.DoesNotContain("bug report", hint);   // no reproduction hint (pari 148: NO-GO)
+    }
+
+    [Theory]
+    [InlineData("Re-importing an ODS export crashes when the dataset has booleans.")]
+    [InlineData("The total is wrong after the fourth item, it doesn't work.")]
+    [InlineData("L'export plante quand il y a des booléens.")]
+    [InlineData("Le bouton ne marche plus depuis hier.")]
+    [InlineData("Der Export stürzt ab, wenn Booleans drin sind.")]
+    [InlineData("El botón no funciona.")]
+    [InlineData("Il salvataggio non funziona più.")]
+    [InlineData("Экспорт падает на булевых значениях.")]
+    [InlineData("保存ボタンが動かない。")]
+    [InlineData("저장 버튼이 작동하지 않아요.")]
+    [InlineData("Zapis nie działa.")]
+    [InlineData("导出时程序崩溃。")]
+    [InlineData("A column formatter corrupts the original data.")]
+    [InlineData("Default arguments from a delegate definition are ignored.")]
+    [InlineData("The second header is not parsed properly.")]
+    [InlineData("I expected 3 rows back, but the import gives 2.")]
+    [InlineData("Le total devrait être 12 mais il affiche 0.")]
+    [InlineData("Users get an error when they log in.")]
+    [InlineData("I get an error when I save the file.")]
+    [InlineData("The date shown is wrong.")]
+    [InlineData("The app hangs when I click save.")]
+    [InlineData("J'ai une erreur quand je sauvegarde.")]
+    [InlineData("Le total est faux.")]
+    public void ABugReport_IsRecognised_AndCarriesNoHint(string question)
+    {
+        Assert.True(ToolHints.IsBugReport(question));
+        // Measured (pari 148): told to reproduce, the model fixed no more. The report decides the bar's words only.
+        Assert.DoesNotContain("bug report", ToolHints.For(question, All) ?? "");
+    }
+
+    [Theory]
+    [InlineData("Add a dark mode to the settings page.")]
+    [InlineData("Start the debugger on the tests.")]
+    [InlineData("Rename Customer to Client everywhere.")]
+    [InlineData("Ajoute une page de paramètres.")]
+    [InlineData("Use tabs instead of spaces in the generated files.")]       // "instead" without an expectation
+    [InlineData("It should return a list; add the method.")]
+    // Words a request uses as often as a report: a feature read as a bug would end on "fixed without reproducing it".
+    [InlineData("Implement the gRPC protocol handler.")]                      // "roto" inside "protocol"
+    [InlineData("Add a prototype of the login page.")]
+    [InlineData("Make sure the logger doesn't print passwords.")]
+    [InlineData("Add a retry when the request fails.")]
+    [InlineData("Throw an ArgumentException when name is null.")]
+    [InlineData("Add exception handling to the importer.")]
+    [InlineData("Add a linear regression model.")]
+    [InlineData("添加线性回归模型。")]
+    [InlineData("Add a 'report a bug' button.")]
+    [InlineData("Write a function that should return the sum but skip nulls.")]
+    [InlineData("Zeige einen Fehler an, wenn das Feld leer ist.")]
+    public void ARequestThatIsNoBug_CarriesNoReproductionHint(string question)
+    {
+        Assert.False(ToolHints.IsBugReport(question));
+        Assert.Null(ToolHints.For(question, All));
+    }
 
     [Fact]
     public void BothAsked_BothSaid_AndATurnWithoutTheTool_SaysNothingOfIt()

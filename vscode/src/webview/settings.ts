@@ -220,6 +220,117 @@ function cardsField(field: Field, select: HTMLSelectElement): HTMLElement {
   return wrap;
 }
 
+/** Approvals, drawn as two cards — Ask me, Auto — with what auto mode risks said under them as soon as it is picked. The
+ *  inverted box stays the value Save reads (checked: ask). */
+function approvalModeField(field: Field, box: HTMLInputElement): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'field wide';
+  wrap.id = 'row-' + field.key;
+  const set = document.createElement('fieldset');
+  set.className = 'cards';
+  const legend = document.createElement('legend');
+  legend.textContent = res('SettingsSectionApprovals');
+  const grid = document.createElement('div');
+  grid.className = 'cardgrid';
+  const risks = document.createElement('div');
+  risks.className = 'auto-risks';
+  risks.setAttribute('role', 'note');
+  const title = document.createElement('strong');
+  title.textContent = res('AutoRisksTitle');
+  const list = document.createElement('ul');
+  for (const key of ['AutoRiskMistake', 'AutoRiskSteered', 'AutoRiskOutside', 'AutoRiskSmallModel']) {
+    const li = document.createElement('li');
+    li.textContent = res(key);
+    list.appendChild(li);
+  }
+  const kept = document.createElement('p');
+  const keptTitle = document.createElement('strong');
+  keptTitle.textContent = res('AutoStillProtectedTitle') + ' · ';
+  kept.append(keptTitle, document.createTextNode(res('AutoStillProtected')));
+  risks.append(title, list, kept);
+  const show = (): void => {
+    risks.hidden = box.checked;
+  };
+  for (const [ask, titleKey, textKey] of [[true, 'ApprovalsAskTitle', 'ApprovalsAskText'], [false, 'ApprovalsAutoTitle', 'ApprovalsAutoText']] as const) {
+    const card = document.createElement('label');
+    card.className = 'choicecard' + (ask ? '' : ' auto');
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'cards-' + field.key;
+    radio.checked = box.checked === ask;
+    radio.addEventListener('change', () => {
+      box.checked = ask;
+      show();
+      refreshForm();
+    });
+    const name = document.createElement('span');
+    name.className = 'choicename';
+    name.append(radio, document.createTextNode(res(titleKey)));
+    const d = document.createElement('span');
+    d.className = 'hint';
+    d.textContent = res(textKey);
+    card.append(name, d);
+    grid.appendChild(card);
+  }
+  box.hidden = true;
+  box.id = 'f-' + field.key;
+  show();
+  set.append(legend, grid, box);
+  wrap.append(set, risks);
+  return wrap;
+}
+
+/** Auto mode confirmed in this panel: its later saves do not ask again. */
+let autoConfirmedHere = false;
+
+/** Turning approvals off asks once more, naming what cannot be undone; the box must be ticked first. Resolves to whether
+ *  the person confirmed. */
+function confirmAutoMode(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'auto-confirm';
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    const heading = document.createElement('h2');
+    heading.textContent = res('AutoConfirmTitle');
+    dialog.setAttribute('aria-label', heading.textContent);
+    const body = document.createElement('p');
+    body.textContent = res('AutoConfirmBody');
+    const tick = document.createElement('label');
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    tick.append(box, document.createTextNode(' ' + res('AutoConfirmCheck')));
+    const keep = document.createElement('button');
+    keep.textContent = res('AutoConfirmKeep');
+    const off = document.createElement('button');
+    off.className = 'danger';
+    off.textContent = res('AutoConfirmTurnOff');
+    off.disabled = true;
+    box.addEventListener('change', () => {
+      off.disabled = !box.checked;
+    });
+    const done = (yes: boolean): void => {
+      overlay.remove();
+      resolve(yes);
+    };
+    keep.addEventListener('click', () => done(false));
+    off.addEventListener('click', () => done(true));
+    overlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        done(false);
+      }
+    });
+    const buttons = document.createElement('div');
+    buttons.className = 'buttons';
+    buttons.append(keep, off);
+    dialog.append(heading, body, tick, buttons);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    keep.focus();
+  });
+}
+
 /** A select drawn as a segmented switch — one radio per option; the select stays the value Save reads. */
 function segmentedField(field: Field, select: HTMLSelectElement, hint: HTMLElement | null): HTMLElement {
   const wrap = document.createElement('div');
@@ -489,7 +600,7 @@ function renderFooter(): HTMLElement {
   saveBtn = document.createElement('button');
   saveBtn.id = 'save';
   saveBtn.textContent = res('BtnSave');
-  saveBtn.addEventListener('click', onSave);
+  saveBtn.addEventListener('click', onSaveClicked);
   footer.append(unsavedEl, statusEl, cancel, saveBtn);
   return footer;
 }
@@ -813,6 +924,10 @@ function renderField(field: Field): HTMLElement {
       box.checked = field.inverted ? value !== true : value === true;
       box.addEventListener('change', refreshForm);
       input = box;
+      if (field.editor === 'approvalMode') {
+        inputs.set(field.key, box);
+        return approvalModeField(field, box);
+      }
       break;
     }
     default: {
@@ -1168,6 +1283,23 @@ function applyDefault(
   if (!Number.isNaN(value)) {
     config[field.key] = value;
   }
+}
+
+function onSaveClicked(): void {
+  // Turning approvals off asks once more; turning them back on, or any other save, does not.
+  // ⚠ Asked while Auto is picked, not only when the panel's copy says approvals were on: another window may have turned
+  // them back on in the file since, and this Save would turn them off again without a word. Once per panel.
+  const approvals = inputs.get('securityAlertsDisabled') as HTMLInputElement | undefined;
+  if (approvals && !approvals.checked && !autoConfirmedHere) {
+    void confirmAutoMode().then((yes) => {
+      if (yes) {
+        autoConfirmedHere = true;
+        onSave();
+      }
+    });
+    return;
+  }
+  onSave();
 }
 
 function onSave(): void {

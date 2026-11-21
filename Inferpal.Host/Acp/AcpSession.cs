@@ -209,6 +209,9 @@ internal sealed class AcpSession : IAsyncDisposable
     /// <summary>What a session's start had to say, told at its first turn (the client did not know the session yet).</summary>
     private string? _startNotice;
 
+    /// <summary>Auto mode was said in this thread: never twice.</summary>
+    private bool _autoModeSaid;
+
     // The model the server does not list, and the sentence that says so: said at the next prompt if it answers it.
     private (string Model, string Text)? _missingModel;
 
@@ -239,6 +242,20 @@ internal sealed class AcpSession : IAsyncDisposable
                 _startNotice = _startNotice is null ? notice : _startNotice + "\n\n" + notice;
         }
         catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.WindowCatchUp", ex); }
+        // Approvals off (auto mode) in Inferpal's settings: said once at the start, never on every step.
+        try
+        {
+            var json = await _link.InvokeWithCancellationAsync<string>("config/get", cancellationToken: ct);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("securityAlertsDisabled", out var off) && off.ValueKind == System.Text.Json.JsonValueKind.True
+                && !_autoModeSaid)
+            {
+                // Once per thread: this runs again when the models appear later, after the start notice was said.
+                _autoModeSaid = true;
+                _startNotice = _startNotice is null ? Strings.AcpAutoNotice : _startNotice + "\n\n" + Strings.AcpAutoNotice;
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException) { Diagnostics.Swallow("AcpSession.AutoModeNotice", ex); }
     }
 
     /// <summary>

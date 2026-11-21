@@ -158,9 +158,15 @@ internal abstract class ApprovalServiceBase : IApprovalService
     public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null, Services.CodeActions.DiffInfo? diff = null, bool forcePrompt = false) =>
         ApproveAsync(toolName, details, ct, subject, diff, forcePrompt, grantKey: toolName);
 
+    private int _autoApprovals;
+
     /// <inheritdoc/>
-    public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct) =>
-        ApproveAsync(toolName, details, ct, subject, diff: null, forcePrompt: false, grantKey);
+    public int AutoApprovals => Volatile.Read(ref _autoApprovals);
+
+    /// <inheritdoc/>
+    public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct,
+                                                 bool forcePrompt = false) =>
+        ApproveAsync(toolName, details, ct, subject, diff: null, forcePrompt, grantKey);
 
     /// <inheritdoc/>
     public bool Allows(string toolName, string subject)
@@ -230,11 +236,19 @@ internal abstract class ApprovalServiceBase : IApprovalService
             if (decision == PermissionDecision.Allow)  return true;   // rule auto-approved
 
             // decision == Prompt — fall through to the global YOLO switch, then the session grant.
-            if (alertsOff)                             return true;
+            // Auto mode: counted, so the step and the result bar say it ran without asking.
+            // Auto mode: counted, so the step and the result bar say it ran without asking — only a call that would have
+            // asked: one an "Always" of this session already lets through is no auto mode's doing.
+            if (alertsOff)
+            {
+                if (!Granted(grantKey)) Interlocked.Increment(ref _autoApprovals);
+                return true;
+            }
             if (Granted(grantKey))                     return true;
         }
 
-        var message = Strings.ApprovalMessage(toolName, details);
+        // A script's details start with the marker its card reads: where no card is drawn, a heading in its place.
+        var message = Strings.ApprovalMessage(toolName, Shell.ScriptRun.Readable(details));
         // The workspace the card is asked in: an "Always" answered after another solution opened is trust given to this
         // one, never to the next.
         var cardRoot = _rootDir();

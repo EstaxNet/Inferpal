@@ -18,7 +18,7 @@
   <a href="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml"><img src="https://github.com/EstaxNet/Inferpal/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI"></a>
   <a href="https://github.com/EstaxNet/Inferpal/releases/latest"><img src="https://img.shields.io/github/v/release/EstaxNet/Inferpal" alt="Release"></a>
   <a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3"></a>
-  <img src="https://img.shields.io/badge/tests-9827%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-9903%20passing-brightgreen" alt="Tests">
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs"><img src="https://img.shields.io/badge/Visual%20Studio-install-5C2D91" alt="Install for Visual Studio"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vscode"><img src="https://img.shields.io/badge/VS%20Code-install-007ACC" alt="Install for VS Code"></a>
   <a href="https://open-vsx.org/extension/EstaxNet/inferpal-vscode"><img src="https://img.shields.io/badge/Open%20VSX-install-C160EF" alt="Install from Open VSX"></a>
@@ -68,7 +68,7 @@
 </p>
 
 It also queries your CSV, Excel and JSON files with SQL, reads a log by level and time, calls the service you are
-building to check a fix, measures before it says faster, reads PDFs, spreadsheets, notebooks, screenshots and screen recordings of a bug, and
+building to check a fix, measures before it says faster, reads PDFs, spreadsheets, notebooks, screenshots, screen recordings of a bug and static analysis reports, writes a short script of its own when no tool does the job (you read it before it runs), and
 looks at the window of a desktop app it started. Zed, JetBrains IDEs, Qt Creator, Neovim and Emacs get the same agent
 through the [Agent Client Protocol](docs/acp.md).
 

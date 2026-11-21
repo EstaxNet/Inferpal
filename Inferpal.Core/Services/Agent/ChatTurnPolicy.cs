@@ -222,8 +222,50 @@ internal static class ChatTurnPolicy
     public static bool LastCheckFailed(IEnumerable<ToolExecution> executions, int? filesChangedInRun) =>
         filesChangedInRun is > 0 && LastCheck(executions)?.Failed == true;
 
+    /// <summary>Whether a run that changed files showed the bug first: a check that FAILED before its first edit that
+    /// landed (<see cref="Reproduced"/>), none (<see cref="NotReproduced"/>), or no edit landed (<see cref="None"/>).</summary>
+    internal enum ReproductionState { None, Reproduced, NotReproduced }
+
+    /// <summary>Whether <paramref name="executions"/> showed the bug before changing anything — read from what the run's
+    /// checks said, never from the answer. The result bar's words for a bug report (pari 148).</summary>
+    /// <remarks>⚠ The build an edit's Smart Fix runs is part of that edit: never a reproduction. A check that proved nothing
+    /// (no test matched, no project) shows nothing either. ⚠ Within one turn: a red run of an earlier turn of the same task
+    /// is not seen (the bar is the turn's).</remarks>
+    internal static ReproductionState Reproduction(IReadOnlyList<ToolExecution> executions)
+    {
+        // A check that wrote files as it ran (snapshots, a results folder) is a check before it is a change.
+        var firstEdit = -1;
+        for (var i = 0; i < executions.Count && firstEdit < 0; i++)
+            if (EditLanded(executions[i]) || ToolChangedFiles(executions[i]) && CheckOf(executions[i]) is not { Failed: not null })
+                firstEdit = i;
+        if (firstEdit < 0) return ReproductionState.None;
+        for (var i = 0; i < firstEdit; i++)
+            if (!IsFileEdit(executions[i].Name) && CheckOf(executions[i]) is { Failed: true })
+                return ReproductionState.Reproduced;
+        return ReproductionState.NotReproduced;
+    }
+
     /// <summary>What a check of a turn checked.</summary>
     internal enum CheckKind { Build, Tests }
+
+    /// <summary>The kind of the first check that failed before the run's first edit — what a "fixed" must pass again —, or
+    /// <c>null</c>.</summary>
+    internal static CheckKind? ReproducedBy(IReadOnlyList<ToolExecution> executions)
+    {
+        for (var i = 0; i < executions.Count; i++)
+        {
+            if (EditLanded(executions[i]) || ToolChangedFiles(executions[i]) && CheckOf(executions[i]) is not { Failed: not null })
+                return null;
+            if (!IsFileEdit(executions[i].Name) && CheckOf(executions[i]) is { Failed: true } red) return red.Kind;
+        }
+        return null;
+    }
+
+    /// <summary>Whether the check at <paramref name="at"/> ran after the run's last change, and is no edit's own build: what
+    /// a claim about the fix may stand on.</summary>
+    internal static bool ChecksTheFix(IReadOnlyList<ToolExecution> executions, int at) =>
+        at >= 0 && !IsFileEdit(executions[at].Name) && EditsAfter(executions, at).Count == 0
+        && executions.Take(at).Any(e => EditLanded(e) || ToolChangedFiles(e));
 
     /// <summary>A check's kind and verdict: <c>true</c> failed, <c>false</c> passed, <c>null</c> nothing proven.</summary>
     /// <param name="Kind">What it checked.</param>

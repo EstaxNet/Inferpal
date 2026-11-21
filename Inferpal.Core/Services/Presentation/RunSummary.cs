@@ -11,8 +11,9 @@ namespace Inferpal.Services.Presentation;
 /// </summary>
 /// <remarks><see cref="PassedThenEdited"/>: the last check passed, and files were edited after it that nothing checked —
 /// drawn with the info mark, never the check mark, and not "nothing proven" either (a step that failed before the green
-/// does not turn the run red).</remarks>
-internal enum RunCheck { None, BuildPassed, BuildFailed, TestsPassed, TestsFailed, TestsPassedPart, Unproven, PassedThenEdited }
+/// does not turn the run red). <see cref="PassedUnreproduced"/>: a bug report's fix whose checks pass, none of which failed
+/// on the bug before the change — the info mark too (pari 148).</remarks>
+internal enum RunCheck { None, BuildPassed, BuildFailed, TestsPassed, TestsFailed, TestsPassedPart, Unproven, PassedThenEdited, PassedUnreproduced }
 
 /// <summary>One file a run changed, as its result bar shows it.</summary>
 /// <param name="Added">Lines added since the run's backup — an estimate, never a promise of git's count.</param>
@@ -29,9 +30,11 @@ internal sealed record RunFileLine(string Path, string Name, int Added, int Remo
 /// <param name="RunId">The run <c>/undo-run</c> takes; empty when the run changed nothing.</param>
 /// <param name="Screen">What the app showed before the run's first write and after its last, as the agent looked at it;
 /// <c>null</c> when it did not look on both sides.</param>
+/// <param name="CheckTip">What the check's words mean, on hover: said for a bug report's fix (proven or guessed); empty
+/// otherwise.</param>
 internal sealed record RunSummaryModel(
     int Steps, string Title, string Detail, IReadOnlyList<RunFileLine> Files, RunCheck Check, string CheckText,
-    string RunId, Documents.RunScreen? Screen = null);
+    string RunId, Documents.RunScreen? Screen = null, string CheckTip = "");
 
 /// <summary>
 /// Builds <see cref="RunSummaryModel"/> from the tool calls of a turn and the file history of its run — the same
@@ -48,7 +51,9 @@ internal static class RunSummary
 
     /// <summary>The summary of a turn; <c>null</c> when no tool ran (an answer alone has no run to show).</summary>
     /// <param name="run">The file-history run of the turn, or <c>null</c> when it has none (nothing was tracked).</param>
-    public static RunSummaryModel? Build(IReadOnlyList<ToolExecution> executions, HistoryRun? run)
+    /// <param name="bugReport">The question read as a bug report (<see cref="Prompting.ToolHints.IsBugReport"/>): its fix
+    /// says whether a check showed the bug first — proven or guessed.</param>
+    public static RunSummaryModel? Build(IReadOnlyList<ToolExecution> executions, HistoryRun? run, bool bugReport = false)
     {
         if (executions.Count == 0) return null;
 
@@ -86,11 +91,39 @@ internal static class RunSummary
             checkText = Strings.RunCheckedThenUnseen(checkText);
         }
 
+        // Proven or guessed: a bug report's fix says whether a check FAILED on the bug before the first edit — read from
+        // the run, never from the answer. Only a run that changed files; a green followed by unchecked edits keeps its
+        // own words (it says less than a fix: the edits after it were never checked).
+        // ⚠ A claim about the fix stands only on a check that ran AFTER the last change and is no edit's own build; "fixed"
+        // asks a check of the kind that showed the bug (a red test is not fixed by a green build).
+        var checkTip = string.Empty;
+        var reproduction = bugReport ? ChatTurnPolicy.Reproduction(executions) : ChatTurnPolicy.ReproductionState.None;
+        if (reproduction != ChatTurnPolicy.ReproductionState.None
+            && check is not (RunCheck.PassedThenEdited or RunCheck.None or RunCheck.Unproven)
+            && ChatTurnPolicy.ChecksTheFix(executions, at))
+        {
+            var passed = check is RunCheck.BuildPassed or RunCheck.TestsPassed or RunCheck.TestsPassedPart;
+            var shownBy = ChatTurnPolicy.ReproducedBy(executions);
+            var sameKind = shownBy is null || shownBy == ChatTurnPolicy.CheckKind.Build || verdict?.Kind == ChatTurnPolicy.CheckKind.Tests;
+            if (reproduction == ChatTurnPolicy.ReproductionState.Reproduced && passed && sameKind)
+                (checkText, checkTip) = (Strings.RunReproducedThenFixed(checkText), Strings.RunReproducedThenFixedTip);
+            else if (reproduction == ChatTurnPolicy.ReproductionState.Reproduced && !passed)
+                (checkText, checkTip) = (check == RunCheck.TestsFailed ? Strings.RunReproducedTestsStillFail : Strings.RunReproducedBuildStillFails,
+                                         Strings.RunReproducedStillFailsTip);
+            else if (reproduction == ChatTurnPolicy.ReproductionState.NotReproduced && passed)
+            {
+                (checkText, checkTip) = (Strings.RunFixedWithoutReproducing(checkText), Strings.RunFixedWithoutReproducingTip);
+                check = RunCheck.PassedUnreproduced;
+            }
+        }
+
         var parts = new List<string>();
         if (reads > 0)       parts.Add(Strings.RunRead(reads));
         if (searches > 0)    parts.Add(Strings.RunSearched(searches));
         if (files.Count > 0) parts.Add(Strings.RunEdited(files.Count));
         if (commands > 0)    parts.Add(Strings.RunCommands(commands));
+        // Auto mode: how many steps would have asked — said, never hidden among the others.
+        if (executions.Count(e => e.Auto) is var auto and > 0) parts.Add(Strings.RunAutoSteps(auto));
         if (checkText.Length > 0) parts.Add(checkText);
 
         return new RunSummaryModel(
@@ -99,7 +132,7 @@ internal static class RunSummary
             string.Join(" · ", parts),
             files, check, checkText,
             files.Count > 0 ? run!.Id : string.Empty,
-            run is null ? null : Documents.ScreenLooks.Pair(run.Looks, run.WriteCount));
+            run is null ? null : Documents.ScreenLooks.Pair(run.Looks, run.WriteCount), checkTip);
     }
 
     /// <summary>The words of a check, empty for none.</summary>
@@ -277,6 +310,14 @@ internal static class RunSummary
         {
             using var doc = System.Text.Json.JsonDocument.Parse(input);
             if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return string.Empty;
+            // A script of the agent's (run_command's 'script'): its language and length, never its first characters.
+            if (doc.RootElement.TryGetProperty("script", out var script) && script.ValueKind == System.Text.Json.JsonValueKind.String
+                && script.GetString() is { Length: > 0 } code)
+            {
+                var language = doc.RootElement.TryGetProperty("language", out var lang) && lang.ValueKind == System.Text.Json.JsonValueKind.String
+                    ? lang.GetString() : null;
+                return Strings.StepScript(language ?? "script", code.ReplaceLineEndings("\n").TrimEnd('\n').Split('\n').Length);
+            }
             foreach (var key in SubjectKeys)
             {
                 if (doc.RootElement.TryGetProperty(key, out var value)

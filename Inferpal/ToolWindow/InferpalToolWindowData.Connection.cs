@@ -740,6 +740,8 @@ internal partial class InferpalToolWindowData
         {
             if (!string.Equals(ActiveModelLabel, _config.DefaultModel, StringComparison.Ordinal))
                 ActiveModelLabel = _config.DefaultModel;
+            // Approvals turned off or back on: the header's Auto badge follows.
+            AutoMode = _config.SecurityAlertsDisabled;
             // A server moved to another machine, or back: where the code goes is said again.
             RefreshWelcomeLine();
         });

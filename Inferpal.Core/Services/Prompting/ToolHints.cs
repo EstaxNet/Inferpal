@@ -94,6 +94,41 @@ internal static class ToolHints
         + @"|(?<![゠-ヿ])ログ|(?<![가-힣])로그|dziennik|日志",
         Options, RegexBudget.Default);
 
+    /// <summary>Reports a bug, in the ten languages: something crashing, hanging, broken, not working, giving a wrong
+    /// result, or what was expected and what came instead.</summary>
+    /// <remarks>⚠ PRECISION first: a feature request read as a bug ends on "fixed without reproducing it" under a green
+    /// run, which misleads; a report missed keeps today's bar. So never the words a request uses as often as a report —
+    /// "fails", "throws", "exception", "error" alone, "regression" (a linear regression), "bug" in "report a bug", "should
+    /// … but" (a spec) —, and every Latin word between boundaries ("roto" is in "protocol").</remarks>
+    private static readonly Regex Bug = new(
+        @"\b(crash(es|ed|ing)?|hangs|freezes|broken|buggy|(it|this|that|which) (does(n.t| not)|no longer) works?"
+        + @"|(is(n.t| not)|are(n.t| not)|stopped|not) working|doesn.t work|don.t work|no longer works|corrupt(s|ed|ing)?"
+        + @"|is ignored|are ignored|(is|are|gets?) lost|(there.s|there is|found|have|got) a bug|bugs? (in|when|with)"
+        + @"|(get|got|getting|gives?|throws?) an? (error|exception)\b.{0,40}\bwhen"
+        + @"|(is|are|shows?|gives?|returns?|displays?) (the )?wrong|(not|n.t) (parsed|handled|shown|saved|computed|rendered) (properly|correctly)"
+        + @"|(I expected|expected to (get|see)|it should (be|return|show|give)|I think the output should be)\b.{0,400}\b(but (I get|got|it|the|instead)|instead)\b)"
+        + @"|\b(plante|plantent|planté|ne (marche|fonctionne) (plus|pas)|cass[ée]e?s?|corromp\w*|est ignor[ée]e?|sont ignor[ée]e?s"
+        + @"|(une|j.ai une) erreur quand|(est|sont) (faux|fausses?)|(devrait|j.attendais)\b.{0,400}\bmais)\b"
+        + @"|\b(funktioniert (nicht|nicht mehr)|stürzt ab|abgestürzt|kaputt|hängt sich auf)\b"
+        + @"|\b(no funciona|se cuelga|se bloquea)\b"
+        + @"|\b(non funziona|si blocca|crasha)\b"
+        + @"|(не работает|падает|вылетает|зависает|сломал\w*)"
+        + @"|(動かない|クラッシュ|フリーズ|不具合)"
+        + @"|(작동하지 않|동작하지 않|크래시|멈춰)"
+        + @"|\b(nie działa|zawiesza się|wywala się)\b"
+        + @"|(不工作|无法运行|崩溃|闪退|卡死)",
+        Options | RegexOptions.Singleline, RegexBudget.Default);
+
+    /// <summary>Whether <paramref name="question"/> reads as a bug report: what decides the result bar's words of a fix
+    /// (<see cref="Agent.ChatTurnPolicy.Reproduction"/>). ⚠ Not "debug" or "debugger": asking to use them is
+    /// no report.</summary>
+    public static bool IsBugReport(string? question)
+    {
+        if (string.IsNullOrWhiteSpace(question)) return false;
+        try { return RegexBudget.IsMatch(Bug, question); }
+        catch (RegexMatchTimeoutException) { return false; }
+    }
+
     /// <summary>Which tools a turn offers, as it will send them: none with the tools off (a code action too), Plan's
     /// read-only ones, or the held mode's (<see cref="ContextManager.NextTurnTools"/>). Read only when a question calls
     /// for a hint: most never do, and the registry and the mode are read from disk.</summary>
@@ -123,6 +158,8 @@ internal static class ToolHints
                 lines.Add(LogFilter);
         }
         catch (RegexMatchTimeoutException) { return null; }   // a question too long to read in time: no hint
+        // ⚠ No reproduction hint for a bug report: measured (pari 148), the model reproduced more and fixed no more —
+        // 0/6 against 1/6 without it. A bug report decides only the result bar's words (IsBugReport).
         return lines.Count == 0 ? null : Header + "\n\n" + string.Join("\n\n", lines);
     }
 }

@@ -119,6 +119,40 @@
   <data name="ScreenAfter" xml:space="preserve"><value>после · {0}</value></data>
   <data name="ScreenOpenHint" xml:space="preserve"><value>Нажмите на изображение, чтобы открыть его в полном размере.</value></data>
   <data name="VideoChip" xml:space="preserve"><value>видео · {0} · кадров: {1}</value></data>
+  <data name="RunReproducedThenFixed" xml:space="preserve"><value>воспроизведено, затем исправлено · {0}</value></data>
+  <data name="RunFixedWithoutReproducing" xml:space="preserve"><value>исправлено без воспроизведения · {0}</value></data>
+  <data name="RunReproducedTestsStillFail" xml:space="preserve"><value>воспроизведено · тесты всё ещё не проходят</value></data>
+  <data name="RunReproducedBuildStillFails" xml:space="preserve"><value>воспроизведено · сборка всё ещё не проходит</value></data>
+  <data name="RunReproducedThenFixedTip" xml:space="preserve"><value>Проверка не проходила до первого изменения и проходит после последнего.</value></data>
+  <data name="RunReproducedStillFailsTip" xml:space="preserve"><value>Проверка не проходила до первого изменения и всё ещё не проходит после последнего.</value></data>
+  <data name="RunFixedWithoutReproducingTip" xml:space="preserve"><value>До изменения ничто не показало ошибку: проверки проходят, но ни одна не падала из-за неё.</value></data>
+  <data name="ApprovalRunScript" xml:space="preserve"><value>Запустить скрипт, написанный агентом</value></data>
+  <data name="ApprovalScriptWhere" xml:space="preserve"><value>{0} · строк: {1} · запускается в {2}</value></data>
+  <data name="ApprovalScriptNote" xml:space="preserve"><value>Записан вне вашего репозитория: в нём ничего не меняется, если скрипт туда не пишет. К нему применяются ваши правила для команд.</value></data>
+  <data name="ApprovalOpenScript" xml:space="preserve"><value>Открыть в редакторе</value></data>
+  <data name="StepScript" xml:space="preserve"><value>скрипт {0} · строк: {1}</value></data>
+  <data name="ApprovalsAskTitle" xml:space="preserve"><value>Спрашивать меня</value></data>
+  <data name="ApprovalsAskText" xml:space="preserve"><value>Карточка перед каждым изменением, командой или исходящим запросом: сначала вы видите diff или точную команду. Рекомендуется.</value></data>
+  <data name="ApprovalsAutoTitle" xml:space="preserve"><value>Авто · подтверждения выключены</value></data>
+  <data name="ApprovalsAutoText" xml:space="preserve"><value>Агент меняет файлы, запускает команды и выходит в сеть, не спрашивая. Для одноразового окружения, контейнера или копии (/run-copy).</value></data>
+  <data name="AutoRisksTitle" xml:space="preserve"><value>Чем рискует авторежим</value></data>
+  <data name="AutoRiskMistake" xml:space="preserve"><value>Ошибка проходит: неверная правка, git reset, удалённая папка — никто не читает это заранее. Undo run возвращает файлы, записанные агентом, но не то, что сделала команда (push, миграция, удалённая ветка).</value></data>
+  <data name="AutoRiskSteered" xml:space="preserve"><value>Прочитанное может им управлять: веб-страница, задача или файл репозитория могут содержать инструкции для модели; без карточки он может им последовать — выполнить сказанное или отправить ваш код или секрет по указанному адресу.</value></data>
+  <data name="AutoRiskOutside" xml:space="preserve"><value>Он может выйти за пределы проекта: команда или скрипт работают с правами вашей учётной записи — другие папки, ключи SSH и токены, сеть.</value></data>
+  <data name="AutoRiskSmallModel" xml:space="preserve"><value>Маленькая модель ошибается чаще: при 8–16 ГБ агент чаще неверно понимает команду или зацикливается, и авторежим доводит каждую ошибку до конца.</value></data>
+  <data name="AutoStillProtectedTitle" xml:space="preserve"><value>Защищено даже в авторежиме</value></data>
+  <data name="AutoStillProtected" xml:space="preserve"><value>Ваши правила deny и встроенный список катастрофических команд · запись в инструкции и разрешения агента (его контекст, память, заметки и правила) · команды, эффект которых не прочитать (закодированные, скачанные и запущенные).</value></data>
+  <data name="AutoConfirmTitle" xml:space="preserve"><value>Выключить подтверждения?</value></data>
+  <data name="AutoConfirmBody" xml:space="preserve"><value>Теперь агент меняет файлы, запускает команды и выходит в сеть, не показывая вам заранее, во всех окружениях, пока вы снова не включите подтверждения. Undo run не отменяет действия команд, а страница, задача или файл могут им управлять. Ваши правила deny и список катастрофических команд продолжают действовать.</value></data>
+  <data name="AutoConfirmCheck" xml:space="preserve"><value>Понимаю: действовать без моего подтверждения</value></data>
+  <data name="AutoConfirmKeep" xml:space="preserve"><value>Продолжать спрашивать</value></data>
+  <data name="AutoConfirmTurnOff" xml:space="preserve"><value>Выключить подтверждения</value></data>
+  <data name="AutoBadge" xml:space="preserve"><value>Авто</value></data>
+  <data name="AutoBadgeTip" xml:space="preserve"><value>Подтверждения выключены: агент действует без вопросов. Нажмите, чтобы включить их снова.</value></data>
+  <data name="StepAuto" xml:space="preserve"><value>авто</value></data>
+  <data name="StepAutoTip" xml:space="preserve"><value>Подтверждения выключены: выполнено без карточки</value></data>
+  <data name="RunAutoSteps" xml:space="preserve"><value>шагов без вопроса: {0}</value></data>
+  <data name="AcpAutoNotice" xml:space="preserve"><value>Подтверждения выключены в настройках Inferpal: агент меняет файлы, запускает команды и выходит в сеть без вопросов. Ваши правила deny продолжают действовать.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} слишком велик для чтения (больше {1} МБ).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Нет незафиксированных изменений в `{0}`: проверять нечего.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Проверено: незафиксированные изменения в `{0}`.</value></data>

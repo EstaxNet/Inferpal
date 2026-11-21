@@ -297,6 +297,8 @@ export interface ToolNotice {
   /** What a saved session keeps of the output, as Visual Studio's bubble keeps it (the Core's `ToolNotice.Kept`); absent
    *  or null when that is the whole output. */
   kept?: string | null;
+  /** Auto mode let the call through without a card: its step says "auto". */
+  auto?: boolean;
 }
 
 export interface PlanNotice {
@@ -722,6 +724,8 @@ export interface ApprovalCard {
   rows?: { label: string; value: string }[];
   /** A binary file to write (a capture saved as PNG): its pictures, the one it replaces first; absent for anything else. */
   binary?: { label: string; before?: string | null; after?: string | null; beforeCaption: string; afterCaption: string } | null;
+  /** A file the card offers to open (a copy of the agent's script, pari 161); empty for none. */
+  openPath?: string;
 }
 
 /** One file a run changed. */
@@ -742,8 +746,10 @@ export interface RunSummary {
   title: string;
   detail: string;
   files: RunFileLine[];
-  check: 'none' | 'buildPassed' | 'buildFailed' | 'testsPassed' | 'testsFailed' | 'testsPassedPart' | 'unproven' | 'passedThenEdited';
+  check: 'none' | 'buildPassed' | 'buildFailed' | 'testsPassed' | 'testsFailed' | 'testsPassedPart' | 'unproven' | 'passedThenEdited' | 'passedUnreproduced';
   checkText: string;
+  /** What the check's words mean, on hover (a bug report's fix: proven or guessed); empty otherwise. */
+  checkTip?: string;
   runId: string;
   /** What the app showed before the run's first write and after its last, as the agent looked at it; absent when it did
    *  not look on both sides (the Core's ScreenLooks). */
@@ -1104,7 +1110,7 @@ export interface SettingsField {
   /** Resource name of the hint shown instead when the selected server is not Ollama. */
   hintNotOllama?: string | null;
   /** The structured editor drawn over a list setting's text. */
-  editor?: 'pinnedFiles' | 'mcpServers' | 'approvalRules' | 'nameValue' | 'cards' | 'segmented' | 'proxyAccess' | null;
+  editor?: 'pinnedFiles' | 'mcpServers' | 'approvalRules' | 'nameValue' | 'cards' | 'segmented' | 'proxyAccess' | 'approvalMode' | null;
   /** A numeric box whose 0 means "not set": shown empty, and empty saves 0. */
   zeroIsEmpty?: boolean;
   /** Resource name of what an optional model list shows for its empty value ("Same as chat"). */

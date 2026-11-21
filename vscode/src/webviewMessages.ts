@@ -83,6 +83,8 @@ export interface WvTranscriptItem {
   toolKept?: string;
   /** A writing call's change, in the approval card's lines (`ToolNotice.diff`). */
   toolDiff?: string;
+  /** Auto mode let the call through without a card (`ToolNotice.auto`). */
+  toolAuto?: boolean;
   hasErrors?: boolean;
   /** Pre-formatted local time (HH:MM), stamped when the entry was pushed. */
   timestamp?: string;
@@ -223,6 +225,8 @@ export interface WvHydrate {
   toolBubblesExpanded: boolean;
   /** The conversation drawn compact (host config ChatDensity). */
   compact: boolean;
+  /** Approvals are off (auto mode): the header shows the Auto badge. */
+  autoMode?: boolean;
   mentionCategories: WvMentionCategory[];
   chips: WvChip[];
   /** Files pinned into every request (full paths). */
@@ -250,7 +254,9 @@ export type ExtToWebview =
   /** The turn's wait card: a request waiting on a server that reads its prompt; null takes it away. */
   | { type: 'wait'; wait: ModelWait | null }
   | { type: 'assistant'; text: string; timestamp: string; notice?: boolean }
-  | { type: 'tool'; name: string; input: string; output: string; hasErrors: boolean; diff?: string; timestamp: string; expanded: boolean }
+  | { type: 'tool'; name: string; input: string; output: string; hasErrors: boolean; diff?: string; auto?: boolean; timestamp: string; expanded: boolean }
+  /** Approvals are off (auto mode): the chat's header shows the badge. */
+  | { type: 'autoMode'; on: boolean }
   | { type: 'plan'; plan: WvPlan }
   | { type: 'approval'; id: number; message: string; card?: ApprovalCard | null; hasDiff?: boolean }
   | { type: 'approvalDismiss'; id: number }

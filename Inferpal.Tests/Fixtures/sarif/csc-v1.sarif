@@ -1,0 +1,164 @@
+{
+ "$schema": "http://json.schemastore.org/sarif-1.0.0",
+ "version": "1.0.0",
+ "runs": [
+  {
+   "tool": {
+    "name": "Compilateur Microsoft (R) Visual C#",
+    "version": "5.12.0.0",
+    "fileVersion": "5.12.0-1.26529.118 (297acf930fb0f5c07fd4e51d78e521b4ad2e5d1f)",
+    "semanticVersion": "5.12.0",
+    "language": "fr-FR"
+   },
+   "results": [
+    {
+     "ruleId": "CS8602",
+     "level": "warning",
+     "message": "D\u00e9r\u00e9f\u00e9rencement d'une \u00e9ventuelle r\u00e9f\u00e9rence null.",
+     "locations": [
+      {
+       "resultFile": {
+        "uri": "file:///C:/src/sarifproj/Program.cs",
+        "region": {
+         "startLine": 8,
+         "startColumn": 27,
+         "endLine": 8,
+         "endColumn": 28
+        }
+       }
+      }
+     ],
+     "properties": {
+      "warningLevel": 1
+     }
+    },
+    {
+     "ruleId": "CS0168",
+     "level": "warning",
+     "message": "La variable 'unused' est d\u00e9clar\u00e9e, mais jamais utilis\u00e9e",
+     "locations": [
+      {
+       "resultFile": {
+        "uri": "file:///C:/src/sarifproj/Program.cs",
+        "region": {
+         "startLine": 6,
+         "startColumn": 13,
+         "endLine": 6,
+         "endColumn": 19
+        }
+       }
+      }
+     ],
+     "properties": {
+      "warningLevel": 3
+     }
+    },
+    {
+     "ruleId": "CS0219",
+     "level": "warning",
+     "message": "La variable 'kept' est assign\u00e9e, mais sa valeur n'est jamais utilis\u00e9e",
+     "suppressionStates": [
+      "suppressedInSource"
+     ],
+     "locations": [
+      {
+       "resultFile": {
+        "uri": "file:///C:/src/sarifproj/Program.cs",
+        "region": {
+         "startLine": 10,
+         "startColumn": 13,
+         "endLine": 10,
+         "endColumn": 17
+        }
+       }
+      }
+     ],
+     "properties": {
+      "warningLevel": 3
+     }
+    },
+    {
+     "ruleId": "CA1852",
+     "level": "warning",
+     "message": "Le type \u00abP\u00bb peut \u00eatre scell\u00e9, car il n\u2019a aucun sous-type dans son assembly conteneur et n\u2019est pas visible en externe",
+     "locations": [
+      {
+       "resultFile": {
+        "uri": "file:///C:/src/sarifproj/Program.cs",
+        "region": {
+         "startLine": 2,
+         "startColumn": 7,
+         "endLine": 2,
+         "endColumn": 8
+        }
+       }
+      }
+     ],
+     "properties": {
+      "warningLevel": 1
+     }
+    }
+   ],
+   "rules": {
+    "CA1852": {
+     "id": "CA1852",
+     "shortDescription": "Sceller les types internes",
+     "fullDescription": "Lorsqu\u2019un type n\u2019est pas accessible en dehors de son assembly et qu\u2019il n\u2019a aucun sous-type dans son assembly conteneur, il peut \u00eatre scell\u00e9 en toute s\u00e9curit\u00e9. Les types de scellage peuvent am\u00e9liorer les performances.",
+     "defaultLevel": "note",
+     "helpUri": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1852",
+     "properties": {
+      "category": "Performance",
+      "isEnabledByDefault": true,
+      "tags": [
+       "Telemetry",
+       "EnabledRuleInAggressiveMode",
+       "CompilationEnd"
+      ]
+     }
+    },
+    "CS0168": {
+     "id": "CS0168",
+     "shortDescription": "La variable est d\u00e9clar\u00e9e mais jamais utilis\u00e9e",
+     "defaultLevel": "warning",
+     "helpUri": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0168)",
+     "properties": {
+      "category": "Compiler",
+      "isEnabledByDefault": true,
+      "tags": [
+       "Compiler",
+       "Telemetry"
+      ]
+     }
+    },
+    "CS0219": {
+     "id": "CS0219",
+     "shortDescription": "La variable est assign\u00e9e mais sa valeur n'est jamais utilis\u00e9e",
+     "defaultLevel": "warning",
+     "helpUri": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0219)",
+     "properties": {
+      "category": "Compiler",
+      "isEnabledByDefault": true,
+      "tags": [
+       "Compiler",
+       "Telemetry"
+      ]
+     }
+    },
+    "CS8602": {
+     "id": "CS8602",
+     "shortDescription": "D\u00e9r\u00e9f\u00e9rencement d'une \u00e9ventuelle r\u00e9f\u00e9rence null.",
+     "defaultLevel": "warning",
+     "helpUri": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS8602)",
+     "properties": {
+      "category": "Compiler",
+      "isEnabledByDefault": true,
+      "tags": [
+       "Compiler",
+       "Telemetry"
+      ]
+     }
+    }
+   }
+  }
+ ]
+}

@@ -158,6 +158,14 @@ internal partial class InferpalToolWindowData
     /// <summary>A wait past its measured read: a warning, not a failure.</summary>
     [DataMember] public string ThemeWarn       { get => _themeWarn;       set => SetProperty(ref _themeWarn,       value); }
 
+    private bool _autoMode;
+    /// <summary>Approvals are off (auto mode): the header's badge shows while they are.</summary>
+    [DataMember] public bool   AutoMode        { get => _autoMode;        set => SetProperty(ref _autoMode,        value); }
+    [DataMember] public string AutoBadge       { get; private set; } = Strings.AutoBadge;
+    [DataMember] public string AutoBadgeTip    { get; private set; } = Strings.AutoBadgeTip;
+    /// <summary>The badge's click: the settings window on Agent and approvals.</summary>
+    [DataMember] public AsyncCommand OpenApprovalsCommand { get; private set; } = null!;
+
     /// <summary>A cut turn's "Open time limits": the settings window, on the page that holds them — the open window shows
     /// it, else the one built next opens on it.</summary>
     private void OpenTimeLimits() => OpenSettingsPage(
@@ -187,6 +195,8 @@ internal partial class InferpalToolWindowData
         MenuSearchCommand      = new AsyncCommand(async (p, ct) => { await RunOnVMContextAsync(CloseMenus); await ToggleSearchAsync(p, ct); });
         MenuExportCommand      = new AsyncCommand(async (p, ct) => { await RunOnVMContextAsync(CloseMenus); await ExportAsync(p, ct); });
         MenuXrayCommand        = new AsyncCommand(async (p, ct) => { await RunOnVMContextAsync(CloseMenus); await ToggleXrayPanelAsync(p, ct); });
+        OpenApprovalsCommand   = new AsyncCommand((_, _) => { OpenSettingsPage("agent", "SettingsSectionApprovals"); return Task.CompletedTask; });
+        AutoMode               = _config.SecurityAlertsDisabled;
         MenuSettingsCommand    = new AsyncCommand(async (_, ct) =>
         {
             await RunOnVMContextAsync(CloseMenus);
@@ -530,8 +540,11 @@ internal partial class InferpalToolWindowData
         {
             if (!IsLoading) return;
             ChatMessageItem? created = null;
-            created = ChatMessageItem.ApprovalMsg(card,
-                openDiff is null ? null : () => _ = OpenCardDiffAsync(created!, openDiff, answeredToken));
+            // A script's card opens the script (a copy of it) where a change's card opens its diff.
+            created = card.OpenPath.Length > 0
+                ? ChatMessageItem.ApprovalMsg(card, () => OpenInEditor(card.OpenPath, "Chat.OpenScript", ex => Strings.MsgError(ex.Message)))
+                : ChatMessageItem.ApprovalMsg(card,
+                    openDiff is null ? null : () => _ = OpenCardDiffAsync(created!, openDiff, answeredToken));
             InsertCard(created);
             _pendingApproval = created;
             RefreshComposerPlaceholder();

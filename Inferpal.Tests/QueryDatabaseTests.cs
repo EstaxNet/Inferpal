@@ -435,7 +435,7 @@ public sealed class QueryDatabaseTests : IDisposable
             return Task.FromResult(answer);
         }
 
-        public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct)
+        public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct, bool forcePrompt = false)
         {
             events.Add("card (scoped)");
             LastDetails = details;

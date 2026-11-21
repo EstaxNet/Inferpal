@@ -1068,7 +1068,11 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     [DataMember] public bool   ToolBubblesExpanded      { get => _toolBubblesExpanded;      set => SetProperty(ref _toolBubblesExpanded,      value); }
     [DataMember] public bool   RunEndSoundEnabled       { get => _runEndSoundEnabled;       set => SetProperty(ref _runEndSoundEnabled,       value); }
     /// <summary>The inverse of <see cref="InferpalConfig.SecurityAlertsDisabled"/>: the box says what happens.</summary>
-    [DataMember] public bool   AskBeforeActions             { get => _askBeforeActions;             set => SetProperty(ref _askBeforeActions,             value); }
+    [DataMember] public bool   AskBeforeActions
+    {
+        get => _askBeforeActions;
+        set { if (SetProperty(ref _askBeforeActions, value)) RaiseNotifyPropertyChangedEvent(nameof(ApprovalsAuto)); }
+    }
     [DataMember] public bool   PackageCheckEnabled          { get => _packageCheckEnabled;          set => SetProperty(ref _packageCheckEnabled,          value); }
     [DataMember] public string ContextWindowSizeText        { get => _contextWindowSizeText;        set => SetProperty(ref _contextWindowSizeText,        value); }
     [DataMember] public string ContextWindowKeepTurnsText   { get => _contextWindowKeepTurnsText;   set => SetProperty(ref _contextWindowKeepTurnsText,   value); }
@@ -1231,6 +1235,13 @@ internal partial class InferpalSettingsData : NotifyPropertyChangedObject
     /// </summary>
     private async Task SaveAsync(object? _, CancellationToken ct)
     {
+        // Turning approvals off asks once more, in the window — at every Save while it is not confirmed, a second click
+        // included; its "Turn approvals off" saves (ConfirmAutoCommand). Said in the footer too: the card may be on another page.
+        if (TurnsApprovalsOff())
+        {
+            await RunOnVMContextAsync(() => { AutoConfirmTicked = false; ShowAutoConfirm = true; SaveStatus = Strings.AutoConfirmTitle; });
+            return;
+        }
         try
         {
             await SaveCoreAsync(ct);

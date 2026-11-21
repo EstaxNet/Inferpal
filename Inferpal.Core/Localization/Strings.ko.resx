@@ -119,6 +119,40 @@
   <data name="ScreenAfter" xml:space="preserve"><value>변경 후 · {0}</value></data>
   <data name="ScreenOpenHint" xml:space="preserve"><value>이미지를 클릭하면 원래 크기로 열립니다.</value></data>
   <data name="VideoChip" xml:space="preserve"><value>동영상 · {0} · {1}장</value></data>
+  <data name="RunReproducedThenFixed" xml:space="preserve"><value>재현 후 수정 · {0}</value></data>
+  <data name="RunFixedWithoutReproducing" xml:space="preserve"><value>재현 없이 수정 · {0}</value></data>
+  <data name="RunReproducedTestsStillFail" xml:space="preserve"><value>재현 · 테스트가 여전히 실패</value></data>
+  <data name="RunReproducedBuildStillFails" xml:space="preserve"><value>재현 · 빌드가 여전히 실패</value></data>
+  <data name="RunReproducedThenFixedTip" xml:space="preserve"><value>첫 변경 전에 실패한 검사가 마지막 변경 후에는 통과합니다.</value></data>
+  <data name="RunReproducedStillFailsTip" xml:space="preserve"><value>첫 변경 전에 실패한 검사가 마지막 변경 후에도 여전히 실패합니다.</value></data>
+  <data name="RunFixedWithoutReproducingTip" xml:space="preserve"><value>변경 전에 버그를 보여 준 것이 없습니다. 검사는 통과하지만 이 버그로 실패한 검사는 없었습니다.</value></data>
+  <data name="ApprovalRunScript" xml:space="preserve"><value>에이전트가 작성한 스크립트 실행</value></data>
+  <data name="ApprovalScriptWhere" xml:space="preserve"><value>{0} · {1}줄 · {2}에서 실행</value></data>
+  <data name="ApprovalScriptNote" xml:space="preserve"><value>저장소 밖에 작성됩니다. 스크립트가 그곳에 쓰지 않는 한 저장소는 바뀌지 않습니다. 명령 규칙이 적용됩니다.</value></data>
+  <data name="ApprovalOpenScript" xml:space="preserve"><value>편집기에서 열기</value></data>
+  <data name="StepScript" xml:space="preserve"><value>{0} 스크립트 · {1}줄</value></data>
+  <data name="ApprovalsAskTitle" xml:space="preserve"><value>나에게 묻기</value></data>
+  <data name="ApprovalsAskText" xml:space="preserve"><value>변경, 명령, 외부 요청 전마다 카드가 표시되어 diff나 정확한 명령을 먼저 봅니다. 권장.</value></data>
+  <data name="ApprovalsAutoTitle" xml:space="preserve"><value>자동 · 승인 끔</value></data>
+  <data name="ApprovalsAutoText" xml:space="preserve"><value>에이전트가 묻지 않고 파일을 바꾸고 명령을 실행하며 온라인에 접속합니다. 일회용 작업 공간, 컨테이너, 복사본(/run-copy)용입니다.</value></data>
+  <data name="AutoRisksTitle" xml:space="preserve"><value>자동 모드의 위험</value></data>
+  <data name="AutoRiskMistake" xml:space="preserve"><value>실수가 그대로 통과합니다. 잘못된 편집, git reset, 삭제된 폴더 — 아무도 미리 읽지 않습니다. Undo run은 에이전트가 쓴 파일은 되돌리지만 명령이 한 일(push, 마이그레이션, 삭제된 브랜치)은 되돌리지 않습니다.</value></data>
+  <data name="AutoRiskSteered" xml:space="preserve"><value>읽은 내용에 조종당할 수 있습니다. 웹 페이지, 이슈, 저장소 파일에 모델을 위한 지시가 있으면 카드 없이 그대로 따라 실행하거나 코드나 비밀을 지정된 주소로 보낼 수 있습니다.</value></data>
+  <data name="AutoRiskOutside" xml:space="preserve"><value>프로젝트 밖까지 닿을 수 있습니다. 명령이나 스크립트는 계정 권한으로 실행됩니다 — 다른 폴더, SSH 키와 토큰, 네트워크.</value></data>
+  <data name="AutoRiskSmallModel" xml:space="preserve"><value>작은 모델은 더 자주 실수합니다. 8-16GB에서는 큰 모델보다 명령을 잘못 읽거나 반복하는 일이 많고, 자동 모드는 그 실수를 모두 실행합니다.</value></data>
+  <data name="AutoStillProtectedTitle" xml:space="preserve"><value>자동 모드에서도 보호되는 것</value></data>
+  <data name="AutoStillProtected" xml:space="preserve"><value>deny 규칙과 기본 제공되는 치명적 명령 목록 · 에이전트의 지시와 권한(컨텍스트, 메모리, 노트, 규칙)에 대한 쓰기 · 효과를 읽을 수 없는 명령(인코딩, 다운로드 후 실행).</value></data>
+  <data name="AutoConfirmTitle" xml:space="preserve"><value>승인을 끌까요?</value></data>
+  <data name="AutoConfirmBody" xml:space="preserve"><value>이제부터 승인을 다시 켤 때까지 모든 작업 공간에서 에이전트가 미리 보여 주지 않고 파일을 바꾸고 명령을 실행하며 온라인에 접속합니다. 명령이 한 일은 Undo run으로 되돌릴 수 없고, 읽은 페이지나 이슈, 파일이 에이전트를 조종할 수 있습니다. deny 규칙과 치명적 명령 목록은 계속 적용됩니다.</value></data>
+  <data name="AutoConfirmCheck" xml:space="preserve"><value>이해했습니다: 묻지 않고 실행</value></data>
+  <data name="AutoConfirmKeep" xml:space="preserve"><value>계속 묻기</value></data>
+  <data name="AutoConfirmTurnOff" xml:space="preserve"><value>승인 끄기</value></data>
+  <data name="AutoBadge" xml:space="preserve"><value>자동</value></data>
+  <data name="AutoBadgeTip" xml:space="preserve"><value>승인이 꺼져 있어 에이전트가 묻지 않고 실행합니다. 다시 켜려면 클릭하세요.</value></data>
+  <data name="StepAuto" xml:space="preserve"><value>자동</value></data>
+  <data name="StepAutoTip" xml:space="preserve"><value>승인 끔: 카드 없이 실행됨</value></data>
+  <data name="RunAutoSteps" xml:space="preserve"><value>묻지 않은 단계 {0}개</value></data>
+  <data name="AcpAutoNotice" xml:space="preserve"><value>Inferpal 설정에서 승인이 꺼져 있습니다. 이 에이전트는 묻지 않고 파일을 바꾸고 명령을 실행하며 온라인에 접속합니다. deny 규칙은 계속 적용됩니다.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0}은(는) 너무 커서 읽을 수 없습니다({1}MB 초과).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>`{0}` 아래에 커밋되지 않은 변경이 없습니다. 검토할 것이 없습니다.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>검토 대상: `{0}` 아래의 커밋되지 않은 변경.</value></data>

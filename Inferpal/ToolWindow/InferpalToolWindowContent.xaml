@@ -185,6 +185,18 @@
                 <Button DockPanel.Dock="Right" Style="{StaticResource IconBtn}" Content="&#xE710;" Margin="8,0,0,0"
                         Command="{Binding ClearCommand}"
                         ToolTip="{Binding LabelNewConversation}" AutomationProperties.Name="{Binding LabelNewConversation}"/>
+                <!-- Approvals off (auto mode): a badge while it lasts; it opens the settings on Agent and approvals. -->
+                <Button DockPanel.Dock="Left" Template="{StaticResource Flat8}" Height="24" Padding="8,0" Margin="0,0,8,0" Cursor="Hand"
+                        Background="Transparent" BorderBrush="{Binding ThemeWarn}" BorderThickness="1"
+                        Visibility="{Binding AutoMode, Converter={StaticResource b2v}}" Command="{Binding OpenApprovalsCommand}"
+                        ToolTip="{Binding AutoBadgeTip}" AutomationProperties.Name="{Binding AutoBadgeTip}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE945;" FontSize="11" Foreground="{Binding ThemeWarn}"
+                                   VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="{Binding AutoBadge}" FontSize="11.5" FontWeight="SemiBold" Foreground="{Binding ThemeWarn}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
                 <!-- The model button: the dot says whether the server answers; it opens the model menu. -->
                 <Button Template="{StaticResource Flat8}" Height="32" Padding="10,0" Cursor="Hand"
                         Background="{Binding ThemeSurface}" BorderBrush="{Binding ThemeBorder}" BorderThickness="1"
@@ -698,6 +710,9 @@
                                     </TextBlock>
                                     <TextBlock DockPanel.Dock="Left" Text="{Binding ToolTitle}" FontFamily="Cascadia Mono, Consolas"
                                                FontSize="12" Foreground="{Binding ThemeText}" VerticalAlignment="Center"/>
+                                    <!-- Auto mode let the step through without a card. -->
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding StepAuto}" ToolTip="{Binding StepAutoTip}" FontSize="11.5"
+                                               Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{Binding DataContext.ThemeWarn, ElementName=root}"/>
                                     <!-- The status of an HTTP answer (http_request): an error code in the error colour. -->
                                     <Border DockPanel.Dock="Right" CornerRadius="4" BorderThickness="1" Padding="6,0" Margin="8,0,0,0"
                                             VerticalAlignment="Center">
@@ -1545,7 +1560,7 @@
                                             </TextBlock.Style>
                                         </TextBlock>
                                         <TextBlock Text="{Binding CheckText}" FontSize="13" Margin="5,0,0,0" VerticalAlignment="Center"
-                                                   Foreground="{Binding ThemeSubtleText}"/>
+                                                   ToolTip="{Binding CheckTip}" Foreground="{Binding ThemeSubtleText}"/>
                                     </StackPanel>
                                 </WrapPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">

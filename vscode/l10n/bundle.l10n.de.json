@@ -238,5 +238,12 @@
   "Diagram drawn from the Mermaid code": "Aus dem Mermaid-Code gezeichnetes Diagramm",
   "This diagram does not read, so it is shown as code": "Dieses Diagramm lässt sich nicht lesen und wird als Code angezeigt",
   "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} Bitten Sie das Modell, es zu korrigieren.",
-  "{0} (proposed change)": "{0} (vorgeschlagene Änderung)"
+  "{0} (proposed change)": "{0} (vorgeschlagene Änderung)",
+  "Open in an editor": "Im Editor öffnen",
+  "{0} script · 1 line": "{0}-Skript · 1 Zeile",
+  "{0} script · {1} lines": "{0}-Skript · {1} Zeilen",
+  "Auto": "Auto",
+  "Approvals are off: the agent acts without asking. Click to turn them back on.": "Freigaben aus: der Agent handelt ohne zu fragen. Klicken, um sie wieder einzuschalten.",
+  "auto": "auto",
+  "Approvals are off: run without a card": "Freigaben aus: ohne Karte ausgeführt"
 }

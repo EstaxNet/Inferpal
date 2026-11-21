@@ -35,6 +35,7 @@ internal sealed class ToolEventRegistry(
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
     public int? WritesInRun => inner.WritesInRun;
     public int? UnseenCallsInRun => inner.UnseenCallsInRun;
+    public int? AutoApprovals => inner.AutoApprovals;
     public void ForgetWholeRead(string path) => inner.ForgetWholeRead(path);
     public IReadOnlyList<Services.Documents.ChatImage> TakeReadImages() => inner.TakeReadImages();
     public IEnumerable<string> CallableNames => inner.CallableNames;

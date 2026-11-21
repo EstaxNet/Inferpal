@@ -272,6 +272,9 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
   changes you kept stay as the run made them. When the agent looked at the page or the window of your app
   (`view_page`, `view_window`) before its first change and again after its last, the bar shows **On screen**: the two
   looks side by side, a click opening one full size — the pictures it worked from, never a "before" made up afterwards.
+  When you asked it to fix a bug, the bar says whether the fix is **proven or guessed**: *reproduced, then fixed* when a
+  test or a build failed before its first change and passes after its last, *fixed without reproducing it* (the info
+  mark) when nothing showed the bug first — read from what the run did, never from the answer.
 - **Run replay** — `/replay [n]` shows a post-mortem timeline of an agent run: every tool
   call with its target and duration, then the files it touched.
 - **Long runs stay awake** *(both editors, and ACP)* — while the model works (an answer, an agent
@@ -320,6 +323,10 @@ look at what the code produces, measure it, and read the files developers deal w
 - **Your web service, called for real** — the agent starts the service in the background, waits until it is ready,
   sends requests with `http_request` and reads the answers, error pages and stack traces included; it then fixes the
   code and calls again to confirm.
+- **A script of its own** *(both editors)* — when no tool does what the agent needs (a computation over a log, a
+  conversion, a count over many files), it writes a short script — Python, PowerShell, bash or Node, whichever this
+  machine has — and runs it from your project. The script is written outside your repository, and the approval card
+  shows it whole, with a button to open a copy in an editor tab: what you approve is what you read.
 - **A measure, not one lucky run** — `run_command` with `repeat` runs a command several times after a warm-up and
   gives the median, the spread, and whether a change is faster beyond the normal variation between runs.
 - **The text of an image** — `ocr` reads a screenshot, a photo of a page or a scanned PDF in Inferpal's ten languages,

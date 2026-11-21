@@ -1555,3 +1555,70 @@ body.vscode-high-contrast-light .segment:has(input:checked) {
 .proxyeditor .linkbtn {
   align-self: flex-start;
 }
+
+/* Approvals: Auto picked is drawn as a warning, its risks said under the cards, and Save asks once more. */
+.choicecard.auto:has(input:checked) {
+  border-color: var(--vscode-editorWarning-foreground, #cca700);
+}
+
+.auto-risks {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--vscode-editorWarning-foreground, #cca700);
+  font-size: 12.5px;
+}
+
+.auto-risks[hidden] {
+  display: none;
+}
+
+.auto-risks ul {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+
+.auto-risks p {
+  margin: 6px 0 0;
+  opacity: 0.85;
+}
+
+.auto-confirm {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 100;
+}
+
+.auto-confirm [role='dialog'] {
+  max-width: 520px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--vscode-editorWarning-foreground, #cca700);
+  background: var(--vscode-editorWidget-background, #252526);
+  color: var(--vscode-foreground);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auto-confirm h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.auto-confirm p {
+  margin: 0;
+}
+
+.auto-confirm .buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.auto-confirm button.danger:disabled {
+  opacity: 0.5;
+}

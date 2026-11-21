@@ -137,6 +137,10 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
     [DataMember] public string StepSubject { get => _stepSubject; set => SetProperty(ref _stepSubject, value); }
     /// <summary>The status of the HTTP answer a step got ("500"); empty for any other step.</summary>
     [DataMember] public string StepStatus  { get => _stepStatus;  set => SetProperty(ref _stepStatus,  value); }
+    /// <summary>Auto mode let the step through without a card: "auto" on its line (empty otherwise).</summary>
+    [DataMember] public string StepAuto    { get => _stepAuto;    set => SetProperty(ref _stepAuto,    value); }
+    [DataMember] public string StepAutoTip { get; set; } = "";
+    private string _stepAuto = "";
     /// <summary>That status is an error (4xx, 5xx): drawn in the error colour.</summary>
     [DataMember] public bool   StepStatusFailed { get => _stepStatusFailed; set => SetProperty(ref _stepStatusFailed, value); }
     /// <summary>The run line's glyph: a tool while it runs, a check once it ended, a cross when its check failed.</summary>
@@ -165,6 +169,9 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
     private string _btnUndo = string.Empty;
     private Action? _onUndo;
     [DataMember] public string CheckText   { get => _checkText;   set => SetProperty(ref _checkText,   value); }
+    /// <summary>What the check's words mean, on hover (a bug report's fix: proven or guessed); <c>null</c>: no tooltip.</summary>
+    [DataMember] public string? CheckTip   { get => _checkTip;    set => SetProperty(ref _checkTip,    value); }
+    private string? _checkTip;
     [DataMember] public bool   HasCheck    { get => _hasCheck;    set => SetProperty(ref _hasCheck,    value); }
     [DataMember] public bool   CheckFailed { get => _checkFailed; set => SetProperty(ref _checkFailed, value); }
     [DataMember] public bool   CheckUnproven { get => _checkUnproven; set => SetProperty(ref _checkUnproven, value); }
@@ -841,6 +848,7 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
                        && summary?.Check is null or Services.Presentation.RunCheck.None or Services.Presentation.RunCheck.Unproven;
         RunGlyph  = RunFailed ? Glyphs.Failed
                   : summary?.Check is Services.Presentation.RunCheck.Unproven or Services.Presentation.RunCheck.PassedThenEdited
+                                      or Services.Presentation.RunCheck.PassedUnreproduced
                       ? Glyphs.Info : Glyphs.Check;
     }
 
@@ -1065,8 +1073,10 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
         {
             Role        = "result",
             CheckText   = summary.CheckText,
+            CheckTip    = summary.CheckTip.Length > 0 ? summary.CheckTip : null,
             HasCheck    = summary.Check != Services.Presentation.RunCheck.None,
-            CheckUnproven = summary.Check is Services.Presentation.RunCheck.Unproven or Services.Presentation.RunCheck.PassedThenEdited,
+            CheckUnproven = summary.Check is Services.Presentation.RunCheck.Unproven or Services.Presentation.RunCheck.PassedThenEdited
+                                          or Services.Presentation.RunCheck.PassedUnreproduced,
             CheckFailed = summary.Check is Services.Presentation.RunCheck.BuildFailed or Services.Presentation.RunCheck.TestsFailed,
             BtnUndo     = Strings.RunUndo,
             CanUndo     = onUndo is not null,
@@ -1171,7 +1181,7 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
             CardNote       = card.Note,
             IsOutbound     = card.Outbound,
             BtnDeny        = Strings.ApprovalDeny,
-            BtnOpenDiff    = Strings.ApprovalOpenDiff,
+            BtnOpenDiff    = card.OpenPath.Length > 0 ? Strings.ApprovalOpenScript : Strings.ApprovalOpenDiff,
             BtnAlwaysRule  = card.RuleLabel,
             CardRuleTip    = card.RuleTooltip,
             HasRule        = card.RuleLabel.Length > 0,

@@ -54,6 +54,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <inheritdoc/>
     public int? WritesInRun => _fileHistory.CurrentRunWriteCount;
     public int? UnseenCallsInRun => _fileHistory.CurrentRunUnseenCalls;
+    public int? AutoApprovals => _approval.AutoApprovals;
 
     /// <summary>The images <c>read_file</c> read since the loop last took them.</summary>
     private readonly Documents.ToolImageInbox _readImages = new();

@@ -597,7 +597,10 @@ internal sealed partial class HostServer : IDisposable
             var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);
             // A parameter models miss, said when the typed question calls for it and the turn offers its tool, judged on
             // the registry the turn sends (ToolHints). ⚠ Before the active-file block, which runs to the request heading.
-            var toolHint = ToolHints.For(string.IsNullOrWhiteSpace(p.Query) ? p.Prompt : p.Query,
+            // A bug report's fix says on its result bar whether a check showed the bug first (proven or guessed).
+            var typed = string.IsNullOrWhiteSpace(p.Query) ? p.Prompt : p.Query;
+            var bugReport = ToolHints.IsBugReport(typed);
+            var toolHint = ToolHints.For(typed,
                 ToolHints.OfferedBy(s.Tools, !p.CodeAction && s.ToolsEnabled, s.PlanMode, () => CurrentMode(s)));
             // Asked again (Regenerate), the question carries the notes its first answer read, as the history kept it.
             var promptText = ChatTurnPolicy.WithInjectedContext(ChatTurnPolicy.WithUserNotes(p.Prompt, p.Notes ?? []),
@@ -780,7 +783,7 @@ internal sealed partial class HostServer : IDisposable
                 return new ChatSendResult(
                     FinalAnswer(result.FinalResponse, streamed.ToString(), result.Executions, endNotice, model, s),
                     false, result.TokensUsed, result.PromptTokens, EndNotice: endNotice, ContextWindow: ctxDecision.Window,
-                    Run: RunSummaryDto.Of(Services.Presentation.RunSummary.Build(result.Executions, RunOf(s, runId))),
+                    Run: RunSummaryDto.Of(Services.Presentation.RunSummary.Build(result.Executions, RunOf(s, runId), bugReport)),
                     Model: model, Ended: Ended(result.ReachedIterationLimit, result.AnswerCut, result.AnswerRepeating),
                     OffersContinue: ChatTurnPolicy.OffersContinue(result.ReachedIterationLimit, result.WasLoopDetected,
                                                                   result.AnswerCut, result.AnswerRepeating));
@@ -839,7 +842,7 @@ internal sealed partial class HostServer : IDisposable
                     false, run.TokensUsed, run.PromptTokens,
                     EndNotice: runEndNotice,
                     ContextWindow: ctxDecision.Window,
-                    Run: RunSummaryDto.Of(Services.Presentation.RunSummary.Build(run.Executions, RunOf(s, runId))),
+                    Run: RunSummaryDto.Of(Services.Presentation.RunSummary.Build(run.Executions, RunOf(s, runId), bugReport)),
                     Model: model, Ended: Ended(run.ReachedIterationLimit, run.AnswerCut, run.AnswerRepeating),
                     OffersContinue: ChatTurnPolicy.OffersContinue(run.ReachedIterationLimit, run.WasLoopDetected,
                                                                   run.AnswerCut, run.AnswerRepeating));

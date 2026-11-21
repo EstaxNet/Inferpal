@@ -35,11 +35,13 @@ internal sealed record ApprovalPreviewLine(string Kind, string Text);
 /// <c>null</c> for none.</param>
 /// <param name="Binary">A binary file to write (a capture saved as PNG): its picture, and the one it replaces, in place of
 /// a preview of lines; <c>null</c> for anything else.</param>
+/// <param name="OpenPath">A file the card offers to open in an editor tab, read-only (a script of the agent's, pari 161);
+/// empty for none.</param>
 internal sealed record ApprovalCardModel(
     string Title, string Subject, string Meta, IReadOnlyList<ApprovalPreviewLine> Preview, string More,
     string AlwaysTooltip, string Message, string RuleLabel = "", string RuleTooltip = "", bool OffersAlways = true,
     string AllowLabel = "", string AlwaysLabel = "", string Warning = "", string Note = "", bool Outbound = false,
-    IReadOnlyList<ApprovalCardRow>? Rows = null, RunFileBinary? Binary = null);
+    IReadOnlyList<ApprovalCardRow>? Rows = null, RunFileBinary? Binary = null, string OpenPath = "");
 
 /// <summary>One fact a card states: <paramref name="Label"/> beside <paramref name="Value"/>.</summary>
 internal sealed record ApprovalCardRow(string Label, string Value);
@@ -164,9 +166,27 @@ internal static class ApprovalCard
                                      Warning: string.Join("\n\n", warnings), Note: Strings.DatabaseReadNote, Outbound: !here, Rows: rows);
     }
 
+    /// <summary>A script of the agent's (<see cref="Shell.ScriptRun"/>): titled as one, its language, length and folder under
+    /// the title, the script itself whole — the card is the only view of what will run —, and the file offered to open.</summary>
+    private static ApprovalCardModel? ScriptCard(ApprovalPrompt prompt, string? root, bool keepsGrantsAcrossSolutions)
+    {
+        if (Shell.ScriptRun.ReadDetails(prompt.Details) is not { } script) return null;
+        var lines = script.Code.Split('\n');
+        var folder = root is not null && Shell.ShellSession.SameFolder(script.Folder, root)
+            ? Path.GetFileName(Path.TrimEndingDirectorySeparator(root))
+            : script.Folder;
+        return new ApprovalCardModel(Strings.ApprovalRunScript, Strings.ApprovalScriptWhere(script.Interpreter, lines.Length, folder),
+                                     string.Empty, lines.Select(l => new ApprovalPreviewLine("ctx", l)).ToList(), string.Empty,
+                                     keepsGrantsAcrossSolutions ? Strings.ApprovalAlwaysTooltip(prompt.ToolName)
+                                                                : Strings.ApprovalAlwaysTooltipUntilRestart(prompt.ToolName),
+                                     prompt.Message, OffersAlways: !prompt.Forced, Note: Strings.ApprovalScriptNote,
+                                     OpenPath: Shell.ScriptRun.ViewOf(script.File));
+    }
+
     public static ApprovalCardModel Build(ApprovalPrompt prompt, string? root, bool keepsGrantsAcrossSolutions = false)
     {
         if (prompt.ToolName == "query_database" && DatabaseCard(prompt) is { } database) return database;
+        if (prompt.ToolName == "run_command" && ScriptCard(prompt, root, keepsGrantsAcrossSolutions) is { } scriptCard) return scriptCard;
         // A file tool's subject is its path; any other tool's is the string its rules match (an MCP call's raw JSON plus
         // its values), which is not for display: what it runs is in its details.
         // ⚠ A change to SEVERAL files (apply_edits) has every path as its subject, one per line, so that the rules match

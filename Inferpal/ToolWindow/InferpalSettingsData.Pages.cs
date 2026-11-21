@@ -196,6 +196,7 @@ internal partial class InferpalSettingsData
         LabelUseRecommendedSampling   = Strings.LabelUseRecommendedSampling;
         HintUseRecommendedSampling    = Strings.HintUseRecommendedSampling;
         LabelAskBeforeActions         = Strings.LabelAskBeforeActions;
+        ApplyAutoModeLabels();
         HintAskBeforeActions          = Strings.HintAskBeforeActions;
         LabelPackageCheck             = Strings.LabelPackageCheck;
         HintPackageCheck              = Strings.HintPackageCheck;
@@ -417,6 +418,8 @@ internal partial class InferpalSettingsData
     /// <summary>Puts every box back to what is saved. Nothing is written.</summary>
     private void ReloadFromConfig()
     {
+        // A reload (Cancel, the file followed) drops a confirmation left open: it belonged to the values being dropped.
+        ShowAutoConfirm = false;
         var c = _config;
         _opened = c.SnapshotNow();
         _teamRules = ReadTeamRules();   // the team file may have changed since the window opened

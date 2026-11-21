@@ -1290,12 +1290,47 @@
                 <Border BorderBrush="{Binding NavLineBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,0,0,8">
                     <TextBlock Text="{Binding LabelSectionApprovals}" Style="{StaticResource SectionTitle}" Margin="0"/>
                 </Border>
-                <CheckBox AutomationProperties.Name="{Binding LabelAskBeforeActions}" IsChecked="{Binding AskBeforeActions, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
-                    <StackPanel Margin="4,0,0,0">
-                        <TextBlock Text="{Binding LabelAskBeforeActions}" Style="{StaticResource FieldLabel}" Margin="0"/>
-                        <TextBlock Text="{Binding HintAskBeforeActions}" Style="{StaticResource Hint}" Margin="0,2,0,0"/>
+                <!-- Approvals: Ask me or Auto, and what auto mode risks, said as soon as it is picked. -->
+                <UniformGrid Columns="2" Margin="0,2,0,8" AutomationProperties.Name="{Binding LabelSectionApprovals}">
+                    <RadioButton Style="{StaticResource ChoiceCard}" GroupName="approvals" Tag="{Binding ApprovalsAskTitle}"
+                                 IsChecked="{Binding AskBeforeActions, Mode=TwoWay}" AutomationProperties.Name="{Binding ApprovalsAskTitle}">
+                        <TextBlock Text="{Binding ApprovalsAskText}" Style="{StaticResource Hint}" Margin="0"/>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource ChoiceCard}" GroupName="approvals" Tag="{Binding ApprovalsAutoTitle}" Margin="0"
+                                 IsChecked="{Binding ApprovalsAuto, Mode=TwoWay}" AutomationProperties.Name="{Binding ApprovalsAutoTitle}">
+                        <TextBlock Text="{Binding ApprovalsAutoText}" Style="{StaticResource Hint}" Margin="0"/>
+                    </RadioButton>
+                </UniformGrid>
+                <Border BorderBrush="{Binding WarningForeground}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12"
+                        MaxWidth="680" HorizontalAlignment="Left" Visibility="{Binding ApprovalsAuto, Converter={StaticResource b2v}}"
+                        AutomationProperties.Name="{Binding AutoRisksTitle}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding AutoRisksTitle}" Style="{StaticResource FieldLabel}" Foreground="{Binding WarningForeground}" Margin="0,0,0,6"/>
+                        <TextBlock Text="{Binding AutoRiskMistake}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding AutoRiskSteered}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding AutoRiskOutside}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding AutoRiskSmallModel}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <TextBlock Text="{Binding AutoStillProtectedTitle}" Style="{StaticResource FieldLabel}" Margin="0,0,0,2"/>
+                        <TextBlock Text="{Binding AutoStillProtected}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0"/>
                     </StackPanel>
-                </CheckBox>
+                </Border>
+                <!-- Save turning approvals off asks once more, in the window: the box must be ticked first. -->
+                <Border BorderBrush="{Binding WarningForeground}" BorderThickness="2" CornerRadius="8" Padding="14,12" Margin="0,0,0,12"
+                        MaxWidth="680" HorizontalAlignment="Left" Visibility="{Binding ShowAutoConfirm, Converter={StaticResource b2v}}"
+                        AutomationProperties.Name="{Binding AutoConfirmTitle}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding AutoConfirmTitle}" Style="{StaticResource FieldLabel}" Margin="0,0,0,6"/>
+                        <TextBlock Text="{Binding AutoConfirmBody}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <CheckBox IsChecked="{Binding AutoConfirmTicked, Mode=TwoWay}" AutomationProperties.Name="{Binding AutoConfirmCheck}" Margin="0,0,0,10">
+                            <TextBlock Text="{Binding AutoConfirmCheck}" Style="{StaticResource Hint}" Margin="4,0,0,0"/>
+                        </CheckBox>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="{Binding AutoConfirmKeep}" Command="{Binding KeepAskingCommand}" Padding="12,4" Margin="0,0,8,0"/>
+                            <Button Content="{Binding AutoConfirmTurnOff}" Command="{Binding ConfirmAutoCommand}" Padding="12,4"
+                                    IsEnabled="{Binding AutoConfirmTicked}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
                 <CheckBox AutomationProperties.Name="{Binding LabelPackageCheck}" IsChecked="{Binding PackageCheckEnabled, Mode=TwoWay}" Margin="0,0,0,12" VerticalContentAlignment="Top">
                     <StackPanel Margin="4,0,0,0">
                         <TextBlock Text="{Binding LabelPackageCheck}" Style="{StaticResource FieldLabel}" Margin="0"/>
