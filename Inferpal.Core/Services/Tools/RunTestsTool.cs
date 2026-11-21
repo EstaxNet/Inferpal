@@ -993,12 +993,14 @@ internal class RunTestsTool : ITool
                 sb.AppendLine($"  {e}");
             if (environment.Count > MaxCompileErrorsListed)
                 sb.AppendLine($"  … +{environment.Count - MaxCompileErrorsListed} more error(s) not listed");
+            if (GetDiagnosticsTool.EnvironmentRemedy(string.Join("\n", environment)) is { } remedy) sb.AppendLine(remedy);
         }
         // The host's refusal of a global.json, with no error line beside it: one beside it is the code's, and stays red.
         else if (CompileErrors(raw).Count == 0 && GetDiagnosticsTool.IsSdkNotFound(raw))
         {
             sb.AppendLine(EnvironmentRefused);
             sb.AppendLine(Truncate(raw.Trim(), MaxRawChars));
+            if (GetDiagnosticsTool.EnvironmentRemedy(raw) is { } remedy) sb.AppendLine(remedy);
         }
         else if (CompileErrors(raw) is { Count: > 0 } errors)
         {

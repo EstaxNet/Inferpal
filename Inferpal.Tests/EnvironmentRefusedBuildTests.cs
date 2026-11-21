@@ -195,4 +195,41 @@ public sealed class EnvironmentRefusedBuildTests
         Assert.StartsWith(RunTestsTool.BuildFailed, said);
         Assert.True(TddCommandHandler.TestsFailed(said));
     }
+    // ── What clears it (pari 139) ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void AMissingWorkload_NamesTheCommandThatInstallsIt_ThroughTheCard()
+    {
+        var diagnosed = Diagnose(WorkloadMissing + "\n");
+        Assert.Contains("dotnet workload restore", diagnosed);
+        Assert.Contains("asks the person first", diagnosed);
+        var tested = RunTestsTool.ParseDotnetOutput(WorkloadMissing + "\n", 1);
+        Assert.Contains("dotnet workload restore", tested);
+    }
+
+    [Fact]
+    public void AMissingSdk_IsThePersonsToInstall_AndNeverWorkedAround()
+    {
+        foreach (var said in new[]
+                 {
+                     Interpret(new ChildProcessResult(155, string.Empty, SdkNotFound, TimedOut: false), "App.csproj", 90),
+                     Diagnose(TargetNotSupported + "\n"),
+                     RunTestsTool.ParseDotnetOutput(SdkNotFound, 155),
+                 })
+        {
+            Assert.Contains("https://dotnet.microsoft.com/download", said);
+            Assert.Contains("never edit global.json", said);
+            Assert.DoesNotContain("dotnet workload restore", said);
+        }
+    }
+
+    [Fact]
+    public void ANotRestoredClone_KeepsItsOwnRemedy_AndNoOther()
+    {
+        // REFERENCE ARM: a project not restored is cleared by a restore, which the line already says; no SDK, no workload.
+        var said = Diagnose(NotRestoredLine + "\n");
+        Assert.Contains("dotnet restore", said);
+        Assert.DoesNotContain("workload", said);
+        Assert.DoesNotContain("dotnet.microsoft.com", said);
+    }
 }

@@ -143,6 +143,28 @@ internal class GetDiagnosticsTool : ITool
         Regex.IsMatch(errorLine, @"\berror\s+NETSDK(?:1045|1147)\b", RegexOptions.None, RegexBudget.Default);
 
     /// <summary>
+    /// What clears an environment refusal (<see cref="BuildStop.Environment"/>, <see cref="IsSdkNotFound"/>) in
+    /// <paramref name="output"/>, said after its reason; <c>null</c> when it names neither a workload nor an SDK. A
+    /// workload is installed by the person's approval of <c>run_command</c>, never by the tool; an SDK is the person's to
+    /// install: the agent names it.
+    /// </summary>
+    internal static string? EnvironmentRemedy(string output)
+    {
+        if (Regex.IsMatch(output, @"\bNETSDK1147\b", RegexOptions.None, RegexBudget.Default))
+            return "To clear it: `dotnet workload restore <the project or solution>` installs the workloads the project "
+                 + "lists — through run_command, which asks the person first (it installs on this machine). Then check again.";
+        if (IsSdkNotFound(output) || Regex.IsMatch(output, @"\bNETSDK1045\b", RegexOptions.None, RegexBudget.Default))
+            return "To clear it: the .NET SDK the project asks for (its global.json, or its target framework) is not "
+                 + "installed here. Installing an SDK is the person's to do: tell them which version, and "
+                 + "https://dotnet.microsoft.com/download — never edit global.json or the target framework to get around it.";
+        return null;
+    }
+
+    /// <summary>Its reason, then what clears it when the output names it (<see cref="EnvironmentRemedy"/>).</summary>
+    internal static string WithRemedy(string reason, string output) =>
+        EnvironmentRemedy(output) is { } remedy ? reason + "\n" + remedy : reason;
+
+    /// <summary>
     /// Whether <paramref name="output"/> is the dotnet host refusing a <c>global.json</c> whose SDK is not installed: it
     /// prints no error code, on stderr, before MSBuild starts. Both the current host's sentence and the one before .NET 8.
     /// </summary>
@@ -436,7 +458,7 @@ internal class GetDiagnosticsTool : ITool
             body = run.TimedOut ? run.Stdout.Trim()
                  : run.Succeeded ? Strings.DiagBuildOk(projectFile)
                  // The host refuses a global.json before MSBuild starts — on stderr, which the failure below does not show.
-                 : IsSdkNotFound(run.Stderr) ? EnvironmentRefused + "\n" + run.Stderr.Trim()
+                 : IsSdkNotFound(run.Stderr) ? WithRemedy(EnvironmentRefused + "\n" + run.Stderr.Trim(), run.Stderr)
                  : Strings.DiagBuildFailed(run.ExitCode, run.Stdout.Trim());
         }
         else
@@ -452,7 +474,7 @@ internal class GetDiagnosticsTool : ITool
             else if (stop == BuildStop.NotRestored)
                 body = NotRestored + "\n" + ErrorsFirst(diagnostics);
             else if (stop == BuildStop.Environment)
-                body = EnvironmentRefused + "\n" + ErrorsFirst(diagnostics);
+                body = WithRemedy(EnvironmentRefused + "\n" + ErrorsFirst(diagnostics), string.Join("\n", errorLines));
             else if (errorLines.Count == 0 && !run.Succeeded && !run.TimedOut)
                 // ⚠ dotnet failed and no error line is readable: "0 error(s)" read Clean. Its output is the report.
                 body = Strings.DiagBuildFailed(run.ExitCode, run.Stdout.Trim());
