@@ -8,7 +8,7 @@
 
 With [Ollama](https://ollama.com), [LM Studio](https://lmstudio.ai), llama.cpp, vLLM or any OpenAI-compatible server, on this computer or a GPU machine you own. Windows, Linux and macOS.
 
-![VS Code with Inferpal: asked to capture the cart with two teas, the agent starts the shop, adds two teas and opens the cart in the browser pane step by step, then saves the capture on an approval card](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/cart.gif)
+[![VS Code with Inferpal: asked to capture the cart with two teas, the agent starts the shop, adds two teas and opens the cart in the browser pane step by step, then saves the capture on an approval card](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/cart.gif)](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/cart.gif)
 
 *"Capture the cart with two teas in it, for the README." It starts the app, clicks through it and saves the picture. Replayed in VS Code.*
 
@@ -16,12 +16,30 @@ With [Ollama](https://ollama.com), [LM Studio](https://lmstudio.ai), llama.cpp, 
 
 ## See it work
 
-| | | |
-|---|---|---|
-| ![The checkout page looked at a phone's width, one line of CSS changed, the page looked at again](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/demo-checkout.gif) | ![A WPF order form the agent launched, filled and reviewed through the system's accessibility, its summary saved](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/desktop-app.gif) | ![The development database read on its card, the cause found in the code, the fix approved](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/database.gif) |
-| **It looks at what it builds** | **It drives your desktop app** | **It reads your database** |
-| ![A background task runs while the code is being written, then its report opens](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/background-task.gif) | ![A run on a copy of the repository, each change kept or dropped, then applied](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/copy.gif) | ![A change approved on its card, then the whole run undone in one click](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/approve-undo.gif) |
-| **It works while you code** | **On a copy, if you prefer** | **You approve, you undo** |
+### It looks at what it builds
+
+[![The checkout page looked at a phone's width, one line of CSS changed, the page looked at again](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/demo-checkout.gif)](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/demo-checkout.gif)
+
+### It drives your desktop app
+
+[![A WPF order form the agent launched, filled and reviewed through the system's accessibility, its summary saved](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/desktop-app.gif)](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/desktop-app.gif)
+
+### It reads your database
+
+[![The development database read on its card, the cause found in the code, the fix approved](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/database.gif)](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/database.gif)
+
+### It works while you code
+
+[![A background task runs while the code is being written, then its report opens](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/background-task.gif)](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/background-task.gif)
+
+### On a copy, if you prefer
+
+[![A run on a copy of the repository, each change kept or dropped, then applied](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/copy.gif)](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/copy.gif)
+
+### You approve, you undo
+
+[![A change approved on its card, then the whole run undone in one click](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/approve-undo.gif)](https://raw.githubusercontent.com/EstaxNet/Inferpal/9a666540f2f679722b4068b1cb7c9d679957fe24/docs/assets/listing/approve-undo.gif)
+
 
 | It sees | It acts | It checks |
 |---|---|---|
