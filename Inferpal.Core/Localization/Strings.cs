@@ -529,11 +529,6 @@ internal static class Strings
     public static string RunReproducedThenFixedTip => Get(nameof(RunReproducedThenFixedTip));
     public static string RunReproducedStillFailsTip => Get(nameof(RunReproducedStillFailsTip));
     public static string RunFixedWithoutReproducingTip => Get(nameof(RunFixedWithoutReproducingTip));
-    public static string ApprovalRunScript => Get(nameof(ApprovalRunScript));
-    public static string ApprovalScriptWhere(string language, int lines, string folder) => Format(Get(nameof(ApprovalScriptWhere)), language, lines, folder);
-    public static string ApprovalScriptNote => Get(nameof(ApprovalScriptNote));
-    public static string ApprovalOpenScript => Get(nameof(ApprovalOpenScript));
-    public static string StepScript(string language, int lines) => Format(Get(nameof(StepScript)), language, lines);
     public static string ApprovalsAskTitle => Get(nameof(ApprovalsAskTitle));
     public static string ApprovalsAskText => Get(nameof(ApprovalsAskText));
     public static string ApprovalsAutoTitle => Get(nameof(ApprovalsAutoTitle));

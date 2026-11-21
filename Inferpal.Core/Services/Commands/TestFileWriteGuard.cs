@@ -30,8 +30,8 @@ internal sealed class TestFileWriteGuard(IApprovalService inner) : IApprovalServ
 
     public bool Allows(string toolName, string subject) => inner.Allows(toolName, subject);
 
-    public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct, bool forcePrompt = false) =>
-        inner.RequestScopedApprovalAsync(toolName, details, subject, grantKey, ct, forcePrompt);
+    public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct) =>
+        inner.RequestScopedApprovalAsync(toolName, details, subject, grantKey, ct);
 
     public bool RulesUnreadable => inner.RulesUnreadable;
 

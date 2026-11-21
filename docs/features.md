@@ -323,10 +323,6 @@ look at what the code produces, measure it, and read the files developers deal w
 - **Your web service, called for real** — the agent starts the service in the background, waits until it is ready,
   sends requests with `http_request` and reads the answers, error pages and stack traces included; it then fixes the
   code and calls again to confirm.
-- **A script of its own** *(both editors)* — when no tool does what the agent needs (a computation over a log, a
-  conversion, a count over many files), it writes a short script — Python, PowerShell, bash or Node, whichever this
-  machine has — and runs it from your project. The script is written outside your repository, and the approval card
-  shows it whole, with a button to open a copy in an editor tab: what you approve is what you read.
 - **A measure, not one lucky run** — `run_command` with `repeat` runs a command several times after a warm-up and
   gives the median, the spread, and whether a change is faster beyond the normal variation between runs.
 - **The text of an image** — `ocr` reads a screenshot, a photo of a page or a scanned PDF in Inferpal's ten languages,

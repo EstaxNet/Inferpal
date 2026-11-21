@@ -90,9 +90,7 @@ internal sealed class RunCommandTool : ITool, IDisposable
                  + $"variables set by 'cd' or `{setEnv}` persist to later calls). Set background=true for "
                  + "long-running commands (builds, servers, watchers): it returns a job id immediately. Use "
                  + "action='poll' with that id to read new output, action='wait' with 'until' to wait for a line (a server's "
-                 + "\"listening\" line) instead of polling again and again, and action='stop' to terminate it. When no tool does "
-                 + "what you need (a computation, a conversion, a count over many files), write a short script instead: "
-                 + "'script' and 'language'; the person reads it on the card before it runs.";
+                 + "\"listening\" line) instead of polling again and again, and action='stop' to terminate it.";
         }
     }
 
@@ -109,9 +107,7 @@ internal sealed class RunCommandTool : ITool, IDisposable
             until             = new { type = "string", description = "For action='wait': the text a line of the job's output must contain (plain text, not a pattern)." },
             timeout_seconds   = new { type = "integer", description = $"For action='wait': the longest to wait, {MinWaitSeconds}-{MaxWaitSeconds} seconds (default {DefaultWaitSeconds})." },
             // ⚠ Short on purpose: this definition goes with every request.
-            repeat            = new { type = "integer", description = $"To measure: run it {RepeatedRun.MinRepeat}-{RepeatedRun.MaxRepeat} times after a warm-up; gives the median, the spread, and whether it changed beyond the noise since its last measure." },
-            script            = new { type = "string", description = "Instead of 'command': a script's code, run from the session's folder." },
-            language          = new { type = "string", @enum = Shell.ScriptRun.Extensions.Keys.ToArray(), description = "The script's language." }
+            repeat            = new { type = "integer", description = $"To measure: run it {RepeatedRun.MinRepeat}-{RepeatedRun.MaxRepeat} times after a warm-up; gives the median, the spread, and whether it changed beyond the noise since its last measure." }
         },
         required = Array.Empty<string>()
     };
@@ -128,14 +124,8 @@ internal sealed class RunCommandTool : ITool, IDisposable
             return action == "wait" ? await WaitAsync(args, ct) : HandleAction(action, args);
         }
 
-        // A script of its own: written outside the repository, shown whole on the card (ScriptRun).
-        if (args.Str("script") is { Length: > 0 } code) return await RunScriptAsync(args, code, ct);
-
         if (args.Str("command") is not { Length: > 0 } command)
-            return "Error: 'command' is required (or use action='poll'/'stop'/'list', or 'script' with 'language').";
-        // ⚠ The marker draws a script's card: a command holding it would be shown as a script it is not.
-        if (command.Contains(Shell.ScriptRun.Marker.TrimEnd('\t'), StringComparison.Ordinal))
-            return "Error: the command holds the marker of a script's card — nothing ran. Send a script with 'script'.";
+            return "Error: 'command' is required (or use action='poll'/'stop'/'list').";
 
         var rawWorkDir = args.Str("working_directory");
         // A relative working_directory is relative to the SESSION's directory, as the parameter
@@ -202,75 +192,6 @@ internal sealed class RunCommandTool : ITool, IDisposable
 
         if (repeat is { } measure) return await MeasureAsync(command, runIn, measure.Item1, measure.Item2, ct);
         return await _session.RunAsync(command, workDir, ct);
-    }
-
-    /// <summary>How many scripts failed in a row, and when the last one did: past three within a few minutes, the next is
-    /// refused and the model is told to say what blocks it — a model that rewrites a failing script loops until its budget.
-    /// A later turn starts again: the person may have fixed what blocked it.</summary>
-    private int _scriptFailuresInRow;
-    private DateTime _lastScriptFailure;
-
-    /// <summary>The most scripts that may fail in a row before the next is refused.</summary>
-    internal const int MaxScriptFailuresInRow = 3;
-
-    /// <summary>How long failures count as "in a row".</summary>
-    private static readonly TimeSpan ScriptFailureWindow = TimeSpan.FromMinutes(10);
-
-    /// <summary>Runs a script of the model's: its language's interpreter on this machine, its file in the account's folder,
-    /// the card showing the script itself and the rules judging its launch line and every line of it.</summary>
-    private async Task<string> RunScriptAsync(JsonElement args, string rawCode, CancellationToken ct)
-    {
-        if (args.Str("command") is { Length: > 0 })
-            return "Error: give 'command' or 'script', not both — nothing ran.";
-        if (args.Has("repeat") || args.Bool("background", false) || args.Str("working_directory") is { Length: > 0 })
-            return "Error: a script runs once, in the session's folder: 'repeat', 'background' and 'working_directory' are for a "
-                 + "command — nothing ran.";
-        if (args.Keyword("language") is not { } language || !Shell.ScriptRun.Extensions.ContainsKey(language))
-            return $"Error: 'language' must be one of {string.Join(", ", Shell.ScriptRun.Extensions.Keys)} — nothing ran.";
-        if (DateTime.UtcNow - _lastScriptFailure > ScriptFailureWindow) _scriptFailuresInRow = 0;
-        if (_scriptFailuresInRow >= MaxScriptFailuresInRow)
-            return $"Error: {MaxScriptFailuresInRow} scripts failed in a row — nothing ran. Say what blocks you instead of "
-                 + "writing another.";
-        // ⚠ One text for the card, the rules and the interpreter: every line break an interpreter honours made plain.
-        var code = Shell.ScriptRun.Normalize(rawCode);
-        var runIn = _session.StartDirectory(null).Directory;
-        var root = _session.WorkspaceRoot;
-        if (Execution.RunRoot.Copy is { } copy)
-        {
-            if (!PathSanitizer.IsUnderRoot(runIn, copy))
-                return $"Error: this run works in a copy of the repository ({copy}); a script runs inside it, not in {runIn} — nothing ran.";
-            // What a command's line is judged on in a copy, a shell script's lines are too.
-            if (language is "bash" or "powershell")
-                foreach (var line in code.Split('\n'))
-                    if (Execution.RunRoot.CommandRefusal(line) is { } refused) return refused;
-        }
-        (string Exe, string[] Args, string Name, bool Repository)? Find(string lang) =>
-            Shell.ScriptRun.Interpreter(lang, runIn, root, Shell.ShellLauncher.FindOnPath, File.Exists, OperatingSystem.IsWindows());
-        if (Find(language) is not { } interpreter)
-            return Shell.ScriptRun.Missing(language, Shell.ScriptRun.Extensions.Keys.Where(l => l != language && Find(l) is not null));
-
-        var file = Shell.ScriptRun.NewFile(language);
-        // The card opens a COPY, written now; the file that runs is written after the answer, from the approved text.
-        await Shell.ScriptRun.WriteAsync(Shell.ScriptRun.ViewOf(file), code, language, ct);
-        var (dialect, _) = Shell.ShellLauncher.Resolve();
-        var command = Shell.ScriptRun.CommandLine(dialect, interpreter.Exe, interpreter.Args, file);
-        var details = Shell.ScriptRun.Details(language, interpreter.Name, runIn, file, code);
-        // ⚠ The rules judge the launch line AND every line of the script: a multi-line subject is approved without a card
-        // only when every line is allowed, so a rule written for `python manage.py test` never lets a script through.
-        var subject = command + "\n" + code;
-        // A project's own interpreter is the repository's code: its owner's "No" to running it holds.
-        var force = !PathSanitizer.IsUnderRoot(runIn, root)
-                    || interpreter.Repository && WorkspaceCodeConsent.Declined(Execution.RunRoot.Origin ?? root);
-        if (!await _approval.RequestScopedApprovalAsync("run_command", details, subject, Shell.ScriptRun.GrantKey, ct, force))
-            return Strings.RunCancelled;
-
-        await Shell.ScriptRun.WriteAsync(file, code, language, ct);
-        var result = await _session.RunAsync(command, null, ct);
-        // Judged on the session's own last line: a script that prints "[exit code 0]" itself, or one stopped at the deadline
-        // (no exit line), is no success.
-        if (result.TrimEnd().EndsWith("[exit code 0]", StringComparison.Ordinal)) _scriptFailuresInRow = 0;
-        else (_scriptFailuresInRow, _lastScriptFailure) = (_scriptFailuresInRow + 1, DateTime.UtcNow);
-        return $"[script run by {interpreter.Name}, kept at {file}]\n{result}";
     }
 
     /// <summary>The last measure of each command in this session — by folder (the shared rule for paths), then by command

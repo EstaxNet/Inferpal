@@ -540,11 +540,8 @@ internal partial class InferpalToolWindowData
         {
             if (!IsLoading) return;
             ChatMessageItem? created = null;
-            // A script's card opens the script (a copy of it) where a change's card opens its diff.
-            created = card.OpenPath.Length > 0
-                ? ChatMessageItem.ApprovalMsg(card, () => OpenInEditor(card.OpenPath, "Chat.OpenScript", ex => Strings.MsgError(ex.Message)))
-                : ChatMessageItem.ApprovalMsg(card,
-                    openDiff is null ? null : () => _ = OpenCardDiffAsync(created!, openDiff, answeredToken));
+            created = ChatMessageItem.ApprovalMsg(card,
+                openDiff is null ? null : () => _ = OpenCardDiffAsync(created!, openDiff, answeredToken));
             InsertCard(created);
             _pendingApproval = created;
             RefreshComposerPlaceholder();

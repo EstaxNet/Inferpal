@@ -310,14 +310,6 @@ internal static class RunSummary
         {
             using var doc = System.Text.Json.JsonDocument.Parse(input);
             if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return string.Empty;
-            // A script of the agent's (run_command's 'script'): its language and length, never its first characters.
-            if (doc.RootElement.TryGetProperty("script", out var script) && script.ValueKind == System.Text.Json.JsonValueKind.String
-                && script.GetString() is { Length: > 0 } code)
-            {
-                var language = doc.RootElement.TryGetProperty("language", out var lang) && lang.ValueKind == System.Text.Json.JsonValueKind.String
-                    ? lang.GetString() : null;
-                return Strings.StepScript(language ?? "script", code.ReplaceLineEndings("\n").TrimEnd('\n').Split('\n').Length);
-            }
             foreach (var key in SubjectKeys)
             {
                 if (doc.RootElement.TryGetProperty(key, out var value)

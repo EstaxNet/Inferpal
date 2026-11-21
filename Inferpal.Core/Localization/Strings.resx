@@ -130,11 +130,6 @@ This cannot be undone.</value></data>
   <data name="RunReproducedThenFixedTip" xml:space="preserve"><value>A check failed before the first edit and passes after the last one.</value></data>
   <data name="RunReproducedStillFailsTip" xml:space="preserve"><value>A check failed before the first edit and still fails after the last one.</value></data>
   <data name="RunFixedWithoutReproducingTip" xml:space="preserve"><value>Nothing showed the bug before the change: the checks pass, but none of them failed on it.</value></data>
-  <data name="ApprovalRunScript" xml:space="preserve"><value>Run a script the agent wrote</value></data>
-  <data name="ApprovalScriptWhere" xml:space="preserve"><value>{0} · {1:line|lines} · runs in {2}</value></data>
-  <data name="ApprovalScriptNote" xml:space="preserve"><value>Written outside your repository: nothing in it changes unless the script writes there. Your rules for commands apply to it.</value></data>
-  <data name="ApprovalOpenScript" xml:space="preserve"><value>Open in an editor</value></data>
-  <data name="StepScript" xml:space="preserve"><value>{0} script · {1:line|lines}</value></data>
   <data name="ApprovalsAskTitle" xml:space="preserve"><value>Ask me</value></data>
   <data name="ApprovalsAskText" xml:space="preserve"><value>A card before each change, command or outbound request: you see the diff or the exact command first. Recommended.</value></data>
   <data name="ApprovalsAutoTitle" xml:space="preserve"><value>Auto · approvals off</value></data>

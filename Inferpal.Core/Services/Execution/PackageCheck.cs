@@ -220,9 +220,7 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
         var found = new List<AddedPackage>();
         if (tool == "run_command")
         {
-            // A shell script's lines are commands too: a package it installs is checked as one typed would be.
-            if ((args.Str("command") ?? (args.Keyword("language") is "bash" or "powershell" ? args.Str("script") : null)) is not { } command)
-                return found;
+            if (args.Str("command") is not { } command) return found;
             var start = shell is not null && Directory.Exists(shell.Directory) ? shell.Directory : root;
             var dir = ExistingFolder(args.Str("working_directory"), start) ?? start;
             // One step at a time, so that `cd web && npm install x` is asked from web/, and a pipe ends a step's arguments.
@@ -317,8 +315,7 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
     /// <summary>What the permission rules match this call on at its card: the command, or each file it writes.</summary>
     private static IEnumerable<string> RuleSubjects(string tool, JsonElement args, string root) =>
         tool == "run_command"
-            ? args.Str("command") is { } command ? [command]
-              : args.Str("script") is { } script && args.Keyword("language") is "bash" or "powershell" ? [script] : []
+            ? args.Str("command") is { } command ? [command] : []
             : Writes(tool, args).Select(w => ResolvedPath(w.Path, root)).OfType<string>();
 
     /// <summary><paramref name="raw"/> resolved against <paramref name="from"/>, existing or not; <c>null</c> when it is not a usable path.</summary>

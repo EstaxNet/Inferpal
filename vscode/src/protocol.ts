@@ -724,8 +724,6 @@ export interface ApprovalCard {
   rows?: { label: string; value: string }[];
   /** A binary file to write (a capture saved as PNG): its pictures, the one it replaces first; absent for anything else. */
   binary?: { label: string; before?: string | null; after?: string | null; beforeCaption: string; afterCaption: string } | null;
-  /** A file the card offers to open (a copy of the agent's script, pari 161); empty for none. */
-  openPath?: string;
 }
 
 /** One file a run changed. */

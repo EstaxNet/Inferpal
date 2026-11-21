@@ -46,8 +46,7 @@ internal interface IApprovalService
     /// <c>http_request</c>, never the whole tool.
     /// </summary>
     /// <remarks>An implementation that cannot keep such a grant asks every time (forced): never a grant wider than asked.</remarks>
-    Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct,
-                                          bool forcePrompt = false) =>
+    Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct) =>
         RequestApprovalAsync(toolName, details, ct, subject: subject, forcePrompt: true);
 
     /// <summary>

@@ -126,11 +126,6 @@
   <data name="RunReproducedThenFixedTip" xml:space="preserve"><value>最初の変更の前に失敗したチェックが、最後の変更の後に成功しています。</value></data>
   <data name="RunReproducedStillFailsTip" xml:space="preserve"><value>最初の変更の前に失敗したチェックが、最後の変更の後もまだ失敗しています。</value></data>
   <data name="RunFixedWithoutReproducingTip" xml:space="preserve"><value>変更前にバグを示したものはありません。チェックは成功しますが、バグで失敗していたものはありません。</value></data>
-  <data name="ApprovalRunScript" xml:space="preserve"><value>エージェントが書いたスクリプトを実行</value></data>
-  <data name="ApprovalScriptWhere" xml:space="preserve"><value>{0} · {1} 行 · {2} で実行</value></data>
-  <data name="ApprovalScriptNote" xml:space="preserve"><value>リポジトリの外に書かれます。スクリプトが書き込まない限り、リポジトリは変わりません。コマンドのルールが適用されます。</value></data>
-  <data name="ApprovalOpenScript" xml:space="preserve"><value>エディターで開く</value></data>
-  <data name="StepScript" xml:space="preserve"><value>{0} スクリプト · {1} 行</value></data>
   <data name="ApprovalsAskTitle" xml:space="preserve"><value>確認する</value></data>
   <data name="ApprovalsAskText" xml:space="preserve"><value>変更、コマンド、外部への要求の前にカードを表示します。差分や正確なコマンドを先に確認できます。推奨。</value></data>
   <data name="ApprovalsAutoTitle" xml:space="preserve"><value>自動 · 承認オフ</value></data>

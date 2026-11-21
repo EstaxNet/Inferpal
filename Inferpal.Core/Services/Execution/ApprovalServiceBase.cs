@@ -164,9 +164,8 @@ internal abstract class ApprovalServiceBase : IApprovalService
     public int AutoApprovals => Volatile.Read(ref _autoApprovals);
 
     /// <inheritdoc/>
-    public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct,
-                                                 bool forcePrompt = false) =>
-        ApproveAsync(toolName, details, ct, subject, diff: null, forcePrompt, grantKey);
+    public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct) =>
+        ApproveAsync(toolName, details, ct, subject, diff: null, forcePrompt: false, grantKey);
 
     /// <inheritdoc/>
     public bool Allows(string toolName, string subject)
@@ -247,8 +246,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
             if (Granted(grantKey))                     return true;
         }
 
-        // A script's details start with the marker its card reads: where no card is drawn, a heading in its place.
-        var message = Strings.ApprovalMessage(toolName, Shell.ScriptRun.Readable(details));
+        var message = Strings.ApprovalMessage(toolName, details);
         // The workspace the card is asked in: an "Always" answered after another solution opened is trust given to this
         // one, never to the next.
         var cardRoot = _rootDir();

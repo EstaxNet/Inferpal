@@ -1181,7 +1181,7 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
             CardNote       = card.Note,
             IsOutbound     = card.Outbound,
             BtnDeny        = Strings.ApprovalDeny,
-            BtnOpenDiff    = card.OpenPath.Length > 0 ? Strings.ApprovalOpenScript : Strings.ApprovalOpenDiff,
+            BtnOpenDiff    = Strings.ApprovalOpenDiff,
             BtnAlwaysRule  = card.RuleLabel,
             CardRuleTip    = card.RuleTooltip,
             HasRule        = card.RuleLabel.Length > 0,

@@ -1657,12 +1657,6 @@ function stepSubject(input: string | undefined): string {
   }
   try {
     const args = JSON.parse(input) as Record<string, unknown>;
-    // A script of the agent's (run_command's 'script'): its language and length, as RunSummary.Subject in the Core.
-    if (typeof args.script === 'string' && args.script) {
-      const language = typeof args.language === 'string' && args.language ? args.language : 'script';
-      const lines = args.script.replace(/\r\n/g, '\n').replace(/\n+$/, '').split('\n').length;
-      return lines === 1 ? t('stepScriptOne', language) : t('stepScriptMany', language, lines);
-    }
     for (const key of ['path', 'file_path', 'command', 'query', 'url', 'symbol', 'pattern', 'sql', 'table']) {
       let value = args[key];
       if (typeof value === 'string' && value) {
@@ -2582,14 +2576,6 @@ function addApprovalCard(id: number, message: string, card?: ApprovalCard | null
     openDiff.textContent = t('approvalOpenDiff');
     openDiff.addEventListener('click', () => post({ type: 'openApprovalDiff', text: card?.message ?? message, id }));
     head.append(openDiff);
-  } else if (card?.openPath) {
-    // A script of the agent's: its copy opens in an editor tab — an edit there never changes what runs.
-    const openPath = card.openPath;
-    const openScript = document.createElement('button');
-    openScript.className = 'linkbtn';
-    openScript.textContent = t('approvalOpenScript');
-    openScript.addEventListener('click', () => post({ type: 'openFile', path: openPath }));
-    head.append(openScript);
   }
   el.setAttribute('aria-label', [card?.title, card?.subject].filter((p) => p).join(' — ') || message);
 
