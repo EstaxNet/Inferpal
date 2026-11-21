@@ -127,7 +127,7 @@ public sealed class HttpRequestToolTests : IDisposable
             return Task.FromResult(false);   // nothing leaves the machine in a test
         }
         public bool Allows(string toolName, string subject) => allows;
-        public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct, bool forcePrompt = false)
+        public Task<bool> RequestScopedApprovalAsync(string toolName, string details, string subject, string grantKey, CancellationToken ct)
         {
             Forced = false;   // a rule names it: the shared path decides, its grant (if any) filed under this origin only
             return Task.FromResult(false);

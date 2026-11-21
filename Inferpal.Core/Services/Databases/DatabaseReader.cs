@@ -233,6 +233,9 @@ internal static class DatabaseReader
             var sb = new StringBuilder();
             int shown = 0, cut = 0, results = 0, read = 0;
             var more = false;
+            string? plan = null;
+            // Only an EXPLAIN is read as a plan: a column of saved plans (pg_store_plans, a log table) stays its rows.
+            var explain = sql.TrimStart().StartsWith("EXPLAIN", StringComparison.OrdinalIgnoreCase);
             var reader = await command.ExecuteReaderAsync(ct);
             try
             {
@@ -244,6 +247,15 @@ internal static class DatabaseReader
                     var rowsHere = 0;
                     while (await reader.ReadAsync(ct))
                     {
+                        // A plan in one cell (EXPLAIN (FORMAT JSON), EXPLAIN FORMAT=JSON): read whole, as the plan it is —
+                        // a cell is otherwise cut at MaxCellChars, and a plan's JSON is no table.
+                        if (explain && results == 1 && rowsHere == 0 && reader.FieldCount == 1 && !reader.IsDBNull(0)
+                            && Documents.SqlPlanText.FromQueryResult(Convert.ToString(reader.GetValue(0), CultureInfo.InvariantCulture) ?? "",
+                                                                     Tools.ToolOutputBudget.ListChars) is { } read0)
+                        {
+                            plan = read0;
+                            break;
+                        }
                         if (++read > MaxRowsRead || sb.Length > Tools.ToolOutputBudget.ListChars)
                         {
                             more = true;
@@ -253,7 +265,7 @@ internal static class DatabaseReader
                         shown++;
                         rowsHere++;
                     }
-                    if (more) break;
+                    if (more || plan is not null) break;
                     if (rowsHere == 0) sb.AppendLine(emptyNote ?? "(no rows)");
                 } while (await reader.NextResultAsync(ct));
             }
@@ -266,6 +278,7 @@ internal static class DatabaseReader
                 try { await reader.DisposeAsync(); }
                 catch (DbException ex) when (more) { Diagnostics.Swallow("DatabaseReader.Stopped", ex); }
             }
+            if (plan is not null) return plan;
             if (results == 0) return "The query returned no columns.";
             if (cut > 0) sb.AppendLine($"({cut} cell(s) cut at {MaxCellChars} characters, marked …)");
             if (more) sb.AppendLine($"(more rows than the {shown} shown, all this answer holds: aggregate, filter, or page with a limit and an offset)");

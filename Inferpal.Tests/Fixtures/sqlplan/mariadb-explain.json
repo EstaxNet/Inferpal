@@ -1,0 +1,39 @@
+{
+  "query_block": {
+    "select_id": 1,
+    "cost": 21.02364472,
+    "filesort": {
+      "sort_key": "sum(o.total) desc",
+      "temporary_table": {
+        "nested_loop": [
+          {
+            "table": {
+              "table_name": "o",
+              "access_type": "ALL",
+              "loops": 1,
+              "rows": 19793,
+              "cost": 3.3191746,
+              "filtered": 100,
+              "attached_condition": "o.country = 'France' and o.customer is not null"
+            }
+          },
+          {
+            "table": {
+              "table_name": "c",
+              "access_type": "eq_ref",
+              "possible_keys": ["PRIMARY"],
+              "key": "PRIMARY",
+              "key_length": "4",
+              "used_key_parts": ["id"],
+              "ref": ["plans.o.customer"],
+              "loops": 19793,
+              "rows": 1,
+              "cost": 17.70447012,
+              "filtered": 100
+            }
+          }
+        ]
+      }
+    }
+  }
+}

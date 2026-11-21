@@ -43,7 +43,7 @@ internal sealed class QueryDatabaseTool(IApprovalService approval, Func<string?>
             connection = new { type = "string", description = "Where the project declares the connection: <file>#<key> (appsettings.Development.json#ConnectionStrings:Default, .env#DATABASE_URL), env:<NAME>, or secrets:<project file>#<key> (user secrets)." },
             action     = new { type = "string", description = "tables (the default without sql), describe (a table: columns, keys, indexes), or query (with sql)." },
             table      = new { type = "string", description = "describe: the table or view, as schema.table or table." },
-            sql        = new { type = "string", description = "query: one read — SELECT, WITH … SELECT, EXPLAIN without ANALYZE, SHOW, DESCRIBE, or EXEC sp_help 'name' (SQL Server)." },
+            sql        = new { type = "string", description = "query: one read — SELECT, WITH … SELECT, EXPLAIN without ANALYZE, SHOW, DESCRIBE, or EXEC sp_help 'name' (SQL Server). EXPLAIN (FORMAT JSON) on PostgreSQL, EXPLAIN FORMAT=JSON on MySQL or MariaDB: the plan read as its costliest operators." },
             engine     = new { type = "string", description = "postgres, sqlserver or mysql — only when the connection string's form does not say it." },
         },
         required = new[] { "connection" },

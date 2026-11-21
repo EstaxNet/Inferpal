@@ -1,0 +1,68 @@
+{
+  "query_optimization": {
+    "r_total_time_ms": 0.131557257
+  },
+  "query_block": {
+    "select_id": 1,
+    "cost": 21.02364472,
+    "r_loops": 1,
+    "r_total_time_ms": 5.432017937,
+    "filesort": {
+      "sort_key": "sum(o.total) desc",
+      "r_loops": 1,
+      "r_total_time_ms": 0.052961746,
+      "r_used_priority_queue": false,
+      "r_output_rows": 500,
+      "r_buffer_size": "15KiB",
+      "r_sort_mode": "sort_key,rowid",
+      "temporary_table": {
+        "nested_loop": [
+          {
+            "table": {
+              "table_name": "o",
+              "access_type": "ALL",
+              "loops": 1,
+              "r_loops": 1,
+              "rows": 19793,
+              "r_rows": 20000,
+              "cost": 3.3191746,
+              "r_table_time_ms": 2.203491322,
+              "r_other_time_ms": 0.814194222,
+              "r_engine_stats": {
+                "pages_accessed": 55
+              },
+              "filtered": 100,
+              "r_total_filtered": 14.285,
+              "attached_condition": "o.country = 'France' and o.customer is not null",
+              "r_filtered": 14.285
+            }
+          },
+          {
+            "table": {
+              "table_name": "c",
+              "access_type": "eq_ref",
+              "possible_keys": ["PRIMARY"],
+              "key": "PRIMARY",
+              "key_length": "4",
+              "used_key_parts": ["id"],
+              "ref": ["plans.o.customer"],
+              "loops": 19793,
+              "r_loops": 2857,
+              "rows": 1,
+              "r_rows": 1,
+              "cost": 17.70447012,
+              "r_table_time_ms": 1.039886783,
+              "r_other_time_ms": 1.292411545,
+              "r_engine_stats": {
+                "pages_accessed": 2857
+              },
+              "filtered": 100,
+              "r_total_filtered": 100,
+              "r_filtered": 100
+            }
+          }
+        ]
+      }
+    }
+  }
+}
