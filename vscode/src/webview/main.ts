@@ -4,7 +4,7 @@
 // No literal user-visible English here — strings go through t() (window.__l10n).
 import type {
   ApprovalCard, AwayNotice, CopyAppliedCard, CopyReview, CopyStartCard, CutCard, InputCard, InputCardField, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunReviewFile, RunReviewLine,
-  RunSummary, SetupPlace, SetupPlan, ImageNotSeenCard,
+  RunSummary, RunScreen, SetupPlace, SetupPlan, ImageNotSeenCard,
 } from '../protocol';
 import type {
   ExtToWebview,
@@ -1963,7 +1963,7 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     target.runGlyph.classList.toggle('ok', !failed && !info);
     target.runGlyph.classList.toggle('failed', failed);
   }
-  if (run.files.length === 0 && run.check === 'none') {
+  if (run.files.length === 0 && run.check === 'none' && !run.screen) {
     return;
   }
   const bar = document.createElement('div');
@@ -2009,8 +2009,51 @@ function renderRunSummary(target: TurnView, run: RunSummary | null | undefined):
     undo.addEventListener('click', () => post({ type: 'send', text: `/undo-run #${runId}` }));
     bar.appendChild(undo);
   }
+  if (run.screen) {
+    bar.appendChild(screenStrip(run.screen));
+  }
   // Above the session recap, written during the turn: the bar closes the run, the recap the turn (Visual Studio's order).
   target.el.insertBefore(bar, target.el.querySelector(':scope > [data-notice="ooda_recap"]'));
+}
+
+/** What the app showed before the run's first write and after its last, side by side; a picture opens full size. */
+function screenStrip(screen: RunScreen): HTMLElement {
+  const strip = document.createElement('div');
+  strip.className = 'result-screen';
+  const title = document.createElement('span');
+  title.className = 'result-screen-title';
+  title.textContent = screen.title;
+  const row = document.createElement('div');
+  row.className = 'result-screen-row';
+  const look = (src: string, caption: string, file: string | null): HTMLElement => {
+    const figure = document.createElement('figure');
+    const picture = document.createElement('button');
+    picture.className = 'result-screen-look';
+    picture.setAttribute('aria-label', caption);
+    picture.title = caption;
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = caption;
+    picture.append(img);
+    if (file) {
+      picture.addEventListener('click', () => post({ type: 'openImage', path: file }));
+    } else {
+      picture.disabled = true;
+    }
+    const figcaption = document.createElement('figcaption');
+    figcaption.textContent = caption;
+    figure.append(picture, figcaption);
+    return figure;
+  };
+  const arrow = document.createElement('span');
+  arrow.setAttribute('aria-hidden', 'true');
+  arrow.textContent = '→';
+  row.append(look(screen.before, screen.beforeCaption, screen.beforeFile), arrow, look(screen.after, screen.afterCaption, screen.afterFile));
+  const hint = document.createElement('span');
+  hint.className = 'result-screen-hint';
+  hint.textContent = screen.hint;
+  strip.append(title, row, hint);
+  return strip;
 }
 
 /** A run's result bar as it stands: undone, "Run undone · N changes kept" in place of its files, its check and Undo

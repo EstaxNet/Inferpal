@@ -114,6 +114,10 @@
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0}을(를) 읽을 수 없습니다. 손상되었거나 Inferpal이 읽지 못하는 형식입니다.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0}을(를) 읽는 데 너무 오래 걸렸습니다({1}초 초과). 텍스트가 첨부되지 않습니다.</value></data>
   <data name="AttachDocumentNoReader" xml:space="preserve"><value>{0}을(를) 읽지 못했습니다: {1}.</value></data>
+  <data name="ScreenOnScreen" xml:space="preserve"><value>화면 · {0}</value></data>
+  <data name="ScreenBefore" xml:space="preserve"><value>변경 전 · {0}</value></data>
+  <data name="ScreenAfter" xml:space="preserve"><value>변경 후 · {0}</value></data>
+  <data name="ScreenOpenHint" xml:space="preserve"><value>이미지를 클릭하면 원래 크기로 열립니다.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0}은(는) 너무 커서 읽을 수 없습니다({1}MB 초과).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>`{0}` 아래에 커밋되지 않은 변경이 없습니다. 검토할 것이 없습니다.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>검토 대상: `{0}` 아래의 커밋되지 않은 변경.</value></data>

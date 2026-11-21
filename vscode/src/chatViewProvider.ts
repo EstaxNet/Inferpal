@@ -2076,6 +2076,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
         }
         return;
+      case 'openImage':
+        // A look of the run's result bar, full size: an image opens in the editor's own viewer, never as text.
+        try {
+          await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(msg.path));
+        } catch (err) {
+          this.log(`[chat] open ${msg.path} failed: ${String(err)}`);
+          void vscode.window.showWarningMessage(ChatViewProvider.errorText(err));
+        }
+        return;
       case 'openXray':
         await this.openXray();
         return;

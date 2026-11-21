@@ -20,6 +20,17 @@ internal sealed class ToolImageInbox
     /// <summary>Keeps an image a tool read, for the loop to send after the batch.</summary>
     public void Put(ChatImage image) => _images.Enqueue(image);
 
+    /// <summary>Where a look at what an app shows is noted for the run (<see cref="Look"/>); set by the registry.</summary>
+    public Action<string, ChatImage>? Looked { get; set; }
+
+    /// <summary>An image of what an app shows at <paramref name="target"/>: sent like any other, and noted for the run's
+    /// before-and-after (<see cref="ScreenLooks"/>).</summary>
+    public void Look(string target, ChatImage image)
+    {
+        Put(image);
+        Looked?.Invoke(target, image);
+    }
+
     /// <summary>The images read since the last call, and empties the inbox.</summary>
     public IReadOnlyList<ChatImage> Take()
     {

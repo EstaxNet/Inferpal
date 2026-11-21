@@ -1485,6 +1485,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
+                            <StackPanel>
                             <!-- One wrapping row, as VS Code's: the files, their check, then the buttons, which go under them when
                                  the chat is narrow; a column beside the buttons would leave a file's name cut. -->
                             <WrapPanel>
@@ -1572,6 +1573,57 @@
                                     </Button>
                                 </StackPanel>
                             </WrapPanel>
+                            <!-- On screen: what the app showed before the run's first write and after its last, as the agent
+                                 looked at it; a picture opens full size. -->
+                            <StackPanel Margin="4,8,4,2">
+                                <StackPanel.Style>
+                                    <!-- Undone, the run's "after" is no longer what the app shows. -->
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasScreen}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsRunUndone}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <Border BorderThickness="0,1,0,0" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}" Margin="0,0,0,6"/>
+                                <TextBlock Text="{Binding ScreenTitle}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeText}"/>
+                                <ItemsControl ItemsSource="{Binding ScreenLooks}" Margin="0,6,0,4" Focusable="False">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE72A;" FontSize="12" Margin="4,0,8,16"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                           Visibility="{Binding ShowArrow, Converter={StaticResource b2v}}"/>
+                                                <StackPanel>
+                                                    <Button Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="0"
+                                                            Padding="0" Cursor="Hand" Command="{Binding OpenCommand}" IsEnabled="{Binding CanOpen}"
+                                                            AutomationProperties.Name="{Binding Caption}" ToolTip="{Binding Caption}">
+                                                        <Border CornerRadius="6" BorderThickness="1" ClipToBounds="True"
+                                                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                                                            <Image Source="{Binding Path}" MaxWidth="160" MaxHeight="220" Stretch="Uniform"/>
+                                                        </Border>
+                                                    </Button>
+                                                    <TextBlock Text="{Binding Caption}" FontSize="11" Margin="0,3,0,0"
+                                                               Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding ScreenHint}" FontSize="11" TextWrapping="Wrap"
+                                           Foreground="{Binding ThemeSubtleText}"/>
+                            </StackPanel>
+                            </StackPanel>
                         </Border>
 
                         <!-- ── A run's review card: each file against the state before the run; Keep, Undo, Redo ── -->

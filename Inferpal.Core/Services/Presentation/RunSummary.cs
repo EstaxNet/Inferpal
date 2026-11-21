@@ -27,9 +27,11 @@ internal sealed record RunFileLine(string Path, string Name, int Added, int Remo
 /// read 1 file · edited 1 · build passed") and a result bar — the files it changed, the last check, Undo run.
 /// </summary>
 /// <param name="RunId">The run <c>/undo-run</c> takes; empty when the run changed nothing.</param>
+/// <param name="Screen">What the app showed before the run's first write and after its last, as the agent looked at it;
+/// <c>null</c> when it did not look on both sides.</param>
 internal sealed record RunSummaryModel(
     int Steps, string Title, string Detail, IReadOnlyList<RunFileLine> Files, RunCheck Check, string CheckText,
-    string RunId);
+    string RunId, Documents.RunScreen? Screen = null);
 
 /// <summary>
 /// Builds <see cref="RunSummaryModel"/> from the tool calls of a turn and the file history of its run — the same
@@ -96,7 +98,8 @@ internal static class RunSummary
             Strings.RunSteps(executions.Count),
             string.Join(" · ", parts),
             files, check, checkText,
-            files.Count > 0 ? run!.Id : string.Empty);
+            files.Count > 0 ? run!.Id : string.Empty,
+            run is null ? null : Documents.ScreenLooks.Pair(run.Looks, run.WriteCount));
     }
 
     /// <summary>The words of a check, empty for none.</summary>

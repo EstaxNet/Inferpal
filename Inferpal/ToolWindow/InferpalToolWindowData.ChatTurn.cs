@@ -905,7 +905,7 @@ internal partial class InferpalToolWindowData
                 // red output is the point).
                 if (_runLine is { } ended && !_config.ToolBubblesExpanded && !ended.Steps.Exists(s => s.HasErrors))
                     ended.SetRunOpen(false);
-                if (summary is not null && (summary.Files.Count > 0 || summary.Check != Services.Presentation.RunCheck.None))
+                if (summary is not null && (summary.Files.Count > 0 || summary.Check != Services.Presentation.RunCheck.None || summary.Screen is not null))
                     InsertResultBar(summary);
 
                 if (lastAssistant is not null)

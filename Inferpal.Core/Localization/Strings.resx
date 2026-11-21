@@ -118,6 +118,10 @@ This cannot be undone.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} could not be read: it is damaged, or in a form Inferpal does not read.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} took too long to read (more than {1} s): its text is not attached.</value></data>
   <data name="AttachDocumentNoReader" xml:space="preserve"><value>{0} was not read: {1}.</value></data>
+  <data name="ScreenOnScreen" xml:space="preserve"><value>On screen · {0}</value></data>
+  <data name="ScreenBefore" xml:space="preserve"><value>before · {0}</value></data>
+  <data name="ScreenAfter" xml:space="preserve"><value>after · {0}</value></data>
+  <data name="ScreenOpenHint" xml:space="preserve"><value>Click one to open it full size.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} is too large to read (more than {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>No uncommitted change under `{0}`: nothing to review.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Reviewed: the uncommitted changes under `{0}`.</value></data>

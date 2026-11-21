@@ -1078,8 +1078,34 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
         };
         foreach (var f in summary.Files)
             item.ResultFiles.Add(new ResultFileItem(f, openFile));
+        // What the app showed before the run's first write and after its last: drawn from files of this process's own.
+        if (summary.Screen is { } screen && ThumbnailFiles.Of(screen.Before) is { } before && ThumbnailFiles.Of(screen.After) is { } after)
+        {
+            // ⚠ Not openFile: Visual Studio opens it as a TEXT document, a picture as its bytes. The system's viewer.
+            item.ScreenLooks.Add(new ScreenLookItem(before, screen.BeforeCaption, arrow: false, screen.BeforeFile, OpenPicture));
+            item.ScreenLooks.Add(new ScreenLookItem(after, screen.AfterCaption, arrow: true, screen.AfterFile, OpenPicture));
+            item.ScreenTitle = screen.Title;
+            item.ScreenHint  = screen.Hint;
+            item.HasScreen   = true;
+        }
         return item;
     }
+
+    /// <summary>A look full size, in the system's image viewer: a file of Inferpal's own, never the person's.</summary>
+    private static void OpenPicture(string path)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true })?.Dispose(); }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or System.IO.FileNotFoundException)
+        {
+            Services.Diagnostics.Swallow("ChatMessageItem.OpenPicture", ex);
+        }
+    }
+
+    /// <summary>The run's first and last look at what the app showed (<see cref="ScreenLookItem"/>), under its result bar.</summary>
+    [DataMember] public ObservableCollection<ScreenLookItem> ScreenLooks { get; } = [];
+    [DataMember] public bool   HasScreen   { get; private set; }
+    [DataMember] public string ScreenTitle { get; private set; } = string.Empty;
+    [DataMember] public string ScreenHint  { get; private set; } = string.Empty;
 
     /// <summary>A run's review card, under its result bar (<see cref="Services.Presentation.RunReviewModel"/>).</summary>
     /// <param name="act">A file's Keep, Undo or Redo: the file's path, the change of it (1-based; null: the whole file),
@@ -1479,6 +1505,28 @@ internal sealed class ReviewPictureItem(string path, string caption, bool arrow)
     [DataMember] public string Caption   { get; } = caption;
     /// <summary>The second of two pictures: an arrow leads to it.</summary>
     [DataMember] public bool   ShowArrow { get; } = arrow;
+}
+
+/// <summary>One look of a run's result bar: its thumbnail (a file of this process's own), its caption, and the look full
+/// size opened on a click.</summary>
+[DataContract]
+internal sealed class ScreenLookItem
+{
+    public ScreenLookItem(string path, string caption, bool arrow, string? file, Action<string> open)
+    {
+        Path      = path;
+        Caption   = caption;
+        ShowArrow = arrow;
+        CanOpen   = file is not null;
+        OpenCommand = new AsyncCommand((_, _) => { if (file is not null) open(file); return Task.CompletedTask; });
+    }
+
+    [DataMember] public string Path      { get; }
+    [DataMember] public string Caption   { get; }
+    /// <summary>The second of two pictures: an arrow leads to it.</summary>
+    [DataMember] public bool   ShowArrow { get; }
+    [DataMember] public bool   CanOpen   { get; }
+    [DataMember] public AsyncCommand OpenCommand { get; }
 }
 
 /// <summary>

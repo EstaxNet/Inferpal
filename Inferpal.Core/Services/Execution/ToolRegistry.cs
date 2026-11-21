@@ -108,6 +108,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         // function for all: a tool given the workspace's root alone would work in the person's folder during a copy run.
         Func<string> root = () => Root;
         _fileHistory = fileHistory ?? new();
+        _readImages.Looked = _fileHistory.RecordLook;
         // Outside a git repository the history lives at the workspace root — one folder, the one restore_file searches.
         _fileHistory.WorkspaceRoot ??= root;
         // Read at each snapshot, from the file: a setting saved mid-session — in this editor or the other — decides where

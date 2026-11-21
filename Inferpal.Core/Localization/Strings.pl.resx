@@ -114,6 +114,10 @@ Tej operacji nie można cofnąć.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>Nie udało się odczytać {0}: plik jest uszkodzony lub w formacie, którego Inferpal nie czyta.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>Odczyt {0} trwał zbyt długo (ponad {1} s): jego tekst nie został dołączony.</value></data>
   <data name="AttachDocumentNoReader" xml:space="preserve"><value>Nie odczytano {0}: {1}.</value></data>
+  <data name="ScreenOnScreen" xml:space="preserve"><value>Na ekranie · {0}</value></data>
+  <data name="ScreenBefore" xml:space="preserve"><value>przed · {0}</value></data>
+  <data name="ScreenAfter" xml:space="preserve"><value>po · {0}</value></data>
+  <data name="ScreenOpenHint" xml:space="preserve"><value>Kliknij obraz, aby otworzyć go w pełnym rozmiarze.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} jest zbyt duży, by go odczytać (ponad {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Brak niezatwierdzonych zmian w `{0}`: nie ma czego przeglądać.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Przejrzano: niezatwierdzone zmiany w `{0}`.</value></data>

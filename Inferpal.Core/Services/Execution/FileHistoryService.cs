@@ -720,6 +720,8 @@ internal class FileHistoryService
         lock (_runLock)
         {
             if (alreadyRead is not null) run.NoteRead(alreadyRead);
+            // The looks of runs already ended are freed: their pair was drawn when they ended, nobody reads them again.
+            foreach (var ended in _runs) ended.ForgetLooks();
             _runs.Add(run);
             // ⚠ A run begins with every question asked with tools on, so the cap counts questions: dropped oldest first,
             // fifteen questions that changed nothing pushed out the run that did, and /undo-run answered "no run with
@@ -1121,6 +1123,14 @@ internal class FileHistoryService
     internal int? CurrentRunWriteCount
     {
         get { lock (_runLock) return Run?.WriteCount; }
+    }
+
+    /// <summary>A look the agent took at <paramref name="target"/> (a page at one width, a window), with how many of the
+    /// current run's writes came before it; nothing outside a run.</summary>
+    internal void RecordLook(string target, Documents.ChatImage image)
+    {
+        lock (_runLock)
+            if (Run is { } run) run.AddLook(new Documents.ScreenLook(target, image, run.WriteCount, DateTime.Now));
     }
 
     /// <summary>How many calls of the current run changed what nobody could follow (<see cref="HistoryRun.UnseenCalls"/>);
@@ -2198,6 +2208,29 @@ internal sealed class HistoryRun
 
     /// <summary>The count a run read from disk was written with.</summary>
     public void RestoreWatchedCalls(int count) => WatchedCalls = Math.Max(0, count);
+
+    // The agent's looks at what an app shows, the first and the last of each target (ScreenLooks): bounded by the targets,
+    // never one picture per look. Mutated under FileHistoryService's run lock, read by copy.
+    private readonly Dictionary<string, (Documents.ScreenLook First, Documents.ScreenLook Last)> _looks = new(StringComparer.Ordinal);
+
+    /// <summary>A look at <paramref name="look"/>'s target: the first one stays, the last one is replaced.</summary>
+    public void AddLook(Documents.ScreenLook look)
+    {
+        lock (_looks)
+            _looks[look.Target] = _looks.TryGetValue(look.Target, out var had) ? (had.First, look) : (look, look);
+    }
+
+    /// <summary>Frees the looks (full-size pictures) once the run's result bar has drawn them.</summary>
+    public void ForgetLooks()
+    {
+        lock (_looks) _looks.Clear();
+    }
+
+    /// <summary>The first and the last look at each target, a copy.</summary>
+    public IReadOnlyList<(Documents.ScreenLook First, Documents.ScreenLook Last)> Looks
+    {
+        get { lock (_looks) return [.. _looks.Values]; }
+    }
 
     // Every write, where _firstByPath keeps each file once. Mutated under FileHistoryService's run lock.
     public int WriteCount { get; private set; }

@@ -117,6 +117,10 @@ Cette action est irréversible.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} n'a pas pu être lu : il est endommagé, ou dans une forme qu'Inferpal ne lit pas.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} a été trop long à lire (plus de {1} s) : son texte n'est pas joint.</value></data>
   <data name="AttachDocumentNoReader" xml:space="preserve"><value>{0} n'a pas été lu : {1}.</value></data>
+  <data name="ScreenOnScreen" xml:space="preserve"><value>À l'écran · {0}</value></data>
+  <data name="ScreenBefore" xml:space="preserve"><value>avant · {0}</value></data>
+  <data name="ScreenAfter" xml:space="preserve"><value>après · {0}</value></data>
+  <data name="ScreenOpenHint" xml:space="preserve"><value>Cliquez sur une image pour l'ouvrir en grand.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} est trop gros pour être lu (plus de {1} Mo).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Aucun changement non commité sous `{0}` : rien à relire.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Relu : les changements non commités sous `{0}`.</value></data>

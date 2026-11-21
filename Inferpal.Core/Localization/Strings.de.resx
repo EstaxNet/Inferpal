@@ -114,6 +114,10 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="AttachDocumentUnreadable" xml:space="preserve"><value>{0} konnte nicht gelesen werden: Die Datei ist beschädigt oder in einer Form, die Inferpal nicht liest.</value></data>
   <data name="AttachDocumentTooSlow" xml:space="preserve"><value>{0} brauchte zu lange zum Lesen (mehr als {1} s): Sein Text wird nicht angehängt.</value></data>
   <data name="AttachDocumentNoReader" xml:space="preserve"><value>{0} wurde nicht gelesen: {1}.</value></data>
+  <data name="ScreenOnScreen" xml:space="preserve"><value>Auf dem Bildschirm · {0}</value></data>
+  <data name="ScreenBefore" xml:space="preserve"><value>vorher · {0}</value></data>
+  <data name="ScreenAfter" xml:space="preserve"><value>nachher · {0}</value></data>
+  <data name="ScreenOpenHint" xml:space="preserve"><value>Klicken Sie auf ein Bild, um es in voller Größe zu öffnen.</value></data>
   <data name="AttachDocumentTooLarge" xml:space="preserve"><value>{0} ist zu groß zum Lesen (mehr als {1} MB).</value></data>
   <data name="CheckPathNoDiff" xml:space="preserve"><value>Keine nicht committete Änderung unter `{0}`: nichts zu prüfen.</value></data>
   <data name="CheckPathLabel" xml:space="preserve"><value>Geprüft: die nicht committeten Änderungen unter `{0}`.</value></data>

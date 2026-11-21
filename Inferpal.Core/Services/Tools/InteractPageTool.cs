@@ -424,6 +424,8 @@ internal sealed class InteractPageTool : ITool, IDisposable
         catch (Exception ex) when (Unanswered(ex)) { lines.Add("No capture: " + Why(ex)); return string.Join("\n", lines); }
         if (captured is not null && ChatImages.Read(captured, "page.png").Image is { } image)
         {
+            // Put, never Look: this capture shows a state the steps brought the page to, not the page as it opens — paired
+            // with a plain look as its "before" or "after", the strip would compare two different things.
             _images.Put(image);
             lines.Add(string.Create(CultureInfo.InvariantCulture,
                 $"The capture ({PageSession.Width}×{PageSession.Height}) follows this result."));

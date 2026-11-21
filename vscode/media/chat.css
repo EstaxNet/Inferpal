@@ -1142,6 +1142,63 @@ kbd {
   color: var(--vscode-errorForeground, #f44747);
 }
 
+.result-screen {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ip-line);
+}
+
+.result-screen-title {
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.result-screen-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.result-screen-row figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.result-screen-look {
+  padding: 0;
+  border: 1px solid var(--ip-line);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  max-width: 160px;
+}
+
+.result-screen-look img {
+  display: block;
+  max-width: 158px;
+  max-height: 220px;
+  border-radius: 5px;
+}
+
+.result-screen-look:disabled {
+  cursor: default;
+}
+
+.result-screen-hint {
+  color: var(--ip-muted);
+}
+
+/* Undone, the run's "after" is no longer what the app shows. */
+.result.undone .result-screen {
+  display: none;
+}
+
 .result .undo {
   margin-left: auto;
   height: 26px;

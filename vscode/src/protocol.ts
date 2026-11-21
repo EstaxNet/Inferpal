@@ -745,6 +745,21 @@ export interface RunSummary {
   check: 'none' | 'buildPassed' | 'buildFailed' | 'testsPassed' | 'testsFailed' | 'testsPassedPart' | 'unproven' | 'passedThenEdited';
   checkText: string;
   runId: string;
+  /** What the app showed before the run's first write and after its last, as the agent looked at it; absent when it did
+   *  not look on both sides (the Core's ScreenLooks). */
+  screen?: RunScreen | null;
+}
+
+/** The two looks of a run's result bar: thumbnails as PNG data URLs, full size in files of Inferpal's own. */
+export interface RunScreen {
+  title: string;
+  before: string;
+  after: string;
+  beforeCaption: string;
+  afterCaption: string;
+  beforeFile: string | null;
+  afterFile: string | null;
+  hint: string;
 }
 
 /** One diff line of a run's review: `+`, `-`, ` ` or `…` (a cut, its text saying how much). */

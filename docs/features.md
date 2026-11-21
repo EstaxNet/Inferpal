@@ -269,7 +269,9 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
   failed). Under the answer, a **result bar** lists the files it changed with their lines added and
   removed, the last build or test check — "part of the suite" when the tests that ran were a selection, through `run_tests` or
   the shell (`dotnet test --filter`, `pytest -k`, `go test -run`…) —, and **Undo run** (`/undo-run`), offered on the latest run; once undone, the bar says **Run undone** and how many
-  changes you kept stay as the run made them.
+  changes you kept stay as the run made them. When the agent looked at the page or the window of your app
+  (`view_page`, `view_window`) before its first change and again after its last, the bar shows **On screen**: the two
+  looks side by side, a click opening one full size — the pictures it worked from, never a "before" made up afterwards.
 - **Run replay** — `/replay [n]` shows a post-mortem timeline of an agent run: every tool
   call with its target and duration, then the files it touched.
 - **Long runs stay awake** *(both editors, and ACP)* — while the model works (an answer, an agent

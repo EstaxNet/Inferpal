@@ -177,7 +177,9 @@ internal sealed class ViewPageTool : ITool
             if (png is null || browser is null) break;
             var read = ChatImages.Read(png, $"{stem}-{width}px.png");
             if (read.Image is not { } image) { failed.Add($"at {width} px: {read.Refusal}"); continue; }
-            _images.Put(image);
+            // A look, paired with another of the same page at the same width when the run changes files between them.
+            // Keyed by `shown` (a workspace file's path), never `target`: a file is served on a fresh port at each call.
+            _images.Look(string.Create(CultureInfo.InvariantCulture, $"{WorkspacePages.LookTarget(shown)} · {width} px"), image);
             if (note is not null) notes.Add($"At {width} px: {note}");   // said with a picture that is sent, never without
             taken.Add($"{width}×{PageCapture.HeightFor(width).ToString(CultureInfo.InvariantCulture)}");
         }
@@ -313,4 +315,11 @@ internal sealed class WorkspacePages : IDisposable
     {
         try { _listener.Stop(); _listener.Close(); } catch { /* already closed */ }
     }
+
+    /// <summary>A page as the result bar names it: a served address without its scheme (<c>localhost:5173/cart</c>), a
+    /// workspace file by its path in the workspace, as given.</summary>
+    internal static string LookTarget(string shown) =>
+        Uri.TryCreate(shown, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
+            ? uri.Authority + Uri.UnescapeDataString(uri.PathAndQuery).TrimEnd('/')
+            : shown;
 }

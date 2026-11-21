@@ -293,13 +293,15 @@ internal sealed record CutCardDto(string? Note, string OpenLimits, string Page, 
 /// <c>testsPassedPart</c>, <c>unproven</c>, or <c>passedThenEdited</c> (a green last check, then files changed that
 /// nothing checked: never drawn with the check mark).</param>
 /// <param name="RunId">What <c>/undo-run</c> takes; empty when the run changed no file.</param>
+/// <param name="Screen">What the app showed before the run's first write and after its last, as the agent looked at it
+/// (<see cref="Services.Documents.ScreenLooks"/>); <c>null</c> when it did not look on both sides.</param>
 internal sealed record RunSummaryDto(
     int Steps, string Title, string Detail, List<Services.Presentation.RunFileLine> Files, string Check, string CheckText,
-    string RunId)
+    string RunId, Services.Documents.RunScreen? Screen = null)
 {
     public static RunSummaryDto? Of(Services.Presentation.RunSummaryModel? m) => m is null ? null : new(
         m.Steps, m.Title, m.Detail, [.. m.Files],
-        char.ToLowerInvariant(m.Check.ToString()[0]) + m.Check.ToString()[1..], m.CheckText, m.RunId);
+        char.ToLowerInvariant(m.Check.ToString()[0]) + m.Check.ToString()[1..], m.CheckText, m.RunId, m.Screen);
 }
 
 /// <summary>`chat/wait` — the card of a request waiting on a server that reads its prompt (<see cref="ModelWait"/>).</summary>

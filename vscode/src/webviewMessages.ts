@@ -404,6 +404,8 @@ export type WebviewToExt =
   | { type: 'modesOpen' }
   /** A file of a run's result bar. */
   | { type: 'openFile'; path: string }
+  /** A look of a run's result bar, full size: opened in the editor's image viewer. */
+  | { type: 'openImage'; path: string }
   /** An `/import` card's Apply: the numbers of the boxes left ticked (none is a choice too). */
   | { type: 'importApply'; id: string; numbers: number[] }
   /** A gesture on the first-run card. */

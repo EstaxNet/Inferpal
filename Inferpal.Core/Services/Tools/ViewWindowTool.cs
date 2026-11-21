@@ -139,7 +139,9 @@ internal sealed class ViewWindowTool : ITool
             sb.Append($"## Window \"{name}\" — process {w.ProcessId}");
             if (w.Png is { } png && ChatImages.Read(png, $"{name}.png").Image is { } image)
             {
-                images.Put(image);
+                // A look, paired with another of the same window title when the run changes files between them (the app
+                // relaunched after an edit is another job, the same window).
+                images.Look($"\"{name}\"", image);
                 sb.Append($", {w.Width}×{w.Height}: its picture follows this result");
             }
             else sb.Append(", no picture");

@@ -47,6 +47,7 @@ internal static class TestConfigIsolation
         // And for the copies a run works in (pari 106): one folder for the whole suite, set once — a test class repointing
         // the static would move another class's copy under its feet, and the developer's own copies stay out of reach.
         Inferpal.Services.Execution.WorkCopy.Home = Path.Combine(root, $"copies-{Environment.ProcessId}");
+        Inferpal.Services.Documents.ScreenLooks.HomeOverride = Path.Combine(root, $"looks-{Environment.ProcessId}");
         // A copy is a whole work tree: one a failed test left would pile up run after run. Those of runs over a day old go.
         try
         {
