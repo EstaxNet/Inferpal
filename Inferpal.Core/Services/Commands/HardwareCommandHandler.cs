@@ -35,7 +35,7 @@ internal static class HardwareCommandHandler
         {
             return double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var gb)
                    && double.IsFinite(gb) && gb > 0
-                ? new(Strings.HardwareBudgetSet($"{gb:0.#}"), SetBudgetGb: gb)
+                ? new(Strings.HardwareBudgetSet(Strings.Ui($"{gb:0.#}")), SetBudgetGb: gb)
                 : new(Strings.HardwareUsage);
         }
 

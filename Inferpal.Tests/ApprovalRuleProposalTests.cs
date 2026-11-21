@@ -644,7 +644,10 @@ public sealed class ApprovalRuleProposalTests : IDisposable
     {
         var rule = ApprovalRuleProposal.For("run_command", "dotnet test", _dir)!;
         var card = ApprovalCard.Build(new ApprovalPrompt("run_command", "dotnet test", null, null, "Run?", rule), _dir);
-        Assert.Equal(Strings.ApprovalAlwaysRule(rule.Describe), card.RuleLabel);
+        // A button is plain text: the rule reads "Always: commands that start with dotnet test", no Markdown code marks.
+        Assert.Equal(Strings.ApprovalAlwaysRule(rule.Describe.Replace("`", "")), card.RuleLabel);
+        Assert.DoesNotContain("`", card.RuleLabel);
+        Assert.Contains("dotnet test", card.RuleLabel);
         Assert.Contains(rule.Lines[0], card.RuleTooltip);
         // Reference arm: no rule, no button.
         var none = ApprovalCard.Build(new ApprovalPrompt("run_command", "rm x", null, null, "Run?"), _dir);

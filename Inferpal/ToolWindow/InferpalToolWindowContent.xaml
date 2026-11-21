@@ -1485,11 +1485,9 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                            <!-- One wrapping row, as VS Code's: the files, their check, then the buttons, which go under them when
+                                 the chat is narrow; a column beside the buttons would leave a file's name cut. -->
+                            <WrapPanel>
                                 <!-- Its run undone: what stayed as the run made it, in place of its files and check -->
                                 <TextBlock Grid.Column="0" Text="{Binding RunUndone}" FontSize="13" Margin="4,3" VerticalAlignment="Center"
                                            TextWrapping="Wrap" Foreground="{Binding ThemeSubtleText}"
@@ -1507,7 +1505,7 @@
                                                         Command="{Binding OpenCommand}" ToolTip="{Binding Path}"
                                                         AutomationProperties.Name="{Binding Name}">
                                                     <!-- A wrap, not a row: a binary file's kind and size goes under its name when the
-                                                         column beside the buttons is too narrow, never cut -->
+                                                         chat is too narrow, never cut -->
                                                     <WrapPanel>
                                                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8A5;" FontSize="12" VerticalAlignment="Center"
                                                                    Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
@@ -1573,7 +1571,7 @@
                                         </StackPanel>
                                     </Button>
                                 </StackPanel>
-                            </Grid>
+                            </WrapPanel>
                         </Border>
 
                         <!-- ── A run's review card: each file against the state before the run; Keep, Undo, Redo ── -->
@@ -1597,10 +1595,9 @@
                                             Command="{Binding CloseReviewCommand}" AutomationProperties.Name="{Binding BtnCloseReview}" ToolTip="{Binding BtnCloseReview}">
                                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE711;" FontSize="11" Foreground="{Binding ThemeSubtleText}"/>
                                     </Button>
-                                    <TextBlock DockPanel.Dock="Left" Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold"
-                                               VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
-                                    <TextBlock Text="{Binding CardSubject}" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
-                                               TextWrapping="Wrap" Foreground="{Binding ThemeSubtleText}"/>
+                                    <!-- Title and subject flow as one wrapped line: a title docked beside its subject leaves the subject one
+                                         word per line in a narrow chat. -->
+                                    <TextBlock FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="{Binding CardTitle, Mode=OneWay}" FontWeight="SemiBold" Foreground="{Binding ThemeText}"/><Run Text="  "/><Run Text="{Binding CardSubject, Mode=OneWay}" Foreground="{Binding ThemeSubtleText}"/></TextBlock>
                                 </DockPanel>
                                 <ItemsControl ItemsSource="{Binding ReviewFiles}">
                                     <ItemsControl.ItemTemplate>
@@ -2320,11 +2317,9 @@
                                     <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" Text="&#xEA18;" FontSize="14"
                                                VerticalAlignment="Center"
                                                Foreground="{Binding DataContext.ThemeAccentText, ElementName=root}"/>
-                                    <TextBlock DockPanel.Dock="Left" Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold"
-                                               Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
-                                    <!-- Wrapped, never trimmed: the card is the only view of what is approved. -->
-                                    <TextBlock Text="{Binding CardSubject}" FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center"
-                                               TextWrapping="Wrap" Foreground="{Binding ThemeSubtleText}"/>
+                                    <!-- Wrapped, never trimmed: the card is the only view of what is approved. Title and subject flow as one
+                                         wrapped line: a title docked beside its subject leaves the subject one word per line in a narrow chat. -->
+                                    <TextBlock FontSize="13" Margin="8,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"><Run Text="{Binding CardTitle, Mode=OneWay}" FontWeight="SemiBold" Foreground="{Binding ThemeText}"/><Run Text="  "/><Run Text="{Binding CardSubject, Mode=OneWay}" Foreground="{Binding ThemeSubtleText}"/></TextBlock>
                                 </DockPanel>
                                 <!-- The facts the card states (query_database: where, engine, server, account) -->
                                 <ItemsControl ItemsSource="{Binding CopyRows}" Margin="12,0,12,8" Grid.IsSharedSizeScope="True"
@@ -2586,7 +2581,9 @@
                                                 </StackPanel>
                                             </Button>
                                             <!-- The narrow rule, offered only when one describes the call: written to the machine's rules. -->
-                                            <Button Height="32" Padding="10,0" Margin="0,0,8,6"
+                                            <!-- A minimum height, never a fixed one (LineBtn sets 28): the rule names a folder or a command, which wraps onto a
+                                                 second line beside Deny in a narrow chat. -->
+                                            <Button Height="Auto" MinHeight="32" Padding="10,4" Margin="0,0,8,6"
                                                     BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
                                                     Command="{Binding AlwaysRuleCommand}" ToolTip="{Binding CardRuleTip}"
                                                     AutomationProperties.Name="{Binding BtnAlwaysRule}">
@@ -2599,8 +2596,10 @@
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Button.Style>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="11" Foreground="{Binding ThemeText}"
+                                                <!-- A DockPanel, not a horizontal StackPanel: it hands the text the button's real width, so the rule wraps
+                                                     where the button ends (a StackPanel measures it as if it had all the room). -->
+                                                <DockPanel>
+                                                    <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="11" Foreground="{Binding ThemeText}"
                                                                VerticalAlignment="Center" Margin="0,0,6,0">
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
@@ -2614,8 +2613,8 @@
                                                         </TextBlock.Style>
                                                     </TextBlock>
                                                     <TextBlock Text="{Binding BtnAlwaysRule}" FontSize="13" Foreground="{Binding ThemeText}"
-                                                               VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420"/>
-                                                </StackPanel>
+                                                               VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="300"/>
+                                                </DockPanel>
                                             </Button>
                                         </WrapPanel>
                                     </DockPanel>
@@ -4367,12 +4366,12 @@
                 </Grid>
 
                 <!-- The toolbar (row 3): attach, Chat / Agent / Plan, the context ring, send or stop -->
+                <!-- The ring sits in the stretching column: in a narrow chat it is what gives way, never Send or Stop. -->
                 <Grid Grid.Row="3" Margin="10,6,10,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
@@ -4395,10 +4394,10 @@
                     </Button>
 
                     <!-- Chat / Agent / Plan: one switch for what the turn may do -->
-                    <Border Grid.Column="1" Margin="8,0,0,0" Height="30" Padding="2" CornerRadius="7" BorderThickness="1"
+                    <Border Grid.Column="1" Margin="6,0,0,0" Height="30" Padding="2" CornerRadius="7" BorderThickness="1"
                             Background="{Binding ThemeWindowBg}" BorderBrush="{Binding ThemeBorder}">
                         <StackPanel Orientation="Horizontal">
-                            <Button Template="{StaticResource Flat5}" Padding="10,0" BorderThickness="1" Cursor="Hand"
+                            <Button Template="{StaticResource Flat5}" Padding="8,0" BorderThickness="1" Cursor="Hand"
                                     Command="{Binding SetModeCommand}" CommandParameter="chat"
                                     ToolTip="{Binding TipModeChat}" AutomationProperties.Name="{Binding LabelModeChat}">
                                 <Button.Style>
@@ -4419,7 +4418,7 @@
                                 </Button.Style>
                                 <TextBlock Text="{Binding LabelModeChat}" FontSize="13" VerticalAlignment="Center"/>
                             </Button>
-                            <Button Template="{StaticResource Flat5}" Padding="10,0" BorderThickness="1" Cursor="Hand"
+                            <Button Template="{StaticResource Flat5}" Padding="8,0" BorderThickness="1" Cursor="Hand"
                                     Command="{Binding SetModeCommand}" CommandParameter="agent"
                                     ToolTip="{Binding TipModeAgent}" AutomationProperties.Name="{Binding LabelModeAgent}">
                                 <Button.Style>
@@ -4440,7 +4439,7 @@
                                 </Button.Style>
                                 <TextBlock Text="{Binding LabelModeAgent}" FontSize="13" VerticalAlignment="Center"/>
                             </Button>
-                            <Button Template="{StaticResource Flat5}" Padding="10,0" BorderThickness="1" Cursor="Hand"
+                            <Button Template="{StaticResource Flat5}" Padding="8,0" BorderThickness="1" Cursor="Hand"
                                     Command="{Binding SetModeCommand}" CommandParameter="plan"
                                     ToolTip="{Binding TipModePlan}" AutomationProperties.Name="{Binding LabelModePlan}">
                                 <Button.Style>
@@ -4463,7 +4462,7 @@
                             </Button>
                             <!-- The fourth segment: the mode held (its name), or "Modes", opening the list of the modes found
                                  here — always shown: without a mode, the list says where one goes -->
-                            <Button Template="{StaticResource Flat5}" Padding="10,0" BorderThickness="1" Cursor="Hand"
+                            <Button Template="{StaticResource Flat5}" Padding="8,0" BorderThickness="1" Cursor="Hand"
                                     Command="{Binding ToggleModeMenuCommand}"
                                     ToolTip="{Binding ModesSegmentTip}" AutomationProperties.Name="{Binding ModesSegmentLabel}"
                                     AutomationProperties.HelpText="{Binding ModesSegmentTip}">
@@ -4494,8 +4493,8 @@
                     </Border>
 
                     <!-- How full the next question's window is; it opens the X-Ray -->
-                    <Button Grid.Column="3" Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="0"
-                            Padding="4,2" Margin="0,0,8,0" Cursor="Hand" VerticalAlignment="Center"
+                    <Button Grid.Column="2" Template="{StaticResource Flat6}" Background="Transparent" BorderThickness="0"
+                            Padding="2,2" Margin="4,0,4,0" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right"
                             Command="{Binding ToggleXrayPanelCommand}"
                             ToolTip="{Binding ContextRingTip}" AutomationProperties.Name="{Binding ContextRingTip}"
                             Visibility="{Binding HasContextBudget, Converter={StaticResource b2v}}">
@@ -4511,7 +4510,7 @@
                     </Button>
 
                     <!-- Send; while a turn runs, Stop -->
-                    <Button Grid.Column="4" Template="{StaticResource FlatRound}" Width="32" Height="32" Cursor="Hand">
+                    <Button Grid.Column="3" Template="{StaticResource FlatRound}" Width="32" Height="32" Cursor="Hand">
                         <Button.Style>
                             <Style TargetType="Button">
                                 <Setter Property="Background" Value="{Binding ThemeAccent}"/>

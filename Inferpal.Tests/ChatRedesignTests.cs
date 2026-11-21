@@ -356,6 +356,39 @@ public sealed class ChatRedesignTests : IDisposable
         Assert.DoesNotContain("NoWrap", card, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// At a side bar's width (the listing's clips: 478 px), nothing in the chat is cut: the rule button wraps where it ends,
+    /// Send or Stop stays whole (the context ring gives way), and the result bar's buttons go under its files.
+    /// </summary>
+    [Fact]
+    public void InANarrowChat_TheRuleButtonWraps_SendStaysWhole_AndTheResultBarWraps()
+    {
+        var xaml = File.ReadAllText(Path.Combine(ConversationPersistenceSilenceTests.RepoRoot(), "Inferpal", "ToolWindow", "InferpalToolWindowContent.xaml"));
+
+        // The rule button: a height that grows (LineBtn fixes one), its text in a panel that hands it the button's width.
+        var rule = xaml[xaml.LastIndexOf("<Button", xaml.IndexOf("AlwaysRuleCommand", StringComparison.Ordinal), StringComparison.Ordinal)..];
+        rule = rule[..rule.IndexOf("</Button>", StringComparison.Ordinal)];
+        Assert.Contains("Binding BtnAlwaysRule", rule, StringComparison.Ordinal);   // WITNESS: the rule button is read
+        Assert.Contains("Height=\"Auto\"", rule, StringComparison.Ordinal);
+        Assert.Contains("<DockPanel>", rule, StringComparison.Ordinal);
+        Assert.DoesNotContain("Orientation=\"Horizontal\"", rule, StringComparison.Ordinal);
+
+        // The toolbar: the ring in the stretching column, Send or Stop in the last fixed one.
+        var bar = xaml[xaml.IndexOf("<!-- The toolbar (row 3)", StringComparison.Ordinal)..];
+        bar = bar[..bar.IndexOf("</Grid>", StringComparison.Ordinal)];
+        Assert.Contains("ToggleXrayPanelCommand", bar, StringComparison.Ordinal);   // WITNESS: the toolbar is read
+        var ring = bar[bar.LastIndexOf("<Button", bar.IndexOf("ToggleXrayPanelCommand", StringComparison.Ordinal), StringComparison.Ordinal)..];
+        Assert.StartsWith("<Button Grid.Column=\"2\"", ring, StringComparison.Ordinal);
+        Assert.Equal(4, System.Text.RegularExpressions.Regex.Matches(bar[..bar.IndexOf("</Grid.ColumnDefinitions>", StringComparison.Ordinal)], "<ColumnDefinition ").Count);
+        Assert.Contains("<ColumnDefinition Width=\"*\"/>\n                        <ColumnDefinition Width=\"Auto\"/>\n                    </Grid.ColumnDefinitions>",
+                        bar.Replace("\r\n", "\n"), StringComparison.Ordinal);
+
+        // The result bar: one wrapping row, as VS Code's, never a column beside the buttons.
+        var result = xaml[xaml.IndexOf("<!-- ── The result bar:", StringComparison.Ordinal)..xaml.IndexOf("<!-- ── A run's review card:", StringComparison.Ordinal)];
+        Assert.Contains("Binding ResultFiles", result, StringComparison.Ordinal);   // WITNESS: the result bar is read
+        Assert.DoesNotContain("<Grid.ColumnDefinitions>", result, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void APathOutsideTheWorkspace_IsShownWhole()
     {

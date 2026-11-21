@@ -40,7 +40,7 @@ public class TaskStepCountTests
     {
         var report = await ReportOf(600, "en");
 
-        Assert.Contains("<summary>Steps (600 — the last 200 kept)</summary>", report);
+        Assert.Contains("**Steps (600 — the last 200 kept)**", report);
         Assert.Contains("- … 400 earlier steps not kept", report);
         Assert.Contains("- step 600", report);
         Assert.Contains("- step 401", report);
@@ -54,7 +54,10 @@ public class TaskStepCountTests
     {
         var report = await ReportOf(3, "en");
 
-        Assert.Contains("<summary>Steps (3)</summary>", report);
+        Assert.Contains("**Steps (3)**", report);
+        // Plain Markdown: both chats neutralize raw HTML, which would show as markup.
+        Assert.DoesNotContain("<details>", report);
+        Assert.DoesNotContain("<summary>", report);
         Assert.DoesNotContain("not kept", report);
     }
 

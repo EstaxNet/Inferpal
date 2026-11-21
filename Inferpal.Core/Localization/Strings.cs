@@ -24,6 +24,10 @@ internal static class Strings
     /// <summary>The interface culture: the language chosen in the settings, else the thread's UI culture.</summary>
     internal static CultureInfo UiCulture => OverrideCulture ?? CultureInfo.CurrentUICulture;
 
+    /// <summary>A number written for the person, in the interface's language: the thread's culture is the system's,
+    /// so an English interface on a French system would otherwise read "20,2s".</summary>
+    internal static string Ui(FormattableString text) => text.ToString(UiCulture);
+
     private static string Get(string key)
     {
         var culture = UiCulture;

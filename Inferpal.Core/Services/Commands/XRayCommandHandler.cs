@@ -50,7 +50,7 @@ internal static class XRayCommandHandler
         var systemTokens = sized.Where(x => x.Section.Placement != PromptPlacement.Question).Sum(x => x.Tokens);
 
         var sb = new StringBuilder();
-        sb.AppendLine(Strings.XrayHeader($"~{systemTokens:N0}"));
+        sb.AppendLine(Strings.XrayHeader(Strings.Ui($"~{systemTokens:N0}")));
         sb.AppendLine();
         sb.AppendLine("```");
 
@@ -58,16 +58,16 @@ internal static class XRayCommandHandler
         {
             var pct = total > 0 ? tokens * 100.0 / total : 0;
             sb.Append(Bar(pct))
-              .Append(' ').Append($"{pct,3:0}%")
-              .Append(' ').Append($"{"~" + tokens.ToString("N0"),8}")
+              .Append(' ').Append(Strings.Ui($"{pct,3:0}%"))
+              .Append(' ').Append($"{"~" + tokens.ToString("N0", Strings.UiCulture),8}")
               .Append("  ").AppendLine(Label(section));
         }
 
         sb.AppendLine("```");
         sb.AppendLine();
-        sb.AppendLine("- " + Strings.XrayHistory($"~{historyTokens:N0}"));
+        sb.AppendLine("- " + Strings.XrayHistory(Strings.Ui($"~{historyTokens:N0}")));
         if (toolTokens > 0)
-            sb.AppendLine("- " + Strings.XrayTools($"~{toolTokens:N0}"));
+            sb.AppendLine("- " + Strings.XrayTools(Strings.Ui($"~{toolTokens:N0}")));
         if (Presentation.XRayPanelPresenter.ToolsOnDemandLine(toolsOnDemand) is { } onDemand)
             sb.AppendLine("- " + onDemand);
         if (Presentation.XRayPanelPresenter.TurnedOffLine(turnedOff) is { } off)
@@ -83,7 +83,7 @@ internal static class XRayCommandHandler
             // its own (on shares of the total, which cannot exceed 100 anyway). Clamped here, a
             // prompt at 450 % of the window read as exactly full.
             var pct  = used * 100.0 / contextWindow;
-            sb.AppendLine("- " + Strings.XrayBudget($"~{used:N0}", $"{contextWindow:N0}", $"{pct:0}"));
+            sb.AppendLine("- " + Strings.XrayBudget(Strings.Ui($"~{used:N0}"), Strings.Ui($"{contextWindow:N0}"), Strings.Ui($"{pct:0}")));
         }
 
         return sb.ToString().TrimEnd();

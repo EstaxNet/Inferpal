@@ -213,15 +213,14 @@ internal static class TaskCommandHandler
         // The journal explains an empty or surprising report; only useful while/after running.
         if (task.Steps.Count > 0)
         {
-            sb.AppendLine().AppendLine("<details>");
+            // Plain Markdown, never HTML: both chats neutralize raw HTML (it would show as markup).
             // The title counts the steps TAKEN; the journal keeps the last ones, and says how many went.
             var title = task.StepsNotKept > 0
                 ? Strings.TaskStepsTitleCut(task.StepsTaken, task.Steps.Count)
                 : $"{Strings.TaskStepsTitle} ({task.Steps.Count})";
-            sb.AppendLine($"<summary>{title}</summary>").AppendLine();
+            sb.AppendLine().AppendLine($"**{title}**").AppendLine();
             if (task.StepsNotKept > 0) sb.AppendLine($"- {Strings.TaskStepsNotKept(task.StepsNotKept)}");
             foreach (var step in task.Steps) sb.AppendLine($"- {Escape(step)}");
-            sb.AppendLine().AppendLine("</details>");
         }
 
         return sb.ToString().TrimEnd();
@@ -275,7 +274,7 @@ internal static class TaskCommandHandler
     }
 
     internal static string FormatDuration(TimeSpan d) =>
-        d.TotalMinutes >= 1 ? $"{(int)d.TotalMinutes}m {d.Seconds}s" : $"{d.TotalSeconds:0.0}s";
+        d.TotalMinutes >= 1 ? $"{(int)d.TotalMinutes}m {d.Seconds}s" : Strings.Ui($"{d.TotalSeconds:0.0}s");
 
     private static string Truncate(string text, int max) =>
         text.Length <= max ? text : text[..(max - 1)] + "…";

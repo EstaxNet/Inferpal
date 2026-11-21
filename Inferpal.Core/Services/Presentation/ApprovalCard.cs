@@ -249,7 +249,8 @@ internal static class ApprovalCard
                                      keepsGrantsAcrossSolutions ? Strings.ApprovalAlwaysTooltip(prompt.ToolName)
                                                                 : Strings.ApprovalAlwaysTooltipUntilRestart(prompt.ToolName),
                                      prompt.Message,
-                                     prompt.Rule is { } rule ? Strings.ApprovalAlwaysRule(rule.Describe) : string.Empty,
+                                     // A button is plain text: the description's Markdown code marks would show as such.
+                                     prompt.Rule is { } rule ? Strings.ApprovalAlwaysRule(rule.Describe.Replace("`", "")) : string.Empty,
                                      prompt.Rule is { } spelled ? Strings.ApprovalRuleTooltip(string.Join("\n", spelled.Lines)) : string.Empty,
                                      OffersAlways: !prompt.Forced, Binary: prompt.Diff?.Binary);
         // edit_notebook: titled by the cell ("Change cell 3 of analysis.ipynb"), its kind beside the count, its note under the

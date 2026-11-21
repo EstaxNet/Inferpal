@@ -71,7 +71,7 @@ internal static class ConversationExporter
             sb.AppendLine(Strings.ExportTitle);
             sb.AppendLine(date);
             sb.AppendLine((modelName is null ? "" : $"{Strings.ExportModel}: {modelName}  |  ") + $"{Strings.ExportTurns}: {turns}  |  {Strings.ExportToolCalls}: {toolCalls}"
-                          + (sessionTokens is null ? "" : $"  |  {Strings.ExportTokens}: {sessionTokens:N0}")
+                          + (sessionTokens is null ? "" : Strings.Ui($"  |  {Strings.ExportTokens}: {sessionTokens:N0}"))
                           + (durationStr is null ? "" : $"  |  {Strings.ExportDuration}: {durationStr}"));
             sb.AppendLine();
 
@@ -94,7 +94,7 @@ internal static class ConversationExporter
             if (modelName is not null) sb.AppendLine($"| {Strings.ExportModel} | `{modelName}` |");
             sb.AppendLine($"| {Strings.ExportTurns} | {turns} |");
             sb.AppendLine($"| {Strings.ExportToolCalls} | {toolCalls} |");
-            if (sessionTokens is not null) sb.AppendLine($"| {Strings.ExportTokens} | {sessionTokens:N0} |");
+            if (sessionTokens is not null) sb.AppendLine(Strings.Ui($"| {Strings.ExportTokens} | {sessionTokens:N0} |"));
             if (durationStr is not null)   sb.AppendLine($"| {Strings.ExportDuration} | {durationStr} |");
             sb.AppendLine();
             sb.AppendLine("---");

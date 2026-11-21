@@ -92,7 +92,7 @@ internal sealed class HardwareProfile
         var sb = new StringBuilder(Strings.HardwareReportHeading + "\n\n");
 
         sb.AppendLine(BudgetGb > 0
-            ? Strings.HardwareBudgetLine($"{BudgetGb:0.#}")
+            ? Strings.HardwareBudgetLine(Strings.Ui($"{BudgetGb:0.#}"))
             : Strings.HardwareBudgetNotSet);
 
         // ⚠ An unreported load is not an empty one: "0 GB · Compute: CPU" sends a user whose model
@@ -116,9 +116,9 @@ internal sealed class HardwareProfile
         }
         else if (Running.Count > 0)
         {
-            var headroom = HeadroomGb is { } h ? Strings.HardwareHeadroom($"{h:0.#}") : "";
-            var ofBudget = BudgetGb > 0 ? Strings.HardwareOfBudget($"{BudgetGb:0.#}") : "";
-            sb.AppendLine(Strings.HardwareLoadedLine($"{LoadedGb:0.#}", ofBudget, headroom));
+            var headroom = HeadroomGb is { } h ? Strings.HardwareHeadroom(Strings.Ui($"{h:0.#}")) : "";
+            var ofBudget = BudgetGb > 0 ? Strings.HardwareOfBudget(Strings.Ui($"{BudgetGb:0.#}")) : "";
+            sb.AppendLine(Strings.HardwareLoadedLine(Strings.Ui($"{LoadedGb:0.#}"), ofBudget, headroom));
             sb.AppendLine(Strings.HardwareCompute(IsGpu ? "GPU" : "CPU"));
         }
         else
@@ -131,7 +131,7 @@ internal sealed class HardwareProfile
             sb.AppendLine("\n" + Strings.HardwareLoadedModelsTable);
             foreach (var m in Running)
                 sb.AppendLine(m.ReportsVram
-                    ? $"| `{m.Name}` | {m.SizeVram / ModelCatalog.BytesPerGb:0.#} GB |"
+                    ? Strings.Ui($"| `{m.Name}` | {m.SizeVram / ModelCatalog.BytesPerGb:0.#} GB |")
                     : $"| `{m.Name}` | — |");
         }
 
@@ -144,7 +144,7 @@ internal sealed class HardwareProfile
                 var marker  = loaded.Contains(m.Name) ? " 🟢" : "";
                 var diskGb  = m.SizeBytes / ModelCatalog.BytesPerGb;
                 var estGb   = ModelCatalog.EstimateVramBytes(m.SizeBytes) / ModelCatalog.BytesPerGb;
-                sb.AppendLine($"| `{m.Name}`{marker} | {diskGb:0.#} GB | {estGb:0.#} GB |");
+                sb.AppendLine(Strings.Ui($"| `{m.Name}`{marker} | {diskGb:0.#} GB | {estGb:0.#} GB |"));
             }
             sb.AppendLine("\n" + Strings.HardwareInstalledNote);
         }
