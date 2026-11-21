@@ -31,6 +31,11 @@ public sealed class ShellCheckVerdictTests
     [InlineData("cargo test")]
     [InlineData("go test ./...")]
     [InlineData("CI=1 npm run test")]
+    [InlineData("node --test")]                       // Node's own runner: what a package.json "test" script often is
+    [InlineData("node --test test/cart.test.js")]
+    [InlineData("deno test")]
+    [InlineData("bun test")]
+    [InlineData("python -m unittest discover")]
     public void TestAndBuildRuns_AreChecks(string command) => Assert.True(CheckCommand.IsCheck(command));
 
     [Theory]
@@ -38,6 +43,10 @@ public sealed class ShellCheckVerdictTests
     [InlineData("grep -rn dotnet test .")]
     [InlineData("git status")]
     [InlineData("cat tests/test_cart.py")]
+    [InlineData("node server.js")]                    // node, but not its test runner
+    [InlineData("node server.js --test-mode")]        // an app's own flag
+    [InlineData("node --test-reporter=spec app.js")]
+    [InlineData("node scripts/build.js && echo \"run with --test\"")]   // --test in another step
     public void CommandsThatOnlyMentionARunner_AreNot(string command) => Assert.False(CheckCommand.IsCheck(command));
 
     [Fact]
@@ -103,6 +112,15 @@ public sealed class ShellCheckVerdictTests
             [Ran("apply_edits"), Shell("pytest -q", "E   ModuleNotFoundError: No module named 'shop'\n1 error in 0.05s\n[exit code 2]")],
             filesChangedInRun: 1));
     }
+
+    /// <summary>A runner that started and found no test ran nothing: never a red run.</summary>
+    [Theory]
+    [InlineData("python -m unittest discover", "\n[stderr]\n----------------------------------------------------------------------\nRan 0 tests in 0.000s\n\nNO TESTS RAN\n[exit code 5]")]
+    [InlineData("deno test", "error: No test modules found\n[exit code 1]")]
+    [InlineData("bun test", "No tests found!\n[exit code 1]")]
+    [InlineData("pytest -q", "no tests ran in 0.01s\n[exit code 5]")]
+    public void ARunnerThatFoundNoTest_IsNotAVerdict(string command, string output) =>
+        Assert.Null(CheckCommand.Failed(System.Text.Json.JsonSerializer.Serialize(new { command }), output));
 
     [Fact]
     public void ATurnThatChangedNothing_StillSaysNothing()

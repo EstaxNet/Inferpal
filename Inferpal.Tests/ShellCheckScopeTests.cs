@@ -34,6 +34,12 @@ public sealed class ShellCheckScopeTests
     [InlineData("npx jest src/cart.test.ts")]
     [InlineData("npx jest --testPathPatterns cart")]
     [InlineData("go test ./... -skip TestSlow")]
+    [InlineData("node --test test/cart.test.js")]
+    [InlineData("node --test --test-name-pattern=cart")]
+    [InlineData("bun test cart")]
+    [InlineData("deno test cart_test.ts")]
+    [InlineData("python -m unittest tests.test_cart")]
+    [InlineData("python -m unittest -k cart")]
     public void ASelectorOfTheRunner_MakesItPartOfTheSuite(string command) =>
         Assert.True(CheckCommand.NarrowsTests(command));
 
@@ -51,6 +57,12 @@ public sealed class ShellCheckScopeTests
     [InlineData("pytest -W ignore::DeprecationWarning")]
     [InlineData("pytest -o python_files=*_test.py")]
     [InlineData("npx jest --testPathIgnorePatterns e2e")]
+    [InlineData("node --test")]
+    [InlineData("node --test test/")]                // a folder may hold the whole suite
+    [InlineData("bun test")]
+    [InlineData("deno test")]
+    [InlineData("python -m unittest")]
+    [InlineData("python -m unittest discover -s tests -p 'test_*.py'")]
     public void WithoutASelector_ItIsTheWholeSuite(string command) =>
         Assert.False(CheckCommand.NarrowsTests(command));
 

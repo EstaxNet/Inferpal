@@ -208,14 +208,17 @@ internal static class ToolsAssistant
                 : mcpOff.Contains(e.Key) ? false
                 : mcpOnKeys.Contains(e.Key) || e.State == ToolState.Sent);
         // Offered judged on the tool, never its state: one not offered that is turned off reads "off by the user".
-        var offered = profile.Where(e => e.Source == ToolSource.BuiltIn && e.Tool.IsOffered).ToList();
-        var offCount = offered.Count(e => decided.TryGetValue(e.Key, out var on) ? !on : e.State == ToolState.OffByUser);
+        // Counted as the tools page counts them: on = offered and not off; off = every built-in turned off, offered or not.
+        bool OffAfter(ToolProfileEntry e) => decided.TryGetValue(e.Key, out var on) ? !on : e.State == ToolState.OffByUser;
+        var builtIns = profile.Where(e => e.Source == ToolSource.BuiltIn).ToList();
+        var onCount = builtIns.Count(e => e.Tool.IsOffered && !OffAfter(e));
+        var offCount = builtIns.Count(OffAfter);
         var autoContext = baseline is not null && (baseline.Context != AssistantContext.Lean) == (answers.Context != AssistantContext.Lean)
             ? autoContextNow : answers.Context != AssistantContext.Lean;
         return new AssistantPlan(string.Join("\n", disabled), autoContext, [.. changes, .. mcpChanges],
                                  profile.Where(e => e.State == ToolState.Sent).Sum(e => e.Tokens),
                                  profile.Where(SentAfter).Sum(e => e.Tokens),
-                                 offered.Count - offCount, offCount);
+                                 onCount, offCount);
     }
 
     private static IEnumerable<string> Lines(string text) =>

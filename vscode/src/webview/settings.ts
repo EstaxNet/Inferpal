@@ -230,6 +230,8 @@ function approvalModeField(field: Field, box: HTMLInputElement): HTMLElement {
   set.className = 'cards';
   const legend = document.createElement('legend');
   legend.textContent = res('SettingsSectionApprovals');
+  // Named for a screen reader; not shown: the section's title above says the same word.
+  legend.className = 'visually-hidden';
   const grid = document.createElement('div');
   grid.className = 'cardgrid';
   const risks = document.createElement('div');

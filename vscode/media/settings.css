@@ -1688,3 +1688,30 @@ body.vscode-high-contrast-light .segment:has(input:checked) {
 .assistbadge.on { background: var(--vscode-inputValidation-infoBackground, rgba(76, 194, 122, 0.18)); }
 .assistfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .assistfoot .assistnext { margin-left: auto; }
+
+/* The assistant's buttons, as the panel's own; the counter before the questions when the panel is narrow. */
+.assist button.primary, .assistentry button.primary {
+  border: 0;
+  border-radius: 4px;
+  padding: 6px 16px;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.assist button.primary:disabled { opacity: 0.6; cursor: default; }
+.assist button.secondary {
+  border: 1px solid var(--ip-line);
+  border-radius: 4px;
+  padding: 6px 16px;
+  background: transparent;
+  color: var(--vscode-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+@media (max-width: 900px) {
+  .assistaside { order: -1; flex-basis: 100%; padding: 0 0 12px; border-left: 0; border-bottom: 1px solid var(--ip-line); }
+}
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

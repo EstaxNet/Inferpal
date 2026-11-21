@@ -13,7 +13,10 @@ internal static class CheckCommand
     // MENTIONS one (an echo, a grep) is not a run of it: the runner must start a command segment.
     private static readonly Regex Check = new(
         @"(?:^|[;&|(]\s*|\bthen\s+|\bdo\s+)\s*(?:(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*)" +
-        @"(?:dotnet\s+(?:test|build)|(?:python3?|py)\s+-m\s+pytest|pytest|(?:npm|pnpm|yarn)\s+(?:run\s+)?test|" +
+        @"(?:dotnet\s+(?:test|build)|(?:python3?|py)\s+-m\s+(?:pytest|unittest)|pytest|(?:npm|pnpm|yarn)\s+(?:run\s+)?test|" +
+        // The runners built into a runtime: Node's (`node --test`, flags before it), Deno's, Bun's. The flags are read in
+        // the same step only, and `--test-mode` or `--test-reporter=x` alone is not the runner.
+        @"node\s+(?:[^\s;&|]+\s+)*?--test(?![-\w=])|(?:deno|bun)\s+test|" +
         @"npx\s+(?:jest|vitest|mocha|tsc)|jest|vitest|mocha|tsc|cargo\s+(?:test|build|check)|go\s+(?:test|build|vet)|" +
         @"mvn\S*\s+(?:\S+\s+)*?(?:test|verify|package)|\.?/?gradlew?\s+(?:\S+\s+)*?(?:test|build|check)|make\s+(?:test|check))\b",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexBudget.Default);
@@ -32,7 +35,7 @@ internal static class CheckCommand
     }
 
     // A check that runs tests rather than a build: dotnet test, pytest, npm test, cargo test, go test, mvn test…
-    private static readonly Regex Tests = new(@"\b(?:test|pytest|jest|vitest|mocha)\b",
+    private static readonly Regex Tests = new(@"\b(?:test|pytest|unittest|jest|vitest|mocha)\b",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexBudget.Default);
 
     /// <summary>Whether a check command runs tests (otherwise it builds).</summary>
@@ -53,6 +56,14 @@ internal static class CheckCommand
         (Rx(@"\bgo\s+test\b"), Rx(@"(?:^|\s)-(?:run|skip)(?:[\s=]|$)")),
         (Rx(@"\bcargo\s+test\b"), Rx(@"^\s+[^\s\-<>&|0-9*]")),
         (Rx(@"\bmocha\b"), Rx(@"(?:^|\s)(?:--grep|-g|--fgrep|-f)(?:[\s=]|$)")),
+        // node --test: a name pattern, or a file named after it (a folder may hold the whole suite).
+        (Rx(@"\bnode\s+(?:[^\s;&|]+\s+)*?--test(?![-\w=])"),
+         Rx(@"(?:^|\s)--test-(?:name|skip)-pattern(?:[\s=]|$)|(?:^|\s)[^\s-]\S*\.[cm]?[jt]sx?(?:\s|$)")),
+        // bun test: any positional is a path filter; deno test: a name filter or a file.
+        (Rx(@"\bbun\s+test\b"), Rx(@"(?:^|\s)(?:-t|--test-name-pattern)(?:[\s=]|$)|(?:^|\s)[^\s\-<>&|0-9]")),
+        (Rx(@"\bdeno\s+test\b"), Rx(@"(?:^|\s)--filter(?:[\s=]|$)|(?:^|\s)[^\s-]\S*\.[cm]?[jt]sx?(?:\s|$)")),
+        // unittest: -k, or a module named (discover's -s/-p arguments are a search, not a selection).
+        (Rx(@"\s-m\s+unittest\b"), Rx(@"(?:^|\s)-k(?:\s|$)|^(?!.*\bdiscover\b)(?:.*\s)?[^\s-]")),
     ];
 
     private static Regex Rx(string pattern) =>
@@ -159,8 +170,18 @@ internal static class CheckCommand
 
     private static readonly Regex Cmdlet = new(@"^[A-Za-z]+-[A-Za-z]+\b", RegexOptions.CultureInvariant, RegexBudget.Default);
 
-    private static bool NeverStarted(int code, string output) =>
-        code != 0 && (CodeActions.SmartFixValidator.IsToolMissing(code, output) || Tools.RunTestsTool.PytestModuleMissing(output));
+    // A runner that started and found no test exits non-zero (unittest 5, deno, bun and jest 1): nothing ran, never red.
+    private static readonly Regex NothingRan = new(
+        @"NO TESTS RAN|No test modules found|No tests found|No test files found|no tests ran in",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexBudget.Default);
+
+    private static bool NeverStarted(int code, string output)
+    {
+        if (code == 0) return false;
+        if (CodeActions.SmartFixValidator.IsToolMissing(code, output) || Tools.RunTestsTool.PytestModuleMissing(output)) return true;
+        try { return NothingRan.IsMatch(output); }
+        catch (RegexMatchTimeoutException) { return false; }
+    }
 
     /// <summary>The exit code run_command reported: 0 when no note follows the output; null when nothing ran to its
     /// end (an error or refusal before the run, a background job, a pipeline stopped early).</summary>
