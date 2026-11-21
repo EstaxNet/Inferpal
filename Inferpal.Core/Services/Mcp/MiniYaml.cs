@@ -176,12 +176,42 @@ internal static class MiniYaml
             return node;
         }
 
+        /// <summary>How many nodes aliases may copy in one file. ⚠ An alias copies its anchor, aliases nest: ten aliases of
+        /// ten aliases, nine levels deep, are 10^9 nodes from a file of one kilobyte ("billion laughs") — an exhausted memory
+        /// the host does not survive, from a file an agent reads without asking.</summary>
+        internal const long MaxAliasNodes = 1_000_000;
+
+        private long _aliasNodes;
+
         private JsonNode? Alias(string value, int number)
         {
             var name = value[1..].Trim();
             if (!_anchors.TryGetValue(name, out var node))
                 throw new FormatException($"line {number}: the alias *{name} names no anchor written before it");
+            _aliasNodes += Count(node);
+            if (_aliasNodes > MaxAliasNodes)
+                throw new FormatException($"line {number}: the aliases copy more than {MaxAliasNodes} values");
             return node?.DeepClone();
+        }
+
+        /// <summary>How many nodes <paramref name=node/> holds, itself included; stops counting past the cap.</summary>
+        private long Count(JsonNode? node)
+        {
+            long total = 1;
+            var pending = new Stack<JsonNode?>();
+            pending.Push(node);
+            while (pending.Count > 0 && total <= MaxAliasNodes)
+            {
+                var next = pending.Pop();
+                IEnumerable<JsonNode?> children = next switch
+                {
+                    JsonObject o => o.Select(p => p.Value),
+                    JsonArray a => a,
+                    _ => [],
+                };
+                foreach (var child in children) { total++; pending.Push(child); }
+            }
+            return total;
         }
 
         // ── Block scalars ───────────────────────────────────────────────────────
