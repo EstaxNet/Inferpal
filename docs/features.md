@@ -228,7 +228,10 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
   parallel**.
 - **Turning tools off** — `/tools` lists every tool with what it weighs in each request; `/tools off <tool>` (or the
   Tools page's button) turns one off in every conversation, built-in or MCP: the model is never offered it, and your
-  own commands that use it keep working. See [Tools](tools.md#turning-a-tool-off).
+  own commands that use it keep working. Not sure which to keep? **Help me choose** on the Tools page asks what you work
+  on and what the agent may reach, then shows which tools it would turn off and how much lighter each question gets;
+  nothing is saved until you apply. A question that needs a tool you turned off says so, with **Use them for this
+  question**. See [Tools](tools.md#turning-a-tool-off).
 - **Persistent plans** (`/plan save`) — a plan proposed in the chat lives only in that
   conversation. Saved, it becomes `.inferpal/plans/<name>.md`: numbered steps with checkboxes,
   committed with the code, so it survives a restart, shows up in the review of the change it
@@ -275,6 +278,11 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
   When you asked it to fix a bug, the bar says whether the fix is **proven or guessed**: *reproduced, then fixed* when a
   test or a build failed before its first change and passes after its last, *fixed without reproducing it* (the info
   mark) when nothing showed the bug first — read from what the run did, never from the answer.
+- **It reads its work back before it answers** *(Agent mode, and Chat mode in both editors)* — a run that edited files
+  reads its whole diff against your request: a debug print left behind, a change you did not ask for, the test, doc or
+  changelog line the change still needs. It fixes what it finds and says what it left as it is. When the run changed a
+  page, a style or a window layout of an app it started that still runs, and it has not looked since, it looks at the
+  result before answering and fixes what does not look right.
 - **Run replay** — `/replay [n]` shows a post-mortem timeline of an agent run: every tool
   call with its target and duration, then the files it touched.
 - **Long runs stay awake** *(both editors, and ACP)* — while the model works (an answer, an agent
@@ -312,6 +320,10 @@ look at what the code produces, measure it, and read the files developers deal w
   open for its next call. It asks nothing in the app it started itself; another service of your machine asks once.
   Pages of this machine only, in a fresh browser that reaches nothing else.
   Needs Chrome, Edge or Chromium.
+- **Accessibility, and the page's requests** — asked to, `view_page` also reads what a screen-reader or keyboard user
+  meets, from the browser's own accessibility tree: controls and images with no name, text under WCAG AA contrast
+  (measured on the colors shown), what the keyboard cannot reach and the tab order, each with a selector that finds it
+  (Chrome, Edge or Chromium). With those browsers it also lists the page's failed and slowest requests beside its console.
 - **The desktop app in the state you want** — `interact_window` uses the app the agent launched as you would: it types
   in a field, clicks, chooses in a list, ticks a box and waits, through the system's accessibility and never your mouse
   or keyboard, then looks at the window — and saves its picture where you ask, on the usual write card. Only the
@@ -322,14 +334,16 @@ look at what the code produces, measure it, and read the files developers deal w
   allow) and Linux.
 - **Your web service, called for real** — the agent starts the service in the background, waits until it is ready,
   sends requests with `http_request` and reads the answers, error pages and stack traces included; it then fixes the
-  code and calls again to confirm.
+  code and calls again to confirm. It can also replay a request your project keeps — a `.http` file, a Postman or Bruno
+  collection — by its name, with the environment you name; a secret from it shows on the card, and the agent sees only
+  its name.
 - **A measure, not one lucky run** — `run_command` with `repeat` runs a command several times after a warm-up and
   gives the median, the spread, and whether a change is faster beyond the normal variation between runs.
 - **The text of an image** — `ocr` reads a screenshot, a photo of a page or a scanned PDF in Inferpal's ten languages,
   nothing to install; a model that does not see images gets that text instead of the picture.
 - **Long logs, data files, archives** — `read_file` filters a log by level and time (`level`, `since`, `until`), each
-  entry with its stack trace; `query_data` answers one read-only SQL query on a CSV, TSV, JSON, Excel or SQLite file
-  too large to read; a zip, NuGet, 7z, RAR or tar archive (gz, bz2, xz) is listed and read in place, never extracted, and a
+  entry with its stack trace; `query_data` answers one read-only SQL query on a CSV, TSV, JSON, Excel, Parquet, Arrow or
+  SQLite file too large to read; a zip, NuGet, 7z, RAR or tar archive (gz, bz2, xz) is listed and read in place, never extracted, and a
   lone `app.log.gz`, `.bz2` or `.xz` reads as the file it holds.
 - **Your development database** — `query_database` finds the connection where your project declares it
   (`appsettings.Development.json`, `.env`, an environment variable, user secrets), lists the tables, reads a table's
@@ -418,6 +432,11 @@ for the model — each exclusion said, never silent. Writing one of these files 
   one narrow rule describes also offers that rule (*commands that start with `dotnet test`*,
   *writes under `tests/`*), written to the per-machine rules when picked; `/permissions suggest`
   names the ones you keep granting. What each tool asks: [Tools](tools.md#what-the-agent-can-do-and-what-asks-first).
+- **Auto mode** — in *Agent and approvals*, **Ask me** or **Auto** (`securityAlertsDisabled`). Picking Auto shows what it
+  risks — a mistake goes through, what the agent reads can steer it, a command reaches outside the project — and saving
+  it asks you to confirm. Still protected: your `deny` rules, the built-in denylist, writes to the agent's own
+  instructions and commands whose effect cannot be read. While it is on, an **Auto** badge stays in the chat's header
+  and every step that ran without asking says so.
 - **The first build or test run in a workspace asks** — the agent's first build, test run, Smart Fix check,
   `msbuild_property` evaluation or notebook run in a workspace asks once, even after "Always", because each runs the repository's
   code (except in auto mode, which runs it without asking, as it runs any command). A refusal holds until the editor restarts. A `/build` or `/tdd` you run yourself counts as
@@ -1191,6 +1210,17 @@ scanned PDF is read by OCR, on every system; a file too large to read in time sa
 protected by a password asks for it on a card in the chat (Visual Studio and VS Code); the model gets the text, never
 the password, and three wrong tries leave the file closed. An archive (`.zip`, `.7z`, `.rar`, `.tar.gz`, `.tar.xz`…) is read in
 place, entry by entry, never extracted.
+
+**What your tools leave reads as what it means.** A CPU profile reads first as its costliest functions and hottest
+paths; a Lighthouse report as its scores and the audits that failed, the largest gain first; a query plan as its
+costliest operators and full scans; a crash report (`.ips`, `.crash`, `.wer`, Android tombstones and ANR traces) as the
+exception and the faulting thread's stack; a Terraform plan as what it destroys, replaces, creates and changes; a SARIF
+report as its findings, errors first; an MSBuild `.binlog` (replayed by the .NET SDK) as its errors and slowest
+projects; an OpenAPI file as its operations and a `.har` capture as its requests; a `.patch` as whether each block still
+applies, and the agent can apply it on the usual card. A GitHub, GitLab, Gitea or Codeberg issue or pull request link
+reads as the ticket and its comments. A screen recording (`.mp4`, `.mov`, `.webm`, a moving GIF) goes to a model that
+sees as eight frames with their times, so it can say *when* it goes wrong (Windows decodes an `.mp4` itself; macOS and
+Linux use ffmpeg).
 
 **The agent also looks at what it builds** — the page your app serves (`view_page`, captured at a laptop's width and a
 phone's, or brought into a given state first with `interact_page`) and the desktop app it launched (`view_window`, or

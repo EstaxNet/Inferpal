@@ -3,6 +3,31 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.9.3
+
+The agent checks its own work before it answers, reads the files your tools leave behind as what they mean, and helps
+you choose which tools it gets.
+
+- **It reviews its own diff**: a run that edited files reads its changes back against your request (a debug print left,
+  a change you did not ask for, a test or doc still to update), fixes what it finds and says what it left.
+- **It looks at the app after changing its interface**, when the app it started still runs, and fixes what does not
+  look right; the result bar shows the before and after pictures it worked from.
+- **Proven or guessed**: after a bug fix, the result bar says *reproduced, then fixed* or *fixed without reproducing it*.
+- **Accessibility**: asked to, it checks a page for unnamed controls, faint text, what the keyboard cannot reach and
+  the tab order (Chrome, Edge or Chromium).
+- **Help me choose** on the Tools page picks the tools to turn off and shows how much lighter each question gets; a
+  question that needs a tool you turned off offers **Use them for this question**.
+- **Auto mode**, with its risks shown before you confirm; an **Auto** badge in the header, each step that ran without
+  asking marked. Deny rules still apply.
+- **Read as what they mean**: Parquet and Arrow (with SQL), CPU profiles, Lighthouse reports, query plans, crash
+  reports, Terraform plans, SARIF, patches (and applied on the usual card), MSBuild binlogs, OpenAPI and `.har`, issue
+  and pull request links, and screen recordings (eight frames with their times).
+- **Your `.http`, Postman and Bruno requests** replayed by name; a page's **failed and slowest requests** beside its
+  console.
+- **Fixed**: with the web tools off, the agent no longer reaches another machine through `http_request`; looking at a
+  page works again with recent Chrome and Edge on Windows; a background task's report shows its steps as plain text and
+  counts them right; numbers follow the interface's language.
+
 ## 1.9.2
 
 The agent uses what it builds: it clicks through the page or the desktop app it launched, reads the data behind it, and

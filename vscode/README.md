@@ -12,7 +12,7 @@ With [Ollama](https://ollama.com), [LM Studio](https://lmstudio.ai), llama.cpp, 
 
 *"Capture the cart with two teas in it, for the README." It starts the app, clicks through it and saves the picture. Replayed in VS Code.*
 
-> **1.9.2 · 20 Nov 2026** — the agent clicks through the page or the desktop app it builds and captures the state reached · it works on a copy of your repository, and you keep or drop each change · it reads your development database, read-only. [Full changelog](https://github.com/EstaxNet/Inferpal/releases/tag/v1.9.2)
+> **1.9.3 · 22 Nov 2026** — the agent reviews its own diff and looks at your app again before it answers · the result bar says whether a fix is proven or guessed · it reads profiles, crash reports, query plans, Terraform plans and a dozen other files your tools leave · **Help me choose** picks its tools, and auto mode says what it risks. [Full changelog](https://github.com/EstaxNet/Inferpal/releases/tag/v1.9.3)
 
 ## See it work
 
@@ -63,14 +63,14 @@ The model runs on a server you choose, on this computer or a GPU machine you own
 | 12 – 16 GB | Gemma 4 12B, or Ternary Bonsai 2 27B (slower) |
 | 8 GB | Granite 4.2 8B |
 
-Any model that calls tools works. [Every measurement](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/models.md#by-graphics-card)
+Any model that calls tools works. [Every measurement](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/models.md#by-graphics-card)
 
 ## Get started
 
 1. Install a model server — [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai).
 2. Open **Inferpal** from the activity bar. It finds your server and picks a model, or offers to install one.
 
-[Getting started](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/getting-started.md) · Right-click a test, a problem, a debugger stop or a file for a ready-made action · [Everything it can do](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/features.md): 44 built-in tools, 50+ commands, 10 languages
+[Getting started](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/getting-started.md) · Right-click a test, a problem, a debugger stop or a file for a ready-made action · [Everything it can do](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/features.md): 44 built-in tools, 50+ commands, 10 languages
 
 ## Right-click, and it's on it
 
@@ -97,7 +97,7 @@ The spec is a PDF, the test data lives in a spreadsheet, the error is on a scree
 | A file protected by a password | Attach it as usual | A card asks you for the password; the model gets the text, never the password |
 | A question about a flow or a design | Ask for a diagram | A Mermaid diagram drawn in the chat, its code one click away |
 
-Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks, e-mails (`.eml`, `.msg`), Windows event logs (`.evtx`), MSBuild binary logs (`.binlog`) and diagrams (`.drawio`, `.vsdx`) are read too, by you and by the agent's `read_file` and `search_in_files`. Nothing is installed for it and nothing leaves your machine. A scanned PDF is read by OCR; a file too large to read says so instead of sending noise. Every format, in one table: [File formats](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/file-formats.md).
+Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks, e-mails (`.eml`, `.msg`), Windows event logs (`.evtx`), MSBuild binary logs (`.binlog`), diagrams (`.drawio`, `.vsdx`), CPU profiles, Lighthouse reports, query plans, crash reports, Terraform plans, SARIF, patches, OpenAPI specifications, `.har` captures and issue or pull request links are read too, each first as what matters in it, by you and by the agent's `read_file` and `search_in_files`. Nothing is installed for it and nothing leaves your machine. A scanned PDF is read by OCR; a file too large to read says so instead of sending noise. Every format, in one table: [File formats](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/file-formats.md).
 
 When the model that will answer does not see images, the text written in the image goes instead, read on your computer by Inferpal's OCR; only a picture with no text gets a card that offers one of your server that does, or sending without it. A large image is scaled down to 1920 × 1080 first, and said.
 
@@ -113,9 +113,10 @@ looks at what the code produces, measures it, and reads the files developers dea
 | Type, click and choose in the desktop app the agent launched (`interact_window`) | The order form filled in and sent, its window checked and captured for your README, without touching your mouse or keyboard |
 | Look at the window of a desktop app it started, with every control's type, text, value and state (`view_window`) | A disabled button or an empty field noticed, even by a model that cannot read images |
 | Start your web service, send it real HTTP requests and read the answers (`http_request`) | An error reproduced, fixed, then confirmed by calling the service again |
+| Check a page's accessibility as the browser computes it (`view_page` with `accessibility`, in Chrome, Edge or Chromium) | Unnamed buttons and fields, text too faint to read, what the keyboard cannot reach and the tab order, each with what finds it on the page |
 | Run a command several times after a warm-up and compare medians (`run_command` with `repeat`) | A change kept as "faster" only when the gain is beyond the normal variation between runs |
 | Read a log by level and time range (`read_file`) | Only the entries that matter, each with its stack trace and line number |
-| Answer one read-only SQL query on a CSV, TSV, JSON, Excel or SQLite file (`query_data`) | Counts, filters and sums on files too large to read |
+| Answer one read-only SQL query on a CSV, TSV, JSON, Excel, Parquet, Arrow or SQLite file (`query_data`) | Counts, filters and sums on files too large to read |
 | Read your development database, found where your project declares it (`query_database`) | Why an order shows no total, answered from the data — PostgreSQL, SQL Server, MySQL or MariaDB, reads only, no connection string stored |
 | Read inside zip, 7z, RAR and tar archives and NuGet packages without extracting them | Logs and packages inspected where they are |
 | Change one cell of a Jupyter notebook, then run the notebook on a copy (`edit_notebook`, `run_notebook`) | The failing cell fixed and its output checked, the rest of the notebook untouched |
@@ -140,24 +141,26 @@ Ask in plain words, for example *"add argument validation to this method and cov
 - **Every write, delete and command waits for you**, with the real diff. Press Enter to allow or Esc to deny. You can also allow a narrow rule you choose, such as *commands that start with `npm test`*.
 - **Every file the agent edits is backed up first.** **Undo run** puts them all back in one click.
 - **You can steer it while it works.** Type a correction and press Enter, and the agent reads it before its next step. Ctrl+Enter queues a message for after the turn instead.
-- **It checks its own work.** It builds or typechecks after each edit (.NET, TypeScript, Rust, Go) and feeds the errors straight back.
+- **It checks its own work.** It builds or typechecks after each edit (.NET, TypeScript, Rust, Go) and feeds the errors straight back. Before it answers, it reads its whole diff against your request (a debug print left, a change you did not ask for, a test or doc still to update) and, when it changed the interface of the app it started, looks at it again. After a bug fix, the result bar says whether the fix is *reproduced, then fixed* or *fixed without reproducing it*.
+- **Approvals off, if you choose.** *Auto* in *Agent and approvals* shows what it risks before you confirm; your deny rules still apply, an **Auto** badge stays in the header and every step that ran without asking says so.
 - **It refuses invented packages before asking you.** Local models make up package names. Before a package is added, its name is looked up on nuget.org, npm or PyPI.
 - **It can work on a copy of your repository.** `/run-copy` lets it build, test and edit on a branch of its own while your files stay as they are; you keep or drop each change before it reaches them.
 - **Long runs announce themselves.** If a run takes more than 30 seconds while you look elsewhere, a notification says when it is done.
 
 ## Also in the box
 
-- **44 built-in tools**: files, text and semantic search, build and tests, shell with background jobs, git, the editor, the debugger, compiler-backed analysis and symbol rename, web search and page fetch. Add any **MCP** server's tools and your own shell commands. See the [reference](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/tools.md).
+- **44 built-in tools**: files, text and semantic search, build and tests, shell with background jobs, git, the editor, the debugger, compiler-backed analysis and symbol rename, web search and page fetch. Add any **MCP** server's tools and your own shell commands. See the [reference](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/tools.md).
 - **Semantic code search** across your workspace, with an embedding model installed (keyword search without one). The most relevant code is added to each question, and suggested as chips while you type.
 - **Reviews and Git text.** `/check` reviews your diff, a branch or a commit, and anchors every finding to a line. `/commit` drafts the commit message, and `/pr-description` writes the pull request description.
 - **Typed mentions**: `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url` `@terminal`, or drop files from your file manager on the chat with Shift held. **@Docs** indexes a documentation site with `/docs add <url>`.
 - **A model server behind a reverse proxy.** Caddy or nginx with a password, an access token, Cloudflare Access, or headers of your own: *Settings → Server and models → Access through a reverse proxy* builds the headers, shows what will be sent and to whom, and its **Test** says where a request stopped. Only that server receives them.
+- **Fewer tools, lighter questions.** On the Tools page, **Help me choose** asks what you work on and what the agent may reach, then shows which tools it would turn off and how much lighter each question gets; nothing is saved until you apply.
 - **Modes, yours or your repository's.** Beside Chat, Agent and Plan, pick a mode found for the workspace: your own, GitHub Copilot's custom agents or Roo Code's custom modes. It brings its instructions, model, tools and effort, and adds no permission.
 - **Your repository's agent setup, read as it is.** It reads `AGENTS.md`, `CLAUDE.md`, the Copilot and Cursor instruction files, and your project rules. It honours `.aiignore`-style files.
 - **Background and debug sessions.** `/task` investigates in the background while you work. `/debug` drives a debug session once you approve it.
 - **Context you can see.** A gauge shows how full the model's window is, and `/xray` shows what fills it.
-- **One engine, every editor.** The same agent runs in [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs), with shared settings and conversations, so you can start in one editor and finish in the other. It is also an [Agent Client Protocol](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/acp.md) agent for Zed, the JetBrains IDEs, Qt Creator, Neovim and Emacs.
-- **50+ slash commands** and an interface in 10 languages. See the [slash commands](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/slash-commands.md).
+- **One engine, every editor.** The same agent runs in [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs), with shared settings and conversations, so you can start in one editor and finish in the other. It is also an [Agent Client Protocol](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/acp.md) agent for Zed, the JetBrains IDEs, Qt Creator, Neovim and Emacs.
+- **50+ slash commands** and an interface in 10 languages. See the [slash commands](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/slash-commands.md).
 
 ---
 
@@ -175,9 +178,9 @@ Ask in plain words, for example *"add argument validation to this method and cov
 
 **Which server should I use?** Ollama gets every feature, including per-model memory figures, downloads from the chat and unloading idle models. LM Studio runs everything except per-model memory figures, unloading idle models and `/models delete`. Other OpenAI-compatible servers (llama-server, vLLM) run the chat, the agent and the search. They also run inline completions if the server can complete around the cursor.
 
-**Can the model run on another machine?** Yes. Point the server address at it, as described in [Remote inference](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/remote-inference.md). Behind a reverse proxy that asks for a password or a token, give it its credentials in *Settings → Server and models*.
+**Can the model run on another machine?** Yes. Point the server address at it, as described in [Remote inference](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/remote-inference.md). Behind a reverse proxy that asks for a password or a token, give it its credentials in *Settings → Server and models*.
 
-**Does it work with Remote - WSL, Remote - SSH or Dev Containers?** Yes, when the other side is x64 Linux (there is no build for ARM Linux or Alpine): Inferpal runs on the other side, next to your files. There, `localhost` is WSL, the remote machine or the container — Inferpal says so when a local address does not answer, with the address to use instead ([details](https://github.com/EstaxNet/Inferpal/blob/v1.9.2/docs/remote-inference.md#5-vs-code-connected-to-wsl-ssh-or-a-container)).
+**Does it work with Remote - WSL, Remote - SSH or Dev Containers?** Yes, when the other side is x64 Linux (there is no build for ARM Linux or Alpine): Inferpal runs on the other side, next to your files. There, `localhost` is WSL, the remote machine or the container — Inferpal says so when a local address does not answer, with the address to use instead ([details](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/remote-inference.md#5-vs-code-connected-to-wsl-ssh-or-a-container)).
 
 **Does it work offline?** Yes, with a local server. Only web search and page fetch need the internet.
 
