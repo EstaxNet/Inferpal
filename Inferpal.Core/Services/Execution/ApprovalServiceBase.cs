@@ -106,6 +106,9 @@ internal abstract class ApprovalServiceBase : IApprovalService
         Decide(toolName, subject, out var unreadableDeny, out _) == PermissionDecision.Deny || unreadableDeny;
 
     /// <inheritdoc/>
+    public bool ApprovalsOff => _config.SharedSecurityAlertsDisabled;
+
+    /// <inheritdoc/>
     public bool RulesUnreadable => GetPolicy().OverlayUnread;
 
     /// <summary>

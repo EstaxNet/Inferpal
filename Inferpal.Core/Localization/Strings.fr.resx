@@ -1380,7 +1380,7 @@ Tapez `/setup` pour réessayer.</value></data>
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Moyenne</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Élevée</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Me demander avant de modifier des fichiers, de lancer des commandes ou d'aller en ligne</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Vous voyez le vrai diff ou la commande exacte. Désactivé : approuvé sans demander, sauf l'écriture des fichiers de consignes, les commandes dont l'effet ne se lit pas et le premier build ou lancement de tests de l'assistant dans un espace de travail, qui demandent toujours — les commandes catastrophiques restent refusées.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Vous voyez le vrai diff ou la commande exacte. Désactivé : approuvé sans demander, sauf l'écriture des fichiers de consignes et les commandes dont l'effet ne se lit pas, qui demandent toujours — les commandes catastrophiques restent refusées.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Vérifier qu'un paquet existe avant de l'ajouter</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Seul le nom ajouté est envoyé, et seulement au registre public (nuget.org, npm, PyPI). Un nom inventé est refusé avant qu'on vous demande ; un flux privé ou un registre qui ne répond pas n'est pas vérifié.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Montrer la modification avant de l'appliquer</value></data>
@@ -1917,7 +1917,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ToolStateCutByWindow" xml:space="preserve"><value>laissé de côté à cette fenêtre</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>coupé</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>coupé par l'entrée de son serveur</value></data>
-  <data name="ToolStateNotOffered" xml:space="preserve"><value>non proposé pour l'instant</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>activé · proposé quand il peut servir</value></data>
   <data name="ToolTurnOff" xml:space="preserve"><value>Couper</value></data>
   <data name="ToolTurnOn" xml:space="preserve"><value>Remettre</value></data>
   <data name="ToolListColTool" xml:space="preserve"><value>Outil</value></data>

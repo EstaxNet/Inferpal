@@ -420,7 +420,7 @@ for the model — each exclusion said, never silent. Writing one of these files 
   names the ones you keep granting. What each tool asks: [Tools](tools.md#what-the-agent-can-do-and-what-asks-first).
 - **The first build or test run in a workspace asks** — the agent's first build, test run, Smart Fix check,
   `msbuild_property` evaluation or notebook run in a workspace asks once, even after "Always", because each runs the repository's
-  code. A refusal holds until the editor restarts. A `/build` or `/tdd` you run yourself counts as
+  code (except in auto mode, which runs it without asking, as it runs any command). A refusal holds until the editor restarts. A `/build` or `/tdd` you run yourself counts as
   agreement.
 - **Instruction files always ask first** — a write to a file agents read back as instructions is
   force-prompted the same way: Inferpal's own `.inferpal/` memory, notes, context and rules, and the

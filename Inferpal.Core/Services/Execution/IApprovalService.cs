@@ -88,6 +88,10 @@ internal interface IApprovalService
     /// </summary>
     bool Refuses(string toolName, string subject) => false;
 
+    /// <summary>Whether the person turned approvals off (auto mode), read in the settings file now. False when the
+    /// service holds no settings.</summary>
+    bool ApprovalsOff => false;
+
     /// <summary>
     /// The workspace's own permission rules exist and cannot be read now: <see cref="Refuses"/> answers yes for every call
     /// until they can, and what refuses says this file, not a rule. False when the service holds no rules.

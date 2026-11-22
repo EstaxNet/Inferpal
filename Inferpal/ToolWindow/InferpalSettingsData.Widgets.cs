@@ -229,6 +229,7 @@ internal partial class InferpalSettingsData
         _docsActions = live is null ? null : new SettingsDocsActions(_config, live.Docs);
         InitModelBlocks();
         InitToolsAssist();
+        InitAutoMode();
 
         RebuildIndexCommand   = new AsyncCommand((_, ct) => RebuildIndexAsync(ct));
         ToggleOversizeCommand = new AsyncCommand((_, _) => RunOnVMContextAsync(() =>
@@ -264,6 +265,8 @@ internal partial class InferpalSettingsData
         LabelKeptForget        = Strings.KeptForget;
         LabelKeptConfirm       = Strings.KeptForgetConfirm;
         LabelKeptKeep          = Strings.KeptForgetKeep;
+        TellAll([nameof(LabelSectionKept), nameof(DescSectionKept), nameof(LabelKeptEmpty), nameof(LabelKeptOpenHere),
+                 nameof(LabelKeptForget), nameof(LabelKeptConfirm), nameof(LabelKeptKeep)]);
         LabelSectionDocs       = Strings.SettingsSectionDocs;
         DescSectionDocs        = Strings.SettingsSectionDocsDesc;
         NoteDocs               = Strings.SettingsDocsNote;

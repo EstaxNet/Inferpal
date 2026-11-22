@@ -382,6 +382,22 @@ public sealed class ToolSwitchesTests : IDisposable
         Assert.Contains("- " + line, XRayCommandHandler.Handle([], 0, 32_768, new InferpalConfig(), turnedOff: off));
     }
 
+    /// <summary>A tool that is on but offered only when it can serve (interact_window, with no app running) says it is on —
+    /// its button offers to turn it off, and a state read as "off" beside "Turn off" contradicts it.</summary>
+    [Fact]
+    public async Task AToolOnButNotOfferedNow_SaysItIsOn_BesideItsTurnOffButton()
+    {
+        var b = await Build(32_768, []);
+        var row = Assert.Single(ToolListPresenter.Build(b.Tools).Groups.SelectMany(g => g.Rows), r => r.Name == "interact_window");
+
+        Assert.Equal("notOffered", row.State);   // witness: no app runs, so it is not offered
+        Assert.False(row.Off);
+        Assert.Equal(Strings.ToolTurnOff, row.ActionLabel);
+        Strings.ApplyLanguage("en");
+        try { Assert.StartsWith("on ·", Strings.ToolStateNotOffered); }
+        finally { Strings.ApplyLanguage(null); }
+    }
+
     [Fact]
     public async Task ALineThatNamesNoToolHere_IsListed_AndTurnedBackOnByItsText()
     {

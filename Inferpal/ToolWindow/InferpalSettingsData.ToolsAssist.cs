@@ -133,6 +133,14 @@ internal partial class InferpalSettingsData
         LabelAssistCarries         = Strings.AssistCarries;
         LabelAssistToolTokens      = Strings.AssistToolTokens;
         LabelAssistMeasured        = Strings.AssistMeasured;
+        // ⚠ Told, or Visual Studio, which read the view model before ApplyLabels, shows the assistant without a word.
+        TellAll(GetType().GetProperties().Where(p => p.Name.StartsWith("LabelAssist", StringComparison.Ordinal)).Select(p => p.Name));
+    }
+
+    /// <summary>Tells Visual Studio of members set after it read the view model (VsRemoteUiNotifyTests).</summary>
+    private void TellAll(IEnumerable<string> names)
+    {
+        foreach (var name in names) RaiseNotifyPropertyChangedEvent(name);
     }
 
     private void InitToolsAssist()

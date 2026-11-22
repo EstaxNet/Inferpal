@@ -75,6 +75,24 @@ public sealed class ForcedCardTests : IDisposable
         Assert.Contains("allow_always", Ids(Inferpal.Host.Acp.AcpSession.Options(null, offersAlways: true)));
     }
 
+    /// <summary>Auto mode runs the project's code without a card (as run_command does), and remembers nothing: approvals
+    /// turned back on ask again. Reference arm: approvals on, the card is shown.</summary>
+    [Fact]
+    public async Task InAutoMode_TheProjectCodeConsent_ShowsNoCard_AndIsAskedAgainOnceApprovalsAreBack()
+    {
+        var config = new InferpalConfig { SecurityAlertsDisabled = true };
+        var card = new Card(config, _root, ApprovalDecision.Once);
+        var consent = new WorkspaceCodeConsent(card, () => _root);
+
+        Assert.Null(await consent.RefusalAsync("run_tests", CancellationToken.None));
+        Assert.Empty(card.Shown);
+        Assert.Equal(1, card.AutoApprovals);   // the step says "auto", and the result bar counts it
+
+        config.SecurityAlertsDisabled = false;
+        Assert.Null(await consent.RefusalAsync("run_tests", CancellationToken.None));
+        Assert.Single(card.Shown);
+    }
+
     private sealed class Recording(bool answer) : IApprovalService
     {
         public readonly List<(string Tool, bool Forced)> Asked = [];

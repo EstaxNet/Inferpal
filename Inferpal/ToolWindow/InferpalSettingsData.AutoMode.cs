@@ -74,7 +74,13 @@ internal partial class InferpalSettingsData
                      nameof(AutoStillProtectedTitle), nameof(AutoStillProtected), nameof(AutoConfirmTitle), nameof(AutoConfirmBody),
                      nameof(AutoConfirmCheck), nameof(AutoConfirmKeep), nameof(AutoConfirmTurnOff)])
             RaiseNotifyPropertyChangedEvent(name);
-        ConfirmAutoCommand ??= new AsyncCommand(async (_, ct) =>
+    }
+
+    /// <summary>The confirmation's two commands, made with the view model: a command Visual Studio has not read at its first
+    /// read of the view model leaves its button doing nothing.</summary>
+    private void InitAutoMode()
+    {
+        ConfirmAutoCommand = new AsyncCommand(async (_, ct) =>
         {
             if (!AutoConfirmTicked) return;
             await RunOnVMContextAsync(() => { ShowAutoConfirm = false; AutoConfirmTicked = false; });
@@ -86,7 +92,7 @@ internal partial class InferpalSettingsData
                 await RunOnVMContextAsync(() => SaveStatus = Strings.SettingsSaveFailed(message));
             }
         });
-        KeepAskingCommand ??= new AsyncCommand((_, _) => RunOnVMContextAsync(() =>
+        KeepAskingCommand = new AsyncCommand((_, _) => RunOnVMContextAsync(() =>
         {
             ShowAutoConfirm = false;
             AutoConfirmTicked = false;

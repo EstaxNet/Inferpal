@@ -1143,6 +1143,9 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
         {
             CardTitle = string.Empty;
             CardSubject = string.Empty;
+            // Told too: on a card already shown, an untold title stays on screen.
+            RaiseNotifyPropertyChangedEvent(nameof(CardTitle));
+            RaiseNotifyPropertyChangedEvent(nameof(CardSubject));
             return;
         }
         CardTitle   = Strings.RunReviewTitle;

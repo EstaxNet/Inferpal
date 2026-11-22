@@ -1380,7 +1380,7 @@
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>中</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>高</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>在修改文件、运行命令或联网前先询问我</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>您会看到真实的 diff 或确切的命令。关闭后无需询问即批准，但写入指令文件、无法读出效果的命令，以及助手在工作区中首次启动的构建或测试运行仍会询问——灾难性命令仍会被拒绝。</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>您会看到真实的 diff 或确切的命令。关闭后无需询问即批准，但写入指令文件、无法读出效果的命令仍会询问——灾难性命令仍会被拒绝。</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>添加软件包前检查它是否存在</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>只把要添加的名称发送到公共注册表（nuget.org、npm、PyPI）。虚构的名称会在询问你之前被拒绝；私有源或不响应的注册表不会被检查。</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>应用前先显示修改</value></data>
@@ -1917,7 +1917,7 @@
   <data name="ToolStateCutByWindow" xml:space="preserve"><value>此窗口下未提供</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>已关闭</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>已由其服务器条目关闭</value></data>
-  <data name="ToolStateNotOffered" xml:space="preserve"><value>当前未提供</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>已开启 · 可用时提供</value></data>
   <data name="ToolTurnOff" xml:space="preserve"><value>关闭</value></data>
   <data name="ToolTurnOn" xml:space="preserve"><value>打开</value></data>
   <data name="ToolListColTool" xml:space="preserve"><value>工具</value></data>

@@ -1380,7 +1380,7 @@
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>Среднее</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>Высокое</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>Спрашивать перед изменением файлов, запуском команд или выходом в сеть</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>Вы видите настоящий diff или точную команду. Выключено: одобряется без вопроса, кроме записи файлов инструкций, команд, чьё действие нельзя прочитать, и первой сборки или запуска тестов ассистентом в рабочей области, — они по-прежнему спрашивают; катастрофические команды по-прежнему отклоняются.</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>Вы видите настоящий diff или точную команду. Выключено: одобряется без вопроса, кроме записи файлов инструкций и команд, чьё действие нельзя прочитать — они по-прежнему спрашивают; катастрофические команды по-прежнему отклоняются.</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>Проверять, что пакет существует, перед его добавлением</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>Отправляется только добавляемое имя и только в публичный реестр (nuget.org, npm, PyPI). Выдуманное имя отклоняется до того, как вас спросят; частный источник или реестр, который не отвечает, не проверяется.</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>Показывать изменение перед применением</value></data>
@@ -1917,7 +1917,7 @@
   <data name="ToolStateCutByWindow" xml:space="preserve"><value>не предлагается при этом окне</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>отключён</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>отключён записью своего сервера</value></data>
-  <data name="ToolStateNotOffered" xml:space="preserve"><value>сейчас не предлагается</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>включён · предлагается, когда может пригодиться</value></data>
   <data name="ToolTurnOff" xml:space="preserve"><value>Отключить</value></data>
   <data name="ToolTurnOn" xml:space="preserve"><value>Включить</value></data>
   <data name="ToolListColTool" xml:space="preserve"><value>Инструмент</value></data>

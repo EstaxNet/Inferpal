@@ -1380,7 +1380,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ReasoningEffortMedium" xml:space="preserve"><value>中</value></data>
   <data name="ReasoningEffortHigh" xml:space="preserve"><value>高</value></data>
   <data name="LabelAskBeforeActions" xml:space="preserve"><value>ファイルの変更、コマンドの実行、オンライン アクセスの前に確認する</value></data>
-  <data name="HintAskBeforeActions" xml:space="preserve"><value>実際の差分や正確なコマンドを確認できます。オフにすると確認なしで承認されます。ただし指示ファイルへの書き込み、効果を読み取れないコマンド、アシスタントがワークスペースで最初に行うビルドやテスト実行は引き続き確認します (壊滅的なコマンドは引き続き拒否されます)。</value></data>
+  <data name="HintAskBeforeActions" xml:space="preserve"><value>実際の差分や正確なコマンドを確認できます。オフにすると確認なしで承認されます。ただし指示ファイルへの書き込みと効果を読み取れないコマンドは引き続き確認します (壊滅的なコマンドは引き続き拒否されます)。</value></data>
   <data name="LabelPackageCheck" xml:space="preserve"><value>パッケージを追加する前に存在を確認する</value></data>
   <data name="HintPackageCheck" xml:space="preserve"><value>送信されるのは追加する名前だけで、送信先は公開レジストリ（nuget.org、npm、PyPI）のみです。架空の名前は確認を求める前に拒否されます。プライベートフィードや応答しないレジストリは確認されません。</value></data>
   <data name="LabelInlineDiffPreview" xml:space="preserve"><value>適用する前に変更を表示する</value></data>
@@ -1917,7 +1917,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ToolStateCutByWindow" xml:space="preserve"><value>このウィンドウでは除外</value></data>
   <data name="ToolStateOff" xml:space="preserve"><value>オフ</value></data>
   <data name="ToolStateOffByEntry" xml:space="preserve"><value>サーバーのエントリでオフ</value></data>
-  <data name="ToolStateNotOffered" xml:space="preserve"><value>現在は提示されません</value></data>
+  <data name="ToolStateNotOffered" xml:space="preserve"><value>オン · 使えるときに提示</value></data>
   <data name="ToolTurnOff" xml:space="preserve"><value>オフにする</value></data>
   <data name="ToolTurnOn" xml:space="preserve"><value>オンにする</value></data>
   <data name="ToolListColTool" xml:space="preserve"><value>ツール</value></data>

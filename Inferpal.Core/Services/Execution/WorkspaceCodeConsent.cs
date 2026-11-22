@@ -13,8 +13,9 @@ namespace Inferpal.Services.Execution;
 /// ⚠ A build or a test run executes what the repository wrote — an <c>&lt;Exec&gt;</c> in a project file, a
 /// <c>build.rs</c>, a <c>package.json</c> test script, the project's own <c>.venv</c> interpreter. Without this card, a
 /// cloned repository whose README says "run the tests first" has its code run by a model's call, unasked — the commands
-/// of <c>.inferpal/validators.json</c> already ask. Forced like them: an "Always" grant, an <c>allow</c> rule or the
-/// approvals turned off do not skip it. A build or a run the person started (<c>/build</c>, <c>/tdd</c>,
+/// of <c>.inferpal/validators.json</c> already ask. Forced like them: an "Always" grant or an <c>allow</c> rule do not skip
+/// it; auto mode does, as it runs any command (the person chose it, and run_command runs the same code). A build or a run
+/// the person started (<c>/build</c>, <c>/tdd</c>,
 /// <c>/test coverage</c>, a click) is theirs, and counts as their agreement.
 /// </remarks>
 internal sealed class WorkspaceCodeConsent(IApprovalService? approval, Func<string?> getRoot)
@@ -60,6 +61,10 @@ internal sealed class WorkspaceCodeConsent(IApprovalService? approval, Func<stri
             var name = Path.GetFileName(root) is { Length: > 0 } leaf ? leaf : root;
             var withdrawn = new StrongBox<bool>();
             bool agreed;
+            // Auto mode runs the project's code without a card, as run_command does (its "still protected" list does not
+            // name this one): asked as an ordinary call — the deny rules still decide, the step counts as auto — and the
+            // answer is not remembered, so approvals turned back on ask again.
+            var auto = approval.ApprovalsOff;
             // ⚠ Asked in the middle of a call (Smart Fix after a write): its answer is not the call's — a "No" here does
             // not make the write that already happened a refused call.
             using (ApprovalServiceBase.NotingWithdrawal(withdrawn))
@@ -68,13 +73,13 @@ internal sealed class WorkspaceCodeConsent(IApprovalService? approval, Func<stri
                 try
                 {
                     agreed = await approval.RequestApprovalAsync(toolName, Strings.ProjectCodeConsent(name), ct, subject: root,
-                                                                 forcePrompt: true);
+                                                                 forcePrompt: !auto);
                 }
                 // A rule that denies the call: refused, never an exception thrown after a write that happened.
                 catch (PermissionDeniedException) { return Refusal; }
             }
             // ⚠ A card a note took away is no answer: remembered as a "No", every later build of the workspace was refused.
-            if (!withdrawn.Value) lock (Gate) Answered[root] = agreed;
+            if (!withdrawn.Value && !auto) lock (Gate) Answered[root] = agreed;
             return agreed ? null : Refusal;
         }
         finally { asking.Release(); }
