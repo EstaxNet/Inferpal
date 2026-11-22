@@ -155,7 +155,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new EditNotebookTool(approval, history, root, overlay, setDiff));
         Register(new RunNotebookTool(codeConsent, root, overlay));
         Register(new FetchUrlTool(approval, _readImages));
-        Register(new HttpRequestTool(approval));
+        Register(new HttpRequestTool(approval, root));
         // A page an app the agent started serves (a background job of run_command) is its own work: looked at and used
         // without a card. Any other address of this machine is another app of the person's.
         Task<bool> ServedByAgent(int port, CancellationToken ct) => Shell.LocalPorts.ServedByAsync(port,
@@ -767,7 +767,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     {
         if (args.ValueKind != JsonValueKind.Object) return null;
 
-        foreach (var key in (string[])["path", "file_path", "command", "url", "query", "target", "name"])
+        foreach (var key in (string[])["path", "file_path", "command", "url", "collection", "query", "target", "name"])
         {
             if (args.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String)
             {

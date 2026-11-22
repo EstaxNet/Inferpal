@@ -16,7 +16,7 @@ namespace Inferpal.Services.Tools;
 /// the card is forced each time, unless one of the person's <c>allow http_request</c> rules matches the whole subject
 /// (<see cref="Subject"/>). No redirect is followed: the next request is judged again.
 /// </remarks>
-internal sealed class HttpRequestTool(IApprovalService approval) : ITool
+internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? getWorkspaceRoot = null) : ITool
 {
     // A page in a legacy code page (windows-1252, shift_jis) is read as it says, never as UTF-8.
     static HttpRequestTool() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -28,13 +28,16 @@ internal sealed class HttpRequestTool(IApprovalService approval) : ITool
 
     /// <inheritdoc/>
     /// <remarks>The server it calls acts on its own: what it changes is beyond the request (<see cref="ToolEffect.Runs"/>).</remarks>
-    public ToolEffect EffectOf(JsonElement args) => ToolEffect.Network | ToolEffect.Runs;
+    public ToolEffect EffectOf(JsonElement args) =>
+        ToolEffect.Network | ToolEffect.Runs | (args.Has("collection") ? ToolEffect.Reads : ToolEffect.None);
 
     public string Description =>
         "Sends one HTTP request (any method) and returns the status, headers and body — to call the app or API you are " +
         "running locally (http://localhost:5000/api/orders) and read its answer, a 500's stack trace included. The person " +
         "approves the first call to each local address; any other address is approved call by call. Redirects are not " +
-        "followed. For a server still starting, set wait_seconds, or wait on its job: run_command action='wait'.";
+        "followed. For a server still starting, set wait_seconds, or wait on its job: run_command action='wait'. To replay a " +
+        "request the project keeps (.http/.rest file, Postman collection, Bruno collection), give collection and request " +
+        "(its name; without it, the names are listed) and environment if it needs one.";
 
     public object Parameters => new
     {
@@ -47,8 +50,10 @@ internal sealed class HttpRequestTool(IApprovalService approval) : ITool
             body            = new { type = "string",  description = "Request body (text, up to 1 MB). JSON when it starts with { or [ and no Content-Type is given." },
             wait_seconds    = new { type = "integer", description = $"Local addresses only: keep trying while nothing listens yet, up to this many seconds (0-{MaxWait})." },
             timeout_seconds = new { type = "integer", description = $"The longest the request may take, 1-{MaxTimeout} seconds (default {DefaultTimeout})." },
+            collection      = new { type = "string",  description = "Instead of url: a .http or .rest file, a Postman collection (.json), a Bruno collection (folder or .bru) of the workspace." },
+            request         = new { type = "string",  description = "With collection: the request's name." },
+            environment     = new { type = "string",  description = "With collection: the environment whose variables it uses." },
         },
-        required = new[] { "url" },
     };
 
     private static readonly HashSet<string> Methods = new(StringComparer.Ordinal) { "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS" };
@@ -60,7 +65,8 @@ internal sealed class HttpRequestTool(IApprovalService approval) : ITool
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
-        var url = args.Str("url") ?? throw new ArgumentException("url is required.");
+        if (args.Has("collection")) return await ReplayAsync(args, ct);
+        var url = args.Str("url") ?? throw new ArgumentException("url is required (or collection and request).");
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             return $"Error: '{url}' is not an http or https URL.";
         var method = (args.Str("method") ?? "GET").Trim().ToUpperInvariant();
@@ -125,6 +131,54 @@ internal sealed class HttpRequestTool(IApprovalService approval) : ITool
         {
             return $"The request to {Origin(uri)} failed: {Diagnostics.RootMessage(ex)}";
         }
+    }
+
+    /// <summary>
+    /// A request of the project's collection, replayed through the very checks, card and rules of one written by hand: it
+    /// becomes the arguments the model would have written, and the call is made again with them.
+    /// </summary>
+    /// <remarks>⚠ What the variables hold (a token, a password) goes on the card the person reads, never back to the
+    /// model: the reply names the request and its address with what looks like a credential masked, and a refusal of
+    /// the address is masked the same way.</remarks>
+    private async Task<string> ReplayAsync(JsonElement args, CancellationToken ct)
+    {
+        foreach (var own in new[] { "url", "method", "headers", "body" })
+            if (args.Has(own)) return $"Error: give either collection and request, or url and its own '{own}' — not both.";
+        var root = getWorkspaceRoot?.Invoke();
+        var path = PathSanitizer.Sanitize(args.Str("collection"), root);
+        PathSanitizer.AssertUnderRoot(path, root);
+        var shown = string.IsNullOrEmpty(root) ? path : Path.GetRelativePath(root, path);
+        var name = args.Str("request");
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            var (names, kind, environments, listError) = RequestCollection.List(path, root);
+            if (listError is not null) return "Error: " + listError + ".";
+            return $"{shown} ({kind}) holds {names.Count} request{(names.Count == 1 ? "" : "s")}: "
+                 + string.Join(", ", names.Take(100).Select(n => "'" + n + "'")) + (names.Count > 100 ? ", …" : "") + "."
+                 + (environments.Count > 0 ? $" Environments: {string.Join(", ", environments)}." : "")
+                 + " Call again with request (and environment) to send one.";
+        }
+        var (request, error) = RequestCollection.Resolve(path, name, args.Str("environment"), root);
+        if (request is null) return "Error: " + error;
+
+        var replayed = new Dictionary<string, object?> { ["url"] = request.Url, ["method"] = request.Method };
+        if (request.Headers.Count > 0)
+        {
+            var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (key, value) in request.Headers) headers[key] = value;   // a name given twice: the last one, as a client sends one
+            replayed["headers"] = headers;
+        }
+        if (request.Body is not null) replayed["body"] = request.Body;
+        foreach (var kept in new[] { "wait_seconds", "timeout_seconds" })
+            if (args.Has(kept)) replayed[kept] = args.Int(kept, 0);
+        // Everything that goes back — the answer, its headers and body, a refusal that quotes a header — has the values the
+        // environment gave masked by name: an echo endpoint or a .NET message carries them as they were sent.
+        var answer = request.Mask(await ExecuteAsync(JsonSerializer.SerializeToElement(replayed), ct));
+        if (answer.StartsWith("Error:", StringComparison.Ordinal)) answer = SecretRedactor.Redact(answer);
+        var said = $"Replayed '{request.Name}' from {shown}: {request.Method} {SecretRedactor.Redact(request.Mask(request.Url))}"
+                 + (request.Notes.Count > 0 ? " (" + string.Join("; ", request.Notes) + ")" : "") + "."
+                 + (request.Secrets.Count > 0 ? " The values its environment gave are shown by their {{name}}." : "");
+        return said + "\n\n" + answer;
     }
 
     private static async Task<string> SendAsync(Uri uri, string method, List<KeyValuePair<string, string>> headers, string? body,
