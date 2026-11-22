@@ -2569,7 +2569,7 @@ What you save there applies from your next question, in this thread and the othe
   <data name="AssistInternetGiven" xml:space="preserve"><value>Only pages I give it</value></data>
   <data name="AssistInternetGivenDesc" xml:space="preserve"><value>An @url you paste, the docs you add with @Docs</value></data>
   <data name="AssistInternetNever" xml:space="preserve"><value>Never</value></data>
-  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Nothing leaves this machine but the model's server</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Only this machine and the model's server — a command or an MCP server excepted</value></data>
   <data name="AssistDebugger" xml:space="preserve"><value>The debugger of the editor</value></data>
   <data name="AssistDebuggerMay" xml:space="preserve"><value>It may debug</value></data>
   <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>Start, set breakpoints, read the variables</value></data>

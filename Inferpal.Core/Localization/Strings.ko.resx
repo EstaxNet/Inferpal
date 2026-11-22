@@ -2565,7 +2565,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="AssistInternetGiven" xml:space="preserve"><value>내가 준 페이지만</value></data>
   <data name="AssistInternetGivenDesc" xml:space="preserve"><value>붙여 넣은 @url, @Docs로 추가한 문서</value></data>
   <data name="AssistInternetNever" xml:space="preserve"><value>사용 안 함</value></data>
-  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>모델 서버 외에는 아무것도 이 컴퓨터 밖으로 나가지 않습니다</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>이 컴퓨터와 모델 서버만 — 명령이나 MCP 서버는 예외</value></data>
   <data name="AssistDebugger" xml:space="preserve"><value>편집기 디버거</value></data>
   <data name="AssistDebuggerMay" xml:space="preserve"><value>디버그 허용</value></data>
   <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>시작, 중단점 설정, 변수 읽기</value></data>

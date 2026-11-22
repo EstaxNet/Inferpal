@@ -2565,7 +2565,7 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="AssistInternetGiven" xml:space="preserve"><value>Solo le pagine che gli do</value></data>
   <data name="AssistInternetGivenDesc" xml:space="preserve"><value>Un @url che incolli, la documentazione aggiunta con @Docs</value></data>
   <data name="AssistInternetNever" xml:space="preserve"><value>Mai</value></data>
-  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Nulla esce da questa macchina tranne verso il server del modello</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Solo questa macchina e il server del modello, tranne un comando o un server MCP</value></data>
   <data name="AssistDebugger" xml:space="preserve"><value>Il debugger dell'editor</value></data>
   <data name="AssistDebuggerMay" xml:space="preserve"><value>Può fare il debug</value></data>
   <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>Avviare, impostare breakpoint, leggere le variabili</value></data>

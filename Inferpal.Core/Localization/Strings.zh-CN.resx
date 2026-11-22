@@ -2565,7 +2565,7 @@
   <data name="AssistInternetGiven" xml:space="preserve"><value>仅限我给它的页面</value></data>
   <data name="AssistInternetGivenDesc" xml:space="preserve"><value>你粘贴的 @url，以及用 @Docs 添加的文档</value></data>
   <data name="AssistInternetNever" xml:space="preserve"><value>从不</value></data>
-  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>除模型服务器外，任何内容都不离开本机</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>仅限本机和模型服务器——命令或 MCP 服务器除外</value></data>
   <data name="AssistDebugger" xml:space="preserve"><value>编辑器的调试器</value></data>
   <data name="AssistDebuggerMay" xml:space="preserve"><value>允许调试</value></data>
   <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>启动、设置断点、读取变量</value></data>

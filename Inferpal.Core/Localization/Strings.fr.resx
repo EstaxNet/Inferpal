@@ -2565,7 +2565,7 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="AssistInternetGiven" xml:space="preserve"><value>Seulement les pages que je lui donne</value></data>
   <data name="AssistInternetGivenDesc" xml:space="preserve"><value>Un @url que vous collez, la doc ajoutée avec @Docs</value></data>
   <data name="AssistInternetNever" xml:space="preserve"><value>Jamais</value></data>
-  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Rien ne sort de cette machine, sauf vers le serveur du modèle</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Seulement cette machine et le serveur du modèle — sauf une commande ou un serveur MCP</value></data>
   <data name="AssistDebugger" xml:space="preserve"><value>Le débogueur de l'éditeur</value></data>
   <data name="AssistDebuggerMay" xml:space="preserve"><value>Il peut déboguer</value></data>
   <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>Démarrer, poser des points d'arrêt, lire les variables</value></data>

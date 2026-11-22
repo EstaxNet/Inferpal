@@ -2565,7 +2565,7 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="AssistInternetGiven" xml:space="preserve"><value>Nur Seiten, die ich ihm gebe</value></data>
   <data name="AssistInternetGivenDesc" xml:space="preserve"><value>Eine eingefügte @url, mit @Docs hinzugefügte Doku</value></data>
   <data name="AssistInternetNever" xml:space="preserve"><value>Nie</value></data>
-  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Nichts verlässt diesen Rechner außer zum Modellserver</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Nur dieser Rechner und der Modellserver — außer einem Befehl oder einem MCP-Server</value></data>
   <data name="AssistDebugger" xml:space="preserve"><value>Der Debugger des Editors</value></data>
   <data name="AssistDebuggerMay" xml:space="preserve"><value>Er darf debuggen</value></data>
   <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>Starten, Haltepunkte setzen, Variablen lesen</value></data>

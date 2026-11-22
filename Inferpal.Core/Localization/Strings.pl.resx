@@ -2565,7 +2565,7 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="AssistInternetGiven" xml:space="preserve"><value>Tylko strony, które mu podam</value></data>
   <data name="AssistInternetGivenDesc" xml:space="preserve"><value>Wklejony @url, dokumentacja dodana przez @Docs</value></data>
   <data name="AssistInternetNever" xml:space="preserve"><value>Nigdy</value></data>
-  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Nic nie opuszcza tego komputera poza serwerem modelu</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Tylko ten komputer i serwer modelu — poza poleceniem lub serwerem MCP</value></data>
   <data name="AssistDebugger" xml:space="preserve"><value>Debugger edytora</value></data>
   <data name="AssistDebuggerMay" xml:space="preserve"><value>Może debugować</value></data>
   <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>Uruchamianie, punkty przerwania, odczyt zmiennych</value></data>

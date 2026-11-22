@@ -2565,7 +2565,7 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="AssistInternetGiven" xml:space="preserve"><value>渡したページのみ</value></data>
   <data name="AssistInternetGivenDesc" xml:space="preserve"><value>貼り付けた @url、@Docs で追加したドキュメント</value></data>
   <data name="AssistInternetNever" xml:space="preserve"><value>使わない</value></data>
-  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>モデルのサーバー以外へは何も送信しません</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>このマシンとモデルのサーバーのみ — コマンドや MCP サーバーを除く</value></data>
   <data name="AssistDebugger" xml:space="preserve"><value>エディターのデバッガー</value></data>
   <data name="AssistDebuggerMay" xml:space="preserve"><value>デバッグしてよい</value></data>
   <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>起動、ブレークポイント設定、変数の確認</value></data>

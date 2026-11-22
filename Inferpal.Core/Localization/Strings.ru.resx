@@ -2565,7 +2565,7 @@
   <data name="AssistInternetGiven" xml:space="preserve"><value>Только страницы, которые я даю</value></data>
   <data name="AssistInternetGivenDesc" xml:space="preserve"><value>Вставленный @url, документация, добавленная через @Docs</value></data>
   <data name="AssistInternetNever" xml:space="preserve"><value>Никогда</value></data>
-  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>С этой машины ничего не уходит, кроме сервера модели</value></data>
+  <data name="AssistInternetNeverDesc" xml:space="preserve"><value>Только эта машина и сервер модели — кроме команды или MCP-сервера</value></data>
   <data name="AssistDebugger" xml:space="preserve"><value>Отладчик редактора</value></data>
   <data name="AssistDebuggerMay" xml:space="preserve"><value>Ему можно отлаживать</value></data>
   <data name="AssistDebuggerMayDesc" xml:space="preserve"><value>Запуск, точки останова, чтение переменных</value></data>
