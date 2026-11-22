@@ -75,6 +75,7 @@ internal sealed class ViewPageTool : ITool
             url   = new { type = "string",  description = "A page served on this machine: http://localhost:<port>/<path> (or 127.0.0.1)." },
             path  = new { type = "string",  description = "Or an HTML file of the workspace, relative to its root (when nothing serves it)." },
             width = new { type = "integer", description = $"One width in CSS pixels ({MinWidth}-{MaxWidth}); without it, both {DefaultWide} and {DefaultNarrow}." },
+            accessibility = new { type = "boolean", description = "Also read what a screen reader or a keyboard meets: controls and images without a name, text under WCAG AA contrast, what the keyboard cannot reach, the tab order — each with its selector." },
         },
     };
 
@@ -146,7 +147,7 @@ internal sealed class ViewPageTool : ITool
         if (served is not null) target = served.UrlOf(target);
         try
         {
-            return await CaptureAllAsync(browsers, target, shown, widths, widthNote, ct);
+            return await CaptureAllAsync(browsers, target, shown, widths, widthNote, args.Bool("accessibility", false), ct);
         }
         catch (ArgumentException ex)
         {
@@ -157,7 +158,7 @@ internal sealed class ViewPageTool : ITool
     /// <summary>Each width by the first browser that captures it; one that fails hands over to the next (WebKit on a macOS
     /// that refuses it, a snap that cannot write where it is told), and the ones that failed are named.</summary>
     private async Task<string> CaptureAllAsync(IReadOnlyList<CaptureBrowser> browsers, string target, string shown, List<int> widths,
-                                               string? widthNote, CancellationToken ct)
+                                               string? widthNote, bool accessibility, CancellationToken ct)
     {
         var taken = new List<string>();
         var failed = new List<string>();
@@ -167,6 +168,10 @@ internal sealed class ViewPageTool : ITool
         CaptureBrowser? browser = null;
         // The page's requests, read at its first width only: each width loads the page again, the same requests again.
         PageNetwork? network = null;
+        // What a screen reader and a keyboard meet, read at the first width too, when asked.
+        PageAccessibility? audit = null;
+        // The browser that captured the first width: the one these readings come from.
+        CaptureBrowser? firstBy = null;
         foreach (var width in widths)
         {
             byte[]? png = null;
@@ -174,10 +179,12 @@ internal sealed class ViewPageTool : ITool
             while (png is null && next < browsers.Count)
             {
                 browser = browsers[next];
-                var attempt = taken.Count == 0 && network is null ? new PageNetwork() : null;
-                (png, var why, note) = await PageCapture.CaptureAsync(browser, target, width, ct, network: attempt);
+                var first = taken.Count == 0 && network is null;
+                var attempt = first ? new PageNetwork() : null;
+                var auditing = first && accessibility ? new PageAccessibility() : null;
+                (png, var why, note) = await PageCapture.CaptureAsync(browser, target, width, ct, network: attempt, accessibility: auditing);
                 if (png is null) { failed.Add($"by {browser.Name} at {width} px: {why}"); next++; }
-                else if (attempt is not null) network = attempt;
+                else { if (attempt is not null) { network = attempt; firstBy = browser; } audit ??= auditing; }
             }
             if (png is null || browser is null) break;
             var read = ChatImages.Read(png, $"{stem}-{width}px.png");
@@ -200,9 +207,16 @@ internal sealed class ViewPageTool : ITool
         if (network is not null)
         {
             if (!network.Read)
-                lines.Add($"Requests: not read — {browser!.Name} captured the page without its DevTools protocol (only a Chromium "
+                lines.Add($"Requests: not read — {(firstBy ?? browser)!.Name} captured the page without its DevTools protocol (only a Chromium "
                         + "browser driven that way reports them; interact_page does).");
             else lines.AddRange(network.Lines(PageSession.OriginOf(new Uri(target))));
+        }
+        if (audit is not null)
+        {
+            if (!audit.Read && audit.Failed is null)
+                lines.Add($"Accessibility: not read — {(firstBy ?? browser)!.Name} captured the page without its DevTools protocol (only a "
+                        + "Chromium browser driven that way gives its accessibility tree).");
+            else lines.AddRange(audit.Lines());
         }
         lines.AddRange(failed.Select(f => $"Not captured {f}"));
         if (taken.Count == 0) lines.Add("If the page is served by an app that is starting, wait for it (run_command action='wait') and call again.");

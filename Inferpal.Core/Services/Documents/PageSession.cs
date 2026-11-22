@@ -373,7 +373,8 @@ internal sealed class PageSession : IDisposable
     /// </summary>
     internal async Task<(IReadOnlyList<string> Controls, int More)> ControlsAsync(CancellationToken ct)
     {
-        var listed = await EvalAsync(ControlsScript.Replace("__MAX__", MaxControls.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal), ct);
+        var listed = await EvalAsync(ControlsScript.Replace("__MAX__", MaxControls.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)
+                                                   .Replace("__SELECTOR__", PageAccessibility.SelectorFunction, StringComparison.Ordinal), ct);
         var controls = listed.GetProperty("controls").EnumerateArray().Select(c => c.GetString() ?? "").ToList();
         return (controls, listed.GetProperty("more").GetInt32());
     }
@@ -632,22 +633,7 @@ internal sealed class PageSession : IDisposable
         (() => {
           const q = "a[href], button, input, select, textarea, summary, [contenteditable=true], [onclick], [role=button], "
                   + "[role=link], [role=tab], [role=menuitem], [role=option], [role=checkbox], [role=radio], [role=switch]";
-          const one = (s) => { try { return document.querySelectorAll(s).length === 1; } catch { return false; } };
-          const selectorOf = (e) => {
-            if (e.id && one("#" + CSS.escape(e.id))) return "#" + CSS.escape(e.id);
-            const tag = e.tagName.toLowerCase();
-            for (const a of ["name", "data-testid", "aria-label", "placeholder"]) {
-              const v = e.getAttribute(a);
-              if (v) { const s = tag + "[" + a + "=" + JSON.stringify(v) + "]"; if (one(s)) return s; }
-            }
-            const parts = [];
-            for (let n = e; n && n !== document.body; n = n.parentElement) {
-              if (n.id && one("#" + CSS.escape(n.id))) { parts.unshift("#" + CSS.escape(n.id)); return parts.join(" > "); }
-              let i = 1; for (let s = n.previousElementSibling; s; s = s.previousElementSibling) if (s.tagName === n.tagName) i++;
-              parts.unshift(n.tagName.toLowerCase() + ":nth-of-type(" + i + ")");
-            }
-            return ["body", ...parts].join(" > ");
-          };
+          const selectorOf = __SELECTOR__;
           const controls = []; let more = 0;
           for (const e of document.querySelectorAll(q)) {
             const r = e.getBoundingClientRect(), st = getComputedStyle(e);

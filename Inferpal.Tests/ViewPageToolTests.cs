@@ -286,4 +286,83 @@ public sealed class ViewPageToolTests : IDisposable
         Assert.Contains("1280×900 and 390×844", said);
         Assert.Equal(2, images.Take().Count);
     }
+
+    /// <summary>What a screen reader and a keyboard meet, read from the browser itself: the planted defects are said with
+    /// their selectors; what only an audit that guesses would report (a labelled icon, a decorative image, a gray that
+    /// passes, an icon inside a named button) is not.</summary>
+    [Fact]
+    public async Task Accessibility_SaysWhatAScreenReaderAndAKeyboardMeet_AndNothingTheBrowserNames()
+    {
+        var chromium = PageCapture.FindAll().Where(b => b.Engine == CaptureEngine.Chromium).ToList();
+        if (chromium.Count == 0) return;   // undecided: the accessibility tree is read through a Chromium's DevTools
+        File.WriteAllText(Path.Combine(_root, "a11y.html"), """
+            <!doctype html><html lang="en"><body style="background:#fff">
+            <button id="close"><svg width="16" height="16"><path d="M2 2L14 14" stroke="#000"/></svg></button>
+            <button id="search" aria-label="Search"><svg width="16" height="16"><circle cx="8" cy="8" r="5" stroke="#000" fill="none"/></svg></button>
+            <img src="chart.png" width="100" height="50"><img id="divider" src="d.png" alt="" width="100" height="4">
+            <label>City <input id="city"></label>
+            <p id="ok" style="color:#757575">Prices include VAT.</p><p id="faint" style="color:#aaaaaa">Free shipping.</p>
+            <div id="buy" onclick="void 0">Buy</div><a id="promo" href="/p" tabindex="3">Promo</a>
+            </body></html>
+            """);
+
+        var said = await Call(new { path = "a11y.html", width = 1280, accessibility = true }, browsers: () => chromium);
+        var reading = said[said.IndexOf("Accessibility", StringComparison.Ordinal)..];
+        var defects = string.Join("\n", reading.Split('\n').Where(l => !l.StartsWith("- Tab order", StringComparison.Ordinal)));
+
+        Assert.Contains("button <button id=\"close\"> #close", defects);
+        Assert.Contains("img[src=\"chart.png\"]", defects);
+        Assert.Contains("#aaaaaa on #ffffff \"Free shipping.\" #faint", defects);
+        Assert.Contains("out of the keyboard's reach (no tabindex, not a button or link): #buy", defects);
+        Assert.Contains("tabindex=3 puts it ahead of the page's order: #promo", defects);
+        foreach (var named in new[] { "#search", "#divider", "#city", "#ok" }) Assert.DoesNotContain(named, defects);
+        Assert.Contains("- Tab order (4): \"Promo\" #promo;", reading);   // #buy is not in it: that is its defect
+    }
+
+    /// <summary>What real pages do that an audit reading only rgb() and DOM ancestors gets wrong: a modern color, a text
+    /// over an image, a menu hidden with its parent, a styled checkbox, a transparent label — none is a defect; the text
+    /// that cannot be measured is said as not judged.</summary>
+    [Fact]
+    public async Task Accessibility_ReadsRealPagesWithoutFalseAlarms()
+    {
+        var chromium = PageCapture.FindAll().Where(b => b.Engine == CaptureEngine.Chromium).ToList();
+        if (chromium.Count == 0) return;
+        var longSrc = "data:image/png;base64," + new string('A', 200);
+        File.WriteAllText(Path.Combine(_root, "real.html"), $$"""
+            <!doctype html><html lang="en"><body style="margin:0;background:#fff">
+            <div id="band" style="background:oklch(0.2 0.02 260)"><p id="on-oklch" style="color:#fff">Dark band</p></div>
+            <div style="position:relative;height:120px"><img src="hero.png" alt="Beach" style="position:absolute;inset:0;width:100%;height:100%;background:#123">
+              <h1 id="over-hero" style="position:relative;color:#fff;margin:0">Welcome</h1></div>
+            <nav style="display:none"><a id="mobile-link" href="/m" tabindex="2">Mobile menu</a></nav>
+            <label><input id="styled" type="checkbox" style="opacity:0;position:absolute"><span>Remember me</span></label>
+            <button id="loading" style="color:transparent;background:#06c">Saving</button>
+            <img src="{{longSrc}}" width="20" height="20">
+            </body></html>
+            """);
+
+        var said = await Call(new { path = "real.html", width = 1280, accessibility = true }, browsers: () => chromium);
+        var reading = said[said.IndexOf("Accessibility", StringComparison.Ordinal)..];
+        var defects = string.Join("\n", reading.Split('\n').Where(l => !l.StartsWith("- Tab order", StringComparison.Ordinal)));
+
+        foreach (var decoy in new[] { "#on-oklch", "#over-hero", "#mobile-link", "#styled", "#loading" })
+            Assert.DoesNotContain(decoy, defects);
+        Assert.DoesNotContain("#mobile-link", reading);           // hidden with its parent: in no list, the tab order neither
+        Assert.Contains("Not judged for contrast: 2 texts", reading);   // the hero's title and the transparent label
+        Assert.DoesNotContain(new string('A', 100), reading);     // an image's data: address is never its selector
+        Assert.Contains("1 image with no text alternative", reading);
+    }
+
+    /// <summary>Reference arm: without the argument, nothing of it is read.</summary>
+    [Fact]
+    public async Task WithoutAccessibility_NothingOfItIsRead()
+    {
+        var chromium = PageCapture.FindAll().Where(b => b.Engine == CaptureEngine.Chromium).ToList();
+        if (chromium.Count == 0) return;
+        File.WriteAllText(Path.Combine(_root, "plain.html"), "<button><svg></svg></button>");
+
+        var said = await Call(new { path = "plain.html", width = 1280 }, browsers: () => chromium);
+
+        Assert.Contains("captured by", said);
+        Assert.DoesNotContain("Accessibility", said);
+    }
 }

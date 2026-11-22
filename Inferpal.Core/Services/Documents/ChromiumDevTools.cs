@@ -52,9 +52,11 @@ internal static class ChromiumDevTools
     /// </summary>
     /// <param name="flags">The browser's own flags (profile, network cut), without a window size, a picture or an address.</param>
     /// <param name="network">Fed with the page's requests when given (<see cref="PageNetwork"/>).</param>
+    /// <param name="accessibility">Read after the picture when given (<see cref="PageAccessibility"/>).</param>
     internal static async Task<(byte[]? Png, string? Why)> CaptureAsync(string executable, IReadOnlyList<string> flags, string profile,
                                                                         string url, int width, int height, TimeSpan budget,
-                                                                        CancellationToken ct, PageNetwork? network = null)
+                                                                        CancellationToken ct, PageNetwork? network = null,
+                                                                        PageAccessibility? accessibility = null)
     {
         if (NoProtocol(executable)) return (null, "its DevTools port did not open, a few minutes ago");
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -84,6 +86,16 @@ internal static class ChromiumDevTools
                 {
                     // Only a capture that drew the picture vouches for its requests: one that fell back read a load it aborted.
                     if (network is not null) network.Read = true;
+                    if (accessibility is not null)
+                    {
+                        if (network is not null) network.Frozen = true;
+                        // Read after the picture, in what is left of the budget: running out loses the reading, never the picture.
+                        try { await accessibility.ReadAsync(page, width, deadline.Token).ConfigureAwait(false); }
+                        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                        {
+                            accessibility.Fail($"the capture's {budget.TotalSeconds:0} s ran out before it was read");
+                        }
+                    }
                     return (Convert.FromBase64String(base64), null);
                 }
                 return (null, "the browser returned no picture");

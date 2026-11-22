@@ -147,7 +147,8 @@ internal static class PageCapture
     /// <param name="height">The viewport's height; by default the one a page is looked at with (<see cref="HeightFor"/>).</param>
     internal static async Task<(byte[]? Png, string? Why, string? Note)> CaptureAsync(CaptureBrowser browser, string url, int width,
                                                                                       CancellationToken ct, int? height = null,
-                                                                                      PageNetwork? network = null)
+                                                                                      PageNetwork? network = null,
+                                                                                      PageAccessibility? accessibility = null)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var page) || (page.Scheme != Uri.UriSchemeHttp && page.Scheme != Uri.UriSchemeHttps))
             throw new ArgumentException("A capture renders an http page of this machine.", nameof(url));
@@ -172,7 +173,7 @@ internal static class PageCapture
                     // One budget for the capture: the protocol gets part of it, the command line what is left.
                     var started = Stopwatch.StartNew();
                     var (drawn, why) = await ChromiumDevTools.CaptureAsync(browser.Executable, ChromiumFlags(devTools, host, port), devTools,
-                                                                           url, width, viewport, ProtocolBudget, ct, network);
+                                                                           url, width, viewport, ProtocolBudget, ct, network, accessibility);
                     if (drawn is not null) return (drawn, null, null);
                     Diagnostics.Record("PageCapture.DevTools", $"{browser.Name}: {why}; captured from the command line instead");
                     if (!OperatingSystem.IsLinux() && width < CommandLineNarrowest)

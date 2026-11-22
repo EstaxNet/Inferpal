@@ -53,10 +53,14 @@ internal sealed class PageNetwork
     private readonly List<Request> _order = [];
     private int _dropped, _forgottenOk;
 
+    /// <summary>No event is recorded any more: what the capture does after its picture (the accessibility reading focuses
+    /// elements, whose handlers may fetch) is not the page's load.</summary>
+    internal volatile bool Frozen;
+
     /// <summary>One DevTools event of the page; any other is ignored. Never throws for a shape it does not expect.</summary>
     internal void OnEvent(string name, JsonElement p)
     {
-        if (p.ValueKind != JsonValueKind.Object || Str(p, "requestId") is not { Length: > 0 } id) return;
+        if (Frozen || p.ValueKind != JsonValueKind.Object || Str(p, "requestId") is not { Length: > 0 } id) return;
         lock (_order)
         {
             switch (name)
