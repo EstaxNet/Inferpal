@@ -34,6 +34,7 @@ internal sealed class ToolEventRegistry(
     public IReadOnlyList<ToolDefinition> Definitions => inner.Definitions;
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
     public int? WritesInRun => inner.WritesInRun;
+    public Task<string?> RunDiffAsync(int budget, CancellationToken ct) => inner.RunDiffAsync(budget, ct);
     public int? UnseenCallsInRun => inner.UnseenCallsInRun;
     public int? AutoApprovals => inner.AutoApprovals;
     public void ForgetWholeRead(string path) => inner.ForgetWholeRead(path);

@@ -1125,6 +1125,12 @@ internal class FileHistoryService
         get { lock (_runLock) return Run?.WriteCount; }
     }
 
+    /// <summary>Each file the current run changed, with the backup it took before its first change; empty outside a run.</summary>
+    internal IReadOnlyList<RunChange> CurrentRunChanges
+    {
+        get { lock (_runLock) return Run is { } run ? [.. run.Changes] : []; }
+    }
+
     /// <summary>A look the agent took at <paramref name="target"/> (a page at one width, a window), with how many of the
     /// current run's writes came before it; nothing outside a run.</summary>
     internal void RecordLook(string target, Documents.ChatImage image)

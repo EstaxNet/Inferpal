@@ -56,6 +56,85 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     public int? UnseenCallsInRun => _fileHistory.CurrentRunUnseenCalls;
     public int? AutoApprovals => _approval.AutoApprovals;
 
+    /// <summary>The largest file a run's diff reads: past it, the file is named, never read.</summary>
+    private const long RunDiffFileBytes = 2L * 1024 * 1024;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// ⚠ What reaches the model here is held to the rules of every read for it: a file the ignore files keep out is named,
+    /// never shown (a command can have changed one); a binary is its kind and size, never its bytes; a file that cannot be
+    /// read is named with its cause — a review must never fail the run that asked for it. The text is English: it is the
+    /// model's.
+    /// </remarks>
+    public async Task<string?> RunDiffAsync(int budget, CancellationToken ct)
+    {
+        var changes = _fileHistory.CurrentRunChanges;
+        if (changes.Count == 0) return null;
+        var sb = new System.Text.StringBuilder();
+        var named = new List<string>();
+        var shownAny = false;
+        foreach (var change in changes.OrderBy(c => c.OriginalPath, StringComparer.Ordinal))
+        {
+            ct.ThrowIfCancellationRequested();
+            var shown = Root is { Length: > 0 } root ? Path.GetRelativePath(root, change.OriginalPath) : change.OriginalPath;
+            var block = await DiffBlockAsync(change, shown, ct);
+            if (block is null) continue;
+            if (block.StartsWith("(", StringComparison.Ordinal)) { named.Add($"{shown} {block}"); continue; }
+            if (sb.Length >= budget) { named.Add($"{shown} (not shown: the diff is full)"); continue; }
+            if (sb.Length + block.Length > budget)
+                block = block[..Math.Max(0, budget - sb.Length)] + "\n[cut here: read the file with read_file]\n";
+            sb.Append(block);
+            shownAny = true;
+        }
+        if (named.Count > 0) sb.Append("Also changed, not shown here: ").Append(string.Join("; ", named)).Append('\n');
+        return shownAny || named.Count > 0 ? sb.ToString() : null;
+    }
+
+    /// <summary>One changed file's block, its header and its lines; a parenthesised reason when it is only named;
+    /// <c>null</c> when nothing is left to say (no difference).</summary>
+    private static async Task<string?> DiffBlockAsync(RunChange change, string shown, CancellationToken ct)
+    {
+        if (Governance.ContentExclusions.Of(change.OriginalPath) is not null) return "(kept out of AI tools by the ignore files)";
+        if (change.SnapshotFailed) return "(its backup could not be taken)";
+        try
+        {
+            var exists = File.Exists(change.OriginalPath);
+            var backup = change.SnapshotPath is { } s && File.Exists(s) ? s : null;
+            if (change.SnapshotPath is not null && backup is null) return "(its backup is no longer there)";
+            foreach (var side in new[] { backup, exists ? change.OriginalPath : null }.OfType<string>())
+            {
+                var length = new FileInfo(side).Length;
+                if (length > RunDiffFileBytes) return $"(too large to show: {length / 1024:N0} KB)";
+                if (TextFileEncoding.IsBinaryFile(side)) return $"(binary, {length / 1024:N0} KB)";
+            }
+            var before = backup is null ? "" : await TextFileEncoding.ReadTextAsync(backup, ct);
+            var after = exists ? await TextFileEncoding.ReadTextAsync(change.OriginalPath, ct) : "";
+            if (before == after) return null;
+            var label = change.SnapshotPath is null ? " (created)" : !exists ? " (deleted)" : "";
+            var body = new System.Text.StringBuilder($"### {shown}{label}\n");
+            var diffLines = change.SnapshotPath is null ? [] : DiffComputer.Compute(before, after);
+            // A created file has no "before", and a rewrite too large to diff folds into one marker: the new text's head
+            // is what there is to read back.
+            if (!diffLines.Any(l => l.Prefix is "+" or "-"))
+            {
+                if (change.SnapshotPath is not null) body.Append("(too large a change to diff here: the new text's head follows)\n");
+                var lines = after.Split('\n');
+                foreach (var line in lines.Take(150)) body.Append('+').Append(line.TrimEnd('\r')).Append('\n');
+                if (lines.Length > 150) body.Append($"[{lines.Length - 150} more lines]\n");
+                return body.ToString();
+            }
+            foreach (var line in diffLines.Take(200))
+                body.Append(line.Prefix == "…" ? "… (unchanged or long lines not shown)" : line.Prefix + line.Text.TrimEnd('\r')).Append('\n');
+            if (diffLines.Count > 200) body.Append($"[{diffLines.Count - 200} more diff lines]\n");
+            return body.ToString();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Diagnostics.Swallow("ToolRegistry.RunDiff", ex);
+            return $"(cannot be read: {Diagnostics.RootMessage(ex)})";
+        }
+    }
+
     /// <summary>The images <c>read_file</c> read since the loop last took them.</summary>
     private readonly Documents.ToolImageInbox _readImages = new();
 

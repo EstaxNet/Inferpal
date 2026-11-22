@@ -36,6 +36,14 @@ internal interface IToolRegistry
     int? WritesInRun => null;
 
     /// <summary>
+    /// The diff of every file the current run changed, each against the backup taken before its first change, within
+    /// <paramref name="budget"/> characters (what is left out said); <c>null</c> when this registry tracks no run or the run
+    /// changed nothing.
+    /// </summary>
+    /// <remarks>⚠ A decorator forwards it: answered by default, the run that wrote through it is never shown what it wrote.</remarks>
+    Task<string?> RunDiffAsync(int budget, CancellationToken ct) => Task.FromResult<string?>(null);
+
+    /// <summary>
     /// How many calls of the current run changed the work tree where the run could not follow it (outside git, past a
     /// cap); <c>null</c> when this registry watches nothing or no run is active.
     /// </summary>

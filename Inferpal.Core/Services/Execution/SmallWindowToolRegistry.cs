@@ -83,6 +83,7 @@ internal sealed class SmallWindowToolRegistry(IToolRegistry inner, int window, I
         public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct) => inner.ExecuteAsync(name, args, ct);
         public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
         public int? WritesInRun => inner.WritesInRun;
+        public Task<string?> RunDiffAsync(int budget, CancellationToken ct) => inner.RunDiffAsync(budget, ct);
         public int? UnseenCallsInRun => inner.UnseenCallsInRun;
         public int? AutoApprovals => inner.AutoApprovals;
         public void ForgetWholeRead(string path) => inner.ForgetWholeRead(path);
@@ -130,6 +131,7 @@ internal sealed class SmallWindowToolRegistry(IToolRegistry inner, int window, I
     public DiffInfo? ConsumeDiff() => inner.ConsumeDiff();
     public IReadOnlyList<Documents.ChatImage> TakeReadImages() => inner.TakeReadImages();
     public int? WritesInRun => inner.WritesInRun;
+    public Task<string?> RunDiffAsync(int budget, CancellationToken ct) => inner.RunDiffAsync(budget, ct);
     public int? UnseenCallsInRun => inner.UnseenCallsInRun;
     public int? AutoApprovals => inner.AutoApprovals;
     public void ForgetWholeRead(string path) => inner.ForgetWholeRead(path);

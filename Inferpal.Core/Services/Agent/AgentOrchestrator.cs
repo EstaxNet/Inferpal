@@ -1062,6 +1062,11 @@ internal sealed class AgentOrchestrator
         // A plan written instead of a step (LooksLikePlanEcho) is sent back at most this many times per run.
         const int MaxPlanEchoNudges = 2;
         int planEchoNudges = 0;
+        // A run that wrote reads its own diff back once before it answers (pari 159).
+        var diffReviewed = false;
+        const int ReviewDiffChars = 12_000;
+        // The answer the review held back: what the run ends on if the turns after the review give no usable answer.
+        string? heldAnswer = null;
         // A plan exhausted on an edit that broke the build asks for the fix at most this many times per run (see buildFixAsked).
         const int MaxBuildFixRounds = 2;
         int buildFixRounds = 0;
@@ -1501,6 +1506,22 @@ internal sealed class AgentOrchestrator
                     continue;
                 }
 
+                // (3) The run wrote files: once, before it says it is done, it reads back what it changed against the request —
+                //     a leftover print, a change not asked for, the test or the caller it did not touch. Never at the last
+                //     iteration (nothing left to fix with), never on an answer that is no answer.
+                //     Room for the review and a fix (three iterations), a diff sized to the window that is loaded.
+                if (!diffReviewed && visible && iteration + 3 < maxIter && tools.WritesInRun is > 0
+                    && !LooksLikeToolRefusal(turn.TextContent) && !LooksLikePlanEcho(turn.TextContent)
+                    && await tools.RunDiffAsync(Math.Min(ReviewDiffChars, Math.Max(2_000, await RunWindowAsync(model, ct) / 2)), ct)
+                       is { Length: > 0 } runDiff)
+                {
+                    diffReviewed = true;
+                    heldAnswer = turn.TextContent;
+                    messages.Add(new ChatMessageDto("user", ModelPrompts.AgentReviewDiff(runDiff, userTask)) { IsScaffolding = true });
+                    onStreamReset?.Invoke();
+                    continue;
+                }
+
                 // ── Genuine final response ────────────────────────────────────
                 CloseRemainingSteps(plan, tools.WritesInRun is null ? null : unclaimedWrites, onStepUpdate);
                 SettleCheckSteps(plan, executions, onStepUpdate);
@@ -1519,7 +1540,8 @@ internal sealed class AgentOrchestrator
                     // The synthesis replaced the answer: its own cut and repeat are what the end notice reads.
                     (finalText, finalCut, finalRepeating) = await SynthesizeFinalAnswerAsync(
                         model, messages, anchorCount, executions, userTask,
-                        degenerate ? string.Empty : finalText,   // never keep a refusal or a plan as the fallback
+                        // never keep a refusal or a plan as the fallback; after a review, the answer it held back
+                        degenerate || !MarkdownParser.HasPrintableText(finalText) ? heldAnswer ?? string.Empty : finalText,
                         onToken, onStreamReset, onStep, runEffort, ct, onThinking, serverScale);
                 }
 
@@ -1541,7 +1563,7 @@ internal sealed class AgentOrchestrator
         SettleCheckSteps(plan, executions, onStepUpdate);
         var (capFinal, capCut, capRepeating) = executions.Count > 0
             ? await SynthesizeFinalAnswerAsync(
-                model, messages, anchorCount, executions, userTask, Strings.MsgIterationLimit(maxIter), onToken, onStreamReset, onStep,
+                model, messages, anchorCount, executions, userTask, heldAnswer ?? Strings.MsgIterationLimit(maxIter), onToken, onStreamReset, onStep,
                 runEffort, ct, onThinking, serverScale)
             : (Strings.MsgIterationLimit(maxIter), false, false);
         return new OrchestratorResult(

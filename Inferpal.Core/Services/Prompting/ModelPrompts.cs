@@ -168,6 +168,16 @@ internal static class ModelPrompts
         + "Fix them now with another edit — read the lines they name first if you need to. Do not answer as if the change were done while the build fails.",
                       iteration, max, toolNames);
 
+    /// <summary>Sent once, when a run that wrote files gives its final answer: the run's whole diff, read back against the request.</summary>
+    public static string AgentReviewDiff(string diff, string task) =>
+        string.Format("Before you answer: below is everything you changed in this run. Read it against my request, which was: \"{1}\".\n"
+        + "Look for three things: (1) debugging left behind — a print, a console.log, commented-out code, a TODO you added; "
+        + "(2) a change my request did not ask for; (3) what the change still needs and you did not do — a test that still expects the old behaviour, "
+        + "a doc or a README that names the old thing, another caller of what you changed, a changelog line the repository asks for.\n"
+        + "Fix what needs fixing with your tools now (search before you conclude nothing else uses it). Then write the complete final answer to my request, "
+        + "in my language, and say what you left as it is and why. If nothing needs fixing, just write the final answer.\n\n{0}",
+                      diff, task);
+
     /// <summary>Nudge when an ACT response is a new JSON plan instead of a tool call or an answer (AgentOrchestrator.LooksLikePlanEcho).</summary>
     public const string AgentPlanEchoNudge =
         "That is a plan, not a step carried out. Do not write another plan. Call the tool for the next step now "
