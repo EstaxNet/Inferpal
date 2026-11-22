@@ -111,7 +111,8 @@ public sealed class PatchTextTests : IDisposable
         var (_, again) = PatchText.Apply(atLine, file);
 
         Assert.Contains("Rounding.Cent(a + b)", atLine, StringComparison.Ordinal);
-        Assert.EndsWith("}\n", atLine, StringComparison.Ordinal);
+        // The file's own line ends: this source file (and so Totals) is CRLF where git checks it out so.
+        Assert.EndsWith(Totals.EndsWith("\r\n", StringComparison.Ordinal) ? "}\r\n" : "}\n", atLine, StringComparison.Ordinal);
         Assert.Equal(PatchText.Outcome.Applied, exact[0].Outcome);
         Assert.Equal((PatchText.Outcome.Shifted, 2), (shifted[0].Outcome, shifted[0].Offset));
         Assert.StartsWith("// header\n// two\nclass Totals", shiftedText, StringComparison.Ordinal);

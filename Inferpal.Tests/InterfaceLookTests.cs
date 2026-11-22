@@ -56,7 +56,7 @@ public sealed class InterfaceLookTests : IDisposable
         await File.WriteAllTextAsync(path, content);
     }
 
-    private static string LongCommand => OperatingSystem.IsWindows() ? "ping -n 60 127.0.0.1" : "sleep 60";
+    private static string LongCommand => OperatingSystem.IsWindows() ? "ping -n 25 127.0.0.1" : "sleep 25";
 
     [Fact]
     public async Task AnInterfaceChange_WhileTheAppRuns_IsToBeLookedAt_AndAPictureBroughtBackSeesIt()

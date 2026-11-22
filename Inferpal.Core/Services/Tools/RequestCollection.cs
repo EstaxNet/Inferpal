@@ -579,7 +579,8 @@ internal static partial class RequestCollection
         var requests = new List<Raw>();
         var notesOfEnvs = new List<string>();
         var files = single is not null ? [single]
-            : WorkspaceScan.EnumerateFiles(folder, "*.bru").Where(f => !IsBrunoSettings(folder, f)).Take(500).ToList();
+            : WorkspaceScan.EnumerateFiles(folder, "*.bru").Where(f => !IsBrunoSettings(folder, f))
+                           .OrderBy(f => f, StringComparer.Ordinal).Take(500).ToList();   // the same 500 on every machine
         foreach (var file in files)
         {
             var blocks = BruBlocks(ReadText(file, root));

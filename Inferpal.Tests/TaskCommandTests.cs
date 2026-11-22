@@ -251,16 +251,17 @@ public class TaskCommandTests
     [Fact]
     public void FormatDuration_ReadsNaturally_BelowAndAboveAMinute()
     {
-        // The decimal separator follows the UI culture (it is user-facing text), so the
-        // expectation is pinned to a known culture rather than to the dev machine's.
-        var previous = System.Globalization.CultureInfo.CurrentCulture;
-        System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+        // The decimal separator follows the interface's language (Strings.Ui), never the machine's culture: pinned to
+        // English, then French — the reference arm that shows the separator really follows it.
+        Strings.ApplyLanguage("en");
         try
         {
             Assert.Equal("4.2s",  TaskCommandHandler.FormatDuration(TimeSpan.FromSeconds(4.23)));
             Assert.Equal("2m 5s", TaskCommandHandler.FormatDuration(TimeSpan.FromSeconds(125)));
+            Strings.ApplyLanguage("fr");
+            Assert.Equal("4,2s",  TaskCommandHandler.FormatDuration(TimeSpan.FromSeconds(4.23)));
         }
-        finally { System.Globalization.CultureInfo.CurrentCulture = previous; }
+        finally { Strings.ApplyLanguage(null); }
     }
 
     // ── Tool surface ────────────────────────────────────────────────────────────

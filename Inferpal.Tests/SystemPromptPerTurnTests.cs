@@ -49,7 +49,8 @@ public class SystemPromptPerTurnTests
                       + "historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, toolHint, activeFile);"),
                      (host, "s.History.Add(new ChatMessageDto(\"user\", promptText));",
                       "RefreshSystemPrompt(s, withMode: !p.CodeAction);var activeFile = ActiveFileContext.ToSend(BuildActiveFileBlock(s), s.History);"
-                      + "var toolHint = ToolHints.For(string.IsNullOrWhiteSpace(p.Query) ? p.Prompt : p.Query,"
+                      + "var typed = string.IsNullOrWhiteSpace(p.Query) ? p.Prompt : p.Query;var bugReport = ToolHints.IsBugReport(typed);"
+                      + "var toolHint = ToolHints.For(typed,"
                       + "ToolHints.OfferedBy(s.Tools, !p.CodeAction && s.ToolsEnabled, s.PlanMode, () => CurrentMode(s)));"
                       + "var promptText = ChatTurnPolicy.WithInjectedContext(ChatTurnPolicy.WithUserNotes(p.Prompt, p.Notes ?? []),"
                       + "autoCtx, workspace, toolHint, activeFile);"),
