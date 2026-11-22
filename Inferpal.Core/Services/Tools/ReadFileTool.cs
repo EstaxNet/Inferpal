@@ -160,7 +160,8 @@ internal class ReadFileTool : ITool
                 ?? Documents.SqlPlanText.Summarize(Path.GetFileName(path), content, PageChars, ct)
                 ?? Documents.LighthouseText.Summarize(Path.GetFileName(path), content, PageChars, ct)
                 ?? Documents.PatchText.Summarize(Path.GetFileName(path), content, PageChars,
-                       Documents.PatchText.Workspace(_getWorkspaceRoot(), _overlay), ct)) is { } first)
+                       Documents.PatchText.Workspace(_getWorkspaceRoot(), _overlay), ct)
+                ?? Documents.ProfileText.Summarize(Path.GetFileName(path), content, PageChars, ct)) is { } first)
             return first;
         var shown = PageOf(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
         // ⚠ What the model has SEEN, not what it asked for: a first page or a range is not the file, and write_file lets
@@ -234,7 +235,8 @@ internal class ReadFileTool : ITool
                 ?? Documents.CrashReportText.Summarize(inner, text, PageChars, ct)
                 ?? Documents.SqlPlanText.Summarize(inner, text, PageChars, ct)
                 ?? Documents.LighthouseText.Summarize(inner, text, PageChars, ct)
-                ?? Documents.PatchText.Summarize(inner, text, PageChars, Documents.PatchText.Workspace(_getWorkspaceRoot(), _overlay), ct)) is { } first)
+                ?? Documents.PatchText.Summarize(inner, text, PageChars, Documents.PatchText.Workspace(_getWorkspaceRoot(), _overlay), ct)
+                ?? Documents.ProfileText.Summarize(inner, text, PageChars, ct)) is { } first)
             return first;
         var page = PageOf(text, shown, args.Int("start_line", 0), args.Int("end_line", 0));
         return page.Text.Length > MaxChars ? Cap(page.Text, shown) : page.Text;
