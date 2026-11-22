@@ -76,6 +76,7 @@ internal sealed class PageSession : IDisposable
         public readonly List<string> Console = [];
         public readonly List<string> Dialogs = [];
         public int Dropped;
+        public readonly PageNetwork Network = new();
         public volatile string? MainFrame;
     }
 
@@ -130,7 +131,7 @@ internal sealed class PageSession : IDisposable
             var session = new PageSession(driven, work, events, OriginOf(origin), subject, browser.Name, runId, served, servedRoot);
             try
             {
-                foreach (var domain in new[] { "Page.enable", "Runtime.enable", "Log.enable" })
+                foreach (var domain in new[] { "Page.enable", "Runtime.enable", "Log.enable", "Network.enable" })
                     await driven.Page.CallAsync(domain, new { }, ct);
                 var tree = await driven.Page.CallAsync("Page.getFrameTree", new { }, ct);
                 events.MainFrame = tree.GetProperty("frameTree").GetProperty("frame").GetProperty("id").GetString();
@@ -169,6 +170,11 @@ internal sealed class PageSession : IDisposable
     private static void OnEvent(DevToolsConnection page, string name, JsonElement p, PageEvents events)
     {
         string? line = null;
+        if (name.StartsWith("Network.", StringComparison.Ordinal))
+        {
+            events.Network.OnEvent(name, p);
+            return;
+        }
         switch (name)
         {
             case "Page.frameStartedLoading":
@@ -226,6 +232,57 @@ internal sealed class PageSession : IDisposable
         s = s.ReplaceLineEndings(" ");
         return s.Length <= MaxLine ? s : s[..MaxLine] + "…";
     }
+
+    /// <summary>The page's requests ended since the last call (<see cref="PageNetwork.Lines"/>); forgets them.</summary>
+    internal IReadOnlyList<string> TakeNetwork() => _events.Network.Lines(Origin);
+
+    /// <summary>The start of each answer that carried an error status, read from the browser while it still holds it, what
+    /// looks like a credential masked (best effort); an answer it no longer holds is said so.</summary>
+    internal async Task<IReadOnlyList<string>> FailedBodiesAsync(CancellationToken ct)
+    {
+        var bodies = new List<string>();
+        var failed = _events.Network.FailedWithBody(Origin);
+        foreach (var (id, label, bytes) in failed.Take(MaxBodies))
+        {
+            // ⚠ The browser sends a body whole in one message, copied several times on the way: a large one is named, never
+            // asked for, only to keep its first few hundred characters.
+            if (bytes > MaxBodyBytes)
+            {
+                bodies.Add(string.Create(CultureInfo.InvariantCulture, $"  {label}: ({bytes:0} bytes, not read)"));
+                continue;
+            }
+            string shown;
+            try
+            {
+                var body = await _browser.Page.CallAsync("Network.getResponseBody", new { requestId = id }, ct);
+                var text = body.TryGetProperty("body", out var b) ? b.GetString() ?? "" : "";
+                shown = body.TryGetProperty("base64Encoded", out var encoded) && encoded.ValueKind == JsonValueKind.True
+                    ? "(encoded content, not shown)"
+                    : text.Length == 0 ? "(empty)" : Clip(text);
+            }
+            catch (DevToolsCallException) { shown = "(the browser no longer holds it)"; }
+            catch (Exception ex) when (ex is OperationCanceledException || ChromiumDevTools.IsProtocolFailure(ex))
+            {
+                // What was read is kept: the rest is said not read, with why.
+                bodies.Add("  … the other bodies were not read: " + (ex is OperationCanceledException ? "the page did not answer in time" : ex.Message));
+                return bodies;
+            }
+            bodies.Add($"  {label}: {shown}");
+        }
+        if (failed.Count > MaxBodies) bodies.Add($"  … {failed.Count - MaxBodies} more error answers, their bodies not read.");
+        return bodies;
+
+        // Masked on a generous slice BEFORE the cut: a credential cut short is no longer one the redactor recognises.
+        static string Clip(string text)
+        {
+            var masked = SecretRedactor.Redact(text.Length > 4096 ? text[..4096] : text);
+            var line = string.Join(' ', masked.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim();
+            return line.Length <= BodyChars && text.Length <= 4096 ? line
+                 : line[..Math.Min(BodyChars, line.Length)] + string.Create(CultureInfo.InvariantCulture, $"… ({text.Length} characters)");
+        }
+    }
+
+    private const int BodyChars = 300, MaxBodies = 15, MaxBodyBytes = 256 * 1024;
 
     /// <summary>The console's lines since the last call, errors first, and how many were left out; empties it.</summary>
     internal (IReadOnlyList<string> Lines, int Dropped) TakeConsole()

@@ -304,6 +304,34 @@ public sealed class InteractPageToolTests : IDisposable
         Assert.Equal(PageSession.Height, image.Height);
     }
 
+    [Fact]
+    public async Task ThePagesFailedRequests_AreSaid_ApartFromWhatTheBrowserDoesNotReach_WithTheirBodiesOnRequest()
+    {
+        File.WriteAllText(Path.Combine(_root, "orders.html"), """
+            <!doctype html><html><head><title>Orders</title>
+            <link rel="stylesheet" href="https://cdn.example.com/theme.css"></head><body>
+            <p id="state">Loading</p>
+            <script>
+              fetch("/api/orders.json").then(r => document.getElementById("state").textContent = "Status " + r.status);
+            </script></body></html>
+            """);
+
+        var said = await Played(Tool(() => "run-1"), new
+        {
+            path = "orders.html",
+            network_bodies = true,
+            steps = new object[] { new { action = "wait_for", text = "Status 404" } },
+        });
+        if (said is null) return;   // undecided: no Chromium browser starts here
+
+        Assert.Contains("1. wait_for: done", said);
+        Assert.Matches(@"Network \(\d+ requests?, \d+ failed", said);
+        Assert.Contains("  GET /api/orders.json → 404", said);
+        Assert.Contains("Not reached — this browser reaches only the page's own address, so this says nothing of the app: https://cdn.example.com (1)", said);
+        Assert.Contains("Error answers (the start of each body", said);
+        Assert.Contains("GET /api/orders.json → 404", said[said.IndexOf("Error answers", StringComparison.Ordinal)..]);
+    }
+
     /// <summary>A page whose script is busy a few seconds (a machine under load runs it as late) is slow, not looping: it is
     /// kept, with the state the calls brought it to, for the next call.</summary>
     [Fact]

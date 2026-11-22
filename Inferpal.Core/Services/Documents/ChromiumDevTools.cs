@@ -50,17 +50,19 @@ internal static class ChromiumDevTools
     /// why when the browser could not be driven — the caller then captures from the command line, in what is left of its budget.
     /// </summary>
     /// <param name="flags">The browser's own flags (profile, network cut), without a window size, a picture or an address.</param>
+    /// <param name="network">Fed with the page's requests when given (<see cref="PageNetwork"/>).</param>
     internal static async Task<(byte[]? Png, string? Why)> CaptureAsync(string executable, IReadOnlyList<string> flags, string profile,
                                                                         string url, int width, int height, TimeSpan budget,
-                                                                        CancellationToken ct)
+                                                                        CancellationToken ct, PageNetwork? network = null)
     {
         if (NoProtocol(executable)) return (null, "its DevTools port did not open, a few minutes ago");
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
         deadline.CancelAfter(budget);
         try
         {
+            Action<DevToolsConnection, string, JsonElement>? onEvent = network is null ? null : (_, name, p) => network.OnEvent(name, p);
             var (browser, why, portTimedOut) = await LaunchAsync(executable, flags, profile, width, height, CapturePortWait,
-                                                                 ["Emulation.virtualTimeBudgetExpired"], null, deadline.Token).ConfigureAwait(false);
+                                                                 ["Emulation.virtualTimeBudgetExpired"], onEvent, deadline.Token).ConfigureAwait(false);
             if (portTimedOut) PortTimedOut(executable);
             if (browser is null) return (null, why);
             PortOpened(executable);
@@ -68,6 +70,7 @@ internal static class ChromiumDevTools
             {
                 var page = browser.Page;
                 await page.CallAsync("Page.enable", new { }, deadline.Token).ConfigureAwait(false);
+                if (network is not null) await page.CallAsync("Network.enable", new { }, deadline.Token).ConfigureAwait(false);
                 // Paused until the navigation starts, then advanced while no request is pending: what --virtual-time-budget does.
                 await page.CallAsync("Emulation.setVirtualTimePolicy", new { policy = "pause" }, deadline.Token).ConfigureAwait(false);
                 var mark = page.Mark;
@@ -76,9 +79,13 @@ internal static class ChromiumDevTools
                     new { policy = "pauseIfNetworkFetchesPending", budget = SettleMilliseconds }, deadline.Token).ConfigureAwait(false);
                 await page.WaitForAsync("Emulation.virtualTimeBudgetExpired", mark, deadline.Token).ConfigureAwait(false);
                 var shot = await page.CallAsync("Page.captureScreenshot", new { format = "png" }, deadline.Token).ConfigureAwait(false);
-                return shot.TryGetProperty("data", out var data) && data.GetString() is { } base64
-                    ? (Convert.FromBase64String(base64), null)
-                    : (null, "the browser returned no picture");
+                if (shot.TryGetProperty("data", out var data) && data.GetString() is { } base64)
+                {
+                    // Only a capture that drew the picture vouches for its requests: one that fell back read a load it aborted.
+                    if (network is not null) network.Read = true;
+                    return (Convert.FromBase64String(base64), null);
+                }
+                return (null, "the browser returned no picture");
             }
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)

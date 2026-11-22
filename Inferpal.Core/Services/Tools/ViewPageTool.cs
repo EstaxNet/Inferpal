@@ -63,7 +63,8 @@ internal sealed class ViewPageTool : ITool
         "Look at a page of the app you are building as a browser renders it — served on this machine " +
         "(http://localhost:5173/cart) or an HTML file of the workspace — captured at a laptop's width (1280 px) and a phone's " +
         "(390 px), or at the one width you give. Use it for what the source does not show: a button that cannot be seen, a " +
-        "layout that overflows on a phone, an element covering another, text cut off. Pages of this machine only; the page " +
+        "layout that overflows on a phone, an element covering another, text cut off; its failed and slowest requests are " +
+        "listed. Pages of this machine only; the page " +
         "reaches nothing but its own address. The person approves the first look at an address no app you started serves.";
 
     public object Parameters => new
@@ -164,6 +165,8 @@ internal sealed class ViewPageTool : ITool
         var stem = Path.GetFileNameWithoutExtension(new Uri(target).Segments.LastOrDefault()?.Trim('/') is { Length: > 0 } s ? s : "page");
         var next = 0;
         CaptureBrowser? browser = null;
+        // The page's requests, read at its first width only: each width loads the page again, the same requests again.
+        PageNetwork? network = null;
         foreach (var width in widths)
         {
             byte[]? png = null;
@@ -171,8 +174,10 @@ internal sealed class ViewPageTool : ITool
             while (png is null && next < browsers.Count)
             {
                 browser = browsers[next];
-                (png, var why, note) = await PageCapture.CaptureAsync(browser, target, width, ct);
+                var attempt = taken.Count == 0 && network is null ? new PageNetwork() : null;
+                (png, var why, note) = await PageCapture.CaptureAsync(browser, target, width, ct, network: attempt);
                 if (png is null) { failed.Add($"by {browser.Name} at {width} px: {why}"); next++; }
+                else if (attempt is not null) network = attempt;
             }
             if (png is null || browser is null) break;
             var read = ChatImages.Read(png, $"{stem}-{width}px.png");
@@ -192,6 +197,13 @@ internal sealed class ViewPageTool : ITool
                       "is captured; what the page loads from anywhere but its own address (the Internet, another port of " +
                       "this machine) is missing on purpose.");
         lines.AddRange(notes);
+        if (network is not null)
+        {
+            if (!network.Read)
+                lines.Add($"Requests: not read — {browser!.Name} captured the page without its DevTools protocol (only a Chromium "
+                        + "browser driven that way reports them; interact_page does).");
+            else lines.AddRange(network.Lines(PageSession.OriginOf(new Uri(target))));
+        }
         lines.AddRange(failed.Select(f => $"Not captured {f}"));
         if (taken.Count == 0) lines.Add("If the page is served by an app that is starting, wait for it (run_command action='wait') and call again.");
         return string.Join("\n", lines);

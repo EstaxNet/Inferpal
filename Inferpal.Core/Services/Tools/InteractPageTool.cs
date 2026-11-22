@@ -97,7 +97,8 @@ internal sealed class InteractPageTool : ITool, IDisposable
     public string Description =>
         "Use a page of the app you build as a person does, in a browser cut off from the network: open it, then click, type, " +
         "choose, press keys, wait — and capture the state reached (a cart with two items, a filled form). Returns each step " +
-        "done or why not, the page's controls with a selector each, its console, and the capture; save_to writes the capture " +
+        "done or why not, the page's controls with a selector each, its console, its failed and slowest requests, and the " +
+        "capture; save_to writes the capture " +
         "into the project as a PNG. The page stays open for your next call: without url, it continues from there.";
 
     public object Parameters => new
@@ -108,6 +109,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
             url   = new { type = "string", description = "The page to open first, served on this machine (http://localhost:5173/cart)." },
             path  = new { type = "string", description = "Or an HTML file of the workspace to open first." },
             save_to = new { type = "string", description = "A PNG file of the project to save the capture to (docs/images/cart.png)." },
+            network_bodies = new { type = "boolean", description = "true: also the start of each error answer's body" },
             steps = new
             {
                 type = "array",
@@ -144,6 +146,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
         if (stepsError is not null) return "Error: " + stepsError;
         // Checked before any step plays: a call never acts for a capture it cannot save.
         var (saveTo, saveRefusal) = CaptureSaving.Target(args.Str("save_to"), _getWorkspaceRoot());
+        var bodies = args.Bool("network_bodies", false);
         if (saveRefusal is not null) return saveRefusal;
         if (saveTo is not null && _history is null) return "Error: save_to is not available here: the capture cannot be saved.";
         if (saveTo is not null && CaptureSaving.Unseen(_history!, _getWorkspaceRoot(), saveTo) is { } unseen)
@@ -183,7 +186,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
         try
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            var report = await PlayAsync(target, steps!, saveTo, ct);
+            var report = await PlayAsync(target, steps!, saveTo, bodies, ct);
             // Every exit before the save (a page not opened, no capture, a page that stopped answering) says it.
             if (saveTo is not null && !report.Contains(CaptureSaving.SavedPrefix, StringComparison.Ordinal)
                 && !report.Contains(CaptureSaving.NotSavedPrefix, StringComparison.Ordinal))
@@ -200,7 +203,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
         }
     }
 
-    private async Task<string> PlayAsync(Target? target, List<PageStep> steps, string? saveTo, CancellationToken ct)
+    private async Task<string> PlayAsync(Target? target, List<PageStep> steps, string? saveTo, bool bodies, CancellationToken ct)
     {
         var runId = _runId();
         if (_session is { } open)
@@ -274,7 +277,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
                 var at = session.Served is { } served ? served.UrlOf(target.OpenAt) : target.OpenAt;
                 var opening = await session.PlayAsync(new PageStep("goto", Url: at), budget.Token);
                 lines.Add(opening.Done ? Capitalized(opening.Detail) + "." : "Not opened: " + opening.Detail + ".");
-                if (!opening.Done) return await FinishAsync(session, lines, null, null, ct);
+                if (!opening.Done) return await FinishAsync(session, lines, null, null, bodies, ct);
             }
 
             byte[]? captured = null;
@@ -323,7 +326,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
                 lines.Add("The page stopped answering (its script may loop): it was closed; a next call opens it afresh.");
                 return string.Join("\n", lines);
             }
-            return await FinishAsync(session, lines, captured, saveTo, ct);
+            return await FinishAsync(session, lines, captured, saveTo, bodies, ct);
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
@@ -370,7 +373,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
 
     /// <summary>The page's address, its controls, its console and the capture — saved to <paramref name="saveTo"/> when
     /// given: what the steps left. Each part the page refuses is said in its place; the others are still given.</summary>
-    private async Task<string> FinishAsync(PageSession session, List<string> lines, byte[]? captured, string? saveTo,
+    private async Task<string> FinishAsync(PageSession session, List<string> lines, byte[]? captured, string? saveTo, bool bodies,
                                            CancellationToken ct)
     {
         using var finish = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -419,6 +422,22 @@ internal sealed class InteractPageTool : ITool, IDisposable
             var notShown = console.Count - Math.Min(console.Count, MaxConsoleLines) + dropped;
             if (notShown > 0) lines.Add($"  … {notShown} more lines not shown.");
         }
+
+        // The bodies before the lines: reading the lines forgets the requests the bodies are asked by.
+        if (bodies)
+        {
+            try
+            {
+                var read = await session.FailedBodiesAsync(finish.Token);
+                if (read.Count > 0)
+                {
+                    lines.Add("Error answers (the start of each body; what looks like a credential masked, as far as recognised):");
+                    lines.AddRange(read);
+                }
+            }
+            catch (Exception ex) when (Unanswered(ex)) { lines.Add("Error answers: not read — " + Why(ex)); }
+        }
+        lines.AddRange(session.TakeNetwork());
 
         try { captured ??= await session.CaptureAsync(finish.Token); }
         catch (Exception ex) when (Unanswered(ex)) { lines.Add("No capture: " + Why(ex)); return string.Join("\n", lines); }
