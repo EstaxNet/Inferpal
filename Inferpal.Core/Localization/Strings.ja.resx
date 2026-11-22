@@ -411,6 +411,7 @@ API キーが必要な場合は設定でキーを確認してください。そ�
   <data name="DiffMoreLines" xml:space="preserve"><value>… (差分の行があと {0})</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits には少なくとも1つの編集が必要です。</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>{0} 個のファイルに編集を適用しますか？</value></data>
+  <data name="ApplyPatchLeftOut" xml:space="preserve"><value>パッチが求めているが、この変更に含まれないもの: {0}。</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>変更は適用されませんでした — {0}。</value></data>
   <data name="ApplyEditsOk" xml:space="preserve"><value>{1} 個のファイルに {0} 件の編集を適用しました。</value></data>
   <data name="RenameConfirm" xml:space="preserve"><value>`{0}` → `{1}` に名前を変更（{2} 個のファイル、{3} 箇所）</value></data>

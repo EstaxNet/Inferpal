@@ -51,7 +51,9 @@ internal sealed class ApplyEditsTool : ITool
         "Applies multiple edits across one or more files atomically (all-or-nothing): each edit " +
         "replaces old_content with new_content in its file (whitespace-tolerant, like apply_diff). " +
         "If ANY edit cannot be applied, NO file is changed. Use for coordinated refactors that span " +
-        "several files (e.g. rename across call sites). Files are snapshotted so /undo-run reverts the whole set.";
+        "several files (e.g. rename across call sites). Files are snapshotted so /undo-run reverts the whole set. " +
+        "To apply a patch file (.patch, .diff) instead, send patch with its path and no edits: each block is placed where " +
+        "its lines stand, new files are created, and the blocks that no longer apply are left out and returned to you.";
 
     public object Parameters => new
     {
@@ -75,8 +77,8 @@ internal sealed class ApplyEditsTool : ITool
                     required = new[] { "path", "old_content", "new_content" },
                 },
             },
+            patch = new { type = "string", description = "Path of a patch file (.patch, .diff) to apply, instead of edits." },
         },
-        required = new[] { "edits" },
     };
 
     private sealed record Edit(string Path, string Old, string New, string? Occurrence);
@@ -87,6 +89,10 @@ internal sealed class ApplyEditsTool : ITool
         // send the model to the same place: told the first for a double-encoded list — the shape a
         // small model emits — it resends the same payload. The per-entry shape check below already
         // names its offender; this is the same event one level up.
+        if (args.Has("patch"))
+            return args.Has("edits")
+                ? ToolFailure.Said(Strings.ApplyEditsAborted("send either edits or patch, not both"))
+                : await ApplyPatchAsync(args.Str("patch"), ct);
         if (!args.Has("edits"))
             return Strings.ApplyEditsEmpty;
         if (!args.Array("edits", out var editsEl))
@@ -239,6 +245,173 @@ internal sealed class ApplyEditsTool : ITool
             : string.Empty;
 
         return Strings.ApplyEditsOk(edits.Count, changed.Count) + staleNote + smartFixNote.TrimEnd();
+    }
+
+    /// <summary>
+    /// The patch at <paramref name="patchArg"/> applied: each file's blocks placed where their lines stand (<see
+    /// cref="Documents.PatchText.Apply"/>), new files created, on ONE approval card, backed up for <c>/undo-run</c>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Not all or nothing, unlike edits: a patch made on another state of the code has blocks that no longer apply, and
+    /// refusing it whole leaves the person doing every block by hand. What is written is what the card shows; what is left
+    /// out — a block, a deletion, a rename, a binary file, a file the workspace keeps out — is named on the card and handed
+    /// back to the model with its text. A patch path is judged as every written path is (<see cref="Documents.PatchText.Locate"/>).
+    /// </remarks>
+    private async Task<string> ApplyPatchAsync(string? patchArg, CancellationToken ct)
+    {
+        var root = _getWorkspaceRoot();
+        var patchPath = PathSanitizer.Sanitize(patchArg, root);
+        // Read as read_file reads: inside the workspace only — the blocks that do not apply go back to the model verbatim.
+        PathSanitizer.AssertUnderRoot(patchPath, root);
+        if (!File.Exists(patchPath)) return ToolFailure.Said(Strings.ToolFileNotFound(patchPath));
+        var patchText = _overlay is not null && _overlay.TryGetUnsaved(patchPath, out var buffered)
+            ? buffered : await TextFileEncoding.ReadTextAsync(patchPath, ct);
+        if (Documents.PatchText.Parse(patchText) is not { } patch)
+            return ToolFailure.Said(Strings.ApplyEditsAborted(
+                $"{Path.GetFileName(patchPath)} holds no file diff (no 'diff --git', or '---' and '+++' lines followed by '@@' blocks)"));
+
+        var original = new Dictionary<string, string?>(PathComparer.Default);   // null: the file does not exist yet
+        var current  = new Dictionary<string, string>(PathComparer.Default);
+        var leftOut  = new List<string>();      // for the card and the model: what the patch asks that is not written
+        var rejected = new List<string>();      // for the model: each block not placed, with its text
+        var placed   = 0;
+        var located  = patch.Files.Select(f => (File: f, Where: Documents.PatchText.Locate(f, root))).ToList();
+        if (_overlay is not null)
+            await _overlay.RefreshAsync(ct, located.Select(l => l.Where.Path).OfType<string>().Where(File.Exists).ToList());
+
+        foreach (var (file, (path, why)) in located)
+        {
+            ct.ThrowIfCancellationRequested();
+            var name = file.Path;
+            switch (file.Kind)
+            {
+                case Documents.PatchText.FileKind.Delete:
+                    leftOut.Add($"{name}: deleted by the patch, not done here (delete_file deletes it)");
+                    continue;
+                case Documents.PatchText.FileKind.Binary:
+                    leftOut.Add($"{name}: a binary change, whose content the patch text does not hold");
+                    continue;
+                case Documents.PatchText.FileKind.ModeOnly:
+                    leftOut.Add($"{name}: only its file mode changes, not done here");
+                    continue;
+                case Documents.PatchText.FileKind.Copy:
+                    leftOut.Add($"{file.NewPath}: a copy of {file.OldPath} with changes, not done here (copy the file, then edit the copy)");
+                    continue;
+                case Documents.PatchText.FileKind.Rename:
+                    leftOut.Add($"{file.OldPath} → {file.NewPath}: the rename is not done here (move the file with a command)"
+                              + (file.Hunks.Count > 0 ? "; its content changes are applied under its current name" : ""));
+                    if (file.Hunks.Count == 0) continue;
+                    break;
+            }
+            if (file.ModeChanged) leftOut.Add($"{name}: its file mode change is not done here");
+            if (why is not null) { leftOut.Add($"{name}: not touched, {why}"); continue; }
+            if (path is null) { leftOut.Add($"{name}: not in the workspace"); continue; }
+
+            if (!current.ContainsKey(path))
+            {
+                var exists = File.Exists(path);
+                if (exists || file.Kind != Documents.PatchText.FileKind.Add)
+                {
+                    if (!exists) { leftOut.Add($"{name}: not in the workspace"); continue; }
+                    if (FileTarget.DirectoryRefusal(path) is { } isDirectory) { leftOut.Add($"{name}: {isDirectory}"); continue; }
+                    if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) { leftOut.Add($"{name}: {unsaved}"); continue; }
+                    if (GeneratedFiles.EditRefusal(path) is { } generated) { leftOut.Add($"{name}: {generated}"); continue; }
+                    if (TextFileEncoding.IsBinaryFile(path)) { leftOut.Add($"{name}: a binary file in the workspace"); continue; }
+                    var text = await TextFileEncoding.ReadTextAsync(path, ct);
+                    original[path] = text;
+                    current[path]  = text;
+                }
+                else
+                {
+                    original[path] = null;
+                    current[path]  = "";
+                }
+            }
+            // ⚠ Any file already there, changed by an earlier commit of the series or not: an add never lands on top of it.
+            if (file.Kind == Documents.PatchText.FileKind.Add && (original[path] is not null || current[path].Length > 0))
+            {
+                // A file the patch adds that is already here: never overwritten, said, unless it already holds the result.
+                var added = Documents.PatchText.Apply("", file).Content;
+                leftOut.Add(string.Equals(added.ReplaceLineEndings("\n"), current[path].ReplaceLineEndings("\n"), StringComparison.Ordinal)
+                    ? $"{name}: already holds what the patch adds"
+                    : $"{name}: the patch creates it, and it already exists — not overwritten");
+                continue;
+            }
+            var (content, results) = Documents.PatchText.Apply(current[path], file);
+            current[path] = content;
+            for (var k = 0; k < results.Count; k++)
+            {
+                var r = results[k];
+                switch (r.Outcome)
+                {
+                    case Documents.PatchText.Outcome.Applied or Documents.PatchText.Outcome.Shifted:
+                        placed++;
+                        break;
+                    case Documents.PatchText.Outcome.AlreadyApplied:
+                        leftOut.Add($"{name}: block {k + 1} (line {r.Hunk.OldStart}) is already applied");
+                        break;
+                    default:
+                        leftOut.Add($"{name}: block {k + 1} (line {r.Hunk.OldStart}) no longer applies");
+                        rejected.Add($"{name}, block {k + 1}:\n{r.Hunk.Text}");
+                        break;
+                }
+            }
+        }
+
+        var changed = current.Where(kv => !string.Equals(kv.Value, original[kv.Key], StringComparison.Ordinal))
+                             .Select(kv => kv.Key).ToList();
+        var notes = leftOut.Count == 0 ? "" : "\nNot written:\n" + string.Join("\n", leftOut.Select(l => "- " + l));
+        var handBack = rejected.Count == 0 ? ""
+            : "\n\nThe blocks that no longer apply, as the patch writes them — apply each by hand with apply_diff on the file as "
+              + "it is now, or tell the user it is left out:\n" + string.Join("\n\n", rejected);
+        if (changed.Count == 0)
+            return "Nothing written: no block of the patch applies to the workspace as it is." + notes + handBack;
+        foreach (var p in changed)
+            if (FileTarget.EncodingRefusal(p, current[p]) is { } cannotHold) return ToolFailure.Said(Strings.ApplyEditsAborted(cannotHold));
+        var broken = new List<string>();
+        foreach (var p in changed)
+            if (await SyntaxGuard.RefusalAsync(p, original[p], current[p], root, _history.CurrentRunId, ct) is { } refusal) broken.Add(refusal);
+        if (broken.Count > 0) return ToolFailure.Said(Strings.ApplyEditsAborted(string.Join("\n", broken))) + notes;
+
+        var before = changed.ToDictionary(p => p, p => original[p] ?? "", PathComparer.Default);
+        var details = BuildApprovalDetails(root, changed, before, current);
+        if (leftOut.Count > 0) details = Strings.ApplyPatchLeftOut(string.Join("; ", leftOut)) + "\n\n" + details;
+        var files = changed.Select(p => new FileChange(new DiffInfo(before[p], current[p], p),
+                                                       BuildApprovalDetails(root, [p], before, current))).ToList();
+        var designers = changed.Select(GeneratedFiles.DesignerWarning).OfType<string>().ToList();
+        if (designers.Count > 0) details = string.Join("\n", designers) + "\n\n" + details;
+        if (!await _approval.RequestBatchApprovalAsync("apply_edits", details, files, ct, subject: string.Join("\n", changed),
+                                                       forcePrompt: designers.Count > 0))
+            return Strings.DiffCancelled;
+        if (await FileTarget.ChangedSinceApprovalAsync(_overlay, changed.Select(p => new ApprovedFile(p, original[p])), ct) is { } typedMeanwhile)
+            return ToolFailure.Said(Strings.ApplyEditsAborted(typedMeanwhile));
+
+        foreach (var path in changed)
+        {
+            var (saved, _) = await _history.BackUpBeforeChangeAsync(path, ct);   // a created file is recorded as created
+            if (!saved) return _history.BackupFailedMessage(path);
+        }
+        try
+        {
+            foreach (var path in changed.Where(p => original[p] is null))
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return ToolFailure.Said(Strings.ApplyEditsAborted($"a folder for a new file could not be created ({ex.Message})"));
+        }
+        var write = await SafeFileWriter.WriteAllOrRollBackAsync([.. changed.Select(p => (p, current[p], before[p]))]);
+        if (!write.Ok)
+        {
+            var reason = $"writing {RelPath(root, write.FailedPath!)} failed ({write.Error})";
+            return write.Stuck.Count == 0
+                ? ToolFailure.Said(Strings.ApplyEditsAborted(reason))
+                : $"Error: {reason}, and {string.Join(", ", write.Stuck.Select(s => RelPath(root, s)))} "
+                  + "could not be put back — restore it with restore_file when it is offered; otherwise tell the user: /undo-run puts the run's files back.";
+        }
+        var smartFixNote = _smartFix is not null ? "\n\n" + (await _smartFix.ValidateManyAsync(changed, ct) ?? string.Empty) : string.Empty;
+        return $"Patch applied: {placed} block{(placed == 1 ? "" : "s")} in {changed.Count} file{(changed.Count == 1 ? "" : "s")} "
+             + $"({string.Join(", ", changed.Select(p => RelPath(root, p)))})." + notes + handBack + smartFixNote.TrimEnd();
     }
 
     private static string BuildApprovalDetails(

@@ -411,6 +411,7 @@ Kontynuować?</value></data>
   <data name="DiffMoreLines" xml:space="preserve"><value>… (+{0} wiersz(y) różnic więcej)</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits wymaga co najmniej jednej edycji.</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>Zastosować zmiany w {0} {0:pliku|plikach|plikach}?</value></data>
+  <data name="ApplyPatchLeftOut" xml:space="preserve"><value>Pominięte w tej zmianie, choć łatka o to prosi: {0}.</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>Nie zastosowano żadnych zmian — {0}.</value></data>
   <data name="ApplyEditsOk" xml:space="preserve"><value>Zastosowano {0} {0:edycję|edycje|edycji} w {1} {1:pliku|plikach|plikach}.</value></data>
   <data name="RenameConfirm" xml:space="preserve"><value>Zmień nazwę `{0}` → `{1}` w {2} {2:pliku|plikach|plikach} ({3} {3:wystąpienie|wystąpienia|wystąpień})</value></data>

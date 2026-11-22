@@ -77,22 +77,26 @@ internal static class SafeFileWriter
         foreach (var (path, content, original) in files)
         {
             byte[]? before = null;
+            var existed = true;
             try
             {
-                before = File.Exists(path) ? await File.ReadAllBytesAsync(path).ConfigureAwait(false) : null;
+                existed = File.Exists(path);
+                before = existed ? await File.ReadAllBytesAsync(path).ConfigureAwait(false) : null;
                 await WritePreservingAsync(path, content, CancellationToken.None).ConfigureAwait(false);
                 written.Add((path, original, before));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                // ⚠ The failing write truncates before it writes: its own file is put back as well.
-                if (before is not null) written.Add((path, original, before));
+                // ⚠ The failing write truncates before it writes: its own file is put back as well — one it was creating
+                // is removed. Never one that existed and could not be read: nothing was written to it.
+                if (before is not null || !existed) written.Add((path, original, before));
                 var stuck = new List<string>();
-                foreach (var (done, original0, held) in written)
+                foreach (var (done, _, held) in written)
                 {
                     try
                     {
-                        if (held is null) await WritePreservingAsync(done, original0, CancellationToken.None).ConfigureAwait(false);
+                        // A file the batch created is put back by being removed: an empty file in its place is not "no change".
+                        if (held is null) { if (File.Exists(done)) File.Delete(done); }
                         // Unchanged — a write refused before it opened the file (read-only, a character its code page
                         // lacks) — is not put back: rewriting a read-only file would name it as one that could not be.
                         else if (!HoldsExactly(done, held))

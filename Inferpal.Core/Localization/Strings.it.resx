@@ -411,6 +411,7 @@ Continuare?</value></data>
   <data name="DiffMoreLines" xml:space="preserve"><value>… (+{0} riga/he di diff in più)</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits richiede almeno una modifica.</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>Applicare le modifiche a {0} {0:file|file}?</value></data>
+  <data name="ApplyPatchLeftOut" xml:space="preserve"><value>Escluso da questa modifica, anche se la patch lo chiede: {0}.</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>Nessuna modifica applicata — {0}.</value></data>
   <data name="ApplyEditsOk" xml:space="preserve"><value>{0} {0:modifica applicata|modifiche applicate} su {1} {1:file|file}.</value></data>
   <data name="RenameConfirm" xml:space="preserve"><value>Rinominare `{0}` → `{1}` in {2} {2:file|file} ({3} {3:occorrenza|occorrenze})</value></data>

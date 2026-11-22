@@ -411,6 +411,7 @@
   <data name="DiffMoreLines" xml:space="preserve"><value>… (还有 {0} 行差异)</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits 至少需要一个编辑。</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>将编辑应用到 {0} 个文件？</value></data>
+  <data name="ApplyPatchLeftOut" xml:space="preserve"><value>补丁要求但未包含在此更改中的内容：{0}。</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>未应用任何更改 — {0}。</value></data>
   <data name="ApplyEditsOk" xml:space="preserve"><value>已在 {1} 个文件中应用 {0} 个编辑。</value></data>
   <data name="RenameConfirm" xml:space="preserve"><value>将 `{0}` 重命名为 `{1}`（{2} 个文件，{3} 处）</value></data>

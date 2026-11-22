@@ -1421,6 +1421,9 @@ internal static class Strings
     public static string ApplyEditsEmpty => Get(nameof(ApplyEditsEmpty));
     public static string ApplyEditsConfirm(int files) =>
         Format(Get(nameof(ApplyEditsConfirm)), files);
+    /// <summary>The approval card's first line when a patch asks for more than it writes.</summary>
+    public static string ApplyPatchLeftOut(string detail) =>
+        Format(Get(nameof(ApplyPatchLeftOut)), detail);
     public static string ApplyEditsAborted(string detail) =>
         Format(Get(nameof(ApplyEditsAborted)), detail);
     public static string ApplyEditsOk(int edits, int files) =>

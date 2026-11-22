@@ -411,6 +411,7 @@
   <data name="DiffMoreLines" xml:space="preserve"><value>… (ещё строк различий: {0})</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits требует хотя бы одну правку.</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>Применить изменения к {0} {0:файлу|файлам|файлам}?</value></data>
+  <data name="ApplyPatchLeftOut" xml:space="preserve"><value>Не вошло в это изменение, хотя патч это требует: {0}.</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>Изменения не применены — {0}.</value></data>
   <data name="ApplyEditsOk" xml:space="preserve"><value>Применено правок: {0} (файлов: {1}).</value></data>
   <data name="RenameConfirm" xml:space="preserve"><value>Переименовать `{0}` → `{1}` в {2} {2:файле|файлах|файлах} ({3} {3:вхождение|вхождения|вхождений})</value></data>

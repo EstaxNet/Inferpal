@@ -411,6 +411,7 @@ Haga clic en ↻ Reintentar en la cabecera una vez corregido.</value></data>
   <data name="DiffMoreLines" xml:space="preserve"><value>… (+{0} línea(s) de diferencias más)</value></data>
   <data name="ApplyEditsEmpty" xml:space="preserve"><value>apply_edits requiere al menos una edición.</value></data>
   <data name="ApplyEditsConfirm" xml:space="preserve"><value>¿Aplicar cambios a {0} {0:archivo|archivos}?</value></data>
+  <data name="ApplyPatchLeftOut" xml:space="preserve"><value>Fuera de este cambio, aunque el parche lo pide: {0}.</value></data>
   <data name="ApplyEditsAborted" xml:space="preserve"><value>No se aplicaron cambios — {0}.</value></data>
   <data name="ApplyEditsOk" xml:space="preserve"><value>{0} {0:edición aplicada|ediciones aplicadas} en {1} {1:archivo|archivos}.</value></data>
   <data name="RenameConfirm" xml:space="preserve"><value>Renombrar `{0}` → `{1}` en {2} {2:archivo|archivos} ({3} {3:aparición|apariciones})</value></data>
