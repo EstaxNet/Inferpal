@@ -707,6 +707,27 @@ internal partial class InferpalToolWindowData
                     UpsertStatusBubble("\U0001F4AD " + Strings.StatusThinking);
             }
 
+            // The streamed answer emptied — between the orchestrator's acts, and before a run's answer it held for its diff review.
+            void ResetStream()
+            {
+                // Drop buffered tokens synchronously FIRST so a pending timer flush cannot
+                // resurrect the bubble after it is removed below (would duplicate the response).
+                sink.Reset();
+                thinkingPreview.Reset(); // stale reasoning from the finished act must not bleed into the next
+                Post(() =>
+                {
+                    // Discard the intermediate streaming bubble entirely: setting Content = "" left a visually empty
+                    // bubble for some outputs (a lone "---", partial timer-flush tokens). Removing it and nulling
+                    // streamingMsg makes the final bubble start fresh from the first token of the last act.
+                    if (streamingMsg is not null)
+                    {
+                        var idx = Messages.IndexOf(streamingMsg);
+                        if (idx >= 0) Messages.RemoveAt(idx);
+                        streamingMsg = null;
+                    }
+                });
+            }
+
             if (useOrchestrator)
             {
                 // Orchestrated path: generates an explicit plan, then runs the
@@ -736,30 +757,7 @@ internal partial class InferpalToolWindowData
                             planBubble.RefreshPlan(activePlan);
                     }),
                     onToolExecuted: StreamToolBubble,
-                    onStreamReset: () =>
-                    {
-                        // Drop buffered tokens synchronously FIRST so a pending timer flush cannot
-                        // resurrect the bubble after it is removed below (would duplicate the response).
-                        sink.Reset();
-                        thinkingPreview.Reset(); // stale reasoning from the finished act must not bleed into the next
-                        Post(() =>
-                        {
-                        // Discard the intermediate streaming bubble entirely.
-                        // Setting Content = "" was insufficient: some model outputs
-                        // (lone "---", partial timer-flush tokens, whitespace runs)
-                        // passed HasPrintableText/HasBlocks guards and left a visually
-                        // empty bubble visible.  By removing the item from Messages and
-                        // nulling streamingMsg, we guarantee the final response bubble
-                        // is created fresh from the very first token of the last act —
-                        // so it can never contain intermediate tool-calling rationale.
-                        if (streamingMsg is not null)
-                        {
-                            var idx = Messages.IndexOf(streamingMsg);
-                            if (idx >= 0) Messages.RemoveAt(idx);
-                            streamingMsg = null;
-                        }
-                        });
-                    },
+                    onStreamReset: ResetStream,
                     ct: localCts.Token,
                     onThinking: OnThinking,
                     steering: steering);
@@ -782,6 +780,8 @@ internal partial class InferpalToolWindowData
                 // Basic path: unchanged 20-turn reactive loop. A code action (its one-off model) has the quick
                 // budget, a question the normal one, tools or not.
                 var loopComplexity = ChatTurnPolicy.TurnComplexity(codeAction: oneTimeModel is not null);
+                // A run that writes reads its diff back before it answers, as the orchestrated path does.
+                using var review = Services.Agent.RunDiffReview.Enter(ResetStream);
                 var result = await _client.RunAgentAsync(
                     model:      effectiveModel,
                     history:    _history,

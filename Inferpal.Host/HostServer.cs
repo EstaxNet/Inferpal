@@ -815,6 +815,12 @@ internal sealed partial class HostServer : IDisposable
                 var durable = new List<ChatMessageDto>(s.History);
                 var runId = s.Tools.History.BeginRun();
                 turnRunId = runId;
+                // A run that writes reads its diff back before it answers, as the agent path does: the streamed answer it held
+                // is emptied the same way. ⚠ Only where the client can take a streamed answer back (VS Code): an ACP client in
+                // chat mode shows each chunk for good, and would show — and keep — the held answer and the next one together.
+                using var review = s.Editor.HasEditor
+                    ? Inferpal.Services.Agent.RunDiffReview.Enter(() => { streamed.Clear(); Notify("chat/streamReset", new { }); })
+                    : null;
                 var run = await s.Client.RunAgentAsync(
                     model, s.History, chatTools,
                     onStep:         Step,

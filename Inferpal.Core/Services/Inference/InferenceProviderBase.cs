@@ -701,6 +701,9 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         var anchorCount = messages.Count;
         // The server's count of the last request against its estimate (AgentOrchestrator.ServerScale).
         var scale = 1.0;
+        // A chat turn's run reads its diff back once before it answers (RunDiffReview), the answer it held as the fallback.
+        var reviewReset = Agent.RunDiffReview.Current;
+        ChatTurnResult? heldTurn = null;
 
         for (int i = 0; i < maxIterations; i++)
         {
@@ -762,6 +765,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                     // the history ends on calls nobody answered and OpenAI-compatible servers
                     // refuse the next request.
                     messages.RemoveAt(messages.Count - 1);
+                    if (heldTurn is not null) return Held(heldTurn) with { WasLoopDetected = true };
                     var loopMsg = executions.Count > 0 ? string.Empty : Strings.MsgLoopDetected;
                     return new AgentResult(loopMsg, executions, messages, totalTokens, lastPromptEval,
                                            WasLoopDetected: true);
@@ -815,6 +819,26 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             }
             else
             {
+                // An answer cut at the limit or stopped repeating is said as it is: its notice and Continue stay its own.
+                if (reviewReset is not null && heldTurn is null && i + 3 < maxIterations && tools.WritesInRun is > 0
+                    && !turn.CutAtLimit && !turn.StoppedRepeating
+                    && MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(turn.TextContent))
+                    && await tools.RunDiffAsync(Math.Min(12_000, Math.Max(2_000, window / 2)), ct) is { Length: > 0 } runDiff)
+                {
+                    heldTurn = turn;
+                    // The question as the agent loop quotes it: its tail (never the context blocks injected before it), with
+                    // the notes typed during the run.
+                    var asked = messages.LastOrDefault(m => m.Role == "user" && !m.IsScaffolding && !m.IsUserNote)?.Content ?? "";
+                    var request = ChatTurnPolicy.WithUserNotes(AgentOrchestrator.TaskSnippet(asked),
+                        (steering?.Applied ?? []).Select(n => AgentOrchestrator.TaskSnippet(n.Text)));
+                    messages.Add(new ChatMessageDto("user", ModelPrompts.AgentReviewDiff(runDiff, request)) { IsScaffolding = true });
+                    reviewReset();
+                    continue;
+                }
+                // The turn after a review that gives no answer leaves the one the review held — its narration emptied
+                // first, so no front-end keeps it as the answer.
+                if (heldTurn is not null && !MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(turn.TextContent)))
+                    return Held(heldTurn);
                 return new AgentResult(turn.TextContent, executions, messages, totalTokens, lastPromptEval,
                                        AnswerCut: turn.CutAtLimit, AnswerRepeating: turn.StoppedRepeating,
                                        AnswerIsReasoning: turn.AnswerIsReasoning);
@@ -822,8 +846,17 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         }
 
         // ⚠ Flagged: without it, the default chat-with-tools path and /task end at the cap with no notice at all — the
-        // limit message reads as the answer, and a task finishes "done".
+        // limit message reads as the answer, and a task finishes "done". After a review, the answer it held is the answer.
+        if (heldTurn is not null) return Held(heldTurn) with { ReachedIterationLimit = true };
         return new AgentResult(Strings.MsgIterationLimit(maxIterations), executions, messages, totalTokens, lastPromptEval,
                                ReachedIterationLimit: true);
+
+        // The answer the review held: what was streamed since emptied, its own flags kept.
+        AgentResult Held(ChatTurnResult held)
+        {
+            reviewReset?.Invoke();
+            return new AgentResult(held.TextContent, executions, messages, totalTokens, lastPromptEval,
+                                   AnswerCut: held.CutAtLimit, AnswerRepeating: held.StoppedRepeating, AnswerIsReasoning: held.AnswerIsReasoning);
+        }
     }
 }

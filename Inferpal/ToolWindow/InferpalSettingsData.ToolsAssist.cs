@@ -150,11 +150,15 @@ internal partial class InferpalSettingsData
     }
 
     /// <summary>Opens on what the settings describe now: the first answer sets every choice.</summary>
-    private async Task OpenAssistAsync()
+    private async Task OpenAssistAsync(bool reopen = false)
     {
         if (_live?.ToolsAssist is not { } assist) return;
         var seq = 0;
-        await RunOnVMContextAsync(() => seq = ++_assistSeq);
+        // ⚠ Judged on the VM context: a save seen from another thread just before Apply set its flag would otherwise start a
+        // reopen that outnumbers the Apply, and the Apply — the settings already written — would not close.
+        // A reopen on a save seen from another thread: only if the assistant is still open (Cancel may have closed it since).
+        await RunOnVMContextAsync(() => seq = _assistApplying || reopen && !_assistOpen ? 0 : ++_assistSeq);
+        if (seq == 0) return;
         try
         {
             var result = await assist(null, false);
@@ -227,9 +231,16 @@ internal partial class InferpalSettingsData
             {
                 _assistApplying = false;
                 RaiseNotifyPropertyChangedEvent(nameof(AssistCanAct));
-                if (seq != _assistSeq) return;
-                if (result is not { } r) { SetAssistError(Strings.ToolListNoChat); return; }
-                if (!r.Applied) { ShowAssistModel(r.Model); SetAssistError(r.Message); return; }
+                // What was written is closed on, whatever was asked since: the settings changed, the assistant is done.
+                if (result is { Applied: false } || result is null)
+                {
+                    if (seq != _assistSeq) return;
+                    if (result is not { } refused) { SetAssistError(Strings.ToolListNoChat); return; }
+                    ShowAssistModel(refused.Model);
+                    SetAssistError(refused.Message);
+                    return;
+                }
+                var r = result.Value;
                 // The form follows what was written, as opened too: else a later Save writes the old auto-context back, and
                 // the form counts an unsaved change nobody made (and stops following the file).
                 SetProperty(ref _ragAutoContextEnabled, r.Model.Plan.AutoContext, nameof(RagAutoContextEnabled));
@@ -255,7 +266,7 @@ internal partial class InferpalSettingsData
     /// Its own Apply saves while <see cref="_assistApplying"/> holds, and is left alone.</summary>
     private void OnConfigSavedForAssist()
     {
-        if (_assistOpen && !_assistApplying) _ = OpenAssistAsync();
+        if (_assistOpen && !_assistApplying) _ = OpenAssistAsync(reopen: true);
     }
 
     private void CloseAssist(string? said)
