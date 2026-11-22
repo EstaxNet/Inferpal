@@ -178,6 +178,26 @@ internal static class ModelPrompts
         + "in my language, and say what you left as it is and why. If nothing needs fixing, just write the final answer.\n\n{0}",
                       diff, task);
 
+    /// <summary>Sent once, when a run that changed the interface of an app it started gives its final answer without having
+    /// looked at it since (IToolRegistry.UnseenInterfaceChange).</summary>
+    /// <param name="offered">The look tools this turn sends (view_page, interact_page, view_window, interact_window): only
+    /// those are named.</param>
+    public static string AgentLookAfterInterfaceChange(string facts, IReadOnlyCollection<string> offered)
+    {
+        var ways = new List<string>();
+        if (offered.Contains("view_page")) ways.Add("view_page for a web page (at the address the app serves, which its output above gives)");
+        else if (offered.Contains("interact_page")) ways.Add("interact_page for a web page (its capture shows it)");
+        if (offered.Contains("view_window")) ways.Add("view_window for a desktop window");
+        else if (offered.Contains("interact_window")) ways.Add("interact_window for a desktop window");
+        return "Before you answer: " + facts + " Look at what your change does as the person will see it: " + string.Join(", ", ways) + ". "
+             + "If it does not look the way my request asks — something hidden, overlapping, cut off, unstyled, or no change at all — "
+             + "fix it with your tools and look again. Then write the complete final answer to my request, in my language, and say what you checked.";
+    }
+
+    /// <summary>The look tools a turn sends, for <see cref="AgentLookAfterInterfaceChange"/>; none: no look is asked for.</summary>
+    public static IReadOnlyCollection<string> LookToolsOffered(IEnumerable<string> sent) =>
+        [.. sent.Where(n => n is "view_page" or "interact_page" or "view_window" or "interact_window")];
+
     /// <summary>Nudge when an ACT response is a new JSON plan instead of a tool call or an answer (AgentOrchestrator.LooksLikePlanEcho).</summary>
     public const string AgentPlanEchoNudge =
         "That is a plan, not a step carried out. Do not write another plan. Call the tool for the next step now "

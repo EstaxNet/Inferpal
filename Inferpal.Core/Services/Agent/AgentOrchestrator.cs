@@ -1064,6 +1064,8 @@ internal sealed class AgentOrchestrator
         int planEchoNudges = 0;
         // A run that wrote reads its own diff back once before it answers (pari 159).
         var diffReviewed = false;
+        // Asked once to look at an interface it changed (UnseenInterfaceChange).
+        var lookAsked = false;
         const int ReviewDiffChars = 12_000;
         // The answer the review held back: what the run ends on if the turns after the review give no usable answer.
         string? heldAnswer = null;
@@ -1506,17 +1508,34 @@ internal sealed class AgentOrchestrator
                     continue;
                 }
 
+                // (3a) The run changed the interface of an app it started and has not looked since: once, it looks before it
+                //      says it is done (what the source cannot show — a rule overridden, an element covered). Room for a look,
+                //      a fix and a second look.
+                // ⚠ Also on a turn with no visible text once tools ran: a model that reasons ends there, and the run would go
+                //   to its synthesis without either. Only a visible answer is held.
+                if (!lookAsked && (visible || executions.Count > 0) && iteration + 4 < maxIter
+                    && !LooksLikeToolRefusal(turn.TextContent) && !LooksLikePlanEcho(turn.TextContent)
+                    && ModelPrompts.LookToolsOffered(tools.Definitions.Select(d => d.Function.Name)) is { Count: > 0 } looks
+                    && tools.UnseenInterfaceChange() is { } unseen)
+                {
+                    lookAsked = true;
+                    if (visible) heldAnswer ??= turn.TextContent;
+                    messages.Add(new ChatMessageDto("user", ModelPrompts.AgentLookAfterInterfaceChange(unseen, looks)) { IsScaffolding = true });
+                    onStreamReset?.Invoke();
+                    continue;
+                }
+
                 // (3) The run wrote files: once, before it says it is done, it reads back what it changed against the request —
                 //     a leftover print, a change not asked for, the test or the caller it did not touch. Never at the last
                 //     iteration (nothing left to fix with), never on an answer that is no answer.
                 //     Room for the review and a fix (three iterations), a diff sized to the window that is loaded.
-                if (!diffReviewed && visible && iteration + 3 < maxIter && tools.WritesInRun is > 0
+                if (!diffReviewed && (visible || executions.Count > 0) && iteration + 3 < maxIter && tools.WritesInRun is > 0
                     && !LooksLikeToolRefusal(turn.TextContent) && !LooksLikePlanEcho(turn.TextContent)
                     && await tools.RunDiffAsync(Math.Min(ReviewDiffChars, Math.Max(2_000, await RunWindowAsync(model, ct) / 2)), ct)
                        is { Length: > 0 } runDiff)
                 {
                     diffReviewed = true;
-                    heldAnswer = turn.TextContent;
+                    if (visible) heldAnswer = turn.TextContent;
                     messages.Add(new ChatMessageDto("user", ModelPrompts.AgentReviewDiff(runDiff, userTask)) { IsScaffolding = true });
                     onStreamReset?.Invoke();
                     continue;

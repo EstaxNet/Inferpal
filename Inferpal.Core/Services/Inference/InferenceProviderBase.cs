@@ -704,6 +704,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         // A chat turn's run reads its diff back once before it answers (RunDiffReview), the answer it held as the fallback.
         var reviewReset = Agent.RunDiffReview.Current;
         ChatTurnResult? heldTurn = null;
+        bool lookAsked = false, diffReviewed = false;
 
         for (int i = 0; i < maxIterations; i++)
         {
@@ -819,12 +820,25 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             }
             else
             {
+                // An interface it changed in an app it started, not looked at since: once, it looks before it answers.
+                if (reviewReset is not null && !lookAsked && i + 4 < maxIterations && !turn.CutAtLimit && !turn.StoppedRepeating
+                    && MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(turn.TextContent))
+                    && ModelPrompts.LookToolsOffered(tools.Definitions.Select(d => d.Function.Name)) is { Count: > 0 } looks
+                    && tools.UnseenInterfaceChange() is { } unseen)
+                {
+                    lookAsked = true;
+                    heldTurn ??= turn;
+                    messages.Add(new ChatMessageDto("user", ModelPrompts.AgentLookAfterInterfaceChange(unseen, looks)) { IsScaffolding = true });
+                    reviewReset();
+                    continue;
+                }
                 // An answer cut at the limit or stopped repeating is said as it is: its notice and Continue stay its own.
-                if (reviewReset is not null && heldTurn is null && i + 3 < maxIterations && tools.WritesInRun is > 0
+                if (reviewReset is not null && !diffReviewed && i + 3 < maxIterations && tools.WritesInRun is > 0
                     && !turn.CutAtLimit && !turn.StoppedRepeating
                     && MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(turn.TextContent))
                     && await tools.RunDiffAsync(Math.Min(12_000, Math.Max(2_000, window / 2)), ct) is { Length: > 0 } runDiff)
                 {
+                    diffReviewed = true;
                     heldTurn = turn;
                     // The question as the agent loop quotes it: its tail (never the context blocks injected before it), with
                     // the notes typed during the run.

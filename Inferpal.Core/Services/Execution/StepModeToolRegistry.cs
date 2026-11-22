@@ -26,6 +26,7 @@ internal sealed class StepModeToolRegistry(IToolRegistry inner, Func<Cancellatio
 
     public int? WritesInRun => inner.WritesInRun;
     public Task<string?> RunDiffAsync(int budget, CancellationToken ct) => inner.RunDiffAsync(budget, ct);
+    public string? UnseenInterfaceChange() => inner.UnseenInterfaceChange();
     public int? UnseenCallsInRun => inner.UnseenCallsInRun;
     public int? AutoApprovals => inner.AutoApprovals;
     public void ForgetWholeRead(string path) => inner.ForgetWholeRead(path);

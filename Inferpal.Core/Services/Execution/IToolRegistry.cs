@@ -44,6 +44,14 @@ internal interface IToolRegistry
     Task<string?> RunDiffAsync(int budget, CancellationToken ct) => Task.FromResult<string?>(null);
 
     /// <summary>
+    /// What the run changed in the interface and has not looked at since, while an app it started still runs — the files
+    /// and the app's jobs, said to the model; <c>null</c> when there is nothing to look at (no such file, no app running, a
+    /// look taken after the last of those writes).
+    /// </summary>
+    /// <remarks>⚠ A decorator forwards it: answered by default, a run is never asked to look at what it changed.</remarks>
+    string? UnseenInterfaceChange() => null;
+
+    /// <summary>
     /// How many calls of the current run changed the work tree where the run could not follow it (outside git, past a
     /// cap); <c>null</c> when this registry watches nothing or no run is active.
     /// </summary>

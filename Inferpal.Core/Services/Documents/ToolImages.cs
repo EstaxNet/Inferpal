@@ -18,7 +18,16 @@ internal sealed class ToolImageInbox
     private readonly ConcurrentQueue<ChatImage> _images = new();
 
     /// <summary>Keeps an image a tool read, for the loop to send after the batch.</summary>
-    public void Put(ChatImage image) => _images.Enqueue(image);
+    public void Put(ChatImage image)
+    {
+        _images.Enqueue(image);
+        Interlocked.Increment(ref _received);
+    }
+
+    private int _received;
+
+    /// <summary>How many images were put here since the inbox was made: a call that raised it brought a picture back.</summary>
+    public int Received => Volatile.Read(ref _received);
 
     /// <summary>Where a look at what an app shows is noted for the run (<see cref="Look"/>); set by the registry.</summary>
     public Action<string, ChatImage>? Looked { get; set; }

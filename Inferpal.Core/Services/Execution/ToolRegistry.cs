@@ -90,6 +90,63 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         return shownAny || named.Count > 0 ? sb.ToString() : null;
     }
 
+    /// <summary>The background jobs of <c>run_command</c>: the apps the agent started.</summary>
+    private readonly Shell.BackgroundShellRegistry? _jobs;
+
+    /// <summary>The run of the agent's last look at what an app shows, and each interface file of that run as it was then;
+    /// a look of another run counts for nothing.</summary>
+    /// <remarks>⚠ A file is compared with itself, never its date with the clock: a network drive stamps with its own clock,
+    /// FAT by two seconds, a copy keeps its source's date — and a deleted file has no date at all.</remarks>
+    private (string? Run, Dictionary<string, (bool Exists, long Length, DateTime Written)> Files) _lastLook = (null, []);
+
+    /// <summary>The tools that look at what an app shows.</summary>
+    private static readonly HashSet<string> LookTools = new(StringComparer.Ordinal)
+        { "view_page", "interact_page", "view_window", "interact_window" };
+
+    /// <summary>What a person sees of an app: styles, markup, components, window layouts.</summary>
+    internal static readonly HashSet<string> InterfaceExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".css", ".scss", ".sass", ".less", ".styl", ".html", ".htm", ".vue", ".svelte", ".jsx", ".tsx", ".astro",
+        ".xaml", ".axaml", ".razor", ".cshtml", ".hbs", ".ejs", ".pug",
+    };
+
+    /// <summary>The run's interface files, each as it is now.</summary>
+    private Dictionary<string, (bool Exists, long Length, DateTime Written)> InterfaceFilesNow()
+    {
+        var now = new Dictionary<string, (bool, long, DateTime)>(PathComparer.Default);
+        foreach (var change in _fileHistory.CurrentRunChanges)
+        {
+            if (!InterfaceExtensions.Contains(Path.GetExtension(change.OriginalPath))) continue;
+            try
+            {
+                var file = new FileInfo(change.OriginalPath);
+                now[change.OriginalPath] = file.Exists ? (true, file.Length, file.LastWriteTimeUtc) : (false, 0, default);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                now[change.OriginalPath] = (false, -1, default);   // unreadable: never the state a look saw
+            }
+        }
+        return now;
+    }
+
+    /// <inheritdoc/>
+    public string? UnseenInterfaceChange()
+    {
+        if (_jobs is null || _fileHistory.CurrentRunId is not { } run) return null;
+        var apps = _jobs.List().Where(j => j.Running && ViewWindowTool.Ours(_jobs, j.Id)).ToList();
+        if (apps.Count == 0) return null;
+        var seen = _lastLook.Run == run ? _lastLook.Files : [];
+        var unseen = InterfaceFilesNow().Where(f => !seen.TryGetValue(f.Key, out var then) || then != f.Value)
+                                        .Select(f => Root is { Length: > 0 } root ? Path.GetRelativePath(root, f.Key).Replace('\\', '/') : f.Key)
+                                        .ToList();
+        if (unseen.Count == 0) return null;
+        unseen.Sort(StringComparer.Ordinal);
+        return "You changed " + string.Join(", ", unseen.Take(12)) + (unseen.Count > 12 ? $" and {unseen.Count - 12} more" : "")
+             + ", and the app you started is still running: "
+             + string.Join("; ", apps.Take(4).Select(j => $"job {j.Id} `{(j.Command.Length > 120 ? j.Command[..119] + "…" : j.Command)}`")) + ".";
+    }
+
     /// <summary>One changed file's block, its header and its lines; a parenthesised reason when it is only named;
     /// <c>null</c> when nothing is left to say (no difference).</summary>
     private static async Task<string?> DiffBlockAsync(RunChange change, string shown, CancellationToken ct)
@@ -220,6 +277,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new ListFilesTool(root));
         Register(new SearchInFilesTool(root, overlay));
         var runCommand = new RunCommandTool(approval, config, root);
+        _jobs = runCommand.Background;
         Register(runCommand);
         Register(new ViewWindowTool(runCommand.Background, _readImages));
         Register(new InteractWindowTool(runCommand.Background, _readImages, approval, root, history));
@@ -753,8 +811,13 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             // one that backs up its own writes or writes the editor's buffer says so (NeedsWorkTreeWatch), and is spared it.
             if (!ToolCeilings.LeavesTrackedFilesAlone(name) && tool.NeedsWorkTreeWatchFor(args) && _fileHistory.IsTracking)
                 WorkTreeBracket.Enter(watch = await WorkTreeBracket.OpenAsync(Root, UnsavedNow(), ct));
+            var imagesBefore = _readImages.Received;
             var result = await tool.ExecuteAsync(args, ct);
             _fileHistory.RecordToolCall(name, ExtractSubject(args), sw.ElapsedMilliseconds, error: false);
+            // A look that brought a picture back: what was written before it has been seen (UnseenInterfaceChange). A capture
+            // that failed ("Not captured…", no browser) is no look.
+            if (LookTools.Contains(name) && _readImages.Received > imagesBefore)
+                _lastLook = (_fileHistory.CurrentRunId, InterfaceFilesNow());
             // Called by its exact name — read in tool_search's description — a tool on demand that ran is loaded. A call
             // refused before it ran (an excluded file) or that failed loads nothing.
             _onDemand.LoadIfDeferred(name);
