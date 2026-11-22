@@ -16,7 +16,9 @@ namespace Inferpal.Services.Tools;
 /// the card is forced each time, unless one of the person's <c>allow http_request</c> rules matches the whole subject
 /// (<see cref="Subject"/>). No redirect is followed: the next request is judged again.
 /// </remarks>
-internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? getWorkspaceRoot = null) : ITool
+/// <param name="internetOff">Whether the person keeps the Internet off now — <c>fetch_url</c> and <c>web_search</c> both turned
+/// off, unless opened for this question: then only this machine is reached, before any card.</param>
+internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? getWorkspaceRoot = null, Func<bool>? internetOff = null) : ITool
 {
     // A page in a legacy code page (windows-1252, shift_jis) is read as it says, never as UTF-8.
     static HttpRequestTool() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -75,6 +77,12 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
         if (IsUnspecified(uri))
             return $"Error: '{uri.Host}' is no address to call — the server listens on every interface; call it at 127.0.0.1.";
         var local = IsLoopback(uri);
+        // ⚠ "No Internet" means no request out, not "a card for each": answered before the card, and said so the model does
+        // not look for another way out. A local API is no Internet.
+        if (!local && internetOff?.Invoke() == true)
+            return ToolFailure.Said($"Error: {uri.Host} is not this machine, and the person's settings keep the Internet off (fetch_url and " +
+                   "web_search are turned off): http_request reaches only this machine (localhost, 127.0.0.1). The call was NOT executed. " +
+                   "Do not look for another way out: answer without it, and say what you could not reach.");
 
         var headers = new List<KeyValuePair<string, string>>();
         if (args.Has("headers") && !args.Object("headers", out _))

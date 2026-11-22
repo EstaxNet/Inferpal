@@ -292,7 +292,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         Register(new EditNotebookTool(approval, history, root, overlay, setDiff));
         Register(new RunNotebookTool(codeConsent, root, overlay));
         Register(new FetchUrlTool(approval, _readImages));
-        Register(new HttpRequestTool(approval, root));
+        // "No Internet" holds for every way out: http_request reaches only this machine while both web tools are off.
+        Register(new HttpRequestTool(approval, root, () => _tools.TryGetValue("fetch_url", out var fetch) && TurnedOff(fetch)
+                                                         && _tools.TryGetValue("web_search", out var search) && TurnedOff(search)));
         // A page an app the agent started serves (a background job of run_command) is its own work: looked at and used
         // without a card. Any other address of this machine is another app of the person's.
         Task<bool> ServedByAgent(int port, CancellationToken ct) => Shell.LocalPorts.ServedByAsync(port,

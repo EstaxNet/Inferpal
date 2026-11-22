@@ -382,6 +382,32 @@ public sealed class ToolSwitchesTests : IDisposable
         Assert.Contains("- " + line, XRayCommandHandler.Handle([], 0, 32_768, new InferpalConfig(), turnedOff: off));
     }
 
+    /// <summary>"No Internet" (fetch_url and web_search off) holds for http_request too: another machine is refused before any
+    /// card, this machine is not; opened for this question, the way out is open again. Reference arm: the web tools on.</summary>
+    [Fact]
+    public async Task WithTheInternetOff_HttpRequestReachesOnlyThisMachine_UnlessOpenedForThisQuestion()
+    {
+        var b = await Build(32_768, []);
+        static System.Text.Json.JsonElement Url(string url) => System.Text.Json.JsonDocument.Parse($$"""{"url":"{{url}}","timeout_seconds":2}""").RootElement;
+        const string Off = "keep the Internet off";
+
+        var on = await b.Tools.ExecuteAsync("http_request", Url("https://example.invalid/x"), CancellationToken.None);
+        Assert.DoesNotContain(Off, on);   // reference arm: the web tools are on
+
+        b.Config.DisabledTools = "fetch_url\nweb_search";
+        var outside = await b.Tools.ExecuteAsync("http_request", Url("https://example.invalid/x"), CancellationToken.None);
+        Assert.Contains(Off, outside);
+        Assert.Contains("NOT executed", outside);
+        var local = await b.Tools.ExecuteAsync("http_request", Url("http://127.0.0.1:9/"), CancellationToken.None);
+        Assert.DoesNotContain(Off, local);   // a local API is no Internet
+
+        using (ToolSwitches.OpenForThisQuestion(["fetch_url", "web_search"]))
+            Assert.DoesNotContain(Off, await b.Tools.ExecuteAsync("http_request", Url("https://example.invalid/x"), CancellationToken.None));
+
+        b.Config.DisabledTools = "web_search";   // pages it is given: the way out stays, card by card
+        Assert.DoesNotContain(Off, await b.Tools.ExecuteAsync("http_request", Url("https://example.invalid/x"), CancellationToken.None));
+    }
+
     /// <summary>A tool that is on but offered only when it can serve (interact_window, with no app running) says it is on —
     /// its button offers to turn it off, and a state read as "off" beside "Turn off" contradicts it.</summary>
     [Fact]
