@@ -88,7 +88,11 @@ public sealed class InterfaceLookTests : IDisposable
                     Assert.Null(tools.UnseenInterfaceChange());
                     await Task.Delay(50);
                     await ChangeAsync(tools.History, "app.css", "button { color: blue; }\n");   // written after the look
-                    Assert.Contains("app.css", tools.UnseenInterfaceChange(), StringComparison.Ordinal);
+                    // A capture can outlast the first app (a child is parked 25 s at most): one started now still runs.
+                    var again = await tools.ExecuteAsync("run_command", Args(new { command = LongCommand, background = true }), CancellationToken.None);
+                    var againId = System.Text.RegularExpressions.Regex.Match(again, @"bg\d+").Value;
+                    try { Assert.Contains("app.css", tools.UnseenInterfaceChange(), StringComparison.Ordinal); }
+                    finally { await tools.ExecuteAsync("run_command", Args(new { action = "stop", id = againId }), CancellationToken.None); }
                 }
                 else Assert.False(OperatingSystem.IsWindows() && chromium, looked);   // undecided only without a browser
             }

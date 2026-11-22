@@ -12,6 +12,7 @@ namespace Inferpal.Tests;
 /// Routing and rendering of <c>/task</c>, plus the tool surface a background run is allowed.
 /// The queue is driven with a runner that never returns, so tasks sit in known states.
 /// </summary>
+[Collection(CultureSerialCollection.Name)]   // FormatDuration flips the interface language
 public class TaskCommandTests
 {
     private static BackgroundTaskQueue Queue() =>

@@ -106,7 +106,9 @@ public sealed class PatchTextTests : IDisposable
         var file = PatchText.Parse(FormatPatch)!.Files[0];
 
         var (atLine, exact) = PatchText.Apply(Totals, file);
-        var (shiftedText, shifted) = PatchText.Apply("// header\n// two\n" + Totals, file);
+        // The file's own line ends: this source file (and so Totals) is CRLF where git checks it out so.
+        var nl = Totals.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        var (shiftedText, shifted) = PatchText.Apply("// header" + nl + "// two" + nl + Totals, file);
         var (_, gone) = PatchText.Apply(Totals.Replace("a * 0.2m", "a * 0.21m", StringComparison.Ordinal), file);
         var (_, again) = PatchText.Apply(atLine, file);
 
@@ -115,7 +117,7 @@ public sealed class PatchTextTests : IDisposable
         Assert.EndsWith(Totals.EndsWith("\r\n", StringComparison.Ordinal) ? "}\r\n" : "}\n", atLine, StringComparison.Ordinal);
         Assert.Equal(PatchText.Outcome.Applied, exact[0].Outcome);
         Assert.Equal((PatchText.Outcome.Shifted, 2), (shifted[0].Outcome, shifted[0].Offset));
-        Assert.StartsWith("// header\n// two\nclass Totals", shiftedText, StringComparison.Ordinal);
+        Assert.StartsWith("// header" + nl + "// two" + nl + "class Totals", shiftedText, StringComparison.Ordinal);
         Assert.Equal(PatchText.Outcome.Rejected, gone[0].Outcome);
         Assert.Equal(PatchText.Outcome.AlreadyApplied, again[0].Outcome);
     }
