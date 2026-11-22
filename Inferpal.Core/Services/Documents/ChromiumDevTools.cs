@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text.Json;
@@ -134,13 +135,15 @@ internal static class ChromiumDevTools
             _ = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
             _ = process.StandardError.ReadToEndAsync(CancellationToken.None);
             var port = await PortAsync(process, profile, portWait, ct).ConfigureAwait(false);
+            // From here on, the process stopped and watched is the browser that runs, never a launcher that handed off.
+            process = Owned(process, profile);
             if (port is null)
             {
-                var exited = process.HasExited;
+                var running = !process.HasExited;
                 Stop(process);
-                return exited
-                    ? (null, "the browser exited as it started", false)
-                    : (null, $"the browser did not open its DevTools port within {portWait.TotalSeconds:0} s", true);
+                return running
+                    ? (null, $"the browser did not open its DevTools port within {portWait.TotalSeconds:0} s", true)
+                    : (null, "the browser exited as it started", false);
             }
             using var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared });
             var socketUrl = await PageSocketAsync(http, port, ct).ConfigureAwait(false);
@@ -157,9 +160,23 @@ internal static class ChromiumDevTools
         catch
         {
             page?.Dispose();
-            Stop(process);
+            Stop(Owned(process, profile));
             throw;
         }
+    }
+
+    /// <summary>The browser that runs on <paramref name="profile"/>: <paramref name="launched"/>, or — when it handed off
+    /// (<see cref="HandedOff"/>) — the process that holds the profile, else nothing would stop it, nor say it is gone.</summary>
+    private static System.Diagnostics.Process Owned(System.Diagnostics.Process launched, string profile)
+    {
+        if (!HandedOff(launched)) return launched;
+        if (ProfileOwner(profile) is not { } real)
+        {
+            Diagnostics.Record("ChromiumDevTools.Owned", "a browser that handed off was not found holding its profile");
+            return launched;
+        }
+        launched.Dispose();
+        return real;
     }
 
     /// <summary>Kills the browser and waits for it: gone before the caller removes its profile, which it holds files in.</summary>
@@ -177,10 +194,12 @@ internal static class ChromiumDevTools
     {
         var file = Path.Combine(profile, "DevToolsActivePort");
         var until = DateTime.UtcNow + wait;
+        var handOff = DateTime.UtcNow + HandOffGrace;
         while (DateTime.UtcNow < until)
         {
             ct.ThrowIfCancellationRequested();
-            if (browser.HasExited) return null;
+            // A launcher that handed off has exited while its browser opens the port; one that exited otherwise is gone.
+            if (browser.HasExited && !(HandedOff(browser) && (ProfileHeld(profile) || DateTime.UtcNow < handOff))) return null;
             try
             {
                 if (File.Exists(file) && File.ReadAllLines(file) is [{ Length: > 0 } port, { Length: > 0 }, ..]) return port.Trim();
@@ -189,6 +208,139 @@ internal static class ChromiumDevTools
             await Task.Delay(100, ct).ConfigureAwait(false);
         }
         return null;
+    }
+
+    /// <summary>How long a launcher that exited may take to have its browser hold the profile.</summary>
+    private static readonly TimeSpan HandOffGrace = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// Whether <paramref name="launched"/> exited by handing the run to a browser it started: Chrome and Edge on Windows may
+    /// start their browser as a child and exit at once (code 0), the picture or the DevTools port coming from the child.
+    /// </summary>
+    /// <remarks>⚠ Judged on its exit alone, never as the browser's end: what decides is the profile the child holds
+    /// (<see cref="ProfileHeld"/>).</remarks>
+    internal static bool HandedOff(System.Diagnostics.Process launched)
+    {
+        try { return launched.HasExited && launched.ExitCode == 0; }
+        catch (InvalidOperationException) { return false; }
+    }
+
+    /// <summary>Whether a Chromium still runs on <paramref name="profile"/>: it holds its lock file there while it does.</summary>
+    internal static bool ProfileHeld(string profile)
+    {
+        var singleton = new FileInfo(Path.Combine(profile, "SingletonLock"));   // Linux and macOS: a link, gone at exit
+        if (singleton.LinkTarget is not null || singleton.Exists) return true;
+        var lockFile = Path.Combine(profile, "lockfile");                       // Windows: a file held open while it runs
+        if (!File.Exists(lockFile)) return false;
+        try
+        {
+            using (File.Open(lockFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) return false;
+        }
+        catch (IOException) { return true; }
+        catch (UnauthorizedAccessException) { return true; }
+    }
+
+    /// <summary>
+    /// Waits, after a launcher that handed off (<see cref="HandedOff"/>), for the browser it started to let its profile go —
+    /// a capture from the command line is written by that browser, and only when it exits is its picture whole.
+    /// </summary>
+    /// <returns>Whether the browser let it go within <paramref name="wait"/>; when not, or when <paramref name="ct"/> fires,
+    /// the browser is stopped (it would outlive the capture, holding its work folder).</returns>
+    internal static async Task<bool> WaitForHandOffAsync(string profile, TimeSpan wait, CancellationToken ct)
+    {
+        var started = DateTime.UtcNow;
+        var seen = false;
+        try
+        {
+            while (DateTime.UtcNow - started < wait)
+            {
+                if (ProfileHeld(profile)) seen = true;
+                else if (seen || DateTime.UtcNow - started > HandOffGrace) return true;
+                await Task.Delay(100, ct).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            if (ProfileOwner(profile) is { } stopped) Stop(stopped);
+            throw;
+        }
+        if (ProfileOwner(profile) is { } left) Stop(left);
+        return false;
+    }
+
+    /// <summary>
+    /// The process that holds <paramref name="profile"/>'s lock file, as Windows' Restart Manager names it; <c>null</c> when
+    /// none does, or elsewhere (no launcher hands off there).
+    /// </summary>
+    /// <remarks>Read without the browser's DevTools port: it names the browser that never opened it too.</remarks>
+    internal static System.Diagnostics.Process? ProfileOwner(string profile)
+    {
+        if (!OperatingSystem.IsWindows()) return null;
+        var lockFile = Path.Combine(profile, "lockfile");
+        if (!File.Exists(lockFile)) return null;
+        if (RestartManager.RmStartSession(out var session, 0, new System.Text.StringBuilder(64)) != 0) return null;
+        try
+        {
+            if (RestartManager.RmRegisterResources(session, 1, [lockFile], 0, null, 0, null) != 0) return null;
+            uint count = 4, reasons = 0;
+            var holders = new RestartManager.ProcessInfo[count];
+            if (RestartManager.RmGetList(session, out _, ref count, holders, ref reasons) != 0) return null;
+            for (var i = 0; i < count; i++)
+            {
+                try
+                {
+                    var process = System.Diagnostics.Process.GetProcessById(holders[i].Process.ProcessId);
+                    // The same process the Restart Manager saw, never another that took its id since.
+                    if (process.StartTime.ToFileTimeUtc() == ((long)holders[i].Process.StartHigh << 32 | holders[i].Process.StartLow)) return process;
+                    process.Dispose();
+                }
+                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+                {
+                    // Gone since it was listed.
+                }
+            }
+            return null;
+        }
+        finally
+        {
+            _ = RestartManager.RmEndSession(session);
+        }
+    }
+
+    private static class RestartManager
+    {
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct UniqueProcess
+        {
+            public int ProcessId;
+            public uint StartLow, StartHigh;   // a FILETIME: two DWORDs, 4-byte aligned (a long would pad the struct)
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal struct ProcessInfo
+        {
+            public UniqueProcess Process;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] public string AppName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)] public string ServiceShortName;
+            public int ApplicationType;
+            public uint AppStatus;
+            public uint TSSessionId;
+            [MarshalAs(UnmanagedType.Bool)] public bool Restartable;
+        }
+
+        [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RmStartSession(out uint session, int flags, System.Text.StringBuilder key);
+
+        [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+        internal static extern int RmRegisterResources(uint session, uint files, string[] names, uint applications,
+                                                       UniqueProcess[]? processes, uint services, string[]? serviceNames);
+
+        [DllImport("rstrtmgr.dll")]
+        internal static extern int RmGetList(uint session, out uint needed, ref uint count, [In, Out] ProcessInfo[] holders,
+                                             ref uint reasons);
+
+        [DllImport("rstrtmgr.dll")]
+        internal static extern int RmEndSession(uint session);
     }
 
     /// <summary>The page target's socket, asked again while the browser has not created its first tab yet.</summary>
@@ -215,7 +367,8 @@ internal sealed class ChromiumBrowser(System.Diagnostics.Process process, DevToo
     /// <summary>Whether the browser still runs and its page still answers the connection.</summary>
     public bool Running
     {
-        get { try { return !process.HasExited && !Page.Lost; } catch (InvalidOperationException) { return false; } }
+        // A browser that handed off and was not found holding its profile (Owned) is judged by its page alone.
+        get { try { return (!process.HasExited || ChromiumDevTools.HandedOff(process)) && !Page.Lost; } catch (InvalidOperationException) { return false; } }
     }
 
     public void Dispose()

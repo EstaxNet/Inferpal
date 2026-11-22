@@ -200,8 +200,13 @@ internal static class PageCapture
                         psi.ArgumentList.Add(a);
                     break;
             }
+            var running = Stopwatch.StartNew();
             var run = await ChildProcess.RunAsync(psi, budget, ct);
             if (run.TimedOut) return (null, $"{browser.Name} did not finish the capture within {Budget.TotalSeconds:0} s: it was stopped.", null);
+            // A Chromium launcher that handed off (ChromiumDevTools.HandedOff) exits before its browser writes the picture.
+            if (browser.Engine == CaptureEngine.Chromium && run.ExitCode == 0 && !File.Exists(png)
+                && !await ChromiumDevTools.WaitForHandOffAsync(profile, budget - running.Elapsed, ct))
+                return (null, $"{browser.Name} did not finish the capture within {Budget.TotalSeconds:0} s.", null);
             if (!File.Exists(png) || new FileInfo(png).Length == 0)
             {
                 var said = (run.Stderr + "\n" + run.Stdout).Trim();

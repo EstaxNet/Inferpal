@@ -264,7 +264,14 @@ public sealed class InteractPageToolTests : IDisposable
     private static async Task<string?> Played(InteractPageTool tool, object args)
     {
         var said = await Call(tool, args);
-        return said.StartsWith("No browser", StringComparison.Ordinal) ? null : said;
+        if (!said.StartsWith("No browser", StringComparison.Ordinal)) return said;
+        // ⚠ A browser that hands off to a child (ChromiumDevTools.HandedOff) read as "exited as it started" would keep every
+        // one of these tests green while the tool failed: on Windows, where Edge is installed, that is a red. What the machine
+        // itself refuses (a policy that turns DevTools off) stays undecided.
+        if (OperatingSystem.IsWindows() && PageCapture.FindAll().Any(b => b.Engine == CaptureEngine.Chromium)
+            && said.Contains("exited as it started", StringComparison.Ordinal))
+            Assert.Fail("A Chromium is installed here, yet: " + said);
+        return null;
     }
 
     [Fact]
