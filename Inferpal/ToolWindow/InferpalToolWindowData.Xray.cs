@@ -86,6 +86,31 @@ internal partial class InferpalToolWindowData
         return (list!, message);
     }
 
+    /// <summary>The settings' tools assistant: the review for <paramref name="answers"/>, and with <paramref name="apply"/>
+    /// what it shows written — refused while a reply is being written, like the Tools page's buttons.</summary>
+    private async Task<(ToolsAssistantModel Model, string? Message, bool Applied)> ToolsAssistFromSettingsAsync(
+        AssistantAnswers? answers, bool apply)
+    {
+        ToolsAssistantModel? model = null;
+        string? message = null;
+        var applied = false;
+        await RunOnVMContextAsync(() =>
+        {
+            ToolsAssistantModel Build() => ToolsAssistantPresenter.Build(_tools.Profile(), _config.SharedDisabledTools,
+                                                                          _config.RagAutoContextEnabled, ContextWindowInUse, answers);
+            model = Build();
+            if (!apply) return;
+            if (IsLoading || _sendStarting) { message = Strings.HostTurnBusy; return; }
+            _config.DisabledTools         = model.Plan.DisabledTools;
+            _config.RagAutoContextEnabled = model.Plan.AutoContext;
+            _config.Save();
+            model   = Build();
+            message = Strings.AssistApplied(model.Plan.On, model.Plan.Off);
+            applied = true;
+        });
+        return (model!, message, applied);
+    }
+
     /// <summary>The counts the settings' Context page shows, read on the VM context.</summary>
     private async Task<XRayPanelModel?> CurrentXrayModelAsync()
     {

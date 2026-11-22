@@ -129,6 +129,43 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- The tools assistant's card, for a radio or a box inside an item template: its colours come from the window
+             (the ItemsControl's context), its title and sentence from the item. -->
+        <Style x:Key="AssistCard" TargetType="ToggleButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="bd" BorderThickness="1" CornerRadius="8" Padding="10,8"
+                                BorderBrush="{Binding DataContext.McpRowBorder, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                Background="{Binding DataContext.McpRowBackground, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                           Foreground="{Binding DataContext.TextForeground, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                                <TextBlock Text="{Binding Description}" FontSize="11.5" TextWrapping="Wrap" Margin="0,3,0,0"
+                                           Foreground="{Binding DataContext.SubtleForeground, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="BorderThickness" Value="2"/>
+                                <Setter TargetName="bd" Property="BorderBrush"
+                                        Value="{Binding DataContext.LinkForeground, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <DataTemplate x:Key="AssistRadioCard">
+            <RadioButton Style="{StaticResource AssistCard}" GroupName="{Binding Group}" IsChecked="{Binding Picked, Mode=TwoWay}"
+                         AutomationProperties.Name="{Binding Title}" AutomationProperties.HelpText="{Binding Description}"/>
+        </DataTemplate>
+        <DataTemplate x:Key="AssistBoxCard">
+            <CheckBox Style="{StaticResource AssistCard}" IsChecked="{Binding Picked, Mode=TwoWay}"
+                      AutomationProperties.Name="{Binding Title}" AutomationProperties.HelpText="{Binding Description}"/>
+        </DataTemplate>
     </DataTemplate.Resources>
 
     <Grid x:Name="root" Background="{Binding PageBg}">
@@ -2052,7 +2089,180 @@
                 <TextBlock Text="{Binding DescSectionToolList}" Style="{StaticResource Hint}" Margin="0,2,0,8"/>
                 <TextBlock Text="{Binding ToolListNoChatText}" Foreground="{Binding SubtleForeground}" TextWrapping="Wrap" Margin="0,0,0,12"
                            Visibility="{Binding ToolListNoChat, Converter={StaticResource b2v}}"/>
-                <StackPanel Visibility="{Binding HasToolList, Converter={StaticResource b2v}}" Margin="0,0,0,8">
+                <!-- The tools assistant (pari 163): its entry over the list, its panel in place of the list while open.
+                     Nothing is written before Apply; every choice asks the Core again. -->
+                <StackPanel Visibility="{Binding AssistOpen, Converter={StaticResource b2v}}" Margin="0,0,0,8"
+                            AutomationProperties.Name="{Binding LabelAssistTitle}">
+                    <TextBlock Text="{Binding LabelAssistTitle}" Style="{StaticResource SectionTitle}" Margin="0"/>
+                    <TextBlock Text="{Binding LabelAssistSubtitle}" Style="{StaticResource Hint}" Margin="0,2,0,8"/>
+                    <ItemsControl ItemsSource="{Binding AssistSteps}" Margin="0,0,0,10">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock x:Name="step" Text="{Binding Title}" Foreground="{Binding Foreground}" Margin="0,0,16,0"/>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Current}" Value="True">
+                                        <Setter TargetName="step" Property="FontWeight" Value="SemiBold"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="220"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                            <!-- 1. What you work on -->
+                            <StackPanel Visibility="{Binding AssistStep0, Converter={StaticResource b2v}}">
+                                <TextBlock Text="{Binding LabelAssistWorkQuestion}" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding LabelAssistWorkHint}" Style="{StaticResource Hint}" Margin="0,0,0,8"/>
+                                <ItemsControl ItemsSource="{Binding AssistWorkCards}" ItemTemplate="{StaticResource AssistBoxCard}"
+                                              AutomationProperties.Name="{Binding LabelAssistWorkQuestion}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding LabelAssistWorkNote}" Style="{StaticResource Hint}"/>
+                            </StackPanel>
+                            <!-- 2. What the agent may reach -->
+                            <StackPanel Visibility="{Binding AssistStep1, Converter={StaticResource b2v}}">
+                                <TextBlock Text="{Binding LabelAssistReachQuestion}" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding LabelAssistReachHint}" Style="{StaticResource Hint}" Margin="0,0,0,8"/>
+                                <TextBlock Text="{Binding LabelAssistCommands}" Style="{StaticResource FieldLabel}" Margin="0,4,0,4"/>
+                                <ItemsControl ItemsSource="{Binding AssistCommandCards}" ItemTemplate="{StaticResource AssistRadioCard}"
+                                              AutomationProperties.Name="{Binding LabelAssistCommands}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><UniformGrid Columns="3"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding LabelAssistInternet}" Style="{StaticResource FieldLabel}" Margin="0,4,0,4"/>
+                                <ItemsControl ItemsSource="{Binding AssistInternetCards}" ItemTemplate="{StaticResource AssistRadioCard}"
+                                              AutomationProperties.Name="{Binding LabelAssistInternet}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><UniformGrid Columns="3"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding LabelAssistDebugger}" Style="{StaticResource FieldLabel}" Margin="0,4,0,4"/>
+                                <ItemsControl ItemsSource="{Binding AssistDebuggerCards}" ItemTemplate="{StaticResource AssistRadioCard}"
+                                              AutomationProperties.Name="{Binding LabelAssistDebugger}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </StackPanel>
+                            <!-- 3. What goes with each question -->
+                            <StackPanel Visibility="{Binding AssistStep2, Converter={StaticResource b2v}}">
+                                <TextBlock Text="{Binding LabelAssistContextQuestion}" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding AssistContextHint}" Style="{StaticResource Hint}" Margin="0,0,0,8"/>
+                                <ItemsControl ItemsSource="{Binding AssistContextCards}" ItemTemplate="{StaticResource AssistRadioCard}"
+                                              AutomationProperties.Name="{Binding LabelAssistContextQuestion}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><UniformGrid Columns="3"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                                <CheckBox IsChecked="{Binding AssistRare, Mode=TwoWay}" AutomationProperties.Name="{Binding LabelAssistRareTools}" Margin="0,2,0,10">
+                                    <TextBlock Text="{Binding LabelAssistRareTools}" Foreground="{Binding TextForeground}" TextWrapping="Wrap" Margin="4,0,0,0"/>
+                                </CheckBox>
+                                <StackPanel Visibility="{Binding HasAssistServers, Converter={StaticResource b2v}}">
+                                    <TextBlock Text="{Binding LabelAssistMcpTitle}" Style="{StaticResource FieldLabel}"/>
+                                    <ItemsControl ItemsSource="{Binding AssistServerRows}" AutomationProperties.Name="{Binding LabelAssistMcpTitle}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding Picked, Mode=TwoWay}" AutomationProperties.Name="{Binding Title}" Margin="0,0,0,6">
+                                                    <TextBlock TextWrapping="Wrap" Margin="4,0,0,0">
+                                                        <Run Text="{Binding Title, Mode=OneWay}" FontWeight="SemiBold"
+                                                             Foreground="{Binding DataContext.TextForeground, ElementName=root}"/>
+                                                        <Run Text="  "/>
+                                                        <Run Text="{Binding Description, Mode=OneWay}" Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"/>
+                                                    </TextBlock>
+                                                </CheckBox>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+                            <!-- 4. The review: every tool that changes, why, and what it weighs -->
+                            <StackPanel Visibility="{Binding AssistStep3, Converter={StaticResource b2v}}">
+                                <TextBlock Text="{Binding LabelAssistReviewTitle}" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding LabelAssistReviewNone}" Style="{StaticResource Hint}"
+                                           Visibility="{Binding AssistNoRows, Converter={StaticResource b2v}}"/>
+                                <ItemsControl ItemsSource="{Binding AssistReviewRows}" AutomationProperties.Name="{Binding LabelAssistReviewTitle}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{Binding DataContext.McpRowBorder, ElementName=root}" BorderThickness="0,0,0,1" Padding="4,5">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="70"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Becomes}" Foreground="{Binding BecomesForeground}" FontWeight="SemiBold"/>
+                                                    <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                                                        <TextBlock Text="{Binding Tools}" FontFamily="Cascadia Mono, Consolas" FontSize="11.5" TextWrapping="Wrap"
+                                                                   Foreground="{Binding DataContext.TextForeground, ElementName=root}"/>
+                                                        <TextBlock Text="{Binding Because}" FontSize="11.5" TextWrapping="Wrap" Margin="0,2,0,0"
+                                                                   Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Saves}" TextAlignment="Right"
+                                                               Foreground="{Binding DataContext.SubtleForeground, ElementName=root}"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding LabelAssistReviewNote}" Style="{StaticResource Hint}" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <!-- What each question carries: the Core's figures, measured on the definitions sent. -->
+                        <Border Grid.Column="1" Style="{StaticResource Card}" VerticalAlignment="Top">
+                            <StackPanel>
+                                <TextBlock Text="{Binding LabelAssistCarries}" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="{Binding LabelAssistToolTokens}" Style="{StaticResource Hint}" Margin="0"/>
+                                <TextBlock Text="{Binding AssistTokens}" Foreground="{Binding TextForeground}" FontSize="15" FontWeight="SemiBold"
+                                           TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock Text="{Binding AssistCounts}" Style="{StaticResource Hint}"/>
+                                <StackPanel Visibility="{Binding HasAssistShare, Converter={StaticResource b2v}}" Margin="0,8,0,0">
+                                    <Border Width="200" Height="6" HorizontalAlignment="Left" CornerRadius="3" Background="{Binding McpRowBorder}">
+                                        <Border Width="{Binding AssistBarFill}" HorizontalAlignment="Left" CornerRadius="3" Background="{Binding LinkForeground}"/>
+                                    </Border>
+                                    <TextBlock Text="{Binding AssistShare}" Style="{StaticResource Hint}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding LabelAssistMeasured}" Style="{StaticResource Hint}" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <TextBlock Text="{Binding AssistError}" Foreground="{Binding WarningForeground}" TextWrapping="Wrap" Margin="0,8,0,0"
+                               Visibility="{Binding HasAssistError, Converter={StaticResource b2v}}"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                        <Button Content="{Binding AssistBackLabel}" Command="{Binding AssistBackCommand}" IsEnabled="{Binding AssistCanAct}" Padding="12,3" Margin="0,0,8,0"/>
+                        <Button Content="{Binding AssistNextLabel}" Command="{Binding AssistNextCommand}" IsEnabled="{Binding AssistCanAct}" Padding="12,3"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Margin="0,0,0,8">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="{Binding HasToolList, Converter={StaticResource b2v}}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding AssistOpen}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,10" Padding="12,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding LabelAssistEntry}" Foreground="{Binding TextForeground}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="{Binding LabelAssistOpen}" Command="{Binding OpenAssistCommand}" Padding="12,3" Margin="12,0,0,0"/>
+                        </Grid>
+                    </Border>
                     <TextBlock Text="{Binding ToolListSummary}" Foreground="{Binding TextForeground}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,6"/>
                     <TextBlock Text="{Binding ToolListMessage}" Foreground="{Binding WarningForeground}" TextWrapping="Wrap" Margin="0,0,0,6"
                                Visibility="{Binding HasToolListMessage, Converter={StaticResource b2v}}"/>

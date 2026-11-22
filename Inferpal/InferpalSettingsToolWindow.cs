@@ -56,7 +56,8 @@ internal class InferpalSettingsToolWindow : VsToolWindow
             OpenXray: OpenXrayAsync,
             OpenFile: OpenFileAsync,
             ToolList: async () => _context.ToolList is { } list ? await list() : null,
-            SetTool: async (key, off) => _context.SetTool is { } set ? await set(key, off) : null);
+            SetTool: async (key, off) => _context.SetTool is { } set ? await set(key, off) : null,
+            ToolsAssist: async (answers, apply) => _context.ToolsAssist is { } assist ? await assist(answers, apply) : null);
         var data = new InferpalSettingsData(_config, _client, Extensibility, _mcp, () => _index.RootDir, live);
         // A page asked for before the window existed (a cut turn's "Open time limits"), and the way to ask it later.
         if (_context.SettingsPage is { } asked)

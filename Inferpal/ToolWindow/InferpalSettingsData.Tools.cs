@@ -35,6 +35,7 @@ internal partial class InferpalSettingsData
         LabelSectionToolList = Strings.SettingsSectionToolList;
         DescSectionToolList  = Strings.SettingsSectionToolListDesc;
         ToolListNoChatText   = Strings.ToolListNoChat;
+        ApplyToolsAssistLabels();
     }
 
     /// <summary>The settings were saved — by <c>/tools off</c> in the chat among others: a Tools page on screen reads its
@@ -42,6 +43,7 @@ internal partial class InferpalSettingsData
     private void OnConfigSavedForToolList()
     {
         if (_page == "tools") _ = RefreshToolListAsync();
+        OnConfigSavedForAssist();
     }
 
     private async Task RefreshToolListAsync()

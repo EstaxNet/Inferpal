@@ -34,6 +34,8 @@ internal sealed class VsWindowHarness : IDisposable
     public FakeInferenceProvider Fake { get; }
     public ToolRegistry Tools { get; }
     public InferpalToolWindowData Window { get; }
+    /// <summary>What the window gives the other windows (the settings window reads the tools through it).</summary>
+    public VsContextHolder Holder { get; }
 
     /// <param name="fake">The model server.</param>
     /// <param name="folderOpen">Whether Visual Studio has <see cref="Root"/> open.</param>
@@ -56,7 +58,7 @@ internal sealed class VsWindowHarness : IDisposable
         config ??= new InferpalConfig { DefaultModel = "m" };
         config.RagEnabled = false;
         config.IsFirstRun = false;   // a first run probes the servers of the machine the suite runs on
-        var holder = new VsContextHolder();
+        var holder = Holder = new VsContextHolder();
         var editor = new NullEditorSurface();
         IInferenceProvider held = client ?? Fake;
         var index  = Owned(new ProjectIndexService(held, config, new LspSemanticProvider()));

@@ -232,6 +232,49 @@ public sealed class VsSettingsWindowTests : IDisposable
         Assert.Equal(newName, InferpalSettingsData.MovedName(new Uri(typed), new Uri(saved)));
     }
 
+    /// <summary>The tools assistant's Apply writes the auto-context through the chat: the form shows what was written AND
+    /// counts it as saved — else it reports an unsaved change nobody made, and stops following the file until Save.</summary>
+    [Fact]
+    public async Task TheToolsAssistant_Applied_LeavesNoUnsavedChangeInTheForm()
+    {
+        new InferpalConfig { DefaultModel = "m", RagAutoContextEnabled = true }.Save();
+        var config = InferpalConfig.Load();
+        var client = new FakeInferenceProvider();
+        await using var mcp = new Services.Mcp.McpToolService(config, new Approve());
+        using var index = new Services.Rag.ProjectIndexService(client, config, new Services.Lsp.LspSemanticProvider());
+        using var docs  = new Services.Docs.DocsIndexService(client, config);
+        Services.Presentation.ToolsAssistantModel Model(Services.Presentation.AssistantAnswers? a) =>
+            Services.Presentation.ToolsAssistantPresenter.Build([], config.SharedDisabledTools, config.RagAutoContextEnabled, 0, a);
+        var live = new SettingsLiveSources(index, docs, () => Task.FromResult<Services.Presentation.XRayPanelModel?>(null),
+            () => Task.FromResult<IReadOnlyList<Services.Presentation.RepoInstructionRow>?>(null), () => Task.CompletedTask,
+            _ => Task.CompletedTask,
+            ToolsAssist: (answers, apply) =>
+            {
+                var model = Model(answers);
+                if (apply)
+                {
+                    // What the chat window does: the shared settings written and saved.
+                    config.RagAutoContextEnabled = model.Plan.AutoContext;
+                    config.Save();
+                }
+                return Task.FromResult<(Services.Presentation.ToolsAssistantModel, string?, bool)?>((Model(answers), "applied", apply));
+            });
+        var form = new InferpalSettingsData(config, client, null!, mcp, live: live);
+        form.ApplyLabels();
+        Assert.Equal(Localization.Strings.SettingsNoUnsavedChanges, form.UnsavedText);   // witness: opened clean
+
+        await form.OpenAssistCommand.ExecuteAsync(null, null!, CancellationToken.None);
+        Assert.True(form.AssistOpen);
+        form.AssistContextCards[0].Picked = true;                                        // Lean: no auto-context
+        for (var i = 0; i < 3; i++) await form.AssistNextCommand.ExecuteAsync(null, null!, CancellationToken.None);
+        await form.AssistNextCommand.ExecuteAsync(null, null!, CancellationToken.None);  // Apply
+
+        Assert.False(OnDisk().RagAutoContextEnabled);                                    // witness: applied
+        Assert.False(form.AssistOpen);
+        Assert.False(form.RagAutoContextEnabled);
+        Assert.Equal(Localization.Strings.SettingsNoUnsavedChanges, form.UnsavedText);
+    }
+
     private sealed class Approve : Services.Execution.IApprovalService
     {
         public Task<bool> RequestApprovalAsync(string toolName, string details, CancellationToken ct, string? subject = null,

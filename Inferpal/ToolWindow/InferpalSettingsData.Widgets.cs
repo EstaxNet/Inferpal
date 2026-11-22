@@ -24,7 +24,8 @@ internal sealed record SettingsLiveSources(
     Func<Task<IReadOnlyList<RepoInstructionRow>?>> RepoInstructions,
     Func<Task> OpenXray, Func<string, Task> OpenFile,
     Func<Task<ToolListModel?>>? ToolList = null,
-    Func<string, bool, Task<(ToolListModel List, string Message)?>>? SetTool = null);
+    Func<string, bool, Task<(ToolListModel List, string Message)?>>? SetTool = null,
+    Func<AssistantAnswers?, bool, Task<(ToolsAssistantModel Model, string? Message, bool Applied)?>>? ToolsAssist = null);
 
 /// <summary>
 /// The live blocks of the settings pages (<see cref="SettingSection.Widget"/>): the code index, the project's exclusions,
@@ -227,6 +228,7 @@ internal partial class InferpalSettingsData
         _live        = live;
         _docsActions = live is null ? null : new SettingsDocsActions(_config, live.Docs);
         InitModelBlocks();
+        InitToolsAssist();
 
         RebuildIndexCommand   = new AsyncCommand((_, ct) => RebuildIndexAsync(ct));
         ToggleOversizeCommand = new AsyncCommand((_, _) => RunOnVMContextAsync(() =>
@@ -344,6 +346,8 @@ internal partial class InferpalSettingsData
     {
         _livePoll?.Dispose();
         _livePoll = null;
+        // Left for another page, the assistant closes: back on Tools, it opens again on what the settings are then.
+        if (page != "tools" && AssistOpen) CloseAssist(null);
         switch (page)
         {
             case "server":  _ = RefreshLoadedModelsAsync(CancellationToken.None); break;

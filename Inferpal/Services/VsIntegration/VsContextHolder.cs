@@ -71,6 +71,12 @@ internal class VsContextHolder
     /// buttons; answers the list after it and what the change said. Set by the chat window.</summary>
     public Func<string, bool, Task<(Services.Presentation.ToolListModel List, string Message)>>? SetTool { get; set; }
 
+    /// <summary>The tools assistant (pari 163) for the answers given (<c>null</c>: the ones the settings describe now); with
+    /// <c>apply</c>, writes what its review shows, refused while a reply is being written. Answers the model after it, what
+    /// applying said, and whether it wrote. Set by the chat window.</summary>
+    public Func<Services.Presentation.AssistantAnswers?, bool,
+                Task<(Services.Presentation.ToolsAssistantModel Model, string? Message, bool Applied)>>? ToolsAssist { get; set; }
+
     /// <summary>Says a sentence in the chat as a notice — a rule an approval wrote to the settings. Set by the chat
     /// window.</summary>
     public Action<string>? Notice { get; set; }
