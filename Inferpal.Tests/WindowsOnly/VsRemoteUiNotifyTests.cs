@@ -45,9 +45,10 @@ public sealed class VsRemoteUiNotifyTests : IDisposable
         var client = new FakeInferenceProvider();
         await using var mcp = new Services.Mcp.McpToolService(config, new NoopApproval());
         var form = new InferpalSettingsData(config, client, null!, mcp);
-        var before = Members(form);
+        // Listening BEFORE the snapshot: a background refresh between the two would read as a silent change.
         var told = new HashSet<string>(StringComparer.Ordinal);
         ((INotifyPropertyChanged)form).PropertyChanged += (_, e) => { lock (told) told.Add(e.PropertyName ?? ""); };
+        var before = Members(form);
 
         form.ApplyLabels();
 
@@ -63,9 +64,9 @@ public sealed class VsRemoteUiNotifyTests : IDisposable
     public void EveryChatMemberApplyLabelsChanges_TellsVisualStudio()
     {
         using var vs = new VsWindowHarness();
-        var before = Members(vs.Window);
         var told = new HashSet<string>(StringComparer.Ordinal);
         ((INotifyPropertyChanged)vs.Window).PropertyChanged += (_, e) => { lock (told) told.Add(e.PropertyName ?? ""); };
+        var before = Members(vs.Window);
 
         vs.Window.ApplyLabels();
 
