@@ -240,7 +240,7 @@
   "Mermaid: {0} Ask the model to fix it.": "Mermaid: {0} Попросите модель исправить его.",
   "{0} (proposed change)": "{0} (предлагаемое изменение)",
   "Auto": "Авто",
-  "Approvals are off: the agent acts without asking. Click to turn them back on.": "Подтверждения выключены: агент действует без вопросов. Нажмите, чтобы включить их снова.",
+  "Approvals are off: the agent acts without asking. Click to open the approval settings.": "Подтверждения выключены: агент действует без вопросов. Нажмите, чтобы открыть настройки подтверждений.",
   "auto": "авто",
   "Approvals are off: run without a card": "Подтверждения выключены: выполнено без карточки"
 }

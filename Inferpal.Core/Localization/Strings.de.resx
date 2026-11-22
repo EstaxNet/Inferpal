@@ -143,7 +143,7 @@ Diese Aktion kann nicht rückgängig gemacht werden.</value></data>
   <data name="AutoConfirmKeep" xml:space="preserve"><value>Weiter fragen</value></data>
   <data name="AutoConfirmTurnOff" xml:space="preserve"><value>Freigaben ausschalten</value></data>
   <data name="AutoBadge" xml:space="preserve"><value>Auto</value></data>
-  <data name="AutoBadgeTip" xml:space="preserve"><value>Freigaben aus: der Agent handelt ohne zu fragen. Klicken, um sie wieder einzuschalten.</value></data>
+  <data name="AutoBadgeTip" xml:space="preserve"><value>Freigaben aus: der Agent handelt ohne zu fragen. Klicken, um die Freigabe-Einstellungen zu öffnen.</value></data>
   <data name="StepAuto" xml:space="preserve"><value>auto</value></data>
   <data name="StepAutoTip" xml:space="preserve"><value>Freigaben aus: ohne Karte ausgeführt</value></data>
   <data name="RunAutoSteps" xml:space="preserve"><value>{0:Schritt|Schritte} ohne Rückfrage</value></data>

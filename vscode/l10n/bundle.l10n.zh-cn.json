@@ -240,7 +240,7 @@
   "Mermaid: {0} Ask the model to fix it.": "Mermaid：{0} 请让模型修正它。",
   "{0} (proposed change)": "{0}（建议的更改）",
   "Auto": "自动",
-  "Approvals are off: the agent acts without asking. Click to turn them back on.": "审批已关闭：代理不经询问即行动。点击重新打开。",
+  "Approvals are off: the agent acts without asking. Click to open the approval settings.": "审批已关闭：代理不经询问即行动。点击打开审批设置。",
   "auto": "自动",
   "Approvals are off: run without a card": "审批已关闭：未经卡片即执行"
 }

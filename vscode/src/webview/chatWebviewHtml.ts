@@ -100,7 +100,7 @@ export function webviewStrings(): Record<string, string> {
     rewindHereTip: t('Go back here — the conversation and its files'),
     approvalOpenDiff: t('Open diff'),
     autoBadge: t('Auto'),
-    autoBadgeTip: t('Approvals are off: the agent acts without asking. Click to turn them back on.'),
+    autoBadgeTip: t('Approvals are off: the agent acts without asking. Click to open the approval settings.'),
     stepAuto: t('auto'),
     stepAutoTip: t('Approvals are off: run without a card'),
     stepsOne: t('1 step'),

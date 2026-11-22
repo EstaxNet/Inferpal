@@ -146,7 +146,7 @@ Cette action est irréversible.</value></data>
   <data name="AutoConfirmKeep" xml:space="preserve"><value>Continuer à me demander</value></data>
   <data name="AutoConfirmTurnOff" xml:space="preserve"><value>Couper les approbations</value></data>
   <data name="AutoBadge" xml:space="preserve"><value>Auto</value></data>
-  <data name="AutoBadgeTip" xml:space="preserve"><value>Approbations coupées : l'agent agit sans demander. Cliquez pour les rétablir.</value></data>
+  <data name="AutoBadgeTip" xml:space="preserve"><value>Approbations coupées : l'agent agit sans demander. Cliquez pour ouvrir les réglages des approbations.</value></data>
   <data name="StepAuto" xml:space="preserve"><value>auto</value></data>
   <data name="StepAutoTip" xml:space="preserve"><value>Approbations coupées : exécuté sans carte</value></data>
   <data name="RunAutoSteps" xml:space="preserve"><value>{0:étape|étapes} sans demander</value></data>

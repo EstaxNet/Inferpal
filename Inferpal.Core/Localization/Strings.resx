@@ -147,7 +147,7 @@ This cannot be undone.</value></data>
   <data name="AutoConfirmKeep" xml:space="preserve"><value>Keep asking me</value></data>
   <data name="AutoConfirmTurnOff" xml:space="preserve"><value>Turn approvals off</value></data>
   <data name="AutoBadge" xml:space="preserve"><value>Auto</value></data>
-  <data name="AutoBadgeTip" xml:space="preserve"><value>Approvals are off: the agent acts without asking. Click to turn them back on.</value></data>
+  <data name="AutoBadgeTip" xml:space="preserve"><value>Approvals are off: the agent acts without asking. Click to open the approval settings.</value></data>
   <data name="StepAuto" xml:space="preserve"><value>auto</value></data>
   <data name="StepAutoTip" xml:space="preserve"><value>Approvals are off: run without a card</value></data>
   <data name="RunAutoSteps" xml:space="preserve"><value>{0:step|steps} without asking</value></data>

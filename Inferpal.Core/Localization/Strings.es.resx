@@ -146,7 +146,7 @@ Esta acción no se puede deshacer.</value></data>
   <data name="AutoConfirmKeep" xml:space="preserve"><value>Seguir preguntándome</value></data>
   <data name="AutoConfirmTurnOff" xml:space="preserve"><value>Desactivar las aprobaciones</value></data>
   <data name="AutoBadge" xml:space="preserve"><value>Auto</value></data>
-  <data name="AutoBadgeTip" xml:space="preserve"><value>Aprobaciones desactivadas: el agente actúa sin preguntar. Haga clic para reactivarlas.</value></data>
+  <data name="AutoBadgeTip" xml:space="preserve"><value>Aprobaciones desactivadas: el agente actúa sin preguntar. Haga clic para abrir los ajustes de aprobación.</value></data>
   <data name="StepAuto" xml:space="preserve"><value>auto</value></data>
   <data name="StepAutoTip" xml:space="preserve"><value>Aprobaciones desactivadas: ejecutado sin tarjeta</value></data>
   <data name="RunAutoSteps" xml:space="preserve"><value>{0:paso|pasos} sin preguntar</value></data>

@@ -143,7 +143,7 @@
   <data name="AutoConfirmKeep" xml:space="preserve"><value>Продолжать спрашивать</value></data>
   <data name="AutoConfirmTurnOff" xml:space="preserve"><value>Выключить подтверждения</value></data>
   <data name="AutoBadge" xml:space="preserve"><value>Авто</value></data>
-  <data name="AutoBadgeTip" xml:space="preserve"><value>Подтверждения выключены: агент действует без вопросов. Нажмите, чтобы включить их снова.</value></data>
+  <data name="AutoBadgeTip" xml:space="preserve"><value>Подтверждения выключены: агент действует без вопросов. Нажмите, чтобы открыть настройки подтверждений.</value></data>
   <data name="StepAuto" xml:space="preserve"><value>авто</value></data>
   <data name="StepAutoTip" xml:space="preserve"><value>Подтверждения выключены: выполнено без карточки</value></data>
   <data name="RunAutoSteps" xml:space="preserve"><value>шагов без вопроса: {0}</value></data>

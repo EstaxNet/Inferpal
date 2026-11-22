@@ -240,7 +240,7 @@
   "Mermaid: {0} Ask the model to fix it.": "Mermaid : {0} Demandez au modèle de le corriger.",
   "{0} (proposed change)": "{0} (modification proposée)",
   "Auto": "Auto",
-  "Approvals are off: the agent acts without asking. Click to turn them back on.": "Approbations coupées : l'agent agit sans demander. Cliquez pour les rétablir.",
+  "Approvals are off: the agent acts without asking. Click to open the approval settings.": "Approbations coupées : l'agent agit sans demander. Cliquez pour ouvrir les réglages des approbations.",
   "auto": "auto",
   "Approvals are off: run without a card": "Approbations coupées : exécuté sans carte"
 }

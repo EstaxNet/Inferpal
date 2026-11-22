@@ -143,7 +143,7 @@
   <data name="AutoConfirmKeep" xml:space="preserve"><value>引き続き確認する</value></data>
   <data name="AutoConfirmTurnOff" xml:space="preserve"><value>承認をオフにする</value></data>
   <data name="AutoBadge" xml:space="preserve"><value>自動</value></data>
-  <data name="AutoBadgeTip" xml:space="preserve"><value>承認はオフです。エージェントは確認なしで動作します。クリックして元に戻します。</value></data>
+  <data name="AutoBadgeTip" xml:space="preserve"><value>承認はオフです。エージェントは確認なしで動作します。クリックして承認の設定を開きます。</value></data>
   <data name="StepAuto" xml:space="preserve"><value>自動</value></data>
   <data name="StepAutoTip" xml:space="preserve"><value>承認オフ：カードなしで実行</value></data>
   <data name="RunAutoSteps" xml:space="preserve"><value>確認なしの手順: {0}</value></data>
