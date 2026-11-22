@@ -91,6 +91,11 @@ an archive split into volumes (`.part1.rar`, `.7z.001`) is not read. At most 8 M
 | Delimited text, loaded as the table `data` | `.csv` (comma or semicolon), `.tsv` |
 | JSON, loaded as the table `data` (columns from the keys) | `.json` (an array of objects), `.jsonl`, `.ndjson` (one object per line) |
 | Excel workbook, one table per sheet named after it | `.xlsx`, `.xlsm`, `.xlsb`, `.xls` |
+| Columnar data (pandas, Polars, Spark, DuckDB), loaded as the table `data` with the types it declares | `.parquet` (any compression), `.arrow`, `.feather` (version 2, compressed or not), `.ipc` |
+
+In a Parquet or Arrow file, a date reads as `yyyy-MM-dd`, a timestamp as `yyyy-MM-dd HH:mm:ss` (UTC when the file says so),
+a category as its text, and a list or a structure as JSON text read with `json_extract`; an empty string stays apart from a
+missing value, and a NaN loads as NULL, said.
 
 In a sheet, a title above the header is left out, a merged cell gives its value to its whole range, and a date reads
 as `yyyy-MM-dd` text, which SQLite's date functions take. A nested JSON object stays JSON text, read with `json_extract`.

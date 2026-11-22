@@ -92,6 +92,11 @@
     <PackageReference Include="Npgsql" Version="10.0.3" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.2" />
     <PackageReference Include="MySqlConnector" Version="3.0.0" />
+    <!-- query_data on Parquet and Arrow (pari 137): Parquet.Net (MIT) and Apache.Arrow (Apache-2.0), fully managed — their
+         Snappy, Zstd and LZ4 codecs too. Not Apache.Arrow.Compression, a second compression stack (K4os's streams and their
+         own dependencies): an Arrow file's LZ4 or Zstd is decoded in ColumnarData, on the block codecs Parquet.Net brings. -->
+    <PackageReference Include="Parquet.Net" Version="6.1.0" />
+    <PackageReference Include="Apache.Arrow" Version="23.0.0" />
   </ItemGroup>
 
 </Project>

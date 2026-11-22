@@ -20,7 +20,7 @@ namespace Inferpal.Services.Tools;
 /// into the workspace, and a pooled connection keeps the file locked after the call. ⚠ A query has a deadline (the engine's
 /// progress handler): a cross join of two large tables would otherwise hold the run.
 /// </remarks>
-internal sealed class QueryDataTool : ITool
+internal sealed partial class QueryDataTool : ITool
 {
     private readonly Func<string?> _getRoot;
 
@@ -36,6 +36,10 @@ internal sealed class QueryDataTool : ITool
     internal static TimeSpan Deadline { get; set; } = TimeSpan.FromSeconds(20);
 
     private const int MaxCellChars = 200;
+
+    /// <summary>A value that is a date or a timestamp written as text.</summary>
+    [System.Text.RegularExpressions.GeneratedRegex(@"^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2}(\.\d+)?)?$")]
+    private static partial System.Text.RegularExpressions.Regex DateText();
     private const int SqliteLimitAttached = 7;
 
     // SQLite authorizer action codes and answers.
@@ -64,7 +68,7 @@ internal sealed class QueryDataTool : ITool
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
 
     public string Description =>
-        "Runs a read-only SQL query (SQLite) on a data file: a .db or .sqlite database, or a CSV, TSV, JSON, JSONL or Excel " +
+        "Runs a read-only SQL query (SQLite) on a data file: a .db or .sqlite database, or a CSV, TSV, JSON, JSONL, Parquet, Arrow or Excel " +
         "file loaded as the table `data` (a workbook: a table per sheet); the tables and columns loaded are said. Use it to " +
         "count, filter, sum or group rows instead of reading a large data file. Only SELECT (and schema PRAGMAs). As many rows as " +
         "the answer holds are shown, the cut said.";
@@ -74,7 +78,7 @@ internal sealed class QueryDataTool : ITool
         type = "object",
         properties = new
         {
-            path = new { type = "string", description = "The data file: .csv, .tsv, .xlsx, .xls, .json, .jsonl, .db, .sqlite." },
+            path = new { type = "string", description = "The data file: .csv, .tsv, .xlsx, .xls, .json, .jsonl, .parquet, .arrow, .feather, .ipc, .db, .sqlite." },
             sql  = new { type = "string", description = "The query, e.g. SELECT status, COUNT(*) FROM data GROUP BY status." },
         },
         required = new[] { "path", "sql" },
@@ -95,13 +99,43 @@ internal sealed class QueryDataTool : ITool
             return $"'{name}' is an OpenDocument spreadsheet: query_data reads .xlsx, .xls, CSV, JSON and SQLite. Read it with " +
                    "read_file, or ask the user to save it as .xlsx or CSV.";
         var database = Databases.Contains(ext);
-        if (!database && !Delimited.Contains(ext) && !Workbooks.Contains(ext) && !Json.Contains(ext))
-            return $"'{name}' is not a data file query_data reads (.csv, .tsv, .xlsx, .xls, .json, .jsonl, .db, .sqlite).";
+        var columnar = Documents.ColumnarData.Extensions.Contains(ext);
+        if (!database && !columnar && !Delimited.Contains(ext) && !Workbooks.Contains(ext) && !Json.Contains(ext))
+            return $"'{name}' is not a data file query_data reads (.csv, .tsv, .xlsx, .xls, .json, .jsonl, .parquet, .arrow, .feather, .ipc, .db, .sqlite).";
         var limit = database ? MaxDatabaseBytes : MaxDelimitedBytes;
         if (new FileInfo(path).Length > limit)
             return $"'{name}' is larger than {limit / (1024 * 1024)} MB: it is not loaded. Ask the user for a smaller extract.";
+        if (columnar) return await QueryColumnarAsync(path, sql, ct);
 
         return await Task.Run(() => database ? QueryCopy(path, sql, ct) : QueryLoaded(path, ext, sql, ct), ct);
+    }
+
+    /// <summary>A Parquet or Arrow file read as one table (<see cref="Documents.ColumnarData"/>), loaded as <c>data</c> like a
+    /// CSV, then queried.</summary>
+    private static async Task<string> QueryColumnarAsync(string path, string sql, CancellationToken ct)
+    {
+        Documents.ColumnarData.Table table;
+        try { table = await Task.Run(() => Documents.ColumnarData.ReadAsync(path, MaxCells, MaxColumns, ct), ct); }
+        // Neither reader is hardened against a damaged file: whatever it throws is a file that could not be loaded.
+        catch (Exception ex) when (ex is not OperationCanceledException and not OutOfMemoryException)
+        {
+            if (ex is not (FormatException or DocumentLimitException)) Diagnostics.Swallow("QueryDataTool.LoadColumnar", ex);
+            return $"'{Path.GetFileName(path)}' could not be loaded: {ex.Message.TrimEnd('.')}.";
+        }
+        return await Task.Run(() =>
+        {
+            using var connection = new SqliteConnection("Data Source=:memory:;Pooling=False");
+            connection.Open();
+            var (names, types) = Table(connection, "data", table.Columns, table.Rows, decimalComma: false, ct, table.Types, Documents.ColumnarData.Null);
+            var said = $"'{Path.GetFileName(path)}' ({table.Kind}) loaded as the table `data` ({table.Rows.Count} row(s)); columns: "
+                     + Columns(names, types) + "." + (table.Notes.Count > 0 ? " " + string.Join(" ", table.Notes) : "")
+                     + (types.Any(t => t == "TEXT") && table.Rows.Take(50).Any(r => r.Any(v => v.StartsWith('{') || v.StartsWith('[')))
+                         ? " A list or a structure is JSON text: read a field with json_extract(column, '$.field')." : "")
+                     // SQLite has no date type: CAST(x AS TIMESTAMP) makes "2026-03-01 08:30:00" the number 2026.
+                     + (table.Rows.Take(50).Any(r => r.Any(v => DateText().IsMatch(v)))
+                         ? " Dates and times are text (yyyy-MM-dd, yyyy-MM-dd HH:mm:ss): compare them as text or with date() and strftime(), never CAST." : "");
+            return Run(connection, sql, said, ct);
+        }, ct);
     }
 
     /// <summary>The database queried through a private copy (its <c>-wal</c> and <c>-journal</c> too): nothing is written
@@ -274,8 +308,13 @@ internal sealed class QueryDataTool : ITool
     /// <c>colN</c>, duplicates suffixed) and their types. A column is INTEGER or REAL only when every value in it reads back
     /// as written; an empty value is NULL; fields past the header's columns are left out.
     /// </summary>
+    /// <param name="declared">A column's type as the file declares it (Parquet, Arrow), <c>null</c> to infer it from the text:
+    /// a double column of whole values is REAL, never INTEGER (<c>price / 3</c> would divide as integers).</param>
+    /// <param name="nullMarker">The value that stands for null, when the file tells null from an empty string; otherwise an
+    /// empty value is null.</param>
     private static (List<string> Names, List<string> Types) Table(
-        SqliteConnection connection, string table, List<string> header, List<List<string>> body, bool decimalComma, CancellationToken ct)
+        SqliteConnection connection, string table, List<string> header, List<List<string>> body, bool decimalComma, CancellationToken ct,
+        IReadOnlyList<string?>? declared = null, string? nullMarker = null)
     {
         var names = new List<string>();
         for (var i = 0; i < header.Count; i++)
@@ -287,7 +326,7 @@ internal sealed class QueryDataTool : ITool
             names.Add(unique);
         }
         if (names.Count == 0) throw new FormatException("it has no columns");
-        var types = names.Select((_, c) => TypeOf(body, c, decimalComma)).ToList();
+        var types = names.Select((_, c) => declared?.ElementAtOrDefault(c) ?? TypeOf(body, c, decimalComma, nullMarker)).ToList();
         var quotedTable = "\"" + table.Replace("\"", "\"\"") + "\"";
         using (var create = connection.CreateCommand())
         {
@@ -305,8 +344,8 @@ internal sealed class QueryDataTool : ITool
                 if ((++row & 1023) == 0) ct.ThrowIfCancellationRequested();
                 for (var c = 0; c < names.Count; c++)
                 {
-                    var v = c < r.Count ? r[c] : string.Empty;
-                    parameters[c].Value = v.Trim().Length == 0 ? DBNull.Value
+                    var v = c < r.Count ? r[c] : nullMarker ?? string.Empty;
+                    parameters[c].Value = v == nullMarker || (nullMarker is null || types[c] != "TEXT") && v.Trim().Length == 0 ? DBNull.Value
                         : types[c] == "INTEGER" ? long.Parse(v.Trim(), CultureInfo.InvariantCulture)
                         : types[c] == "REAL" ? Real(v.Trim(), decimalComma)!.Value
                         : v;
@@ -521,9 +560,9 @@ internal sealed class QueryDataTool : ITool
         return said.ToString();
     }
 
-    private static string TypeOf(List<List<string>> body, int c, bool decimalComma)
+    private static string TypeOf(List<List<string>> body, int c, bool decimalComma, string? nullMarker = null)
     {
-        var values = body.Select(r => c < r.Count ? r[c].Trim() : string.Empty).Where(v => v.Length > 0).ToList();
+        var values = body.Select(r => c < r.Count && r[c] != nullMarker ? r[c].Trim() : string.Empty).Where(v => v.Length > 0).ToList();
         if (values.Count == 0) return "TEXT";
         // A number is a number only when it reads back as written: "007", "+33…" and 25-digit identifiers stay TEXT.
         if (values.All(v => long.TryParse(v, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var n)
