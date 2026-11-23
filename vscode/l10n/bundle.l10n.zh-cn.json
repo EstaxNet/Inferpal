@@ -242,6 +242,5 @@
   "Auto": "自动",
   "Approvals are off: the agent acts without asking. Click to open the approval settings.": "审批已关闭：代理不经询问即行动。点击打开审批设置。",
   "auto": "自动",
-  "Approvals are off: run without a card": "审批已关闭：未经卡片即执行",
-  "No run the closing of the editor cut is left to resume.": "没有因关闭编辑器而中断、可以继续的运行。"
+  "Approvals are off: run without a card": "审批已关闭：未经卡片即执行"
 }

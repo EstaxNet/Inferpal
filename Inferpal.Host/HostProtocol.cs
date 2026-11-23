@@ -100,8 +100,7 @@ internal sealed record ChatSendParams(
     List<string>? Notes = null,
     List<ImageDto>? Images = null,
     bool InCopy = false,
-    List<string>? OpenTools = null,
-    string? ResumeRun = null);
+    List<string>? OpenTools = null);
 
 /// <summary><c>chat/toolOff</c>: the question just sent calls for tools the person turned off (pari 163) — the notice, the
 /// family's name and the tools its gestures open (<c>chat/send</c>'s <c>openTools</c>) or turn back on.</summary>
@@ -1112,29 +1111,18 @@ internal sealed record NewRuleParams(bool Allow, string? Tool, string? Pattern);
 internal sealed record AwayNoticeDto(
     string Title, AwayRunDto? Run, List<AwayTaskDto> Tasks,
     string Review, string Undo, string OpenReport, string Retry, string Dismiss, string? NoAnswer,
-    Services.Presentation.AwayPruned? Pruned, Services.Presentation.AwayCopy? Copy = null,
-    string? ResumeButton = null, string? ResumeTitle = null)
+    Services.Presentation.AwayPruned? Pruned, Services.Presentation.AwayCopy? Copy = null)
 {
     public static AwayNoticeDto Of(Services.Presentation.AwayNoticeModel m, string? noAnswer) => new(
         m.Title,
-        m.Run is { } run ? new AwayRunDto(run.RunId, run.Text, [.. run.Files], run.Warning, run.Resume) : null,
+        m.Run is { } run ? new AwayRunDto(run.RunId, run.Text, [.. run.Files], run.Warning) : null,
         [.. m.Tasks.Select(t => new AwayTaskDto(t.Id, t.Text, t.Retry))],
         Localization.Strings.RunReviewButton, Localization.Strings.RunUndo, Localization.Strings.AwayOpenReport,
-        Localization.Strings.McpCardRetry, Localization.Strings.BuildBannerDismiss, noAnswer, m.Pruned, m.Copy,
-        Localization.Strings.RunResumeButton, Localization.Strings.AwayResumeTitle);
+        Localization.Strings.McpCardRetry, Localization.Strings.BuildBannerDismiss, noAnswer, m.Pruned, m.Copy);
 }
 
-/// <summary>A run the closing cut, in <see cref="AwayNoticeDto"/>; <paramref name="Resume"/>: what Resume run carries,
-/// <c>null</c> for a run with nothing to resume.</summary>
-internal sealed record AwayRunDto(string RunId, string Text, List<Services.Presentation.RunFileLine> Files, string Warning,
-                                  string? Resume = null);
-
-/// <summary><c>session/resume</c> — the run to resume: the one named, else the newest the closing cut.</summary>
-internal sealed record SessionResumeParams(string? RunId = null);
-
-/// <summary>What <c>session/resume</c> gives the client to send: the bubble, the question as typed (what the turn's context
-/// is searched with), the mode, and the run (<c>chat/send</c>'s <c>resumeRun</c>).</summary>
-internal sealed record ResumeTurnDto(string RunId, string Bubble, string Question, bool Agent);
+/// <summary>A run the closing cut, in <see cref="AwayNoticeDto"/>.</summary>
+internal sealed record AwayRunDto(string RunId, string Text, List<Services.Presentation.RunFileLine> Files, string Warning);
 
 /// <summary>A background task in <see cref="AwayNoticeDto"/>; <paramref name="Retry"/> for one the closing stopped.</summary>
 internal sealed record AwayTaskDto(string Id, string Text, bool Retry);

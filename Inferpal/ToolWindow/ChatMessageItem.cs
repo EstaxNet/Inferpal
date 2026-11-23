@@ -515,13 +515,7 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
 
     // ── The notice of a start ("away"): what the closing of Visual Studio cut or left unread — the Core's AwayNotice ──
     // Its title is CardTitle. Screen only: dismissed, it is marked said and never shown again.
-    private Action? _onAwayReview, _onAwayUndo, _onAwayDismiss, _onAwayKept, _onAwayResume;
-    /// <summary>The run can be resumed: the block of what goes with it, and its button.</summary>
-    [DataMember] public bool   HasAwayResume   { get; private set; }
-    [DataMember] public string AwayResumeTitle { get; private set; } = string.Empty;
-    [DataMember] public string AwayResumeText  { get; private set; } = string.Empty;
-    [DataMember] public string BtnAwayResume   { get; private set; } = string.Empty;
-    [DataMember] public AsyncCommand AwayResumeCommand { get; }
+    private Action? _onAwayReview, _onAwayUndo, _onAwayDismiss, _onAwayKept;
     [DataMember] public string AwayRunText     { get; private set; } = string.Empty;
     [DataMember] public string AwayRunFiles    { get; private set; } = string.Empty;
     [DataMember] public string AwayRunWarning  { get; private set; } = string.Empty;
@@ -546,7 +540,7 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
     /// <param name="kept">The button of the old indexes removed: the settings, on what is kept.</param>
     internal static ChatMessageItem AwayMsg(Services.Presentation.AwayNoticeModel notice, Action review, Action undo,
                                             Action dismiss, Action<Services.Presentation.AwayTask> act, Action? kept = null,
-                                            Action? reviewCopy = null, Action? discardCopy = null, Action? resume = null)
+                                            Action? reviewCopy = null, Action? discardCopy = null)
     {
         var item = new ChatMessageItem
         {
@@ -560,11 +554,6 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
                                                           : f.Removed > 0 ? $"{f.Path}   +{f.Added} −{f.Removed}" : $"{f.Path}   +{f.Added}"))
                 : string.Empty,
             AwayRunWarning = notice.Run?.Warning ?? string.Empty,
-            HasAwayResume   = notice.Run?.Resume is not null && resume is not null,
-            AwayResumeTitle = Strings.AwayResumeTitle,
-            AwayResumeText  = notice.Run?.Resume ?? string.Empty,
-            BtnAwayResume   = Strings.RunResumeButton,
-            _onAwayResume   = resume,
             BtnAwayReview  = Strings.RunReviewButton,
             BtnAwayUndo    = Strings.RunUndo,
             AwayDismissTip = Strings.BuildBannerDismiss,
@@ -774,7 +763,6 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
         ReviewCommand       = new AsyncCommand((_, _) => { _onReview?.Invoke(); return Task.CompletedTask; });
         CloseReviewCommand  = new AsyncCommand((_, _) => { _onCloseReview?.Invoke(); return Task.CompletedTask; });
         AwayReviewCommand   = new AsyncCommand((_, _) => { _onAwayReview?.Invoke(); return Task.CompletedTask; });
-        AwayResumeCommand   = new AsyncCommand((_, _) => { _onAwayResume?.Invoke(); return Task.CompletedTask; });
         AwayUndoCommand     = new AsyncCommand((_, _) => { _onAwayUndo?.Invoke(); return Task.CompletedTask; });
         AwayKeptCommand     = new AsyncCommand((_, _) => { _onAwayKept?.Invoke(); return Task.CompletedTask; });
         AwayDismissCommand  = new AsyncCommand((_, _) => { _onAwayDismiss?.Invoke(); return Task.CompletedTask; });

@@ -242,6 +242,5 @@
   "Auto": "Авто",
   "Approvals are off: the agent acts without asking. Click to open the approval settings.": "Подтверждения выключены: агент действует без вопросов. Нажмите, чтобы открыть настройки подтверждений.",
   "auto": "авто",
-  "Approvals are off: run without a card": "Подтверждения выключены: выполнено без карточки",
-  "No run the closing of the editor cut is left to resume.": "Нет запуска, прерванного закрытием редактора, который можно продолжить."
+  "Approvals are off: run without a card": "Подтверждения выключены: выполнено без карточки"
 }

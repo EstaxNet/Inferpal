@@ -2761,17 +2761,6 @@ kbd {
   color: var(--ip-muted);
 }
 
-/* What Resume run carries: a block of its own above the buttons. */
-.away-resume {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px;
-  border-radius: 8px;
-  background: var(--vscode-sideBar-background, transparent);
-  font-size: 12px;
-}
-
 .away-actions {
   display: flex;
   gap: 8px;

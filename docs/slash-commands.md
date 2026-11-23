@@ -34,7 +34,7 @@ editor with tools disabled).
 - [Build, test and commit](#build-test-and-commit) — `/build`, `/fix-build`, `/tdd`, `/solution`, `/map`, `/git`,
   `/commit`, `/pr-description`
 - [Review a change, set your rules](#review-a-change-set-your-rules) — `/check`, `/checks`, `/rules`, `/permissions`
-- [Undo or replay what the agent did](#undo-or-replay-what-the-agent-did) — `/undo-run`, `/resume-run`, `/restore`, `/replay`
+- [Undo or replay what the agent did](#undo-or-replay-what-the-agent-did) — `/undo-run`, `/restore`, `/replay`
 - [Plan and steer the agent](#plan-and-steer-the-agent) — `/plan`, `/agent-step`, `/resume`, `/modes`
 - [Debug a running program](#debug-a-running-program) — `/debug`
 - [Run the agent on a copy of the repository](#run-the-agent-on-a-copy-of-the-repository) — `/run-copy`
@@ -106,7 +106,6 @@ What a rule and a check are, and how they differ: [Rules & AI Checks](rules-and-
 | Command | Description |
 |---|---|
 | `/undo-run [list\|review]` | Revert every file changed during the last agent run — restores edited files, deletes files created that run — save the files changed after the run (an undo would lose that change) and those you kept: both are left as they are, and named. `list` shows the workspace's tracked runs; `review` lists the last run's files and where each stands; `/undo-run #<run> <file>` undoes one file of that run (the result bar's **Review changes** does it with a click, and Keep, Undo and Redo per file); `review` numbers the changes of a file changed in several places, `/undo-run #<run>:<n> <file>` gives change *n* back and leaves the others, and `/undo-run redo #<run>[:<n>] <file>` gives a file or a change the run's version again. Runs are kept beside the backups, so an undo still works after the editor restarts |
-| `/resume-run` | Resume the run the closing of the editor cut: your question, the plan with its steps done, the files it changed and its last check go with it; the agent reads again what changed since and goes on from the first step not done. The away notice offers the same as **Resume run** |
 | `/restore <path>` | Restore a file from the most recent backup Inferpal kept of it — in `.inferpal/history/`, or in your user folder with `historyStorage: user` |
 | `/replay [n]` | Post-mortem timeline of an agent run: every tool call with its target and duration, then the files it touched (`n` = nth most recent run, default latest) |
 

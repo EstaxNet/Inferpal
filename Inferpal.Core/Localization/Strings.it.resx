@@ -2627,21 +2627,4 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Riattivarli</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Non ora</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Riattivali con {0}.</value></data>
-  <data name="RunResumeButton" xml:space="preserve"><value>Riprendi l'esecuzione</value></data>
-  <data name="AwayResumeTitle" xml:space="preserve"><value>Riprendi l'esecuzione riparte da dove si è fermata</value></data>
-  <data name="AwayResumePlan" xml:space="preserve"><value>La sua domanda, il piano ({0} su {1} passi completati) e i file modificati ripartono con essa. Nulla di già fatto viene richiesto di nuovo.</value></data>
-  <data name="AwayResumeNoPlan" xml:space="preserve"><value>Questa esecuzione non aveva un piano: la sua domanda, {0} {0:azione svolta|azioni svolte} e i file modificati ripartono con essa. Nulla di già fatto viene richiesto di nuovo.</value></data>
-  <data name="AwayResumeTestsPassed" xml:space="preserve"><value>Gli ultimi test sono passati.</value></data>
-  <data name="AwayResumeTestsFailed" xml:space="preserve"><value>Gli ultimi test sono falliti.</value></data>
-  <data name="AwayResumeBuildPassed" xml:space="preserve"><value>L'ultima compilazione è riuscita.</value></data>
-  <data name="AwayResumeBuildFailed" xml:space="preserve"><value>L'ultima compilazione è fallita.</value></data>
-  <data name="AwayResumeChangedSince" xml:space="preserve"><value>Modificato dopo l'interruzione: {0}. L'agente lo rilegge prima di proseguire e mantiene la sua modifica.</value></data>
-  <data name="ResumeRunQuestion" xml:space="preserve"><value>Riprendi l'esecuzione interrotta alle {0}</value></data>
-  <data name="ResumeChipPlan" xml:space="preserve"><value>piano: {0} su {1} fatti</value></data>
-  <data name="ResumeChipFiles" xml:space="preserve"><value>{0} {0:file modificato|file modificati}</value></data>
-  <data name="ResumeChipCheckPassed" xml:space="preserve"><value>ultimo controllo superato</value></data>
-  <data name="ResumeChipCheckFailed" xml:space="preserve"><value>ultimo controllo fallito</value></data>
-  <data name="ResumeChipChangedSince" xml:space="preserve"><value>{0} modificato da allora</value></data>
-  <data name="RunResumeNone" xml:space="preserve"><value>Nessuna esecuzione interrotta dalla chiusura dell'editor da riprendere.</value></data>
-  <data name="CmdResumeRunHint" xml:space="preserve"><value>Riprendi l'esecuzione interrotta dalla chiusura dell'editor</value></data>
 </root>

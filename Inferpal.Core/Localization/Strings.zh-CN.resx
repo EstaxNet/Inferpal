@@ -2627,21 +2627,4 @@
   <data name="ToolOffTurnOn" xml:space="preserve"><value>开启它们</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>暂不</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>可用 {0} 开启它们。</value></data>
-  <data name="RunResumeButton" xml:space="preserve"><value>继续运行</value></data>
-  <data name="AwayResumeTitle" xml:space="preserve"><value>“继续运行”从停下的地方接着做</value></data>
-  <data name="AwayResumePlan" xml:space="preserve"><value>你的问题、已完成 {0}/{1} 步的计划以及改过的文件会一起带上。已完成的不会再做一遍。</value></data>
-  <data name="AwayResumeNoPlan" xml:space="preserve"><value>这次运行没有计划：你的问题、已执行的 {0} 个操作以及改过的文件会一起带上。已完成的不会再做一遍。</value></data>
-  <data name="AwayResumeTestsPassed" xml:space="preserve"><value>最后一次测试通过了。</value></data>
-  <data name="AwayResumeTestsFailed" xml:space="preserve"><value>最后一次测试失败了。</value></data>
-  <data name="AwayResumeBuildPassed" xml:space="preserve"><value>最后一次构建成功了。</value></data>
-  <data name="AwayResumeBuildFailed" xml:space="preserve"><value>最后一次构建失败了。</value></data>
-  <data name="AwayResumeChangedSince" xml:space="preserve"><value>中断后被改过：{0}。智能体会先重新读取，并保留你的改动。</value></data>
-  <data name="ResumeRunQuestion" xml:space="preserve"><value>继续 {0} 中断的运行</value></data>
-  <data name="ResumeChipPlan" xml:space="preserve"><value>计划: 已完成 {0}/{1}</value></data>
-  <data name="ResumeChipFiles" xml:space="preserve"><value>改动了 {0} 个文件</value></data>
-  <data name="ResumeChipCheckPassed" xml:space="preserve"><value>最后一次检查通过</value></data>
-  <data name="ResumeChipCheckFailed" xml:space="preserve"><value>最后一次检查失败</value></data>
-  <data name="ResumeChipChangedSince" xml:space="preserve"><value>{0} 此后被改过</value></data>
-  <data name="RunResumeNone" xml:space="preserve"><value>没有因关闭编辑器而中断、可以继续的运行。</value></data>
-  <data name="CmdResumeRunHint" xml:space="preserve"><value>继续因关闭编辑器而中断的运行</value></data>
 </root>

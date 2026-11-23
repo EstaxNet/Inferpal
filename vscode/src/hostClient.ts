@@ -8,7 +8,6 @@ import type { DebugDelegate } from './debugBridge';
 import {
   ActiveDocumentDto,
   AwayNotice,
-  ResumeTurn,
   CopyApplyResult,
   CopyDiscardResult,
   CopyPrepareResult,
@@ -1043,11 +1042,6 @@ export class HostClient {
   /** The notice of a start: what the closing of VS Code cut or left unread; null when there is nothing to say. */
   sessionAway(endsOnAQuestion: boolean): Promise<AwayNotice | null> {
     return this.connection().sendRequest<AwayNotice | null>('session/away', { endsOnAQuestion });
-  }
-
-  /** The run to resume — the one named, else the newest the closing cut — or null when there is none. */
-  sessionResume(runId?: string): Promise<ResumeTurn | null> {
-    return this.connection().sendRequest<ResumeTurn | null>('session/resume', { runId: runId ?? null });
   }
 
   /** The notice dismissed: its runs and tasks are not said again. */

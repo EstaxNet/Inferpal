@@ -650,16 +650,6 @@ internal sealed partial class HostServer
                     return new SlashCommandResult(true, null, [new SlashEffectDto("runCopy", question)]);
                 }
 
-                // The client asks session/resume for the bubble and sends it: the same turn as the away notice's button.
-                case SlashCommandId.ResumeRun:
-                {
-                    var (runId, malformed) = ResumeRunCommandHandler.Arg(p.Text);
-                    if (malformed) return new SlashCommandResult(true, Strings.SlashUsage("/resume-run [#run]"));
-                    return ResumeRunCommandHandler.Pick(s.Tools.History.Runs, runId, s.Tools.History.Editor) is { } cut
-                        ? new SlashCommandResult(true, null, [new SlashEffectDto("resumeRun", cut.Id)])
-                        : new SlashCommandResult(true, Strings.RunResumeNone);
-                }
-
                 // Not portable yet (VS-only UX or planned for a later phase): a deterministic
                 // localized answer beats falling through to the model with a raw "/command".
                 case SlashCommandId.FixBuild:

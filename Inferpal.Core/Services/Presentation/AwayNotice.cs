@@ -5,9 +5,7 @@ namespace Inferpal.Services.Presentation;
 
 /// <summary>A run the closing cut, as the notice says it: when it started, what it changed, what Undo run can give back.</summary>
 /// <param name="RunId">The run (<c>/undo-run #id</c>, the review).</param>
-/// <param name="Resume">What Resume run carries (<see cref="RunResumeTurn.CardText"/>); <c>null</c> for a run with nothing
-/// to resume.</param>
-internal sealed record AwayRun(string RunId, string Text, IReadOnlyList<RunFileLine> Files, string Warning, string? Resume = null);
+internal sealed record AwayRun(string RunId, string Text, IReadOnlyList<RunFileLine> Files, string Warning);
 
 /// <summary>A background task the notice says: one that finished before the editor closed and was never read, or one the
 /// closing stopped (<paramref name="Retry"/>).</summary>
@@ -51,12 +49,10 @@ internal static class AwayNotice
     /// <param name="pruned">The old indexes this start removed; they are gone, so this is the one time they are said.</param>
     /// <param name="left">A copy of the repository this editor held when it closed (<c>WorkCopy.LeftToSayAsync</c>), and how
     /// many files its run changed there.</param>
-    /// <param name="history">The runs' service: what changed since the cut, as <c>/undo-run</c> judges it; <c>null</c>: nothing
-    /// is said changed.</param>
     public static AwayNoticeModel? Build(IEnumerable<HistoryRun> runs, string editorSlot, string editorName,
                                         IReadOnlyList<BackgroundTaskSnapshot> tasks, IReadOnlySet<string> saidRuns,
                                         DateTime now, string? root = null, Rag.PrunedIndexes? pruned = null,
-                                        (Execution.WorkCopy Copy, int? Changed)? left = null, FileHistoryService? history = null)
+                                        (Execution.WorkCopy Copy, int? Changed)? left = null)
     {
         AwayRun? cut = null;
         // The newest run of this editor, by id (local times repeat an hour every autumn): the closing cut it, or nothing.
@@ -66,11 +62,8 @@ internal static class AwayNotice
         {
             var files = RunSummary.Files(run).Select(f => f with { Path = Named(f.Path, root) }).ToList();
             var last  = run.LastChange ?? run.StartedAt;
-            var later = history?.TouchedLater(run);
-            var resume = RunResumeTurn.Of(run, path => history is not null && history.ChangedSinceRun(run, path, later!), root, now);
             cut = new AwayRun(run.Id, Strings.AwayRunCut(Time(run.StartedAt, now), editorName, files.Count, Time(last, now)),
-                              files, Strings.AwayRunCutWarning(Time(last, now), files.Count),
-                              resume is null ? null : RunResumeTurn.CardText(run, resume.ChangedSince));
+                              files, Strings.AwayRunCutWarning(Time(last, now), files.Count));
         }
 
         var said = new List<AwayTask>();

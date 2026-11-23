@@ -113,9 +113,6 @@ type MentionsExpanded = {
 /** `inCopy`: the question goes to the copy this window holds (`/run-copy`), its bubble keeping the command. */
 type TurnReplay = { prompt: string; codeAction: boolean; query?: string; inCopy?: boolean };
 
-/** A run the closing cut, picked up again: the run the host resumes, and the mode it goes on in. */
-type ResumeAsked = { runId: string; agent: boolean };
-
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewId = 'inferpal.chat';
 
@@ -228,8 +225,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     /** The question as its bubble showed it when the turn started (an /explain's line naming the excerpt included). */
     shown: string;
     attachments: PendingAttachment[];
-    /** The run a resumed question picked up again: Regenerate asks it again through `/resume-run`. */
-    resumeRun?: string;
   } | undefined;
   /** The card of a run on a copy waiting for the person (start, review, applied): the transcript does not carry it, so
    *  every redraw shows it again — the copy is held by the host until it is applied or discarded. */
@@ -3356,33 +3351,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
               await this.openCopyStart(outcome.copyQuestion, question);
               return;
             }
-            if (outcome.resumeRun !== null) {
-              // The bubble says what goes with the resumed run; what the run did reaches the model through the host.
-              const turn = await host.sessionResume(outcome.resumeRun);
-              if (!turn) {
-                // Gone meanwhile (undone, resumed elsewhere): said, never an empty answer.
-                this.finishTurn('', t('No run the closing of the editor cut is left to resume.'), false, 0);
-                return;
-              }
-              {
-                if (await this.refusedWhileBackendDown(text, typed, question)) {
-                  return;
-                }
-                question.text = turn.bubble;
-                this.awayNotice = null;
-                this.hydrate();
-                // A resumed run carries its own: the chips waiting in the composer stay there, for the next question.
-                const waiting = this.pendingAttachments;
-                this.pendingAttachments = [];
-                try {
-                  await this.chatTurn(turn.bubble, host, false, turn.question, false, { runId: turn.runId, agent: turn.agent });
-                } finally {
-                  this.pendingAttachments = [...waiting, ...this.pendingAttachments];
-                  this.postChips();
-                }
-                return;
-              }
-            }
             if (outcome.chatPrompt !== null) {
               // sendAsPrompt (expanded user template): continue as a normal chat turn — refused like a typed question
               // when the backend is known to be down, its bubble taken back.
@@ -3492,11 +3460,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** Applies the editor-side effects of a handled slash command. */
   private async applySlashEffects(
     effects: SlashEffect[],
-  ): Promise<{ chatPrompt: string | null; notes: string[]; rehydrate: boolean; dropHostMarkdown: boolean; copyQuestion: string | null;
-               resumeRun: string | null }> {
+  ): Promise<{ chatPrompt: string | null; notes: string[]; rehydrate: boolean; dropHostMarkdown: boolean; copyQuestion: string | null }> {
     let chatPrompt: string | null = null;
     let copyQuestion: string | null = null;
-    let resumeRun: string | null = null;
     const notes: string[] = [];
     let rehydrate = false;
     let dropHostMarkdown = false;
@@ -3579,10 +3545,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           // `/run-copy <question>`: the start card first — nothing is made before the person answers it.
           copyQuestion = e.value ?? null;
           break;
-        case 'resumeRun':
-          // `/resume-run` (or the away notice's button): the run the closing cut, picked up again.
-          resumeRun = e.value ?? null;
-          break;
         case 'openSettings':
           // `/settings`: the settings panel, as the command palette opens it.
           try {
@@ -3644,7 +3606,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           break; // unknown kinds are ignored (forward compatibility)
       }
     }
-    return { chatPrompt, notes, rehydrate, dropHostMarkdown, copyQuestion, resumeRun };
+    return { chatPrompt, notes, rehydrate, dropHostMarkdown, copyQuestion };
   }
 
   /** /explain and /review: active selection (or whole document) fenced into the prompt,
@@ -3688,15 +3650,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** One model turn (agent or plain chat) with @-mention and pending-chip expansion. `codeAction`: a read-only
    * code action, answered by the code-actions model without tools. `query`: what the auto-context searches for —
    * the prompt as written by default, never with the attached files appended. */
-  private async chatTurn(prompt: string, host: HostClient, codeAction = false, query?: string, inCopy = false,
-                         resume?: ResumeAsked): Promise<void> {
+  private async chatTurn(prompt: string, host: HostClient, codeAction = false, query?: string, inCopy = false): Promise<void> {
     // When the request left: a long turn's end is announced (announceRunEnd); 0 = it never left.
     let startedAt = 0;
     try {
       // What another editor saved since: this question answers with it (its model and agent mode included).
       await this.followSettings(host);
-      // A resumed run goes on in its own mode, whatever the window shows now.
-      const agentMode = resume ? resume.agent : this.windowAgentMode();
+      const agentMode = this.windowAgentMode();
       // A notice about the previous question is not about this one.
       if (this.toolOffCard) {
         this.showToolOffCard(null);
@@ -3827,8 +3787,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // A question for a copy is not resent as such: its bubble is `/run-copy …`, which asks again through the start card.
       if (asked && !inCopy) {
         this.lastSent = { question: asked, text: prompt, codeAction, query, shown: asked.text, attachments: [...chips] };
-        // Regenerate asks a resumed run again through /resume-run: its bubble alone would reach the model without its run.
-        this.lastSent.resumeRun = resume?.runId;
       }
       // A regenerated question's notes come back under it, read: asked again with them, it is the question the history
       // keeps — and the next save keeps them too.
@@ -3868,7 +3826,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         notes: notes.length > 0 ? notes : undefined,
         inCopy: inCopy || undefined,
         openTools,
-        resumeRun: resume?.runId,
       });
       // A stopped turn's partial answer is the host's: empty when nothing visible had come (reasoning only).
       const finalText = result.cancelled ? result.text : result.text || this.streamText;
@@ -4147,13 +4104,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     }
     const at = this.transcript.indexOf(question);
     if (this.busy || at < 0) {
-      return;
-    }
-    if (sent?.resumeRun) {
-      // A resumed run is asked again as one: its bubble alone would reach the model without its run.
-      this.transcript.splice(at);
-      this.hydrate();
-      await this.send(`/resume-run #${sent.resumeRun}`, false);
       return;
     }
     // The notes its run read are part of the question in the host's history: asked again, it carries them.

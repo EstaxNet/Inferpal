@@ -519,7 +519,7 @@ internal partial class InferpalToolWindowData
             var left = await WorkCopy.LeftToSayAsync(root, ConversationStore.VisualStudioSlot, CancellationToken.None);
             var notice = Services.Presentation.AwayNotice.Build(_tools.History.Runs, ConversationStore.VisualStudioSlot,
                                                                "Visual Studio", queue.List(), queue.SaidRuns(), DateTime.Now, root,
-                                                               Services.Rag.KeptIndexes.PruneHere(root), left, _tools.History);
+                                                               Services.Rag.KeptIndexes.PruneHere(root), left);
             if (notice is null) return;
             await RunOnVMContextAsync(() =>
             {
@@ -542,16 +542,7 @@ internal partial class InferpalToolWindowData
                     kept: () => { if (notice.Pruned is { } pruned) OpenSettingsPage(pruned.Page, pruned.Section); },
                     // The copy left: exactly that one taken up, then its review or its discard.
                     reviewCopy: () => { if (notice.Copy is { } copy) _ = ActOnLeftCopyAsync(copy.Folder, discard: false); },
-                    discardCopy: () => { if (notice.Copy is { } copy) _ = ActOnLeftCopyAsync(copy.Folder, discard: true); },
-                    // The run picked up again: the notice goes, the resumed question takes its place.
-                    resume: () =>
-                    {
-                        if (notice.Run is not { } run) return;
-                        // Dealt with: the notice is not said again, here or at the next start.
-                        _ = Task.Run(() => queue.MarkSaid(notice.RunIds, []));
-                        _ = RunOnVMContextAsync(() => { if (card is not null) Messages.Remove(card); });
-                        _ = HandleSlashCommandAsync($"/resume-run #{run.RunId}", CancellationToken.None);
-                    });
+                    discardCopy: () => { if (notice.Copy is { } copy) _ = ActOnLeftCopyAsync(copy.Folder, discard: true); });
                 ApplyItemTheme(card);
                 // Under a restored question no answer will follow: said there, and kept with the conversation.
                 if (notice.Run is not null && !IsLoading && !_sendStarting

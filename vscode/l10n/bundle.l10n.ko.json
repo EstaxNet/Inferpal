@@ -242,6 +242,5 @@
   "Auto": "자동",
   "Approvals are off: the agent acts without asking. Click to open the approval settings.": "승인이 꺼져 있어 에이전트가 묻지 않고 실행합니다. 승인 설정을 열려면 클릭하세요.",
   "auto": "자동",
-  "Approvals are off: run without a card": "승인 끔: 카드 없이 실행됨",
-  "No run the closing of the editor cut is left to resume.": "편집기를 닫아 중단된 실행 중 재개할 것이 없습니다."
+  "Approvals are off: run without a card": "승인 끔: 카드 없이 실행됨"
 }

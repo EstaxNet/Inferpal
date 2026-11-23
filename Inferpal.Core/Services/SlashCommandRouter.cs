@@ -90,7 +90,7 @@ internal enum SlashCommandId
     Commit, CommitExec, Pr, FixBuild, History, PHistory, Models, AgentStep, Resume,
     Note, Notes, Snippets, Template, Docs, Check, Rules, Checks, Plan, Prompts,
     Hardware, Setup, Diagnostics, UndoRun, Replay, Xray, Bench, Arena, Tdd, Branch, Task,
-    Onboard, Debug, Permissions, Instructions, Skill, Import, Settings, TestCoverage, Modes, RunCopy, ResumeRun,
+    Onboard, Debug, Permissions, Instructions, Skill, Import, Settings, TestCoverage, Modes, RunCopy,
 }
 
 /// <summary>A command the user or the repository wrote: <c>/name</c> → a prompt, from the config
@@ -222,7 +222,6 @@ internal static class SlashCommandRouter
         ("/skill",        Strings.SlashHintSkill,        SlashCategory.Knowledge),
         ("/replay",      Strings.SlashHintReplay,      SlashCategory.Transparency),
         ("/undo-run",    Strings.SlashHintUndoRun,     SlashCategory.Transparency),
-        ("/resume-run",  Strings.CmdResumeRunHint,     SlashCategory.Transparency),
         ("/diagnostics", Strings.SlashHintDiagnostics, SlashCategory.Transparency),
     ];
 
@@ -404,7 +403,6 @@ internal static class SlashCommandRouter
             case "/permissions":       return new SlashDelegatedAction(SlashCommandId.Permissions,     parts);
             case "/diagnostics":       return new SlashDelegatedAction(SlashCommandId.Diagnostics,     parts);
             case "/undo-run":          return new SlashDelegatedAction(SlashCommandId.UndoRun,         parts);
-            case "/resume-run":        return new SlashDelegatedAction(SlashCommandId.ResumeRun,       parts);
             case "/run-copy":          return new SlashDelegatedAction(SlashCommandId.RunCopy,         parts);
             case "/replay":            return new SlashDelegatedAction(SlashCommandId.Replay,          parts);
             case "/xray":              return new SlashDelegatedAction(SlashCommandId.Xray,            parts);

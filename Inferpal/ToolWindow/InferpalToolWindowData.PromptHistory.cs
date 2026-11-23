@@ -161,17 +161,6 @@ internal partial class InferpalToolWindowData
         await ShowInfoAsync(await Services.Commands.HistoryCommandHandler.HandleAsync(
             _store, parts, DateTime.UtcNow, ct));
 
-    /// <summary><c>/resume-run [#run]</c> (and the away notice's button): the run the closing cut, picked up again — its
-    /// bubble, its run reaching the model as a block, its plan from the first step not done.</summary>
-    private async Task HandleResumeRunCommandAsync(string[] parts, CancellationToken ct)
-    {
-        var (runId, malformed) = Services.Commands.ResumeRunCommandHandler.Arg(string.Join(" ", parts));
-        if (malformed) { await ShowInfoAsync(Strings.SlashUsage("/resume-run [#run]")); return; }
-        var turn = Services.Commands.ResumeRunCommandHandler.Turn(_tools.History, runId, FindProjectRoot(), DateTime.Now);
-        if (turn is null) { await ShowInfoAsync(Strings.RunResumeNone); return; }
-        await SendCoreAsync(turn.Bubble, oneTimeModel: null, attachments: [], ct, clearPrompt: false, typed: false, resume: turn);
-    }
-
     // /undo-run [list|review] — logic shared with the Host (UndoRunCommandHandler). Typed or from a bar's Undo, the bars
     // then show their runs as they stand.
     private async Task HandleUndoRunCommandAsync(string[] parts, CancellationToken ct)

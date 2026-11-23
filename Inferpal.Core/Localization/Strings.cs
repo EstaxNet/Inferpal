@@ -2423,23 +2423,6 @@ internal static class Strings
     public static string AwayRunCut(string started, string editor, int files, string last) =>
         Format(Get(nameof(AwayRunCut)), started, editor, files, last);
     public static string AwayRunCutWarning(string last, int files) => Format(Get(nameof(AwayRunCutWarning)), last, files);
-    public static string RunResumeButton => Get(nameof(RunResumeButton));
-    public static string AwayResumeTitle => Get(nameof(AwayResumeTitle));
-    public static string AwayResumePlan(int done, int total) => Format(Get(nameof(AwayResumePlan)), done, total);
-    public static string AwayResumeNoPlan(int actions) => Format(Get(nameof(AwayResumeNoPlan)), actions);
-    public static string AwayResumeTestsPassed => Get(nameof(AwayResumeTestsPassed));
-    public static string AwayResumeTestsFailed => Get(nameof(AwayResumeTestsFailed));
-    public static string AwayResumeBuildPassed => Get(nameof(AwayResumeBuildPassed));
-    public static string AwayResumeBuildFailed => Get(nameof(AwayResumeBuildFailed));
-    public static string AwayResumeChangedSince(string files) => Format(Get(nameof(AwayResumeChangedSince)), files);
-    public static string ResumeRunQuestion(string time) => Format(Get(nameof(ResumeRunQuestion)), time);
-    public static string ResumeChipPlan(int done, int total) => Format(Get(nameof(ResumeChipPlan)), done, total);
-    public static string ResumeChipFiles(int files) => Format(Get(nameof(ResumeChipFiles)), files);
-    public static string ResumeChipCheckPassed => Get(nameof(ResumeChipCheckPassed));
-    public static string ResumeChipCheckFailed => Get(nameof(ResumeChipCheckFailed));
-    public static string ResumeChipChangedSince(string file) => Format(Get(nameof(ResumeChipChangedSince)), file);
-    public static string RunResumeNone => Get(nameof(RunResumeNone));
-    public static string CmdResumeRunHint => Get(nameof(CmdResumeRunHint));
     public static string AwayTaskDone(string id, string at, string editor) => Format(Get(nameof(AwayTaskDone)), id, at, editor);
     public static string AwayTaskDoneKept                    => Get(nameof(AwayTaskDoneKept));
     public static string AwayTaskDoneProposalsKept(int count) => Format(Get(nameof(AwayTaskDoneProposalsKept)), count);

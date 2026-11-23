@@ -112,8 +112,6 @@ export interface ChatSendParams {
   images?: ImageDto[];
   /** The question goes to the copy of the repository this window holds, or a new one (`/run-copy`, pari 106). */
   inCopy?: boolean;
-  /** A run the closing cut, picked up again (`session/resume`): its block reaches the model before the bubble's words. */
-  resumeRun?: string;
   /** Tools the person turned off, offered to this question alone (the tool-off notice's "use them for this question"). */
   openTools?: string[];
 }
@@ -1625,19 +1623,10 @@ export interface SetupInstallProgress {
   line: string;
 }
 
-/** `session/resume`: the run to resume, as the client sends it — its bubble, the question as typed, its mode. */
-export interface ResumeTurn {
-  runId: string;
-  bubble: string;
-  question: string;
-  agent: boolean;
-}
-
 /** `session/away`: what the closing of VS Code cut or left unread, said once at a start, with its buttons' words. */
 export interface AwayNotice {
   title: string;
-  /** `resume`: what Resume run carries, null for a run with nothing to resume. */
-  run: { runId: string; text: string; files: RunFileLine[]; warning: string; resume?: string | null } | null;
+  run: { runId: string; text: string; files: RunFileLine[]; warning: string } | null;
   tasks: { id: string; text: string; retry: boolean }[];
   review: string;
   undo: string;
@@ -1650,7 +1639,4 @@ export interface AwayNotice {
   noAnswer: string | null;
   /** A copy of the repository the closing left behind (`/run-copy`): its review, or discarded. */
   copy?: { folder: string; text: string; note: string; review: string; discard: string } | null;
-  /** The words of Resume run and of its block's title. */
-  resumeButton?: string | null;
-  resumeTitle?: string | null;
 }

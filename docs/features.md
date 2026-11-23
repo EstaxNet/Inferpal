@@ -299,9 +299,7 @@ its next step. **Ctrl+Enter** queues a message for after the turn instead.
 - **While you were away** — at the next start, a notice above the conversation says what the editor's closing left
   behind: the agent run it cut (when it started, the files it changed, with *Review changes* and *Undo run*), and the
   background tasks it stopped (*Retry*) or whose report was never opened (*Open the report*). Each editor says only its
-  own runs; dismissed, the notice is not said again. **Resume run** picks the cut run up where it stopped: the question,
-  the plan with its steps done, the files it changed and its last check go with it, a file changed since is read again
-  and kept, and the plan goes on from its first step not done (`/resume-run` does the same, in ACP too).
+  own runs; dismissed, the notice is not said again.
 
 </details>
 

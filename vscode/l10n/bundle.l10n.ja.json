@@ -242,6 +242,5 @@
   "Auto": "自動",
   "Approvals are off: the agent acts without asking. Click to open the approval settings.": "承認はオフです。エージェントは確認なしで動作します。クリックして承認の設定を開きます。",
   "auto": "自動",
-  "Approvals are off: run without a card": "承認オフ：カードなしで実行",
-  "No run the closing of the editor cut is left to resume.": "エディターを閉じたことで中断された実行で、再開できるものはありません。"
+  "Approvals are off: run without a card": "承認オフ：カードなしで実行"
 }

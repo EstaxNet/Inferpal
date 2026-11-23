@@ -2627,21 +2627,4 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Activarlas</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Ahora no</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Actívelas con {0}.</value></data>
-  <data name="RunResumeButton" xml:space="preserve"><value>Reanudar la ejecución</value></data>
-  <data name="AwayResumeTitle" xml:space="preserve"><value>Reanudar la ejecución sigue donde se detuvo</value></data>
-  <data name="AwayResumePlan" xml:space="preserve"><value>Su pregunta, el plan con {0} de {1} pasos hechos y los archivos que cambió van con ella. No se vuelve a pedir nada ya hecho.</value></data>
-  <data name="AwayResumeNoPlan" xml:space="preserve"><value>Esta ejecución no tenía plan: su pregunta, {0} {0:acción realizada|acciones realizadas} y los archivos que cambió van con ella. No se vuelve a pedir nada ya hecho.</value></data>
-  <data name="AwayResumeTestsPassed" xml:space="preserve"><value>Sus últimas pruebas pasaron.</value></data>
-  <data name="AwayResumeTestsFailed" xml:space="preserve"><value>Sus últimas pruebas fallaron.</value></data>
-  <data name="AwayResumeBuildPassed" xml:space="preserve"><value>Su última compilación tuvo éxito.</value></data>
-  <data name="AwayResumeBuildFailed" xml:space="preserve"><value>Su última compilación falló.</value></data>
-  <data name="AwayResumeChangedSince" xml:space="preserve"><value>Cambiado desde el corte: {0}. El agente lo vuelve a leer antes de seguir y conserva su cambio.</value></data>
-  <data name="ResumeRunQuestion" xml:space="preserve"><value>Reanudar la ejecución cortada a las {0}</value></data>
-  <data name="ResumeChipPlan" xml:space="preserve"><value>plan: {0} de {1} hechos</value></data>
-  <data name="ResumeChipFiles" xml:space="preserve"><value>{0} {0:archivo cambiado|archivos cambiados}</value></data>
-  <data name="ResumeChipCheckPassed" xml:space="preserve"><value>última comprobación superada</value></data>
-  <data name="ResumeChipCheckFailed" xml:space="preserve"><value>última comprobación fallida</value></data>
-  <data name="ResumeChipChangedSince" xml:space="preserve"><value>{0} cambiado desde entonces</value></data>
-  <data name="RunResumeNone" xml:space="preserve"><value>No queda ninguna ejecución cortada por el cierre del editor que reanudar.</value></data>
-  <data name="CmdResumeRunHint" xml:space="preserve"><value>Reanudar la ejecución cortada al cerrar el editor</value></data>
 </root>
