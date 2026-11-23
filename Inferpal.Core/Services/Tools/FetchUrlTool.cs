@@ -46,7 +46,8 @@ internal class FetchUrlTool : ITool
     /// <inheritdoc/>
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Network;
     public string Description => "Fetches the readable text content of a web page. Use this to read documentation, articles, or any web page whose URL you already know. "
-                                + "An issue or pull request of GitHub, GitLab, Gitea or Codeberg reads as its title, description, comments in order and changed files, with its images.";
+                                + "An issue or pull request of GitHub, GitLab, Gitea or Codeberg reads as its title, description, review threads, failed checks, comments in order and changed files, with its images; "
+                                + "a GitHub Actions run or job, or a GitLab pipeline or job, reads as what failed in it.";
     public object Parameters  => new
     {
         type = "object",

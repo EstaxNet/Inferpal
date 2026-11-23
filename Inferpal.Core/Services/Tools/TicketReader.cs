@@ -18,7 +18,7 @@ namespace Inferpal.Services.Tools;
 /// forge, so its refusal is a page read without a word. ⚠ The text is written by the ticket's authors: said so above it,
 /// data, never instructions. ⚠ Nothing here throws but the caller's cancel: a ticket that cannot be read is a page.
 /// </remarks>
-internal static class TicketReader
+internal static partial class TicketReader
 {
     /// <summary>Which forge's API answers, and where.</summary>
     internal enum Forge { GitHub, GitLab, Gitea }
@@ -27,7 +27,7 @@ internal static class TicketReader
     /// request's files are listed, whether the ADDRESS says pull request, the forge's page size, and where a pull request's
     /// inline review comments and its reviews are listed (empty for GitLab, whose discussions carry both).</summary>
     internal sealed record Ticket(Forge Forge, string Api, string Comments, string PullFiles, bool IsPull, int Number, int PageSize,
-        string ReviewComments = "", string Reviews = "");
+        string ReviewComments = "", string Reviews = "", string Checks = "", string Repo = "", string Statuses = "");
 
     /// <summary>How long reading one ticket may take, every call and image together.</summary>
     private static readonly TimeSpan Budget = TimeSpan.FromSeconds(60);
@@ -52,7 +52,11 @@ internal static class TicketReader
                 var n = int.Parse(m.Groups[4].Value, CultureInfo.InvariantCulture);
                 return new(Forge.GitHub, $"{repo}/issues/{n}", $"{repo}/issues/{n}/comments?per_page=100",
                            $"{repo}/pulls/{n}/files?per_page=100", m.Groups[3].Value == "pull", n, 100,
-                           $"{repo}/pulls/{n}/comments?per_page=100", $"{repo}/pulls/{n}/reviews?per_page=100");
+                           $"{repo}/pulls/{n}/comments?per_page=100", $"{repo}/pulls/{n}/reviews?per_page=100",
+                           // The checks of the pull request's latest commit, by its ref: no call for its head's sha.
+                           $"{repo}/commits/refs/pull/{n}/head/check-runs?per_page=100&filter=latest", repo,
+                           // External CI (Jenkins, CircleCI…) reports by commit statuses, never by checks.
+                           $"{repo}/commits/refs/pull/{n}/head/status?per_page=100");
             }
             if (GitLabPath.Match(path) is { Success: true } g)
             {
@@ -73,13 +77,13 @@ internal static class TicketReader
                            Reviews: $"{repo}/pulls/{n}/reviews?limit=50");
             }
         }
-        catch (RegexMatchTimeoutException) { }
+        catch (RegexMatchTimeoutException ex) { Diagnostics.Swallow("TicketReader.Parse", ex); }
         return null;
     }
 
     /// <summary>What a ticket read gave: its text, the images its body and comments show (their addresses), or why the API
     /// did not answer (a note to put above the page read instead; <c>null</c> when the address is no forge's).</summary>
-    internal sealed record Read(string? Text, IReadOnlyList<string> Images, string? Refused);
+    internal sealed record Read(string? Text, IReadOnlyList<string> Images, string? Refused, bool Settled = true);
 
     /// <summary>Fetches JSON at an address: <c>fetch_url</c>'s network path in production, a fixture in tests.</summary>
     internal delegate Task<string> JsonFetch(string url, CancellationToken ct);
@@ -92,7 +96,8 @@ internal static class TicketReader
                                                userAgent: "Inferpal");
 
     // The last ticket read, kept a few minutes: paging through it (start_char) re-reads it, and GitHub allows 60 calls an
-    // hour without an account — a pull request takes five, three windows would spend fifteen.
+    // hour without an account — a pull request takes up to ten (ticket, comments, files, review, verdicts, checks, statuses,
+    // annotations), three windows would spend thirty.
     private static readonly object CacheLock = new();
     private static (string Url, DateTime At, Read Read)? _last;
     private static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(10);
@@ -104,8 +109,10 @@ internal static class TicketReader
     /// <param name="ct">The caller's cancel.</param>
     internal static async Task<Read?> ReadAsync(string url, JsonFetch fetch, Func<string, bool> denied, CancellationToken ct)
     {
-        if (Parse(url) is not { } ticket) return null;
-        if (denied(ticket.Api) || denied(ticket.Comments)) return new(null, [], null);
+        var ticket = Parse(url);
+        var run = ticket is null ? ParseRun(url) : null;
+        if (ticket is null && run is null) return null;
+        if (ticket is not null ? denied(ticket.Api) || denied(ticket.Comments) : denied(run!.Api)) return new(null, [], null);
         // Only what the network gave is kept: a test's fixture never answers another test.
         var cached = fetch == Network;
         lock (CacheLock)
@@ -113,15 +120,21 @@ internal static class TicketReader
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(ct);
         budget.CancelAfter(Budget);
         Read read;
-        try { read = await ReadUncachedAsync(url, ticket, fetch, denied, budget.Token).ConfigureAwait(false); }
+        try
+        {
+            read = ticket is not null
+                ? await ReadUncachedAsync(url, ticket, fetch, denied, budget.Token).ConfigureAwait(false)
+                : await ReadRunAsync(run!, fetch, denied, budget.Token).ConfigureAwait(false);
+        }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             // Whatever a forge answers, a ticket that cannot be read is the page: never a failed fetch.
             Diagnostics.Swallow("TicketReader.Read", ex);
-            return new(null, [], IsKnownForge(ticket, url) ? Refusal(ticket, ex) : null);
+            return new(null, [], ticket is null ? Refusal(run!.Forge, ex, "CI run") : IsKnownForge(ticket, url) ? Refusal(ticket, ex) : null);
         }
-        if (cached && read.Text is not null)
+        // ⚠ A run or a check still going is read again next time: kept, it would answer "running" for minutes.
+        if (cached && read.Text is not null && read.Settled)
             lock (CacheLock) _last = (url, DateTime.UtcNow, read);
         return read;
     }
@@ -149,6 +162,7 @@ internal static class TicketReader
         var inlineTask = isPull && ticket.ReviewComments.Length > 0 && !denied(ticket.ReviewComments)
             ? ListAsync(fetch, ticket.ReviewComments, ct) : null;
         var reviewsTask = isPull && ticket.Reviews.Length > 0 && !denied(ticket.Reviews) ? ListAsync(fetch, ticket.Reviews, ct) : null;
+        var checksTask = isPull ? ReadChecksAsync(ticket, head, fetch, denied, ct) : null;
         var (commentItems, commentsWhy) = await commentsTask.ConfigureAwait(false);
         var (fileItems, filesWhy) = filesTask is null ? ([], null) : await filesTask.ConfigureAwait(false);
         var (inlineItems, inlineWhy) = inlineTask is null ? ([], null) : await inlineTask.ConfigureAwait(false);
@@ -186,9 +200,16 @@ internal static class TicketReader
         var review = isPull
             ? RenderReview(threads, inlineWhy, inlinePageFull, reviews, reviewsWhy, reviewItems.Count >= ticket.PageSize, changesRequested)
             : ("", null);
+        var settled = true;
+        if (checksTask is not null && await checksTask.ConfigureAwait(false) is var (checksText, checksSummary, checksSettled))
+        {
+            review = (review.Text + checksText,
+                      review.Summary is null ? checksSummary : checksSummary is null ? review.Summary : review.Summary + "\n" + checksSummary);
+            settled = checksSettled;
+        }
         var text = Render(ticket, url, head, isPull, body, comments, total, commentsWhy, commentItems.Count >= ticket.PageSize,
                           review, files, filesWhy, fileItems.Count >= ticket.PageSize, images);
-        return new(text, images, null);
+        return new(text, images, null, settled);
     }
 
     /// <summary>Why a review the rules refuse is not read.</summary>
@@ -403,13 +424,17 @@ internal static class TicketReader
     }
 
     /// <summary>The items of one page of a list the forge gives, or why it could not be read.</summary>
-    private static async Task<(List<JsonElement> Items, string? Why)> ListAsync(JsonFetch fetch, string address, CancellationToken ct)
+    private static async Task<(List<JsonElement> Items, string? Why)> ListAsync(JsonFetch fetch, string address, CancellationToken ct,
+        string? under = null)
     {
         try
         {
             using var doc = JsonDocument.Parse(await fetch(address, ct).ConfigureAwait(false));
-            return doc.RootElement.ValueKind == JsonValueKind.Array
-                ? (doc.RootElement.EnumerateArray().Select(e => e.Clone()).ToList(), null)
+            // GitHub gives some lists inside an object ({"total_count": …, "jobs": […]}).
+            var list = under is not null && doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty(under, out var inner)
+                ? inner : doc.RootElement;
+            return list.ValueKind == JsonValueKind.Array
+                ? (list.EnumerateArray().Select(e => e.Clone()).ToList(), null)
                 : ([], "the forge's answer was not a list");
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or ArgumentException or IOException
@@ -546,6 +571,20 @@ internal static class TicketReader
         ticket.Forge != Forge.Gitea
         || Uri.TryCreate(url, UriKind.Absolute, out var u)
            && (u.Host.Equals("codeberg.org", StringComparison.OrdinalIgnoreCase) || u.Host.Equals("gitea.com", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Why the forge did not give a CI run, in a sentence that says the page is read instead.</summary>
+    private static string Refusal(Forge forge, Exception ex, string what)
+    {
+        var why = (ex as HttpRequestException)?.StatusCode switch
+        {
+            System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Unauthorized =>
+                "it does not show it without an account (a private repository, or a run that does not exist)",
+            System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.TooManyRequests when forge == Forge.GitHub =>
+                "its limit of 60 calls an hour without an account is reached on this network",
+            _ => Diagnostics.RootMessage(ex).TrimEnd('.'),
+        };
+        return $"[{(forge == Forge.GitHub ? "GitHub" : "GitLab")}'s API did not give this {what}: {why}. Its web page is read instead.]";
+    }
 
     /// <summary>Why the forge did not give the ticket, in a sentence that says the page is read instead.</summary>
     private static string Refusal(Ticket ticket, Exception ex)

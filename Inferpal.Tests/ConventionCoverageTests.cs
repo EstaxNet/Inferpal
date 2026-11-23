@@ -1625,6 +1625,12 @@ public class ConventionCoverageTests
     }
 
     // ── 22. A model keyword is read through Keyword, never otherwise ──────────
+    /// <summary>Rule 22's exemptions: (file, variable) pairs that hold what a forge's API answered, not a model's keyword.</summary>
+    private static readonly HashSet<(string File, string Name)> ForgeWrittenValues =
+    [
+        ("TicketReader.Ci.cs", "app"),   // the slug of the app that keeps a check (github-actions, azure-pipelines)
+    ];
+
 
     [Fact]
     public void ModelKeywords_AreReadThroughToolArgsKeyword()
@@ -1742,6 +1748,9 @@ public class ConventionCoverageTests
                 {
                     if (!ReadsAnArgument(init, readers, out var viaKeyword)) continue;
                     if (!ComparedToALiteral(scope, name)) continue;
+                    // Nominative exemptions: values a FORGE wrote, read by the same `Str` reader as a model's
+                    // argument — never a keyword the model chose.
+                    if (ForgeWrittenValues.Contains((Path.GetFileName(file), name))) continue;
 
                     keywordArgs++;
                     if (!viaKeyword)
