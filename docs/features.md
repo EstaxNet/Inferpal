@@ -333,7 +333,7 @@ look at what the code produces, measure it, and read the files developers deal w
   stays empty. A model that does not see images gets the controls too. Windows, macOS (it says which permission to
   allow) and Linux.
 - **Your web service, called for real** — the agent starts the service in the background, waits until it is ready,
-  sends requests with `http_request` and reads the answers, error pages and stack traces included; it then fixes the
+  sends requests with `http_request` (GraphQL too: its schema read by introspection, each mutation asked) and reads the answers, error pages and stack traces included; it then fixes the
   code and calls again to confirm. It can also replay a request your project keeps — a `.http` file, a Postman or Bruno
   collection — by its name, with the environment you name; a secret from it shows on the card, and the agent sees only
   its name.

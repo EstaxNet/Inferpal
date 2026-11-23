@@ -1534,6 +1534,7 @@
   <data name="ApprovalReadPage" xml:space="preserve"><value>读取网页</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>搜索网络</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>使用 {0}</value></data>
+  <data name="HttpRequestMayChangeData" xml:space="preserve"><value>⚠ 可能更改服务器上的数据（{0}）：每次都会询问，不受“始终允许”或规则覆盖。</value></data>
   <data name="ViewPageCardServed" xml:space="preserve"><value>在与网络隔离的浏览器 (view_page) 中打开 {0} 并截图。其脚本会运行。</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} 行</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>…… 另有 {0} 行</value></data>

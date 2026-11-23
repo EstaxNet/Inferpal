@@ -169,6 +169,7 @@ internal static class Strings
     public static string ApprovalReadPage => Get(nameof(ApprovalReadPage));
     public static string ApprovalSearchWeb => Get(nameof(ApprovalSearchWeb));
     public static string ApprovalUseTool(string tool) => Format(Get(nameof(ApprovalUseTool)), tool);
+    public static string HttpRequestMayChangeData(string cause) => Format(Get(nameof(HttpRequestMayChangeData)), cause);
     public static string ViewPageCardServed(string page) => Format(Get(nameof(ViewPageCardServed)), page);
     public static string ApprovalLineCount(int count) => Format(Get(nameof(ApprovalLineCount)), count);
     public static string ApprovalMoreLines(int count) => Format(Get(nameof(ApprovalMoreLines)), count);

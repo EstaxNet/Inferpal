@@ -1534,6 +1534,7 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ApprovalReadPage" xml:space="preserve"><value>웹 페이지 읽기</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>웹 검색</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>{0} 사용</value></data>
+  <data name="HttpRequestMayChangeData" xml:space="preserve"><value>⚠ 서버의 데이터를 변경할 수 있습니다({0}): 매번 확인하며, '항상'이나 규칙으로 허용되지 않습니다.</value></data>
   <data name="ViewPageCardServed" xml:space="preserve"><value>네트워크에서 차단된 브라우저(view_page)에서 {0}을(를) 열고 캡처합니다. 스크립트가 실행됩니다.</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0}줄</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0}줄 더</value></data>

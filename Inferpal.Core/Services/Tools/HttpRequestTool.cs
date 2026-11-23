@@ -39,7 +39,9 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
         "approves the first call to each local address; any other address is approved call by call. Redirects are not " +
         "followed. For a server still starting, set wait_seconds, or wait on its job: run_command action='wait'. To replay a " +
         "request the project keeps (.http/.rest file, Postman collection, Bruno collection), give collection and request " +
-        "(its name; without it, the names are listed) and environment if it needs one.";
+        "(its name; without it, the names are listed) and environment if it needs one. For a GraphQL API, give graphql (the " +
+        "query or mutation) and variables instead of body, or introspect=true to read its schema; a mutation or a subscription " +
+        "is approved by the person each time.";
 
     public object Parameters => new
     {
@@ -55,6 +57,10 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
             collection      = new { type = "string",  description = "Instead of url: a .http or .rest file, a Postman collection (.json), a Bruno collection (folder or .bru) of the workspace." },
             request         = new { type = "string",  description = "With collection: the request's name." },
             environment     = new { type = "string",  description = "With collection: the environment whose variables it uses." },
+            graphql         = new { type = "string",  description = "Instead of body: a GraphQL document (query, mutation), POSTed as JSON to url." },
+            variables       = new { type = "object",  description = "With graphql: the operation's variables." },
+            operation_name  = new { type = "string",  description = "With graphql: which operation of the document to run." },
+            introspect      = new { type = "boolean", description = "Instead of body: read the GraphQL schema at url (its queries, mutations and types)." },
         },
     };
 
@@ -63,7 +69,9 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
     // Headers that would change WHERE or HOW the request goes, not what it says: Host reroutes through local forward proxies
     // and virtual hosts, Upgrade opens a websocket (a debugger's port), the framing ones are the client's to write.
     private static readonly HashSet<string> RefusedHeaders = new(StringComparer.OrdinalIgnoreCase)
-        { "Host", "Connection", "Upgrade", "Transfer-Encoding", "Content-Length", "Expect", "TE", "Keep-Alive", "Trailer" };
+        { "Host", "Connection", "Upgrade", "Transfer-Encoding", "Content-Length", "Expect", "TE", "Keep-Alive", "Trailer",
+          // The body is text sent as it is: an encoding declared over it would have the server read something else.
+          "Content-Encoding", "Content-Transfer-Encoding" };
 
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
@@ -71,7 +79,7 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
         var url = args.Str("url") ?? throw new ArgumentException("url is required (or collection and request).");
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             return $"Error: '{url}' is not an http or https URL.";
-        var method = (args.Str("method") ?? "GET").Trim().ToUpperInvariant();
+        var method = (args.Str("method") ?? (args.Str("graphql") is not null || args.Bool("introspect", false) ? "POST" : "GET")).Trim().ToUpperInvariant();
         if (!Methods.Contains(method)) return $"Error: unknown method '{method}' (expected {string.Join(", ", Methods)}).";
 
         if (IsUnspecified(uri))
@@ -95,6 +103,21 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
                 headers.Add(new(p.Name, p.Value.AsText() ?? p.Value.GetRawText()));
             }
         var body = args.Str("body");
+        var introspect = args.Bool("introspect", false);
+        var graphQl = args.Str("graphql");
+        if (graphQl is null && !introspect && (args.Has("variables") || args.Has("operation_name")))
+            return "Error: variables and operation_name go with graphql; in a body of your own, write them into its JSON.";
+        if (graphQl is not null || introspect)
+        {
+            if (body is not null) return "Error: give either graphql (or introspect) or body — not both.";
+            if (graphQl is not null && introspect) return "Error: give either graphql or introspect — not both.";
+            if (method != HttpMethod.Post.Method) return "Error: a GraphQL request is sent with POST (leave method out).";
+            if (args.Has("variables") && !args.Object("variables", out _)) return "Error: 'variables' must be an object, name → value.";
+            body = GraphQlRequest.Body(introspect ? GraphQlRequest.IntrospectionQuery : graphQl!,
+                                       args.Object("variables", out var vars) ? vars : null, args.Str("operation_name"));
+            if (!headers.Any(x => x.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)))
+                headers.Add(new("Content-Type", "application/json"));
+        }
         if (body is not null && Encoding.UTF8.GetByteCount(body) > MaxBodyBytes)
             return $"Error: the body is larger than {MaxBodyBytes / (1024 * 1024)} MB.";
 
@@ -107,8 +130,15 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
         if (wait > 0 && !local) return "Error: wait_seconds is for a local address only.";
 
         var subject = Subject(method, uri);
-        var details = Details(method, uri, headers, body, local);
-        var approved = local
+        // ⚠ A mutation or a subscription is asked every time, however it is spelled: no "Always", no rule lets it through.
+        var changes = GraphQlRequest.MayChange(uri, body,
+            headers.LastOrDefault(x => x.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)).Value);
+        // A request that may change data shows its whole body, a local one too: the operation may sit past any cut.
+        var details = Details(method, uri, headers, body, local && changes is null);
+        var approved = changes is not null
+            ? await approval.RequestApprovalAsync(Name, details + "\n\n" + Localization.Strings.HttpRequestMayChangeData(changes), ct,
+                                                  subject: subject, forcePrompt: true)
+            : local
             ? await approval.RequestScopedApprovalAsync(Name, details, subject, grantKey: $"{Name} {Origin(uri)}", ct)
             // Anywhere else: a card every time, unless the person's own rule names this whole subject — and even then nothing
             // a card could answer is filed under the tool's name (a rule changed between the two reads draws a card whose
@@ -123,7 +153,10 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
         var notes = string.Join("\n\n", new[] { timeoutNote, waitNote }.Where(n => n is not null));
         try
         {
-            var report = await SendAsync(uri, method, headers, body, local, wait, deadline.Token);
+            // A GraphQL answer is read whole before any cut: its errors and its schema are judged on all of it.
+            var graphQlAnswer = introspect || graphQl is not null || GraphQlRequest.IsGraphQlBody(body)
+                ? (introspect ? GraphQlAnswer.Schema : GraphQlAnswer.Errors) : GraphQlAnswer.None;
+            var report = await SendAsync(uri, method, headers, body, local, wait, graphQlAnswer, deadline.Token);
             return notes.Length == 0 ? report : notes + "\n\n" + report;
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
@@ -150,7 +183,7 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
     /// the address is masked the same way.</remarks>
     private async Task<string> ReplayAsync(JsonElement args, CancellationToken ct)
     {
-        foreach (var own in new[] { "url", "method", "headers", "body" })
+        foreach (var own in new[] { "url", "method", "headers", "body", "graphql", "variables", "operation_name", "introspect" })
             if (args.Has(own)) return $"Error: give either collection and request, or url and its own '{own}' — not both.";
         var root = getWorkspaceRoot?.Invoke();
         var path = PathSanitizer.Sanitize(args.Str("collection"), root);
@@ -189,8 +222,12 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
         return said + "\n\n" + answer;
     }
 
+    /// <summary>How an answer is read as GraphQL: not at all, its errors said above it (a server sends them under HTTP 200),
+    /// or an introspection read as its schema rather than its raw JSON.</summary>
+    private enum GraphQlAnswer { None, Errors, Schema }
+
     private static async Task<string> SendAsync(Uri uri, string method, List<KeyValuePair<string, string>> headers, string? body,
-                                                bool local, int wait, CancellationToken ct)
+                                                bool local, int wait, GraphQlAnswer graphQl, CancellationToken ct)
     {
         var waitUntil = DateTime.UtcNow.AddSeconds(wait);
         while (true)
@@ -237,7 +274,7 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
             try
             {
                 using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-                return await ReportAsync(response, ct);
+                return await ReportAsync(response, graphQl, ct);
             }
             catch (HttpRequestException ex) when (ex.InnerException is SocketException { SocketErrorCode: SocketError.ConnectionRefused }
                                                   && DateTime.UtcNow < waitUntil)
@@ -273,7 +310,7 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
         throw last;
     }
 
-    private static async Task<string> ReportAsync(HttpResponseMessage response, CancellationToken ct)
+    private static async Task<string> ReportAsync(HttpResponseMessage response, GraphQlAnswer graphQl, CancellationToken ct)
     {
         var sb = new StringBuilder($"HTTP {(int)response.StatusCode} {response.ReasonPhrase}\n");
         var all = response.Headers.Concat(response.Content.Headers).ToList();
@@ -304,6 +341,18 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
         try { encoding = charset is { Length: > 0 } ? Encoding.GetEncoding(charset) : Encoding.UTF8; }
         catch (ArgumentException) { encoding = Encoding.UTF8; }
         var text = encoding.GetString(bytes);
+        if (graphQl != GraphQlAnswer.None)
+        {
+            // Judged on the whole answer read, before the cut below: a real schema is far past any page.
+            if (GraphQlRequest.Errors(text) is { } errors) sb.Insert(sb.Length - 1, errors + "\n");
+            if (graphQl == GraphQlAnswer.Schema)
+            {
+                if (GraphQlRequest.Schema(text, Agent.AgentOrchestrator.MaxToolResultCharsInContext - sb.Length - 200) is { } schema)
+                    return sb.Append(schema).ToString();
+                if (!cut) sb.Insert(sb.Length - 1, "(The answer holds no schema: its errors, if any, are above.)\n");
+                else sb.Insert(sb.Length - 1, $"(The answer is larger than the {MaxBodyBytes / (1024 * 1024)} MB read: its schema could not be read whole.)\n");
+            }
+        }
         var max = Agent.AgentOrchestrator.MaxToolResultCharsInContext - sb.Length - 200;
         if (text.Length > max)
             return sb.Append(text.AsSpan(0, Math.Max(0, max))).Append($"\n\n[body cut: {max} of {text.Length} characters shown{(cut ? $", and only the first {MaxBodyBytes / (1024 * 1024)} MB were read" : "")} — ask the API for less (a filter, a page)]").ToString();

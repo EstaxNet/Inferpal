@@ -1534,6 +1534,7 @@ Wpisz `/setup`, aby spróbować ponownie.</value></data>
   <data name="ApprovalReadPage" xml:space="preserve"><value>Przeczytaj stronę WWW</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Szukaj w sieci</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>Użyj {0}</value></data>
+  <data name="HttpRequestMayChangeData" xml:space="preserve"><value>⚠ Może zmienić dane na serwerze ({0}): pytanie za każdym razem, nigdy nie obejmuje go „Zawsze” ani reguła.</value></data>
   <data name="ViewPageCardServed" xml:space="preserve"><value>Otwórz {0} w przeglądarce odciętej od sieci (view_page) i zrób zrzut. Jego skrypty są wykonywane.</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>wiersze: {0}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… jeszcze wierszy: {0}</value></data>

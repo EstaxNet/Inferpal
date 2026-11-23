@@ -1534,6 +1534,7 @@ Tapez `/setup` pour réessayer.</value></data>
   <data name="ApprovalReadPage" xml:space="preserve"><value>Lire une page web</value></data>
   <data name="ApprovalSearchWeb" xml:space="preserve"><value>Chercher sur le web</value></data>
   <data name="ApprovalUseTool" xml:space="preserve"><value>Utiliser {0}</value></data>
+  <data name="HttpRequestMayChangeData" xml:space="preserve"><value>⚠ Peut modifier des données sur le serveur ({0}) : demandé à chaque fois, jamais couvert par Toujours ni par une règle.</value></data>
   <data name="ViewPageCardServed" xml:space="preserve"><value>Ouvrir {0} dans un navigateur coupé du réseau (view_page), et le capturer. Ses scripts s'exécutent.</value></data>
   <data name="ApprovalLineCount" xml:space="preserve"><value>{0} {0:ligne|lignes}</value></data>
   <data name="ApprovalMoreLines" xml:space="preserve"><value>… {0} {0:ligne|lignes} de plus</value></data>
