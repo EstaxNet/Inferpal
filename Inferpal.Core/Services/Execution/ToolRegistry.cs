@@ -90,6 +90,13 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         return shownAny || named.Count > 0 ? sb.ToString() : null;
     }
 
+    /// <summary>The path of the file open in the editor, or <c>null</c> when there is no editor or no file.</summary>
+    private string? ActiveFilePath()
+    {
+        try { return _editor.IsAvailable ? _editor.ActiveDocumentPath : null; }
+        catch (Exception ex) { Diagnostics.Swallow("ToolRegistry.ActiveFile", ex); return null; }
+    }
+
     /// <summary>The background jobs of <c>run_command</c>: the apps the agent started.</summary>
     private readonly Shell.BackgroundShellRegistry? _jobs;
 
@@ -275,7 +282,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         var smartFix = new SmartFixValidator(config, root, approval, codeConsent);
         var setDiff  = (DiffInfo? d) => { _pendingDiff = d; };
 
-        Register(new ReadFileTool(root, overlay, history, approval, _readImages));
+        Register(new ReadFileTool(root, overlay, history, approval, _readImages, ActiveFilePath));
         Register(new WriteFileTool(approval, history, root, smartFix, setDiff, overlay));
         Register(new ListFilesTool(root));
         Register(new SearchInFilesTool(root, overlay));

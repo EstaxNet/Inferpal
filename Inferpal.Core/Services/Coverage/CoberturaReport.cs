@@ -53,7 +53,8 @@ internal sealed class CoberturaReport
             if (!File.Exists(xmlPath)) return null;
             return Parse(File.ReadAllText(xmlPath), root, File.Exists);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException or OverflowException
+                                       or FormatException or ArgumentException)
         {
             Diagnostics.Swallow("CoberturaReport.Read", ex);
             return null;
@@ -62,7 +63,13 @@ internal sealed class CoberturaReport
 
     /// <param name="exists">Whether a candidate path is a file: a class's file name is relative to one of the report's
     /// <c>source</c> folders, and only the one where the file is says which.</param>
-    internal static CoberturaReport Parse(string xml, string root, Func<string, bool> exists)
+    /// <param name="leftOut">Told each file the report names that is no source of the workspace (outside it, a test,
+    /// generated, third-party): a reader that shows the report says how many.</param>
+    /// <param name="bases">Folders a file name is also tried against, after the report's <c>source</c> folders; given, a
+    /// file found nowhere is left out rather than placed at the root.</param>
+    /// <param name="ct">Stops a long report.</param>
+    internal static CoberturaReport Parse(string xml, string root, Func<string, bool> exists, Action<string>? leftOut = null,
+                                          IReadOnlyList<string>? bases = null, CancellationToken ct = default)
     {
         using var reader = XmlReader.Create(new StringReader(xml), new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore, XmlResolver = null });
         var doc     = XDocument.Load(reader);
@@ -72,13 +79,12 @@ internal sealed class CoberturaReport
         var fullRoot = Path.GetFullPath(root);
         foreach (var cls in doc.Descendants("class"))
         {
+            ct.ThrowIfCancellationRequested();
             var name = ((string?)cls.Attribute("filename") ?? string.Empty).Replace('\\', Path.DirectorySeparatorChar)
                                                                             .Replace('/', Path.DirectorySeparatorChar);
             if (name.Length == 0) continue;
-            var full = Locate(name, sources, fullRoot, exists);
-            if (!Tools.PathSanitizer.IsUnderRoot(full, fullRoot)) continue;
-            var relative = Path.GetRelativePath(fullRoot, full).Replace('\\', '/');
-            if (!IsSource(relative)) continue;
+            if (Locate(name, sources, fullRoot, exists, bases) is not { } full || SourceOf(full, fullRoot) is not { } relative)
+            { leftOut?.Invoke(name); continue; }
 
             if (!files.TryGetValue(relative, out var lines)) files[relative] = lines = [];
             // The lines of the class itself, not those its methods repeat.
@@ -96,6 +102,19 @@ internal sealed class CoberturaReport
         }
         return new CoberturaReport(files, methods.ToDictionary(m => m.Key, m => Joined(m.Value), StringComparer.Ordinal));
     }
+
+    /// <summary>A file the report names, relative to the workspace root with forward slashes — or <c>null</c> when it is no
+    /// source of the workspace: outside it, a test, generated, third-party.</summary>
+    internal static string? SourceOf(string full, string fullRoot)
+    {
+        if (!Tools.PathSanitizer.IsUnderRoot(full, fullRoot)) return null;
+        var relative = Path.GetRelativePath(fullRoot, full).Replace('\\', '/');
+        return IsSource(relative) ? relative : null;
+    }
+
+    /// <summary>A report from line hits read elsewhere (lcov, JaCoCo), by file relative to the workspace root: no method
+    /// spans.</summary>
+    internal static CoberturaReport FromLines(Dictionary<string, Dictionary<int, int>> files) => new(files, []);
 
     /// <summary>The name a method has in its source: an async method's state machine (<c>MoveNext</c> of
     /// <c>&lt;SaveAsync&gt;d__3</c>), a lambda or a local function (<c>&lt;Save&gt;b__0_0</c>) are the method they were
@@ -135,16 +154,28 @@ internal sealed class CoberturaReport
         lines[number] = Math.Max(lines.GetValueOrDefault(number), (int)Math.Min(hits, int.MaxValue));
     }
 
-    private static string Locate(string name, List<string> sources, string root, Func<string, bool> exists)
+    private static string? Locate(string name, List<string> sources, string root, Func<string, bool> exists, IReadOnlyList<string>? bases)
     {
-        if (Path.IsPathFullyQualified(name)) return Path.GetFullPath(name);
+        if (Path.IsPathFullyQualified(name))
+            return bases is null || Probe(Path.GetFullPath(name), root, exists) ? Path.GetFullPath(name) : null;
         foreach (var source in sources)
         {
             var candidate = Path.GetFullPath(Path.Combine(Path.IsPathFullyQualified(source) ? source : Path.Combine(root, source), name));
-            if (exists(candidate)) return candidate;
+            if (Probe(candidate, root, exists)) return candidate;
         }
-        return Path.GetFullPath(Path.Combine(root, name));
+        foreach (var dir in bases ?? [])
+        {
+            var candidate = Path.GetFullPath(Path.Combine(dir, name));
+            if (Probe(candidate, root, exists)) return candidate;
+        }
+        return bases is null ? Path.GetFullPath(Path.Combine(root, name)) : null;
     }
+
+    /// <summary>Whether <paramref name="candidate"/> is a file — never asked of the disk through a path to another machine:
+    /// a report's <c>source</c> may name a share, and asking for a file there is a
+    /// connection that sends the person's credentials.</summary>
+    internal static bool Probe(string candidate, string root, Func<string, bool> exists) =>
+        !Execution.NetworkPath.LeadsOutside(candidate, root) && exists(candidate);
 
     /// <summary>Several reports — one per test project of a solution — as one: a line is as covered as its best report
     /// says.</summary>
