@@ -40,7 +40,7 @@ internal class ReadFileTool : ITool
     // OCR reads a PDF — no build, no program of the repository runs.
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
-        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg, .evtx event logs, MSBuild .binlog build logs, .pcap/.pcapng network captures read as their problems, conversations, DNS and HTTP, a Playwright trace.zip as its failure, steps, console and network (with the page at the failure), a distributed trace export (OpenTelemetry OTLP JSON, Jaeger, Zipkin) as its spans in error, slow path and span tree, a coverage report (lcov, Cobertura, JaCoCo) as its uncovered lines per file, the file open in the editor first, .drawio/.vsdx diagrams; an OpenAPI specification reads first as its operations, a .har capture as its requests); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
+        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg, .evtx event logs, MSBuild .binlog build logs, .pcap/.pcapng network captures read as their problems, conversations, DNS and HTTP, a Playwright trace.zip as its failure, steps, console and network (with the page at the failure), a distributed trace export (OpenTelemetry OTLP JSON, Jaeger, Zipkin) as its spans in error, slow path and span tree, a coverage report (lcov, Cobertura, JaCoCo) as its uncovered lines per file, the file open in the editor first, a load test result (k6 summary or --out json, JMeter .jtl) as its failed thresholds and per request its errors, percentiles and throughput, .drawio/.vsdx diagrams; an OpenAPI specification reads first as its operations, a .har capture as its requests); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
         "lines, and the answer says which start_line to pass to read on. A log reads filtered by level and time (level, since, until): " +
         "only the matching entries, each line under its number.";
     public object Parameters => new
@@ -173,6 +173,7 @@ internal class ReadFileTool : ITool
                 ?? Documents.SqlPlanText.Summarize(Path.GetFileName(path), content, PageChars, ct)
                 ?? Documents.LighthouseText.Summarize(Path.GetFileName(path), content, PageChars, ct)
                 ?? Documents.OtelTraceText.Summarize(Path.GetFileName(path), content, PageChars, ct)
+                ?? Documents.LoadTestText.Summarize(Path.GetFileName(path), content, PageChars, ct)
                 ?? Documents.CoverageReportText.Summarize(Path.GetFileName(path), content, PageChars, root, active, reportFolder: Path.GetDirectoryName(path), ct: ct)
                 ?? Documents.PatchText.Summarize(Path.GetFileName(path), content, PageChars,
                        Documents.PatchText.Workspace(_getWorkspaceRoot(), _overlay), ct)
@@ -274,6 +275,7 @@ internal class ReadFileTool : ITool
                 ?? Documents.SqlPlanText.Summarize(inner, text, PageChars, ct)
                 ?? Documents.LighthouseText.Summarize(inner, text, PageChars, ct)
                 ?? Documents.OtelTraceText.Summarize(inner, text, PageChars, ct)
+                ?? Documents.LoadTestText.Summarize(inner, text, PageChars, ct)
                 ?? Documents.CoverageReportText.Summarize(inner, text, PageChars, root, ct: ct)
                 ?? Documents.PatchText.Summarize(inner, text, PageChars, Documents.PatchText.Workspace(_getWorkspaceRoot(), _overlay), ct)
                 ?? Documents.ProfileText.Summarize(inner, text, PageChars, ct)) is { } first)
