@@ -242,5 +242,6 @@
   "Auto": "Auto",
   "Approvals are off: the agent acts without asking. Click to open the approval settings.": "Freigaben aus: der Agent handelt ohne zu fragen. Klicken, um die Freigabe-Einstellungen zu öffnen.",
   "auto": "auto",
-  "Approvals are off: run without a card": "Freigaben aus: ohne Karte ausgeführt"
+  "Approvals are off: run without a card": "Freigaben aus: ohne Karte ausgeführt",
+  "No run the closing of the editor cut is left to resume.": "Kein durch das Schließen des Editors unterbrochener Lauf ist fortzusetzen."
 }

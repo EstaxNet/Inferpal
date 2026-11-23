@@ -719,6 +719,12 @@ internal sealed class AcpSession : IAsyncDisposable
             switch (e.Kind)
             {
                 case "runCopy":          return await RunCopyAsync(typed, e.Value ?? string.Empty, content);
+                // `/resume-run`: the run the closing cut, picked up again — its bubble here, its run through the host.
+                case "resumeRun":
+                    var turn = await _link.InvokeWithParameterObjectAsync<ResumeTurnDto?>(
+                        "session/resume", new { runId = e.Value }, CancellationToken.None);
+                    if (turn is null) return SayNotice(typed, Strings.RunResumeNone);
+                    return await ChatAsync(turn.Bubble, content, resume: turn);
                 case "sendAsPrompt":     sendAsPrompt = e.Value; break;
                 case "setPrompt":        if (!string.IsNullOrEmpty(e.Value)) notes.Add(CopyBlock(Strings.AcpPasteThis, e.Value)); break;
                 case "copyToClipboard":  if (!string.IsNullOrEmpty(e.Value)) notes.Add(CopyBlock(Strings.AcpCopyThis, e.Value)); break;
@@ -964,7 +970,7 @@ internal sealed class AcpSession : IAsyncDisposable
 
     /// <param name="inCopy">The question goes to the copy of the repository this thread holds, or a new one (<c>/run-copy</c>):
     /// its bubble keeps the command, and what its run left is reviewed after the answer.</param>
-    private async Task<string> ChatAsync(string typed, AcpPromptContent content, bool inCopy = false)
+    private async Task<string> ChatAsync(string typed, AcpPromptContent content, bool inCopy = false, ResumeTurnDto? resume = null)
     {
         var (promptText, labels, attachedPaths) = await BuildPromptAsync(typed, content);
         var asked = inCopy ? "/run-copy " + typed : typed;
@@ -1031,11 +1037,13 @@ internal sealed class AcpSession : IAsyncDisposable
         var result = await _link.InvokeWithParameterObjectAsync<ChatSendResult>("chat/send", new
         {
             prompt        = promptText,
-            query         = typed,
+            query         = resume?.Question ?? typed,
             model         = _model,
             // A model picked in this thread answers whatever the mode: it is what the selector shows.
             modelOverridesRoles = _model is not null,
-            agentMode     = _mode == AcpModes.Agent,
+            // A resumed run goes on in its own mode.
+            agentMode     = resume?.Agent ?? _mode == AcpModes.Agent,
+            resumeRun     = resume?.RunId,
             attachedPaths = attachedPaths.Count > 0 ? attachedPaths : null,
             images        = images.Count > 0 ? images : null,
             inCopy,

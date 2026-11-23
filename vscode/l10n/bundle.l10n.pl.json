@@ -242,5 +242,6 @@
   "Auto": "Auto",
   "Approvals are off: the agent acts without asking. Click to open the approval settings.": "Zatwierdzanie wyłączone: agent działa bez pytania. Kliknij, aby otworzyć ustawienia zatwierdzania.",
   "auto": "auto",
-  "Approvals are off: run without a card": "Zatwierdzanie wyłączone: wykonano bez karty"
+  "Approvals are off: run without a card": "Zatwierdzanie wyłączone: wykonano bez karty",
+  "No run the closing of the editor cut is left to resume.": "Brak przebiegu przerwanego zamknięciem edytora do wznowienia."
 }

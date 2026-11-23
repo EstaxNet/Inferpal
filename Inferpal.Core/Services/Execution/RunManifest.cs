@@ -44,6 +44,23 @@ internal static class RunManifest
         [property: JsonPropertyName("kept")] List<int>? Kept,
         [property: JsonPropertyName("after")] string? After);
 
+    private sealed record ResumeStepDto(
+        [property: JsonPropertyName("text")] string? Text,
+        [property: JsonPropertyName("done")] bool Done,
+        [property: JsonPropertyName("tool"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Tool = null);
+
+    private sealed record ResumeDto(
+        [property: JsonPropertyName("question")] string? Question,
+        [property: JsonPropertyName("mode")] string? Mode,
+        [property: JsonPropertyName("goal")] string? Goal,
+        [property: JsonPropertyName("plan")] List<ResumeStepDto>? Plan,
+        [property: JsonPropertyName("steps")] List<string>? Steps,
+        [property: JsonPropertyName("checkPassed")] bool? CheckPassed,
+        [property: JsonPropertyName("check")] string? Check,
+        [property: JsonPropertyName("actions")] int Actions = 0,
+        [property: JsonPropertyName("earlierFiles"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] List<string>? EarlierFiles = null,
+        [property: JsonPropertyName("resumedFrom"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ResumedFrom = null);
+
     // "undone" and "givenBack" are the marks of the first runs written: read as generation 1, never written again.
     private sealed record Dto(
         [property: JsonPropertyName("id")] string? Id,
@@ -62,7 +79,8 @@ internal static class RunManifest
         [property: JsonPropertyName("givenBack"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] List<string>? GivenBack = null,
         [property: JsonPropertyName("pieces"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] Dictionary<string, PieceDto>? Pieces = null,
         [property: JsonPropertyName("editor"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Editor = null,
-        [property: JsonPropertyName("lastChange"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTime? LastChange = null);
+        [property: JsonPropertyName("lastChange"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DateTime? LastChange = null,
+        [property: JsonPropertyName("resume"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ResumeDto? Resume = null);
 
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
@@ -169,7 +187,12 @@ internal static class RunManifest
             run.Uncovered.Select(u => new NoteDto(u.Call, u.Note.Reason.ToString(), u.Note.File)).ToList(),
             Pieces: run.Pieces.Count == 0 ? null : run.Pieces.ToDictionary(
                 p => p.Key, p => new PieceDto(p.Value.Generation, p.Value.RunCopy, [.. p.Value.Undone], [.. p.Value.Kept], p.Value.After)),
-            Editor: run.Editor, LastChange: run.LastChange?.ToUniversalTime()),
+            Editor: run.Editor, LastChange: run.LastChange?.ToUniversalTime(),
+            Resume: run.Resume is { } r
+                ? new ResumeDto(r.Question, r.Mode, r.Goal, [.. r.Plan.Select(s => new ResumeStepDto(s.Text, s.Done, s.Tool))], [.. r.Steps],
+                                r.Check?.Passed, r.Check?.Summary, r.Actions,
+                                r.EarlierFiles is { Count: > 0 } earlier ? [.. earlier] : null, r.ResumedFrom)
+                : null),
             Options);
         return Header + Sign(json, key) + "\n" + json;
     }
@@ -236,7 +259,7 @@ internal static class RunManifest
                 return null;
             }
 
-        var run = new HistoryRun(dto.Id, dto.Started.ToLocalTime()) { Editor = dto.Editor };
+        var run = new HistoryRun(dto.Id, dto.Started.ToLocalTime()) { Editor = dto.Editor, Resume = ResumeOf(dto.Resume) };
         foreach (var change in dto.Changes) run.RecordFirst(change.Path!, change.Snapshot, change.Failed);
         run.LastChange = dto.LastChange?.ToLocalTime();   // the manifest's time, not the moment of this reading
         run.RestoreWatchedCalls(dto.Watched);
@@ -248,6 +271,16 @@ internal static class RunManifest
         MergeMarks(run, dto);
         return new Reading(run, dto.Open, dto.Pid);
     }
+
+    /// <summary>What a run's file says it carries to be resumed; <c>null</c> without a question or a mode (an older file).</summary>
+    private static RunResume? ResumeOf(ResumeDto? dto) =>
+        dto is { Question: { Length: > 0 } question, Mode: { Length: > 0 } mode }
+            ? new RunResume(question, mode, dto.Goal,
+                            [.. (dto.Plan ?? []).Where(s => s.Text is { Length: > 0 }).Select(s => new ResumeStep(s.Text!, s.Done, s.Tool))],
+                            [.. (dto.Steps ?? []).Where(s => s is { Length: > 0 })],
+                            dto.CheckPassed is bool passed && dto.Check is { Length: > 0 } check ? new ResumeCheck(passed, check) : null,
+                            dto.Actions, [.. (dto.EarlierFiles ?? []).Where(f => f is { Length: > 0 })], dto.ResumedFrom)
+            : null;
 
     /// <summary>
     /// Brings into <paramref name="run"/> what another process marked in its file — undone, given back. Both only grow:

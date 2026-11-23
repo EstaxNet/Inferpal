@@ -2627,4 +2627,21 @@ RAG가 비활성화된 경우 설정에서 `ragEnabled = true`로 설정하세�
   <data name="ToolOffTurnOn" xml:space="preserve"><value>켜기</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>나중에</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>{0}(으)로 켤 수 있습니다.</value></data>
+  <data name="RunResumeButton" xml:space="preserve"><value>실행 재개</value></data>
+  <data name="AwayResumeTitle" xml:space="preserve"><value>'실행 재개'는 멈춘 곳에서 이어 갑니다</value></data>
+  <data name="AwayResumePlan" xml:space="preserve"><value>질문, {1}단계 중 {0}단계를 마친 계획, 변경한 파일이 함께 넘어갑니다. 이미 한 일은 다시 요청하지 않습니다.</value></data>
+  <data name="AwayResumeNoPlan" xml:space="preserve"><value>이 실행에는 계획이 없었습니다. 질문, 수행한 작업 {0}개, 변경한 파일이 함께 넘어갑니다. 이미 한 일은 다시 요청하지 않습니다.</value></data>
+  <data name="AwayResumeTestsPassed" xml:space="preserve"><value>마지막 테스트는 통과했습니다.</value></data>
+  <data name="AwayResumeTestsFailed" xml:space="preserve"><value>마지막 테스트는 실패했습니다.</value></data>
+  <data name="AwayResumeBuildPassed" xml:space="preserve"><value>마지막 빌드는 성공했습니다.</value></data>
+  <data name="AwayResumeBuildFailed" xml:space="preserve"><value>마지막 빌드는 실패했습니다.</value></data>
+  <data name="AwayResumeChangedSince" xml:space="preserve"><value>중단 후 변경됨: {0}. 에이전트는 계속하기 전에 다시 읽고 변경 내용을 유지합니다.</value></data>
+  <data name="ResumeRunQuestion" xml:space="preserve"><value>{0}에 중단된 실행 재개</value></data>
+  <data name="ResumeChipPlan" xml:space="preserve"><value>계획: {1}개 중 {0}개 완료</value></data>
+  <data name="ResumeChipFiles" xml:space="preserve"><value>변경한 파일 {0}개</value></data>
+  <data name="ResumeChipCheckPassed" xml:space="preserve"><value>마지막 검사 통과</value></data>
+  <data name="ResumeChipCheckFailed" xml:space="preserve"><value>마지막 검사 실패</value></data>
+  <data name="ResumeChipChangedSince" xml:space="preserve"><value>{0}: 그 후 변경됨</value></data>
+  <data name="RunResumeNone" xml:space="preserve"><value>편집기를 닫아 중단된 실행 중 재개할 것이 없습니다.</value></data>
+  <data name="CmdResumeRunHint" xml:space="preserve"><value>편집기를 닫아 중단된 실행 재개</value></data>
 </root>

@@ -3293,12 +3293,51 @@
                                                FontFamily="Cascadia Mono, Consolas" Foreground="{Binding ThemeText}"/>
                                     <TextBlock Text="{Binding AwayRunWarning}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
                                                Foreground="{Binding ThemeSubtleText}"/>
+                                    <!-- What Resume run carries: the question, the plan, the files, the last check, what changed since. -->
+                                    <Border Margin="0,8,0,0" Padding="8" CornerRadius="8" Background="{Binding DataContext.ThemeWindowBg, ElementName=root}"
+                                            Visibility="{Binding HasAwayResume, Converter={StaticResource b2v}}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding AwayResumeTitle}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"
+                                                       Foreground="{Binding ThemeText}"/>
+                                            <TextBlock Text="{Binding AwayResumeText}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
+                                                       Foreground="{Binding ThemeSubtleText}"/>
+                                        </StackPanel>
+                                    </Border>
                                     <WrapPanel Margin="0,8,0,0" HorizontalAlignment="Right">
                                         <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" Margin="0,0,8,0" BorderThickness="0" Cursor="Hand"
                                                 Background="{Binding DataContext.ThemeAccent, ElementName=root}"
-                                                Command="{Binding AwayReviewCommand}" AutomationProperties.Name="{Binding BtnAwayReview}">
-                                            <TextBlock Text="{Binding BtnAwayReview}" FontSize="13" VerticalAlignment="Center"
+                                                Visibility="{Binding HasAwayResume, Converter={StaticResource b2v}}"
+                                                Command="{Binding AwayResumeCommand}" AutomationProperties.Name="{Binding BtnAwayResume}">
+                                            <TextBlock Text="{Binding BtnAwayResume}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
                                                        Foreground="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                        </Button>
+                                        <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" Margin="0,0,8,0" Cursor="Hand"
+                                                Command="{Binding AwayReviewCommand}" AutomationProperties.Name="{Binding BtnAwayReview}">
+                                            <Button.Style>
+                                                <Style TargetType="Button">
+                                                    <Setter Property="Background" Value="{Binding DataContext.ThemeAccent, ElementName=root}"/>
+                                                    <Setter Property="BorderThickness" Value="0"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasAwayResume}" Value="True">
+                                                            <Setter Property="Background" Value="Transparent"/>
+                                                            <Setter Property="BorderThickness" Value="1"/>
+                                                            <Setter Property="BorderBrush" Value="{Binding DataContext.ThemeBorder, ElementName=root}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                            <TextBlock Text="{Binding BtnAwayReview}" FontSize="13" VerticalAlignment="Center">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{Binding DataContext.ThemeOnAccent, ElementName=root}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding HasAwayResume}" Value="True">
+                                                                <Setter Property="Foreground" Value="{Binding ThemeText}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
                                         </Button>
                                         <Button Template="{StaticResource Flat6}" Height="28" Padding="12,0" BorderThickness="1" Cursor="Hand"
                                                 Background="Transparent" BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"

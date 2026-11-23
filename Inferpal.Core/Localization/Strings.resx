@@ -2631,4 +2631,21 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Turn them on</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Not now</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Turn them on with {0}.</value></data>
+  <data name="RunResumeButton" xml:space="preserve"><value>Resume run</value></data>
+  <data name="AwayResumeTitle" xml:space="preserve"><value>Resume run picks up where it stopped</value></data>
+  <data name="AwayResumePlan" xml:space="preserve"><value>Your question, the plan with {0} of {1} steps done and the files it changed go with it. Nothing already done is asked for again.</value></data>
+  <data name="AwayResumeNoPlan" xml:space="preserve"><value>This run had no plan: your question, the {0} {0:action|actions} it took and the files it changed go with it. Nothing already done is asked for again.</value></data>
+  <data name="AwayResumeTestsPassed" xml:space="preserve"><value>Its last tests passed.</value></data>
+  <data name="AwayResumeTestsFailed" xml:space="preserve"><value>Its last tests failed.</value></data>
+  <data name="AwayResumeBuildPassed" xml:space="preserve"><value>Its last build succeeded.</value></data>
+  <data name="AwayResumeBuildFailed" xml:space="preserve"><value>Its last build failed.</value></data>
+  <data name="AwayResumeChangedSince" xml:space="preserve"><value>Changed since the cut: {0}. The agent reads it again before going on, and keeps your change.</value></data>
+  <data name="ResumeRunQuestion" xml:space="preserve"><value>Resume the run cut at {0}</value></data>
+  <data name="ResumeChipPlan" xml:space="preserve"><value>plan: {0} of {1} done</value></data>
+  <data name="ResumeChipFiles" xml:space="preserve"><value>{0} {0:file|files} changed</value></data>
+  <data name="ResumeChipCheckPassed" xml:space="preserve"><value>last check passed</value></data>
+  <data name="ResumeChipCheckFailed" xml:space="preserve"><value>last check failed</value></data>
+  <data name="ResumeChipChangedSince" xml:space="preserve"><value>{0} changed since</value></data>
+  <data name="RunResumeNone" xml:space="preserve"><value>No run the closing of the editor cut is left to resume.</value></data>
+  <data name="CmdResumeRunHint" xml:space="preserve"><value>Resume the run the closing of the editor cut</value></data>
 </root>

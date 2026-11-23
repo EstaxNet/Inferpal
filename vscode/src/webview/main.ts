@@ -2188,15 +2188,33 @@ function renderAwayNotice(notice: AwayNotice): void {
     actions.className = 'away-actions';
     const undo = action(notice.undo, false, () => post({ type: 'send', text: `/undo-run #${run.runId}` }));
     undo.classList.add('away-undo');
+    // What Resume run carries, above the buttons; the button first, as the one gesture that finishes the work.
+    let resumeBlock: HTMLElement | null = null;
+    if (run.resume && notice.resumeButton) {
+      resumeBlock = document.createElement('div');
+      resumeBlock.className = 'away-resume';
+      const resumeTitle = document.createElement('strong');
+      resumeTitle.textContent = notice.resumeTitle ?? '';
+      const resumeText = document.createElement('p');
+      resumeText.className = 'away-muted';
+      resumeText.textContent = run.resume;
+      resumeBlock.append(resumeTitle, resumeText);
+      actions.append(action(notice.resumeButton, true, () => {
+        card.remove();
+        // Dealt with: the notice is not said again, here or at the next start.
+        post({ type: 'awayDismissed', runIds: [run.runId], taskIds: [] });
+        post({ type: 'send', text: `/resume-run #${run.runId}` });
+      }));
+    }
     actions.append(
-      action(notice.review, true, () => {
+      action(notice.review, !resumeBlock, () => {
         // The run's bar is not on screen: its review goes under this notice.
         reviewAnchors.set(run.runId, card);
         post({ type: 'runReview', runId: run.runId });
       }),
       undo,
     );
-    block.append(text, files, warning, actions);
+    block.append(text, files, warning, ...(resumeBlock ? [resumeBlock] : []), actions);
     card.appendChild(block);
   }
 

@@ -2627,4 +2627,21 @@ RAGが無効な場合は、設定で `ragEnabled = true` に設定してくだ�
   <data name="ToolOffTurnOn" xml:space="preserve"><value>オンにする</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>今はしない</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>{0} でオンにできます。</value></data>
+  <data name="RunResumeButton" xml:space="preserve"><value>実行を再開</value></data>
+  <data name="AwayResumeTitle" xml:space="preserve"><value>「実行を再開」は止まったところから続けます</value></data>
+  <data name="AwayResumePlan" xml:space="preserve"><value>質問、{1} 手順中 {0} 手順完了のプラン、変更したファイルが引き継がれます。済んだことは繰り返しません。</value></data>
+  <data name="AwayResumeNoPlan" xml:space="preserve"><value>この実行にはプランがありませんでした。質問、実行済みの {0} 件の操作、変更したファイルが引き継がれます。済んだことは繰り返しません。</value></data>
+  <data name="AwayResumeTestsPassed" xml:space="preserve"><value>最後のテストは成功しました。</value></data>
+  <data name="AwayResumeTestsFailed" xml:space="preserve"><value>最後のテストは失敗しました。</value></data>
+  <data name="AwayResumeBuildPassed" xml:space="preserve"><value>最後のビルドは成功しました。</value></data>
+  <data name="AwayResumeBuildFailed" xml:space="preserve"><value>最後のビルドは失敗しました。</value></data>
+  <data name="AwayResumeChangedSince" xml:space="preserve"><value>中断後に変更: {0}。エージェントは続ける前に読み直し、あなたの変更を残します。</value></data>
+  <data name="ResumeRunQuestion" xml:space="preserve"><value>{0} に中断した実行を再開</value></data>
+  <data name="ResumeChipPlan" xml:space="preserve"><value>プラン: {1} 中 {0} 完了</value></data>
+  <data name="ResumeChipFiles" xml:space="preserve"><value>変更したファイル {0} 件</value></data>
+  <data name="ResumeChipCheckPassed" xml:space="preserve"><value>最後のチェックは成功</value></data>
+  <data name="ResumeChipCheckFailed" xml:space="preserve"><value>最後のチェックは失敗</value></data>
+  <data name="ResumeChipChangedSince" xml:space="preserve"><value>{0} はその後変更</value></data>
+  <data name="RunResumeNone" xml:space="preserve"><value>エディターを閉じたことで中断された実行で、再開できるものはありません。</value></data>
+  <data name="CmdResumeRunHint" xml:space="preserve"><value>エディターを閉じて中断した実行を再開</value></data>
 </root>

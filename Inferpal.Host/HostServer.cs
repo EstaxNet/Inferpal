@@ -601,11 +601,21 @@ internal sealed partial class HostServer : IDisposable
             // the registry the turn sends (ToolHints). ⚠ Before the active-file block, which runs to the request heading.
             // A bug report's fix says on its result bar whether a check showed the bug first (proven or guessed).
             var typed = string.IsNullOrWhiteSpace(p.Query) ? p.Prompt : p.Query;
+            // A run the closing cut, picked up again: what it did reaches the model as a block before the bubble's words,
+            // and its plan goes on from the first step not done.
+            var resumeTurn = p.ResumeRun is { Length: > 0 } resumeId
+                ? ResumeRunCommandHandler.Turn(s.Tools.History, resumeId, s.RootDir, DateTime.Now) : null;
+            if (resumeTurn is not null) typed = resumeTurn.Question;
+            // ⚠ Gone between session/resume and here (undone, resumed elsewhere): the bubble alone would reach the model as
+            // a meaningless question, and it would improvise over files just given back.
+            else if (p.ResumeRun is { Length: > 0 })
+                return new ChatSendResult(string.Empty, false, 0, 0, Error: Strings.RunResumeNone, QuestionKept: false);
             var bugReport = ToolHints.IsBugReport(typed);
             var toolHint = ToolHints.For(typed,
                 ToolHints.OfferedBy(s.Tools, !p.CodeAction && s.ToolsEnabled, s.PlanMode, () => CurrentMode(s)));
             // Asked again (Regenerate), the question carries the notes its first answer read, as the history kept it.
             var promptText = ChatTurnPolicy.WithInjectedContext(ChatTurnPolicy.WithUserNotes(p.Prompt, p.Notes ?? []),
+                                                                resumeTurn is null ? null : ResumeRunCommandHandler.Block(resumeTurn),
                                                                 autoCtx, workspace, toolHint, activeFile);
             s.History.Add(new ChatMessageDto("user", promptText));
             // The images go with the question, never in its text; an earlier question's are not sent again.
@@ -622,8 +632,9 @@ internal sealed partial class HostServer : IDisposable
             // them, `/explain` planned, called tools and raised approval prompts.
             // The mode the person picked for the conversation: its tools, model, effort and instructions — never with a
             // code action, and it excludes Agent and Plan (one selector).
-            var mode      = p.CodeAction ? null : TurnMode(s);
-            var agentMode = mode is null && TurnIsAgent(s, p.CodeAction, p.AgentMode);
+            // A resumed run goes on in its own mode: no held mode, and Agent or Chat as it was.
+            var mode      = p.CodeAction || resumeTurn is not null ? null : TurnMode(s);
+            var agentMode = resumeTurn?.Agent ?? (mode is null && TurnIsAgent(s, p.CodeAction, p.AgentMode));
             var useTools  = !p.CodeAction && s.ToolsEnabled;
             // A question whose words call for a family the person turned off: said once per conversation, before the
             // answer, with the gestures (pari 163). Never for a code action, which answers without tools anyway.
@@ -744,21 +755,24 @@ internal sealed partial class HostServer : IDisposable
                 // Group this run's file snapshots so the adapter can offer /undo-run semantics.
                 var runId = s.Tools.History.BeginRun();
                 turnRunId = runId;
+                // What the run carries to be resumed if the editor closes under it: kept in the run's file as it goes.
+                var resume = RunResumeRecorder.Start(s.Tools.History, typed, agent: true, resumeTurn);
                 var result = await s.Orchestrator.RunAsync(
                     model, s.History, effectiveTools,
                     onStep:         Step,
                     onToken:        OnToken,
-                    onPlanReady:    plan => Notify("chat/plan", new
+                    onPlanReady:    resume.OnPlan(plan => Notify("chat/plan", new
                                     {
                                         goal  = plan.Goal,
                                         steps = plan.Steps.Select(st => st.Description).ToArray(),
-                                    }),
-                    onStepUpdate:   (i, status) => Notify("chat/stepUpdate", new { index = i, status = $"{status}" }),
-                    onToolExecuted: te => Notify("chat/tool", ToolNotice.Of(te) with { Effect = EffectName(s.Tools, te.Name, te.Input) }),
+                                    })),
+                    onStepUpdate:   resume.OnStep((i, status) => Notify("chat/stepUpdate", new { index = i, status = $"{status}" })),
+                    onToolExecuted: resume.OnTool(te => Notify("chat/tool", ToolNotice.Of(te) with { Effect = EffectName(s.Tools, te.Name, te.Input) })),
                     onStreamReset:  () => { streamed.Clear(); Notify("chat/streamReset", new { }); },
                     ct:             cts.Token,
                     onThinking:     OnThinking,
-                    steering:       steering);
+                    steering:       steering,
+                    resumedPlan:    resumeTurn?.Plan);
 
                 // ⚠ A FAILED run returns its error as the answer: said as the error it is, like the plain chat whose
                 // request threw — kept, the model re-read it as what it had said, and a reload handed it back.
@@ -815,6 +829,7 @@ internal sealed partial class HostServer : IDisposable
                 var durable = new List<ChatMessageDto>(s.History);
                 var runId = s.Tools.History.BeginRun();
                 turnRunId = runId;
+                var resume = RunResumeRecorder.Start(s.Tools.History, typed, agent: false, resumeTurn);
                 // A run that writes reads its diff back before it answers, as the agent path does: the streamed answer it held
                 // is emptied the same way. ⚠ Only where the client can take a streamed answer back (VS Code): an ACP client in
                 // chat mode shows each chunk for good, and would show — and keep — the held answer and the next one together.
@@ -827,7 +842,7 @@ internal sealed partial class HostServer : IDisposable
                     onToken:        OnToken,
                     ct:             cts.Token,
                     complexity:     ChatTurnPolicy.TurnComplexity(codeAction: false),
-                    onToolExecuted: te => Notify("chat/tool", ToolNotice.Of(te) with { Effect = EffectName(s.Tools, te.Name, te.Input) }),
+                    onToolExecuted: resume.OnTool(te => Notify("chat/tool", ToolNotice.Of(te) with { Effect = EffectName(s.Tools, te.Name, te.Input) })),
                     onThinking:     OnThinking,
                     effort:         ChatTurnPolicy.TurnEffort(s.Config, codeAction: false, mode),
                     steering:       steering);
@@ -2446,9 +2461,22 @@ internal sealed partial class HostServer : IDisposable
             : null;
         var model = Services.Presentation.AwayNotice.Build(s.Tools.History.Runs, ConversationStore.VsCodeSlot, "VS Code",
                                                           queue.List(), queue.SaidRuns(), DateTime.Now, s.RootDir,
-                                                          Services.Rag.KeptIndexes.PruneHere(s.RootDir), left);
+                                                          Services.Rag.KeptIndexes.PruneHere(s.RootDir), left, s.Tools.History);
         return model is null ? null
             : AwayNoticeDto.Of(model, model.Run is not null && p.EndsOnAQuestion ? Strings.AwayNoAnswer("VS Code") : null);
+    }
+
+    /// <summary>
+    /// The run to resume — the one named (the away notice's button), else the newest the closing cut (<c>/resume-run</c>) —
+    /// as the client sends it: <c>null</c> when there is none.
+    /// </summary>
+    [JsonRpcMethod("session/resume", UseSingleObjectParameterDeserialization = true)]
+    public ResumeTurnDto? SessionResume(SessionResumeParams p)
+    {
+        var s = Session();
+        return ResumeRunCommandHandler.Turn(s.Tools.History, p.RunId, s.RootDir, DateTime.Now) is { } turn
+               ? new ResumeTurnDto(turn.RunId, turn.Bubble, turn.Question, turn.Agent)
+            : null;
     }
 
     /// <summary>The notice of a start dismissed: what it said is not said again.</summary>

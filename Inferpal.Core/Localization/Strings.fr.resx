@@ -2627,4 +2627,21 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Les réactiver</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Pas maintenant</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Réactivez-les avec {0}.</value></data>
+  <data name="RunResumeButton" xml:space="preserve"><value>Reprendre le run</value></data>
+  <data name="AwayResumeTitle" xml:space="preserve"><value>Reprendre le run repart là où il s'est arrêté</value></data>
+  <data name="AwayResumePlan" xml:space="preserve"><value>Votre question, le plan ({0} étapes sur {1} faites) et les fichiers modifiés repartent avec lui. Rien de ce qui est fait n'est redemandé.</value></data>
+  <data name="AwayResumeNoPlan" xml:space="preserve"><value>Ce run n'avait pas de plan : votre question, {0} {0:action menée|actions menées} et les fichiers modifiés repartent avec lui. Rien de ce qui est fait n'est redemandé.</value></data>
+  <data name="AwayResumeTestsPassed" xml:space="preserve"><value>Ses derniers tests ont réussi.</value></data>
+  <data name="AwayResumeTestsFailed" xml:space="preserve"><value>Ses derniers tests ont échoué.</value></data>
+  <data name="AwayResumeBuildPassed" xml:space="preserve"><value>Sa dernière compilation a réussi.</value></data>
+  <data name="AwayResumeBuildFailed" xml:space="preserve"><value>Sa dernière compilation a échoué.</value></data>
+  <data name="AwayResumeChangedSince" xml:space="preserve"><value>Modifié depuis la coupure : {0}. L'agent le relit avant de continuer, et garde votre modification.</value></data>
+  <data name="ResumeRunQuestion" xml:space="preserve"><value>Reprendre le run coupé à {0}</value></data>
+  <data name="ResumeChipPlan" xml:space="preserve"><value>plan : {0} étapes sur {1} faites</value></data>
+  <data name="ResumeChipFiles" xml:space="preserve"><value>{0} {0:fichier modifié|fichiers modifiés}</value></data>
+  <data name="ResumeChipCheckPassed" xml:space="preserve"><value>dernier contrôle réussi</value></data>
+  <data name="ResumeChipCheckFailed" xml:space="preserve"><value>dernier contrôle en échec</value></data>
+  <data name="ResumeChipChangedSince" xml:space="preserve"><value>{0} modifié depuis</value></data>
+  <data name="RunResumeNone" xml:space="preserve"><value>Aucun run coupé par la fermeture de l'éditeur n'est à reprendre.</value></data>
+  <data name="CmdResumeRunHint" xml:space="preserve"><value>Reprendre le run coupé par la fermeture de l'éditeur</value></data>
 </root>

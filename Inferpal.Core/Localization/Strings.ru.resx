@@ -2627,4 +2627,21 @@
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Включить</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Не сейчас</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Включите их командой {0}.</value></data>
+  <data name="RunResumeButton" xml:space="preserve"><value>Продолжить запуск</value></data>
+  <data name="AwayResumeTitle" xml:space="preserve"><value>«Продолжить запуск» начнёт с места остановки</value></data>
+  <data name="AwayResumePlan" xml:space="preserve"><value>Передаются ваш вопрос, план ({0} из {1} шагов сделано) и изменённые файлы. Уже сделанное не запрашивается заново.</value></data>
+  <data name="AwayResumeNoPlan" xml:space="preserve"><value>У этого запуска не было плана: передаются ваш вопрос, {0} {0:действие|действия|действий} и изменённые файлы. Уже сделанное не запрашивается заново.</value></data>
+  <data name="AwayResumeTestsPassed" xml:space="preserve"><value>Последние тесты прошли.</value></data>
+  <data name="AwayResumeTestsFailed" xml:space="preserve"><value>Последние тесты не прошли.</value></data>
+  <data name="AwayResumeBuildPassed" xml:space="preserve"><value>Последняя сборка прошла успешно.</value></data>
+  <data name="AwayResumeBuildFailed" xml:space="preserve"><value>Последняя сборка не удалась.</value></data>
+  <data name="AwayResumeChangedSince" xml:space="preserve"><value>Изменено после остановки: {0}. Агент перечитает это перед продолжением и сохранит ваше изменение.</value></data>
+  <data name="ResumeRunQuestion" xml:space="preserve"><value>Продолжить запуск, прерванный в {0}</value></data>
+  <data name="ResumeChipPlan" xml:space="preserve"><value>план: {0} из {1} сделано</value></data>
+  <data name="ResumeChipFiles" xml:space="preserve"><value>{0} {0:файл изменён|файла изменено|файлов изменено}</value></data>
+  <data name="ResumeChipCheckPassed" xml:space="preserve"><value>последняя проверка пройдена</value></data>
+  <data name="ResumeChipCheckFailed" xml:space="preserve"><value>последняя проверка не пройдена</value></data>
+  <data name="ResumeChipChangedSince" xml:space="preserve"><value>{0} изменён с тех пор</value></data>
+  <data name="RunResumeNone" xml:space="preserve"><value>Нет запуска, прерванного закрытием редактора, который можно продолжить.</value></data>
+  <data name="CmdResumeRunHint" xml:space="preserve"><value>Продолжить запуск, прерванный закрытием редактора</value></data>
 </root>

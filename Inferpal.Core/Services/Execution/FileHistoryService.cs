@@ -819,6 +819,31 @@ internal class FileHistoryService
     }
 
     /// <summary>
+    /// Records what the current run carries to be resumed, and writes the run's file at once when it already holds a
+    /// change: an editor killed in the middle writes nothing at the end. No-op without a current run, or for a run started
+    /// without <see cref="NoteResumeStart"/>.
+    /// </summary>
+    internal void NoteResume(Func<RunResume, RunResume> change)
+    {
+        HistoryRun? run;
+        lock (_runLock)
+        {
+            if (Run is not { Resume: { } resume } current) return;
+            current.Resume = change(resume);
+            run = current;
+        }
+        int files;
+        lock (_runLock) files = run.FileCount;
+        if (files > 0) Persist(run, open: true);
+    }
+
+    /// <summary>Starts the record of what the current run carries to be resumed: the question as typed, and the mode.</summary>
+    internal void NoteResumeStart(string question, string mode)
+    {
+        lock (_runLock) if (Run is { } run) run.Resume = RunResume.Start(question, mode);
+    }
+
+    /// <summary>
     /// The editor is going away under the run in progress: however its turn ends, the run stays open on disk, and the next
     /// start reads it cut short and says so (<see cref="HistoryRun.CutShort"/>). Nothing between two runs.
     /// </summary>
@@ -2019,6 +2044,10 @@ internal sealed class HistoryRun
     /// <summary>The editor whose turn recorded it (the auto-save slot owner: <c>vs</c>, <c>vscode</c>); <c>null</c> for a
     /// run written before editors were recorded. A run the closing cut is said by its own editor only.</summary>
     public string? Editor { get; set; }
+
+    /// <summary>What the run carries to be resumed after a cut (<see cref="RunResume"/>); <c>null</c> for a run started
+    /// without a question (a slash command's).</summary>
+    public RunResume? Resume { get; set; }
 
     /// <summary>
     /// The run has been undone. ⚠ It stays the most recent run with changes, so without this a second <c>/undo-run</c> — or

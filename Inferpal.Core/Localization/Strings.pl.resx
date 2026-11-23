@@ -2627,4 +2627,21 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Włącz je</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Nie teraz</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Włącz je poleceniem {0}.</value></data>
+  <data name="RunResumeButton" xml:space="preserve"><value>Wznów przebieg</value></data>
+  <data name="AwayResumeTitle" xml:space="preserve"><value>Wznów przebieg zaczyna tam, gdzie się zatrzymał</value></data>
+  <data name="AwayResumePlan" xml:space="preserve"><value>Przekazywane są Twoje pytanie, plan ({0} z {1} kroków wykonanych) i zmienione pliki. Nic, co zrobione, nie jest zlecane ponownie.</value></data>
+  <data name="AwayResumeNoPlan" xml:space="preserve"><value>Ten przebieg nie miał planu: przekazywane są Twoje pytanie, {0} {0:działanie|działania|działań} i zmienione pliki. Nic, co zrobione, nie jest zlecane ponownie.</value></data>
+  <data name="AwayResumeTestsPassed" xml:space="preserve"><value>Ostatnie testy przeszły.</value></data>
+  <data name="AwayResumeTestsFailed" xml:space="preserve"><value>Ostatnie testy nie przeszły.</value></data>
+  <data name="AwayResumeBuildPassed" xml:space="preserve"><value>Ostatnia kompilacja się powiodła.</value></data>
+  <data name="AwayResumeBuildFailed" xml:space="preserve"><value>Ostatnia kompilacja się nie powiodła.</value></data>
+  <data name="AwayResumeChangedSince" xml:space="preserve"><value>Zmienione po przerwaniu: {0}. Agent czyta to ponownie przed kontynuacją i zachowuje Twoją zmianę.</value></data>
+  <data name="ResumeRunQuestion" xml:space="preserve"><value>Wznów przebieg przerwany o {0}</value></data>
+  <data name="ResumeChipPlan" xml:space="preserve"><value>plan: {0} z {1} wykonanych</value></data>
+  <data name="ResumeChipFiles" xml:space="preserve"><value>{0} {0:plik zmieniony|pliki zmienione|plików zmienionych}</value></data>
+  <data name="ResumeChipCheckPassed" xml:space="preserve"><value>ostatnia kontrola zaliczona</value></data>
+  <data name="ResumeChipCheckFailed" xml:space="preserve"><value>ostatnia kontrola nieudana</value></data>
+  <data name="ResumeChipChangedSince" xml:space="preserve"><value>{0} zmieniony od tego czasu</value></data>
+  <data name="RunResumeNone" xml:space="preserve"><value>Brak przebiegu przerwanego zamknięciem edytora do wznowienia.</value></data>
+  <data name="CmdResumeRunHint" xml:space="preserve"><value>Wznów przebieg przerwany zamknięciem edytora</value></data>
 </root>

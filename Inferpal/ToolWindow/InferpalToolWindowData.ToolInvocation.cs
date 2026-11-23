@@ -251,6 +251,12 @@ internal partial class InferpalToolWindowData
         // The workspace block rode with the question taken back: the question asked again carries it again.
         if (!Services.Prompting.WorkspaceContext.IsIn(_history)) _workspaceContextInjected = false;
 
+        // A resumed run is asked again as one: its bubble, its run as a block, its plan from the first step not done.
+        if (_lastResumed is { } resumed && ReferenceEquals(resumed.Question, lastUserItem))
+        {
+            await HandleResumeRunCommandAsync(["/resume-run", "#" + resumed.RunId], CancellationToken.None);
+            return;
+        }
         await SendCoreAsync(userText, oneTimeModel, attachments, ct: CancellationToken.None, clearPrompt: false, notes: notes,
                             typed: false);
     }

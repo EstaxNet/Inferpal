@@ -242,5 +242,6 @@
   "Auto": "Auto",
   "Approvals are off: the agent acts without asking. Click to open the approval settings.": "Aprobaciones desactivadas: el agente actúa sin preguntar. Haga clic para abrir los ajustes de aprobación.",
   "auto": "auto",
-  "Approvals are off: run without a card": "Aprobaciones desactivadas: ejecutado sin tarjeta"
+  "Approvals are off: run without a card": "Aprobaciones desactivadas: ejecutado sin tarjeta",
+  "No run the closing of the editor cut is left to resume.": "No queda ninguna ejecución cortada por el cierre del editor que reanudar."
 }

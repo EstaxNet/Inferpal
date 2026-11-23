@@ -236,6 +236,7 @@ internal partial class InferpalToolWindowData
             case SlashCommandId.History:    await HandleHistoryCommandAsync(parts, ct);                   break;
             case SlashCommandId.Branch:     await HandleBranchCommandAsync(parts, ct);                    break;
             case SlashCommandId.UndoRun:    await HandleUndoRunCommandAsync(parts, ct);                   break;
+            case SlashCommandId.ResumeRun:  await HandleResumeRunCommandAsync(parts, ct);                 break;
             case SlashCommandId.PHistory:   await HandlePHistoryCommandAsync(parts, ct);                  break;
             case SlashCommandId.Models:     await RunOwnedCommandAsync(tok => HandleModelsCommandAsync(parts, tok), ct); break;
             case SlashCommandId.Hardware:   await HandleHardwareCommandAsync(parts, ct);                  break;

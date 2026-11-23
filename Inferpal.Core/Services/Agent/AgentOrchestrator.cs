@@ -996,6 +996,8 @@ internal sealed class AgentOrchestrator
     /// <param name="ct">Cancellation token.</param>
     /// <param name="steering">The notes the user types while the run works, read before each action (<see cref="RunSteering"/>);
     /// <c>null</c> for a run nobody steers.</param>
+    /// <param name="resumedPlan">The plan of a run the closing cut, its finished steps marked: no plan is asked for, and the
+    /// run starts at its first step not done (<see cref="RunResume"/>); <c>null</c> for a new run.</param>
     public async Task<OrchestratorResult> RunAsync(
         string                     model,
         List<ChatMessageDto>       history,
@@ -1008,7 +1010,8 @@ internal sealed class AgentOrchestrator
         Action?                    onStreamReset,
         CancellationToken          ct,
         Action<string>?            onThinking = null,
-        RunSteering?               steering = null)
+        RunSteering?               steering = null,
+        AgentPlan?                 resumedPlan = null)
     {
         // Claim the shared GPU for the whole run, like InferenceProviderBase.RunAgentAsync does for
         // the basic loop: this path calls SendChatAsync directly, so without its own lease the
@@ -1086,8 +1089,6 @@ internal sealed class AgentOrchestrator
         // (PlanPrompt): its JSON asks for a "tool" per step.
 
         // ── Phase 1: PLAN ────────────────────────────────────────────────────
-        onStep(Strings.StatusAgentPlanning);
-
         // Build a separate message list for the planning call: we append the
         // plan-request as a new user message so the original user turn is preserved.
         var planPrompt   = PlanPrompt(tools, userTask);
@@ -1096,33 +1097,46 @@ internal sealed class AgentOrchestrator
             new ChatMessageDto("user", planPrompt),
         };
 
-        ChatTurnResult planTurn;
-        try
+        AgentPlan plan;
+        string planReply;
+        if (resumedPlan is { Steps.Count: > 0 } resumed)
         {
-            // No tools during planning — we want a pure JSON response.  Quick timeout: plans are short.
-            // While the server reads the prompt the line says so, then gives the step back.
-            planTurn = await _client.SendChatAsync(model, planMessages, EmptyToolRegistry.Instance, null, runEffort, ct, TaskComplexity.Quick,
-                                                   onThinking: onThinking, onWaiting: ModelWaitScope.OrStep(onStep, Strings.StatusAgentPlanning));
+            // A resumed run already has its plan: asking for another would let the model plan again what is done.
+            plan = resumed;
+            planReply = plan.ToJson();
         }
-        catch (OperationCanceledException) { throw; }
-        catch (AgentHttpException ex)
+        else
         {
-            return OrchestratorResult.Error(ex.Message, messages, ex.PrefillOverran);
+            onStep(Strings.StatusAgentPlanning);
+            ChatTurnResult planTurn;
+            try
+            {
+                // No tools during planning — we want a pure JSON response.  Quick timeout: plans are short.
+                // While the server reads the prompt the line says so, then gives the step back.
+                planTurn = await _client.SendChatAsync(model, planMessages, EmptyToolRegistry.Instance, null, runEffort, ct, TaskComplexity.Quick,
+                                                       onThinking: onThinking, onWaiting: ModelWaitScope.OrStep(onStep, Strings.StatusAgentPlanning));
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (AgentHttpException ex)
+            {
+                return OrchestratorResult.Error(ex.Message, messages, ex.PrefillOverran);
+            }
+
+            totalTokens      += planTurn.TokensUsed;
+            lastPromptTokens  = planTurn.PromptTokens;
+            // The plan's request carries the run's head: its count sets the first compaction's measure.
+            serverScale       = ServerScale(planTurn.PromptTokens, EstimateTokens(planMessages));
+
+            // Parse JSON plan; fall back to a single-step "execute" plan if parsing fails.
+            plan = PlanOf(planTurn)
+                    ?? new AgentPlan
+                       {
+                           Goal       = Strings.AgentPlanFallbackGoal,
+                           Steps      = [new AgentPlanStep { Index = 1, Description = Strings.AgentPlanFallbackStep }],
+                           IsFallback = true,
+                       };
+            planReply = AnchoredPlanReply(planTurn, plan);
         }
-
-        totalTokens      += planTurn.TokensUsed;
-        lastPromptTokens  = planTurn.PromptTokens;
-        // The plan's request carries the run's head: its count sets the first compaction's measure.
-        serverScale       = ServerScale(planTurn.PromptTokens, EstimateTokens(planMessages));
-
-        // Parse JSON plan; fall back to a single-step "execute" plan if parsing fails.
-        var plan = PlanOf(planTurn)
-                ?? new AgentPlan
-                   {
-                       Goal       = Strings.AgentPlanFallbackGoal,
-                       Steps      = [new AgentPlanStep { Index = 1, Description = Strings.AgentPlanFallbackStep }],
-                       IsFallback = true,
-                   };
 
         onPlanReady?.Invoke(plan);
 
@@ -1131,7 +1145,7 @@ internal sealed class AgentOrchestrator
         // without it the model sees its own JSON with no visible context, which confuses
         // small models into narrating instead of calling tools in the ACT phase.
         messages.Add(new ChatMessageDto("user",      planPrompt) { IsScaffolding = true });
-        messages.Add(new ChatMessageDto("assistant", AnchoredPlanReply(planTurn, plan)));
+        messages.Add(new ChatMessageDto("assistant", planReply));
         messages.Add(new ChatMessageDto("user",      ModelPrompts.AgentExecutePlan) { IsScaffolding = true });
 
         // Everything added so far — system prompt (+ tool descriptions), the original conversation
@@ -1145,7 +1159,9 @@ internal sealed class AgentOrchestrator
         var anchorCount = messages.Count;
 
         // ── Phase 2: Act-Observe loop ────────────────────────────────────────
-        int stepIdx = 0;
+        // A resumed plan starts at its first step not done; a new one at its first.
+        int stepIdx = plan.Steps.FindIndex(s => s.Status is not (AgentStepStatus.Done or AgentStepStatus.Skipped));
+        if (stepIdx < 0) stepIdx = plan.Steps.Count;
         // The run's last landed edit the checks prompt was sent for: once per edit, so a check that cannot prove anything
         // here (no test found, a runner the reader does not know) is never asked for again and again.
         int checksAskedFor = -1;

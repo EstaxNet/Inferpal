@@ -145,7 +145,8 @@ internal partial class InferpalToolWindowData
         bool                 clearPrompt = true,
         IReadOnlyList<string>? notes = null,
         bool                 typed = true,
-        Services.Execution.CopyRun? copy = null)
+        Services.Execution.CopyRun? copy = null,
+        Services.Execution.RunResumeTurn? resume = null)
     {
         // Every turn can reach the file tools: never before the workspace root is pinned.
         PinWorkspaceRoot();
@@ -241,7 +242,8 @@ internal partial class InferpalToolWindowData
                 // said that a file, a selection or a @diff went with this turn, and a reloaded
                 // session handed the model "explain this" without what "this" refers to
                 // (Services/Agent/ChatTurnPolicy.BuildBubbleText).
-                var userItem  = ChatMessageItem.UserMsg(Services.Agent.ChatTurnPolicy.BuildBubbleText(
+                // A resumed run's bubble already names what goes with it.
+                var userItem  = ChatMessageItem.UserMsg(resume?.Bubble ?? Services.Agent.ChatTurnPolicy.BuildBubbleText(
                     copy is null ? userText : "/run-copy " + userText, attachments.Select(a => a.Label).ToList()));
                 ApplyItemTheme(userItem);
                 // The images it carries, drawn small under it (this session only: a saved conversation names them).
@@ -249,6 +251,9 @@ internal partial class InferpalToolWindowData
                 userItem.HasImageFiles = userItem.ImageFiles.Count > 0;
                 Messages.Insert(Messages.Count - 2, userItem);
                 _lastSent = (userItem, userText, oneTimeModel, attachments.ToList());
+                // Regenerate asks a resumed run again through /resume-run: sent as its bubble alone, it would reach the
+                // model without its run.
+                _lastResumed = resume is null ? null : (userItem, resume.RunId);
                 foreach (var note in notes ?? [])
                     InsertThemed(ChatMessageItem.NoteMsg("note-" + ++_noteSeq, note, read: true));
                 ScrollToBottom();
@@ -358,7 +363,7 @@ internal partial class InferpalToolWindowData
             // Auto-context: retrieve and inject the most relevant indexed chunks for this turn,
             // skipping anything already attached. Guarantees per-turn RAG context even when the
             // debounced auto-attach chips did not fire (e.g. the user typed fast and sent).
-            var autoCtx = await BuildAutoContextAsync(userText, attachments, localCts!.Token);
+            var autoCtx = await BuildAutoContextAsync(resume?.Question ?? userText, attachments, localCts!.Token);
 
             await RunOnVMContextAsync(() =>
             {
@@ -374,7 +379,8 @@ internal partial class InferpalToolWindowData
                 // edited file reached the model in its OLD version for the rest of the session. The held mode too: its
                 // file is read again, and a mode whose file is gone leaves the conversation, said.
                 RereadHeldMode();
-                turnMode = oneTimeModel is null ? _heldMode : null;
+                // A resumed run goes on in its own mode: no held mode.
+                turnMode = oneTimeModel is null && resume is null ? _heldMode : null;
                 // A question never follows a question: one the last turn ended without answering (a failed request, a
                 // reload) gets its marked non-answer first, or the two merge and the model answers the earlier one again.
                 Services.Agent.ChatTurnPolicy.CloseUnanswered(_history);
@@ -386,9 +392,11 @@ internal partial class InferpalToolWindowData
                 // A parameter models miss, said when the typed question calls for it and the turn offers its tool, judged on
                 // the registry the turn sends, as the host does (ToolHints). ⚠ Before the active-file block, which runs to
                 // the request heading and is rebuilt in place.
-                var toolHint = ToolHints.For(userText,
+                var toolHint = ToolHints.For(resume?.Question ?? userText,
                     ToolHints.OfferedBy(_tools, oneTimeModel is null && _toolsEnabled, _planMode, () => turnMode));
-                historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText, autoCtx, workspaceCtx, toolHint, activeFile);
+                historyText = Services.Agent.ChatTurnPolicy.WithInjectedContext(historyText,
+                    resume is null ? null : Services.Commands.ResumeRunCommandHandler.Block(resume),
+                    autoCtx, workspaceCtx, toolHint, activeFile);
                 _history.Add(new ChatMessageDto("user", historyText));
                 // The images go with the question, never in its text; an earlier question's are not sent again.
                 Services.Documents.ChatImages.RetireEarlier(_history, before: _history.Count - 1);
@@ -524,7 +532,8 @@ internal partial class InferpalToolWindowData
             // the execution path below share one source of truth.
             // Plan runs the agent loop, read-only, as on the host (TurnIsAgent): a conversation restored in Plan in a Chat
             // window showed Plan and answered as a plain chat.
-            var useOrchestrator = (_config.AgentModeEnabled || _planMode)
+            // A resumed run goes on in its own mode, whatever the window shows now.
+            var useOrchestrator = (resume?.Agent ?? (_config.AgentModeEnabled || _planMode))
                 && turnMode is null
                 && oneTimeModel is null
                 && _toolsEnabled;
@@ -562,7 +571,7 @@ internal partial class InferpalToolWindowData
             // A code action (one-time model) sends no tool; every other turn sends the registry chosen below.
             var toolsCutAt = await CompactOrTruncateAsync(effectiveModel,
                 oneTimeModel is null ? NextTurnToolTokens() : 0, step => UpsertStatusBubble("⏳ " + step),
-                string.Join("\n", [userText, .. notes ?? []]), localCts!.Token);
+                string.Join("\n", [resume?.Question ?? userText, .. notes ?? []]), localCts!.Token);
             // The compaction is done: its line goes, and its notice stays above everything the run adds after it.
             await RunOnVMContextAsync(() =>
             {
@@ -734,14 +743,10 @@ internal partial class InferpalToolWindowData
                 // Plan → Act → Observe loop with live step-status tracking.
                 ChatMessageItem?          planBubble  = null;
                 Models.AgentPlan? activePlan = null;
-
-                var orchResult = await _orchestrator.RunAsync(
-                    model:         effectiveModel,
-                    history:       _history,
-                    tools:         effectiveTools,
-                    onStep:        step  => UpsertStatusBubble("⏳ " + step),
-                    onToken:       token => { sink.Append(token); CountLive(token.Length); },
-                    onPlanReady:   plan  => Post(() =>
+                // What the run carries to be resumed if Visual Studio closes under it: kept in the run's file as it goes.
+                var recorder = turnRunId is not null
+                    ? Services.Agent.RunResumeRecorder.Start(_tools.History, resume?.Question ?? userText, agent: true, resume) : null;
+                Action<Models.AgentPlan> planReady = plan => Post(() =>
                     {
                         activePlan = plan;
                         planBubble = ChatMessageItem.AgentPlanMsg(plan);
@@ -749,18 +754,28 @@ internal partial class InferpalToolWindowData
                         // Insert plan bubble just before the scroll anchors.
                         Messages.Insert(Messages.Count - 2, planBubble);
                         ScrollToBottom();
-                    }),
-                    onStepUpdate:  (_, _) => Post(() =>
+                    });
+                Action<int, Models.AgentStepStatus> stepUpdate = (_, _) => Post(() =>
                     {
                         // Re-render the plan markdown with updated step emojis.
                         if (planBubble is not null && activePlan is not null)
                             planBubble.RefreshPlan(activePlan);
-                    }),
-                    onToolExecuted: StreamToolBubble,
+                    });
+
+                var orchResult = await _orchestrator.RunAsync(
+                    model:         effectiveModel,
+                    history:       _history,
+                    tools:         effectiveTools,
+                    onStep:        step  => UpsertStatusBubble("⏳ " + step),
+                    onToken:       token => { sink.Append(token); CountLive(token.Length); },
+                    onPlanReady:   recorder?.OnPlan(planReady) ?? planReady,
+                    onStepUpdate:  recorder?.OnStep(stepUpdate) ?? stepUpdate,
+                    onToolExecuted: recorder?.OnTool(StreamToolBubble) ?? StreamToolBubble,
                     onStreamReset: ResetStream,
                     ct: localCts.Token,
                     onThinking: OnThinking,
-                    steering: steering);
+                    steering: steering,
+                    resumedPlan: resume?.Plan);
 
                 agentFinalResponse = orchResult.FinalResponse;
                 agentFailed        = orchResult.Failed;
@@ -782,6 +797,8 @@ internal partial class InferpalToolWindowData
                 var loopComplexity = ChatTurnPolicy.TurnComplexity(codeAction: oneTimeModel is not null);
                 // A run that writes reads its diff back before it answers, as the orchestrated path does.
                 using var review = Services.Agent.RunDiffReview.Enter(ResetStream);
+                var recorder = turnRunId is not null
+                    ? Services.Agent.RunResumeRecorder.Start(_tools.History, resume?.Question ?? userText, agent: false, resume) : null;
                 var result = await _client.RunAgentAsync(
                     model:      effectiveModel,
                     history:    _history,
@@ -790,7 +807,7 @@ internal partial class InferpalToolWindowData
                     onToken:    token => { sink.Append(token); CountLive(token.Length); },
                     ct:         localCts.Token,
                     complexity: loopComplexity,
-                    onToolExecuted: StreamToolBubble,
+                    onToolExecuted: recorder?.OnTool(StreamToolBubble) ?? StreamToolBubble,
                     onThinking: OnThinking,
                     effort:     ChatTurnPolicy.TurnEffort(_config, codeAction: oneTimeModel is not null, turnMode),
                     steering:   steering);
@@ -912,7 +929,7 @@ internal partial class InferpalToolWindowData
                 // A bug report's fix says whether a check showed the bug first (proven or guessed), read on the typed question.
                 var summary = Services.Presentation.RunSummary.Build(agentExecutions,
                     turnRunId is null ? null : _tools.History.Runs.LastOrDefault(r => r.Id == turnRunId),
-                    ToolHints.IsBugReport(userText));
+                    ToolHints.IsBugReport(resume?.Question ?? userText));
                 _runLine?.EndRun(summary);
                 // Ended, the run folds into its line — unless the user keeps tool calls open, or a step failed (its
                 // red output is the point).
