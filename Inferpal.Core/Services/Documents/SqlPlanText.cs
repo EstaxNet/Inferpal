@@ -24,7 +24,7 @@ namespace Inferpal.Services.Documents;
 /// </remarks>
 internal static class SqlPlanText
 {
-    private const int MaxChars = 16_000_000;
+    private const int MaxChars = DocumentText.ReportMaxChars;
     private const int Ranked = 8;
     private const int TreeLines = 80;
     private const int LookLines = 15;

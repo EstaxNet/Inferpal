@@ -42,6 +42,10 @@ internal sealed record DocumentExtraction(string Text, int Pages, int PagesWitho
 /// </summary>
 internal static class DocumentText
 {
+    /// <summary>The largest structured report (SARIF, a trace export, a plan, a coverage or load-test result…) read whole to
+    /// summarize it: past it, its text is paged as it is.</summary>
+    internal const int ReportMaxChars = 16_000_000;
+
     /// <summary>
     /// <paramref name="read"/> on a thread of its own, waited for at most <paramref name="limit"/> (and the person's Stop): past
     /// it the caller goes on, said as too slow, and the thread finishes alone — bounded by <see cref="MaxBytes"/>.

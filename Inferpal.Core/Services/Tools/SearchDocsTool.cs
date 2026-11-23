@@ -127,9 +127,7 @@ internal sealed class SearchDocsTool : ITool
             var header = $"### [{i + 1}] {chunk.PageTitle}";
             if (RagResultPresentation.ShowsScore(hit.IsCosine, hit.Score)) header += $" · score {hit.Score:F3}";
 
-            var display = chunk.Content.Length > 900
-                ? SafeTruncate.Truncate(chunk.Content, 900) + "\n…(truncated)"
-                : chunk.Content;
+            var display = RankedResultBudget.Shown(chunk.Content);
             var entry = $"{header}\n<{chunk.Url}>\n\n{display}\n\n";
 
             // In rank order: once one body does not fit, the rest go by location (RankedResultBudget).

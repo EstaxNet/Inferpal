@@ -16,7 +16,7 @@ namespace Inferpal.Services.Documents;
 /// </remarks>
 internal static class PatchText
 {
-    private const int MaxChars = 16_000_000;
+    private const int MaxChars = DocumentText.ReportMaxChars;
     private const int JudgedFileBytes = 4_000_000;
 
     internal enum FileKind { Modify, Add, Delete, Rename, Copy, Binary, ModeOnly }

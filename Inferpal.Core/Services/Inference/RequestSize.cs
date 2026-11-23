@@ -26,11 +26,11 @@ internal readonly record struct RequestSize(int Tools, int SystemPrompt, int Ear
         var last   = messages.Count > system ? 1 : 0;
         var (toolChars, mcpChars, mcpCount) = ToolChars(defs);
         return new(
-            toolChars / 4,
-            AgentOrchestrator.EstimateChars(messages.Take(system)) / 4,
-            AgentOrchestrator.EstimateChars(messages.Skip(system).Take(messages.Count - system - last)) / 4,
-            AgentOrchestrator.EstimateChars(messages.Skip(messages.Count - last)) / 4,
-            mcpChars / 4,
+            toolChars / AgentOrchestrator.CharsPerToken,
+            AgentOrchestrator.EstimateChars(messages.Take(system)) / AgentOrchestrator.CharsPerToken,
+            AgentOrchestrator.EstimateChars(messages.Skip(system).Take(messages.Count - system - last)) / AgentOrchestrator.CharsPerToken,
+            AgentOrchestrator.EstimateChars(messages.Skip(messages.Count - last)) / AgentOrchestrator.CharsPerToken,
+            mcpChars / AgentOrchestrator.CharsPerToken,
             mcpCount);
     }
 
@@ -51,7 +51,7 @@ internal readonly record struct RequestSize(int Tools, int SystemPrompt, int Ear
     }
 
     /// <summary>Estimated tokens of the tool definitions a request carries (their JSON, ~4 characters a token).</summary>
-    public static int ToolTokens(IReadOnlyList<ToolDefinition>? defs) => ToolChars(defs).All / 4;
+    public static int ToolTokens(IReadOnlyList<ToolDefinition>? defs) => ToolChars(defs).All / AgentOrchestrator.CharsPerToken;
 
     /// <summary>The definitions' JSON length — the array's, each serialized once — and the MCP servers' share of it.</summary>
     private static (int All, int Mcp, int McpCount) ToolChars(IReadOnlyList<ToolDefinition>? defs)

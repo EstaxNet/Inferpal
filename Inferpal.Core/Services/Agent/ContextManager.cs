@@ -207,7 +207,7 @@ internal static class ContextManager
         IReadOnlyList<ChatMessageDto> history, CompactionPlan plan, string summary, int toolTokens, int window)
     {
         if (window <= 0) return true;
-        var trigger = window * 8 / 10;
+        var trigger = HistoryCompaction.Trigger(window);
         var summarized = history.ToList();
         HistoryCompaction.ApplySummary(summarized, plan, summary);
         if (AgentOrchestrator.EstimateTokens(summarized) + toolTokens <= trigger) return true;

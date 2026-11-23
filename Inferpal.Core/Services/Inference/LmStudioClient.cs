@@ -46,13 +46,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// native probe queries the CONFIGURED server while the OpenAI-compatible fallback queries the
     /// one it was handed — one server's models presented as another's.
     /// </remarks>
-    private string HostRootFor(string? url)
-    {
-        var b = (UrlOr(url) ?? string.Empty).Trim().TrimEnd('/');
-        if (b.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
-            b = b[..^3].TrimEnd('/');
-        return b;
-    }
+    private string HostRootFor(string? url) => ProviderProbe.RootOf(UrlOr(url));
 
     private string HostRoot => HostRootFor(null);
 

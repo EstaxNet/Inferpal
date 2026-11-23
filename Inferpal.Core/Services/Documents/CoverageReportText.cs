@@ -18,8 +18,7 @@ namespace Inferpal.Services.Documents;
 /// as its lines (<c>null</c>). The file stays a text file: asked for lines, each is the text it holds.</remarks>
 internal static class CoverageReportText
 {
-    /// <summary>The largest report read this way (as SARIF): past it, its text is paged as it is.</summary>
-    private const int MaxChars = 16_000_000;
+    private const int MaxChars = DocumentText.ReportMaxChars;
 
     /// <summary>The most uncovered ranges said for one file; past it, the rest is counted.</summary>
     internal const int MaxRanges = 40;

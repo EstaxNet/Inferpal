@@ -69,12 +69,7 @@ internal sealed class PrefillRates
 
     /// <summary>One server, whichever of its addresses a caller holds: `…/v1` is the OpenAI-compatible client's, the
     /// configured one everybody else's.</summary>
-    private static string Key(string server, string model)
-    {
-        var root = server.Trim().TrimEnd('/');
-        if (root.EndsWith("/v1", StringComparison.OrdinalIgnoreCase)) root = root[..^3].TrimEnd('/');
-        return root + "|" + model;
-    }
+    private static string Key(string server, string model) => ProviderProbe.RootOf(server) + "|" + model;
 
     /// <summary>Keeps a read that went through. A stopped or failed request is never a read: its callers do not come here.</summary>
     /// <param name="server">The server's address.</param>

@@ -17,8 +17,7 @@ namespace Inferpal.Services.Documents;
 /// </remarks>
 internal static class OtelTraceText
 {
-    /// <summary>The largest file read this way (as SARIF): past it, its text is paged as it is.</summary>
-    private const int MaxChars = 16_000_000;
+    private const int MaxChars = DocumentText.ReportMaxChars;
 
     /// <summary>The most spans held from one file: past it they are counted only.</summary>
     internal const int MaxSpans = 200_000;

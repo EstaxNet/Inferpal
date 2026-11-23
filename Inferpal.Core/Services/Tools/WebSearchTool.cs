@@ -14,31 +14,7 @@ internal class WebSearchTool : ITool
 
     private static readonly HttpClient _http = CreateClient();
 
-    private static HttpClient CreateClient()
-    {
-        // The same two guarantees as the other two HTTP clients in this repository, for the same
-        // reasons — and they were written there and not here, which is the whole defect: three
-        // clients, one invariant, stated twice.
-        //
-        //  · No automatic redirect. `FetchUrlTool` and `DocCrawler` both say it in the same words:
-        //    an automatic redirect lets a public URL bounce the request onto 127.0.0.1 or
-        //    169.254.169.254 without passing the SSRF guard again. Here the host is fixed and the
-        //    query escaped, so exploiting it takes a redirect served by DuckDuckGo itself — a thin
-        //    risk, but the cost of closing it is a flag, and the cost of leaving it is that the
-        //    next reader of these three files cannot tell which of the two rules is the real one.
-        //  · A response ceiling. Without it the whole body is buffered before any truncation.
-        var handler = new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared };
-        var client  = new HttpClient(handler)
-        {
-            Timeout = TimeSpan.FromSeconds(20),
-            MaxResponseContentBufferSize = 8 * 1024 * 1024,
-        };
-        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-        client.DefaultRequestHeaders.TryAddWithoutValidation("Accept",
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        return client;
-    }
+    private static HttpClient CreateClient() => WebPageClient.Create(TimeSpan.FromSeconds(20));
 
     public string Name        => "web_search";
     /// <inheritdoc/>

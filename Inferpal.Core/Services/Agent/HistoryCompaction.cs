@@ -47,6 +47,9 @@ internal sealed record CompactionPlan(
 /// </summary>
 internal static class HistoryCompaction
 {
+    /// <summary>The prompt size past which the history is compacted: 80 % of the window.</summary>
+    internal static int Trigger(int contextWindowSize) => contextWindowSize * 8 / 10;
+
     /// <summary>
     /// Decides whether the history must shrink before the next send. Triggers when the
     /// last prompt used more than 80% of <paramref name="contextWindowSize"/>; keeps the
@@ -73,7 +76,7 @@ internal static class HistoryCompaction
         int toolTokens = 0)
     {
         if (contextWindowSize <= 0 || lastPromptTokens == 0) return CompactionPlan.None;
-        if (lastPromptTokens <= contextWindowSize * 8 / 10)  return CompactionPlan.None;
+        if (lastPromptTokens <= Trigger(contextWindowSize))  return CompactionPlan.None;
 
         // ⚠ What the history holds in place of its first turns — the summary, or the marker of the turns dropped: the only
         // scaffolding of a durable history — is replaced whole or not at all. Kept among the anchors (the window grew since

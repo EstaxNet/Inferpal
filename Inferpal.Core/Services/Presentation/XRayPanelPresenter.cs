@@ -82,8 +82,11 @@ internal static class XRayPanelPresenter
         // switches — one id, and switching off one row switched off both.
         PromptSectionKind.Rules when s.Placement == PromptPlacement.Question => "Rules|scoped",
         PromptSectionKind.Persona or PromptSectionKind.Rules => s.Kind.ToString(),
-        _ => (s.Key ?? s.Detail) is { } identity ? $"{s.Kind}|{identity}" : s.Kind.ToString(),
+        _ => (s.Key ?? s.Detail) is { } identity ? IdPrefix(s.Kind) + identity : s.Kind.ToString(),
     };
+
+    /// <summary>What every id of a <paramref name="kind"/> section with an identity starts with.</summary>
+    public static string IdPrefix(PromptSectionKind kind) => $"{kind}|";
 
     /// <summary>Localized display label of a section (shared with the <c>/xray</c> markdown rendering); a layer sent
     /// with the question says so.</summary>

@@ -20,7 +20,7 @@ namespace Inferpal.Services.Documents;
 /// </remarks>
 internal static class TerraformPlanText
 {
-    private const int MaxChars = 16_000_000;
+    private const int MaxChars = DocumentText.ReportMaxChars;
     private const int ValueChars = 120;
     private const int AttributesPerResource = 20;
 

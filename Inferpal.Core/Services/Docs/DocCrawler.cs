@@ -59,27 +59,7 @@ internal sealed class DocCrawler
             ".pdf", ".zip", ".gz", ".tar", ".mp4", ".webm", ".woff", ".woff2", ".ttf",
         };
 
-    private static HttpClient CreateClient()
-    {
-        // Redirects are followed by hand (see FetchPageAsync): an automatic redirect would let a
-        // public documentation URL bounce the crawler onto 127.0.0.1 or 169.254.169.254 without
-        // ever passing the SSRF guard again — the exact hole FetchUrlTool closes by hand.
-        var handler = new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared };
-        var client  = new HttpClient(handler)
-        {
-            Timeout = TimeSpan.FromSeconds(30),
-            // Same ceiling as FetchUrlTool, and for the same reason: what comes back is a page
-            // nobody here controls. GetAsync buffers the whole body before returning, so without
-            // a cap one oversized (or hostile) page is read entirely into the process that hosts
-            // the chat - and @Docs crawls up to MaxPages of them, following links off-site.
-            MaxResponseContentBufferSize = 8 * 1024 * 1024,
-        };
-        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-        client.DefaultRequestHeaders.TryAddWithoutValidation("Accept",
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        return client;
-    }
+    private static HttpClient CreateClient() => WebPageClient.Create(TimeSpan.FromSeconds(30));
 
     /// <summary>A single fetched documentation page.</summary>
     public readonly record struct Page(string Url, string Title, string Text);

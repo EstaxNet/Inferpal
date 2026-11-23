@@ -21,8 +21,7 @@ namespace Inferpal.Services.Documents;
 /// </remarks>
 internal static class SarifText
 {
-    /// <summary>The largest file read this way: past it, its text is paged as it is.</summary>
-    private const int MaxChars = 16_000_000;
+    private const int MaxChars = DocumentText.ReportMaxChars;
 
     /// <summary>How long a message may be in one line.</summary>
     private const int MessageChars = 300;

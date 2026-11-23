@@ -433,9 +433,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
     /// else the configured one.
     /// </remarks>
     internal static int FileSectionsBudget(int contextWindow) =>
-        contextWindow > 0 ? contextWindow : DefaultContextWindow;
-
-    private const int DefaultContextWindow = 8_192;
+        contextWindow > 0 ? contextWindow : Inference.ContextWindowChoice.Factory;
 
     /// <summary>
     /// Shares <paramref name="budget"/> between sections of the given sizes, fairly: sections under an equal share

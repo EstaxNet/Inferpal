@@ -181,8 +181,8 @@ internal static class SettingsWidgets
             {
                 if (!System.IO.File.Exists(path)) return new PinnedFileSize(path, Strings.PinnedFileMissing, Missing: true);
                 var tokens = Commands.XRayCommandHandler.EstimateTokens(Tools.TextFileEncoding.ReadText(path));
-                var sent   = prompt?.Sections.FirstOrDefault(s => s.Enabled && s.Id.StartsWith("Pinned|", StringComparison.Ordinal)
-                                                                 && PathComparer.Default.Equals(s.Id["Pinned|".Length..], path));
+                var sent   = prompt?.Sections.FirstOrDefault(s => s.Enabled && s.Id.StartsWith(XRayPanelPresenter.IdPrefix(PromptSectionKind.Pinned), StringComparison.Ordinal)
+                                                                 && PathComparer.Default.Equals(s.Id[XRayPanelPresenter.IdPrefix(PromptSectionKind.Pinned).Length..], path));
                 return new PinnedFileSize(path,
                     sent is not null && sent.Tokens < tokens
                         ? Strings.PinnedFileTokensSent(Amount(sent.Tokens), Amount(tokens))

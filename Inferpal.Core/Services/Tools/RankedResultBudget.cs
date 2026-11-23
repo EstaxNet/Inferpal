@@ -14,6 +14,13 @@ internal static class RankedResultBudget
     /// <summary>What the bodies may take: the context cap, less room for the headers, notes and locations.</summary>
     internal const int BodyChars = Agent.AgentOrchestrator.MaxToolResultCharsInContext - 1_500;
 
+    /// <summary>The most of one result's body shown: past it, cut and said.</summary>
+    internal const int ResultBodyChars = 900;
+
+    /// <summary>One result's body as shown, cut past <see cref="ResultBodyChars"/>.</summary>
+    internal static string Shown(string content) =>
+        content.Length > ResultBodyChars ? SafeTruncate.Truncate(content, ResultBodyChars) + "\n…(truncated)" : content;
+
     /// <summary>The line above the results when some are listed by location only.</summary>
     internal static string Note(int firstByLocation, int total, string remedy) =>
         $"(results {firstByLocation}–{total} are listed by location only, at the end: with their bodies this answer " +

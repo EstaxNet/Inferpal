@@ -226,14 +226,7 @@ internal sealed class ApplyEditsTool : ITool
         var write = await SafeFileWriter.WriteAllOrRollBackAsync(
             [.. changed.Select(p => (p, current[p], original[p]))]);
 
-        if (!write.Ok)
-        {
-            var reason = $"writing {RelPath(root, write.FailedPath!)} failed ({write.Error})";
-            return write.Stuck.Count == 0
-                ? ToolFailure.Said(Strings.ApplyEditsAborted(reason))
-                : $"Error: {reason}, and {string.Join(", ", write.Stuck.Select(s => RelPath(root, s)))} "
-                  + "could not be put back — restore it with restore_file when it is offered; otherwise tell the user: /undo-run puts the run's files back.";
-        }
+        if (!write.Ok) return WriteFailed(write, root);
 
         // Smart Fix once: building any edited file validates its project (covers same-project edits).
         var smartFixNote = _smartFix is not null
@@ -401,14 +394,7 @@ internal sealed class ApplyEditsTool : ITool
             return ToolFailure.Said(Strings.ApplyEditsAborted($"a folder for a new file could not be created ({ex.Message})"));
         }
         var write = await SafeFileWriter.WriteAllOrRollBackAsync([.. changed.Select(p => (p, current[p], before[p]))]);
-        if (!write.Ok)
-        {
-            var reason = $"writing {RelPath(root, write.FailedPath!)} failed ({write.Error})";
-            return write.Stuck.Count == 0
-                ? ToolFailure.Said(Strings.ApplyEditsAborted(reason))
-                : $"Error: {reason}, and {string.Join(", ", write.Stuck.Select(s => RelPath(root, s)))} "
-                  + "could not be put back — restore it with restore_file when it is offered; otherwise tell the user: /undo-run puts the run's files back.";
-        }
+        if (!write.Ok) return WriteFailed(write, root);
         var smartFixNote = _smartFix is not null ? "\n\n" + (await _smartFix.ValidateManyAsync(changed, ct) ?? string.Empty) : string.Empty;
         return $"Patch applied: {placed} block{(placed == 1 ? "" : "s")} in {changed.Count} file{(changed.Count == 1 ? "" : "s")} "
              + $"({string.Join(", ", changed.Select(p => RelPath(root, p)))})." + notes + handBack + smartFixNote.TrimEnd();
@@ -426,6 +412,16 @@ internal sealed class ApplyEditsTool : ITool
             if (diff is not null) sb.Append('\n').Append(diff);
         }
         return sb.ToString();
+    }
+
+    /// <summary>What the model is told when writing the lot failed: what was not written, and what could not be put back.</summary>
+    private static string WriteFailed(SafeFileWriter.MultiWriteResult write, string? root)
+    {
+        var reason = $"writing {RelPath(root, write.FailedPath!)} failed ({write.Error})";
+        return write.Stuck.Count == 0
+            ? ToolFailure.Said(Strings.ApplyEditsAborted(reason))
+            : $"Error: {reason}, and {string.Join(", ", write.Stuck.Select(s => RelPath(root, s)))} "
+              + "could not be put back — restore it with restore_file when it is offered; otherwise tell the user: /undo-run puts the run's files back.";
     }
 
     private static string RelPath(string? root, string path) =>

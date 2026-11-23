@@ -332,7 +332,10 @@ internal sealed class AgentOrchestrator
     // files never crosses the compaction threshold and the backend silently truncates the head
     // (system prompt + plan), the exact failure compaction exists to prevent. Same formula as
     // OpenAiCompatibleClient.EstimateRequestTokens.
-    internal static int EstimateTokens(IEnumerable<ChatMessageDto> messages) => EstimateChars(messages) / 4;
+    internal static int EstimateTokens(IEnumerable<ChatMessageDto> messages) => EstimateChars(messages) / CharsPerToken;
+
+    /// <summary>The estimator's ratio: characters per token, for code and English prose.</summary>
+    internal const int CharsPerToken = 4;
 
     /// <summary>
     /// The same estimate over the <b>exchange only</b>: the leading system message is left out.
@@ -365,7 +368,7 @@ internal sealed class AgentOrchestrator
             chars += m.Content?.Length ?? 0;
             // An image weighs what its pixels do, not its base64: four characters a token, like the text around it.
             if (m.Images is { Count: > 0 } images)
-                foreach (var image in images) chars += Documents.ChatImages.EstimatedTokens(image) * 4;
+                foreach (var image in images) chars += Documents.ChatImages.EstimatedTokens(image) * CharsPerToken;
             if (m.ToolCalls is { Count: > 0 } calls)
                 foreach (var c in calls)
                     chars += c.Function.Name.Length + c.Function.Arguments.GetRawText().Length;
@@ -395,7 +398,7 @@ internal sealed class AgentOrchestrator
         // Counted once, then kept current as results are elided: re-estimating the whole list for
         // every message examined was quadratic on a long run.
         var chars = EstimateChars(messages);
-        int Weighed() => (int)((chars / 4 + toolTokens) * scale);
+        int Weighed() => (int)((chars / CharsPerToken + toolTokens) * scale);
         if (Weighed() <= trigger) return shrunk;
 
         // Oldest first: the results before the recent tail, then — only when those were not enough — the tail's own,
@@ -410,7 +413,7 @@ internal sealed class AgentOrchestrator
             var m = messages[i];
             if (!m.IsScaffolding || m.Images is not { Count: > 0 } images) continue;
             const string Gone = "\n[The image(s) above were shown earlier and taken out to stay within the context window: read the file again to see it.]";
-            chars -= images.Sum(image => Documents.ChatImages.EstimatedTokens(image) * 4) - Gone.Length;
+            chars -= images.Sum(image => Documents.ChatImages.EstimatedTokens(image) * CharsPerToken) - Gone.Length;
             messages[i] = m with { Images = null, Content = m.Content + Gone };
         }
         for (int i = anchorCount; i < lastBatch; i++)
@@ -430,7 +433,7 @@ internal sealed class AgentOrchestrator
         var batch = Enumerable.Range(lastBatch, messages.Count - lastBatch)
                               .Where(i => messages[i].Role == "tool" && messages[i].Content is { } c && c != ElidedToolResult).ToList();
         if (batch.Count == 0) return shrunk;
-        var excess = chars - (int)((target / scale - toolTokens) * 4);
+        var excess = chars - (int)((target / scale - toolTokens) * CharsPerToken);
         var room   = batch.Sum(i => messages[i].Content!.Length) - excess;
         // Smallest first: what a short result leaves of its share goes to the longer ones.
         var left = batch.Count;

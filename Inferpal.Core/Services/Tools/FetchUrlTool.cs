@@ -22,25 +22,7 @@ internal class FetchUrlTool : ITool
 
     private static readonly HttpClient _http = CreateClient();
 
-    private static HttpClient CreateClient()
-    {
-        // Redirects are followed MANUALLY (see ExecuteAsync) so each hop is re-checked
-        // against IsPrivateOrLoopback — automatic redirects would let a public URL
-        // bounce the request to 127.0.0.1 / 192.168.x.x and bypass the SSRF guard.
-        var handler = new HttpClientHandler { AllowAutoRedirect = false, Proxy = NetworkProxy.Shared };
-        var client  = new HttpClient(handler)
-        {
-            Timeout = TimeSpan.FromSeconds(30),
-            // The whole body was downloaded before the character-level truncation: a multi-GB
-            // response was pulled entirely into memory first.
-            MaxResponseContentBufferSize = 8 * 1024 * 1024,
-        };
-        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-        client.DefaultRequestHeaders.TryAddWithoutValidation("Accept",
-            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-        return client;
-    }
+    private static HttpClient CreateClient() => WebPageClient.Create(TimeSpan.FromSeconds(30));
 
     public string Name        => "fetch_url";
     /// <inheritdoc/>

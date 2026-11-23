@@ -19,7 +19,7 @@ namespace Inferpal.Services.Documents;
 /// </remarks>
 internal static class CrashReportText
 {
-    private const int MaxChars = 16_000_000;
+    private const int MaxChars = DocumentText.ReportMaxChars;
 
     /// <summary>The most frames of one stack shown; the rest is counted.</summary>
     private const int FramesShown = 60;

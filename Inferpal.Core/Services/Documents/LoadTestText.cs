@@ -15,8 +15,7 @@ namespace Inferpal.Services.Documents;
 /// nearest rank, and said to be. No value of the file writes a line of its own: labels and messages are cut and flattened.</remarks>
 internal static class LoadTestText
 {
-    /// <summary>The largest file read this way (as SARIF): past it, its text is paged as it is.</summary>
-    private const int MaxChars = 16_000_000;
+    private const int MaxChars = DocumentText.ReportMaxChars;
 
     /// <summary>The most requests (rows) listed; past it, the rest is counted.</summary>
     internal const int MaxRequests = 40;

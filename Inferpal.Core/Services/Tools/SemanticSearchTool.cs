@@ -221,9 +221,7 @@ internal sealed class SemanticSearchTool : ITool
                 header += $" · score {hit.Score:F3}";
 
             // Truncate very long chunks to avoid overwhelming the context window
-            var display = chunk.Content.Length > 900
-                ? SafeTruncate.Truncate(chunk.Content, 900) + "\n…(truncated)"
-                : chunk.Content;
+            var display = RankedResultBudget.Shown(chunk.Content);
             var entry = $"{header}\n```\n{display}\n```\n\n";
 
             // In rank order: once one body does not fit, the rest go by location.
