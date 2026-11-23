@@ -189,10 +189,63 @@ internal sealed class BackgroundShellRegistry : IDisposable
         try { job!.Process.Kill(entireProcessTree: true); }
         catch (Exception ex) { Diagnostics.Swallow($"BackgroundShellRegistry.Stop({id})", ex); }
 
-        lock (_lock) _jobs.Remove(id);
-        try { job!.Process.Dispose(); } catch { }
-        job.StreamsEnded.Dispose();
+        Forget(job!);
         return true;
+    }
+
+    private void Forget(Job job)
+    {
+        lock (_lock) _jobs.Remove(job.Id);
+        try { job.Process.Dispose(); } catch { }
+        job.StreamsEnded.Dispose();
+    }
+
+    /// <summary>What <see cref="StopIfRunning"/> did.</summary>
+    public enum StopOutcome
+    {
+        /// <summary>Killed, and gone.</summary>
+        Stopped,
+        /// <summary>It had ended on its own (or is no longer tracked): nothing was killed.</summary>
+        AlreadyEnded,
+        /// <summary>The kill did not end it within the wait (access denied, a stubborn tree): it may still run.</summary>
+        NotStopped,
+    }
+
+    /// <summary>The mark of a turn, taken before it: the jobs started after it are that turn's (<see cref="RunningSince"/>).</summary>
+    public int Mark()
+    {
+        lock (_lock) return _seq;
+    }
+
+    /// <summary>The jobs started after <paramref name="mark"/> that still run, in the order they started.</summary>
+    public IReadOnlyList<(string Id, string Command)> RunningSince(int mark)
+    {
+        lock (_lock)
+            return _jobs.Values.Where(j => j.Sequence > mark && !j.Exited).OrderBy(j => j.Sequence)
+                               .Select(j => (j.Id, j.Command)).ToList();
+    }
+
+    /// <summary>
+    /// Stops job <paramref name="id"/> for the person, unless it already ended — then its exit code, <c>null</c> when it is
+    /// no longer tracked (ended and read, or let go). Said <see cref="StopOutcome.Stopped"/> only once the job is gone.
+    /// </summary>
+    /// <remarks>An ended job stays tracked: the model may still read its last output. One the kill did not end stays
+    /// tracked too: the model's <c>stop</c> and the closing of the editor still reach it.</remarks>
+    public (StopOutcome Outcome, int? ExitCode) StopIfRunning(string id)
+    {
+        Job? job;
+        lock (_lock) _jobs.TryGetValue(id, out job);
+        if (job is null) return (StopOutcome.AlreadyEnded, null);
+        if (job.Exited)
+            lock (job.Lock) return (StopOutcome.AlreadyEnded, job.ExitCode);
+        try { job.Process.Kill(entireProcessTree: true); }
+        catch (Exception ex) { Diagnostics.Swallow($"BackgroundShellRegistry.StopIfRunning({id})", ex); }
+        bool gone;
+        try { gone = job.Process.WaitForExit(5000); }
+        catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException) { gone = true; }   // already let go
+        if (!gone) return (StopOutcome.NotStopped, null);
+        Forget(job);
+        return (StopOutcome.Stopped, null);
     }
 
     /// <summary>The process a running job started (the shell; the app it launched is under it), or <c>null</c> for a job

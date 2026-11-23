@@ -2631,4 +2631,14 @@ What you save there applies from your next question, in this thread and the othe
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Turn them on</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Not now</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Turn them on with {0}.</value></data>
+  <data name="LeftRunningTitle" xml:space="preserve"><value>Still running after this run</value></data>
+  <data name="LeftRunningNote" xml:space="preserve"><value>Started by this run. {0:It keeps|They keep} running until you stop {0:it|them} or close {1}.</value></data>
+  <data name="LeftRunningStop" xml:space="preserve"><value>Stop</value></data>
+  <data name="LeftRunningStopAll" xml:space="preserve"><value>Stop all</value></data>
+  <data name="LeftRunningNoneNow" xml:space="preserve"><value>Nothing from this run is running now.</value></data>
+  <data name="LeftRunningText" xml:space="preserve"><value>{0:This job, started by this run, is|These jobs, started by this run, are} still running: {1}. Ask to stop {0:it|them} when you no longer need {0:it|them}.</value></data>
+  <data name="LeftRunningStopped" xml:space="preserve"><value>Stopped</value></data>
+  <data name="LeftRunningEnded" xml:space="preserve"><value>Had already ended — exit code {0}</value></data>
+  <data name="LeftRunningEndedUnknown" xml:space="preserve"><value>Had already ended</value></data>
+  <data name="LeftRunningNotStopped" xml:space="preserve"><value>Could not be stopped — it may still run</value></data>
 </root>

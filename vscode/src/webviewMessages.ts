@@ -3,7 +3,7 @@
 // types are shared instead of mirrored. No 'vscode' import — the webview bundle uses it.
 import type {
   ApprovalCard, AwayNotice, CopyAppliedCard, CopyReview, CopyStartCard, CutCard, ImportCard, InputCard, InputFormAnswer, ModeInfo, ModeLabels, ModelWait, RewindCard, RunReview, RunSummary,
-  SavedMessage, ServerInstallCard, ServerInstallReport, SetupPlace, ToolOffNotice,
+  SavedMessage, ServerInstallCard, ServerInstallReport, SetupPlace, ToolOffNotice, LeftRunningCard,
   SetupPlan,
   XRayPanel,
 } from './protocol';
@@ -20,6 +20,12 @@ export type WvCopyCard =
    *  them back, and a review read again never drops a change the person did not. */
   | { kind: 'review'; review: CopyReview; dropped: string[] }
   | { kind: 'applied'; card: CopyAppliedCard };
+
+/** The "still running after this run" card (pari 168) and, by job id, what a Stop did to each. */
+export interface WvJobsCard {
+  card: LeftRunningCard;
+  outcomes: Record<string, { text: string; done: boolean }>;
+}
 
 export interface WvSetupView {
   phase: 'searching' | 'found' | 'nothing' | 'noModel';
@@ -313,6 +319,8 @@ export type ExtToWebview =
   | { type: 'copyCard'; card: WvCopyCard | null }
   /** The tool-off notice under the question, or null to take it away. */
   | { type: 'toolOffCard'; card: ToolOffNotice | null }
+  /** What the last turn left running, or null to take the card away. */
+  | { type: 'jobsCard'; card: WvJobsCard | null }
   /** The model picker's list, re-read from the server when the menu opened; `model`: the window's model, when its
    *  setting changed outside the picker. */
   | { type: 'models'; models: string[]; model?: string; onlyOtherModels?: boolean }
@@ -362,6 +370,7 @@ export type WebviewToExt =
   | { type: 'copyStart'; question: string; choice: 'copy' | 'mine' | 'cancel' }
   /** A gesture on the tool-off notice. */
   | { type: 'toolOff'; choice: 'once' | 'on' | 'notNow' }
+  | { type: 'jobsStop'; ids: string[] }
   /** The review card's Apply: the hunks kept of review `reviewId`, by path. */
   | { type: 'copyApply'; reviewId: number; kept: Record<string, number[]> }
   /** A change kept or dropped on the review card: every dropped change, by its key. */

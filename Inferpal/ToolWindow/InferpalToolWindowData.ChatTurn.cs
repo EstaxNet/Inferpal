@@ -517,6 +517,8 @@ internal partial class InferpalToolWindowData
 
         // The turn's run, whatever way the turn ends: its last line carries it (going back to the question undoes it).
         string? turnRunId = null;
+        // The jobs started after this mark are the turn's: what it leaves running is said under its answer (pari 168).
+        int? jobsMark = null;
         try
         {
             // Agent mode (Plan→Act→Observe) is active only when the user switch is on AND tools are
@@ -627,6 +629,7 @@ internal partial class InferpalToolWindowData
             {
                 // Start a change-tracking run so this turn's file writes can be reverted via /undo-run.
                 turnRunId = _tools.History.BeginRun();
+                jobsMark  = _tools.Jobs?.Mark();
                 effectiveTools = ChatModes.ToolsFor(_tools, turnMode, _indexService.RootDir);
                 if (_planMode)      effectiveTools = new Services.Execution.PlanModeToolRegistry(effectiveTools);
                 // A window too small for every definition: the tools used most, as the context check planned.
@@ -1014,6 +1017,9 @@ internal partial class InferpalToolWindowData
                 // after the turn (a /restore, a tool launched by a slash command) still attached to
                 // it, and /undo-run reverted that along with the run we had just watched.
                 _tools.History.EndRun();
+                // What the turn left running, under it — after the run is closed: nothing here may leave it open.
+                try { ShowLeftRunning(jobsMark); }
+                catch (Exception ex) { Diagnostics.Swallow("ChatTurn.ShowLeftRunning", ex); }
                 // The header line ends on how long the turn took; a run stopped before its end still gets its glyph.
                 if (_runLine is { RunGlyph: Glyphs.Tool }) _runLine.EndRun(null);
                 if (_turnHead is not null)

@@ -2627,4 +2627,14 @@ Was Sie dort speichern, gilt ab Ihrer nächsten Frage, in diesem Thread und in d
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Einschalten</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Nicht jetzt</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Schalten Sie sie mit {0} ein.</value></data>
+  <data name="LeftRunningTitle" xml:space="preserve"><value>Läuft nach diesem Lauf weiter</value></data>
+  <data name="LeftRunningNote" xml:space="preserve"><value>Von diesem Lauf gestartet. {0:Er läuft|Sie laufen} weiter, bis Sie {0:ihn|sie} beenden oder {1} schließen.</value></data>
+  <data name="LeftRunningStop" xml:space="preserve"><value>Beenden</value></data>
+  <data name="LeftRunningStopAll" xml:space="preserve"><value>Alle beenden</value></data>
+  <data name="LeftRunningNoneNow" xml:space="preserve"><value>Von diesem Lauf läuft nichts mehr.</value></data>
+  <data name="LeftRunningText" xml:space="preserve"><value>{0:Dieser Job, von diesem Lauf gestartet, läuft|Diese Jobs, von diesem Lauf gestartet, laufen} noch: {1}. Bitten Sie darum, {0:ihn|sie} zu beenden, wenn Sie {0:ihn|sie} nicht mehr brauchen.</value></data>
+  <data name="LeftRunningStopped" xml:space="preserve"><value>Beendet</value></data>
+  <data name="LeftRunningEnded" xml:space="preserve"><value>War bereits beendet — Exitcode {0}</value></data>
+  <data name="LeftRunningEndedUnknown" xml:space="preserve"><value>War bereits beendet</value></data>
+  <data name="LeftRunningNotStopped" xml:space="preserve"><value>Konnte nicht beendet werden — läuft vielleicht noch</value></data>
 </root>

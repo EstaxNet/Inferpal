@@ -105,6 +105,7 @@ import {
   TypingChip,
   ImageDto,
   ImageNotSeenCard, ImageText, ImageTextBanner, ToolOffNotice,
+  JobStop,
 } from './protocol';
 
 /** Reverse-RPC surface the editor side must provide before `start()`. */
@@ -545,6 +546,11 @@ export class HostClient {
   /** Removes the copy this window holds, and its branch. */
   copyDiscard(): Promise<CopyDiscardResult> {
     return this.connection().sendRequest<CopyDiscardResult>('copy/discard');
+  }
+
+  /** Stops the jobs a "still running" card names, each one that has not ended on its own; says what was done to each. */
+  jobsStop(ids: string[]): Promise<JobStop[]> {
+    return this.connection().sendRequest<JobStop[]>('jobs/stop', { ids });
   }
 
   /** Releases a step-mode pause (the agent proceeds to its next action). */

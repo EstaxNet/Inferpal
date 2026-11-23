@@ -2627,4 +2627,14 @@ Lo que guarde allí se aplica desde su próxima pregunta, en este hilo y en los 
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Activarlas</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Ahora no</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Actívelas con {0}.</value></data>
+  <data name="LeftRunningTitle" xml:space="preserve"><value>Sigue en marcha después de esta ejecución</value></data>
+  <data name="LeftRunningNote" xml:space="preserve"><value>Iniciado{0:|s} por esta ejecución. {0:Sigue|Siguen} en marcha hasta que {0:lo|los} detengas o cierres {1}.</value></data>
+  <data name="LeftRunningStop" xml:space="preserve"><value>Detener</value></data>
+  <data name="LeftRunningStopAll" xml:space="preserve"><value>Detener todo</value></data>
+  <data name="LeftRunningNoneNow" xml:space="preserve"><value>Ya no hay nada de esta ejecución en marcha.</value></data>
+  <data name="LeftRunningText" xml:space="preserve"><value>{0:Este trabajo, iniciado por esta ejecución, sigue|Estos trabajos, iniciados por esta ejecución, siguen} en marcha: {1}. Pide que {0:lo|los} detengan cuando ya no {0:lo|los} necesites.</value></data>
+  <data name="LeftRunningStopped" xml:space="preserve"><value>Detenido</value></data>
+  <data name="LeftRunningEnded" xml:space="preserve"><value>Ya había terminado — código de salida {0}</value></data>
+  <data name="LeftRunningEndedUnknown" xml:space="preserve"><value>Ya había terminado</value></data>
+  <data name="LeftRunningNotStopped" xml:space="preserve"><value>No se pudo detener — puede que siga en marcha</value></data>
 </root>

@@ -21,6 +21,7 @@ import type {
   WvSetupView,
   WvSlashCommand,
   WvTranscriptItem,
+  WvJobsCard,
 } from '../webviewMessages';
 import { PAGE_LOCALE, t } from './l10n';
 import { renderMarkdownInto, setCopySink, stripThinkTags } from './markdown';
@@ -1042,6 +1043,59 @@ function renderToolOffCard(card: ToolOffNotice | null): void {
   } else {
     messagesEl.appendChild(el);
   }
+  scrollToBottom();
+}
+
+/** What the last turn left running (pari 168), at the end of the thread: each job with Stop, Stop all from two; once
+ *  stopped, or found ended on its own, the row says so. */
+function renderJobsCard(state: WvJobsCard | null): void {
+  const old = messagesEl.querySelector('.jobs-card');
+  if (!state) {
+    old?.remove();
+    return;
+  }
+  const { card, outcomes } = state;
+  const el = document.createElement('section');
+  el.className = 'jobs-card';
+  el.setAttribute('role', 'group');
+  el.setAttribute('aria-label', card.title);
+  const head = copyPart('div', 'jobs-head');
+  const glyph = copyPart('span', 'jobs-glyph');
+  glyph.append(icon('running', 16));
+  head.append(glyph, copyPart('span', 'jobs-title', card.title));
+  const running = card.jobs.filter((job) => !outcomes[job.id]?.done);
+  const list = copyPart('ul', 'jobs-list');
+  for (const job of card.jobs) {
+    const row = copyPart('li', 'jobs-row');
+    const command = copyPart('code', 'jobs-command');
+    command.textContent = job.command;   // as typed: a PowerShell backtick is no code span
+    command.title = job.command;
+    row.append(command, copyPart('span', 'jobs-id', job.id));
+    const said = outcomes[job.id];
+    if (said) {
+      row.append(copyPart('span', 'jobs-outcome', said.text));
+    }
+    if (!said?.done) {
+      const stop = copyButton(el, card.stop, false, () => post({ type: 'jobsStop', ids: [job.id] }));
+      stop.setAttribute('aria-label', `${card.stop} ${job.id}`);
+      row.append(stop);
+    }
+    list.append(row);
+  }
+  el.append(head, copyPart('div', 'jobs-note', running.length > 0 ? card.notes[running.length - 1] : card.noneNow), list);
+  if (running.length >= 2) {
+    const actions = copyPart('div', 'jobs-actions');
+    actions.append(copyButton(el, card.stopAll, false, () => post({ type: 'jobsStop', ids: running.map((job) => job.id) })));
+    el.append(actions);
+  }
+  // The same card in place: a Stop during the next turn does not move it under that turn. A new card goes at the end.
+  el.dataset.jobs = card.jobs.map((job) => job.id).join(' ');
+  if (old instanceof HTMLElement && old.dataset.jobs === el.dataset.jobs) {
+    old.replaceWith(el);
+    return;
+  }
+  old?.remove();
+  messagesEl.appendChild(el);
   scrollToBottom();
 }
 
@@ -4570,6 +4624,9 @@ window.addEventListener('message', (event: MessageEvent<ExtToWebview>) => {
       break;
     case 'toolOffCard':
       renderToolOffCard(msg.card);
+      break;
+    case 'jobsCard':
+      renderJobsCard(msg.card);
       break;
     case 'runReview':
       renderRunReview(msg.runId, msg.review, msg.message);

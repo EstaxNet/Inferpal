@@ -193,6 +193,8 @@ internal sealed record TurnNoteDto(string Id, string Text, int AfterCalls = 0);
 /// the turn stopped at the iteration limit or its answer at the length limit — never after a loop or a repetition.</param>
 /// <param name="AnnounceEnd">The turn was long and the setting, as it stands in the file now, says to announce its end
 /// (<see cref="Services.Agent.ChatTurnPolicy.AnnouncesEnd"/>): the adapter does, when its chat is out of sight.</param>
+/// <param name="LeftRunning">What the turn left running (pari 168): the background jobs it started that still run, with the
+/// card's texts; <c>null</c> when it left nothing. Shown under the answer, never saved: the jobs die with the host.</param>
 /// <param name="RunId">The run of changes the turn made, whatever way it ended (<see cref="RunSummaryDto.RunId"/> says it
 /// only for a turn that finished): saved with the turn's last message, it is what going back to the question undoes.</param>
 internal sealed record ChatSendResult(
@@ -217,7 +219,15 @@ internal sealed record ChatSendResult(
     CutCardDto? Cut = null,
     string? Rate = null,
     string? RateDetail = null,
-    CopyReviewDto? Copy = null);
+    CopyReviewDto? Copy = null,
+    Services.Presentation.LeftRunningCard? LeftRunning = null);
+
+/// <summary><c>jobs/stop</c>: the jobs of a "still running" card to stop (pari 168).</summary>
+internal sealed record JobsStopParams(List<string> Ids);
+
+/// <summary>What a Stop did to one job, as its row then says it ("Stopped", "Had already ended — exit code 1"); <c>Done</c>
+/// false when the kill did not end it: the row keeps Stop.</summary>
+internal sealed record JobStopDto(string Id, string Text, bool Done);
 
 /// <summary><c>copy/prepare</c>: what the start card of a run on a copy says (pari 106); nothing is made.</summary>
 /// <param name="Refusal">Why no copy can be made of this folder, in English (the card names it); <c>null</c> when one can.</param>

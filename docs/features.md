@@ -337,6 +337,10 @@ look at what the code produces, measure it, and read the files developers deal w
   code and calls again to confirm. It can also replay a request your project keeps — a `.http` file, a Postman or Bruno
   collection — by its name, with the environment you name; a secret from it shows on the card, and the agent sees only
   its name.
+- **What it left running, under the answer** — a dev server or a test watcher the agent started in the background and
+  that still runs when the run ends is listed under the answer: its command, its job id, **Stop** (and **Stop all** from
+  two). Stopped, the row says so; one that ended on its own says it with its exit code. Only the jobs of that run, and
+  only on screen: they end with the editor anyway. In ACP, a line after the answer names them; ask the agent to stop them.
 - **A measure, not one lucky run** — `run_command` with `repeat` runs a command several times after a warm-up and
   gives the median, the spread, and whether a change is faster beyond the normal variation between runs.
 - **The text of an image** — `ocr` reads a screenshot, a photo of a page or a scanned PDF in Inferpal's ten languages,

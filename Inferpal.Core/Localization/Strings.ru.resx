@@ -2627,4 +2627,14 @@
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Включить</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Не сейчас</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Включите их командой {0}.</value></data>
+  <data name="LeftRunningTitle" xml:space="preserve"><value>Всё ещё работает после этого запуска</value></data>
+  <data name="LeftRunningNote" xml:space="preserve"><value>{0:Запущено|Запущены|Запущены} этим запуском. {0:Работает|Работают|Работают}, пока вы не {0:остановите его|остановите их|остановите их} или не закроете {1}.</value></data>
+  <data name="LeftRunningStop" xml:space="preserve"><value>Остановить</value></data>
+  <data name="LeftRunningStopAll" xml:space="preserve"><value>Остановить все</value></data>
+  <data name="LeftRunningNoneNow" xml:space="preserve"><value>Ничего из этого запуска больше не работает.</value></data>
+  <data name="LeftRunningText" xml:space="preserve"><value>{0:Это задание, запущенное этим запуском, всё ещё работает|Эти задания, запущенные этим запуском, всё ещё работают|Эти задания, запущенные этим запуском, всё ещё работают}: {1}. Попросите {0:остановить его|остановить их|остановить их}, когда {0:оно|они|они} больше не нужн{0:о|ы|ы}.</value></data>
+  <data name="LeftRunningStopped" xml:space="preserve"><value>Остановлено</value></data>
+  <data name="LeftRunningEnded" xml:space="preserve"><value>Уже завершилось — код выхода {0}</value></data>
+  <data name="LeftRunningEndedUnknown" xml:space="preserve"><value>Уже завершилось</value></data>
+  <data name="LeftRunningNotStopped" xml:space="preserve"><value>Не удалось остановить — возможно, ещё работает</value></data>
 </root>

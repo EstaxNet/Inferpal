@@ -2627,4 +2627,14 @@ Ce que vous y enregistrez s'applique dès votre prochaine question, dans ce fil 
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Les réactiver</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Pas maintenant</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Réactivez-les avec {0}.</value></data>
+  <data name="LeftRunningTitle" xml:space="preserve"><value>Toujours en cours après ce run</value></data>
+  <data name="LeftRunningNote" xml:space="preserve"><value>Lancé{0:|s} par ce run. {0:Il tourne|Ils tournent} jusqu’à ce que vous {0:l’arrêtiez|les arrêtiez} ou fermiez {1}.</value></data>
+  <data name="LeftRunningStop" xml:space="preserve"><value>Arrêter</value></data>
+  <data name="LeftRunningStopAll" xml:space="preserve"><value>Tout arrêter</value></data>
+  <data name="LeftRunningNoneNow" xml:space="preserve"><value>Plus rien de ce run ne tourne.</value></data>
+  <data name="LeftRunningText" xml:space="preserve"><value>{0:Ce job, lancé par ce run, tourne|Ces jobs, lancés par ce run, tournent} toujours : {1}. Demandez à {0:l’arrêter|les arrêter} quand vous n’en aurez plus besoin.</value></data>
+  <data name="LeftRunningStopped" xml:space="preserve"><value>Arrêté</value></data>
+  <data name="LeftRunningEnded" xml:space="preserve"><value>Était déjà fini — code de sortie {0}</value></data>
+  <data name="LeftRunningEndedUnknown" xml:space="preserve"><value>Était déjà fini</value></data>
+  <data name="LeftRunningNotStopped" xml:space="preserve"><value>N’a pas pu être arrêté — il tourne peut-être encore</value></data>
 </root>

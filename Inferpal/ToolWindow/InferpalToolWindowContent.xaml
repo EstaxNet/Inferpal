@@ -3366,6 +3366,70 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- ── What a turn left running (pari 168): its background jobs, each with Stop, Stop all from two ── -->
+                        <Border CornerRadius="10" BorderThickness="1"
+                                Background="{Binding DataContext.ThemeSurface, ElementName=root}"
+                                BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Role}" Value="jobs">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Margin="12,10,12,12" AutomationProperties.Name="{Binding CardTitle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"
+                                               Foreground="{Binding DataContext.ThemeAccent, ElementName=root}"/>
+                                    <TextBlock Text="{Binding CardTitle}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                               TextWrapping="Wrap" Foreground="{Binding ThemeText}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding JobsNote}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" Foreground="{Binding ThemeSubtleText}"/>
+                                <ItemsControl ItemsSource="{Binding Jobs}" Margin="0,4,0,0" Focusable="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <DockPanel Margin="0,4,0,0" LastChildFill="True">
+                                                <Button DockPanel.Dock="Right" Template="{StaticResource Flat6}" Height="24" Padding="10,0" Margin="8,0,0,0"
+                                                        BorderThickness="1" Cursor="Hand" Background="Transparent"
+                                                        BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                                        Command="{Binding StopCommand}" AutomationProperties.Name="{Binding StopName}">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                    <TextBlock Text="{Binding StopLabel}" FontSize="12" VerticalAlignment="Center"
+                                                               Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                                </Button>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Outcome}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                           Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"
+                                                           Visibility="{Binding HasOutcome, Converter={StaticResource b2v}}"/>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Id}" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                           Foreground="{Binding DataContext.ThemeSubtleText, ElementName=root}"/>
+                                                <TextBlock Text="{Binding Command}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                           FontFamily="Cascadia Mono, Consolas" ToolTip="{Binding Command}"
+                                                           Foreground="{Binding DataContext.ThemeText, ElementName=root}"/>
+                                            </DockPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <Button HorizontalAlignment="Right" Template="{StaticResource Flat6}" Height="28" Padding="12,0" Margin="0,8,0,0"
+                                        BorderThickness="1" Cursor="Hand" Background="Transparent"
+                                        BorderBrush="{Binding DataContext.ThemeBorder, ElementName=root}"
+                                        Command="{Binding StopAllCommand}" AutomationProperties.Name="{Binding BtnStopAll}"
+                                        Visibility="{Binding HasStopAll, Converter={StaticResource b2v}}">
+                                    <TextBlock Text="{Binding BtnStopAll}" FontSize="13" VerticalAlignment="Center" Foreground="{Binding ThemeText}"/>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+
                         <!-- ── A server install card: the command and what it does, then its progress, then how it ended ── -->
                         <Border CornerRadius="10" BorderThickness="1"
                                 Background="{Binding DataContext.ThemeSurface, ElementName=root}"

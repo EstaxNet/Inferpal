@@ -213,6 +213,33 @@ export interface ChatSendResult {
   unappliedNotes?: TurnNote[] | null;
   /** A question sent to a copy (`inCopy`): what its run left there, for the review card. */
   copy?: CopyReview | null;
+  /** What the turn left running (pari 168): the background jobs it started that still run, with the card's texts. */
+  leftRunning?: LeftRunningCard | null;
+}
+
+/** A background job a turn left running: its id (`bg1`) and its command, on one line. */
+export interface LeftRunningJob {
+  id: string;
+  command: string;
+}
+
+/** The "still running after this run" card, its texts in the interface's language. */
+export interface LeftRunningCard {
+  title: string;
+  /** The note for each number still running: `notes[n - 1]` for n jobs. */
+  notes: string[];
+  stop: string;
+  stopAll: string;
+  noneNow: string;
+  jobs: LeftRunningJob[];
+}
+
+/** What `jobs/stop` did to one job, as its row then says it. */
+export interface JobStop {
+  id: string;
+  text: string;
+  /** False when the kill did not end it: the row keeps Stop. */
+  done: boolean;
 }
 
 /** A row of the start card of a run on a copy; identifiers in backticks. */

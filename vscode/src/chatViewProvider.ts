@@ -41,6 +41,7 @@ import {
   WvTranscriptItem,
   WvChip,
   WvCopyCard,
+  WvJobsCard,
 } from './webviewMessages';
 
 /**
@@ -231,6 +232,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private copyCard: WvCopyCard | null = null;
   /** The tool-off notice of the last question (pari 163), until a gesture or the next question takes it away. */
   private toolOffCard: ToolOffNotice | null = null;
+  /** What the last turn left running (pari 168), until the next turn ends: the transcript never carries it. */
+  private jobsCard: WvJobsCard | null = null;
   /** The tools "use them for this question" opens: sent with the regenerated question alone (`openTools`). */
   private openToolsOnce: string[] | undefined;
   /** The bubble of the `/run-copy` that opened the start card: replaced by the question once the person answers. */
@@ -615,6 +618,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     const host = this.getHost();
     if (!host?.isRunning) {
       return;
+    }
+    // The jobs a card named died with the host that stopped.
+    if (this.jobsCard) {
+      this.jobsCard = null;
+      this.post({ type: 'jobsCard', card: null });
     }
     // The copy a card showed belongs to the host that stopped: `/run-copy` finds it again, as a copy left behind.
     if (this.copyCard) {
@@ -1235,6 +1243,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private clearTranscript(): void {
     this.transcript.length = 0;
     this.toolOffCard = null;
+    this.jobsCard = null;
     this.hiddenEntries = [];
     this.droppedEntries = 0;
   }
@@ -1953,6 +1962,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         break;
       case 'toolOff':
         await this.answerToolOff(msg.choice);
+        break;
+      case 'jobsStop':
+        await this.stopJobs(msg.ids);
         break;
       case 'copyApply':
         await this.applyCopy(msg.reviewId, msg.kept);
@@ -3913,6 +3925,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       if (result.copy) {
         this.post({ type: 'copyCard', card: this.copyCard });
       }
+      // What this turn left running, stopped or failed too. A turn that left nothing keeps the earlier card and its Stop;
+      // one that left jobs replaces it, its own jobs only.
+      if (result.leftRunning) {
+        this.jobsCard = { card: result.leftRunning, outcomes: {} };
+        this.post({ type: 'jobsCard', card: this.jobsCard });
+      }
       this.turnEnded(result.error ? 'failed' : result.cancelled ? 'stopped' : 'normal');
       this.announceRunEnd(result.announceEnd === true, result.error ? 'failed' : result.cancelled ? 'stopped' : 'normal',
                           [result.duration, result.run?.detail].filter((part) => !!part).join(' · '));
@@ -4300,6 +4318,31 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private showToolOffCard(card: ToolOffNotice | null): void {
     this.toolOffCard = card;
     this.post({ type: 'toolOffCard', card });
+  }
+
+  /** Stops jobs of the "still running" card; each row then says what was done to it. */
+  private async stopJobs(ids: string[]): Promise<void> {
+    const card = this.jobsCard;
+    if (!card) {
+      return;
+    }
+    const host = this.hostForGesture();
+    if (!host) {
+      this.post({ type: 'jobsCard', card });   // its buttons back
+      return;
+    }
+    try {
+      for (const done of await host.jobsStop(ids)) {
+        if (!card.outcomes[done.id]?.done) {
+          card.outcomes[done.id] = { text: done.text, done: done.done };   // the first Stop that ended it says it
+        }
+      }
+    } catch (err) {
+      this.gestureFailed('jobs/stop', err);
+    }
+    if (this.jobsCard === card) {
+      this.post({ type: 'jobsCard', card });
+    }
   }
 
   /**
@@ -5214,6 +5257,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // Nor the tool-off notice, until a gesture or the next question.
     if (this.toolOffCard) {
       this.post({ type: 'toolOffCard', card: this.toolOffCard });
+    }
+    // Nor what the last turn left running.
+    if (this.jobsCard) {
+      this.post({ type: 'jobsCard', card: this.jobsCard });
     }
     // The transcript carries no card and the webview just rebuilt from it: a card still waiting
     // would vanish while the host keeps waiting for its answer, with no timeout.

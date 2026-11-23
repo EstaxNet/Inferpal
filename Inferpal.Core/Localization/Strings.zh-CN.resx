@@ -2627,4 +2627,14 @@
   <data name="ToolOffTurnOn" xml:space="preserve"><value>开启它们</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>暂不</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>可用 {0} 开启它们。</value></data>
+  <data name="LeftRunningTitle" xml:space="preserve"><value>此次运行之后仍在运行</value></data>
+  <data name="LeftRunningNote" xml:space="preserve"><value>由此次运行启动的 {0} 个作业。在你停止或关闭 {1} 之前会一直运行。</value></data>
+  <data name="LeftRunningStop" xml:space="preserve"><value>停止</value></data>
+  <data name="LeftRunningStopAll" xml:space="preserve"><value>全部停止</value></data>
+  <data name="LeftRunningNoneNow" xml:space="preserve"><value>此次运行启动的内容已全部停止。</value></data>
+  <data name="LeftRunningText" xml:space="preserve"><value>此次运行启动的 {0} 个作业仍在运行：{1}。不再需要时，请要求停止。</value></data>
+  <data name="LeftRunningStopped" xml:space="preserve"><value>已停止</value></data>
+  <data name="LeftRunningEnded" xml:space="preserve"><value>此前已结束 — 退出代码 {0}</value></data>
+  <data name="LeftRunningEndedUnknown" xml:space="preserve"><value>此前已结束</value></data>
+  <data name="LeftRunningNotStopped" xml:space="preserve"><value>无法停止 — 可能仍在运行</value></data>
 </root>

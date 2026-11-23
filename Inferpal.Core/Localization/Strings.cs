@@ -3232,4 +3232,14 @@ internal static class Strings
     public static string ToolOffTurnOn => Get(nameof(ToolOffTurnOn));
     public static string ToolOffNotNow => Get(nameof(ToolOffNotNow));
     public static string ToolOffTurnOnWith(string command) => Format(Get(nameof(ToolOffTurnOnWith)), command);
+    public static string LeftRunningTitle => Get(nameof(LeftRunningTitle));
+    public static string LeftRunningNote(int count, string editor) => Format(Get(nameof(LeftRunningNote)), count, editor);
+    public static string LeftRunningStop => Get(nameof(LeftRunningStop));
+    public static string LeftRunningStopAll => Get(nameof(LeftRunningStopAll));
+    public static string LeftRunningNoneNow => Get(nameof(LeftRunningNoneNow));
+    public static string LeftRunningText(int count, string jobs) => Format(Get(nameof(LeftRunningText)), count, jobs);
+    public static string LeftRunningStopped => Get(nameof(LeftRunningStopped));
+    public static string LeftRunningEnded(int exitCode) => Format(Get(nameof(LeftRunningEnded)), exitCode);
+    public static string LeftRunningEndedUnknown => Get(nameof(LeftRunningEndedUnknown));
+    public static string LeftRunningNotStopped => Get(nameof(LeftRunningNotStopped));
 }

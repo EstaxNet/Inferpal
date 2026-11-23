@@ -2627,4 +2627,14 @@ To, co tam zapiszesz, obowiązuje od następnego pytania, w tym wątku i w pozos
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Włącz je</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Nie teraz</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Włącz je poleceniem {0}.</value></data>
+  <data name="LeftRunningTitle" xml:space="preserve"><value>Nadal działa po tym uruchomieniu</value></data>
+  <data name="LeftRunningNote" xml:space="preserve"><value>Uruchomione przez to uruchomienie. {0:Działa|Działają|Działają}, dopóki {0:go|ich|ich} nie zatrzymasz albo nie zamkniesz {1}.</value></data>
+  <data name="LeftRunningStop" xml:space="preserve"><value>Zatrzymaj</value></data>
+  <data name="LeftRunningStopAll" xml:space="preserve"><value>Zatrzymaj wszystkie</value></data>
+  <data name="LeftRunningNoneNow" xml:space="preserve"><value>Nic z tego uruchomienia już nie działa.</value></data>
+  <data name="LeftRunningText" xml:space="preserve"><value>{0:To zadanie, uruchomione przez to uruchomienie, nadal działa|Te zadania, uruchomione przez to uruchomienie, nadal działają|Te zadania, uruchomione przez to uruchomienie, nadal działają}: {1}. Poproś o {0:jego|ich|ich} zatrzymanie, gdy nie {0:będzie|będą|będą} już potrzebne.</value></data>
+  <data name="LeftRunningStopped" xml:space="preserve"><value>Zatrzymane</value></data>
+  <data name="LeftRunningEnded" xml:space="preserve"><value>Już się zakończyło — kod wyjścia {0}</value></data>
+  <data name="LeftRunningEndedUnknown" xml:space="preserve"><value>Już się zakończyło</value></data>
+  <data name="LeftRunningNotStopped" xml:space="preserve"><value>Nie udało się zatrzymać — może nadal działać</value></data>
 </root>

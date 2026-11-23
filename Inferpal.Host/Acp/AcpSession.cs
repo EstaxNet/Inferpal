@@ -1080,6 +1080,10 @@ internal sealed class AcpSession : IAsyncDisposable
             Say("\n\n" + result.EndNotice);
             RecordAnswer(result.EndNotice, notice: true);
         }
+        // What the turn left running (pari 168), said and never saved: the jobs die with the agent, a reloaded session has
+        // nothing to stop. No button here: the person asks the agent.
+        if (result.LeftRunning is { } left && Services.Presentation.LeftRunning.Text(left.Jobs) is { } running)
+            Say("\n\n" + running);
         // The run the turn made goes with its last message, as in both editors: going back to a question finds it there.
         if ((result.Run is { RunId.Length: > 0 } run ? run.RunId : result.RunId) is { Length: > 0 } runId)
             lock (_gate)

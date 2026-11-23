@@ -361,6 +361,9 @@ internal sealed partial class HostServer : IDisposable
         }
         ChatSendResult result;
         CopyReviewDto? review = null;
+        // The jobs started after this mark are the turn's: what it leaves running is said under its answer.
+        var jobs = Session().Tools.Jobs;
+        var mark = jobs?.Mark() ?? 0;
         try
         {
             using (copy?.Enter())
@@ -396,7 +399,22 @@ internal sealed partial class HostServer : IDisposable
             AppliedNotes = notes.Applied.Count > 0 ? [.. notes.Applied.Select(n => new TurnNoteDto(n.Id, n.Text, n.AfterCalls))] : null,
             UnappliedNotes = notes.Unapplied.Count > 0 ? [.. notes.Unapplied.Select(n => new TurnNoteDto(n.Id, n.Text))] : null,
             Copy = review,
+            LeftRunning = Services.Presentation.LeftRunning.Card(Services.Presentation.LeftRunning.Since(jobs, mark), "VS Code"),
         };
+    }
+
+    /// <summary><c>jobs/stop</c>: stops the jobs a "still running" card names (pari 168), each one that has not ended on its
+    /// own; says for each what was done. Outside the turn slot: a job is stopped while a turn runs, as the model's stop is.</summary>
+    [JsonRpcMethod("jobs/stop", UseSingleObjectParameterDeserialization = true)]
+    public List<JobStopDto> JobsStop(JobsStopParams p)
+    {
+        var jobs = Session().Tools.Jobs;
+        return [.. (p.Ids ?? []).Distinct(StringComparer.Ordinal).Select(id =>
+        {
+            var (text, done) = Services.Presentation.LeftRunning.Outcome(
+                jobs?.StopIfRunning(id) ?? (Services.Shell.BackgroundShellRegistry.StopOutcome.AlreadyEnded, null));
+            return new JobStopDto(id, text, done);
+        })];
     }
 
     // ── Run on a copy (pari 106) ───────────────────────────────────────────────

@@ -2627,4 +2627,14 @@ Ciò che salvi lì vale dalla tua prossima domanda, in questo thread e negli alt
   <data name="ToolOffTurnOn" xml:space="preserve"><value>Riattivarli</value></data>
   <data name="ToolOffNotNow" xml:space="preserve"><value>Non ora</value></data>
   <data name="ToolOffTurnOnWith" xml:space="preserve"><value>Riattivali con {0}.</value></data>
+  <data name="LeftRunningTitle" xml:space="preserve"><value>Ancora in esecuzione dopo questa esecuzione</value></data>
+  <data name="LeftRunningNote" xml:space="preserve"><value>Avviat{0:o|i} da questa esecuzione. {0:Continua|Continuano} finché non {0:lo|li} fermi o chiudi {1}.</value></data>
+  <data name="LeftRunningStop" xml:space="preserve"><value>Ferma</value></data>
+  <data name="LeftRunningStopAll" xml:space="preserve"><value>Ferma tutto</value></data>
+  <data name="LeftRunningNoneNow" xml:space="preserve"><value>Non c’è più nulla in esecuzione di questa esecuzione.</value></data>
+  <data name="LeftRunningText" xml:space="preserve"><value>{0:Questo job, avviato da questa esecuzione, è|Questi job, avviati da questa esecuzione, sono} ancora in esecuzione: {1}. Chiedi di {0:fermarlo|fermarli} quando non {0:ti serve|ti servono} più.</value></data>
+  <data name="LeftRunningStopped" xml:space="preserve"><value>Fermato</value></data>
+  <data name="LeftRunningEnded" xml:space="preserve"><value>Era già terminato — codice di uscita {0}</value></data>
+  <data name="LeftRunningEndedUnknown" xml:space="preserve"><value>Era già terminato</value></data>
+  <data name="LeftRunningNotStopped" xml:space="preserve"><value>Impossibile fermarlo — potrebbe essere ancora in esecuzione</value></data>
 </root>

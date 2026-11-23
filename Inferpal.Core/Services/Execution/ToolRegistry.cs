@@ -93,6 +93,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     /// <summary>The background jobs of <c>run_command</c>: the apps the agent started.</summary>
     private readonly Shell.BackgroundShellRegistry? _jobs;
 
+    /// <summary>The background jobs of <c>run_command</c>, for what a turn leaves running (<see cref="Presentation.LeftRunning"/>).</summary>
+    internal Shell.BackgroundShellRegistry? Jobs => _jobs;
+
     /// <summary>The run of the agent's last look at what an app shows, and each interface file of that run as it was then;
     /// a look of another run counts for nothing.</summary>
     /// <remarks>⚠ A file is compared with itself, never its date with the clock: a network drive stamps with its own clock,
