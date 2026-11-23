@@ -1218,7 +1218,7 @@ exception and the faulting thread's stack; a Terraform plan as what it destroys,
 report as its findings, errors first; an MSBuild `.binlog` (replayed by the .NET SDK) as its errors and slowest
 projects; an OpenAPI file as its operations and a `.har` capture as its requests; a `.patch` as whether each block still
 applies, and the agent can apply it on the usual card. A GitHub, GitLab, Gitea or Codeberg issue or pull request link
-reads as the ticket and its comments. A screen recording (`.mp4`, `.mov`, `.webm`, a moving GIF) goes to a model that
+reads as the ticket, its review thread by thread (file, line, open or resolved) and its comments. A screen recording (`.mp4`, `.mov`, `.webm`, a moving GIF) goes to a model that
 sees as eight frames with their times, so it can say *when* it goes wrong (Windows decodes an `.mp4` itself; macOS and
 Linux use ffmpeg).
 

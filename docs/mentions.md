@@ -133,7 +133,7 @@ the active terminal's last finished command — another terminal's is never take
 **`@url` fetches the address you typed, without asking.** It goes the way `fetch_url` goes — a private or local address
 is refused, and so is a redirect to one; `fetch_url` turned off or a deny rule that matches the address refuses it too —
 but there is no approval card: you typed the address yourself. A ticket's address (an issue or a pull request of
-GitHub, GitLab, Gitea or Codeberg) attaches the ticket itself — description, comments in order, changed files — with its
+GitHub, GitLab, Gitea or Codeberg) attaches the ticket itself — description, review threads with their file and line, comments in order, changed files — with its
 images named.
 
 ## When nothing is attached
