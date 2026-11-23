@@ -1148,6 +1148,9 @@ internal sealed class AcpSession : IAsyncDisposable
                     var document = Services.Documents.DocumentText.Handles(path!);
                     if (await MentionController.BinaryRefusalAsync(path!, CancellationToken.None) is { } binary)
                         (notAttached, reason) = (binary, document && Services.Documents.AttachedDocuments.WhyNoText(path!) is { } noText ? noText : "a binary file");
+                    // A Playwright trace is a zip read as its test: never the client's buffer, never the text size limit.
+                    else if (Services.Documents.PlaywrightTrace.IsTrace(path!))
+                        body = await MentionController.FileMentionTextAsync(path!, null, CancellationToken.None);
                     else if ((body = !document && new FileInfo(path!).Length > MentionController.MaxAttachedFileSize ? null
                                  : await EditorBuffer(new PathNote(path), CancellationToken.None) is { } buffered
                                      ? (buffered.Length > MentionController.MaxAttachedFileSize ? null : buffered)

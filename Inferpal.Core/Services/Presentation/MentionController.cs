@@ -495,6 +495,7 @@ internal static class MentionController
     public static string? BinaryRefusal(string filePath)
     {
         if (Documents.DocumentText.Handles(filePath)) return DocumentRefusal(filePath);
+        if (Documents.PlaywrightTrace.IsTrace(filePath)) return null;   // attached as the test it records (pari 170)
         try { return Tools.TextFileEncoding.IsBinaryFile(filePath) ? Strings.AttachBinaryFile(Path.GetFileName(filePath)) : null; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
     }
@@ -572,6 +573,16 @@ internal static class MentionController
     public static async Task<string?> FileMentionTextAsync(string path, Editor.OpenDocumentOverlay? overlay, CancellationToken ct)
     {
         if (Documents.DocumentText.Handles(path)) return await Task.Run(() => Documents.AttachedDocuments.ForModel(path, ct, ocr: true), ct).ConfigureAwait(false);
+        // A Playwright trace: its text (the picture of the page goes only to the agent's read_file, which a model reads beside it).
+        if (Documents.PlaywrightTrace.IsTrace(path))
+            return await Task.Run(() =>
+            {
+                try { return Documents.PlaywrightTrace.Read(path, ct).Text; }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or NotSupportedException or Documents.DocumentLimitException)
+                {
+                    return $"[{Path.GetFileName(path)}: a Playwright trace that could not be read: {Diagnostics.RootMessage(ex)}]";
+                }
+            }, ct).ConfigureAwait(false);
         if (overlay is not null && overlay.TryGetUnsaved(path, out var buffered))
             return buffered.Length > MaxAttachedFileSize ? null : buffered;
         if (new FileInfo(path).Length > MaxAttachedFileSize) return null;

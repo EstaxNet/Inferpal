@@ -266,7 +266,8 @@ public sealed class DocumentTextTests : IDisposable
         Assert.Contains("host.attachRead(uri.fsPath)", code, StringComparison.Ordinal);
         // The same list as the Core's: a format the Core reads but VS Code opens as text would attach as noise.
         var listed = System.Text.RegularExpressions.Regex.Match(code, @"/\\\.\(([a-z|]+)\)\$/i\.test\(uri\.fsPath\)").Groups[1].Value.Split('|');
-        Assert.Equal(DocumentText.Extensions.Select(e => e.TrimStart('.')).Order(), listed.Order());
+        // Plus the zip: a Playwright trace (pari 170) is read by the host, which refuses any other zip as binary.
+        Assert.Equal(DocumentText.Extensions.Select(e => e.TrimStart('.')).Append("zip").Order(), listed.Order());
         // The one remaining openTextDocument of a chosen file is the helper's own.
         var helper = code[code.IndexOf("private async readAttachable(", StringComparison.Ordinal)..];
         helper = helper[..helper.IndexOf("\n  }\n", StringComparison.Ordinal)];

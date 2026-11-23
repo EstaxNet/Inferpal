@@ -36,7 +36,7 @@ internal class ReadFileTool : ITool
     // OCR reads a PDF — no build, no program of the repository runs.
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
-        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg, .evtx event logs, MSBuild .binlog build logs, .pcap/.pcapng network captures read as their problems, conversations, DNS and HTTP, .drawio/.vsdx diagrams; an OpenAPI specification reads first as its operations, a .har capture as its requests); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
+        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg, .evtx event logs, MSBuild .binlog build logs, .pcap/.pcapng network captures read as their problems, conversations, DNS and HTTP, a Playwright trace.zip as its failure, steps, console and network (with the page at the failure), .drawio/.vsdx diagrams; an OpenAPI specification reads first as its operations, a .har capture as its requests); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
         "lines, and the answer says which start_line to pass to read on. A log reads filtered by level and time (level, since, until): " +
         "only the matching entries, each line under its number.";
     public object Parameters => new
@@ -66,6 +66,9 @@ internal class ReadFileTool : ITool
         PathSanitizer.AssertUnderRoot(path, root);
 
         var target = Classify(path, _overlay);
+        // A Playwright trace is a zip, read as the test it records (pari 170), its picture at the failure to a model that sees.
+        if (target is Target.File or Target.Binary && Documents.PlaywrightTrace.IsTrace(path))
+            return await ReadTraceAsync(path, args, ct);
         if (target is Target.File or Target.Binary && Documents.Archives.Handles(path))
             return $"'{Path.GetFileName(path)}' is an archive: list what it holds with list_files (path='{Path.GetFileName(path)}'), "
                  + $"and read an entry with read_file (path='{Path.GetFileName(path)}!/folder/file.txt').";
@@ -170,6 +173,29 @@ internal class ReadFileTool : ITool
         if (shown.Text.Length > MaxChars) return Cap(shown.Text, Path.GetFileName(path));
         _history?.NoteReadLines(path, shown.First, shown.Last, shown.Total);
         return shown.Text;
+    }
+
+    /// <summary>A Playwright trace: its text paged like a document's; the picture of the page at the failure follows the
+    /// result when the loop puts images in front of the model.</summary>
+    private async Task<string> ReadTraceAsync(string path, JsonElement args, CancellationToken ct)
+    {
+        var name = Path.GetFileName(path);
+        Documents.PlaywrightTrace.Reading reading;
+        try { reading = await Task.Run(() => Documents.PlaywrightTrace.Read(path, ct), ct); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or NotSupportedException or Documents.DocumentLimitException)
+        {
+            return $"'{name}' is a Playwright trace that could not be read: {Diagnostics.RootMessage(ex)}.";
+        }
+        _history?.NoteOpened(path);
+        var start = args.Int("start_line", 0);
+        var page = PageOf(reading.Text, name, start, args.Int("end_line", 0));
+        var text = page.Text.Length > MaxChars ? Cap(page.Text, name) : page.Text;
+        if (Filtered(args)) text = "(level, since and until filter a log; a trace is read whole.)\n" + text;
+        // The picture goes with the first page only: paging on does not send it again.
+        if (_images is null || reading.Frame is null || start > 1) return text;
+        if (Documents.ChatImages.Read(reading.Frame, reading.FrameName ?? "page.jpeg").Image is not { } image) return text;
+        _images.Put(image);
+        return text + $"\n(The picture of the {reading.FrameName} follows this result.)";
     }
 
     /// <summary>
