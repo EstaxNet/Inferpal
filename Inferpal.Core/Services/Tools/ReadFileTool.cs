@@ -36,7 +36,7 @@ internal class ReadFileTool : ITool
     // OCR reads a PDF — no build, no program of the repository runs.
     public ToolEffect EffectOf(JsonElement args) => ToolEffect.Reads;
     public string Description =>
-        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg, .evtx event logs, MSBuild .binlog build logs, .drawio/.vsdx diagrams; an OpenAPI specification reads first as its operations, a .har capture as its requests); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
+        "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg, .evtx event logs, MSBuild .binlog build logs, .pcap/.pcapng network captures read as their problems, conversations, DNS and HTTP, .drawio/.vsdx diagrams; an OpenAPI specification reads first as its operations, a .har capture as its requests); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
         "lines, and the answer says which start_line to pass to read on. A log reads filtered by level and time (level, since, until): " +
         "only the matching entries, each line under its number.";
     public object Parameters => new

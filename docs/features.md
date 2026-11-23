@@ -1219,7 +1219,7 @@ place, entry by entry, never extracted.
 paths; a Lighthouse report as its scores and the audits that failed, the largest gain first; a query plan as its
 costliest operators and full scans; a crash report (`.ips`, `.crash`, `.wer`, Android tombstones and ANR traces) as the
 exception and the faulting thread's stack; a Terraform plan as what it destroys, replaces, creates and changes; a SARIF
-report as its findings, errors first; an MSBuild `.binlog` (replayed by the .NET SDK) as its errors and slowest
+report as its findings, errors first; a network capture (`.pcap`, `.pcapng`) as its resets, unanswered connections, DNS and HTTP; an MSBuild `.binlog` (replayed by the .NET SDK) as its errors and slowest
 projects; an OpenAPI file as its operations and a `.har` capture as its requests; a `.patch` as whether each block still
 applies, and the agent can apply it on the usual card. A GitHub, GitLab, Gitea or Codeberg issue or pull request link
 reads as the ticket, its review thread by thread (file, line, open or resolved), its failed checks and its comments; a CI run (GitHub Actions, GitLab) as its failed jobs, steps and annotations, and the end of a GitLab job's log. A screen recording (`.mp4`, `.mov`, `.webm`, a moving GIF) goes to a model that

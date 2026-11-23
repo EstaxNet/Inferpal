@@ -161,6 +161,7 @@ internal static class AttachedDocuments
     internal static string? NoTextKind(string path) => Path.GetExtension(path).ToLowerInvariant() switch
     {
         ".evtx" => "it holds no event",
+        ".pcap" or ".pcapng" => "it holds no packet",
         ".drawio" or ".vsdx" => "it holds no shape with text and no link",
         _ => null,
     };

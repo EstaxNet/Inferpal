@@ -89,9 +89,10 @@ internal static class DocumentText
     internal const long MaxBytes = 20L * 1024 * 1024;
 
     /// <summary>The largest file of the kind <paramref name="path"/> names that is read: an event log at Windows' default size
-    /// (20 MiB of records and its headers) passes <see cref="MaxBytes"/>, and its text is bounded apart (the newest events).</summary>
+    /// (20 MiB of records and its headers) passes <see cref="MaxBytes"/>, and so does a network capture of a few minutes; the
+    /// text of both is bounded apart.</summary>
     internal static long MaxBytesOf(string path) =>
-        Path.GetExtension(path).ToLowerInvariant() is ".evtx" or ".binlog" ? 64L * 1024 * 1024 : MaxBytes;
+        Path.GetExtension(path).ToLowerInvariant() is ".evtx" or ".binlog" or ".pcap" or ".pcapng" ? 64L * 1024 * 1024 : MaxBytes;
 
     /// <summary>How long an event log may take: tens of thousands of events at a few per microsecond, read whole for its
     /// newest ones.</summary>
@@ -100,7 +101,7 @@ internal static class DocumentText
     /// <summary>How long reading the file <paramref name="path"/> names may take, without a password.</summary>
     internal static TimeSpan DeadlineOf(string path) => Path.GetExtension(path).ToLowerInvariant() switch
     {
-        ".evtx"   => EventLogDeadline,
+        ".evtx" or ".pcap" or ".pcapng" => EventLogDeadline,
         ".binlog" => BuildLogDeadline,
         _         => Deadline,
     };
@@ -113,7 +114,7 @@ internal static class DocumentText
     /// (<c>readAttachable</c>): <c>DocumentTextTests</c> holds the two lists equal.</summary>
     internal static readonly string[] Extensions =
         [".pdf", ".docx", ".xlsx", ".xlsm", ".xlsb", ".xls", ".pptx", ".ipynb", ".odt", ".ods", ".odp", ".rtf", ".eml", ".msg", ".doc",
-         ".evtx", ".drawio", ".vsdx", ".binlog"];
+         ".evtx", ".drawio", ".vsdx", ".binlog", ".pcap", ".pcapng"];
 
     /// <summary>Whether <paramref name="path"/> is a document this reader extracts text from, by its extension.</summary>
     internal static bool Handles(string path) => Extensions.Contains(Path.GetExtension(path).ToLowerInvariant());
@@ -179,6 +180,7 @@ internal static class DocumentText
                 ".evtx" => EvtxText.Extract(bytes, deadline.Token),
                 ".drawio" or ".vsdx" => DiagramText.Extract(bytes, kind, deadline.Token),
                 ".binlog" => BinlogText.Extract(bytes, deadline.Token),
+                ".pcap" or ".pcapng" => PcapText.Extract(bytes, deadline.Token),
                 _       => PdfText.Extract(bytes, deadline.Token, password),
             }, limit, ct);
         }
