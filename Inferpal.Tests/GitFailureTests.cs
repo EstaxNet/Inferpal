@@ -246,6 +246,28 @@ public sealed class GitFailureTests : IDisposable
         Assert.DoesNotContain(FailurePrefix, report, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// In <c>git status --short</c> the first column is the index: " M a.txt" is changed and NOT staged, "M  a.txt" is
+    /// staged. A trimmed output turned the first file of /commit and /check into a staged one.
+    /// </summary>
+    [Fact]
+    public async Task TheFirstLineOfGitsOutput_KeepsItsLeadingSpace()
+    {
+        AssertGitRuns();
+        var root = Path.Combine(_base, "status-short");
+        Directory.CreateDirectory(root);
+        Assert.True(RunGit("init -q .", root), "`git init` failed: this test is UNDECIDED, not green.");
+        File.WriteAllText(Path.Combine(root, "a.txt"), "one");
+        Assert.True(RunGit("add a.txt", root) && RunGit("-c user.name=t -c user.email=t@t commit -q -m one", root),
+                    "the commit failed: this test is UNDECIDED, not green.");
+        File.WriteAllText(Path.Combine(root, "a.txt"), "two");   // changed, not staged
+
+        var (output, exit) = await Services.GitProcess.RunAsync("status --short", root, CancellationToken.None);
+
+        Assert.Equal(0, exit);
+        Assert.Equal(" M a.txt", output);
+    }
+
     /// <summary>The localized failure sentence up to where git's own words start.</summary>
     private static string FailurePrefix =>
         Strings.GitCommandFailed("status", "\u0001").Split('\u0001')[0];

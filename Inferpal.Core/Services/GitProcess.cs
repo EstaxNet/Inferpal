@@ -470,7 +470,9 @@ internal static class GitProcess
     {
         var r = await CaptureAsync(args, workDir, ct, budget);
 
-        var combined = r.Stdout.Trim();
+        // ⚠ Only blank lines come off the head: a line's own leading space is meaning — in `status --short` the first column
+        // is the index, and " M a.txt" (changed, not staged) trimmed read as "M a.txt" (staged).
+        var combined = r.Stdout.TrimEnd().TrimStart('\r', '\n');
         if (!string.IsNullOrWhiteSpace(r.Stderr))
             combined += (combined.Length > 0 ? "\n" : "") + r.Stderr.Trim();
         // ⚠ Stopped at its budget, git answers -1 like a git that never started, and Detail named the second ("is it

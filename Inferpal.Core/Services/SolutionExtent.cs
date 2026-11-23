@@ -158,7 +158,7 @@ internal sealed record SolutionExtent(
     }
 
     private const string OutsideContext = "SolutionExtent";
-    private static readonly Dictionary<string, string> _outsideNoted = new(StringComparer.Ordinal);
+    private static readonly Dictionary<string, string> _outsideNoted = new(PathComparer.Default);
 
     /// <summary>
     /// Says in <c>/diagnostics</c>, once per state, which projects stay outside — the extent is recomputed on every

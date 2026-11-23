@@ -13,6 +13,22 @@ namespace Inferpal.Tests;
 /// </remarks>
 public class WorkspaceScanTests
 {
+    /// <summary>A `packages` folder that cannot be read keeps the exclusion — but only while it cannot: absent when first
+    /// asked, then created as a source folder, it is a source folder.</summary>
+    [Fact]
+    public void APackagesFolderNotReadable_IsJudgedAgain_OnceItCanBe()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "inferpal-packages-" + Guid.NewGuid().ToString("N"), "packages");
+        try
+        {
+            Assert.True(WorkspaceScan.LooksLikeNuGetPackages(dir));   // absent: the historical exclusion
+            Directory.CreateDirectory(Path.Combine(dir, "ui"));
+            File.WriteAllText(Path.Combine(dir, "ui", "button.ts"), "export {}");
+            Assert.False(WorkspaceScan.LooksLikeNuGetPackages(dir));  // a source folder now, no .nupkg in it
+        }
+        finally { try { Directory.Delete(Path.GetDirectoryName(dir)!, recursive: true); } catch { } }
+    }
+
     // The workspace these paths belong to: exclusions are judged below it, never above.
     private static string RootOf(string path) => path.StartsWith('/') ? "/home/p" : @"C:\p";
 

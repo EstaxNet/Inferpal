@@ -189,9 +189,15 @@ public class PathCaseFoldingTests
     [InlineData("Inferpal.Core", "Services", "Governance", "CheckReviewParser.cs", ".GroupBy(f => f.File,")]
     [InlineData("Inferpal.Core", "Services", "Rag", "ProjectIndexService.cs", "_pendingRebuild = new(")]
     [InlineData("Inferpal.Core", "Services", "Rag", "ProjectIndexService.cs", "_chunksByFile = new(")]
-    public void ACollectionOfPaths_IsKeyedByTheSharedRule(string a, string b, string c, string d, string site)
+    // A solution noted twice under two spellings of its path; a `Packages` folder judged on its `packages` neighbour.
+    [InlineData("Inferpal.Core", "Services", "SolutionExtent.cs", "_outsideNoted = new(")]
+    [InlineData("Inferpal.Core", "Services", "WorkspaceScan.cs", "NuGetPackagesDirs =")]
+    public void ACollectionOfPaths_IsKeyedByTheSharedRule(string a, string b, string c, string d, string? site = null)
     {
-        var code = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), a, b, c, d));
+        // A file at Services' root carries three path segments: the fourth then holds the site.
+        var parts = site is null ? new[] { a, b, c } : new[] { a, b, c, d };
+        site ??= d;
+        var code = ConventionCoverageTests.CodeOnly(Path.Combine(RepoRoot(), Path.Combine(parts)));
 
         // WITNESS: the collection this case targets still exists, in this shape.
         var at = code.IndexOf(site, StringComparison.Ordinal);

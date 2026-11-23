@@ -72,8 +72,7 @@ internal static class WorkspaceScan
     // marks.
     private const string PackagesDirName = "packages";
 
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> NuGetPackagesDirs =
-        new(StringComparer.OrdinalIgnoreCase);
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> NuGetPackagesDirs = new(PathComparer.Default);
 
     /// <summary>
     /// <c>true</c> when <paramref name="dir"/> is a NuGet packages folder: a <c>repositories.config</c>,
@@ -81,17 +80,20 @@ internal static class WorkspaceScan
     /// unreadable) keeps the historical exclusion. Cached per folder: the question is asked for every
     /// file below it.
     /// </summary>
-    internal static bool LooksLikeNuGetPackages(string dir) => NuGetPackagesDirs.GetOrAdd(dir, static d =>
+    /// <remarks>⚠ Only a judgement is cached: a folder absent or unreadable now is asked again — cached, a `packages`
+    /// folder created later as source stayed excluded until the editor restarted.</remarks>
+    internal static bool LooksLikeNuGetPackages(string dir)
     {
+        if (NuGetPackagesDirs.TryGetValue(dir, out var known)) return known;
         try
         {
-            if (File.Exists(Path.Combine(d, "repositories.config"))) return true;
-            foreach (var package in Directory.EnumerateDirectories(d).Take(50))
-                if (Directory.EnumerateFiles(package, "*.nupkg").Any()) return true;
-            return false;
+            var judged = File.Exists(Path.Combine(dir, "repositories.config"))
+                         || Directory.EnumerateDirectories(dir).Take(50).Any(package => Directory.EnumerateFiles(package, "*.nupkg").Any());
+            NuGetPackagesDirs[dir] = judged;
+            return judged;
         }
         catch { return true; }
-    });
+    }
 
     // Every `packages` segment below the root, judged on the folder it names.
     private static bool UnderNuGetPackages(string path, string below)
