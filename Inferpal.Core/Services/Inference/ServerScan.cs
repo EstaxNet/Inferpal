@@ -180,11 +180,12 @@ internal static class ServerScan
 
     /// <summary>Two addresses of one server: same root, <c>/v1</c> and case aside — and <c>localhost</c>,
     /// <c>127.0.0.1</c> and <c>[::1]</c> are one machine, so a port there is one server however it is spelled.</summary>
-    internal static bool SameAddress(string? a, string? b)
-    {
-        string? Loopback(string? url) =>
-            Hardware.HardwareProbe.IsLoopback(url) && Uri.TryCreate(url, UriKind.Absolute, out var u) ? $"{u.Scheme}://loopback:{u.Port}" : null;
-        if (Loopback(a) is { } la && Loopback(b) is { } lb) return la == lb;
-        return string.Equals(ProviderProbe.RootOf(a), ProviderProbe.RootOf(b), StringComparison.OrdinalIgnoreCase);
-    }
+    internal static bool SameAddress(string? a, string? b) => ServerKey(a) == ServerKey(b);
+
+    /// <summary>One server's key, however its address is spelled (see <see cref="SameAddress"/>): what keys what is learned
+    /// of a server.</summary>
+    internal static string ServerKey(string? url) =>
+        Hardware.HardwareProbe.IsLoopback(url) && Uri.TryCreate(url, UriKind.Absolute, out var u)
+            ? $"{u.Scheme}://loopback:{u.Port}" + new Uri(ProviderProbe.RootOf(url)).AbsolutePath.TrimEnd('/').ToLowerInvariant()
+            : ProviderProbe.RootOf(url).ToLowerInvariant();
 }

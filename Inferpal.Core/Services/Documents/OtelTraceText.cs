@@ -147,7 +147,8 @@ internal static class OtelTraceText
 
     /// <summary>Text from the file on one line: a line break becomes ⏎ (a value must never write a line of this text), any other
     /// control character a space.</summary>
-    private static string Clean(string text) => new(text.Select(c => c == (char)10 ? '⏎' : c < ' ' ? ' ' : c).ToArray());
+    private static string Clean(string text) =>
+        new(text.Select(c => c == (char)10 ? '⏎' : char.IsControl(c) || c is '\u2028' or '\u2029' ? ' ' : c).ToArray());
 
     /// <summary>An OTLP AnyValue as text.</summary>
     private static string AnyValue(JsonElement v)

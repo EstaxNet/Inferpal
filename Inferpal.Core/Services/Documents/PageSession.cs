@@ -229,7 +229,7 @@ internal sealed class PageSession : IDisposable
 
     private static string Cut(string s)
     {
-        s = s.ReplaceLineEndings(" ");
+        s = OneLine.Flat(s);
         return s.Length <= MaxLine ? s : s[..MaxLine] + "…";
     }
 
@@ -273,13 +273,7 @@ internal sealed class PageSession : IDisposable
         return bodies;
 
         // Masked on a generous slice BEFORE the cut: a credential cut short is no longer one the redactor recognises.
-        static string Clip(string text)
-        {
-            var masked = SecretRedactor.Redact(text.Length > 4096 ? text[..4096] : text);
-            var line = string.Join(' ', masked.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim();
-            return line.Length <= BodyChars && text.Length <= 4096 ? line
-                 : line[..Math.Min(BodyChars, line.Length)] + string.Create(CultureInfo.InvariantCulture, $"… ({text.Length} characters)");
-        }
+        static string Clip(string text) => OneLine.Masked(text, BodyChars);
     }
 
     private const int BodyChars = 300, MaxBodies = 15, MaxBodyBytes = 256 * 1024;

@@ -407,7 +407,8 @@ internal static class SqlPlanText
         return text[..Math.Max(0, at)] + Cut;
     }
 
-    private static string Clip(string s) => s.Length <= NoteChars ? s : s[..NoteChars] + "…";
+    // A label or a filter is text of the file: on one line, so that it never writes a line of the plan's summary.
+    private static string Clip(string s) => OneLine.Flat(s) is var one && one.Length <= NoteChars ? one : one[..NoteChars] + "…";
 
     private static string Rows(Op o) =>
         o.Act is double a ? $", {Count(a)} {Noun(a)}{(o.Est is double e ? $" (estimated {Count(e)})" : "")}"

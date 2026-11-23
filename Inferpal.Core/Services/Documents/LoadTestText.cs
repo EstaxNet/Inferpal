@@ -85,8 +85,7 @@ internal static class LoadTestText
 
     private static string Clean(string? text, int max)
     {
-        var flat = string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
-        flat = new string(flat.Select(c => char.IsControl(c) ? ' ' : c).ToArray());
+        var flat = OneLine.Flat(text);
         return flat.Length > max ? flat[..(max - 1)] + "…" : flat;
     }
 

@@ -155,6 +155,31 @@ public sealed class PrefillDecisionTests
     }
 
     [Fact]
+    public void OneServer_HoweverItsAddressIsSpelled_AsTheServerScanJudgesIt()
+    {
+        var store = Store();
+        store.Record("http://LOCALHOST:11434", "m", 10_000, 10_000, TimeSpan.FromSeconds(50));
+
+        Assert.NotNull(store.Estimate("http://127.0.0.1:11434/v1", "m", 10_000));
+        Assert.NotNull(store.Estimate("http://[::1]:11434", "m", 10_000));
+        Assert.Null(store.Estimate("http://127.0.0.1:11435", "m", 10_000));   // another port, another server
+        Assert.Null(store.Estimate("http://localhost:11434/lmstudio", "m", 10_000));   // another path behind one proxy port
+    }
+
+    [Fact]
+    public void ARateLearnedUnderTheFormerKey_IsStillRead()
+    {
+        var store = Store();
+        Directory.CreateDirectory(Path.GetDirectoryName(store.File.Path)!);
+        store.Record("http://Host:1234", "m", 10_000, 10_000, TimeSpan.FromSeconds(50));
+        var learned = store.File.Read(new Dictionary<string, PrefillRates.Entry>()).Value.Values.Single();
+        // A file keyed by the root as configured, its case kept.
+        store.File.Save(new Dictionary<string, PrefillRates.Entry> { ["http://Host:1234|m"] = learned });
+
+        Assert.NotNull(store.Estimate("http://Host:1234", "m", 10_000));
+    }
+
+    [Fact]
     public void AnUnreadableFile_IsNothingMeasured_AndIsReplaced()
     {
         var store = Store();

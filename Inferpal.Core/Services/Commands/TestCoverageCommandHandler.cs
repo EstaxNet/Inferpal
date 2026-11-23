@@ -340,7 +340,8 @@ internal static class TestCoverageCommandHandler
     /// <summary>The file in a reply: its longest code block, or the reply itself.</summary>
     internal static string CodeOf(string reply)
     {
-        var text   = Presentation.MarkdownParser.StripThinkTags(reply);
+        // As every reply turned into a file: reasoning at its head goes, a tag the code holds (a test of a parser) stays.
+        var text   = Presentation.MarkdownParser.WithoutLeadingReasoning(reply);
         var blocks = Fence.Matches(text).Select(m => m.Groups[1].Value).ToList();
         return (blocks.Count > 0 ? blocks.OrderByDescending(b => b.Length).First().TrimEnd() : text.Trim()) + "\n";
     }

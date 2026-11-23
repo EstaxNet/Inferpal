@@ -241,13 +241,7 @@ internal static class ApiText
 
     /// <summary>The start of <paramref name="text"/> on one line, what looks like a credential masked (best effort), and how
     /// long it was when it is cut. Cut BEFORE it is read: a body of megabytes is never split whole for 300 characters.</summary>
-    private static string Mask(string text, int max)
-    {
-        var start = text.Length > max * 2 ? text[..(max * 2)] : text;
-        var line = SecretRedactor.Redact(string.Join(' ', start.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim());
-        return line.Length <= max && text.Length <= max * 2 ? line
-             : line[..Math.Min(max, line.Length)] + string.Create(CultureInfo.InvariantCulture, $"… ({text.Length} characters)");
-    }
+    private static string Mask(string text, int max) => OneLine.Masked(text, max);
 
     // ── Shared ──
 
@@ -281,7 +275,7 @@ internal static class ApiText
     private static string Clip(string text)
     {
         var start = text.Length > LineChars * 2 ? text[..(LineChars * 2)] : text;
-        var line = string.Join(' ', start.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim();
+        var line = OneLine.Flat(start);
         return line.Length <= LineChars ? line : line[..LineChars] + "…";
     }
 }

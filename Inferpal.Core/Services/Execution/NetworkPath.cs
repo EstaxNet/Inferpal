@@ -120,9 +120,12 @@ internal static class NetworkPath
         return host.Length == 0 ? null : host;
     }
 
-    private static bool IsThisMachine(string host) =>
-        host == "." || host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
-        || host.StartsWith("127.", StringComparison.Ordinal) || host is "::1" or "[::1]" or "0--1.ipv6-literal.net"
+    /// <summary>Whether a UNC host names this machine: its name, a loopback spelling, or <c>.</c> (the device namespace).</summary>
+    /// <remarks>⚠ An ADDRESS, parsed: a DNS name that only begins like one (<c>127.evil.example</c>) resolves wherever its
+    /// owner says.</remarks>
+    internal static bool IsThisMachine(string host) =>
+        host == "." || host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || host == "0--1.ipv6-literal.net"
+        || (System.Net.IPAddress.TryParse(host.Trim('[', ']'), out var ip) && System.Net.IPAddress.IsLoopback(ip))
         || host.Equals(Environment.MachineName, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The plain <c>\\host\share\…</c> form of a UNC spelling, for comparing a path with a root.</summary>

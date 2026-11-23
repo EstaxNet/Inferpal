@@ -251,9 +251,8 @@ internal static class PathSanitizer
         return path;
     }
 
-    private static bool IsThisMachine(string host) =>
-        host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || host is "127.0.0.1" or "::1" or "[::1]"
-        || host.Equals(Environment.MachineName, StringComparison.OrdinalIgnoreCase);
+    // This machine as NetworkPath reads it — every loopback spelling — except the device namespace, which shares no drive.
+    private static bool IsThisMachine(string host) => host != "." && Execution.NetworkPath.IsThisMachine(host);
 
     /// <summary>Each name after the root without its stream or index suffix (everything from its first <c>:</c>) and
     /// without trailing dots and spaces — what NTFS opens.</summary>

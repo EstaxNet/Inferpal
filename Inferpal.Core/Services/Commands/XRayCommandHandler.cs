@@ -54,9 +54,12 @@ internal static class XRayCommandHandler
         sb.AppendLine();
         sb.AppendLine("```");
 
+        // Each row's share of the rows listed, as the panel shares them: a layer the history carries is listed too, so a
+        // share of the budget's total would add up past 100 %.
+        var listed = sized.Sum(x => x.Tokens);
         foreach (var (section, tokens) in sized.OrderByDescending(x => x.Tokens))
         {
-            var pct = total > 0 ? tokens * 100.0 / total : 0;
+            var pct = listed > 0 ? tokens * 100.0 / listed : 0;
             sb.Append(Bar(pct))
               .Append(' ').Append(Strings.Ui($"{pct,3:0}%"))
               .Append(' ').Append($"{"~" + tokens.ToString("N0", Strings.UiCulture),8}")
@@ -80,7 +83,7 @@ internal static class XRayCommandHandler
         {
             var used = total + historyTokens + toolTokens;
             // ⚠ Not clamped: this line is text, and the clamp belongs to Bar(), which already does
-            // its own (on shares of the total, which cannot exceed 100 anyway). Clamped here, a
+            // its own (on shares of the rows listed, which cannot exceed 100 anyway). Clamped here, a
             // prompt at 450 % of the window read as exactly full.
             var pct  = used * 100.0 / contextWindow;
             sb.AppendLine("- " + Strings.XrayBudget(Strings.Ui($"~{used:N0}"), Strings.Ui($"{contextWindow:N0}"), Strings.Ui($"{pct:0}")));
@@ -89,8 +92,10 @@ internal static class XRayCommandHandler
         return sb.ToString().TrimEnd();
     }
 
-    /// <summary>Same heuristic as <c>AgentOrchestrator.EstimateTokens</c>: ~4 characters per token.</summary>
-    internal static int EstimateTokens(string text) => (text.Trim().Length + 3) / 4;
+    /// <summary>The estimator's ratio (<see cref="Agent.AgentOrchestrator.CharsPerToken"/>), rounded UP: a short layer is
+    /// listed as ~1, never dropped as 0.</summary>
+    internal static int EstimateTokens(string text) =>
+        (text.Trim().Length + Agent.AgentOrchestrator.CharsPerToken - 1) / Agent.AgentOrchestrator.CharsPerToken;
 
     private static string Bar(double pct)
     {

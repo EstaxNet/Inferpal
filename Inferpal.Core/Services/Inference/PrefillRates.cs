@@ -69,7 +69,10 @@ internal sealed class PrefillRates
 
     /// <summary>One server, whichever of its addresses a caller holds: `…/v1` is the OpenAI-compatible client's, the
     /// configured one everybody else's.</summary>
-    private static string Key(string server, string model) => ProviderProbe.RootOf(server) + "|" + model;
+    private static string Key(string server, string model) => ServerScan.ServerKey(server) + "|" + model;
+
+    // The key a file may still hold: the root as configured, its case and loopback spelling kept. Read, never written.
+    private static string FormerKey(string server, string model) => ProviderProbe.RootOf(server) + "|" + model;
 
     /// <summary>Keeps a read that went through. A stopped or failed request is never a read: its callers do not come here.</summary>
     /// <param name="server">The server's address.</param>
@@ -256,7 +259,10 @@ internal sealed class PrefillRates
     private Entry? Read(string server, string model)
     {
         lock (_lock)
-            return _file.Read(new Dictionary<string, Entry>()).Value.GetValueOrDefault(Key(server, model));
+        {
+            var all = _file.Read(new Dictionary<string, Entry>()).Value;
+            return all.GetValueOrDefault(Key(server, model)) ?? all.GetValueOrDefault(FormerKey(server, model));
+        }
     }
 
     private void Update(string server, string model, Action<Entry> change)
@@ -268,7 +274,9 @@ internal sealed class PrefillRates
             // Still unreadable, it is replaced.
             var (all, _) = _file.ReadSettled(new Dictionary<string, Entry>());
             var key   = Key(server, model);
-            var entry = all.GetValueOrDefault(key) ?? new Entry();
+            var former = FormerKey(server, model);
+            // A rate learned under the former key goes on under the new one, and the former is dropped.
+            var entry = all.GetValueOrDefault(key) ?? (former != key && all.Remove(former, out var kept) ? kept : null) ?? new Entry();
             change(entry);
             all[key] = entry;
             _file.Save(all);

@@ -415,17 +415,17 @@ internal sealed class ApplyEditsTool : ITool
     }
 
     /// <summary>What the model is told when writing the lot failed: what was not written, and what could not be put back.</summary>
-    private static string WriteFailed(SafeFileWriter.MultiWriteResult write, string? root)
+    internal static string WriteFailed(SafeFileWriter.MultiWriteResult write, string? root)
     {
         var reason = $"writing {RelPath(root, write.FailedPath!)} failed ({write.Error})";
         return write.Stuck.Count == 0
             ? ToolFailure.Said(Strings.ApplyEditsAborted(reason))
             : $"Error: {reason}, and {string.Join(", ", write.Stuck.Select(s => RelPath(root, s)))} "
-              + "could not be put back — restore it with restore_file when it is offered; otherwise tell the user: /undo-run puts the run's files back.";
+              + $"could not be put back — restore {(write.Stuck.Count == 1 ? "it" : "them")} with restore_file when it is offered; otherwise tell the user: /undo-run puts the run's files back.";
     }
 
-    private static string RelPath(string? root, string path) =>
-        string.IsNullOrEmpty(root) ? path : Path.GetRelativePath(root, path);
+    // A path as every message names it: relative with forward slashes under the workspace, whole outside it.
+    private static string RelPath(string? root, string path) => Governance.ContentExclusions.Shown(path, root);
 
     /// <summary>
     /// The refusal of a batch because of edit #<paramref name="failed"/> — naming, in a batch of several, the edits

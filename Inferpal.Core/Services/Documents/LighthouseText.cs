@@ -314,7 +314,7 @@ internal static class LighthouseText
 
     private static string Clip(string text, int max)
     {
-        var folded = string.Join(' ', text.Split((char[])['\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries)).Trim();
+        var folded = OneLine.Unbroken(string.Join(' ', text.Split((char[])['\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries)).Trim());
         return folded.Length <= max ? folded : folded[..max] + "…";
     }
 

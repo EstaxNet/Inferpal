@@ -267,7 +267,7 @@ internal static class SarifText
 
     private static string Clip(string text)
     {
-        var one = string.Join(' ', text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim();
+        var one = OneLine.Flat(text);
         return one.Length <= MessageChars ? one : one[..MessageChars] + "…";
     }
 

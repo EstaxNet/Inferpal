@@ -146,7 +146,7 @@ internal static class PlaywrightTrace
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
         var plain = Ansi.Replace(text, string.Empty);
-        var chars = plain.Select(ch => ch is '\n' or '\t' ? ch : ch < ' ' ? '?' : ch).ToArray();
+        var chars = plain.Select(ch => ch is '\n' or '\t' or '\r' ? ch : ch is '\u2028' or '\u2029' or '\u0085' ? '\n' : char.IsControl(ch) ? '?' : ch).ToArray();
         var cleaned = new string(chars).Replace("\r", string.Empty, StringComparison.Ordinal);
         return cleaned.Length > max ? cleaned[..max] + " …" : cleaned;
     }

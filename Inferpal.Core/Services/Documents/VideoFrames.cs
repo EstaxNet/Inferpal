@@ -421,7 +421,7 @@ internal static class VideoFrames
 
     private static string Tail(string text)
     {
-        var line = string.Join(' ', text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim();
+        var line = OneLine.Flat(text);
         return line.Length <= 300 ? line : line[^300..];
     }
 }
