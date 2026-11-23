@@ -85,10 +85,14 @@ internal static class RepoSkills
     private static long _cachedAt;
     private static SkillCatalog _cached = SkillCatalog.None;
 
+    /// <summary>The home folder the user's skills are read from when none is given; <c>null</c> = the user's profile. The
+    /// test suite points it at an empty folder: the developer's own skills (~/.claude/skills…) are not a test's.</summary>
+    internal static string? HomeOverride { get; set; }
+
     /// <summary>The catalog of <paramref name="workspace"/> and of the user, for the families turned on.</summary>
     public static SkillCatalog Load(string? workspace, IReadOnlySet<RepoInstructionFamily> families, string? home = null)
     {
-        home ??= UserFolders.Of(Environment.SpecialFolder.UserProfile);
+        home ??= HomeOverride ?? UserFolders.Of(Environment.SpecialFolder.UserProfile);
         var key = workspace + "|" + home + "|" + string.Join(",", families.Order());
         lock (_gate)
         {

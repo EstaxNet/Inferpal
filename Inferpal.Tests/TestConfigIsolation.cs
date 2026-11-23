@@ -29,6 +29,11 @@ internal static class TestConfigIsolation
         Inferpal.Services.Inference.PrefillRates.Shared.File.PathOverride =
             Path.Combine(root, $"prefill-rates-{Environment.ProcessId}.json");
 
+        // And for the user's skills: the developer's own (~/.claude/skills, ~/.agents/skills…) would enter every catalog a
+        // test reads — a test that expects no skill failed on a machine where skills are installed.
+        Inferpal.Services.Prompting.RepoSkills.HomeOverride =
+            Directory.CreateDirectory(Path.Combine(root, $"home-{Environment.ProcessId}")).FullName;
+
         // And for the models Inferpal loaded on an LM Studio server: a test's load against a loopback server would be
         // remembered in the developer's own file, and their editor would unload a model on its word.
         Inferpal.Services.Inference.LmStudioClient.OwnedFile.PathOverride =
