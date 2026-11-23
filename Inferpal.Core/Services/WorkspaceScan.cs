@@ -97,7 +97,7 @@ internal static class WorkspaceScan
     private static bool UnderNuGetPackages(string path, string below)
     {
         var offset = path.Length - below.Length;
-        foreach (var needle in new[] { @"\packages\", "/packages/" })
+        foreach (var needle in new[] { $@"\{PackagesDirName}\", $"/{PackagesDirName}/" })
         {
             for (var i = below.IndexOf(needle, StringComparison.OrdinalIgnoreCase); i >= 0;
                  i = below.IndexOf(needle, i + 1, StringComparison.OrdinalIgnoreCase))

@@ -32,6 +32,26 @@ internal static class GitProcess
             ? "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321"
             : "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
+    /// <summary>
+    /// What every git reading of Inferpal's own runs with, before its arguments: paths in UTF-8 (<c>core.quotePath</c>,
+    /// on by default, prints every byte above 0x7F as an octal escape — a name the model cannot pass back to read_file)
+    /// and no <c>core.fsmonitor</c> (a PROGRAM the repository names, which git would run at each of Inferpal's readings,
+    /// around every watched call; a command the person runs keeps it).
+    /// </summary>
+    private static readonly string[] ReadingSettings = ["-c", "core.quotePath=false", "-c", "core.fsmonitor=false"];
+
+    /// <summary>The environment of Inferpal's own git readings: no credential prompt from a background process, and
+    /// parseable English output.</summary>
+    private static void ReadingEnvironment(ProcessStartInfo psi)
+    {
+        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
+        psi.Environment["LANG"]                = "en_US.UTF-8";
+    }
+
+    /// <summary>Why a git stopped at its budget gave nothing: one sentence for every reader that says it.</summary>
+    private static string NoAnswerWithin(TimeSpan budget) =>
+        $"git gave no answer within {budget.TotalSeconds:0}s and was stopped";
+
     /// <summary>The runner of <c>/commit-exec</c>: a commit runs the repository's hooks, with their own budget.</summary>
     /// <remarks>⚠ Under the 15 s read budget, a pre-commit hook that formats, lints or builds — or a GPG passphrase typed
     /// slowly — was killed mid-run: the commit failed every time, and a kill during a post-commit hook reported a commit
@@ -83,25 +103,18 @@ internal static class GitProcess
     {
         try
         {
-            // ⚠ core.quotePath (on by default) prints every path with a byte above 0x7F as octal escapes:
-            // Zażółć.cs becomes "Za\305\274\303\263\305\202\304\207.cs", a Chinese name nothing but octal — the name the
-            // model reads in get_git_status, /commit and /check, and cannot pass back to read_file. Off, git writes
-            // the name in UTF-8, which is how its output is decoded here.
+            // ⚠ The reading settings (ReadingSettings) hold no space nor quote: joined, they are the same arguments.
             // ⚠ stdout is captured BYTE-EXACT (Latin-1 maps each byte to one char) and decoded line by line below: git
             // prints a file's content as the bytes the file holds, so a diff of a source saved in a legacy code page,
             // decoded as UTF-8 whole, reached /commit, /check and get_git_status as "caf�" — a line the model
             // cannot quote back into an edit, and that a review reads as corruption.
-            // ⚠ core.fsmonitor names a PROGRAM git runs at every status and diff: set by the repository, it would run at each
-            // of Inferpal's own readings — around every watched call. Off for them; a command the person runs keeps it.
-            var psi = new ProcessStartInfo("git", "-c core.quotePath=false -c core.fsmonitor=false " + DiffShaped(args))
+            var psi = new ProcessStartInfo("git", string.Join(" ", ReadingSettings) + " " + DiffShaped(args))
             {
                 StandardOutputEncoding = Encoding.Latin1,
                 StandardErrorEncoding  = Encoding.UTF8,
             };
             if (!string.IsNullOrEmpty(workDir)) psi.WorkingDirectory = workDir;
-            // No credential prompt from a background process, and parseable English output.
-            psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
-            psi.Environment["LANG"]                = "en_US.UTF-8";
+            ReadingEnvironment(psi);
 
             // ⚠ ChildProcess, not Process.Start: without it git inherits the host's stdin — the
             // JSON-RPC pipe in VS Code — allocates a console and hangs at 0 % CPU forever, on a
@@ -143,13 +156,9 @@ internal static class GitProcess
             UseShellExecute        = false,
             CreateNoWindow         = true,
         };
-        psi.ArgumentList.Add("-c");
-        psi.ArgumentList.Add("core.quotePath=false");
-        psi.ArgumentList.Add("-c");
-        psi.ArgumentList.Add("core.fsmonitor=false");   // the repository's program never runs at Inferpal's readings
+        foreach (var arg in ReadingSettings) psi.ArgumentList.Add(arg);
         foreach (var arg in args) psi.ArgumentList.Add(arg);
-        psi.Environment["GIT_TERMINAL_PROMPT"] = "0";
-        psi.Environment["LANG"]                = "en_US.UTF-8";
+        ReadingEnvironment(psi);
         if (environment is not null)
             foreach (var (name, value) in environment) psi.Environment[name] = value;
 
@@ -196,7 +205,7 @@ internal static class GitProcess
             ct.ThrowIfCancellationRequested();
 
             if (overflow)                                   return new GitBytes(null, $"git wrote more than {maxBytes} bytes", Overflow: true);
-            if (!exited || deadline.IsCancellationRequested) return new GitBytes(null, $"git gave no answer within {allowed.TotalSeconds:0}s and was stopped");
+            if (!exited || deadline.IsCancellationRequested) return new GitBytes(null, NoAnswerWithin(allowed));
             if (proc.ExitCode != 0)
                 return new GitBytes(null, $"git exited with code {proc.ExitCode}"
                     + (stderr.IsCompletedSuccessfully && FirstLine(stderr.Result) is { Length: > 0 } why ? $": {why}" : string.Empty));
@@ -467,7 +476,7 @@ internal static class GitProcess
         // ⚠ Stopped at its budget, git answers -1 like a git that never started, and Detail named the second ("is it
         // installed and on PATH?") — a remedy that cannot apply. Said first, it is the line every reader shows.
         if (r.TimedOut)
-            combined = $"git gave no answer within {(budget ?? Timeout).TotalSeconds:0}s and was stopped."
+            combined = NoAnswerWithin(budget ?? Timeout) + "."
                      + (combined.Length > 0 ? "\n" + combined : string.Empty);
         return (combined, r.ExitCode);
     }

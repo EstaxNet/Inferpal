@@ -57,13 +57,13 @@ internal static class Diagnostics
             var stack = ex.StackTrace;
             if (string.IsNullOrEmpty(stack)) return string.Empty;
 
-            var frames = new List<string>(3);
+            var frames = new List<string>(MaxFrames);
             foreach (var raw in stack!.Split('\n'))
             {
                 var frame = CompactFrame(raw);
                 if (frame.Length == 0) continue;
                 frames.Add(frame);
-                if (frames.Count == 3) break;
+                if (frames.Count == MaxFrames) break;
             }
             // ⚠ TargetSite both as a fallback AND at the front: the JIT inlines, and a Release
             // stack may no longer carry the frame that threw — the same failure yields two
@@ -71,7 +71,7 @@ internal static class Diagnostics
             var thrower = Site(ex);
             if (thrower.Length > 0 && (frames.Count == 0 || frames[0] != thrower))
                 frames.Insert(0, thrower);
-            if (frames.Count > 3) frames.RemoveRange(3, frames.Count - 3);
+            if (frames.Count > MaxFrames) frames.RemoveRange(MaxFrames, frames.Count - MaxFrames);
 
             return frames.Count == 0 ? string.Empty : " @ " + string.Join(" ← ", frames);
         }
@@ -124,11 +124,8 @@ internal static class Diagnostics
         // ⚠ The LAST group, not the first: a closure class is written
         // "<>c__DisplayClass89_0.<SaveCoreAsync>b__0", so taking the first "<>" yields an EMPTY
         // name — "InferpalSettingsData. ← InferpalSettingsData.", which localises nothing.
-        var open = line.LastIndexOf('<');
-        var close = open >= 0 ? line.IndexOf('>', open + 1) : -1;
-        if (open >= 0 && close > open + 1)
+        if (InnerName(line, out var open) is { } method)
         {
-            var method = line.Substring(open + 1, close - open - 1);
             var owner = line.Substring(0, open).TrimEnd('.', '+');
             // The owner still carries "<>c__DisplayClass…" or "d__12": keep only the real type.
             owner = StripClosure(owner);
@@ -144,7 +141,7 @@ internal static class Diagnostics
             if (ownerDot >= 0) line = line.Substring(ownerDot + 1);
         }
 
-        return line.Length > 80 ? line.Substring(0, 80) : line;
+        return line.Length > MaxFrameChars ? line.Substring(0, MaxFrameChars) : line;
     }
 
     /// <summary>Records a free-form best-effort note. Never throws.</summary>
@@ -203,7 +200,7 @@ internal static class Diagnostics
         if (trimmed.Length == 0 || trimmed.StartsWith("#", StringComparison.Ordinal)) return false;
 
         var excerpt = line.Trim();
-        if (excerpt.Length > 120) excerpt = excerpt[..120] + "…";
+        if (excerpt.Length > MaxExcerptChars) excerpt = excerpt[..MaxExcerptChars] + "…";
         Record(context, $"{reason}: {excerpt}");
         return true;
     }
@@ -246,7 +243,7 @@ internal static class Diagnostics
     /// <returns><c>true</c> when this pass actually reported it.</returns>
     internal static bool DroppedLineOnce(string context, string reason, string key, string? line)
     {
-        var slot = context + "\u0001" + key;
+        var slot = Slot(context, key);
         lock (_saidGate)
             if (!_said.Add(slot)) return false;
 
@@ -285,7 +282,7 @@ internal static class Diagnostics
     /// </remarks>
     internal static void Forget(string context, string key)
     {
-        lock (_saidGate) _said.Remove(context + "\u0001" + key);
+        lock (_saidGate) _said.Remove(Slot(context, key));
     }
 
     /// <summary>
@@ -312,7 +309,7 @@ internal static class Diagnostics
     /// <returns><c>true</c> when this call actually recorded it.</returns>
     internal static bool RecordOnce(string context, string detail, string key)
     {
-        var slot = context + "\u0001" + key;
+        var slot = Slot(context, key);
         lock (_saidGate)
             if (!_said.Add(slot)) return false;
 
@@ -358,13 +355,33 @@ internal static class Diagnostics
     }
 
     /// <summary>"&lt;SaveCoreAsync&gt;b__0" → "SaveCoreAsync"; a bare "MoveNext" says nothing.</summary>
-    private static string Clean(string method)
+    private static string Clean(string method) =>
+        InnerName(method, out _) ?? (method is "MoveNext" or ".ctor" ? string.Empty : method);
+
+    /// <summary>
+    /// The real name in a compiler-generated one: the LAST "&lt;…&gt;" group — a closure class is written
+    /// "&lt;&gt;c__DisplayClass89_0.&lt;SaveCoreAsync&gt;b__0", and its first group is empty. <c>null</c> when there is
+    /// none; <paramref name="open"/> is where the group starts.
+    /// </summary>
+    private static string? InnerName(string name, out int open)
     {
-        var open = method.LastIndexOf('<');
-        var close = open >= 0 ? method.IndexOf('>', open + 1) : -1;
-        if (open >= 0 && close > open + 1) return method.Substring(open + 1, close - open - 1);
-        return method is "MoveNext" or ".ctor" ? string.Empty : method;
+        open = name.LastIndexOf('<');
+        var close = open >= 0 ? name.IndexOf('>', open + 1) : -1;
+        return open >= 0 && close > open + 1 ? name.Substring(open + 1, close - open - 1) : null;
     }
+
+    /// <summary>How many frames a site keeps: enough to tell two callers apart, short enough for one line.</summary>
+    private const int MaxFrames = 3;
+
+    /// <summary>The longest frame kept ("Type.Method").</summary>
+    private const int MaxFrameChars = 80;
+
+    /// <summary>The longest excerpt of a dropped line quoted in its note.</summary>
+    private const int MaxExcerptChars = 120;
+
+    /// <summary>The memory slot of a note said once: <see cref="RecordOnce"/>, <see cref="DroppedLineOnce"/> and
+    /// <see cref="Forget"/> must build the same one, or a forget frees nothing.</summary>
+    private static string Slot(string context, string key) => context + "\u0001" + key;
 
     /// <summary>Drops the generated class from a frame owner: "X.&lt;&gt;c__DisplayClass1" → "X".</summary>
     private static string StripClosure(string owner)

@@ -100,7 +100,7 @@ internal sealed record SolutionExtent(
         if (reachable.Count == 0) return new(slnDir, slnDir, beyond, SolutionExtentLimit.BeyondWorkTree);
 
         var root = reachable.Aggregate(slnDir, (r, p) => CommonAncestor(r, DirectoryOf(p)));
-        if (Path.GetDirectoryName(root) is null || (!string.IsNullOrEmpty(home) && IsUnder(Bare(home), root)))
+        if (DriveRootOrHoldsHome(root, home))
             return new(slnDir, slnDir, notCovered, SolutionExtentLimit.UserFolder, root);
         // ⚠ Even when the wider root has .inferpal/ files of its own: the solution folder's are read today, and widening
         // would stop reading them without a word. What is read now stays read.
@@ -209,8 +209,7 @@ internal sealed record SolutionExtent(
     {
         if (ActiveSolutionSignal.TryReadOpenFolder() is not { } folder) return null;
         var home = UserFolders.Of(Environment.SpecialFolder.UserProfile);
-        if (Path.GetDirectoryName(folder) is not null && (string.IsNullOrEmpty(home) || !IsUnder(Bare(home), Bare(folder))))
-            return folder;
+        if (!DriveRootOrHoldsHome(folder, home)) return folder;
         Diagnostics.RecordOnce(OutsideContext,
             $"Open folder not used as the workspace: {folder} is a drive root or holds the user folder.", folder);
         return null;
@@ -262,6 +261,11 @@ internal sealed record SolutionExtent(
         string.Equals(path, root, PathComparer.Comparison)
         || path.StartsWith(root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar,
                            PathComparer.Comparison);
+
+    /// <summary>The two bounds a workspace root never widens past: a drive or filesystem root, and a folder that holds the
+    /// user folder (<paramref name="home"/>; none when unknown).</summary>
+    private static bool DriveRootOrHoldsHome(string dir, string? home) =>
+        Path.GetDirectoryName(dir) is null || (!string.IsNullOrEmpty(home) && IsUnder(Bare(home), Bare(dir)));
 
     /// <summary>Full path without a trailing separator — except a drive or filesystem root, which keeps it.</summary>
     private static string Bare(string path)
