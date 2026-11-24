@@ -110,7 +110,10 @@ A password-protected workbook and an OpenDocument sheet (`.ods`) are read with `
 
 `read_file` filters a log by level and time (`level`, `since`, `until`), each entry kept with the lines under it (a
 stack trace). The formats recognised: **Serilog**, **NLog**, **log4net**, Go's `log`, the .NET **`ILogger` console**,
-ISO 8601 times and **syslog** times. Any other log is still read as text.
+ISO 8601 times and **syslog** times, and the structured logs written one record per line: **JSON** (Serilog's CLEF and
+JSON formatters, **pino**, **bunyan**, **zap**, **structlog**, **ECS**, the `ILogger` JSON console, **winston**,
+**log4j2**) and **logfmt** (Go's `slog`, Grafana). A record reads as its time, level, message and exception, and a
+message repeated on a page is shown once with its count. Any other log is still read as text.
 
 ## Web pages and the app you build
 

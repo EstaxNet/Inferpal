@@ -346,7 +346,7 @@ look at what the code produces, measure it, and read the files developers deal w
 - **The text of an image** — `ocr` reads a screenshot, a photo of a page or a scanned PDF in Inferpal's ten languages,
   nothing to install; a model that does not see images gets that text instead of the picture.
 - **Long logs, data files, archives** — `read_file` filters a log by level and time (`level`, `since`, `until`), each
-  entry with its stack trace; `query_data` answers one read-only SQL query on a CSV, TSV, JSON, Excel, Parquet, Arrow or
+  entry with its stack trace, a JSON or logfmt log record by record with its repeated messages counted once; `query_data` answers one read-only SQL query on a CSV, TSV, JSON, Excel, Parquet, Arrow or
   SQLite file too large to read; a zip, NuGet, 7z, RAR or tar archive (gz, bz2, xz) is listed and read in place, never extracted, and a
   lone `app.log.gz`, `.bz2` or `.xz` reads as the file it holds.
 - **Your development database** — `query_database` finds the connection where your project declares it

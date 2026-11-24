@@ -42,7 +42,8 @@ internal class ReadFileTool : ITool
     public string Description =>
         "Reads a text file, or the text of a document (PDF, Word .docx/.doc, Excel .xlsx/.xls, PowerPoint .pptx, OpenDocument, Outlook .msg, .evtx event logs, MSBuild .binlog build logs, .pcap/.pcapng network captures read as their problems, conversations, DNS and HTTP, a Playwright trace.zip as its failure, steps, console and network (with the page at the failure), a distributed trace export (OpenTelemetry OTLP JSON, Jaeger, Zipkin) as its spans in error, slow path and span tree, a coverage report (lcov, Cobertura, JaCoCo) as its uncovered lines per file, the file open in the editor first, a load test result (k6 summary or --out json, JMeter .jtl) as its failed thresholds and per request its errors, percentiles and throughput, .drawio/.vsdx diagrams; an OpenAPI specification reads first as its operations, a .har capture as its requests); a notebook, an RTF or an .eml is read as the text file it is; an image (PNG, JPEG, WebP, GIF, BMP) is shown to you when you read images. A file too long for one answer comes back in pages of whole " +
         "lines, and the answer says which start_line to pass to read on. A log reads filtered by level and time (level, since, until): " +
-        "only the matching entries, each line under its number.";
+        "only the matching entries, each line under its number; a JSON or logfmt log (one record per line) too, each record shown as its time, " +
+        "level, message and exception, a message repeated on the page counted once.";
     public object Parameters => new
     {
         type = "object",
@@ -185,16 +186,22 @@ internal class ReadFileTool : ITool
         // its middle — inside a block, on lines already counted as read.
         var (start, end) = (args.Int("start_line", 0), args.Int("end_line", 0));
         var conflict = await MergeConflict.HeaderAsync(path, content, ct);
+        // A structured log reads as its text too (an edit quotes the disk); one line above says the filters read it record
+        // by record.
+        var lead = conflict ?? (start == 0 && end == 0 && Documents.StructuredLogLine.FormatOf(content) is { } format
+            ? $"(a {format} log: read_file with level, since or until shows each record as its time, level, message and exception, "
+              + "a message that repeats counted once)\n"
+            : null);
         var shown = PageOf(content, Path.GetFileName(path), start, end,
-                           conflict is null ? PageChars : Math.Max(PageChars / 2, PageChars - conflict.Length));
+                           lead is null ? PageChars : Math.Max(PageChars / 2, PageChars - lead.Length));
         if (conflict is not null && MergeConflict.Blocks(shown.Text) == 0)
-            (conflict, shown) = (null, PageOf(content, Path.GetFileName(path), start, end));
+            (lead, shown) = (null, PageOf(content, Path.GetFileName(path), start, end));
         // ⚠ What the model has SEEN, not what it asked for: a first page or a range is not the file, and write_file lets
         // a whole-file rewrite through only once every line of it has been in front of the model. A read cut at
         // MaxChars is not seen whole.
         if (shown.Text.Length > MaxChars) return Cap(shown.Text, Path.GetFileName(path));
         _history?.NoteReadLines(path, shown.First, shown.Last, shown.Total);
-        return conflict + shown.Text;
+        return lead + shown.Text;
     }
 
     /// <summary>A Playwright trace: its text paged like a document's; the picture of the page at the failure follows the
