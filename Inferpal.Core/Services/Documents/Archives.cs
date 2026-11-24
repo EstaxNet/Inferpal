@@ -398,7 +398,7 @@ internal static class Archives
     /// <summary>How far from a zip's end its end record can start: the 22-byte record and a comment of up to 65,535 bytes.</summary>
     internal const int EndRecordReach = 66_000;
 
-    /// <summary>The entry count a zip's end record declares (the Zip64 one when the classic field is saturated); 0 when it
+    /// <summary>The entry count a zip's end record declares (the Zip64 one when a classic field is saturated); 0 when it
     /// cannot be read — the open then says what is wrong.</summary>
     /// <remarks>⚠ Read before opening: a few megabytes can declare millions of directory records, all of them loaded, with
     /// no way to stop, by the archive reader.</remarks>
@@ -415,7 +415,9 @@ internal static class Archives
             {
                 if (buf[i] != 0x50 || buf[i + 1] != 0x4b || buf[i + 2] != 5 || buf[i + 3] != 6) continue;
                 long count = BitConverter.ToUInt16(buf, i + 10);
-                if (count != 0xFFFF || i < 20) return count;
+                var saturated = count == 0xFFFF || BitConverter.ToUInt32(buf, i + 12) == 0xFFFFFFFF
+                                || BitConverter.ToUInt32(buf, i + 16) == 0xFFFFFFFF;
+                if (!saturated || i < 20) return count;
                 var locator = i - 20;
                 if (buf[locator] != 0x50 || buf[locator + 1] != 0x4b || buf[locator + 2] != 6 || buf[locator + 3] != 7) return count;
                 var zip64 = (long)BitConverter.ToUInt64(buf, locator + 8);

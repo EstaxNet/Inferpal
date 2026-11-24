@@ -182,6 +182,29 @@ public sealed class ArchiveReadTests : IDisposable
         Assert.Equal(3, Archives.DeclaredZipEntries(zip));
     }
 
+    /// <summary>Any saturated field of the classic end record sends the reader to the Zip64 one (the zip format's rule, as
+    /// <c>ZipCrypt</c> reads it): a small count beside a saturated offset declared 5 entries and let 150 000 be loaded.</summary>
+    [Fact]
+    public void AZip64CountBehindASaturatedOffset_IsTheOneDeclared()
+    {
+        var bytes = new byte[56 + 20 + 22];
+        BitConverter.GetBytes(0x06064b50u).CopyTo(bytes, 0);              // Zip64 end record, at offset 0
+        BitConverter.GetBytes(150_000UL).CopyTo(bytes, 32);               // its total entries
+        BitConverter.GetBytes(0x07064b50u).CopyTo(bytes, 56);             // Zip64 locator
+        BitConverter.GetBytes(0UL).CopyTo(bytes, 56 + 8);                 // where the Zip64 end record is
+        BitConverter.GetBytes(1u).CopyTo(bytes, 56 + 16);
+        var end = 56 + 20;                                                // classic end record
+        BitConverter.GetBytes(0x06054b50u).CopyTo(bytes, end);
+        BitConverter.GetBytes((ushort)5).CopyTo(bytes, end + 8);
+        BitConverter.GetBytes((ushort)5).CopyTo(bytes, end + 10);
+        BitConverter.GetBytes(0x100u).CopyTo(bytes, end + 12);
+        BitConverter.GetBytes(0xFFFFFFFFu).CopyTo(bytes, end + 16);       // offset saturated
+        var zip = Path.Combine(_root, "zip64.zip");
+        File.WriteAllBytes(zip, bytes);
+
+        Assert.Equal(150_000, Archives.DeclaredZipEntries(zip));
+    }
+
     [Fact]
     public async Task HostileEntryNames_AreLeftOut()
     {

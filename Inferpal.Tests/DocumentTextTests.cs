@@ -176,6 +176,12 @@ public sealed class DocumentTextTests : IDisposable
         Assert.Equal("Spaced", Text(Encoding.Latin1.GetBytes(pdf.Replace("5 0 obj", header, StringComparison.Ordinal))));
     }
 
+    /// <summary>An inline image ends at "EI" after any PDF white space: after a tab, the skip ran to the end of the stream and
+    /// took the text after the image with it.</summary>
+    [Fact]
+    public void TheTextAfterAnInlineImageEndedAfterATab_IsRead() =>
+        Assert.Contains("After", Text(Pdf("BT /F1 12 Tf 72 720 Td (Before) Tj ET BI /W 1 /H 1 /CS /G /BPC 8 ID x\tEI\nBT /F1 12 Tf 72 700 Td (After) Tj ET")));
+
     [Fact]
     public void ACompressedStream_ReadsAsTheSameText()
     {

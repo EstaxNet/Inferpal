@@ -81,11 +81,11 @@ internal class WebSearchTool : ITool
     /// been a silent feature regression rather than a fix: the engine does redirect (locale, /html/
     /// path moves), and the tool would have parsed the redirect stub and reported "no results".
     /// </summary>
-    private static async Task<(int Status, string Html)> GetFollowingSameHostRedirectsAsync(Uri uri, CancellationToken ct)
+    internal static async Task<(int Status, string Html)> GetFollowingSameHostRedirectsAsync(Uri uri, CancellationToken ct, HttpClient? client = null)
     {
-        for (var hop = 0; hop < 4; hop++)
+        for (var hop = 0; hop <= FetchUrlTool.MaxRedirects; hop++)
         {
-            using var response = await _http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
+            using var response = await (client ?? _http).GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
 
             if ((int)response.StatusCode is < 300 or > 399 || response.Headers.Location is null)
             {

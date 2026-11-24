@@ -33,7 +33,6 @@ public class OutputBoundTests
         public Task<string> ExecuteAsync(string name, JsonElement args, CancellationToken ct) => Task.FromResult("ok");
     }
 
-    private const string LoopedCall = "<tool_call> {\"name\": \"get_diagnostics\", \"arguments\": {}} </tool_call> ";
     private const int    Repeats    = 2000;   // ~140 000 characters: far past a 2 048-token window
 
     /// <summary>About <paramref name="chars"/> characters of words that never repeat — an ordinary answer. A run of one
@@ -118,8 +117,12 @@ public class OutputBoundTests
     {
         var sb = new StringBuilder();
         for (var i = 0; i < Repeats; i++)
-            sb.Append(JsonSerializer.Serialize(new { message = new { role = "assistant", content = "", thinking = LoopedCall }, done = false }))
+        {
+            // Calls that differ, as the compatible stream's do: an identical repeat is stopped at the repeat.
+            var call = $"<tool_call> {{\"name\": \"get_diagnostics\", \"arguments\": {{\"attempt\": {i}}}}} </tool_call> ";
+            sb.Append(JsonSerializer.Serialize(new { message = new { role = "assistant", content = "", thinking = call }, done = false }))
               .Append('\n');
+        }
         return sb.ToString();
     }
 

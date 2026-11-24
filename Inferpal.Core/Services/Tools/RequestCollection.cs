@@ -101,7 +101,7 @@ internal static partial class RequestCollection
         if (matches.Count == 0)
             matches = loaded.Requests.Where(r => string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase)).ToList();
         if (matches.Count == 0)
-            return (null, $"no request named '{name}' in {Path.GetFileName(path)}; its requests: {string.Join(", ", loaded.Requests.Select(r => "'" + r.Name + "'").Take(40))}");
+            return (null, $"no request named '{name}' in {Path.GetFileName(path)}; its requests: {NamedFew.Of([.. loaded.Requests.Select(r => "'" + r.Name + "'")], 40)}");
         if (matches.Count > 1) return (null, $"{matches.Count} requests are named '{name}' in {Path.GetFileName(path)}: rename one");
         var raw = matches[0];
         if (raw.Refusal is not null) return (null, $"'{raw.Name}' {raw.Refusal}. Nothing was sent.");

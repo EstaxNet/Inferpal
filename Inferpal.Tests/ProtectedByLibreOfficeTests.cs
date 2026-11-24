@@ -31,6 +31,18 @@ public sealed class ProtectedByLibreOfficeTests
         Assert.Contains(inside, read.Text);
     }
 
+    /// <summary>An encrypted OpenDocument part inflates up to the spreadsheet limit (256 MB): the person's Stop reaches it, as it
+    /// reaches every other bounded copy.</summary>
+    [Fact]
+    public void AnEncryptedPartsInflation_StopsWhenAsked()
+    {
+        var packed = new MemoryStream();
+        using (var deflate = new System.IO.Compression.DeflateStream(packed, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true))
+            deflate.Write(new byte[1024 * 1024]);
+
+        Assert.Throws<OperationCanceledException>(() => OdfCrypto.Inflate(packed.ToArray(), new CancellationToken(canceled: true)));
+    }
+
     /// <summary>The standard encryption's header may say version 2.2, 3.2 or 4.2 (MS-OFFCRYPTO), as the reader of the same
     /// header in a Word 97 file already takes it: 2.2 read as "unreadable", and no password was ever asked.</summary>
     [Fact]

@@ -125,6 +125,30 @@ public class RepeatedReasoningCallTests
         Assert.False(result.CutAtLimit);   // a repeat is a decision, not a cut
     }
 
+    /// <summary>Ollama's <c>thinking</c> field is stopped at the repeat as the compatible client's reasoning is: the call
+    /// written twice is the model's decision, and what it writes after is the loop or its decay. Two calls far enough apart
+    /// for no text loop to show, then a third: all three ran.</summary>
+    [Fact]
+    public async Task TheOllamaClient_StopsACallRepeatedInItsThinking_Too()
+    {
+        string[] thoughts =
+        [
+            "I should check the build first. ", Diagnostics,
+            "Then again, the counter page may be the cause; reading the component and its tests would tell. ", Diagnostics,
+            "Or perhaps the Razor file itself. ", ReadCounter,
+        ];
+        var body = string.Concat(thoughts.Select(t =>
+                       JsonSerializer.Serialize(new { message = new { role = "assistant", content = "", thinking = t }, done = false }) + "\n"))
+                   + JsonSerializer.Serialize(new { message = new { role = "assistant", content = "" }, done = true, done_reason = "stop" }) + "\n";
+        using var server = new LoopbackHttpServer(path => path.StartsWith("/api/chat", StringComparison.Ordinal) ? body : null);
+        var client = new OllamaClient(new InferpalConfig { Provider = "ollama", BaseUrl = server.BaseUrl, ContextWindowSize = 262_144 });
+
+        var result = await client.SendChatAsync("m", [new ChatMessageDto("user", "fix it")], new Tools(), onToken: null, CancellationToken.None);
+
+        Assert.Contains(server.Paths, p => p.StartsWith("/api/chat", StringComparison.Ordinal));   // witness
+        Assert.Equal("get_diagnostics", Assert.Single(result.ToolCalls!).Function.Name);
+    }
+
     [Fact]
     public async Task TwoDistinctCallsInTheReasoning_AreBothKept()
     {

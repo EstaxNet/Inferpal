@@ -149,7 +149,7 @@ internal static class ZipCrypt
                 var rec = new byte[56];
                 f.Seek((long)BinaryPrimitives.ReadUInt64LittleEndian(buf.AsSpan(eocd - 12)), SeekOrigin.Begin);
                 f.ReadExactly(rec);
-                count = (long)BinaryPrimitives.ReadUInt64LittleEndian(rec.AsSpan(32));
+                count = (long)Math.Min(BinaryPrimitives.ReadUInt64LittleEndian(rec.AsSpan(32)), long.MaxValue);
                 size = (long)BinaryPrimitives.ReadUInt64LittleEndian(rec.AsSpan(40));
                 offset = (long)BinaryPrimitives.ReadUInt64LittleEndian(rec.AsSpan(48));
             }

@@ -190,8 +190,8 @@ internal static class PdfText
                 case "ID":
                     // An inline image's bytes run up to "EI": skipped whole, never read as operators.
                     var end = lexer.Position;
-                    while (end + 2 < content.Length && !(content[end] is 32 or 10 or 13 && content[end + 1] == (byte)'E' && content[end + 2] == (byte)'I'
-                                                          && (end + 3 >= content.Length || content[end + 3] is 32 or 10 or 13)))
+                    while (end + 2 < content.Length && !(PdfLexer.IsWhite(content[end]) && content[end + 1] == (byte)'E' && content[end + 2] == (byte)'I'
+                                                          && (end + 3 >= content.Length || PdfLexer.IsWhite(content[end + 3]))))
                         end++;
                     lexer.Position = Math.Min(content.Length, end + 3);
                     break;

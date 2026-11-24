@@ -18,15 +18,13 @@ namespace Inferpal.Tests;
 /// </summary>
 public sealed class HttpRequestToolTests : IDisposable
 {
-    private readonly HttpListener _server = new();
+    private readonly HttpListener _server;
     private readonly int _port;
     private readonly List<string> _received = [];
 
     public HttpRequestToolTests()
     {
-        _port = FreePort();
-        _server.Prefixes.Add($"http://127.0.0.1:{_port}/");
-        _server.Start();
+        (_server, _port) = LoopbackPorts.StartHttpListener();
         _ = ServeAsync();
     }
 
@@ -35,14 +33,7 @@ public sealed class HttpRequestToolTests : IDisposable
         try { _server.Stop(); _server.Close(); } catch { /* teardown never throws (TeardownDoesNotThrowTests) */ }
     }
 
-    private static int FreePort()
-    {
-        var l = new TcpListener(IPAddress.Loopback, 0);
-        l.Start();
-        var port = ((IPEndPoint)l.LocalEndpoint).Port;
-        l.Stop();
-        return port;
-    }
+    private static int FreePort() => LoopbackPorts.Free();
 
     private async Task ServeAsync()
     {
@@ -287,7 +278,8 @@ public sealed class HttpRequestToolTests : IDisposable
     [Fact]
     public async Task NothingListening_IsSaidWithTheWayToWait()
     {
-        var said = await Call(new NoopApproval(), new { url = $"http://127.0.0.1:{FreePort()}/" });
+        using var refusing = LoopbackPorts.Refusing(out var port);
+        var said = await Call(new NoopApproval(), new { url = $"http://127.0.0.1:{port}/" });
         Assert.Contains("Nothing listens", said);
         Assert.Contains("wait_seconds", said);
     }

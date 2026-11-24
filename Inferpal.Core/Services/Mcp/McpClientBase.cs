@@ -27,8 +27,9 @@ namespace Inferpal.Services.Mcp;
 /// </remarks>
 internal abstract class McpClientBase
 {
-    /// <summary>Budget for the cheap, always-fast calls: handshake and tool listing.</summary>
-    private protected static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(20);
+    /// <summary>Budget for the cheap, always-fast calls: handshake and tool listing. Settable for the test suite, whose
+    /// two legs start their servers under a load no real session has.</summary>
+    internal static TimeSpan HandshakeTimeout { get; set; } = TimeSpan.FromSeconds(20);
 
     /// <summary>Budget for a tool invocation, which may legitimately do real work.</summary>
     private protected static readonly TimeSpan CallTimeout = TimeSpan.FromSeconds(120);

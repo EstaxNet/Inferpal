@@ -35,6 +35,20 @@ public class ModelServerReadersTests
     }
 
     [Fact]
+    public async Task ADownloadTheServerRefuses_IsSaid_AsLmStudioSaysIt()
+    {
+        // A private model, a registry that wants a login: the pull ended on "failed" with no word of why.
+        using var server = new LoopbackHttpServer(
+            path => path.StartsWith("/api/pull", StringComparison.Ordinal) ? """{"error":"pull access denied"}""" : null,
+            path => path.StartsWith("/api/pull", StringComparison.Ordinal) ? 401 : 200);
+        var client = new OllamaClient(new InferpalConfig { Provider = "ollama", BaseUrl = server.BaseUrl });
+        var said = new List<string>();
+
+        Assert.False(await client.PullModelAsync("private/model", said.Add, CancellationToken.None));
+        Assert.Contains(said, s => s.Contains("401", StringComparison.Ordinal) && s.Contains("pull access denied", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task AKeyPastedWithSpaces_IsSentTrimmed_ByTheProbe_AsByTheChat()
     {
         using var server = new LoopbackHttpServer(path => path.EndsWith("/models", StringComparison.Ordinal) ? """{"data":[]}""" : null);

@@ -52,6 +52,11 @@ internal sealed partial class QueryDataTool : ITool
     private static readonly string[] Workbooks = [".xlsx", ".xlsm", ".xlsb", ".xls"];
     private static readonly string[] Json = [".json", ".jsonl", ".ndjson"];
 
+    /// <summary>Every extension read, as the parameter and the refusal name them: written from the lists that decide, so
+    /// neither can leave one out.</summary>
+    private static string Readable =>
+        string.Join(", ", [.. Delimited, .. Workbooks, .. Json, .. Documents.ColumnarData.Extensions, .. Databases]);
+
     /// <summary>How many rows at the top of a sheet are searched for its header.</summary>
     private const int HeaderSearchRows = 20;
 
@@ -78,7 +83,7 @@ internal sealed partial class QueryDataTool : ITool
         type = "object",
         properties = new
         {
-            path = new { type = "string", description = "The data file: .csv, .tsv, .xlsx, .xls, .json, .jsonl, .parquet, .arrow, .feather, .ipc, .db, .sqlite." },
+            path = new { type = "string", description = $"The data file: {Readable}." },
             sql  = new { type = "string", description = "The query, e.g. SELECT status, COUNT(*) FROM data GROUP BY status." },
         },
         required = new[] { "path", "sql" },
@@ -101,7 +106,7 @@ internal sealed partial class QueryDataTool : ITool
         var database = Databases.Contains(ext);
         var columnar = Documents.ColumnarData.Extensions.Contains(ext);
         if (!database && !columnar && !Delimited.Contains(ext) && !Workbooks.Contains(ext) && !Json.Contains(ext))
-            return $"'{name}' is not a data file query_data reads (.csv, .tsv, .xlsx, .xls, .json, .jsonl, .parquet, .arrow, .feather, .ipc, .db, .sqlite).";
+            return $"'{name}' is not a data file query_data reads ({Readable}).";
         var limit = database ? MaxDatabaseBytes : MaxDelimitedBytes;
         if (new FileInfo(path).Length > limit)
             return $"'{name}' is larger than {limit / (1024 * 1024)} MB: it is not loaded. Ask the user for a smaller extract.";

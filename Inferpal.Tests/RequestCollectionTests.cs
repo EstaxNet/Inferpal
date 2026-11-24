@@ -253,6 +253,19 @@ public sealed class RequestCollectionTests : IDisposable
         Assert.Contains(said, error, StringComparison.Ordinal);
     }
 
+    /// <summary>A name not found lists the collection's requests, and says how many more past the ones named: cut at forty
+    /// without a count, the list read as the whole collection.</summary>
+    [Fact]
+    public void AMissingRequest_ListsTheCollection_AndCountsWhatIsNotNamed()
+    {
+        var path = Write("many.http", string.Concat(Enumerable.Range(1, 50).Select(i => $"### R{i}\nGET http://127.0.0.1/{i}\n\n")));
+
+        var (request, error) = RequestCollection.Resolve(path, "missing", null, _root);
+
+        Assert.Null(request);
+        Assert.Contains("and 10 more", error, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void AnHttpFilesOwnVariable_WinsOverTheEnvironment_AsVisualStudioReadsIt()
     {

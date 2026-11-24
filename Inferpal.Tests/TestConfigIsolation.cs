@@ -34,6 +34,11 @@ internal static class TestConfigIsolation
         Inferpal.Services.Prompting.RepoSkills.HomeOverride =
             Directory.CreateDirectory(Path.Combine(root, $"home-{Environment.ProcessId}")).FullName;
 
+        // A test's MCP server starts while two legs of the suite run side by side: a Python server that answers its
+        // handshake in a second missed the product's 20 s under that load ("initialize got no answer"). No test waits
+        // for this budget to run out.
+        Inferpal.Services.Mcp.McpClientBase.HandshakeTimeout = TimeSpan.FromMinutes(1);
+
         // And for the models Inferpal loaded on an LM Studio server: a test's load against a loopback server would be
         // remembered in the developer's own file, and their editor would unload a model on its word.
         Inferpal.Services.Inference.LmStudioClient.OwnedFile.PathOverride =

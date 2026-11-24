@@ -31,6 +31,20 @@ public sealed class QueryDataToolTests : IDisposable
     private Task<string> Query(string path, string sql) =>
         new QueryDataTool(() => _root).ExecuteAsync(JsonSerializer.SerializeToElement(new { path, sql }), default);
 
+    /// <summary>The refusal names every extension the tool reads, from the lists that decide: written by hand, it left out
+    /// .sqlite3, .xlsm, .xlsb and .ndjson, which it reads.</summary>
+    [Fact]
+    public async Task ARefusedFile_NamesEveryExtensionTheToolReads()
+    {
+        var path = Path.Combine(_root, "notes.txt");
+        File.WriteAllText(path, "x");
+
+        var said = await Query(path, "SELECT 1");
+
+        foreach (var extension in new[] { ".sqlite3", ".xlsm", ".xlsb", ".ndjson", ".parquet", ".csv" })
+            Assert.Contains(extension, said);
+    }
+
     private const string Orders =
         "id,date,status,amount,note\n" +
         "1,2026-11-01,paid,10.5,\"first, with a comma\"\n" +

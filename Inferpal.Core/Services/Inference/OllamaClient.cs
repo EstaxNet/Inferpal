@@ -232,6 +232,11 @@ internal class OllamaClient : InferenceProviderBase
         var thinkingLoop = new TextLoopDetector();
         var contentLoop  = new TextLoopDetector();
         var looping      = false;
+        // A call written twice in the reasoning: the model has decided and is looping — stopped at the repeat, as the
+        // compatible client stops it (the calls read as the recovery reads them).
+        var schemaOf     = ToolSchemas.Of(defs);
+        var repeatedCall = new RepeatedCallDetector(OfferedNames(tools), schemaOf);
+        var repeated     = false;
         // A model whose channel envelope the server leaves in the content (Muse Glimmer, Gemma 4): reasoning split out.
         var envelope     = new ChannelEnvelope();
 
@@ -317,6 +322,17 @@ internal class OllamaClient : InferenceProviderBase
                         received += token.Length;
                         looping |= contentLoop.Repeats(token);
                     }
+                }
+
+                // Only while nothing else has come: a structured call or content is a model out of its reasoning.
+                if (toolCalls is null && contentBuilder.Length == 0 && reasoningBuilder.Length > 0
+                    && repeatedCall.Repeats(reasoningBuilder))
+                {
+                    repeated = true;
+                    Diagnostics.Record("OllamaClient.SendChat",
+                        $"Response from \"{model}\" stopped by Inferpal after {received} characters of reasoning: it "
+                        + "had written the same tool call twice there. The first call is run.");
+                    break;
                 }
 
                 // Leaving the loop disposes the stream: the connection closes, and Ollama stops generating.
@@ -436,7 +452,7 @@ internal class OllamaClient : InferenceProviderBase
         // or a loop always ends this way. Returned empty, the user who watched it reason reads "not a single token".
         if (noCall && !contentPrintable && reasoningBuilder.Length > 0)
             return ReasoningOnlyTurn.Recover(reasoningBuilder.ToString(), tokensUsed, promptTokens, cut, looping,
-                                             stoppedEarly: bounded || looping, OfferedNames(tools), ToolSchemas.Of(defs));
+                                             stoppedEarly: bounded || repeated || looping, OfferedNames(tools), schemaOf);
 
         // ⚠ The empty-reply message sends the user to /diagnostics for what the stream contained: it has to be there.
         if (noCall && !contentPrintable)
@@ -782,6 +798,12 @@ internal class OllamaClient : InferenceProviderBase
             return succeeded;
         }
         catch (OperationCanceledException) { throw; }
+        // A refusal (a private model, a registry that wants a login) says its status and the server's words.
+        catch (HttpRequestException ex) when (ServerAnswered(ex))
+        {
+            onStatus(ex.Message);
+            return false;
+        }
         catch { return false; }
     }
 

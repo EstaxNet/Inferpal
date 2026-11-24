@@ -125,7 +125,7 @@ internal static class OdfCrypto
         }
         else return null;
 
-        var plain = Inflate(compressed);
+        var plain = Inflate(compressed, ct);
         return encryption.Path == "encrypted-package" ? new Opened.Package(plain) : new Opened.Content(plain);
     }
 
@@ -151,7 +151,7 @@ internal static class OdfCrypto
     }
 
     /// <summary>A part is deflated before it is encrypted; a package already a zip is returned as it is.</summary>
-    private static byte[] Inflate(byte[] compressed)
+    internal static byte[] Inflate(byte[] compressed, CancellationToken ct)
     {
         if (compressed.Length >= 2 && compressed[0] == (byte)'P' && compressed[1] == (byte)'K') return compressed;
         using var input = new DeflateStream(new MemoryStream(compressed), CompressionMode.Decompress);
@@ -160,6 +160,7 @@ internal static class OdfCrypto
         int read;
         while ((read = input.Read(buffer)) > 0)
         {
+            ct.ThrowIfCancellationRequested();
             output.Write(buffer, 0, read);
             if (output.Length > SpreadsheetText.MaxInflatedBytes) throw new DocumentLimitException("An OpenDocument part inflating past its limit");
         }

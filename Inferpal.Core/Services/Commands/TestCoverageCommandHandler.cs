@@ -377,7 +377,7 @@ internal static class TestCoverageCommandHandler
         {
             // In characters too: a minified line is a whole file on one line.
             if (sb.Length > SourceBudget) { end = n - 1; break; }
-            var line = lines[n - 1].Length > 1_000 ? lines[n - 1][..1_000] + " # ... (line cut)" : lines[n - 1];
+            var line = lines[n - 1].Length > 1_000 ? SafeTruncate.Truncate(lines[n - 1], 1_000) + " # ... (line cut)" : lines[n - 1];
             sb.Append(n.ToString(CultureInfo.InvariantCulture).PadLeft(width))
               .Append(uncovered.Contains(n) ? " NOT COVERED" : "            ").Append(" | ").AppendLine(line);
         }
@@ -397,9 +397,9 @@ internal static class TestCoverageCommandHandler
         var high = Math.Min(lines.Length, last + 80);
         var kept = string.Join('\n', lines.Take(40).Select(Short)) + $"\n# ... (lines 41-{low} not shown)\n"
                  + string.Join('\n', lines.Skip(low).Take(high - low).Select(Short));
-        return (kept.Length <= SourceBudget ? kept : kept[..SourceBudget]) + "\n# ... (rest not shown)";
+        return SafeTruncate.Truncate(kept, SourceBudget) + "\n# ... (rest not shown)";
 
-        static string Short(string line) => line.Length > 1_000 ? line[..1_000] + " # ... (line cut)" : line;
+        static string Short(string line) => line.Length > 1_000 ? SafeTruncate.Truncate(line, 1_000) + " # ... (line cut)" : line;
     }
 
     /// <summary>A test file to imitate: one that imports a file of the target's own folder first (it shows how to reach
@@ -428,7 +428,7 @@ internal static class TestCoverageCommandHandler
         if (best is not { } chosen) return null;
         if (ReadOrNull(chosen.Path) is not { } content) return null;
         return (Path.GetRelativePath(root, chosen.Path).Replace('\\', '/'),
-                content.Length <= ExampleBudget ? content : content[..ExampleBudget] + "\n# ... (rest not shown)");
+                content.Length <= ExampleBudget ? content : SafeTruncate.Truncate(content, ExampleBudget) + "\n# ... (rest not shown)");
     }
 
     private static int CountOf(string text, string word)
@@ -458,12 +458,12 @@ internal static class TestCoverageCommandHandler
         Strings.CoverageUnreadable(files.Count, string.Join(", ", files.Take(5).Select(f => $"`{f}`"))
                                                + (files.Count > 5 ? $" (+{files.Count - 5})" : string.Empty));
 
-    private static string Tail(string text, int max) => text.Length <= max ? text.Trim() : "…" + text[^max..].Trim();
+    private static string Tail(string text, int max) => text.Length <= max ? text.Trim() : "…" + SafeTruncate.Tail(text, max).Trim();
 
     /// <summary>The head and the tail of a tool's output: a runner that cannot start says why first (vitest's "Startup
     /// Error"), then prints a stack; a suite's verdict is at its end.</summary>
     internal static string Ends(string text, int head, int tail) =>
-        text.Length <= head + tail ? text.Trim() : text[..head].TrimEnd() + "\n…\n" + text[^tail..].TrimStart();
+        text.Length <= head + tail ? text.Trim() : SafeTruncate.Truncate(text, head).TrimEnd() + "\n…\n" + SafeTruncate.Tail(text, tail).TrimStart();
 
     /// <summary><paramref name="path"/> relative to <paramref name="root"/> with forward slashes; empty for the root.</summary>
     private static string Relative(string root, string path) =>
