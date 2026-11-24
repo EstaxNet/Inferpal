@@ -120,6 +120,7 @@ public sealed class InteractWindowWindowsTests(ITestOutputHelper output) : IDisp
                 new { action = "wait_for", control = "Ordered for Ada", timeout_ms = 5000 },
             },
         });
+        output.WriteLine(said);   // the whole report when an assertion below fails: it only quotes its first characters
 
         Assert.Contains("1. type nameBox: done", said);
         Assert.Contains("4. click Order: done", said);

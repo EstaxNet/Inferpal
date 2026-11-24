@@ -53,9 +53,9 @@ jobs:
     #   budget 30 min → 1979 s (+179)   |   budget 15 min → 1200 s (+300, = GitHub's grace)
     #   budget 30 min → 1851 s (+51)    |   budget 15 min →  900 s (+0)
     #
-    # A healthy run of this leg's test step is 9–12 minutes (the suite grew; it crossed a 12-minute step budget), so the
-    # job gets the step's sixteen plus restore, build and the host check.
-    timeout-minutes: 22
+    # A healthy run of this leg's test step is 11–15 minutes (the suite grew; it crossed a 12-, then a 16-minute step
+    # budget, still running tests when killed), so the job gets the step's twenty-two plus restore, build and the host check.
+    timeout-minutes: 28
 
     steps:
       - uses: actions/checkout@v7
@@ -82,7 +82,7 @@ jobs:
       # step's own `timeout-minutes` (then 12). Measured at 18 and at 25 minutes elapsed, all three past
       # due. What does end the job is the JOB budget above.
       - name: Test (net10.0 editor-agnostic slice)
-        timeout-minutes: 16
+        timeout-minutes: 22
         run: |
           set +e
           dotnet test Inferpal.Tests/Inferpal.Tests.csproj -c Release --no-build \

@@ -28,7 +28,8 @@ public class ThisMachineShareTests
     {
         // A DNS name is not an address: 127.evil.example resolves wherever its owner says.
         Assert.False(Inferpal.Services.Execution.NetworkPath.IsThisMachine(host));
-        Assert.True(Inferpal.Services.Execution.NetworkPath.Is($@"\\{host}\c$\work\a.txt"));
+        if (OperatingSystem.IsWindows())   // elsewhere \\host\… is no network path: NetworkPath.Is reads Windows spellings only
+            Assert.True(Inferpal.Services.Execution.NetworkPath.Is($@"\\{host}\c$\work\a.txt"));
     }
 
     [Theory]
