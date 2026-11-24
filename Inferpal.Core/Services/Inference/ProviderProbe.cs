@@ -131,7 +131,7 @@ internal static class ProviderProbe
             cts.CancelAfter(deadline);
             using var req = new HttpRequestMessage(HttpMethod.Get, url);
             if (!string.IsNullOrWhiteSpace(apiKey))
-                req.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
+                req.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey.Trim()}");
             using var resp = await _http.SendAsync(req, cts.Token).ConfigureAwait(false);
             if (!resp.IsSuccessStatusCode) return (false, resp.StatusCode, resp.ReasonPhrase);
             var body = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);

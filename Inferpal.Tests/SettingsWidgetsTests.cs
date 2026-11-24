@@ -177,9 +177,9 @@ public class SettingsWidgetsTests
             [], TotalTokens: 1_400, HistoryTokens: 9_800, ContextWindow: 32_768, FillPercent: 0, OverheadWarning: false,
             RawPrompt: string.Empty, ToolTokens: 4_300));
 
-        Assert.Equal(Strings.ContextUsageTokens(15_500.ToString("N0", CultureInfo.CurrentCulture), 32_768.ToString("N0", CultureInfo.CurrentCulture)), usage.Summary);
+        Assert.Equal(Strings.ContextUsageTokens(15_500.ToString("N0", Strings.UiCulture), 32_768.ToString("N0", Strings.UiCulture)), usage.Summary);
         Assert.Equal(["instructions", "tools", "conversation"], usage.Parts.Select(p => p.Key));
-        Assert.Equal(1.4.ToString("0.0", CultureInfo.CurrentCulture) + "k", usage.Parts[0].Amount);
+        Assert.Equal(1.4.ToString("0.0", Strings.UiCulture) + "k", usage.Parts[0].Amount);
         Assert.Equal(100.0 * 9_800 / 32_768, usage.Parts[2].Percent, 3);
     }
 

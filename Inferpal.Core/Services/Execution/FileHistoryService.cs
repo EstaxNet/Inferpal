@@ -1796,15 +1796,14 @@ internal class FileHistoryService
 
     /// <summary>The same rule for a folder: its git work tree; outside git, <paramref name="workspaceRoot"/> when the
     /// folder is it or under it; else the folder itself. The one place the rule is written.</summary>
-    private static string AnchorOfFolder(string folder, string? workspaceRoot)
+    internal static string AnchorOfFolder(string folder, string? workspaceRoot)
     {
         if (FindGitRoot(folder) is { } git) return git;
         if (!string.IsNullOrWhiteSpace(workspaceRoot))
         {
             var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspaceRoot));
             var dir  = Path.TrimEndingDirectorySeparator(folder);
-            if (string.Equals(dir, root, PathComparer.Comparison)
-                || dir.StartsWith(root + Path.DirectorySeparatorChar, PathComparer.Comparison))
+            if (string.Equals(dir, root, PathComparer.Comparison) || PathComparer.IsBelow(dir, root))
                 return root;
         }
         return folder;

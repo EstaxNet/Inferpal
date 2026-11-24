@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace Inferpal.Services;
 
 /// <summary>
@@ -17,4 +19,8 @@ internal static class UserFolders
     /// <summary>The folder's path, even before it exists.</summary>
     internal static string Of(Environment.SpecialFolder folder) =>
         Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify);
+
+    /// <summary>The path of <paramref name="name"/> in Inferpal's folder of the roaming application data, where the
+    /// settings, the sessions and the person's own files live (<c>%AppData%\Inferpal</c>).</summary>
+    internal static string InferpalData(string name) => Path.Combine(Of(Environment.SpecialFolder.ApplicationData), "Inferpal", name);
 }

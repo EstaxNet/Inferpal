@@ -53,7 +53,7 @@ internal static class ToolOffNotice
             + @"|디버그|디버깅|중단점|브레이크포인트"
             + @"|punkt\w* przerwania|krok po kroku"
             + @"|调试|断点|单步")),
-        new("pages", "AssistWorkWebPages", ["view_page", "interact_page"], Words(
+        new("pages", "AssistWorkWebPages", ToolsAssistant.Of(AssistantWork.WebPages), Words(
             @"\bin the browser\b|\bthe (web )?page (shows|looks|displays|renders)\b|\bscreenshot of the (page|site)\b|\bclick (on )?the\b.{0,30}\bbutton\b"
             + @"|dans le navigateur|la page (affiche|s.affiche)|capture de la page|\bclique\w*\b.{0,20}\bbouton\b"
             + @"|im browser|die seite zeigt|\bklick\w*\b.{0,30}\b(button|schaltfl[äa]che)"
@@ -64,7 +64,7 @@ internal static class ToolOffNotice
             + @"|브라우저에서|버튼을 클릭"
             + @"|w przegl[aą]darce|kliknij przycisk"
             + @"|浏览器|点击按钮")),
-        new("desktop", "AssistWorkDesktopApps", ["view_window", "interact_window"], Words(
+        new("desktop", "AssistWorkDesktopApps", ToolsAssistant.Of(AssistantWork.DesktopApps), Words(
             @"\b(wpf|winforms|windows forms|avalonia)\b|\bdialog box\b|\bdesktop app"
             + @"|bo[îi]te de dialogue|appli(cation)? de bureau"
             + @"|desktop-app|dialogfenster"
@@ -75,7 +75,7 @@ internal static class ToolOffNotice
             + @"|데스크톱 앱|대화 상자"
             + @"|aplikacj\w* desktopow|okn\w* dialogow"
             + @"|桌面应用|对话框")),
-        new("data", "AssistWorkData", ["query_database", "query_data"], Words(
+        new("data", "AssistWorkData", ToolsAssistant.Of(AssistantWork.Data), Words(
             @"\b(in|from|into|query|on) (the|my|our) (database|db)\b|\bsql (query|queries)\b|\.(csv|xlsx|parquet)\b"
             + @"|dans la base de donn[ée]es|requ[êe]te sql"
             + @"|in der datenbank|sql-abfrage"
@@ -86,7 +86,7 @@ internal static class ToolOffNotice
             + @"|데이터베이스(에서|의)|sql 쿼리"
             + @"|w bazie danych|zapytani\w* sql"
             + @"|数据库(中|里)")),
-        new("api", "AssistWorkApis", ["http_request"], Words(
+        new("api", "AssistWorkApis", ToolsAssistant.Of(AssistantWork.Apis), Words(
             @"\bcall (the|my|our) (api|endpoint)\b|\bsend an? (request|get|post)\b|\b(get|post|put|patch|delete) /\w"
             + @"|appel\w* l.api|envoi\w* une requ[êe]te"
             + @"|api aufrufen|anfrage senden"
@@ -97,7 +97,7 @@ internal static class ToolOffNotice
             + @"|api를 호출|요청을 보내"
             + @"|wywo[lł]aj api|wy[sś]lij [żz][aą]danie"
             + @"|调用\s?api|发送请求")),
-        new("refactoring", "AssistWorkRefactoring", ["rename_symbol", "analyze_code"], Words(
+        new("refactoring", "AssistWorkRefactoring", ToolsAssistant.Of(AssistantWork.Refactoring), Words(
             @"\brename\b.{0,40}\b(everywhere|across)\b|\bwho calls\b|\bcallers of\b|\bwhat (calls|uses)\b|\bimpact of changing\b"
             + @"|renomm\w*\b.{0,40}\bpartout|qui appelle|les appelants|impact d.un changement"
             + @"|[üu]berall umbenennen|wer ruft|aufrufer"
@@ -108,7 +108,7 @@ internal static class ToolOffNotice
             + @"|호출하는 곳|호출자"
             + @"|zmie[nń] nazw\w*\b.{0,40}\bwsz[eę]dzie|kto wywo[lł]uje"
             + @"|谁调用|调用方")),
-        new("documents", "AssistWorkDocuments", ["edit_notebook", "run_notebook", "ocr"], Words(
+        new("documents", "AssistWorkDocuments", ToolsAssistant.Of(AssistantWork.Documents), Words(
             @"\.ipynb\b|\bnotebook\b|\bocr\b|\bscanned\b|\btext in (the|this) (image|picture|screenshot)\b"
             + @"|texte de l.image|scann[ée]"
             + @"|gescannt|text im bild"

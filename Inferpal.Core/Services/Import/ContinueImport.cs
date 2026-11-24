@@ -457,13 +457,16 @@ internal static class ContinueImport
         // Same fields as McpServerConfig.LiftContinueFields, read here because the key is resolved BEFORE "Bearer " is
         // put in front of it (a secret reference resolves only as a whole value).
         var headers = node["requestOptions"]?["headers"] is JsonObject h
-            ? h.Where(p => Text(p.Value) is not null).ToDictionary(p => p.Key, p => Resolve(Text(p.Value)!))
-            : new Dictionary<string, string>();
-        if (url is not null && Text(node["apiKey"]) is { } apiKey) headers["Authorization"] = "Bearer " + Resolve(apiKey);
+            ? h.Where(p => Text(p.Value) is not null)
+               .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)   // one header, however many spellings: the last
+               .ToDictionary(g => g.Key, g => Resolve(Text(g.Last().Value)!), StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // As LiftContinueFields: a header already written wins over the apiKey.
+        if (url is not null && Text(node["apiKey"]) is { } apiKey) headers.TryAdd("Authorization", "Bearer " + Resolve(apiKey));
 
         var server = new McpServerConfig(name, command, Strings(node["args"]), env, url, headers.Count > 0 ? headers : null,
                                          WorkingDirectory: Text(node["cwd"]),
-                                         DeclaresSse: string.Equals(Text(node["type"]), "sse", StringComparison.OrdinalIgnoreCase));
+                                         DeclaresSse: McpServerConfig.IsSse(Text(node["type"])));
         AddServer(plan, path, node, server, notes, invented: named is null);
     }
 
@@ -540,7 +543,7 @@ internal static class ContinueImport
                 : new Dictionary<string, string>();
             AddServer(plan, path, new JsonObject { ["transport"] = null },
                       new McpServerConfig(name, command, args, env, url,
-                                          DeclaresSse: string.Equals(type, "sse", StringComparison.OrdinalIgnoreCase)),
+                                          DeclaresSse: McpServerConfig.IsSse(type)),
                       [], invented: true);
         }
     }

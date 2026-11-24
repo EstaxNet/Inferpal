@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Inferpal.Config;
 using Inferpal.Localization;
 using Inferpal.Models;
@@ -334,15 +333,12 @@ internal static class TestCoverageCommandHandler
         static string Normal(string text) => text.Replace("\r\n", "\n").Trim();
     }
 
-    private static readonly Regex Fence = new(@"```[^\n]*\n(.*?)```", RegexOptions.Singleline | RegexOptions.CultureInvariant,
-                                              RegexBudget.Default);
-
     /// <summary>The file in a reply: its longest code block, or the reply itself.</summary>
     internal static string CodeOf(string reply)
     {
         // As every reply turned into a file: reasoning at its head goes, a tag the code holds (a test of a parser) stays.
         var text   = Presentation.MarkdownParser.WithoutLeadingReasoning(reply);
-        var blocks = Fence.Matches(text).Select(m => m.Groups[1].Value).ToList();
+        var blocks = Presentation.MarkdownParser.FencedCode(text);
         return (blocks.Count > 0 ? blocks.OrderByDescending(b => b.Length).First().TrimEnd() : text.Trim()) + "\n";
     }
 
@@ -474,7 +470,7 @@ internal static class TestCoverageCommandHandler
         Path.GetRelativePath(root, path).Replace('\\', '/') is var relative && relative == "." ? string.Empty : relative;
 
     private static string Percent(int covered, int total) =>
-        (total == 0 ? 0 : 100.0 * covered / total).ToString("0.0", CultureInfo.CurrentCulture);
+        (total == 0 ? 0 : 100.0 * covered / total).ToString("0.0", Localization.Strings.UiCulture);
 
     /// <summary>The report: the coverage before → after, the files that gained, the tests kept and set aside with their
     /// reason, what is left for another run.</summary>
@@ -489,7 +485,7 @@ internal static class TestCoverageCommandHandler
             var (c1, t1) = measured.Of(files);
             var delta = (t1 == 0 ? 0 : 100.0 * c1 / t1) - (t0 == 0 ? 0 : 100.0 * c0 / t0);
             sb.AppendLine(Strings.CoverageSummary(Percent(c0, t0), Percent(c1, t1),
-                                                  delta.ToString("+0.0;-0.0;0.0", CultureInfo.CurrentCulture), c1, t1));
+                                                  delta.ToString("+0.0;-0.0;0.0", Localization.Strings.UiCulture), c1, t1));
             var gained = files.Where(f => measured.Of([f]).Covered > before.Of([f]).Covered).ToList();
             if (gained.Count > 0)
             {

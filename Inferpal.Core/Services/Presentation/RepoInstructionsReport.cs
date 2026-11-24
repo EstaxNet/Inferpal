@@ -53,7 +53,7 @@ internal static class RepoInstructionsReport
             var scope       = Scope(instruction);
             if (sent.TryGetValue(source.Path, out var going))
             {
-                var section = prompt?.Sections.FirstOrDefault(s => s.Id == $"{PromptSectionKind.RepoInstructions}|{source.Path}");
+                var section = prompt?.Sections.FirstOrDefault(s => s.Id == XRayPanelPresenter.IdPrefix(PromptSectionKind.RepoInstructions) + source.Path);
                 if (section is { Enabled: false })
                 {
                     rows.Add(new(family, file, source.Path, scope, Nothing, Strings.RepoInstructionStateSwitchedOff, IsSent: false));
@@ -61,7 +61,8 @@ internal static class RepoInstructionsReport
                 }
                 var whole  = Commands.XRayCommandHandler.EstimateTokens(going.Text);
                 var tokens = section?.Tokens ?? whole;
-                var cut    = section is not null && section.Content.Contains(" truncated to ", StringComparison.Ordinal);
+                // By weight, as the pinned files are: the words of a file sent whole may name a cut.
+                var cut    = section is not null && section.Tokens < whole;
                 rows.Add(new(family, file, source.Path, scope,
                              cut ? Strings.PinnedFileTokensSent(SettingsWidgets.Amount(tokens), SettingsWidgets.Amount(whole))
                                  : Strings.PinnedFileTokens(SettingsWidgets.Amount(tokens)),

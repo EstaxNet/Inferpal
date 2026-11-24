@@ -56,9 +56,7 @@ internal static class LeftRunning
     /// <summary>A command as an inline code span, fenced longer than any backtick run it holds (a PowerShell escape).</summary>
     private static string Code(string command)
     {
-        var longest = 0;
-        for (int i = 0, run = 0; i < command.Length; i++)
-            longest = Math.Max(longest, run = command[i] == '`' ? run + 1 : 0);
+        var longest = MarkdownParser.LongestBacktickRun(command);
         if (longest == 0) return $"`{command}`";
         var fence = new string('`', longest + 1);
         return $"{fence} {command} {fence}";

@@ -38,6 +38,16 @@ public sealed class ShellCheckExitCodeOwnerTests
     }
 
     [Fact]
+    public void TheCommandThatFollows_IsFoundAsTheShellFindsIt_ALoneCarriageReturn_AndAnEscapedQuote()
+    {
+        // Read as CommandLine reads a line: a lone CR ends a statement, and an escaped quote (\" in bash, `" in PowerShell)
+        // closes nothing — "; echo done" after it is a command of its own.
+        var escape = Inferpal.Services.Shell.ShellLauncher.Resolve().Dialect == Inferpal.Services.Shell.ShellDialect.PowerShell ? '`' : '\\';
+        foreach (var command in new[] { "pytest -q\recho done", $"pytest -k \"a{escape}\"b\"; echo done" })
+            Assert.Null(CheckCommand.Failed(System.Text.Json.JsonSerializer.Serialize(new { command }), PytestRedThroughTail));
+    }
+
+    [Fact]
     public void ARedRunPipedThroughTail_IsNeverTheBarsTestsPassed()
     {
         var turn = new[]

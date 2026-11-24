@@ -157,7 +157,7 @@ internal sealed class BackgroundShellRegistry : IDisposable
         // for. ⚠ Bounded: a background process the job started holds the pipes open for as long as it lives, and the
         // parameterless WaitForExit() blocked this poll — synchronously — until then.
         if (exited)
-            try { job.StreamsEnded.Wait(2000); } catch (ObjectDisposedException) { }
+            try { job.StreamsEnded.Wait(ChildProcess.PipeGraceAfterExit); } catch (ObjectDisposedException) { }
 
         string chunk;
         int? exit;

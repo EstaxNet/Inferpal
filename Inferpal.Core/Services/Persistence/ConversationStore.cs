@@ -19,9 +19,7 @@ namespace Inferpal.Services.Persistence;
 /// </remarks>
 internal class ConversationStore
 {
-    private static readonly string _defaultDir = Path.Combine(
-        UserFolders.Of(Environment.SpecialFolder.ApplicationData),
-        "Inferpal", "sessions");
+    private static readonly string _defaultDir = UserFolders.InferpalData("sessions");
 
     /// <summary>
     /// Redirects the session folder in tests. Every other store here has one; without it the test
@@ -96,7 +94,7 @@ internal class ConversationStore
     /// Auto-saves the current session to "last_session.json".
     public Task AutoSaveAsync(IEnumerable<SavedMessage> messages, CancellationToken ct, string? workspaceRoot = null,
                               SessionState? state = null) =>
-        SaveAsync("last_session", messages, ct, workspaceRoot: workspaceRoot, state: state);
+        SaveAsync(AutoSaveSlot, messages, ct, workspaceRoot: workspaceRoot, state: state);
 
     /// <summary>
     /// <see cref="ForgetAutoSaveAsync"/>, or — when the slot could not be emptied — the notice that says so.
@@ -315,7 +313,7 @@ internal class ConversationStore
     {
         var result     = new List<SessionSummary>();
         var unreadable = new List<string>();
-        foreach (var name in ListSessions().Where(n => n != "last_session"))
+        foreach (var name in ListSessions().Where(n => n != AutoSaveSlot))
         {
             ct.ThrowIfCancellationRequested();
             try
@@ -327,9 +325,8 @@ internal class ConversationStore
                 // reporting it would be an alarm about something that is fine.
                 if (data is null) { if (File.Exists(SessionPath(name))) unreadable.Add(name); continue; }
                 var preview = data.Messages.FirstOrDefault(SessionManager.IsQuestion)?.Content ?? string.Empty;
-                if (preview.Length > 80) preview = preview[..80] + "…";
                 result.Add(new SessionSummary(name, data.SavedAt, SessionManager.ConversationMessageCount(data.Messages),
-                    preview.Replace('\n', ' '), data.Parent, data.ForkTurn, data.WorkspaceRoot));
+                    Agent.ChatTurnPolicy.OneLinePreview(preview, 80), data.Parent, data.ForkTurn, data.WorkspaceRoot));
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
@@ -357,7 +354,7 @@ internal class ConversationStore
         // Each hit with its file's last write: the list reads most recent first, the slots among the sessions.
         var results    = new List<(SessionMatch Hit, DateTime Written)>();
         var unreadable = new List<string>();
-        foreach (var name in ListSessions().Where(n => n != "last_session"))
+        foreach (var name in ListSessions().Where(n => n != AutoSaveSlot))
         {
             ct.ThrowIfCancellationRequested();
             try

@@ -35,6 +35,11 @@ internal static class McpJsonRpc
     internal static bool IsServerMessage(JsonElement message) =>
         message.ValueKind == JsonValueKind.Object && message.TryGetProperty("method", out _);
 
+    /// <summary>Whether <paramref name="message"/> is the server's notification that its tool list changed.</summary>
+    internal static bool IsToolsListChanged(JsonElement message) =>
+        IsServerMessage(message) && message.GetProperty("method") is { ValueKind: JsonValueKind.String } m
+        && m.GetString() == "notifications/tools/list_changed";
+
     /// <summary>Parses a <c>tools/list</c> result into tool infos. Entries without a name are skipped;
     /// a missing/!object schema falls back to <c>{}</c>. Schemas are cloned to outlive the source document.</summary>
     public static IReadOnlyList<McpToolInfo> ParseTools(JsonElement result)
@@ -133,6 +138,10 @@ internal static class McpJsonRpc
 
     /// <summary>What <see cref="ErrorMessage"/> answers when the error carries no text.</summary>
     internal const string UnknownError = "unknown error";
+
+    /// <summary>The <c>data</c> of a JSON-RPC error, detached from its document; <c>null</c> when it has none.</summary>
+    internal static JsonElement? ErrorData(JsonElement error) =>
+        error.ValueKind == JsonValueKind.Object && error.TryGetProperty("data", out var data) ? data.Clone() : null;
 
     /// <summary>The integer <c>code</c> of a JSON-RPC <c>error</c> member; <c>null</c> when there is none.</summary>
     internal static long? ErrorCode(JsonElement error) =>

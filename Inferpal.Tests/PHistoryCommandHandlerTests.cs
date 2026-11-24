@@ -30,6 +30,14 @@ public class PHistoryCommandHandlerTests
     }
 
     [Fact]
+    public void TheReservedWordUse_IsReadInAnyCase_NeverAsASearchTerm()
+    {
+        // "use" is reserved whatever its case, as the use branch reads it: "/phistory USE" lists, as "/phistory use" does.
+        Assert.Equal(PHistoryCommandHandler.Handle(Sample, Cmd("use")).Message, PHistoryCommandHandler.Handle(Sample, Cmd("USE")).Message);
+        Assert.Contains("refactor cache", PHistoryCommandHandler.Handle(Sample, Cmd("Use")).Message);
+    }
+
+    [Fact]
     public void List_Empty_ReturnsEmptyNotice()
     {
         var result = PHistoryCommandHandler.Handle([], Cmd());

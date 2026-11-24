@@ -118,7 +118,7 @@ internal static class ChatModes
 
     /// <summary>The person's own modes, in every workspace: <c>%AppData%\Inferpal\modes</c> (where <c>/import roo</c> puts a
     /// Roo user's global modes).</summary>
-    internal static string UserDir => Path.Combine(UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", "modes");
+    internal static string UserDir => UserFolders.InferpalData("modes");
 
     /// <summary>The modes of this workspace and of the person, with the repository formats the settings read, read now —
     /// a mode file edited between two questions is the one the next question uses.</summary>

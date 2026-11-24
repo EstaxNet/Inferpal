@@ -102,7 +102,7 @@ internal class OllamaClient : InferenceProviderBase
         string model, List<ChatMessageDto> messages, IToolRegistry tools, Action<string>? onToken, CancellationToken ct,
         TaskComplexity complexity, string? toolChoice, Action<string>? onThinking, Action<ModelWait?>? onWaiting)
     {
-        var base_ = ServerUrl.TrimEnd('/');
+        var base_ = ProviderProbe.RootOf(ServerUrl);
         if (string.IsNullOrWhiteSpace(base_))
             throw new AgentHttpException(Strings.MsgNoUrl, isTimeout: false);
         if (IsInCooldown())
@@ -190,13 +190,13 @@ internal class OllamaClient : InferenceProviderBase
         {
             throw Overran();   // Ollama's headers come with its first token
         }
-        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal)
+        catch (HttpRequestException ex) when (ServerAnswered(ex)
                                               && FallsBackToPromptedTools(ex.Message))
         {
             wait.Dispose();
             return await ChatAsync(model, messages, tools, onToken, ct, complexity, toolChoice, onThinking, onWaiting);
         }
-        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        catch (HttpRequestException ex) when (ServerAnswered(ex))
         {
             // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
             // "Cannot reach … check the URL" sends the user to verify a URL that is fine: say what
@@ -498,7 +498,7 @@ internal class OllamaClient : InferenceProviderBase
 
     private async Task<float[]?> EmbedAsync(string text, string model, CancellationToken ct, int depth)
     {
-        var base_ = ServerUrl.TrimEnd('/');
+        var base_ = ProviderProbe.RootOf(ServerUrl);
         // Use the dedicated embedding circuit breaker (independent of chat breaker).
         if (string.IsNullOrWhiteSpace(base_) || IsEmbeddingInCooldown()) return null;
 
@@ -528,8 +528,9 @@ internal class OllamaClient : InferenceProviderBase
             using var stream = await http.Content.ReadAsStreamAsync(sendCts.Token);
             using var doc    = await JsonDocument.ParseAsync(stream, cancellationToken: sendCts.Token);
 
+            // An empty array is no vector, as the compatible client and the index read it.
             if (doc.RootElement.TryGetProperty("embedding", out var embEl) &&
-                embEl.ValueKind == JsonValueKind.Array)
+                embEl.ValueKind == JsonValueKind.Array && embEl.GetArrayLength() > 0)
             {
                 var arr = new float[embEl.GetArrayLength()];
                 int i   = 0;
@@ -622,7 +623,7 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
-            var base_ = ServerUrl.TrimEnd('/');
+            var base_ = ProviderProbe.RootOf(ServerUrl);
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
             var result = await _http.GetFromJsonAsync<RunningModelsResponse>(
@@ -642,9 +643,9 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
-            var base_ = ServerUrl.TrimEnd('/');
+            var base_ = ProviderProbe.RootOf(ServerUrl);
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(10));
+            cts.CancelAfter(UnloadTimeout);
             // keep_alive=0 tells Ollama to evict the model immediately after this no-op request.
             var body = new { model, keep_alive = 0 };
             using var resp = await _http.PostAsJsonAsync($"{base_}/api/generate", body, _jsonOpts, cts.Token);
@@ -666,8 +667,8 @@ internal class OllamaClient : InferenceProviderBase
             // a server that accepts TCP but never answers froze the model dropdowns until the
             // caller's token fired — if it had one.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(10));
-            var base_  = UrlOr(url).TrimEnd('/');
+            cts.CancelAfter(ListingTimeout);
+            var base_  = ProviderProbe.RootOf(UrlOr(url));
             var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", cts.Token);
             return result?.Models?.Select(m => m.Name).ToList() ?? [];
         }
@@ -690,8 +691,8 @@ internal class OllamaClient : InferenceProviderBase
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(10));
-            var base_  = UrlOr(url).TrimEnd('/');
+            cts.CancelAfter(ListingTimeout);
+            var base_  = ProviderProbe.RootOf(UrlOr(url));
             var result = await _http.GetFromJsonAsync<ModelListResponse>($"{base_}/api/tags", cts.Token);
             return result?.Models?.Select(m => new InstalledModelInfo(m.Name, m.Size, m.Capabilities,
                 m.Capabilities is { Count: > 0 } published ? published.Contains("vision", StringComparer.OrdinalIgnoreCase) : null)).ToList() ?? [];
@@ -711,7 +712,7 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
-            var base_ = ServerUrl.TrimEnd('/');
+            var base_ = ProviderProbe.RootOf(ServerUrl);
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(8));
             using var resp = await _http.PostAsJsonAsync($"{base_}/api/show", new { model }, _jsonOpts, cts.Token);
@@ -727,7 +728,7 @@ internal class OllamaClient : InferenceProviderBase
     {
         try
         {
-            var base_ = ServerUrl.TrimEnd('/');
+            var base_ = ProviderProbe.RootOf(ServerUrl);
             var body  = new { name = model, stream = true };
             // Headers-read so download progress streams live instead of arriving all at
             // once when the pull completes (see PostForStreamingAsync).
@@ -792,7 +793,7 @@ internal class OllamaClient : InferenceProviderBase
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(30));   // a delete is bounded work; infinite client timeout is not
             ct = cts.Token;
-            var base_ = ServerUrl.TrimEnd('/');
+            var base_ = ProviderProbe.RootOf(ServerUrl);
             using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Delete, $"{base_}/api/delete")
             {
                 Content = System.Net.Http.Json.JsonContent.Create(new { name = model }, options: _jsonOpts)
@@ -836,7 +837,7 @@ internal class OllamaClient : InferenceProviderBase
         CancellationToken ct,
         string?        model = null)
     {
-        var base_ = ServerUrl.TrimEnd('/');
+        var base_ = ProviderProbe.RootOf(ServerUrl);
         BeginFimAttempt();
         if (string.IsNullOrWhiteSpace(base_) || IsFimInCooldown()) return;
 
@@ -869,7 +870,7 @@ internal class OllamaClient : InferenceProviderBase
                 KeepAlive: ComputeKeepAlive());
 
         // 60 s bounds time-to-first-byte, then chunk inactivity (see SendChatAsync).
-        var deadline = TimeSpan.FromSeconds(60);
+        var deadline = InlineCompletionWait;
 
         HttpResponseMessage http;
         try
@@ -880,7 +881,7 @@ internal class OllamaClient : InferenceProviderBase
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException) { RecordFimFailure(); return; } // internal 60-s timeout expired
-        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        catch (HttpRequestException ex) when (ServerAnswered(ex))
         {
             NoteFimRefusal(m, ex.Message);
             // Ollama refuses a suffix for a model whose template has no insert slot — most chat models — before loading

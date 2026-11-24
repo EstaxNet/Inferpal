@@ -187,7 +187,7 @@ internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<in
     /// <summary>The split of <paramref name="tools"/> for <paramref name="window"/> (pure).</summary>
     internal static Plan Split(IReadOnlyList<ITool> tools, int window)
     {
-        var budget = (int)(window * WindowShare) * 4;   // tokens to characters, the ~4 a token RequestSize counts
+        var budget = (int)(window * WindowShare) * Agent.AgentOrchestrator.CharsPerToken;   // tokens to characters
         var byServer = tools.OfType<McpTool>()
             .GroupBy(t => t.ServerName, StringComparer.Ordinal)
             .Select(g => (Server: g.Key, Tools: (IReadOnlyList<McpTool>)[.. g], Chars: g.Sum(Chars)))
@@ -207,11 +207,11 @@ internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<in
     /// <summary>The characters of a tool's definition as a request sends it.</summary>
     private static int Chars(ITool t)
     {
-        try { return JsonSerializer.Serialize(new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters))).Length; }
+        try { return JsonSerializer.Serialize(ToolRegistry.DefinitionOf(t)).Length; }
         catch (Exception ex)
         {
             Diagnostics.Swallow("OnDemandTools.Chars", ex);
-            return 400;   // the rough per-tool budget RequestSize uses when a schema does not serialize
+            return Inference.RequestSize.UnserializedToolChars;
         }
     }
 

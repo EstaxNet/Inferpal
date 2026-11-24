@@ -74,6 +74,23 @@ public sealed class RepoInstructionsReportTests : IDisposable
     }
 
     [Fact]
+    public void AFileThatSaysTruncated_SentWhole_ShowsOneFigure()
+    {
+        // Judged as the pinned files are (what the section weighs against the whole), never by its words: these name a
+        // cut, and the whole file is sent.
+        Write("AGENTS.md", "Logs are truncated to 200 lines: keep the first error near the top.");
+        var config   = new InferpalConfig();
+        var sections = new SystemPromptBuilder(config, workspaceRoot: _repo).BuildSections("base", projectRoot: _repo);
+        var section  = XRayPanelPresenter.Build(sections, null, 0, 0).Sections
+                           .Single(s => s.Id == $"{PromptSectionKind.RepoInstructions}|{P("AGENTS.md")}");
+
+        var row = Row(Rows(config: config), "AGENTS.md");
+
+        Assert.True(row.IsSent);
+        Assert.Equal(Strings.PinnedFileTokens(SettingsWidgets.Amount(section.Tokens)), row.Sent);
+    }
+
+    [Fact]
     public void ACutFile_ShowsWhatIsSentOutOfTheWhole()
     {
         Write("AGENTS.md", string.Join('\n', Enumerable.Range(0, 2000).Select(i => $"rule {i}: keep things tidy")));

@@ -78,6 +78,9 @@ internal sealed record ShellState(string Directory, IReadOnlyDictionary<string, 
 /// </remarks>
 internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = null, TimeSpan? closeNamesBudget = null)
 {
+    /// <summary>How many close names a refusal offers, and how many each registry is asked for.</summary>
+    internal const int CloseNames = 5;
+
     /// <summary>The check every registry uses unless it is given its own.</summary>
     public static PackageCheck Shared { get; set; } = new(new PackageManagerLookup());
 
@@ -199,7 +202,7 @@ internal sealed class PackageCheck(IPackageLookup lookup, TimeSpan? budget = nul
     /// <summary>The refusal the model reads: the sources asked, and the names that exist, so the next call can use one.</summary>
     private static string Refusal(string name, string where, IReadOnlyList<string> closeNames)
     {
-        var close = closeNames.Where(n => !n.Equals(name, StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase).Take(5).ToList();
+        var close = closeNames.Where(n => !n.Equals(name, StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase).Take(CloseNames).ToList();
         return $"Error: the package '{name}' does not exist on {where}, so the call was NOT executed and nothing was written. "
              + (close.Count > 0 ? $"Packages that exist with close names: {string.Join(", ", close)}. " : "")
              + "Use the exact name of a package that exists, or tell the user that you found none.";

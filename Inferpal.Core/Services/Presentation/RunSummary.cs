@@ -352,5 +352,5 @@ internal static class RunSummary
 
     /// <summary>Whole tokens per second from ten on; one decimal below, where a whole number hides half the figure.</summary>
     private static string Speed(GenerationRate rate) =>
-        rate.PerSecond.ToString(rate.PerSecond >= 10 ? "0" : "0.0", CultureInfo.CurrentCulture);
+        rate.PerSecond.ToString(rate.PerSecond >= 10 ? "0" : "0.0", Localization.Strings.UiCulture);
 }

@@ -148,13 +148,16 @@ internal static class CheckCommand
         if (!start.Success) return false;
 
         var quote = '\0';
+        var posix = Execution.CommandLine.PosixShell();
         for (var i = start.Index + start.Length; i < command.Length; i++)
         {
             var c = command[i];
+            // Read as CommandLine reads a line: an escaped character is taken as written, never a quote or a separator.
+            if (Execution.CommandLine.IsEscape(c, quote == '\0' ? null : quote, posix)) { i++; continue; }
             if (quote != '\0') { if (c == quote) quote = '\0'; continue; }
             if (c is '"' or '\'') { quote = c; continue; }
             var next = i + 1 < command.Length ? command[i + 1] : '\0';
-            if (c is ';' or '\n') return false;
+            if (c is ';' or '\n' or '\r') return false;
             if (c == '&')
             {
                 if (next == '&') { i++; continue; }                                   // "&&": a failure stops here

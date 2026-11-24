@@ -52,4 +52,20 @@ public sealed class SessionListOrderTests : IDisposable
 
         Assert.Equal(["session_b", "session_a"], store.ListSessions());
     }
+
+    [Fact]
+    public async Task APreview_IsOneLine_AndNeverHalfACharacter()
+    {
+        // As every one-line preview (ChatTurnPolicy.OneLinePreview): an emoji across the cut stays whole or goes, a CRLF
+        // question leaves no stray CR.
+        var store = new ConversationStore(_dir);
+        var question = "first\r\nline " + new string('a', 72) + char.ConvertFromUtf32(0x1F600) + " and more";
+        await store.SaveAsync("s", [new SavedMessage("user", question), new SavedMessage("assistant", "an answer")],
+                              CancellationToken.None, workspaceRoot: _dir);
+
+        var preview = Assert.Single((await store.ListWithPreviewAsync(CancellationToken.None)).Items).FirstUserPreview;
+
+        Assert.DoesNotContain('\r', preview);
+        Assert.False(char.IsHighSurrogate(preview[^2]), preview);   // the character before the ellipsis is whole
+    }
 }

@@ -305,8 +305,7 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
             using var doc = JsonDocument.Parse(body.Trim());
             if (doc.RootElement.ValueKind == JsonValueKind.Object
                 && doc.RootElement.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
-                return (McpJsonRpc.ErrorCode(error),
-                        error.TryGetProperty("data", out var data) ? data.Clone() : null);
+                return (McpJsonRpc.ErrorCode(error), McpJsonRpc.ErrorData(error));
         }
         catch (JsonException) { /* not a JSON-RPC body */ }
         return (null, null);
@@ -561,14 +560,12 @@ internal sealed partial class McpHttpClient : McpClientBase, IMcpClient
         return PostAsync(payload, ct);
     }
 
-    private static bool IsToolsListChanged(string data)
+    internal static bool IsToolsListChanged(string data)
     {
         try
         {
             using var doc = JsonDocument.Parse(data);
-            return doc.RootElement.TryGetProperty("method", out var m)
-                && m.ValueKind == JsonValueKind.String
-                && m.GetString() == "notifications/tools/list_changed";
+            return McpJsonRpc.IsToolsListChanged(doc.RootElement);
         }
         catch (JsonException)
         {

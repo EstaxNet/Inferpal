@@ -17,7 +17,7 @@ internal static class RunCopyCommandHandler
     public static string Question(string typed)
     {
         var text = typed.Trim();
-        var at = text.AsSpan().IndexOfAny([' ', '\t', '\r', '\n']);
+        var at = text.AsSpan().IndexOfAny(SlashCommandRouter.CommandWordEnds);
         return at > 0 ? text[at..].Trim() : "";
     }
 

@@ -151,11 +151,13 @@ internal static class MarkdownParser
         return kept.ToString().Trim();
     }
 
-    /// <summary>
-    /// <paramref name="text"/> in a code block to copy as it is: the fence is longer than any run of backticks inside, so
-    /// a code block in the text never closes it early.
-    /// </summary>
-    public static string Fence(string text, string language = "")
+    /// <summary>The contents of the fenced code blocks of <paramref name="text"/> — backticks or tildes, of any length — as the
+    /// chat reads them; an indented block or HTML is no code a reply hands over.</summary>
+    public static IReadOnlyList<string> FencedCode(string text) =>
+        [.. Markdown.Parse(text, _pipeline).Descendants<FencedCodeBlock>().Select(b => b.Lines.ToString())];
+
+    /// <summary>The longest run of backticks in <paramref name="text"/>: a fence or a code span around it must be longer.</summary>
+    public static int LongestBacktickRun(string text)
     {
         int longest = 0, run = 0;
         foreach (var c in text)
@@ -163,7 +165,16 @@ internal static class MarkdownParser
             run = c == '`' ? run + 1 : 0;
             if (run > longest) longest = run;
         }
-        var fence = new string('`', Math.Max(3, longest + 1));
+        return longest;
+    }
+
+    /// <summary>
+    /// <paramref name="text"/> in a code block to copy as it is: the fence is longer than any run of backticks inside, so
+    /// a code block in the text never closes it early.
+    /// </summary>
+    public static string Fence(string text, string language = "")
+    {
+        var fence = new string('`', Math.Max(3, LongestBacktickRun(text) + 1));
         return $"{fence}{language}\n{text}\n{fence}";
     }
 

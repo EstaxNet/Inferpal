@@ -103,7 +103,7 @@ internal static class SessionManager
     public static string FormatTemplateList()
     {
         var list = string.Join("\n", Templates.Select(t => $"- **{t.Id}** — {t.Label}"));
-        return $"{Strings.TemplateListHeader}\n\n{list}\n\n{Strings.SlashUsage("/template <id>")}";
+        return $"{Strings.TemplateListHeader}\n\n{list}\n\n{Strings.SlashUsage(Commands.TemplateCommandHandler.Usage)}";
     }
 
     // ── Snapshots & restore ───────────────────────────────────────────────────

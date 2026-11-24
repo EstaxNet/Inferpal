@@ -610,7 +610,7 @@ internal abstract class ApprovalServiceBase : IApprovalService
     private string? OverlayPath()
     {
         var root = _rulesRoot();
-        return string.IsNullOrEmpty(root) ? null : Path.Combine(root, ".inferpal", "permissions.json");
+        return string.IsNullOrEmpty(root) ? null : Commands.PermissionsCommandHandler.OverlayPath(root);
     }
 
     // File's last-write time, or default(DateTime) when absent — also the cache key, so deleting

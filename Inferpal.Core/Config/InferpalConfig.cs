@@ -16,9 +16,7 @@ namespace Inferpal.Config;
 /// </remarks>
 internal class InferpalConfig
 {
-    private static readonly string ConfigPath = Path.Combine(
-        UserFolders.Of(Environment.SpecialFolder.ApplicationData),
-        "Inferpal", "config.json");
+    private static readonly string ConfigPath = UserFolders.InferpalData("config.json");
 
     /// <summary>
     /// Test seam: redirects <see cref="Load()"/>/<see cref="Save"/> to another file. Set once by the

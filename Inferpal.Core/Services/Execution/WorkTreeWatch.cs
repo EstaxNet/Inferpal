@@ -593,12 +593,7 @@ internal static class WorkTreeWatch
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return (-2, default); }
     }
 
-    private static bool Under(string? workspace, string full)
-    {
-        if (string.IsNullOrEmpty(workspace)) return false;
-        var root = Path.TrimEndingDirectorySeparator(workspace);
-        return full.StartsWith(root + Path.DirectorySeparatorChar, PathComparer.Comparison);
-    }
+    private static bool Under(string? workspace, string full) => !string.IsNullOrEmpty(workspace) && PathComparer.IsBelow(full, workspace);
 
     private static string FullPath(string root, string gitPath) =>
         Path.GetFullPath(Path.Combine(root, gitPath.Replace('/', Path.DirectorySeparatorChar)));

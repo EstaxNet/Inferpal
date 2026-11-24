@@ -18,6 +18,9 @@ internal sealed record TemplateCommandResult(string? Message = null, SessionTemp
 /// </summary>
 internal static class TemplateCommandHandler
 {
+    /// <summary>How /template is typed: the command line under the list, and the refusal of a bare call.</summary>
+    internal const string Usage = "/template <id>";
+
     public static TemplateCommandResult Handle(string[] parts)
     {
         if (parts.Length < 2)
@@ -25,7 +28,7 @@ internal static class TemplateCommandHandler
         // ⚠ One id, nothing after it: "/template code-review focus on security" applied the template — the conversation
         // discarded — and dropped what was asked. Said, and nothing is discarded.
         if (parts.Length > 2)
-            return new TemplateCommandResult(Strings.SlashUsage("/template <id>"));
+            return new TemplateCommandResult(Strings.SlashUsage(Usage));
 
         var id   = parts[1].ToLowerInvariant();
         var tmpl = SessionManager.FindTemplate(id);

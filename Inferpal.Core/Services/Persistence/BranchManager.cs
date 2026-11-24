@@ -154,7 +154,7 @@ internal static class BranchManager
         var names       = sessions.Items.Select(s => s.Name).Concat(sessions.Unreadable).ToList();
         // A current name the store no longer lists was deleted since: writing the parent back under it
         // would bring that file back, so the conversation counts as unsaved.
-        var parentIsNew = string.IsNullOrWhiteSpace(currentName) || currentName == "last_session"
+        var parentIsNew = string.IsNullOrWhiteSpace(currentName) || currentName == ConversationStore.AutoSaveSlot
                           || !sessions.Items.Any(s => s.Name.Equals(currentName, StringComparison.OrdinalIgnoreCase));
         var parentName  = parentIsNew
             ? SessionManager.UniqueSessionName(MakeParentName(messages, localNow), names)
@@ -243,9 +243,5 @@ internal static class BranchManager
             AppendNode(sb, child.Name, child.ForkTurn, depth + 1, children, currentName, seen);
     }
 
-    private static string Preview(string content)
-    {
-        var line = content.Replace('\n', ' ').Replace('\r', ' ').Trim();
-        return line.Length <= PreviewLength ? line : line[..PreviewLength] + "…";
-    }
+    private static string Preview(string content) => Agent.ChatTurnPolicy.OneLinePreview(content.Trim(), PreviewLength);
 }

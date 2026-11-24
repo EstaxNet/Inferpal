@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -61,7 +62,7 @@ internal sealed class PackageManagerLookup : IPackageLookup
         switch (package.Ecosystem)
         {
             case PackageEcosystem.NuGet:
-                var nuget = await RunAsync("dotnet", "dotnet", [], ["package", "search", package.Name, "--take", "5", "--prerelease", "--format", "json"], package, ct);
+                var nuget = await RunAsync("dotnet", "dotnet", [], ["package", "search", package.Name, "--take", PackageCheck.CloseNames.ToString(CultureInfo.InvariantCulture), "--prerelease", "--format", "json"], package, ct);
                 return nuget.Unknown is null && nuget.Result.ExitCode == 0 ? NuGetNames(nuget.Result.Stdout) : [];
             case PackageEcosystem.Npm when RunTestsTool.ResolveNpm(OperatingSystem.IsWindows(), Shell.ShellLauncher.FindOnPath, File.Exists) is { } npm:
                 var search = await RunAsync("npm", npm.FileName, npm.Prefix, NpmSearchArguments(package.Name), package, ct);
@@ -76,7 +77,7 @@ internal sealed class PackageManagerLookup : IPackageLookup
     /// a configuration that sends <c>@types</c> to the public registry and everything else to a company server would
     /// send the company the name a public lookup just found absent.</remarks>
     internal static string[] NpmSearchArguments(string name) =>
-        ["search", "--json", "--searchlimit=5", "--fetch-retries=0", "--registry=https://registry.npmjs.org/", name];
+        ["search", "--json", "--searchlimit=" + PackageCheck.CloseNames.ToString(CultureInfo.InvariantCulture), "--fetch-retries=0", "--registry=https://registry.npmjs.org/", name];
 
     // ── NuGet ────────────────────────────────────────────────────────────────
 
@@ -275,7 +276,7 @@ internal sealed class PackageManagerLookup : IPackageLookup
         var inScopes = false;
         foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
         {
-            var line = WithoutComment(raw);
+            var line = PackageManifests.WithoutTomlComment(raw);
             if (line.Trim().Length == 0) continue;
             var nested = char.IsWhiteSpace(line[0]);
             if (yaml)
@@ -320,13 +321,6 @@ internal sealed class PackageManagerLookup : IPackageLookup
                 ? (line[..at].Trim().Trim('"', '\''), line[(at + 1)..].Trim())
                 : (line.Trim().Trim('"', '\''), string.Empty);
 
-        // A comment starts the line or follows a space: "#" inside an address or a token is no comment.
-        static string WithoutComment(string line)
-        {
-            for (var i = 0; i < line.Length; i++)
-                if (line[i] == '#' && (i == 0 || char.IsWhiteSpace(line[i - 1]))) return line[..i];
-            return line;
-        }
 
         static bool IsPublicNpm(string value) =>
             Regex.Match(value, @"https?://[^\s""'},]+", RegexOptions.None, MatchTimeout) is { Success: true } url

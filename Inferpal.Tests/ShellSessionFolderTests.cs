@@ -155,4 +155,14 @@ public sealed class ShellSessionFolderTests : IDisposable
         root = _other;
         Assert.EndsWith("there", Path.TrimEndingDirectorySeparator(session.CurrentDirectory), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void TheSameFolderSpelledAnotherWay_IsNoMoveOfTheRoot()
+    {
+        // "Has the root moved?" answered as PathComparer.SameDirectory answers it for MCP and the tasks: a "." or the other
+        // separator set the folder and the variables aside as for another repository.
+        Assert.True(ShellSession.SameFolder(_root, Path.Combine(_root, ".") + Path.DirectorySeparatorChar));
+        Assert.True(ShellSession.SameFolder(_root, _root.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)));
+        Assert.False(ShellSession.SameFolder(_root, _other));   // reference arm
+    }
 }

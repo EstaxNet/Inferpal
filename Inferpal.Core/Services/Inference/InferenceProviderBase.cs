@@ -439,9 +439,26 @@ internal abstract class InferenceProviderBase : IInferenceProvider
         var status = $"{(int)code} ({response.ReasonPhrase})";
         response.Dispose(); // release the connection on HTTP errors
         throw new HttpRequestException(detail.Length > 0
-            ? $"HTTP {status}: {detail}"
-            : $"HTTP {status}.", inner: null, code);
+            ? $"{AnsweredPrefix}{status}: {detail}"
+            : $"{AnsweredPrefix}{status}.", inner: null, code);
     }
+
+    /// <summary>How the message of a refusal the server sent begins (<c>HTTP 404 (Not Found): …</c>).</summary>
+    private const string AnsweredPrefix = "HTTP ";
+
+    /// <summary>Whether <paramref name="ex"/> is an answer the server sent with an error status, as
+    /// <c>PostForStreamingAsync</c> raises it: never a connection that failed.</summary>
+    private protected static bool ServerAnswered(HttpRequestException ex) =>
+        ex.Message.StartsWith(AnsweredPrefix, StringComparison.Ordinal);
+
+    /// <summary>How long a list of the server's models is waited for.</summary>
+    private protected static readonly TimeSpan ListingTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>How long a request to unload a model is waited for.</summary>
+    private protected static readonly TimeSpan UnloadTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>An inline completion's wait for its first byte, then between its chunks.</summary>
+    private protected static readonly TimeSpan InlineCompletionWait = TimeSpan.FromSeconds(60);
 
     private const int ErrorDetailChars = 600;
 

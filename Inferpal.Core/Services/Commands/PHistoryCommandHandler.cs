@@ -61,7 +61,7 @@ internal static class PHistoryCommandHandler
             return new(unreadablePath is { } p ? Strings.PHistoryUnreadable(p) : Strings.PHistoryEmpty, null);
 
         // /phistory [term] — filtered list ("use" is reserved, not a search term).
-        var term = parts.Length >= 2 && parts[1] != "use"
+        var term = parts.Length >= 2 && !parts[1].Equals("use", StringComparison.OrdinalIgnoreCase)
             ? string.Join(" ", parts[1..]).ToLowerInvariant()
             : null;
 

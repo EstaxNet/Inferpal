@@ -21,6 +21,8 @@ public class ChatTurnPolicyTests
     [Theory]
     [InlineData("short",            "short")]
     [InlineData("two\nlines",       "two lines")]
+    [InlineData("two\r\nlines",     "two lines")]   // a CRLF question leaves no stray CR in the line
+    [InlineData("one\rline",        "one line")]
     public void OneLinePreview_FlattensNewlines(string text, string expected) =>
         Assert.Equal(expected, ChatTurnPolicy.OneLinePreview(text, 80));
 

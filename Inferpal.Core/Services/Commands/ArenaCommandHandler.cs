@@ -211,7 +211,7 @@ internal static class ArenaCommandHandler
                                      (string Text, double Seconds, bool Cut, bool OnlyReasoning) answer)
     {
         sb.Append("#### ")
-          .AppendLine(Strings.ArenaAnswerHeader(label, answer.Seconds.ToString("0.0", CultureInfo.CurrentUICulture)))
+          .AppendLine(Strings.ArenaAnswerHeader(label, answer.Seconds.ToString("0.0", Localization.Strings.UiCulture)))
           .AppendLine()
           .AppendLine(string.IsNullOrWhiteSpace(answer.Text) ? "*(∅)*" : answer.Text.Trim())
           .AppendLine();

@@ -107,7 +107,7 @@ internal static class CommandLine
         return command < 0 ? null : piece[command..];
     }
 
-    private static bool PosixShell() => Shell.ShellLauncher.Resolve().Dialect != Shell.ShellDialect.PowerShell;
+    internal static bool PosixShell() => Shell.ShellLauncher.Resolve().Dialect != Shell.ShellDialect.PowerShell;
 
     /// <summary>The top-level steps of <paramref name="line"/>, quote- and escape-aware, as written.</summary>
     /// <remarks>⚠ A separator inside brackets belongs to what they hold: cut there, <c>echo $(rm -rf src; true)</c> leaves a
@@ -146,7 +146,7 @@ internal static class CommandLine
 
     /// <summary>Whether <paramref name="c"/> escapes the next character: PowerShell's backtick (outside single quotes), a
     /// POSIX backslash (outside single quotes).</summary>
-    private static bool IsEscape(char c, char? quote, bool posix) =>
+    internal static bool IsEscape(char c, char? quote, bool posix) =>
         quote != '\'' && (posix ? c == '\\' : c == '`');
 
     /// <summary>The text of each command <paramref name="line"/> runs inside itself, in order; a hashtable entry's

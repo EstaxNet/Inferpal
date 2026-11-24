@@ -90,8 +90,8 @@ internal static class ImageCards
     /// past ten.</summary>
     internal static string SizeText(long bytes) =>
         bytes >= 10L * 1024 * 1024
-            ? Strings.SizeMegabytes((bytes / (1024.0 * 1024)).ToString("0.#", CultureInfo.CurrentCulture))
-            : Strings.SizeKilobytes(Math.Max(1, (long)Math.Round(bytes / 1024.0)).ToString(CultureInfo.CurrentCulture));
+            ? Strings.SizeMegabytes((bytes / (1024.0 * 1024)).ToString("0.#", Localization.Strings.UiCulture))
+            : Strings.SizeKilobytes(Math.Max(1, (long)Math.Round(bytes / 1024.0)).ToString(Localization.Strings.UiCulture));
 
     /// <summary>The badge beside the model's name: it sees images, it does not, or nothing when the server does not say.</summary>
     public static string Badge(bool? seesImages) => seesImages switch

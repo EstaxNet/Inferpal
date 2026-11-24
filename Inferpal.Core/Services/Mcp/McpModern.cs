@@ -214,7 +214,7 @@ internal sealed class McpRpcException : InvalidOperationException
     {
         ServerMessage = McpJsonRpc.ErrorMessage(error);
         Code          = McpJsonRpc.ErrorCode(error);
-        RpcData       = error.ValueKind == JsonValueKind.Object && error.TryGetProperty("data", out var d) ? d.Clone() : null;
+        RpcData       = McpJsonRpc.ErrorData(error);
     }
 
     /// <summary>The <c>code</c> of the error; <c>null</c> when the server sent none, or not as an integer.</summary>

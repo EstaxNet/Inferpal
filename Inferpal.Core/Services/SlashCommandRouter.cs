@@ -268,6 +268,9 @@ internal static class SlashCommandRouter
     internal static bool IsResume(string? prompt) =>
         string.Equals(prompt?.Trim(), "/resume", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>What ends a command word: any whitespace — a space, a tab, a line break (Shift+Enter).</summary>
+    internal static readonly char[] CommandWordEnds = [' ', '\t', '\r', '\n'];
+
     /// <summary>
     /// True when <paramref name="text"/> is written as a command: a <c>/</c>, then a name that starts with a letter or a
     /// digit and has no <c>/</c> or <c>\</c> — a path has one, a block comment starts with <c>*</c>, no command, alias or
@@ -282,7 +285,7 @@ internal static class SlashCommandRouter
     {
         var typed = text?.TrimStart() ?? string.Empty;
         if (typed.Length < 2 || typed[0] != '/') return false;
-        var name = typed[1..].Split([' ', '\t', '\r', '\n'], 2)[0];
+        var name = typed[1..].Split(CommandWordEnds, 2)[0];
         return name.Length > 0 && char.IsLetterOrDigit(name[0]) && name.IndexOfAny(['/', '\\']) < 0;
     }
 
@@ -304,7 +307,7 @@ internal static class SlashCommandRouter
     private static string RestOf(string prompt)
     {
         var text = prompt.Trim();
-        var cut  = text.IndexOfAny([' ', '\t']);
+        var cut  = text.IndexOfAny(CommandWordEnds);
         return cut < 0 ? string.Empty : text[(cut + 1)..].Trim();
     }
 
@@ -364,7 +367,12 @@ internal static class SlashCommandRouter
     /// <param name="userTemplates">User templates checked as the fallback for unknown commands.</param>
     public static SlashAction Route(string prompt, IEnumerable<UserSlashTemplate> userTemplates)
     {
-        var parts = prompt.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        // The command word ends at any whitespace (Shift+Enter, a tab), as LooksLikeCommand reads it: what follows it is
+        // split on spaces, as before.
+        prompt = prompt.Trim();
+        if (prompt.IndexOfAny(CommandWordEnds) is var end and > 0 && prompt[end] != ' ')
+            prompt = prompt[..end] + " " + prompt[end..].TrimStart();
+        var parts = prompt.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var cmd   = parts.Length > 0 ? parts[0].ToLowerInvariant() : "/";
 
         switch (cmd)

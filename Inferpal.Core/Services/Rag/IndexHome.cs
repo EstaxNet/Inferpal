@@ -63,7 +63,7 @@ internal static class IndexHome
     internal static string? OldFolderOf(string name)
     {
         if (!OperatingSystem.IsWindows()) return null;
-        var old = Path.Combine(UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", name);
+        var old = UserFolders.InferpalData(name);
         return SameFolder(old, FolderOf(name)) ? null : old;
     }
 

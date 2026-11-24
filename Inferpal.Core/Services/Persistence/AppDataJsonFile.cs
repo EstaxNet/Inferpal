@@ -78,8 +78,7 @@ internal sealed class AppDataJsonFile<T>
         _preserveUnreadable = preserveUnreadable;
         _accept             = accept;
         // Fully qualified: the Path property below shadows System.IO.Path inside this type.
-        _defaultPath = System.IO.Path.Combine(
-            UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", fileName);
+        _defaultPath = UserFolders.InferpalData(fileName);
         _diagnosticName = diagnosticName;
     }
 

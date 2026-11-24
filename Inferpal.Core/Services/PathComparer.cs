@@ -41,8 +41,10 @@ internal static class PathComparer
     /// reaches is <c>PathSanitizer</c>'s question.</summary>
     public static bool IsBelow(string path, string folder)
     {
-        var prefix = folder.TrimEnd('\\', '/');
-        return path.Length > prefix.Length && path.StartsWith(prefix, PathComparer.Comparison) && path[prefix.Length] is '\\' or '/';
+        // A drive root ("R:\\", "/") already ends with its separator: trimmed, the next character is the one that must be one.
+        var prefix = folder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        return path.Length > prefix.Length && path.StartsWith(prefix, PathComparer.Comparison)
+               && (path[prefix.Length] == Path.DirectorySeparatorChar || path[prefix.Length] == Path.AltDirectorySeparatorChar);
     }
 
     /// <summary>Whether two folders are the same — a trailing separator or, where the volume folds it, a different case

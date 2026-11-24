@@ -174,9 +174,7 @@ internal static class ContentExclusions
         return owner;
     }
 
-    private static bool Under(string root, string full) =>
-        full.StartsWith(root + Path.DirectorySeparatorChar, PathComparer.Comparison)
-        || (Path.DirectorySeparatorChar != '/' && full.StartsWith(root + "/", PathComparer.Comparison));
+    private static bool Under(string root, string full) => PathComparer.IsBelow(full, root);
 
     // ── the walk's tally: what a walk skipped during one tool call, said above its result ──
 

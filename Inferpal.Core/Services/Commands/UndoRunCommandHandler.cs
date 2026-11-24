@@ -233,7 +233,8 @@ internal static class UndoRunCommandHandler
     private static (string Message, Presentation.RunReviewModel? Review)? Refused(
         FileHistoryService history, string runId, string path, string? root, bool busy, out HistoryRun run, out string full)
     {
-        full = Path.IsPathFullyQualified(path) || string.IsNullOrEmpty(root) ? path : Path.GetFullPath(Path.Combine(root, path));
+        full = Path.IsPathFullyQualified(path) ? Path.GetFullPath(path)
+             : string.IsNullOrEmpty(root) ? path : Path.GetFullPath(Path.Combine(root, path));
         run = history.Runs.FirstOrDefault(r => r.Id == runId && r.FileCount > 0)!;
         if (run is null) return (Strings.UndoRunNone, null);
         // Still recorded into here or by the other editor: changed now, the agent writes on top.

@@ -56,7 +56,7 @@ internal static class PackageCommands
     /// the configuration on disk does not have yet.</summary>
     internal static bool ChangesSources(string step) =>
         Regex.IsMatch(step, @"(?i)\b(pip|uv|npm_config|nuget|yarn|pnpm|conda)_[a-z0-9_]*\s*=|\bdotnet\s+nuget\s+(add|update|enable|disable|remove)\s+source\b"
-                          + @"|\b(npm|pnpm|yarn|pip3?|uv)\s+config\s+set\b|\bnpm\s+set\b|\bnuget\.config\b|\.npmrc\b|\.yarnrc|\bpip\.(conf|ini)\b|\buv\.toml\b",
+                          + @"|\b(npm|pnpm|yarn|pip3?|uv)\s+config\s+set\b|\bnpm\s+set\b|\bnuget\.config\b|\.npmrc\b|\.yarnrc|\bbunfig\.toml\b|\bpip\.(conf|ini)\b|\b(uv|poetry|pdm)\.toml\b",
                       RegexOptions.None, MatchTimeout);
 
     /// <summary>The names <paramref name="step"/> installs, with their package manager.</summary>
@@ -199,9 +199,14 @@ internal static class PackageManifests
         : null;
 
     /// <summary>A file that says where packages come from: a call that writes one changes the sources it would be checked against.</summary>
-    internal static bool IsSourceConfiguration(string fileName) =>
-        fileName.Equals("nuget.config", StringComparison.OrdinalIgnoreCase)
-        || fileName is ".npmrc" or ".yarnrc" or ".yarnrc.yml" or "pip.conf" or "pip.ini" or "uv.toml" or "poetry.toml" or "pdm.toml";
+    internal static bool IsSourceConfiguration(string fileName) => SourceConfigurations.Contains(fileName);
+
+    // The names in any case: a Windows volume opens .NPMRC as .npmrc. bun's own files, which the lookup reads, too.
+    private static readonly HashSet<string> SourceConfigurations = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "nuget.config", ".npmrc", ".yarnrc", ".yarnrc.yml", "bunfig.toml", ".bunfig.toml",
+        "pip.conf", "pip.ini", "uv.toml", "poetry.toml", "pdm.toml",
+    };
 
     /// <summary>The manifest <paramref name="text"/> declares a package source of its own (an index, a restore source).</summary>
     internal static bool DeclaresSource(string fileName, string text) => EcosystemOf(fileName) switch
@@ -275,7 +280,7 @@ internal static class PackageManifests
     {
         foreach (var raw in text.Split('\n'))
         {
-            var line = raw.Split(" #")[0].Trim();
+            var line = WithoutTomlComment(raw).Trim();
             if (line.Length == 0 || line.StartsWith('#') || line.StartsWith('-')) continue;
             if (PackageCommands.PythonRequirementName(line) is { } name) yield return name;
         }
@@ -313,13 +318,22 @@ internal static class PackageManifests
         return names;
     }
 
+    /// <summary><paramref name="line"/> without its comment: a <c>#</c> that opens the line or follows whitespace (a space,
+    /// a tab); one inside an address or a token is no comment.</summary>
+    internal static string WithoutTomlComment(string line)
+    {
+        for (var i = 0; i < line.Length; i++)
+            if (line[i] == '#' && (i == 0 || char.IsWhiteSpace(line[i - 1]))) return line[..i];
+        return line;
+    }
+
     /// <summary>Each trimmed line of a TOML text with the table it sits in; table headers themselves are not returned.</summary>
     private static IEnumerable<(string Section, string Line)> TomlLines(string text)
     {
         var section = string.Empty;
         foreach (var raw in text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n'))
         {
-            var line = raw.Split(" #")[0].Trim();
+            var line = WithoutTomlComment(raw).Trim();
             if (line.StartsWith('[') && line.EndsWith(']') && !line.Contains('='))
             {
                 section = line.Trim('[', ']').Trim();

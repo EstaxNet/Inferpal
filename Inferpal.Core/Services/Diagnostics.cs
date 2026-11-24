@@ -29,9 +29,7 @@ internal static class Diagnostics
     /// <summary>Overrides the log file path (tests).</summary>
     internal static string? LogPathOverride { get; set; }
 
-    private static string LogPath => LogPathOverride ?? Path.Combine(
-        UserFolders.Of(Environment.SpecialFolder.ApplicationData),
-        "Inferpal", "diagnostics.log");
+    private static string LogPath => LogPathOverride ?? UserFolders.InferpalData("diagnostics.log");
 
     /// <summary>Records a swallowed exception with a short context label. Never throws.</summary>
     internal static void Swallow(string context, Exception ex) =>

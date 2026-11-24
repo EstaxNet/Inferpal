@@ -406,7 +406,7 @@ internal sealed class McpStdioClient : McpClientBase, IMcpClient
                 var method = root.TryGetProperty("method", out var methodEl) && methodEl.ValueKind == JsonValueKind.String
                     ? methodEl.GetString()
                     : null;
-                if (method == "notifications/tools/list_changed")
+                if (McpJsonRpc.IsToolsListChanged(root))
                     ToolsChanged?.Invoke();
                 if (root.TryGetProperty("id", out var requestId))
                     _ = AnswerServerRequestAsync(requestId.Clone(), method);

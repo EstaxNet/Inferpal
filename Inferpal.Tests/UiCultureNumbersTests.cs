@@ -36,6 +36,15 @@ public class UiCultureNumbersTests
     }
 
     [Fact]
+    public void TheSettingsPagesAndCardsNumbers_FollowTheInterfacesLanguage_NotTheSystems()
+    {
+        // The token amounts beside the assistant's own counts, a picture's size, a model's: one page, one way of writing.
+        Assert.Equal("1.5k", Under("fr-FR", "en", () => Inferpal.Services.Presentation.SettingsWidgets.Amount(1500)));
+        Assert.Equal("1,5k", Under("en-US", "fr", () => Inferpal.Services.Presentation.SettingsWidgets.Amount(1500)));
+        Assert.Equal("4.5", Under("fr-FR", "en", () => Inferpal.Services.Presentation.ServerInstallCard.Gb(4.5)));
+    }
+
+    [Fact]
     public void Ui_FormatsEveryNumberInTheInterfaceCulture()
     {
         Assert.Equal("~12,345 of 1.5", Under("fr-FR", "en", () => Strings.Ui($"~{12345:N0} of {1.5:0.#}")));

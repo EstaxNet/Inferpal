@@ -96,6 +96,10 @@ internal static class ToolsAssistant
         ["ocr"] = AssistantWork.Documents,
     };
 
+    /// <summary>The tools of one <paramref name="work"/> family, in the order <see cref="Families"/> lists them: the one list
+    /// the assistant and the tool-off notice read.</summary>
+    internal static string[] Of(AssistantWork work) => [.. Families.Where(f => f.Value == work).Select(f => f.Key)];
+
     /// <summary>The tools turned off unless the person sends everything (<see cref="AssistantContext.Full"/>): rarely needed
     /// whatever the work.</summary>
     internal static readonly IReadOnlySet<string> Rare = new HashSet<string>(StringComparer.Ordinal)

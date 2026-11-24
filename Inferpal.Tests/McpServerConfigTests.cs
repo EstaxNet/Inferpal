@@ -300,4 +300,35 @@ public class McpServerConfigTests
         Assert.Equal("https://x/mcp", s.Url);
         Assert.Equal("Bearer ${TOK}", s.Headers!["Authorization"]);
     }
+
+    [Fact]
+    public void AHeaderNamedInAnotherCase_IsTheSameHeader_TheServerStillStarts()
+    {
+        // Header names are case-insensitive: "authorization" beside an apiKey is the header already written, never a
+        // second one — two spellings made the HTTP client's dictionary throw, and the server never started.
+        var lifted = McpServerConfig.LiftContinueFields(System.Text.Json.Nodes.JsonNode.Parse(
+            """{ "url": "https://x/mcp", "apiKey": "K", "requestOptions": { "headers": { "authorization": "Token T" } } }""")!.AsObject());
+        var auth = Assert.Single(lifted["headers"]!.AsObject(), h => h.Key.Equals("Authorization", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal("Token T", auth.Value!.GetValue<string>());
+
+        var twice = Assert.Single(McpServerConfig.Parse(
+            """{ "s": { "url": "https://x/mcp", "headers": { "Authorization": "Bearer A", "authorization": "Bearer B" } } }"""));
+        Assert.NotNull(new McpHttpClient(twice));   // does not throw on the two spellings
+    }
+
+    [Fact]
+    public void ARejectedEntry_IsNamedAsAnAcceptedOneIs_TrimmedOfItsSpaces()
+    {
+        // The rejected names keep the sign-ins of the servers being edited: " work " is the server "work".
+        McpServerConfig.Parse("""{ " work ": { "type": "ws", "url": "ws://x/mcp" } }""", out var rejected);
+        Assert.Equal("work", Assert.Single(rejected).Name);
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("\"text\"")]
+    [InlineData("[{\"jsonrpc\":\"2.0\",\"method\":\"notifications/tools/list_changed\"}]")]
+    public void AnEventThatIsNoObject_IsNoListChange_NeverAThrow(string data) =>
+        // Thrown, the stream was dropped and reopened after its back-off; the stdio transport skips such a line.
+        Assert.False(McpHttpClient.IsToolsListChanged(data));
 }

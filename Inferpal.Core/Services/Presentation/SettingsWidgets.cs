@@ -198,8 +198,8 @@ internal static class SettingsWidgets
 
     /// <summary>A token amount as the page shows it: exact below a thousand, "1.4k" above.</summary>
     internal static string Amount(int tokens) =>
-        tokens < 1000 ? tokens.ToString("N0", CultureInfo.CurrentCulture)
-                      : (tokens / 1000.0).ToString("0.0", CultureInfo.CurrentCulture) + "k";
+        tokens < 1000 ? tokens.ToString("N0", Localization.Strings.UiCulture)
+                      : (tokens / 1000.0).ToString("0.0", Localization.Strings.UiCulture) + "k";
 
     /// <summary>A start URL as a person reads it: no scheme, no trailing slash.</summary>
     internal static string Address(string url)
@@ -210,7 +210,7 @@ internal static class SettingsWidgets
         return shown.TrimEnd('/');
     }
 
-    private static string N(int value) => value.ToString("N0", CultureInfo.CurrentCulture);
+    private static string N(int value) => value.ToString("N0", Localization.Strings.UiCulture);
 
     private static string At(DateTime? when, DateTime now) =>
         when is not { } t ? "—"

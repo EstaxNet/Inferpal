@@ -23,6 +23,10 @@ public sealed class CodeActionRequestTests
     [InlineData("/refactor extract the parsing", "Refactor", "extract the parsing")]
     [InlineData("/doc only the public API", "Doc", "only the public API")]
     [InlineData("/test the empty input", "Test", "the empty input")]
+    // The command word ends at any whitespace, as LooksLikeCommand reads it: Shift+Enter or a tab after it.
+    [InlineData("/explain\nwhy does this loop stop?", "Explain", "why does this loop stop?")]
+    [InlineData("/fix\r\nthe off-by-one in the loop", "Fix", "the off-by-one in the loop")]
+    [InlineData("/review\tthe error handling", "Review", "the error handling")]
     public void TheRouter_KeepsWhatWasTypedAfterTheCommand(string typed, string kind, string request)
     {
         var action = Assert.IsType<SlashCodeAction>(SlashCommandRouter.Route(typed, []));

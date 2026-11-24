@@ -75,12 +75,7 @@ internal static class PromptFilesService
         return result;
     }
 
-    /// <summary>File name → command token: lower-cased, spaces/underscores collapsed to '-'.</summary>
-    internal static string CommandName(string fileName)
-    {
-        var sb = new StringBuilder(fileName.Length);
-        foreach (var c in fileName.Trim().ToLowerInvariant())
-            sb.Append(c is ' ' or '_' ? '-' : c);
-        return sb.ToString();
-    }
+    /// <summary>File name → command token: lower-cased, each run of blanks (a tab too) or underscores one '-'.</summary>
+    internal static string CommandName(string fileName) =>
+        string.Join('-', fileName.Trim().ToLowerInvariant().Replace('_', ' ').Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 }

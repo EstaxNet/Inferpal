@@ -37,7 +37,7 @@ internal static class ShellStateProtocol
     public static string NewMarker() => "INFERPAL_STATE_" + Guid.NewGuid().ToString("N");
 
     private static string B64Utf8(string s)  => Convert.ToBase64String(Encoding.UTF8.GetBytes(s));
-    private static string B64Utf16(string s) => Convert.ToBase64String(Encoding.Unicode.GetBytes(s));
+    private static string B64Utf16(string s) => ShellSession.Encode(s);
     private static string FromB64Utf8(string s) => Encoding.UTF8.GetString(Convert.FromBase64String(s));
 
     /// <summary>Dialect-dispatching overload: same contract, PowerShell or POSIX wrapper.</summary>

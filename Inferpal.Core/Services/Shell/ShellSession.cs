@@ -47,8 +47,7 @@ internal sealed class ShellSession
     internal string WorkspaceRoot => _root();
 
     /// <summary>Whether two paths name the same folder, as the file system compares them.</summary>
-    internal static bool SameFolder(string a, string b) =>
-        string.Equals(Path.TrimEndingDirectorySeparator(a), Path.TrimEndingDirectorySeparator(b), PathComparer.Comparison);
+    internal static bool SameFolder(string a, string b) => PathComparer.SameDirectory(a, b);
 
     /// <summary>
     /// Sets aside the folder and the environment captured under the root left, and takes back those of the root open now

@@ -69,7 +69,7 @@ internal sealed record ServerInstallCard(
     }
 
     /// <summary>A size in GB the way the setup card writes one.</summary>
-    internal static string Gb(double gb) => gb.ToString("0.#", CultureInfo.CurrentCulture);
+    internal static string Gb(double gb) => gb.ToString("0.#", Localization.Strings.UiCulture);
 
     /// <summary>What a terminal setup (<c>Inferpal.Host --setup</c>) says for <paramref name="offer"/>: the command to run
     /// by hand, then to run the setup again. A terminal runs nothing on the person's behalf.</summary>

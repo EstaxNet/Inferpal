@@ -64,7 +64,7 @@ internal static class IndexCommandHandler
         {
             // The status value itself comes from the indexing service, whose state is English by convention.
             sb.AppendLine(Strings.IndexStatusLine(index.Status));
-            sb.AppendLine(Strings.IndexChunksLine(index.ChunkCount.ToString("N0")));
+            sb.AppendLine(Strings.IndexChunksLine(index.ChunkCount.ToString("N0", Localization.Strings.UiCulture)));
             sb.AppendLine(Strings.IndexRootLine(index.RootDir));
             sb.AppendLine(Strings.IndexModelLine(model));
             sb.AppendLine(Strings.IndexTopKLine(config.RagTopK));

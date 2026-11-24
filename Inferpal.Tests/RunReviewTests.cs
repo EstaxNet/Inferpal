@@ -68,6 +68,19 @@ public sealed class RunReviewTests : IDisposable
         FileActionAsync(history, run.Id, path, action, _dir, busy: false, CancellationToken.None);
 
     [Fact]
+    public async Task AFullPathSpelledWithForwardSlashes_NamesTheSameFileOfTheRun()
+    {
+        // Normalized as a relative path is: on Windows, "C:/…/A.cs" is the run's "C:\…\A.cs".
+        if (!OperatingSystem.IsWindows()) return;
+        var (history, run, a, _, _) = await ARun();
+
+        var (message, _) = await Act(history, run, a.Replace('\\', '/'), RunFileAction.Undo);
+
+        Assert.Equal("a before", Text(a));
+        Assert.Equal(Strings.RunFileRestored("A.cs"), message);
+    }
+
+    [Fact]
     public async Task OneFileUndone_IsBackAsBeforeTheRun_TheOthersStayAsTheRunLeftThem()
     {
         var (history, run, a, b, created) = await ARun();

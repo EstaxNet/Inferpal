@@ -255,14 +255,9 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     /// </remarks>
     private protected override async Task<string?> ReasoningEffortFieldAsync(string model, ReasoningEffort effort, CancellationToken ct)
     {
-        var (published, value) = effort switch
-        {
-            ReasoningEffort.Off    => ("off", "none"),
-            ReasoningEffort.Low    => ("low", "low"),
-            ReasoningEffort.Medium => ("medium", "medium"),
-            ReasoningEffort.High   => ("high", "high"),
-            _                      => ((string?)null, (string?)null),
-        };
+        // LM Studio publishes "off" for what the wire writes "none".
+        var value = EffortValue(effort);
+        var published = effort == ReasoningEffort.Off ? "off" : value;
         if (published is null) return null;
 
         // Read from the native snapshot, cached briefly: a question and its title ask two models in turn.
@@ -430,7 +425,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(10));
+            cts.CancelAfter(UnloadTimeout);
             // Unload keys off the loaded *instance* id, not the model id — sending { model } is rejected
             // with HTTP 400 "Missing required field 'instance_id'". For one instance the two coincide.
             using var req = new HttpRequestMessage(HttpMethod.Post, $"{NativeBase}/models/unload")

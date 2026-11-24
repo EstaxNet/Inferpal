@@ -16,6 +16,14 @@ public class TestCoverageCodeOfTests
         Assert.Equal(reply, TestCoverageCommandHandler.CodeOf(reply));
     }
 
+    [Theory]
+    [InlineData("~~~python\ndef test_a():\n    assert True\n~~~")]
+    [InlineData("````python\ndef test_a():\n    assert True\n````")]
+    [InlineData("Here it is:\n```python\ndef test_a():\n    assert True\n```\nIt covers a.")]   // reference arm
+    public void AFenceOfTildesOrOfFourBackticks_IsUnwrappedAsTheChatReadsIt(string reply) =>
+        // Left whole, the fence lines were written into the test file.
+        Assert.Equal("def test_a():\n    assert True\n", TestCoverageCommandHandler.CodeOf(reply));
+
     [Fact]
     public void ReasoningAtTheHead_Goes()
     {

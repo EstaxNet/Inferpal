@@ -114,6 +114,9 @@ internal sealed record McpServerConfig(
         return null;
     }
 
+    /// <summary>Whether <paramref name="transport"/> is the older SSE transport (<c>"type": "sse"</c>).</summary>
+    internal static bool IsSse(string? transport) => string.Equals(transport, "sse", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Whether a declared transport is WebSocket (<c>websocket</c>, <c>ws</c>), which nothing here speaks.</summary>
     internal static bool IsWebSocket(string? transport) =>
         string.Equals(transport, "websocket", StringComparison.OrdinalIgnoreCase)
@@ -134,9 +137,11 @@ internal sealed record McpServerConfig(
         if (fromOptions is null && apiKey is null) return lifted;
 
         var headers = lifted["headers"] as System.Text.Json.Nodes.JsonObject ?? new System.Text.Json.Nodes.JsonObject();
+        // A header's name in any case: one already written wins, never a second spelling beside it.
+        bool Has(string name) => headers.Any(h => string.Equals(h.Key, name, StringComparison.OrdinalIgnoreCase));
         foreach (var (name, value) in fromOptions?.ToList() ?? [])
-            if (!headers.ContainsKey(name)) headers[name] = value?.DeepClone();
-        if (apiKey is not null && lifted["url"] is not null && !headers.ContainsKey("Authorization"))
+            if (!Has(name)) headers[name] = value?.DeepClone();
+        if (apiKey is not null && lifted["url"] is not null && !Has("Authorization"))
             headers["Authorization"] = "Bearer " + apiKey;
         lifted["headers"] = headers;
         options?.Remove("headers");
@@ -262,8 +267,8 @@ internal sealed record McpServerConfig(
                         if (item.ValueKind == JsonValueKind.String)
                             args.Add(item.GetString()!);
 
-                var env = ReadStringMap(def, "env");
-                var headers = ReadStringMap(def, "headers");
+                var env = ReadStringMap(def, "env", StringComparer.Ordinal);
+                var headers = ReadStringMap(def, "headers", StringComparer.OrdinalIgnoreCase);
                 var oauth = ReadOAuth(def);
 
                 // Optional per-server disable flag (absent ⇒ enabled). Keeps the format
@@ -285,7 +290,7 @@ internal sealed record McpServerConfig(
                     Reject(problems, entry.Name, WebSocketRefusal);
                     continue;
                 }
-                var sse = string.Equals(declared, "sse", StringComparison.OrdinalIgnoreCase);
+                var sse = IsSse(declared);
 
                 // Roo's tools turned off for this server, by the server's own names.
                 var off = new List<string>();
@@ -322,15 +327,16 @@ internal sealed record McpServerConfig(
         // A PAIR, not "name: reason" inside one string: the reason for invalid JSON carries the
         // exception message, which itself contains colons (LineNumber, BytePositionInLine). Joining
         // then splitting again would have produced an absurd server name on screen.
+        name = name.Trim();
         problems.Add(new McpRejectedServer(string.IsNullOrEmpty(name) ? WholeList : name, reason));
         Diagnostics.Record("Mcp", string.IsNullOrEmpty(name)
             ? $"Server list ignored: {reason}."
             : $"Server '{name}' ignored: {reason}.");
     }
 
-    private static Dictionary<string, string> ReadStringMap(JsonElement def, string property)
+    private static Dictionary<string, string> ReadStringMap(JsonElement def, string property, StringComparer names)
     {
-        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        var map = new Dictionary<string, string>(names);
         if (def.TryGetProperty(property, out var e) && e.ValueKind == JsonValueKind.Object)
             foreach (var kv in e.EnumerateObject())
                 if (kv.Value.ValueKind == JsonValueKind.String)

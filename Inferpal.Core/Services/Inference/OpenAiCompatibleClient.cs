@@ -265,6 +265,16 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     /// </summary>
     internal static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> ReasoningRefusals = new();
 
+    /// <summary>The value of <c>reasoning_effort</c> for <paramref name="effort"/>; <c>null</c> when none is sent.</summary>
+    private protected static string? EffortValue(ReasoningEffort effort) => effort switch
+    {
+        ReasoningEffort.Off    => "none",
+        ReasoningEffort.Low    => "low",
+        ReasoningEffort.Medium => "medium",
+        ReasoningEffort.High   => "high",
+        _                      => null,
+    };
+
     /// <summary>
     /// The <c>reasoning_effort</c> this server takes for <paramref name="model"/> to give <paramref name="effort"/>, or
     /// <c>null</c> to send nothing: a value a model's template does not know is not a lower effort, so nothing is sent where
@@ -274,14 +284,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     /// off (GLM 4.7 Flash reasons six times longer sent it).</remarks>
     private protected virtual async Task<string?> ReasoningEffortFieldAsync(string model, ReasoningEffort effort, CancellationToken ct)
     {
-        var wanted = effort switch
-        {
-            ReasoningEffort.Off    => "none",
-            ReasoningEffort.Low    => "low",
-            ReasoningEffort.Medium => "medium",
-            ReasoningEffort.High   => "high",
-            _                      => null,
-        };
+        var wanted = EffortValue(effort);
         if (wanted is null) return null;
         return (await PublishedEffortLevelsAsync(model, ct)).FirstOrDefault(l => string.Equals(l, wanted, StringComparison.OrdinalIgnoreCase));
     }
@@ -497,17 +500,17 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         {
             throw Overran();
         }
-        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal) && DropsTheEffort(ex.Message))
+        catch (HttpRequestException ex) when (ServerAnswered(ex) && DropsTheEffort(ex.Message))
         {
             return await WithoutTheEffortAsync(ex.Message);
         }
-        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal)
+        catch (HttpRequestException ex) when (ServerAnswered(ex)
                                               && FallsBackToPromptedTools(ex.Message))
         {
             wait.Dispose();
             return await SendChatAsync(model, messages, tools, onToken, effort, ct, complexity, toolChoice, onThinking, onWaiting);
         }
-        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        catch (HttpRequestException ex) when (ServerAnswered(ex))
         {
             // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
             // "Cannot reach … check the URL" sends the user to verify a URL that is fine: say
@@ -758,7 +761,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             throw new AgentHttpException(Strings.MsgTimeout(base_), isTimeout: true);
         }
         catch (AgentHttpException) { shownStream.Release(); throw; } // an in-stream server error we already mapped — keep its message
-        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        catch (HttpRequestException ex) when (ServerAnswered(ex))
         {
             // The server ANSWERED — with a refusal (4xx/5xx body carried by PostForStreamingAsync).
             // "Cannot reach … check the URL" sends the user to verify a URL that is fine: say
@@ -1141,7 +1144,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // Bounded: the shared HttpClient's timeout is infinite, and a server that accepts TCP but
         // never answers froze every model dropdown behind this call.
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(TimeSpan.FromSeconds(10));
+        cts.CancelAfter(ListingTimeout);
         using var req = new HttpRequestMessage(HttpMethod.Get, $"{v1Base}/models");
         AddAuth(req);
         using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
@@ -1271,7 +1274,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
     private protected async Task StreamInlineAsync<T>(string url, T request, string model, Func<string, string?> textOf,
                                                       Action<string> onToken, CancellationToken ct, string? refusedKey = null)
     {
-        var deadline = TimeSpan.FromSeconds(60);
+        var deadline = InlineCompletionWait;
 
         HttpResponseMessage http;
         try
@@ -1282,7 +1285,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (OperationCanceledException) { RecordFimFailure(); return; }
-        catch (HttpRequestException ex) when (ex.Message.StartsWith("HTTP ", StringComparison.Ordinal))
+        catch (HttpRequestException ex) when (ServerAnswered(ex))
         {
             NoteFimRefusal(model, ex.Message);
             if (refusedKey is not null

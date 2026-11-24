@@ -650,11 +650,11 @@ internal static class ChatTurnPolicy
         return true;
     }
 
-    /// <summary>Single-line preview: capped at <paramref name="max"/> chars (ellipsis added), newlines flattened.</summary>
+    /// <summary>Single-line preview: capped at <paramref name="max"/> chars (ellipsis added), every line break flattened.</summary>
     public static string OneLinePreview(string text, int max)
     {
         var capped = text.Length > max ? SafeTruncate.Truncate(text, max) + "…" : text;
-        return capped.Replace('\n', ' ');
+        return capped.ReplaceLineEndings(" ");
     }
 
     /// <summary>

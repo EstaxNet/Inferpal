@@ -105,8 +105,7 @@ internal sealed class McpTokenStore
                 "McpTokenStore's default protection is Windows DPAPI; non-Windows hosts must inject protect/unprotect (platform secret store).");
 
     /// <summary>Default location: <c>%AppData%/Inferpal/mcp-oauth.dat</c>, alongside the config file.</summary>
-    public static string DefaultPath => Path.Combine(
-        UserFolders.Of(Environment.SpecialFolder.ApplicationData), "Inferpal", "mcp-oauth.dat");
+    public static string DefaultPath => UserFolders.InferpalData("mcp-oauth.dat");
 
     public McpOAuthState? Get(string serverName)
     {

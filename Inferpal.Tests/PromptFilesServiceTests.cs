@@ -102,6 +102,9 @@ public class PromptFilesServiceTests : IDisposable
     [InlineData("Review Security", "review-security")]
     [InlineData("my_prompt", "my-prompt")]
     [InlineData("UPPER", "upper")]
+    // A run of blanks is one dash, as a repository command's name is: "fix  bug" is /fix-bug, a tab no part of a name.
+    [InlineData("fix  bug", "fix-bug")]
+    [InlineData("a\tb", "a-b")]
     public void CommandName_LowercasesAndDashes(string fileName, string expected)
     {
         Assert.Equal(expected, PromptFilesService.CommandName(fileName));

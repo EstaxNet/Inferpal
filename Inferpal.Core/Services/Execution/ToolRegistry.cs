@@ -653,7 +653,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                       : waiting.Contains(t.Name)                       ? ToolState.OnDemand
                       :                                                  ToolState.NotOffered;
             var tokens = RequestSize.ToolTokens(
-                [new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters))]);
+                [DefinitionOf(t)]);
             return new(t, ToolSwitches.KeyOf(t), source, (t as McpTool)?.ServerName, state, tokens);
         }
         return
@@ -706,7 +706,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
                 .Where(t => t.IsOffered && !TurnedOff(t, switches) && !OutOfTheCopy(t))
                 .Concat(UserTools.Where(t => !TurnedOff(t, switches)))
                 .Concat(DeclaredMcpTools.Where(t => !OutOfTheCopy(t)))
-                .Select(t => new ToolDefinition("function", new ToolFunction(t.Name, t.Description, t.Parameters)))
+                .Select(DefinitionOf)
                 .ToList();
         }
     }
@@ -716,6 +716,9 @@ internal class ToolRegistry : IToolRegistry, IDisposable
         (tool as RunCommandTool ?? (_tools.TryGetValue("run_command", out var shell) ? shell as RunCommandTool : null))?.SessionState is var (cwd, env)
             ? new ShellState(cwd, env)
             : null;
+
+    /// <summary>A tool as a request defines it to the model.</summary>
+    internal static ToolDefinition DefinitionOf(ITool t) => new("function", new ToolFunction(t.Name, t.Description, t.Parameters));
 
     /// <summary>What a call to an invented name answers: the names that exist.</summary>
     /// <remarks>

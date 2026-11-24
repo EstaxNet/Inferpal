@@ -83,7 +83,7 @@ internal static class LoadedModelsCard
             {
                 Memory(m, diskSizes),
                 contexts.TryGetValue(m.Name, out var ctx) && ctx is > 0
-                    ? Strings.LoadedModelContext(ctx.Value.ToString("N0", CultureInfo.CurrentCulture)) : "",
+                    ? Strings.LoadedModelContext(ctx.Value.ToString("N0", Localization.Strings.UiCulture)) : "",
                 Expiry(m.ExpiresAt, nowUtc),
             }.Where(p => p.Length > 0)))).ToList();
 
@@ -134,7 +134,7 @@ internal static class LoadedModelsCard
     }
 
     private static string Gb(long bytes) =>
-        (bytes / ModelCatalog.BytesPerGb).ToString("0.0", CultureInfo.CurrentCulture);
+        (bytes / ModelCatalog.BytesPerGb).ToString("0.0", Localization.Strings.UiCulture);
 }
 
 /// <summary>Unloads models from the server, and says what it really did.</summary>
