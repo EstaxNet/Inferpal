@@ -217,6 +217,12 @@ internal sealed class TaskJournal(string path)
         return ([], given, [], aside);
     }
 
+    /// <summary>How long a reader or writer waits for the lock before giving up.</summary>
+    /// <remarks>⚠ A deadline in time, never a count of tries: a given-up <see cref="Reserve"/> leaves the queue to number its
+    /// task from memory, and two queues of one workspace then give the same numbers. A count of short sleeps runs out in a
+    /// few seconds on a loaded machine, though the lock is only held to read and write a small file.</remarks>
+    internal static TimeSpan LockWait { get; set; } = TimeSpan.FromSeconds(15);
+
     /// <summary>The lock every reader and writer of this journal takes: one at a time, across processes.</summary>
     /// <remarks>⚠ The lock file stays: deleted on close, a process that opened it just before could lock the deleted file
     /// while another created and locked a new one — two writers at once outside Windows, where the share mode is an
@@ -224,14 +230,15 @@ internal sealed class TaskJournal(string path)
     private IDisposable Lock()
     {
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
-        for (var attempt = 0; ; attempt++)
+        var deadline = System.Diagnostics.Stopwatch.StartNew();
+        while (true)
         {
             try
             {
                 return new FileStream(Path + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None, bufferSize: 1);
             }
-            // A lock file still being released (or scanned) can refuse access for a moment on Windows: waited for too.
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException && attempt < 100) { Thread.Sleep(20); }
+            // A lock file held by another window, or still being released (or scanned) on Windows: waited for.
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException && deadline.Elapsed < LockWait) { Thread.Sleep(20); }
         }
     }
 }

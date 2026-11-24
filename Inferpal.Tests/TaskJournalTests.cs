@@ -175,6 +175,25 @@ public sealed class TaskJournalTests : IDisposable
     }
 
     [Fact]
+    public async Task ALockHeldLongerThanAMoment_IsWaitedFor_NeverGivenUpForANumberOfItsOwn()
+    {
+        // Given up after a moment, a queue numbers its task from memory: two queues of one workspace, on a loaded
+        // machine, give the same numbers.
+        var journal = new TaskJournal(File);
+        Directory.CreateDirectory(Path.GetDirectoryName(File)!);
+        string? id;
+        using (var held = new FileStream(File + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
+        {
+            var reserve = Task.Run(() => journal.Reserve(0, i => new TaskJournal.Entry(i, "x", BackgroundTaskState.Queued, DateTimeOffset.Now)));
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            Assert.False(reserve.IsCompleted, "the journal gave up on a lock held five seconds");
+            held.Dispose();
+            id = await reserve;
+        }
+        Assert.Equal("t1", id);
+    }
+
+    [Fact]
     public async Task TwoQueuesOfOneWorkspace_NeverGiveTheSameNumber()
     {
         var a = Queue((_, _, _) => Report("a"));
