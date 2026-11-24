@@ -310,6 +310,23 @@ public class StructuredLogTests : IDisposable
         Assert.Contains("no log entry recognised", read);
     }
 
+    [Theory]
+    // GELF: a syslog severity, 0 (emergency) to 7 (debug), under "level", only beside its short_message.
+    [InlineData(2, "FATAL")]
+    [InlineData(3, "ERROR")]
+    [InlineData(4, "WARN")]
+    [InlineData(6, "INFO")]
+    [InlineData(7, "DEBUG")]
+    public async Task AGelfRecord_ReadsItsSyslogSeverity(int severity, string shown)
+    {
+        var log = $"{{\"version\":\"1.1\",\"host\":\"web1\",\"short_message\":\"disk check\",\"timestamp\":1794910500.5,\"level\":{severity}}}\n"
+                + "{\"version\":\"1.1\",\"host\":\"web1\",\"short_message\":\"heartbeat\",\"timestamp\":1794910501.5,\"level\":6}\n";
+
+        var read = await Read("gelf.log", log, new { path = "gelf.log", level = "trace" });
+
+        Assert.Contains($"1: 2026-11-17 10:15:00.500Z {shown} disk check  version=1.1 host=web1", read);
+    }
+
     [Fact]
     public async Task ATextLog_IsReadAsBefore()
     {

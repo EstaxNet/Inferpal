@@ -228,17 +228,12 @@ internal static class LogFilter
                  + "with one) — read it without level/since/until, or use search_in_files]";
         var notes = new List<string>();
         if (beforeFirst > 0) notes.Add($"{beforeFirst} line(s) before the first entry not judged");
-        if (noLevel > 0) notes.Add($"{noLevel} entr{(noLevel == 1 ? "y" : "ies")} with no level left out");
-        if (noTime > 0) notes.Add($"{noTime} entr{(noTime == 1 ? "y" : "ies")} with no time left out");
-        if (undated > 0) notes.Add($"{undated} entr{(undated == 1 ? "y" : "ies")} with no date compared by time of day only");
+        if (noLevel > 0) notes.Add($"{Entries(noLevel)} with no level left out");
+        if (noTime > 0) notes.Add($"{Entries(noTime)} with no time left out");
+        if (undated > 0) notes.Add($"{Entries(undated)} with no date compared by time of day only");
         if (rolledAt is { } rolled && timed) notes.Add($"the times go back past midnight at line {rolled}: entries are compared by time of day, whatever their day");
-        if (epochJudged > 0) notes.Add($"{epochJudged} entr{(epochJudged == 1 ? "y" : "ies")} timed by an epoch number, read as UTC");
-        var what = string.Join(", ", new[]
-        {
-            minLevel is null ? null : $"level {minLevel} or above",
-            since is null ? null : $"since {Show(since.Value)}",
-            until is null ? null : $"until {Show(until.Value)}",
-        }.Where(s => s is not null));
+        if (epochJudged > 0) notes.Add($"{Entries(epochJudged)} timed by an epoch number, read as UTC");
+        var what = FilterSaid(minLevel, since, until);
         var range = (first == 0 ? "" : $" from line {first + 1}") + (endLine > 0 ? $" to line {last}" : "");
         var repeats = groups.Values.Sum(g => g.Count - 1);
         var footer = cutAt is { } next
@@ -246,16 +241,35 @@ internal static class LogFilter
               + $"each line under its number; more follow — call read_file with the same filter and start_line={next}]"
             : $"[{name}: {kept} of {entries} entries match ({what}){range}, each line under its number; {(endLine > 0 && last < total ? $"line {last} reached" : "the end of the file")}]";
         if (notes.Count > 0) footer += $"\n[{string.Join("; ", notes)}]";
-        var repeated = groups.Values.Where(g => g.Count > 1).OrderByDescending(g => g.Count).ThenBy(g => g.First).ToList();
-        if (repeated.Count > 0)
-        {
-            var listed = repeated.Take(MaxGroupsListed).Select(g => $"{g.Count} × \"{SafeTruncate.Truncate(g.Template, 120)}\" (shown at line {g.First}, "
-                                                                        + $"repeated up to line {g.Last})");
-            footer += $"\n[messages repeated on this page, each shown once: {string.Join("; ", listed)}"
-                      + (repeated.Count > MaxGroupsListed ? $"; and {repeated.Count - MaxGroupsListed} more repeated message(s)" : "")
-                      + " — read one with start_line and end_line on its line]";
-        }
+        if (RepeatedLine(groups.Values) is { } repeatedLine) footer += "\n" + repeatedLine;
         return sb.Length == 0 ? footer : sb + footer;
+    }
+
+    /// <summary>The most characters of a repeated message's template said under a page.</summary>
+    private const int TemplateChars = 120;
+
+    /// <summary>"1 entry", "3 entries".</summary>
+    private static string Entries(int count) => $"{count} entr{(count == 1 ? "y" : "ies")}";
+
+    /// <summary>The filter as the footer says it: "level error or above, since 10:30".</summary>
+    private static string FilterSaid(string? minLevel, Moment? since, Moment? until) => string.Join(", ", new[]
+    {
+        minLevel is null ? null : $"level {minLevel} or above",
+        since is null ? null : $"since {Show(since.Value)}",
+        until is null ? null : $"until {Show(until.Value)}",
+    }.Where(s => s is not null));
+
+    /// <summary>The messages repeated on the page, the most repeated first, each with the line it was shown at and the last
+    /// that repeats it; <c>null</c> when none repeats.</summary>
+    private static string? RepeatedLine(IEnumerable<Repeated> groups)
+    {
+        var repeated = groups.Where(g => g.Count > 1).OrderByDescending(g => g.Count).ThenBy(g => g.First).ToList();
+        if (repeated.Count == 0) return null;
+        var listed = repeated.Take(MaxGroupsListed).Select(g => $"{g.Count} × \"{SafeTruncate.Truncate(g.Template, TemplateChars)}\" (shown at line {g.First}, "
+                                                                + $"repeated up to line {g.Last})");
+        return $"[messages repeated on this page, each shown once: {string.Join("; ", listed)}"
+               + (repeated.Count > MaxGroupsListed ? $"; and {repeated.Count - MaxGroupsListed} more repeated message(s)" : "")
+               + " — read one with start_line and end_line on its line]";
     }
 
     /// <summary>A message shown once on a page: its template, the line it was shown at, how many records carry it, the last.</summary>

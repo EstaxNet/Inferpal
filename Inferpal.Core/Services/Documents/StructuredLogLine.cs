@@ -131,46 +131,9 @@ internal sealed record StructuredLogLine(
             var root = doc.RootElement;
             if (root.ValueKind != JsonValueKind.Object) return null;
             var used = new HashSet<string>(StringComparer.Ordinal);
-
-            (DateOnly? date, TimeOnly? time, string? when, bool epoch) = (null, null, null, false);
-            foreach (var key in TimeKeys)
-                if (Property(root, key, used, mark: false) is { } v && TimeOf(v) is { } read)
-                {
-                    (date, time, when, epoch) = read;
-                    used.Add(key);
-                    break;
-                }
-            if (time is null && root.TryGetProperty("instant", out var instant) && instant.ValueKind == JsonValueKind.Object
-                && instant.TryGetProperty("epochSecond", out var seconds) && TimeOf(seconds) is { } fromInstant)
-                (date, time, when, epoch) = fromInstant;   // log4j2's JSON layout
-
-            int? level = null;
-            foreach (var key in LevelKeys)
-                if (Property(root, key, used, mark: false) is { } v && LevelOf(v, key) is { } rank)
-                {
-                    level = rank;
-                    Property(root, key, used, mark: true);
-                    break;
-                }
-            // CLEF: an event with no level is Information (the format's specification).
-            if (level is null && root.TryGetProperty("@t", out _) && (root.TryGetProperty("@mt", out _) || root.TryGetProperty("@m", out _)))
-                level = Tools.LogFilter.RankOf("information");
-            // GELF: a syslog severity, 0 (emergency) to 7 (debug).
-            if (level is null && root.TryGetProperty("short_message", out _) && root.TryGetProperty("level", out var gelf)
-                && gelf.ValueKind == JsonValueKind.Number && gelf.TryGetInt32(out var severity) && severity is >= 0 and <= 7)
-            {
-                level = severity switch { <= 2 => 5, 3 => 4, 4 => 3, <= 6 => 2, _ => 1 };
-                used.Add("level");
-            }
-
-            var properties = root.TryGetProperty("Properties", out var p) && p.ValueKind == JsonValueKind.Object ? p
-                           : root.TryGetProperty("State", out var s) && s.ValueKind == JsonValueKind.Object ? s : root;
-            var template = TemplateKeys.Select(k => Text(root, k, used)).FirstOrDefault(t => t is not null)
-                           ?? (properties.ValueKind == JsonValueKind.Object && properties.TryGetProperty("{OriginalFormat}", out var of)
-                               && of.ValueKind == JsonValueKind.String ? of.GetString() : null);
-            var message = MessageKeys.Select(k => Text(root, k, used)).FirstOrDefault(m => m is not null);
-            // Rendered even when the record carries its message: the properties it fills are then not repeated as fields.
-            if (template is not null && Render(template, properties, used) is var rendered) message ??= rendered;
+            var (date, time, when, epoch) = RecordTime(root, used);
+            var level = RecordLevel(root, used);
+            var (message, template) = RecordMessage(root, used);
             // A record has a time, or a level and a message: {"course":"French","level":20} is data.
             if (time is null && (level is null || message is null)) return null;
             message = OneLine(message ?? "").Trim();
@@ -178,6 +141,58 @@ internal sealed record StructuredLogLine(
             var exception = ExceptionOf(root, used);
             return new(level, date, time, when, epoch, message, template ?? Neutral(message, "{n}"), exception, FieldsOf(root, used), format);
         }
+    }
+
+    /// <summary>The record's time: the first time key that reads as one, else log4j2's <c>instant</c>.</summary>
+    private static (DateOnly? Date, TimeOnly? Time, string? When, bool Epoch) RecordTime(JsonElement root, HashSet<string> used)
+    {
+        foreach (var key in TimeKeys)
+            if (Property(root, key, used, mark: false) is { } v && TimeOf(v) is { } read)
+            {
+                used.Add(key);
+                return read;
+            }
+        if (root.TryGetProperty("instant", out var instant) && instant.ValueKind == JsonValueKind.Object
+            && instant.TryGetProperty("epochSecond", out var seconds) && TimeOf(seconds) is { } fromInstant)
+            return fromInstant;   // log4j2's JSON layout
+        return (null, null, null, false);
+    }
+
+    /// <summary>The record's level: the first level key that reads as one; CLEF's default; GELF's syslog severity.</summary>
+    private static int? RecordLevel(JsonElement root, HashSet<string> used)
+    {
+        foreach (var key in LevelKeys)
+            if (Property(root, key, used, mark: false) is { } v && LevelOf(v, key) is { } rank)
+            {
+                Property(root, key, used, mark: true);
+                return rank;
+            }
+        // CLEF: an event with no level is Information (the format's specification).
+        if (root.TryGetProperty("@t", out _) && (root.TryGetProperty("@mt", out _) || root.TryGetProperty("@m", out _)))
+            return Tools.LogFilter.RankOf("information");
+        // GELF: a syslog severity, 0 (emergency) to 7 (debug).
+        if (root.TryGetProperty("short_message", out _) && root.TryGetProperty("level", out var gelf)
+            && gelf.ValueKind == JsonValueKind.Number && gelf.TryGetInt32(out var severity) && severity is >= 0 and <= 7)
+        {
+            used.Add("level");
+            return Tools.LogFilter.RankOf(severity switch { <= 2 => "fatal", 3 => "error", 4 => "warn", <= 6 => "info", _ => "debug" });
+        }
+        return null;
+    }
+
+    /// <summary>The record's message and its template: a template (CLEF, Serilog's JSON, the <c>ILogger</c> state) is
+    /// rendered with the record's properties even when the record carries its message, so that the properties it fills are
+    /// not repeated as fields.</summary>
+    private static (string? Message, string? Template) RecordMessage(JsonElement root, HashSet<string> used)
+    {
+        var properties = root.TryGetProperty("Properties", out var p) && p.ValueKind == JsonValueKind.Object ? p
+                       : root.TryGetProperty("State", out var s) && s.ValueKind == JsonValueKind.Object ? s : root;
+        var template = TemplateKeys.Select(k => Text(root, k, used)).FirstOrDefault(t => t is not null)
+                       ?? (properties.ValueKind == JsonValueKind.Object && properties.TryGetProperty("{OriginalFormat}", out var of)
+                           && of.ValueKind == JsonValueKind.String ? of.GetString() : null);
+        var message = MessageKeys.Select(k => Text(root, k, used)).FirstOrDefault(m => m is not null);
+        if (template is not null && Render(template, properties, used) is var rendered) message ??= rendered;
+        return (message, template);
     }
 
     // A key with a dot is read flat ("log.level") or nested ({"log":{"level":…}}).
@@ -326,7 +341,11 @@ internal sealed record StructuredLogLine(
 
     private static string OneLine(string text) => text.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ');
 
-    // logfmt read into a JSON object of strings: two key=value pairs at least, or it is a sentence that holds an '='.
+    /// <summary>The fewest <c>key=value</c> pairs that make a line logfmt: one is a sentence that holds an '='.</summary>
+    private const int MinLogfmtPairs = 2;
+
+    /// <summary>logfmt read into a JSON object of strings; <c>null</c> when the line is no logfmt (too few pairs, a quote
+    /// never closed).</summary>
     private static string? LogfmtAsJson(string line)
     {
         var buffer = new ArrayBufferWriter<byte>();
@@ -344,33 +363,39 @@ internal sealed record StructuredLogLine(
                 var key = line[keyStart..i];
                 if (i >= line.Length || line[i] != '=') continue;   // a bare flag
                 i++;
-                string value;
-                if (i < line.Length && line[i] == '"')
-                {
-                    var sb = new StringBuilder();
-                    i++;
-                    while (i < line.Length && line[i] != '"')
-                    {
-                        if (line[i] == '\\' && i + 1 < line.Length) { i++; sb.Append(line[i] switch { 'n' => '\n', 't' => '\t', var c => c }); }
-                        else sb.Append(line[i]);
-                        i++;
-                    }
-                    if (i >= line.Length) return null;   // an unclosed quote: not logfmt
-                    i++;
-                    value = sb.ToString();
-                }
-                else
-                {
-                    var valueStart = i;
-                    while (i < line.Length && line[i] != ' ') i++;
-                    value = line[valueStart..i];
-                }
+                var value = i < line.Length && line[i] == '"' ? QuotedValue(line, ref i) : BareValue(line, ref i);
+                if (value is null) return null;   // an unclosed quote: not logfmt
                 writer.WriteString(key, value);
                 pairs++;
             }
-            if (pairs < 2) return null;
+            if (pairs < MinLogfmtPairs) return null;
             writer.WriteEndObject();
         }
         return Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
+
+    /// <summary>The value quoted at <paramref name="i"/> (on its opening quote), its escapes read (<c>\n</c>, <c>\t</c>, an
+    /// escaped character as itself), <paramref name="i"/> left past its closing quote; <c>null</c> when it never closes.</summary>
+    private static string? QuotedValue(string line, ref int i)
+    {
+        var sb = new StringBuilder();
+        i++;
+        while (i < line.Length && line[i] != '"')
+        {
+            if (line[i] == '\\' && i + 1 < line.Length) { i++; sb.Append(line[i] switch { 'n' => '\n', 't' => '\t', var c => c }); }
+            else sb.Append(line[i]);
+            i++;
+        }
+        if (i >= line.Length) return null;
+        i++;
+        return sb.ToString();
+    }
+
+    /// <summary>The value at <paramref name="i"/>, up to the next space; <paramref name="i"/> left on it.</summary>
+    private static string BareValue(string line, ref int i)
+    {
+        var start = i;
+        while (i < line.Length && line[i] != ' ') i++;
+        return line[start..i];
     }
 }

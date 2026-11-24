@@ -94,18 +94,9 @@ internal static class MergeConflict
         if (Path.GetDirectoryName(path) is not { } folder || GitProcess.WorkTreeOf(folder) is not { } tree) return null;
         var asked = Path.GetRelativePath(tree, path).Replace('\\', '/');
 
-        // Every unmerged entry, "<mode> <object> <stage>\t<path>\0" per stage, and this file's among them as the file system
-        // compares names: git matches a pathspec case-sensitively, and a path written in another case on Windows found none.
-        var listed = await GitProcess.CaptureBytesAsync(["ls-files", "-u", "-z"], tree, ct, maxBytes: 1024 * 1024);
-        if (listed.Output is not { Length: > 0 } entries) return null;
-        var mine = Encoding.UTF8.GetString(entries).Split('\0', StringSplitOptions.RemoveEmptyEntries)
-                           .Select(e => e.Split('\t', 2) is [var head, var name]
-                                            ? (Stage: head.Split(' ').LastOrDefault() ?? "", Name: name)
-                                            : (Stage: "", Name: ""))
-                           .Where(e => PathComparer.Default.Equals(e.Name, asked)).ToList();
-        if (mine.Count == 0) return null;
-        var relative = mine[0].Name;
-        var stages = mine.Select(e => e.Stage).ToHashSet(StringComparer.Ordinal);
+        var listed = await GitProcess.CaptureBytesAsync(["ls-files", "-u", "-z"], tree, ct, maxBytes: MaxUnmergedListBytes);
+        if (listed.Output is not { Length: > 0 } entries || UnmergedStages(entries, asked) is not { } unmerged) return null;
+        var (relative, stages) = unmerged;
 
         var gitDir = await GitTextAsync(["rev-parse", "--absolute-git-dir"], tree, ct);
         var (operation, ours, theirs, theirsRef) = Operation(gitDir);
@@ -132,6 +123,26 @@ internal static class MergeConflict
         sb.Append("Resolve every block and remove its markers. Staging the file (git add) and going on with the operation are the "
                   + "person's steps.]\n\n");
         return sb.ToString();
+    }
+
+    /// <summary>The most bytes of <c>git ls-files -u</c> read: a conflict touching thousands of files lists them all.</summary>
+    private const int MaxUnmergedListBytes = 1024 * 1024;
+
+    /// <summary>
+    /// This file's unmerged entries in <c>git ls-files -u -z</c>'s output (<c>"&lt;mode&gt; &lt;object&gt; &lt;stage&gt;\t&lt;path&gt;\0"</c>
+    /// per stage): its path as git writes it, and the stages it has (1 the base, 2 ours, 3 theirs); <c>null</c> when it has
+    /// none.
+    /// </summary>
+    /// <remarks>⚠ Matched as the file system compares names: git matches a pathspec case-sensitively, and a path written in
+    /// another case on Windows found none.</remarks>
+    private static (string Relative, HashSet<string> Stages)? UnmergedStages(byte[] entries, string asked)
+    {
+        var mine = Encoding.UTF8.GetString(entries).Split('\0', StringSplitOptions.RemoveEmptyEntries)
+                           .Select(e => e.Split('\t', 2) is [var head, var name]
+                                            ? (Stage: head.Split(' ').LastOrDefault() ?? "", Name: name)
+                                            : (Stage: "", Name: ""))
+                           .Where(e => PathComparer.Default.Equals(e.Name, asked)).ToList();
+        return mine.Count == 0 ? null : (mine[0].Name, mine.Select(e => e.Stage).ToHashSet(StringComparer.Ordinal));
     }
 
     /// <summary>The base of each block of the file: the merged block that holds its two sides, the nearest by where its ours

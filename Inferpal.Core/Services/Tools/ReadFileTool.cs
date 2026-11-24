@@ -160,26 +160,8 @@ internal class ReadFileTool : ITool
         var active = _activeFile is not null && Execution.RunRoot.Copy is null && args.Int("start_line", 0) == 0 && args.Int("end_line", 0) == 0
                      && Documents.CoverageReportText.Handles(Path.GetFileName(path), content)
             ? _activeFile() : null;
-        // A test report reads first as its result, a draw.io diagram as its shapes and links, an API specification as its
-        // operations, a network capture as its requests, a SARIF or Lighthouse report as its findings, a distributed trace as
-        // its errors, slow path and spans; asked for lines, each
-        // is the text it holds.
         if (args.Int("start_line", 0) == 0 && args.Int("end_line", 0) == 0
-            && (Documents.TestReportText.Summarize(Path.GetFileName(path), content, PageChars)
-                ?? Documents.DiagramText.ForRead(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.ApiText.Summarize(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.SarifText.Summarize(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.VulnerabilityReportText.Summarize(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.TerraformPlanText.Summarize(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.CrashReportText.Summarize(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.SqlPlanText.Summarize(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.LighthouseText.Summarize(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.OtelTraceText.Summarize(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.LoadTestText.Summarize(Path.GetFileName(path), content, PageChars, ct)
-                ?? Documents.CoverageReportText.Summarize(Path.GetFileName(path), content, PageChars, root, active, reportFolder: Path.GetDirectoryName(path), ct: ct)
-                ?? Documents.PatchText.Summarize(Path.GetFileName(path), content, PageChars,
-                       Documents.PatchText.Workspace(_getWorkspaceRoot(), _overlay), ct)
-                ?? Documents.ProfileText.Summarize(Path.GetFileName(path), content, PageChars, ct)) is { } first)
+            && ReportOf(Path.GetFileName(path), content, root, ct, active, Path.GetDirectoryName(path)) is { } first)
             return first;
         // A file git holds in conflict says so above the page that shows a block: the operation, each side's commit, the
         // base of every block (MergeConflict). The page itself stays the text on disk, which an edit quotes.
@@ -283,26 +265,42 @@ internal class ReadFileTool : ITool
         if (text.Length == 0) return $"[{shown} is empty: 0 characters]";
         if (Filtered(args)) return LogPage(text, shown, args);
         // A test report or a diagram in a CI artifact reads as it does on disk.
-        if (args.Int("start_line", 0) == 0 && args.Int("end_line", 0) == 0
-            && (Documents.TestReportText.Summarize(inner, text, PageChars) ?? Documents.DiagramText.ForRead(inner, text, PageChars, ct)
-                ?? Documents.ApiText.Summarize(inner, text, PageChars, ct)
-                ?? Documents.SarifText.Summarize(inner, text, PageChars, ct)
-                ?? Documents.VulnerabilityReportText.Summarize(inner, text, PageChars, ct)
-                ?? Documents.TerraformPlanText.Summarize(inner, text, PageChars, ct)
-                ?? Documents.CrashReportText.Summarize(inner, text, PageChars, ct)
-                ?? Documents.SqlPlanText.Summarize(inner, text, PageChars, ct)
-                ?? Documents.LighthouseText.Summarize(inner, text, PageChars, ct)
-                ?? Documents.OtelTraceText.Summarize(inner, text, PageChars, ct)
-                ?? Documents.LoadTestText.Summarize(inner, text, PageChars, ct)
-                ?? Documents.CoverageReportText.Summarize(inner, text, PageChars, root, ct: ct)
-                ?? Documents.PatchText.Summarize(inner, text, PageChars, Documents.PatchText.Workspace(_getWorkspaceRoot(), _overlay), ct)
-                ?? Documents.ProfileText.Summarize(inner, text, PageChars, ct)) is { } first)
+        if (args.Int("start_line", 0) == 0 && args.Int("end_line", 0) == 0 && ReportOf(inner, text, root, ct) is { } first)
             return first;
         var page = PageOf(text, shown, args.Int("start_line", 0), args.Int("end_line", 0));
         return page.Text.Length > MaxChars ? Cap(page.Text, shown) : page.Text;
     }
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> ArchiveCards = new(PathComparer.Default);
+
+    /// <summary>
+    /// A tool's report read first as what it says, a file on disk or an archive's entry alike: a test report as its result,
+    /// a draw.io diagram as its shapes and links, an API specification as its operations, a SARIF, vulnerability or
+    /// Lighthouse report as its findings, a distributed trace as its errors, slow path and spans, a coverage report as its
+    /// uncovered lines, a patch as whether it still applies; <c>null</c> for any other file. Asked for lines, each is the
+    /// text it holds — the caller asks only for a whole read.
+    /// </summary>
+    /// <param name="name">The file's name, which most readers look at first.</param>
+    /// <param name="text">The file's text.</param>
+    /// <param name="root">The workspace root the coverage report's paths are read against.</param>
+    /// <param name="ct">Cancels a long reading.</param>
+    /// <param name="activeFile">The file open in the editor, which a coverage report puts first; none in an archive.</param>
+    /// <param name="reportFolder">The folder the report lies in, which a coverage report's relative paths start from.</param>
+    private string? ReportOf(string name, string text, string? root, CancellationToken ct, string? activeFile = null, string? reportFolder = null) =>
+        Documents.TestReportText.Summarize(name, text, PageChars)
+        ?? Documents.DiagramText.ForRead(name, text, PageChars, ct)
+        ?? Documents.ApiText.Summarize(name, text, PageChars, ct)
+        ?? Documents.SarifText.Summarize(name, text, PageChars, ct)
+        ?? Documents.VulnerabilityReportText.Summarize(name, text, PageChars, ct)
+        ?? Documents.TerraformPlanText.Summarize(name, text, PageChars, ct)
+        ?? Documents.CrashReportText.Summarize(name, text, PageChars, ct)
+        ?? Documents.SqlPlanText.Summarize(name, text, PageChars, ct)
+        ?? Documents.LighthouseText.Summarize(name, text, PageChars, ct)
+        ?? Documents.OtelTraceText.Summarize(name, text, PageChars, ct)
+        ?? Documents.LoadTestText.Summarize(name, text, PageChars, ct)
+        ?? Documents.CoverageReportText.Summarize(name, text, PageChars, root, activeFile, reportFolder: reportFolder, ct: ct)
+        ?? Documents.PatchText.Summarize(name, text, PageChars, Documents.PatchText.Workspace(_getWorkspaceRoot(), _overlay), ct)
+        ?? Documents.ProfileText.Summarize(name, text, PageChars, ct);
 
     // A filter written empty ("level": "") is no filter: the plain read, never a selection of nothing.
     private static bool Filtered(JsonElement args) =>

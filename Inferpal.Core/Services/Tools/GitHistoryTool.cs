@@ -127,9 +127,7 @@ internal sealed class GitHistoryTool : ITool
         if (relative.Length > 0) { command.Add("--"); command.Add(relative); }
         var (text, failure) = await RunAsync(command, repo, ct);
         if (failure is not null)
-            return ClampedArgument.Above(notice, failure.Contains("does not have any commits yet", StringComparison.Ordinal)
-                ? "The repository has no commit yet: there is no history to read."
-                : Strings.GitCommandFailed("log", failure));
+            return ClampedArgument.Above(notice, IsEmptyRepository(failure) ? NoCommitYet : Strings.GitCommandFailed("log", failure));
 
         var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.TrimEnd('\r')).ToList();
         var shownPath = relative.Length > 0 ? relative : "the repository";
@@ -256,7 +254,7 @@ internal sealed class GitHistoryTool : ITool
         // ⚠ A NUL ends a command line on Windows: every argument after it — the path, the limits, --no-textconv — was dropped.
         if (search.Contains('\0')) return "Error: search holds a NUL character, which git cannot be given.";
         var (count, notice) = ClampedArgument.Read(args, "max_count", DefaultCount, MinCount, MaxCount);
-        var (skip, skipNotice) = ClampedArgument.Read(args, "skip", 0, 0, 1_000_000);
+        var (skip, skipNotice) = ClampedArgument.Read(args, "skip", 0, 0, MaxSkip);
         if (skipNotice is not null) notice = notice is null ? skipNotice : notice + "\n" + skipNotice;
 
         List<string> list =
@@ -269,20 +267,11 @@ internal sealed class GitHistoryTool : ITool
         var shownPath = relative.Length > 0 ? relative : "the repository";
         var (text, failure) = await RunAsync(list, repo, ct, SearchBudget);
         if (failure is not null)
-            return ClampedArgument.Above(notice, failure.Contains("does not have any commits yet", StringComparison.Ordinal)
-                ? "The repository has no commit yet: there is no history to read."
+            return ClampedArgument.Above(notice, IsEmptyRepository(failure)
+                ? NoCommitYet
                 : Strings.GitCommandFailed("log", failure) + (relative.Length == 0 ? " Narrow the search with path." : ""));
 
-        // A commit starts on a line that opens with \u0001: a byte inside a subject or a file's text is never at a line's start.
-        var matches = new List<(string Sha, string Header, List<string> Files)>();
-        foreach (var chunk in ("\n" + text.Replace("\r\n", "\n")).Split("\n\u0001", StringSplitOptions.RemoveEmptyEntries))
-        {
-            var lines = chunk.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            if (lines.Length == 0 || lines[0].IndexOf(' ') is not (> 0 and var space)) continue;
-            var files = lines.Skip(1).Where(f => Governance.ContentExclusions.Of(Path.Combine(repo, f)) is null).ToList();
-            if (files.Count == 0) continue;   // matched only where the model may not look
-            matches.Add((lines[0][..space], lines[0][(space + 1)..], files));
-        }
+        var matches = MatchesOf(text, repo);
         // The same sentence whatever was found: said only when a match was dropped, it told the match.
         var keptOut = Governance.ContentExclusions.AnyRules() ? " Files the ignore files keep out are not searched." : "";
         var page = matches.Skip(skip).Take(count).ToList();
@@ -291,51 +280,12 @@ internal sealed class GitHistoryTool : ITool
                 ? $"Only {matches.Count} commit(s) added or removed {what} in {shownPath}: skip={skip} passes over all of them."
                 : $"No commit added or removed {what} in {shownPath}.") + keptOut);
 
-        Regex? pattern = null;
-        if (regex)
-        {
-            try { pattern = new Regex(search, RegexOptions.CultureInvariant, RegexBudget.Default); }
-            catch (ArgumentException) { /* git's own syntax: the lines are not singled out, said per commit */ }
-        }
-        bool Holds(string line)
-        {
-            if (line.Length < 1 || line[0] is not ('+' or '-')) return false;
-            if (!regex) return line.Contains(search, StringComparison.Ordinal);
-            if (pattern is null) return false;
-            try { return RegexBudget.IsMatch(pattern, line[1..]); }
-            catch (RegexMatchTimeoutException) { return false; }
-        }
-
+        var holds = LineMatcher(search, regex);
         var sb = new StringBuilder($"Commits that added or removed {what} in {shownPath}, newest first (hash date author, then subject; the lines that did below):\n");
         var shown = 0;
-        foreach (var (sha, header, files) in page)
+        foreach (var match in page)
         {
-            var block = new StringBuilder(header.TrimEnd()).Append('\n');
-            List<string> show =
-            [
-                .. LogShaped, "-c", "diff.noprefix=false", "-c", "diff.mnemonicPrefix=false", "-c", "diff.relative=false",
-                "show", "--no-ext-diff", "--no-textconv", "--src-prefix=a/", "--dst-prefix=b/", "--format=", "--patch",
-                "--unified=3", sha, "--", .. files,
-            ];
-            var (diff, tooLarge) = await RunAsync(show, repo, ct);
-            var hunks = tooLarge is null ? Hunks(diff) : [];
-            var holding = hunks.Where(h => h.Lines.Any(Holds)).ToList();
-            if (tooLarge is not null)
-                block.Append($"  (its changes could not be read here: {GitProcess.FirstLine(tooLarge)} — show it with commit={sha[..Math.Min(12, sha.Length)]})\n");
-            else if (holding.Count == 0)
-                block.Append($"  (in {string.Join(", ", files)}; the lines are not singled out — a binary file, a text over several lines, "
-                             + "or a pattern only git reads: show the commit)\n");
-            foreach (var hunk in holding.Take(HunksPerCommit))
-            {
-                block.Append("  ").Append(hunk.File).Append(' ').Append(hunk.Header).Append('\n');
-                var at = hunk.Lines.FindIndex(Holds);
-                var from = Math.Max(0, at - 3);
-                foreach (var line in hunk.Lines.Skip(from).Take(LinesPerHunk))
-                    block.Append("  ").Append(line.Length > MaxLineChars ? SafeTruncate.Truncate(line, MaxLineChars) + $" … ({line.Length - MaxLineChars} more characters)" : line).Append('\n');
-                var left = hunk.Lines.Count - Math.Min(LinesPerHunk, hunk.Lines.Count - from);
-                if (left > 0) block.Append($"  … {left} more line(s) of this hunk\n");
-            }
-            if (holding.Count > HunksPerCommit) block.Append($"  … {holding.Count - HunksPerCommit} more hunk(s) hold it: show the commit\n");
+            var block = await CommitBlockAsync(repo, match, holds, ct);
             if (shown > 0 && sb.Length + block.Length > ToolOutputBudget.ListChars) break;
             sb.Append(block);
             shown++;
@@ -345,6 +295,96 @@ internal sealed class GitHistoryTool : ITool
             sb.Append($"… {matches.Count - next} more matching commit(s): read them with skip={next}.\n");
         sb.Append("Show one whole with commit=<hash>.").Append(keptOut);
         return ClampedArgument.Above(notice, sb.ToString());
+    }
+
+    /// <summary>The most matching commits <c>skip</c> passes over.</summary>
+    private const int MaxSkip = 1_000_000;
+
+    /// <summary>The lines shown above the first one that holds the text, to read it in its place.</summary>
+    private const int LinesBeforeMatch = 3;
+
+    /// <summary>The length of a hash named to show a commit whose changes could not be read.</summary>
+    private const int ShortHash = 12;
+
+    private const string NoCommitYet = "The repository has no commit yet: there is no history to read.";
+
+    // git's own words for a repository with no commit.
+    private static bool IsEmptyRepository(string failure) => failure.Contains("does not have any commits yet", StringComparison.Ordinal);
+
+    /// <summary>A commit the search found: its hash, its header line, its matching files the model may read.</summary>
+    private sealed record CommitMatch(string Sha, string Header, List<string> Files);
+
+    /// <summary>
+    /// The commits of <c>git log --name-only</c>'s output, each with its matching files; a file the ignore files keep out
+    /// is dropped, and a commit that matched only in such files with it.
+    /// </summary>
+    private static List<CommitMatch> MatchesOf(string text, string repo)
+    {
+        // A commit starts on a line that opens with \u0001: a byte inside a subject or a file's text is never at a line's start.
+        var matches = new List<CommitMatch>();
+        foreach (var chunk in ("\n" + text.Replace("\r\n", "\n")).Split("\n\u0001", StringSplitOptions.RemoveEmptyEntries))
+        {
+            var lines = chunk.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            if (lines.Length == 0 || lines[0].IndexOf(' ') is not (> 0 and var space)) continue;
+            var files = lines.Skip(1).Where(f => Governance.ContentExclusions.Of(Path.Combine(repo, f)) is null).ToList();
+            if (files.Count == 0) continue;   // matched only where the model may not look
+            matches.Add(new(lines[0][..space], lines[0][(space + 1)..], files));
+        }
+        return matches;
+    }
+
+    /// <summary>Whether a changed line of a diff holds the text: the text itself, or the pattern read by .NET — a pattern
+    /// only git reads (a POSIX class) singles out no line, and the commit says so.</summary>
+    private static Func<string, bool> LineMatcher(string search, bool regex)
+    {
+        Regex? pattern = null;
+        if (regex)
+        {
+            try { pattern = new Regex(search, RegexOptions.CultureInvariant, RegexBudget.Default); }
+            catch (ArgumentException) { /* git's own syntax: the lines are not singled out, said per commit */ }
+        }
+        return line =>
+        {
+            if (line.Length < 1 || line[0] is not ('+' or '-')) return false;
+            if (!regex) return line.Contains(search, StringComparison.Ordinal);
+            if (pattern is null) return false;
+            try { return RegexBudget.IsMatch(pattern, line[1..]); }
+            catch (RegexMatchTimeoutException) { return false; }
+        };
+    }
+
+    /// <summary>
+    /// A found commit as it is shown: its header, then its hunks that hold the text — the lines around the first that does,
+    /// each line bounded — read with one <c>git show</c> of its matching files, so that one huge diff costs that commit its
+    /// lines, never the search.
+    /// </summary>
+    private static async Task<string> CommitBlockAsync(string repo, CommitMatch match, Func<string, bool> holds, CancellationToken ct)
+    {
+        var block = new StringBuilder(match.Header.TrimEnd()).Append('\n');
+        List<string> show =
+        [
+            .. LogShaped, "-c", "diff.noprefix=false", "-c", "diff.mnemonicPrefix=false", "-c", "diff.relative=false",
+            "show", "--no-ext-diff", "--no-textconv", "--src-prefix=a/", "--dst-prefix=b/", "--format=", "--patch",
+            "--unified=3", match.Sha, "--", .. match.Files,
+        ];
+        var (diff, tooLarge) = await RunAsync(show, repo, ct);
+        if (tooLarge is not null)
+            return block.Append($"  (its changes could not be read here: {GitProcess.FirstLine(tooLarge)} — show it with commit={match.Sha[..Math.Min(ShortHash, match.Sha.Length)]})\n").ToString();
+        var holding = Hunks(diff).Where(h => h.Lines.Any(holds)).ToList();
+        if (holding.Count == 0)
+            block.Append($"  (in {string.Join(", ", match.Files)}; the lines are not singled out — a binary file, a text over several lines, "
+                         + "or a pattern only git reads: show the commit)\n");
+        foreach (var hunk in holding.Take(HunksPerCommit))
+        {
+            block.Append("  ").Append(hunk.File).Append(' ').Append(hunk.Header).Append('\n');
+            var from = Math.Max(0, hunk.Lines.FindIndex(l => holds(l)) - LinesBeforeMatch);
+            foreach (var line in hunk.Lines.Skip(from).Take(LinesPerHunk))
+                block.Append("  ").Append(line.Length > MaxLineChars ? SafeTruncate.Truncate(line, MaxLineChars) + $" … ({line.Length - MaxLineChars} more characters)" : line).Append('\n');
+            var left = hunk.Lines.Count - Math.Min(LinesPerHunk, hunk.Lines.Count - from);
+            if (left > 0) block.Append($"  … {left} more line(s) of this hunk\n");
+        }
+        if (holding.Count > HunksPerCommit) block.Append($"  … {holding.Count - HunksPerCommit} more hunk(s) hold it: show the commit\n");
+        return block.ToString();
     }
 
     private sealed record Hunk(string File, string Header, List<string> Lines);
