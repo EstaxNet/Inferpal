@@ -583,11 +583,20 @@ internal static class MentionController
                     return $"[{Path.GetFileName(path)}: a Playwright trace that could not be read: {Diagnostics.RootMessage(ex)}]";
                 }
             }, ct).ConfigureAwait(false);
+        string text;
         if (overlay is not null && overlay.TryGetUnsaved(path, out var buffered))
-            return buffered.Length > MaxAttachedFileSize ? null : buffered;
-        if (new FileInfo(path).Length > MaxAttachedFileSize) return null;
-        // Decoded like the file an edit rewrites: an attached line is what the model quotes back into one.
-        return await Tools.TextFileEncoding.ReadTextAsync(path, ct).ConfigureAwait(false);
+        {
+            if (buffered.Length > MaxAttachedFileSize) return null;
+            text = buffered;
+        }
+        else
+        {
+            if (new FileInfo(path).Length > MaxAttachedFileSize) return null;
+            // Decoded like the file an edit rewrites: an attached line is what the model quotes back into one.
+            text = await Tools.TextFileEncoding.ReadTextAsync(path, ct).ConfigureAwait(false);
+        }
+        // A file git holds in conflict comes with what read_file says of it: the operation, each side, every block's base.
+        return await MergeConflict.HeaderAsync(path, text, ct).ConfigureAwait(false) is { } conflict ? conflict + text : text;
     }
 
     /// <summary>

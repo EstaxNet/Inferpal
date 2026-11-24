@@ -179,13 +179,22 @@ internal class ReadFileTool : ITool
                        Documents.PatchText.Workspace(_getWorkspaceRoot(), _overlay), ct)
                 ?? Documents.ProfileText.Summarize(Path.GetFileName(path), content, PageChars, ct)) is { } first)
             return first;
-        var shown = PageOf(content, Path.GetFileName(path), args.Int("start_line", 0), args.Int("end_line", 0));
+        // A file git holds in conflict says so above the page that shows a block: the operation, each side's commit, the
+        // base of every block (MergeConflict). The page itself stays the text on disk, which an edit quotes.
+        // ⚠ The header shares the page's room: added to a full page, the result passed the context cap and the loop cut
+        // its middle — inside a block, on lines already counted as read.
+        var (start, end) = (args.Int("start_line", 0), args.Int("end_line", 0));
+        var conflict = await MergeConflict.HeaderAsync(path, content, ct);
+        var shown = PageOf(content, Path.GetFileName(path), start, end,
+                           conflict is null ? PageChars : Math.Max(PageChars / 2, PageChars - conflict.Length));
+        if (conflict is not null && MergeConflict.Blocks(shown.Text) == 0)
+            (conflict, shown) = (null, PageOf(content, Path.GetFileName(path), start, end));
         // ⚠ What the model has SEEN, not what it asked for: a first page or a range is not the file, and write_file lets
         // a whole-file rewrite through only once every line of it has been in front of the model. A read cut at
         // MaxChars is not seen whole.
         if (shown.Text.Length > MaxChars) return Cap(shown.Text, Path.GetFileName(path));
         _history?.NoteReadLines(path, shown.First, shown.Last, shown.Total);
-        return shown.Text;
+        return conflict + shown.Text;
     }
 
     /// <summary>A Playwright trace: its text paged like a document's; the picture of the page at the failure follows the
@@ -393,14 +402,15 @@ internal class ReadFileTool : ITool
     /// line count as the file's, a line past it — one <c>search_in_files</c> had just reported — was "past the end", and
     /// the last page said "the end of the file" under the cut. And no copy of the file is split into lines: only the page.
     /// </remarks>
-    internal static Shown PageOf(string content, string name, int start, int end)
+    /// <param name="pageChars">The room a page has (<see cref="PageChars"/>, less what goes above it).</param>
+    internal static Shown PageOf(string content, string name, int start, int end, int pageChars = PageChars)
     {
         var ranged = start > 0 || end > 0;
         var breaks = 0;
         foreach (var c in content) if (c == '\n') breaks++;
         // A trailing newline ends the last line; it does not open another.
         var total = content.EndsWith('\n') ? breaks : breaks + 1;
-        if (!ranged && content.Length <= PageChars) return new(content, 1, total, total);
+        if (!ranged && content.Length <= pageChars) return new(content, 1, total, total);
         if (total <= 0) return new(content, 1, total, total);
 
         var first = Math.Max(1, start);
@@ -422,7 +432,7 @@ internal class ReadFileTool : ITool
             var lineEnd = nl < 0 ? content.Length : nl;
             var add     = lineEnd - cursor + 1;
             // With no end asked for, whole lines up to the page — at least one, even an over-long one.
-            if (end <= 0 && shown >= first && size + add > PageChars) break;
+            if (end <= 0 && shown >= first && size + add > pageChars) break;
             size  += add;
             shown  = i;
             cursor = nl < 0 ? content.Length : nl + 1;

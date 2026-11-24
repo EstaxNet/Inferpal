@@ -59,6 +59,8 @@ internal static class SyntaxGuard
     /// a run, where the loop policy must count the repeats.</summary>
     internal static bool OffersPass(string toolResult) =>
         (Refused(toolResult) && toolResult.Contains(PassOffered, StringComparison.Ordinal))
+        || (toolResult.Contains(MergeConflict.RefusalMarker, StringComparison.Ordinal)
+            && toolResult.Contains(MergeConflict.PassOffered, StringComparison.Ordinal))
         || (toolResult.Contains(CopiedContext.RefusalMarker, StringComparison.Ordinal)
             && toolResult.Contains(CopiedContext.PassOffered, StringComparison.Ordinal));
 
@@ -84,7 +86,8 @@ internal static class SyntaxGuard
     {
         ParseError? error = await FirstErrorAsync(path, proposed, ct) is { } added
                             && (original is null || await FirstErrorAsync(path, original, ct) is null) ? added : null;
-        if (error is null && copied is null) return null;
+        var marker = MergeConflict.WrongMarkers(original, proposed, Shown(path, root));
+        if (error is null && copied is null && marker is null) return null;
 
         if (runId is not null)
         {
@@ -97,6 +100,7 @@ internal static class SyntaxGuard
         var reasons = new List<string>();
         if (copied is not null)
             reasons.Add(CopiedContext.Refusal(copied, shown) + (runId is null ? string.Empty : CopiedContext.PassOffered));
+        if (marker is not null) reasons.Add(marker + (runId is null ? string.Empty : MergeConflict.PassOffered));
         if (error is { } parse)
             reasons.Add($"{RefusalMarker}{shown} at line {parse.Line} ({parse.Message}). "
                         + "Nothing was written: correct the edit and send it again."
