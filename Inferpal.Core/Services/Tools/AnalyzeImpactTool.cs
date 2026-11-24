@@ -163,6 +163,47 @@ internal class AnalyzeImpactTool : ITool
     /// <summary>Referenced types shown inline per dependant, the rest counted.</summary>
     private const int MaxReferencedTypes = 3;
 
+    /// <summary>The width of the report's rule.</summary>
+    private const int RuleWidth = 60;
+
+    /// <summary>The least room the budgeted lists get, however long the report's head.</summary>
+    private const int MinListRoom = 1_200;
+
+    /// <summary>The room kept after the lists for the rest of the report: the verdict and its reasons.</summary>
+    private const int ReportTailRoom = 1_200;
+
+    /// <summary>
+    /// The API narrowed to <paramref name="symbol"/>: its type — or, in a script, whose exports are names and not types,
+    /// its exported name —; or why the file declares no such symbol, naming what it declares.
+    /// </summary>
+    /// <remarks>Without the script branch, naming any TS/JS/py symbol refuses outright instead of running the heuristic
+    /// scoped to that name.</remarks>
+    private static (PublicApi? Api, string? Refusal) ScopeToSymbol(PublicApi api, string symbol, string fileName)
+    {
+        var declared = api.Types.Select(t => t.Name).Concat(api.ExportedNames).Distinct().ToList();
+        var scoped = api with { Types = api.Types.Where(t => t.Name.Equals(symbol, StringComparison.OrdinalIgnoreCase)).ToList() };
+        if (scoped.Types.Count > 0) return (scoped, null);
+        if (api.ExportedNames.Any(n => n.Equals(symbol, StringComparison.OrdinalIgnoreCase)))
+            return (scoped with { ExportedNames = [symbol] }, null);
+        return (null, SymbolNotDeclared(symbol, fileName, declared));
+    }
+
+    /// <summary>The public API the report is about: its types, its exported names (the first <see cref="MaxExportedNames"/>,
+    /// the rest counted — without the count, forty exports read as ten), its namespace.</summary>
+    private static void AppendPublicApi(StringBuilder sb, PublicApi api)
+    {
+        sb.AppendLine();
+        sb.AppendLine("## Public API exposed");
+        foreach (var t in api.Types)
+            sb.AppendLine($"  {KindIcon(t.Kind)} {t.Kind,-12} {t.Name}{(t.IsAbstract ? "  *(abstract)*" : "")}");
+        foreach (var n in api.ExportedNames.Take(MaxExportedNames))
+            sb.AppendLine($"  📤 {n}");
+        if (api.ExportedNames.Count > MaxExportedNames)
+            sb.AppendLine($"  … +{api.ExportedNames.Count - MaxExportedNames} more exported name(s)");
+        if (api.Namespace is not null)
+            sb.AppendLine($"  📦 namespace `{api.Namespace}`");
+    }
+
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         var workspaceRoot = _getRoot();
@@ -191,26 +232,11 @@ internal class AnalyzeImpactTool : ITool
             ? CSharpApiExtractor.Extract(source, filePath)
             : ScriptApiExtractor.Extract(source, filePath, ext);
 
-        // Filter to a specific symbol if requested
         if (!string.IsNullOrWhiteSpace(symbol))
         {
-            var declared = api.Types.Select(t => t.Name).Concat(api.ExportedNames).Distinct().ToList();
-            api = api with
-            {
-                Types = api.Types
-                    .Where(t => t.Name.Equals(symbol, StringComparison.OrdinalIgnoreCase))
-                    .ToList()
-            };
-            if (api.Types.Count == 0)
-            {
-                // Script languages put their exports in ExportedNames, not Types — before this
-                // branch, naming any TS/JS/py symbol made the tool refuse outright instead of
-                // running its heuristic. Scope the scan to that name and carry on.
-                if (api.ExportedNames.Any(n => n.Equals(symbol, StringComparison.OrdinalIgnoreCase)))
-                    api = api with { ExportedNames = [symbol!] };
-                else
-                    return SymbolNotDeclared(symbol!, fileName, declared);
-            }
+            var (scoped, refusal) = ScopeToSymbol(api, symbol, fileName);
+            if (refusal is not null) return refusal;
+            api = scoped!;
         }
 
         if (api.Types.Count == 0 && api.ExportedNames.Count == 0)
@@ -281,31 +307,14 @@ internal class AnalyzeImpactTool : ITool
         // ── 6. Render ─────────────────────────────────────────────────────────
         var sb = new StringBuilder();
         sb.AppendLine(Strings.ImpactHeader(fileName));
-        sb.AppendLine(new string('═', 60));
-
-        // Public API
-        sb.AppendLine();
-        sb.AppendLine("## Public API exposed");
-        if (api.Types.Count > 0)
-            foreach (var t in api.Types)
-                sb.AppendLine($"  {KindIcon(t.Kind)} {t.Kind,-12} {t.Name}{(t.IsAbstract ? "  *(abstract)*" : "")}");
-        if (api.ExportedNames.Count > 0)
-        {
-            // ⚠ The "+N" was missing: a module exporting forty names showed ten,
-            // and the model concluded its public surface holds ten.
-            foreach (var n in api.ExportedNames.Take(MaxExportedNames))
-                sb.AppendLine($"  📤 {n}");
-            if (api.ExportedNames.Count > MaxExportedNames)
-                sb.AppendLine($"  … +{api.ExportedNames.Count - MaxExportedNames} more exported name(s)");
-        }
-        if (api.Namespace is not null)
-            sb.AppendLine($"  📦 namespace `{api.Namespace}`");
+        sb.AppendLine(new string('═', RuleWidth));
+        AppendPublicApi(sb, api);
 
         // ⚠ The lists below are budgeted: the report reaches the model as ONE tool result, and the loop cuts a longer
         // one in its middle — for a file a hundred others use, Layer 2 and the entry points vanished entirely and the
         // tests were cut to their last lines. The counts in the headings stay complete; each list says what it left.
         var semanticText = semantic is not null ? RenderSemantic(semantic, symbol!) : string.Empty;
-        var room   = Math.Max(1_200, ToolOutputBudget.ListChars - sb.Length - semanticText.Length - 1_200);
+        var room   = Math.Max(MinListRoom, ToolOutputBudget.ListChars - sb.Length - semanticText.Length - ReportTailRoom);
         void AppendCapped(List<string> lines, double share)
         {
             var shown = ToolOutputBudget.LinesThatFit(lines, (int)(room * share));

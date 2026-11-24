@@ -144,6 +144,59 @@ internal sealed class ProjectMapService
         // counts its own name as a reference; stems that differ only by case are all counted, as identifiers ignore case.
         // A stem spelled like a C# keyword (Class.cs, If.cs) would be "referenced" by every file that writes the keyword —
         // with case ignored the two cannot be told apart —, so it is left out of the hotspots.
+        CountReferences(refCounts, contents, ct);
+
+        // ── 3. Render ─────────────────────────────────────────────────────────
+        var sb = new StringBuilder();
+
+        var bar = new string('═', RuleWidth);
+        sb.AppendLine(bar);
+        sb.AppendLine($"🗺️  PROJECT MAP  —  {Path.GetFileName(root)}");
+        sb.AppendLine($"    Root   : {root}");
+        sb.AppendLine($"    Scanned: {files.Count} source files  |  {typeList.Count} types  |  {nsFiles.Count} namespaces");
+        // ⚠ Said, never left as a zero: a TypeScript or Python workspace would read as an empty project.
+        if (files.Count == 0) sb.AppendLine($"    {NoCSharp}");
+        // Right under the count it qualifies, not at the far end of a sixty-line report.
+        coverage = coverage.WithUnreadable(unreadable);
+        if (coverage.IsIncomplete) sb.AppendLine($"    {coverage.Warning().Replace("\n", "\n    ")}");
+        if (ignored.Note() is { Length: > 0 } excludedNote) sb.AppendLine($"    {excludedNote}");
+        sb.AppendLine(bar);
+
+        var shownNs = AppendNamespaces(sb, nsFiles);
+        AppendDependencies(sb, usingsByNs, nsFiles, shownNs);
+        AppendTypes(sb, typeList);
+        AppendHotspots(sb, refCounts);
+        sb.AppendLine();
+        sb.AppendLine(bar);
+
+        return sb.ToString().TrimEnd();
+    }
+
+    /// <summary>The width of the map's rules.</summary>
+    private const int RuleWidth = 66;
+
+    /// <summary>The files named beside a namespace.</summary>
+    private const int FilesPerNamespace = 3;
+
+    /// <summary>The internal namespaces named on one import line.</summary>
+    private const int MaxImportsPerLine = 6;
+
+    /// <summary>The interfaces listed with their implementors, and the implementors named per interface.</summary>
+    private const int InterfacesListed = 8, ImplementorsNamed = 4;
+
+    /// <summary>The most referenced file stems listed.</summary>
+    private const int HotspotsListed = 10;
+
+    /// <summary>
+    /// How many other files name each file's stem, read from the contents already read: each file tokenised ONCE into its
+    /// identifiers, each identifier looked up among the stems — every stem against every file would be files × stems
+    /// lookups, half an hour on a repository of 140 000 files.
+    /// </summary>
+    /// <remarks>A file never counts its own name; stems differing only by case are all counted (identifiers ignore case);
+    /// a stem spelled like a C# keyword (Class.cs, If.cs) would be "referenced" by every file writing the keyword, so it is
+    /// left out.</remarks>
+    private static void CountReferences(Dictionary<string, int> refCounts, Dictionary<string, string> contents, CancellationToken ct)
+    {
         var stemsByWord = refCounts.Keys
             .Where(stem => Microsoft.CodeAnalysis.CSharp.SyntaxFacts.GetKeywordKind(stem.ToLowerInvariant())
                            == Microsoft.CodeAnalysis.CSharp.SyntaxKind.None)
@@ -157,38 +210,30 @@ internal sealed class ProjectMapService
                 if (!word.Equals(own, StringComparison.OrdinalIgnoreCase) && stemsByWord.TryGetValue(word, out var stems))
                     foreach (var stem in stems) refCounts[stem]++;
         }
+    }
 
-        // ── 3. Render ─────────────────────────────────────────────────────────
-        var sb = new StringBuilder();
-
-        var bar = new string('═', 66);
-        sb.AppendLine(bar);
-        sb.AppendLine($"🗺️  PROJECT MAP  —  {Path.GetFileName(root)}");
-        sb.AppendLine($"    Root   : {root}");
-        sb.AppendLine($"    Scanned: {files.Count} source files  |  {typeList.Count} types  |  {nsFiles.Count} namespaces");
-        // ⚠ Said, never left as a zero: a TypeScript or Python workspace would read as an empty project.
-        if (files.Count == 0) sb.AppendLine($"    {NoCSharp}");
-        // Right under the count it qualifies, not at the far end of a sixty-line report.
-        coverage = coverage.WithUnreadable(unreadable);
-        if (coverage.IsIncomplete) sb.AppendLine($"    {coverage.Warning().Replace("\n", "\n    ")}");
-        if (ignored.Note() is { Length: > 0 } excludedNote) sb.AppendLine($"    {excludedNote}");
-        sb.AppendLine(bar);
-
-        // ── Namespace tree ───────────────────────────────────────────────────
+    private static void Section(StringBuilder sb, string title)
+    {
         sb.AppendLine();
-        sb.AppendLine($"📦 NAMESPACES  ({nsFiles.Count} total)");
-        sb.AppendLine(new string('─', 66));
+        sb.AppendLine(title);
+        sb.AppendLine(new string('─', RuleWidth));
+    }
 
-        // ⚠ The map reaches the model as ONE tool result, and the loop cuts a longer one in its middle: on a solution
-        // of a hundred namespaces these two sections were forty thousand characters, and the map arrived as its first
-        // and last screens. Each keeps its largest namespaces within a budget, in name order, and says what it left.
-        string NamespaceLine(string ns, List<string> flist)
+    /// <summary>The namespaces, the largest kept within the section's budget and listed in name order, what is left
+    /// counted; returns the ones listed.</summary>
+    /// <remarks>⚠ The map reaches the model as ONE tool result, and the loop cuts a longer one in its middle: unbounded, the
+    /// namespaces and their imports of a large solution are tens of thousands of characters, and the map arrives as its
+    /// first and last screens.</remarks>
+    private static HashSet<string> AppendNamespaces(StringBuilder sb, Dictionary<string, List<string>> nsFiles)
+    {
+        Section(sb, $"📦 NAMESPACES  ({nsFiles.Count} total)");
+        static string NamespaceLine(string ns, List<string> flist)
         {
             var sample = flist
-                .Take(3)
+                .Take(FilesPerNamespace)
                 .Select(Path.GetFileName)
                 .Aggregate((a, b) => $"{a}, {b}");
-            var more = flist.Count > 3 ? $" +{flist.Count - 3} more" : "";
+            var more = flist.Count > FilesPerNamespace ? $" +{flist.Count - FilesPerNamespace} more" : "";
             return $"  {ns,-42} {flist.Count,3} file(s)   {sample}{more}";
         }
 
@@ -209,18 +254,17 @@ internal sealed class ProjectMapService
             sb.AppendLine($"  … +{nsFiles.Count - shownNs.Count} smaller namespace(s) not listed ({hiddenFiles} file(s)) — "
                         + "list_files on a folder shows its files");
         }
+        return shownNs;
+    }
 
-        // ── Dependency edges ─────────────────────────────────────────────────
-        sb.AppendLine();
-        sb.AppendLine("🔗 DEPENDENCIES  (namespace → imported namespaces)");
-        sb.AppendLine(new string('─', 66));
-
-        // Filter to project-internal namespaces only
+    /// <summary>The project-internal imports of the namespaces listed, within the same kind of budget.</summary>
+    private static void AppendDependencies(StringBuilder sb, Dictionary<string, HashSet<string>> usingsByNs,
+                                           Dictionary<string, List<string>> nsFiles, HashSet<string> shownNs)
+    {
+        Section(sb, "🔗 DEPENDENCIES  (namespace → imported namespaces)");
         var knownNs = new HashSet<string>(nsFiles.Keys, StringComparer.Ordinal);
-        const int MaxImportsPerLine = 6;
         var depsUsed = 0;
         var depsLeft = 0;
-        // The namespaces listed above, and within the same kind of budget.
         foreach (var (ns, usings) in usingsByNs.Where(kv => shownNs.Contains(kv.Key)).OrderBy(kv => kv.Key))
         {
             var internal_ = usings
@@ -236,58 +280,51 @@ internal sealed class ProjectMapService
         }
         if (depsLeft > 0)
             sb.AppendLine($"  … +{depsLeft} namespace(s) not listed — the imports of a file are at its top (read_file)");
+    }
 
-        // ── Type inventory ───────────────────────────────────────────────────
-        sb.AppendLine();
+    /// <summary>The types by kind, and the first interfaces with their implementors.</summary>
+    private static void AppendTypes(StringBuilder sb, List<TypeEntry> typeList)
+    {
         int classes    = typeList.Count(t => t.Kind == "class");
         int interfaces = typeList.Count(t => t.Kind == "interface");
         int records    = typeList.Count(t => t.Kind == "record");
         int enums      = typeList.Count(t => t.Kind == "enum");
-        sb.AppendLine($"📐 TYPES  (classes: {classes}  interfaces: {interfaces}  records: {records}  enums: {enums})");
-        sb.AppendLine(new string('─', 66));
+        Section(sb, $"📐 TYPES  (classes: {classes}  interfaces: {interfaces}  records: {records}  enums: {enums})");
 
-        // Key interfaces + their implementors
         var ifaceGroups = typeList
             .Where(t => t.Kind == "interface")
             .OrderBy(t => t.Name)
             .ToList();
-        if (ifaceGroups.Count > 0)
+        if (ifaceGroups.Count == 0) return;
+        sb.AppendLine("  Interfaces:");
+        foreach (var iface in ifaceGroups.Take(InterfacesListed))
         {
-            sb.AppendLine("  Interfaces:");
-            foreach (var iface in ifaceGroups.Take(8))
-            {
-                var impls = typeList
-                    .Where(t => t.Kind is "class" or "record" && t.BaseTypes.Contains(iface.Name))
-                    .Select(t => t.Name)
-                    .ToList();
-                var implStr = impls.Count > 0
-                    ? $"  ← {string.Join(", ", impls.Take(4))}{(impls.Count > 4 ? $" +{impls.Count - 4}" : "")}"
-                    : "";
-                sb.AppendLine($"    {iface.Name,-38} ({iface.Namespace}){implStr}");
-            }
-            if (ifaceGroups.Count > 8) sb.AppendLine($"    … +{ifaceGroups.Count - 8} more interfaces");
+            var impls = typeList
+                .Where(t => t.Kind is "class" or "record" && t.BaseTypes.Contains(iface.Name))
+                .Select(t => t.Name)
+                .ToList();
+            var implStr = impls.Count > 0
+                ? $"  ← {string.Join(", ", impls.Take(ImplementorsNamed))}{(impls.Count > ImplementorsNamed ? $" +{impls.Count - ImplementorsNamed}" : "")}"
+                : "";
+            sb.AppendLine($"    {iface.Name,-38} ({iface.Namespace}){implStr}");
         }
+        if (ifaceGroups.Count > InterfacesListed) sb.AppendLine($"    … +{ifaceGroups.Count - InterfacesListed} more interfaces");
+    }
 
-        // ── Hotspots ─────────────────────────────────────────────────────────
-        sb.AppendLine();
-        sb.AppendLine("🎯 HOTSPOTS  (most referenced file stems)");
-        sb.AppendLine(new string('─', 66));
-
+    /// <summary>The most referenced file stems.</summary>
+    private static void AppendHotspots(StringBuilder sb, Dictionary<string, int> refCounts)
+    {
+        Section(sb, "🎯 HOTSPOTS  (most referenced file stems)");
         var topRefs = refCounts
             .Where(kv => kv.Value > 1)
             .OrderByDescending(kv => kv.Value)
-            .Take(10)
+            .Take(HotspotsListed)
             .ToList();
         if (topRefs.Count == 0)
             sb.AppendLine("  (no cross-references detected)");
         else
             foreach (var (stem, count) in topRefs)
                 sb.AppendLine($"  {stem,-44} {count,3} refs");
-
-        sb.AppendLine();
-        sb.AppendLine(bar);
-
-        return sb.ToString().TrimEnd();
     }
 
     // ── Parsers ───────────────────────────────────────────────────────────────

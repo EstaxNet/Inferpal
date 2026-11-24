@@ -116,22 +116,13 @@ internal class TraceDependencyTool : ITool
             return Strings.TraceDepsNoMethods(Path.GetFileName(filePath));
 
         // ── Build cross-file index ────────────────────────────────────────────
-        // ⚠ This scan is CAPPED like the caller one, and it did not say so. What
-        // the index does not hold is rendered "[external]" — an assertion, not a silence: the
-        // model reads "this call leaves your code" about a method living in file no. 401. On this
-        // repository (652 .cs, cap 400) 252 files are out. And in `direction: "callees"` the
-        // caller scan does not run, so coverage stayed `default` and NO warning was ever emitted
-        // — while the rule is written ten lines below, about the other scan.
-        // ⚠ The scan starts at the WORKSPACE root, not at the analysed file's own folder. It used
-        // to be the folder: asked about `Services/Commands/TaskCommandHandler.cs`, this tool only
-        // looked at `Services/Commands/**`, so every caller living in the host, the VS window or
-        // the tests was **structurally invisible** — and it returned an empty "Callers", which
-        // reads "nothing calls this method". A wrong answer, not a cap: the coverage warning does
-        // not fire either, a single folder never exceeding the cap. ⚠ The tell was the comment
-        // above, which quantifies the cap over "652 .cs" — the whole repository — while the code
-        // enumerated one folder. `AnalyzeImpactTool` had fixed exactly this, the lesson written in
-        // its own comment. Falling back to the folder when no workspace is known: the one case
-        // where the old behaviour was right.
+        // ⚠ This scan is CAPPED like the caller one, and says so: what the index does not hold is rendered "[external]" —
+        // an assertion, not a silence ("this call leaves your code" about a method in a file past the cap) —, and in
+        // `direction: "callees"` the caller scan does not run, so this scan's coverage is the only one to warn about.
+        // ⚠ The scan starts at the WORKSPACE root, never at the analysed file's own folder: from the folder, every caller
+        // living elsewhere (the host, the editor's window, the tests) is invisible, and an empty "Callers" reads "nothing
+        // calls this method" — a wrong answer that no coverage warning flags, one folder never reaching the cap. The
+        // folder stands in only when no workspace is known.
         var rootDir = workspace is { Length: > 0 } ? workspace : Path.GetDirectoryName(filePath)!;
         DefinitionIndex? index = null;
         var indexCoverage = default(ScanCoverage);
@@ -150,27 +141,7 @@ internal class TraceDependencyTool : ITool
         // scanned, nothing to warn about — the callees-only mode reads a single file).
         var coverage = default(ScanCoverage);
 
-        // ⚠ Each section is budgeted, method by method: the report reaches the model as ONE tool result, and the loop
-        // cuts a longer one in its middle — on a file of forty methods, "both" lost the end of the callers and the
-        // start of the callees, unannounced. The methods that do not fit are named, with the way to ask for one.
-        var room = ToolOutputBudget.ListChars - 800;
-        void AppendBlocks(List<(string Name, string Text)> blocks, int budget)
-        {
-            var used  = 0;
-            var shown = 0;
-            foreach (var (_, text) in blocks)
-            {
-                if (shown > 0 && used + text.Length > budget) break;
-                sb.Append(text);
-                used += text.Length;
-                shown++;
-            }
-            if (shown < blocks.Count)
-                sb.AppendLine($"(+{blocks.Count - shown} method(s) not shown here: "
-                            + $"{string.Join(", ", blocks.Skip(shown).Take(20).Select(b => b.Name))}"
-                            + (blocks.Count - shown > 20 ? ", …" : "")
-                            + " — call analyze_code again with symbol=<method> for one)").AppendLine();
-        }
+        var room = ToolOutputBudget.ListChars - HeaderAndFooterRoom;
 
         if (showCallers)
         {
@@ -179,7 +150,7 @@ internal class TraceDependencyTool : ITool
             sb.AppendLine();
             var callerBlocks = new List<(string Name, string Text)>();
             coverage = AppendCallers(callerBlocks, methods, rootDir, ext, index, ct);
-            AppendBlocks(callerBlocks, showCallees ? room * 2 / 5 : room);
+            AppendBudgeted(sb, callerBlocks, showCallees ? room * CallerFifths / 5 : room);
         }
 
         if (showCallees)
@@ -188,18 +159,8 @@ internal class TraceDependencyTool : ITool
             sb.AppendLine("### Callees");
             sb.AppendLine();
 
-            var calleeBlocks = new List<(string Name, string Text)>();
-            foreach (var m in methods)
-            {
-                ct.ThrowIfCancellationRequested();
-                var block = new StringBuilder();
-                block.AppendLine($"▶ **{m.Name}**{m.Signature}  *(line {m.Line})*");
-                var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { m.Name };
-                AppendCalleeTree(block, m, filePath, index, indexCoverage.IsIncomplete, depth, 1, visited, "  ");
-                block.AppendLine();
-                calleeBlocks.Add((m.Name, block.ToString()));
-            }
-            AppendBlocks(calleeBlocks, showCallers ? room * 3 / 5 : room);
+            var calleeBlocks = CalleeBlocks(methods, filePath, index, indexCoverage.IsIncomplete, depth, ct);
+            AppendBudgeted(sb, calleeBlocks, showCallers ? room * (5 - CallerFifths) / 5 : room);
         }
 
         // ── Summary ───────────────────────────────────────────────────────────
@@ -221,6 +182,57 @@ internal class TraceDependencyTool : ITool
         if (worst.IsIncomplete) sb.AppendLine(worst.Warning());
 
         return ClampedArgument.Above(depthNotice, sb.ToString().TrimEnd());
+    }
+
+    /// <summary>The report's room kept for its header, section titles and footer.</summary>
+    private const int HeaderAndFooterRoom = 800;
+
+    /// <summary>With both directions, the callers' share of the room, in fifths; the callees take the rest.</summary>
+    private const int CallerFifths = 2;
+
+    /// <summary>The methods named when a section does not fit.</summary>
+    private const int MethodsNamed = 20;
+
+    /// <summary>
+    /// A section's blocks, method by method, within <paramref name="budget"/>; the methods that do not fit named, with the
+    /// way to ask for one.
+    /// </summary>
+    /// <remarks>⚠ Budgeted per section: the report reaches the model as ONE tool result, and the loop cuts a longer one in
+    /// its middle — "both" would lose the end of the callers and the start of the callees, unannounced.</remarks>
+    private static void AppendBudgeted(StringBuilder sb, List<(string Name, string Text)> blocks, int budget)
+    {
+        var used  = 0;
+        var shown = 0;
+        foreach (var (_, text) in blocks)
+        {
+            if (shown > 0 && used + text.Length > budget) break;
+            sb.Append(text);
+            used += text.Length;
+            shown++;
+        }
+        if (shown < blocks.Count)
+            sb.AppendLine($"(+{blocks.Count - shown} method(s) not shown here: "
+                        + $"{string.Join(", ", blocks.Skip(shown).Take(MethodsNamed).Select(b => b.Name))}"
+                        + (blocks.Count - shown > MethodsNamed ? ", …" : "")
+                        + " — call analyze_code again with symbol=<method> for one)").AppendLine();
+    }
+
+    /// <summary>Each method's callee tree, a block per method.</summary>
+    private static List<(string Name, string Text)> CalleeBlocks(List<MethodInfo> methods, string filePath, DefinitionIndex? index,
+                                                                 bool indexIncomplete, int depth, CancellationToken ct)
+    {
+        var blocks = new List<(string Name, string Text)>();
+        foreach (var m in methods)
+        {
+            ct.ThrowIfCancellationRequested();
+            var block = new StringBuilder();
+            block.AppendLine($"▶ **{m.Name}**{m.Signature}  *(line {m.Line})*");
+            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { m.Name };
+            AppendCalleeTree(block, m, filePath, index, indexIncomplete, depth, 1, visited, "  ");
+            block.AppendLine();
+            blocks.Add((m.Name, block.ToString()));
+        }
+        return blocks;
     }
 
     // ── Callees tree ──────────────────────────────────────────────────────────

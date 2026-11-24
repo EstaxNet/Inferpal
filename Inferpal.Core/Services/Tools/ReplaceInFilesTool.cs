@@ -122,27 +122,7 @@ internal sealed class ReplaceInFilesTool : ITool
                     ? buffered
                     : await TextFileEncoding.ReadTextAsync(file, ct);
                 scanned++;
-                int count;
-                string changed;
-                if (regex is not null)
-                {
-                    // A file all in CRLF is matched as the model reads it, in LF ($ before the break, \n for a break), and
-                    // written back in CRLF. A file with mixed breaks is matched as it is: converting it would touch lines the
-                    // replacement does not.
-                    var crlf = old.Contains("\r\n", StringComparison.Ordinal) && !LoneLineFeed.IsMatch(old);
-                    var text = crlf ? old.Replace("\r\n", "\n", StringComparison.Ordinal) : old;
-                    count = regex.Matches(text).Count;
-                    var result = count > 0 ? regex.Replace(text, replace.Replace("\r\n", "\n", StringComparison.Ordinal)) : text;
-                    changed = crlf ? result.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal) : result;
-                }
-                else
-                {
-                    // A model writes \n: in a CRLF file the text it means has \r\n, and what it writes keeps the file's breaks.
-                    var eol = LineEndings.Dominant(old);
-                    var findHere = LineEndings.ToEol(find, eol);
-                    count = Occurrences(old, findHere);
-                    changed = count > 0 ? old.Replace(findHere, LineEndings.ToEol(replace, eol), StringComparison.Ordinal) : old;
-                }
+                var (count, changed) = Replaced(old, regex, find, replace);
                 if (count == 0 || string.Equals(changed, old, StringComparison.Ordinal)) continue;
                 // A generated file is rewritten by its generator: the tools that edit by hand leave it, and say so.
                 if (GeneratedFiles.Of(file, old) is not null) { generated++; continue; }
@@ -186,15 +166,9 @@ internal sealed class ReplaceInFilesTool : ITool
         }
         if (dryRun) return sb.Append("Dry run — no file was changed. Call again without dry_run to apply.").ToString();
 
-        var details = new StringBuilder(Strings.ReplaceConfirm(OnCard(find), OnCard(replace), hits.Count, total));
-        foreach (var h in hits.Take(MaxFilesInPrompt))
-        {
-            details.Append("\n\n### ").Append(Shown(h.Path, workspace));
-            if (CodeActions.DiffComputer.ComputeText(h.Old, h.New, maxLines: 20) is { } diff) details.Append('\n').Append(diff);
-        }
-        if (hits.Count > MaxFilesInPrompt) details.Append("\n\n").Append(Strings.ReplaceMoreFiles(hits.Count - MaxFilesInPrompt));
         // Every file the call writes is the subject: a deny rule or an instruction file among them is judged on its path.
-        if (!await _approval.RequestApprovalAsync(Name, details.ToString(), ct, subject: string.Join("\n", hits.Select(h => h.Path))))
+        if (!await _approval.RequestApprovalAsync(Name, ApprovalCard(find, replace, hits, total, workspace), ct,
+                                                  subject: string.Join("\n", hits.Select(h => h.Path))))
             return Strings.DiffCancelled;
         if (await FileTarget.ChangedSinceApprovalAsync(_overlay, hits.Select(h => new ApprovedFile(h.Path, h.Old)), ct) is { } typedMeanwhile)
             return typedMeanwhile;
@@ -210,6 +184,43 @@ internal sealed class ReplaceInFilesTool : ITool
             ? $"Error: nothing was replaced: writing {Shown(write.FailedPath!, workspace)} failed ({write.Error}), and every file already written was put back."
             : $"Error: writing {Shown(write.FailedPath!, workspace)} failed ({write.Error}), and "
               + string.Join(", ", write.Stuck.Select(s => Shown(s, workspace))) + " could not be put back — restore them with restore_file when it is offered; otherwise tell the user: /undo-run puts the run's files back.";
+    }
+
+    /// <summary>The lines of each file's diff shown on the approval card.</summary>
+    private const int CardDiffLines = 20;
+
+    /// <summary>How many times <paramref name="old"/> holds the text, and the file once replaced.</summary>
+    /// <remarks>A regular expression: a file all in CRLF is matched as the model reads it, in LF (<c>$</c> before the break,
+    /// <c>\n</c> for a break), and written back in CRLF; a file with mixed breaks is matched as it is — converting it would
+    /// touch lines the replacement does not. A text: a model writes <c>\n</c>, and in a CRLF file the text it means has
+    /// <c>\r\n</c> — what it writes keeps the file's breaks.</remarks>
+    private static (int Count, string Changed) Replaced(string old, Regex? regex, string find, string replace)
+    {
+        if (regex is not null)
+        {
+            var crlf = old.Contains("\r\n", StringComparison.Ordinal) && !LoneLineFeed.IsMatch(old);
+            var text = crlf ? old.Replace("\r\n", "\n", StringComparison.Ordinal) : old;
+            var count = regex.Matches(text).Count;
+            var result = count > 0 ? regex.Replace(text, replace.Replace("\r\n", "\n", StringComparison.Ordinal)) : text;
+            return (count, crlf ? result.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal) : result);
+        }
+        var eol = LineEndings.Dominant(old);
+        var findHere = LineEndings.ToEol(find, eol);
+        var found = Occurrences(old, findHere);
+        return (found, found > 0 ? old.Replace(findHere, LineEndings.ToEol(replace, eol), StringComparison.Ordinal) : old);
+    }
+
+    /// <summary>The approval card: what is replaced by what, in how many files, and the first files' diffs.</summary>
+    private static string ApprovalCard(string find, string replace, List<Hit> hits, int total, string workspace)
+    {
+        var details = new StringBuilder(Strings.ReplaceConfirm(OnCard(find), OnCard(replace), hits.Count, total));
+        foreach (var h in hits.Take(MaxFilesInPrompt))
+        {
+            details.Append("\n\n### ").Append(Shown(h.Path, workspace));
+            if (CodeActions.DiffComputer.ComputeText(h.Old, h.New, maxLines: CardDiffLines) is { } diff) details.Append('\n').Append(diff);
+        }
+        if (hits.Count > MaxFilesInPrompt) details.Append("\n\n").Append(Strings.ReplaceMoreFiles(hits.Count - MaxFilesInPrompt));
+        return details.ToString();
     }
 
     private static int Occurrences(string text, string find)

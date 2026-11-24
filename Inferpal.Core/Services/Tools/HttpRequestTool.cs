@@ -235,45 +235,11 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
         var waitUntil = DateTime.UtcNow.AddSeconds(wait);
         while (true)
         {
-            // A handler per call: a pooled connection would skip the connect check below.
-            using var handler = new SocketsHttpHandler
-            {
-                AllowAutoRedirect      = false,
-                UseCookies             = false,
-                Credentials            = null,
-                AutomaticDecompression = DecompressionMethods.All,
-                // ⚠ No proxy on the loopback: through one, the check below would judge the proxy, not the target.
-                UseProxy               = !local,
-                Proxy                  = NetworkProxy.Shared,
-                PooledConnectionLifetime = TimeSpan.Zero,
-            };
-            if (local) handler.ConnectCallback = (c, token) => ConnectLoopbackAsync(c.DnsEndPoint.Host, c.DnsEndPoint.Port, token);
+            using var handler = HandlerFor(local);
             using var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
-            using var request = new HttpRequestMessage(new HttpMethod(method), uri);
-            if (body is not null)
-            {
-                request.Content = new StringContent(body, Encoding.UTF8);
-                request.Content.Headers.ContentType = new MediaTypeHeaderValue(body.TrimStart().StartsWith('{') || body.TrimStart().StartsWith('[')
-                    ? "application/json" : "text/plain") { CharSet = "utf-8" };
-            }
-            foreach (var (name, value) in headers)
-            {
-                try
-                {
-                    // Validating adds: a CR or LF in a value is refused, never a second header smuggled in.
-                    if (request.Content is not null && name.StartsWith("Content-", StringComparison.OrdinalIgnoreCase))
-                    {
-                        request.Content.Headers.Remove(name);
-                        request.Content.Headers.Add(name, value);
-                    }
-                    else request.Headers.Add(name, value);
-                }
-                catch (Exception ex) when (ex is FormatException or InvalidOperationException)
-                {
-                    return $"Error: the header '{name}' could not be set ({ex.Message}).";
-                }
-            }
-
+            var (built, refused) = RequestOf(uri, method, headers, body);
+            if (refused is not null) return refused;
+            using var request = built!;
             try
             {
                 using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
@@ -282,9 +248,65 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
             catch (HttpRequestException ex) when (ex.InnerException is SocketException { SocketErrorCode: SocketError.ConnectionRefused }
                                                   && DateTime.UtcNow < waitUntil)
             {
-                await Task.Delay(500, ct);
+                await Task.Delay(RetryDelay, ct);
             }
         }
+    }
+
+    /// <summary>How long a refused connection waits before the next try, while the app being called starts.</summary>
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(500);
+
+    /// <summary>The handler of one call: no redirect followed, no cookie, no credential; a proxy only off the loopback, and
+    /// on the loopback a connection only to a loopback address.</summary>
+    /// <remarks>A handler per call: a pooled connection would skip the loopback check of the connection.</remarks>
+    private static SocketsHttpHandler HandlerFor(bool local)
+    {
+        var handler = new SocketsHttpHandler
+        {
+            AllowAutoRedirect      = false,
+            UseCookies             = false,
+            Credentials            = null,
+            AutomaticDecompression = DecompressionMethods.All,
+            // ⚠ No proxy on the loopback: through one, the loopback check would judge the proxy, not the target.
+            UseProxy               = !local,
+            Proxy                  = NetworkProxy.Shared,
+            PooledConnectionLifetime = TimeSpan.Zero,
+        };
+        if (local) handler.ConnectCallback = (c, token) => ConnectLoopbackAsync(c.DnsEndPoint.Host, c.DnsEndPoint.Port, token);
+        return handler;
+    }
+
+    /// <summary>The request: its body typed as JSON or text, its headers added with validation; or why a header could not be
+    /// set.</summary>
+    private static (HttpRequestMessage? Request, string? Refusal) RequestOf(Uri uri, string method, List<KeyValuePair<string, string>> headers,
+                                                                             string? body)
+    {
+        var request = new HttpRequestMessage(new HttpMethod(method), uri);
+        if (body is not null)
+        {
+            request.Content = new StringContent(body, Encoding.UTF8);
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue(body.TrimStart().StartsWith('{') || body.TrimStart().StartsWith('[')
+                ? "application/json" : "text/plain") { CharSet = "utf-8" };
+        }
+        foreach (var (name, value) in headers)
+        {
+            try
+            {
+                // Validating adds: a CR or LF in a value is refused, never a second header smuggled in.
+                if (request.Content is not null && name.StartsWith("Content-", StringComparison.OrdinalIgnoreCase))
+                {
+                    request.Content.Headers.Remove(name);
+                    request.Content.Headers.Add(name, value);
+                }
+                else request.Headers.Add(name, value);
+            }
+            catch (Exception ex) when (ex is FormatException or InvalidOperationException)
+            {
+                request.Dispose();
+                return (null, $"Error: the header '{name}' could not be set ({ex.Message}).");
+            }
+        }
+        return (request, null);
     }
 
     /// <summary>Connects only to a loopback address the name resolves to: a name rewritten elsewhere (hosts file, DNS) is

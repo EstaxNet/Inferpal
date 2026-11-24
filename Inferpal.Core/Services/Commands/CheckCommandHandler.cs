@@ -112,78 +112,9 @@ internal static class CheckCommandHandler
         // ⚠ The lines of a file the workspace's ignore files exclude are its content: its sections leave the diff, and the
         // review says it did not read them — never a clean verdict on what it never saw.
         var excluded = new Governance.ContentExclusions.Tally();
-        // Found from the workspace in its own spelling; git's, links resolved, when the workspace is a link into the tree.
-        var workTree = GitProcess.WorkTreeOf(projectRoot) ?? await Governance.ContentExclusions.DiffWorkTreeAsync(git, ct);
-        string diff;
-        List<string> notReviewed = [];
-        var stagedOnly = false;
-        if (target is not null)
-        {
-            var run = await git(target.DiffArgs, ct);
-            if (GitProcess.FailureNote(target.DiffArgs, run) is { } failed) return new(Named(failed));
-            var text = Governance.ContentExclusions.WithoutExcludedFiles(run.Output, workTree, excluded);
-            if (string.IsNullOrWhiteSpace(text))
-                return new(Named(excluded.Count > 0 ? excluded.ForPerson() : Strings.CheckTargetDiffEmpty(target.Shown)));
-            diff = $"git diff {target.Shown}:\n{text}";
-        }
-        else
-        {
-            // Staged first, unstaged as a fallback — same rule as /commit, so the two commands always
-            // talk about the same change.
-            // ⚠ Same gate as /commit, for the same reason: `Strings.CheckNoDiff` says "the working tree
-            // is clean", which is a claim about the user's repository — and a git that refused would
-            // instead have its `fatal:` line reviewed against the user's checks, since RunAsync appends
-            // stderr to the output.
-            // A path scopes every command to it, new files included.
-            var spec       = scope is null ? string.Empty : " -- " + Pathspec(scope, projectRoot);
-            var stagedArgs = "diff --staged" + spec;
-            var stagedRun  = await git(stagedArgs, ct);
-            if (GitProcess.FailureNote(stagedArgs, stagedRun) is { } stagedFailed)
-                return new(Named(stagedFailed));
-            // Staged or not is decided on what git staged, excluded files included: the change under review stays the one
-            // /commit describes.
-            var staged = Governance.ContentExclusions.WithoutExcludedFiles(stagedRun.Output, workTree, excluded);
-            if (string.IsNullOrWhiteSpace(stagedRun.Output))
-            {
-                var unstagedArgs = "diff" + spec;
-                var unstagedRun  = await git(unstagedArgs, ct);
-                if (GitProcess.FailureNote(unstagedArgs, unstagedRun) is { } unstagedFailed)
-                    return new(Named(unstagedFailed));
-                var statusArgs = "status --short" + spec;
-                var statusRun  = await git(statusArgs, ct);
-                if (GitProcess.FailureNote(statusArgs, statusRun) is { } statusFailed)
-                    return new(Named(statusFailed));
-                var unstaged = Governance.ContentExclusions.WithoutExcludedFiles(unstagedRun.Output, workTree, excluded);
-                var status   = statusRun.Output;
-                if (string.IsNullOrWhiteSpace(unstaged) && string.IsNullOrWhiteSpace(status))
-                    return new(Named(excluded.Count > 0 ? excluded.ForPerson()
-                                   : scope is not null ? Strings.CheckPathNoDiff(ShownScope(scope, projectRoot))
-                                   : Strings.CheckNoDiff));
-                diff = GitCommitPolicy.BuildUnstagedContext(status, unstaged);
-
-                // ⚠ A NEW file is part of the change under review, and `git diff` never shows one: reviewed from the
-                // status line alone, "?? src/NewService.cs" came back "the review turned up nothing on this diff" — a clean
-                // verdict on code nobody read. (/commit leaves them out on purpose: /commit-exec commits tracked files only.)
-                var (_, untracked) = GitCommitPolicy.SplitUntracked(status);
-                if (untracked.Count > 0)
-                {
-                    var (newFiles, notRead) = await NewFilesAsync(projectRoot, git, untracked, diff.Length, excluded, ct,
-                                                                  scope is null ? null : Pathspec(scope, projectRoot));
-                    diff       += Governance.ContentExclusions.WithoutExcludedFiles(newFiles, workTree, excluded);
-                    notReviewed = notRead;
-                }
-            }
-            else if (string.IsNullOrWhiteSpace(staged))
-            {
-                // Only excluded files are staged: nothing the review may read.
-                return new(Named(excluded.ForPerson()));
-            }
-            else
-            {
-                diff = GitCommitPolicy.BuildStagedContext(staged);
-                stagedOnly = true;
-            }
-        }
+        var change = await ChangeUnderReviewAsync(target, scope, projectRoot, git, excluded, ct);
+        if (change.Refusal is not null) return new(Named(change.Refusal));
+        var (diff, notReviewed, stagedOnly) = (change.Diff, change.NotReviewed, change.StagedOnly);
         if (excluded.Count > 0) diff = excluded.Note() + "\n\n" + diff;
 
         // ⚠ The cut rides ABOVE the findings, because it qualifies them: "the review turned up
@@ -250,6 +181,84 @@ internal static class CheckCommandHandler
             rendered = (stagedOnly ? Strings.CheckPathStagedLabel(ShownScope(scope, projectRoot))
                                    : Strings.CheckPathLabel(ShownScope(scope, projectRoot))) + "\n\n" + rendered;
         return new(Named(rendered));
+    }
+
+    /// <summary>The change under review: a revision's diff, or the staged change — the unstaged one and the new files as a
+    /// fallback, the same rule as <c>/commit</c> —, scoped to a path when one is given; or what to say instead (git refused,
+    /// nothing to review, only excluded files).</summary>
+    /// <param name="Refusal">What to say instead of a review; <c>null</c> when there is a change.</param>
+    /// <param name="Diff">The change as the model reads it.</param>
+    /// <param name="NotReviewed">The new files that could not be read into it.</param>
+    /// <param name="StagedOnly">Whether only the staged part is reviewed.</param>
+    private sealed record ChangeUnderReview(string? Refusal, string Diff, List<string> NotReviewed, bool StagedOnly);
+
+    private static ChangeUnderReview Refused(string why) => new(why, string.Empty, [], false);
+
+    private static async Task<ChangeUnderReview> ChangeUnderReviewAsync(CheckTarget? target, string? scope, string projectRoot,
+        GitRunner git, Governance.ContentExclusions.Tally excluded, CancellationToken ct)
+    {
+        // Found from the workspace in its own spelling; git's, links resolved, when the workspace is a link into the tree.
+        var workTree = GitProcess.WorkTreeOf(projectRoot) ?? await Governance.ContentExclusions.DiffWorkTreeAsync(git, ct);
+        if (target is not null)
+        {
+            var run = await git(target.DiffArgs, ct);
+            if (GitProcess.FailureNote(target.DiffArgs, run) is { } failed) return Refused(failed);
+            var text = Governance.ContentExclusions.WithoutExcludedFiles(run.Output, workTree, excluded);
+            if (string.IsNullOrWhiteSpace(text))
+                return Refused(excluded.Count > 0 ? excluded.ForPerson() : Strings.CheckTargetDiffEmpty(target.Shown));
+            return new(null, $"git diff {target.Shown}:\n{text}", [], false);
+        }
+        else
+        {
+            // Staged first, unstaged as a fallback — same rule as /commit, so the two commands always
+            // talk about the same change.
+            // ⚠ Same gate as /commit, for the same reason: `Strings.CheckNoDiff` says "the working tree
+            // is clean", which is a claim about the user's repository — and a git that refused would
+            // instead have its `fatal:` line reviewed against the user's checks, since RunAsync appends
+            // stderr to the output.
+            // A path scopes every command to it, new files included.
+            var spec       = scope is null ? string.Empty : " -- " + Pathspec(scope, projectRoot);
+            var stagedArgs = "diff --staged" + spec;
+            var stagedRun  = await git(stagedArgs, ct);
+            if (GitProcess.FailureNote(stagedArgs, stagedRun) is { } stagedFailed)
+                return Refused(stagedFailed);
+            // Staged or not is decided on what git staged, excluded files included: the change under review stays the one
+            // /commit describes.
+            var staged = Governance.ContentExclusions.WithoutExcludedFiles(stagedRun.Output, workTree, excluded);
+            if (string.IsNullOrWhiteSpace(stagedRun.Output))
+            {
+                var unstagedArgs = "diff" + spec;
+                var unstagedRun  = await git(unstagedArgs, ct);
+                if (GitProcess.FailureNote(unstagedArgs, unstagedRun) is { } unstagedFailed)
+                    return Refused(unstagedFailed);
+                var statusArgs = "status --short" + spec;
+                var statusRun  = await git(statusArgs, ct);
+                if (GitProcess.FailureNote(statusArgs, statusRun) is { } statusFailed)
+                    return Refused(statusFailed);
+                var unstaged = Governance.ContentExclusions.WithoutExcludedFiles(unstagedRun.Output, workTree, excluded);
+                var status   = statusRun.Output;
+                if (string.IsNullOrWhiteSpace(unstaged) && string.IsNullOrWhiteSpace(status))
+                    return Refused(excluded.Count > 0 ? excluded.ForPerson()
+                                   : scope is not null ? Strings.CheckPathNoDiff(ShownScope(scope, projectRoot))
+                                   : Strings.CheckNoDiff);
+                var diff = GitCommitPolicy.BuildUnstagedContext(status, unstaged);
+
+                // ⚠ A NEW file is part of the change under review, and `git diff` never shows one: reviewed from the
+                // status line alone, "?? src/NewService.cs" came back "the review turned up nothing on this diff" — a clean
+                // verdict on code nobody read. (/commit leaves them out on purpose: /commit-exec commits tracked files only.)
+                var (_, untracked) = GitCommitPolicy.SplitUntracked(status);
+                if (untracked.Count == 0) return new(null, diff, [], false);
+                var (newFiles, notRead) = await NewFilesAsync(projectRoot, git, untracked, diff.Length, excluded, ct,
+                                                              scope is null ? null : Pathspec(scope, projectRoot));
+                return new(null, diff + Governance.ContentExclusions.WithoutExcludedFiles(newFiles, workTree, excluded), notRead, false);
+            }
+            else if (string.IsNullOrWhiteSpace(staged))
+            {
+                // Only excluded files are staged: nothing the review may read.
+                return Refused(excluded.ForPerson());
+            }
+            return new(null, GitCommitPolicy.BuildStagedContext(staged), [], true);
+        }
     }
 
     /// <summary>

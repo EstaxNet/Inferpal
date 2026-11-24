@@ -156,16 +156,7 @@ internal class GetGitStatusTool : ITool
         // (marked `*`) is always kept, wherever the date puts it.
         var branches = await GitAsync("branch -a --sort=-committerdate", root, ct);
         sb.AppendLine("=== git branch -a (most recent first) ===");
-        // Gated: unlike `log`, this one answers 0 on a repository without commits.
-        var branchText = branches.OrFailure("branch -a", "(no branches)");
-        if (branches.Ok && branches.Output.Length > 0)
-        {
-            var lines   = branches.Output.Split('\n').Select(l => l.TrimEnd('\r')).ToList();
-            var current = lines.FindIndex(l => l.StartsWith('*'));
-            if (current > 0) { var line = lines[current]; lines.RemoveAt(current); lines.Insert(0, line); }
-            branchText = Fit(string.Join('\n', lines), BranchChars, "branch(es)", keepLast: false);
-        }
-        sb.AppendLine(branchText);
+        sb.AppendLine(BranchesText(branches));
         sb.AppendLine();
 
         // ── diff stat ─────────────────────────────────────────────────────────
@@ -339,6 +330,18 @@ internal class GetGitStatusTool : ITool
         }
         note.Append(" Read one file's diff with include_diff=true and diff_path=<file>.)");
         return (shown, note.ToString());
+    }
+
+    /// <summary>The branches as the report shows them: the current one (marked <c>*</c>) first, wherever its date puts it,
+    /// then the most recently committed, within the budget.</summary>
+    /// <remarks>Gated: unlike <c>log</c>, <c>branch</c> answers 0 on a repository without commits.</remarks>
+    private static string BranchesText(GitAnswer branches)
+    {
+        if (!branches.Ok || branches.Output.Length == 0) return branches.OrFailure("branch -a", "(no branches)");
+        var lines   = branches.Output.Split('\n').Select(l => l.TrimEnd('\r')).ToList();
+        var current = lines.FindIndex(l => l.StartsWith('*'));
+        if (current > 0) { var line = lines[current]; lines.RemoveAt(current); lines.Insert(0, line); }
+        return Fit(string.Join('\n', lines), BranchChars, "branch(es)", keepLast: false);
     }
 
     /// <param name="Output">git's stdout, trimmed — empty when it wrote none.</param>

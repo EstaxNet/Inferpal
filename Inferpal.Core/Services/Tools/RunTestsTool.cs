@@ -883,45 +883,58 @@ internal class RunTestsTool : ITool
         return errors;
     }
 
+    // Format: "Passed! - Failed:     0, Passed:     5, Skipped:     0, Total:     5", one per test project.
+    private static readonly Regex DotnetSummaryLine = new(
+        @"(?:Passed|Failed|Skipped)!\s*-\s*Failed:\s*(\d+),\s*Passed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Total:\s*(\d+)",
+        RegexOptions.Multiline | RegexOptions.Compiled, RegexBudget.Default);
+
+    // Modern vstest (SDK 9/10) prints a block instead, where the line above never matches:
+    //   Test Run Successful.
+    //   Total tests: 16
+    //        Passed: 16
+    //        Failed: 2        (only when non-zero)
+    private static readonly Regex DotnetSummaryBlock = new(
+        @"^Total tests:\s*(\d+)\s*$(?:\r?\n^\s+Passed:\s*(\d+)\s*$)?(?:\r?\n^\s+Failed:\s*(\d+)\s*$)?(?:\r?\n^\s+Skipped:\s*(\d+)\s*$)?",
+        RegexOptions.Multiline | RegexOptions.Compiled, RegexBudget.Default);
+
+    /// <summary>The totals of every test project's summary, the one-line form or else the block form; all 0 when there is
+    /// none — read as no summary, never as "0 tests".</summary>
+    private static (int Failed, int Passed, int Skipped, int Total) DotnetTotals(string raw)
+    {
+        int failed = 0, passed = 0, skipped = 0, total = 0;
+        foreach (Match m in DotnetSummaryLine.Matches(raw))
+        {
+            failed  += int.Parse(m.Groups[1].Value);
+            passed  += int.Parse(m.Groups[2].Value);
+            skipped += int.Parse(m.Groups[3].Value);
+            total   += int.Parse(m.Groups[4].Value);
+        }
+        if (total > 0) return (failed, passed, skipped, total);
+        foreach (Match m in DotnetSummaryBlock.Matches(raw))
+        {
+            total   += int.Parse(m.Groups[1].Value);
+            passed  += m.Groups[2].Success ? int.Parse(m.Groups[2].Value) : 0;
+            failed  += m.Groups[3].Success ? int.Parse(m.Groups[3].Value) : 0;
+            skipped += m.Groups[4].Success ? int.Parse(m.Groups[4].Value) : 0;
+        }
+        return (failed, passed, skipped, total);
+    }
+
+    /// <summary>Build errors listed under a verdict: the first <see cref="MaxCompileErrorsListed"/>, the rest counted.</summary>
+    private static void AppendErrors(StringBuilder sb, IEnumerable<string> errors, int count)
+    {
+        foreach (var e in errors.Take(MaxCompileErrorsListed))
+            sb.AppendLine($"  {e}");
+        if (count > MaxCompileErrorsListed)
+            sb.AppendLine($"  … +{count - MaxCompileErrorsListed} more error(s) not listed");
+    }
+
     internal static string ParseDotnetOutput(string raw, int exitCode)
     {
         var sb = new StringBuilder();
-
-        // Aggregate summary across all test projects
-        // Format: "Passed! - Failed:     0, Passed:     5, Skipped:     0, Total:     5"
-        var summaryRx = new Regex(
-            @"(?:Passed|Failed|Skipped)!\s*-\s*Failed:\s*(\d+),\s*Passed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Total:\s*(\d+)",
-            RegexOptions.Multiline | RegexOptions.Compiled, RegexBudget.Default);
-
-        int totalFailed = 0, totalPassed = 0, totalSkipped = 0, totalTotal = 0;
-        foreach (Match m in summaryRx.Matches(raw))
-        {
-            totalFailed  += int.Parse(m.Groups[1].Value);
-            totalPassed  += int.Parse(m.Groups[2].Value);
-            totalSkipped += int.Parse(m.Groups[3].Value);
-            totalTotal   += int.Parse(m.Groups[4].Value);
-        }
-
-        // Modern vstest (SDK 9/10) prints a multi-line block instead — the single-line format above
-        // never matches there, so every run fell through to "no summary line detected" (green) or
-        // the raw dump (red):
-        //   Test Run Successful.
-        //   Total tests: 16
-        //        Passed: 16
-        //        Failed: 2        (only when non-zero)
-        if (totalTotal == 0)
-        {
-            var blockRx = new Regex(
-                @"^Total tests:\s*(\d+)\s*$(?:\r?\n^\s+Passed:\s*(\d+)\s*$)?(?:\r?\n^\s+Failed:\s*(\d+)\s*$)?(?:\r?\n^\s+Skipped:\s*(\d+)\s*$)?",
-                RegexOptions.Multiline | RegexOptions.Compiled, RegexBudget.Default);
-            foreach (Match m in blockRx.Matches(raw))
-            {
-                totalTotal   += int.Parse(m.Groups[1].Value);
-                totalPassed  += m.Groups[2].Success ? int.Parse(m.Groups[2].Value) : 0;
-                totalFailed  += m.Groups[3].Success ? int.Parse(m.Groups[3].Value) : 0;
-                totalSkipped += m.Groups[4].Success ? int.Parse(m.Groups[4].Value) : 0;
-            }
-        }
+        var (totalFailed, totalPassed, totalSkipped, totalTotal) = DotnetTotals(raw);
+        // Read once: every branch below that looks at the build looks at the same errors.
+        var compileErrors = CompileErrors(raw);
 
         if (totalTotal > 0 && totalPassed + totalFailed == 0)
         {
@@ -935,13 +948,10 @@ internal class RunTestsTool : ITool
         else if (totalTotal > 0 && totalFailed == 0 && exitCode is not (0 or NoExitCode))
         {
             var counts = $"Failed: 0, Passed: {totalPassed}, Skipped: {totalSkipped}, Total: {totalTotal}";
-            if (CompileErrors(raw).Where(e => !IsCommandLineError(e)).ToList() is { Count: > 0 } unbuilt)
+            if (compileErrors.Where(e => !IsCommandLineError(e)).ToList() is { Count: > 0 } unbuilt)
             {
                 sb.AppendLine(PartlyBuilt);
-                foreach (var e in unbuilt.Take(MaxCompileErrorsListed))
-                    sb.AppendLine($"  {e}");
-                if (unbuilt.Count > MaxCompileErrorsListed)
-                    sb.AppendLine($"  … +{unbuilt.Count - MaxCompileErrorsListed} more error(s) not listed");
+                AppendErrors(sb, unbuilt, unbuilt.Count);
                 sb.AppendLine($"Tests of the projects that compiled — {counts}");
             }
             else if (AbortReason(raw) is { } reason)
@@ -970,37 +980,31 @@ internal class RunTestsTool : ITool
         // fix"), and never inferred from "Build FAILED.", which `dotnet test` also prints when a test merely fails.
         // MSBuild's MSB1xxx are COMMAND-LINE errors — which project, a file that does not exist, a bad switch: the code
         // was never built. Read as compiler errors, "MSB1011: specify which project" made /tdd edit sound code.
-        else if (CompileErrors(raw) is { Count: > 0 } invocation && GetDiagnosticsTool.StopOf(invocation) == GetDiagnosticsTool.BuildStop.CommandLine)
+        else if (compileErrors.Count > 0 && GetDiagnosticsTool.StopOf(compileErrors) == GetDiagnosticsTool.BuildStop.CommandLine)
         {
             sb.AppendLine(DotnetCommandRejected);
-            foreach (var e in invocation.Take(3))
+            foreach (var e in compileErrors.Take(3))
                 sb.AppendLine($"  {e}");
         }
         // ⚠ The SDK or a workload, not the code: read as compiler errors, /tdd edits code that was never compiled. Its
         // lines first — a fresh clone lists the projects not restored beside it, and they would hide the one that names why.
-        else if (CompileErrors(raw) is { Count: > 0 } environment && GetDiagnosticsTool.StopOf(environment) == GetDiagnosticsTool.BuildStop.Environment)
+        else if (compileErrors.Count > 0 && GetDiagnosticsTool.StopOf(compileErrors) == GetDiagnosticsTool.BuildStop.Environment)
         {
             sb.AppendLine(EnvironmentRefused);
-            foreach (var e in environment.OrderBy(e => GetDiagnosticsTool.IsEnvironmentRefusal(e) ? 0 : 1).Take(MaxCompileErrorsListed))
-                sb.AppendLine($"  {e}");
-            if (environment.Count > MaxCompileErrorsListed)
-                sb.AppendLine($"  … +{environment.Count - MaxCompileErrorsListed} more error(s) not listed");
-            if (GetDiagnosticsTool.EnvironmentRemedy(string.Join("\n", environment)) is { } remedy) sb.AppendLine(remedy);
+            AppendErrors(sb, compileErrors.OrderBy(e => GetDiagnosticsTool.IsEnvironmentRefusal(e) ? 0 : 1), compileErrors.Count);
+            if (GetDiagnosticsTool.EnvironmentRemedy(string.Join("\n", compileErrors)) is { } remedy) sb.AppendLine(remedy);
         }
         // The host's refusal of a global.json, with no error line beside it: one beside it is the code's, and stays red.
-        else if (CompileErrors(raw).Count == 0 && GetDiagnosticsTool.IsSdkNotFound(raw))
+        else if (compileErrors.Count == 0 && GetDiagnosticsTool.IsSdkNotFound(raw))
         {
             sb.AppendLine(EnvironmentRefused);
             sb.AppendLine(Truncate(raw.Trim(), MaxRawChars));
             if (GetDiagnosticsTool.EnvironmentRemedy(raw) is { } remedy) sb.AppendLine(remedy);
         }
-        else if (CompileErrors(raw) is { Count: > 0 } errors)
+        else if (compileErrors.Count > 0)
         {
             sb.AppendLine(BuildFailed);
-            foreach (var e in errors.Take(MaxCompileErrorsListed))
-                sb.AppendLine($"  {e}");
-            if (errors.Count > MaxCompileErrorsListed)
-                sb.AppendLine($"  … +{errors.Count - MaxCompileErrorsListed} more error(s) not listed");
+            AppendErrors(sb, compileErrors, compileErrors.Count);
         }
         // A filter matching zero tests exits 0: read as a pass, an agent that renamed or deleted
         // the failing test makes `/tdd` declare victory on a run where nothing ran. The vstest

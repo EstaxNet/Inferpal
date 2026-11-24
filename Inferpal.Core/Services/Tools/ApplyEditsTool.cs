@@ -240,6 +240,37 @@ internal sealed class ApplyEditsTool : ITool
         return Strings.ApplyEditsOk(edits.Count, changed.Count) + staleNote + smartFixNote.TrimEnd();
     }
 
+    /// <summary>What a file's change asks that apply_edits does not do — a deletion, a binary change, a mode, a copy, a
+    /// rename —, said for the card and the model, and whether nothing of it is applied (a rename's content changes are,
+    /// under the file's current name); <c>(null, false)</c> for a change it applies whole.</summary>
+    private static (string? Note, bool Skip) KindNote(Documents.PatchText.PatchFile file) => file.Kind switch
+    {
+        Documents.PatchText.FileKind.Delete => ($"{file.Path}: deleted by the patch, not done here (delete_file deletes it)", true),
+        Documents.PatchText.FileKind.Binary => ($"{file.Path}: a binary change, whose content the patch text does not hold", true),
+        Documents.PatchText.FileKind.ModeOnly => ($"{file.Path}: only its file mode changes, not done here", true),
+        Documents.PatchText.FileKind.Copy => ($"{file.NewPath}: a copy of {file.OldPath} with changes, not done here (copy the file, then edit the copy)", true),
+        Documents.PatchText.FileKind.Rename => ($"{file.OldPath} → {file.NewPath}: the rename is not done here (move the file with a command)"
+                                                + (file.Hunks.Count > 0 ? "; its content changes are applied under its current name" : ""),
+                                                file.Hunks.Count == 0),
+        _ => (null, false),
+    };
+
+    /// <summary>
+    /// The text a file's blocks apply to: the file's own (read as an edit reads it), or none for a file the patch creates
+    /// that is not there yet; or why it is not touched (absent, a folder, an unsaved buffer, a generated file, a binary).
+    /// </summary>
+    private async Task<(string? Text, string? Refusal)> StartingTextAsync(string path, Documents.PatchText.PatchFile file, CancellationToken ct)
+    {
+        var exists = File.Exists(path);
+        if (!exists && file.Kind == Documents.PatchText.FileKind.Add) return (null, null);
+        if (!exists) return (null, "not in the workspace");
+        if (FileTarget.DirectoryRefusal(path) is { } isDirectory) return (null, isDirectory);
+        if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) return (null, unsaved);
+        if (GeneratedFiles.EditRefusal(path) is { } generated) return (null, generated);
+        if (TextFileEncoding.IsBinaryFile(path)) return (null, "a binary file in the workspace");
+        return (await TextFileEncoding.ReadTextAsync(path, ct), null);
+    }
+
     /// <summary>
     /// The patch at <paramref name="patchArg"/> applied: each file's blocks placed where their lines stand (<see
     /// cref="Documents.PatchText.Apply"/>), new files created, on ONE approval card, backed up for <c>/undo-run</c>.
@@ -276,25 +307,10 @@ internal sealed class ApplyEditsTool : ITool
         {
             ct.ThrowIfCancellationRequested();
             var name = file.Path;
-            switch (file.Kind)
+            if (KindNote(file) is var (kindNote, skip) && kindNote is not null)
             {
-                case Documents.PatchText.FileKind.Delete:
-                    leftOut.Add($"{name}: deleted by the patch, not done here (delete_file deletes it)");
-                    continue;
-                case Documents.PatchText.FileKind.Binary:
-                    leftOut.Add($"{name}: a binary change, whose content the patch text does not hold");
-                    continue;
-                case Documents.PatchText.FileKind.ModeOnly:
-                    leftOut.Add($"{name}: only its file mode changes, not done here");
-                    continue;
-                case Documents.PatchText.FileKind.Copy:
-                    leftOut.Add($"{file.NewPath}: a copy of {file.OldPath} with changes, not done here (copy the file, then edit the copy)");
-                    continue;
-                case Documents.PatchText.FileKind.Rename:
-                    leftOut.Add($"{file.OldPath} → {file.NewPath}: the rename is not done here (move the file with a command)"
-                              + (file.Hunks.Count > 0 ? "; its content changes are applied under its current name" : ""));
-                    if (file.Hunks.Count == 0) continue;
-                    break;
+                leftOut.Add(kindNote);
+                if (skip) continue;
             }
             if (file.ModeChanged) leftOut.Add($"{name}: its file mode change is not done here");
             if (why is not null) { leftOut.Add($"{name}: not touched, {why}"); continue; }
@@ -302,23 +318,10 @@ internal sealed class ApplyEditsTool : ITool
 
             if (!current.ContainsKey(path))
             {
-                var exists = File.Exists(path);
-                if (exists || file.Kind != Documents.PatchText.FileKind.Add)
-                {
-                    if (!exists) { leftOut.Add($"{name}: not in the workspace"); continue; }
-                    if (FileTarget.DirectoryRefusal(path) is { } isDirectory) { leftOut.Add($"{name}: {isDirectory}"); continue; }
-                    if (FileTarget.UnsavedRefusal(_overlay, path) is { } unsaved) { leftOut.Add($"{name}: {unsaved}"); continue; }
-                    if (GeneratedFiles.EditRefusal(path) is { } generated) { leftOut.Add($"{name}: {generated}"); continue; }
-                    if (TextFileEncoding.IsBinaryFile(path)) { leftOut.Add($"{name}: a binary file in the workspace"); continue; }
-                    var text = await TextFileEncoding.ReadTextAsync(path, ct);
-                    original[path] = text;
-                    current[path]  = text;
-                }
-                else
-                {
-                    original[path] = null;
-                    current[path]  = "";
-                }
+                var (text, refusal) = await StartingTextAsync(path, file, ct);
+                if (refusal is not null) { leftOut.Add($"{name}: {refusal}"); continue; }
+                original[path] = text;
+                current[path]  = text ?? "";
             }
             // ⚠ Any file already there, changed by an earlier commit of the series or not: an add never lands on top of it.
             if (file.Kind == Documents.PatchText.FileKind.Add && (original[path] is not null || current[path].Length > 0))

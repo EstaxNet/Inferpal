@@ -53,15 +53,7 @@ internal class SearchInFilesTool : ITool
         // only as a regex, `DoWork(x)` was "DoWorkx", `arr[i]` "arri", `obj?.Prop` an optional j — each missing the
         // text that IS in the file, and "no results" reads as "not used anywhere". Such a pattern matches both
         // ways: a real regex keeps its matches, and the literal text is never answered as absent.
-        Regex  regex;
-        Regex? literal = null;
-        try
-        {
-            regex = new Regex(search, RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
-            if (Regex.Escape(search) != search)
-                literal = new Regex(Regex.Escape(search), RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
-        }
-        catch { regex = new Regex(Regex.Escape(search), RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default); }
+        var (regex, literal) = Matchers(search);
 
         var results = new List<string>();
 
@@ -83,15 +75,9 @@ internal class SearchInFilesTool : ITool
                 + "path the file system refused). Nothing was searched — this is NOT \"the pattern "
                 + "is absent from the code\".");
 
-        var skippedLarge = 0;
-        var unreadable   = 0;
-        var seen         = 0;
+        var seen = 0;
         var documentWatch = new System.Diagnostics.Stopwatch();
-        var documentsSearched = 0;
-        var documentsWithoutText = 0;
-        var documentsInPart = new List<string>();
-        var documentsNotSearched = 0;
-        var buildLogsNotReplayed = 0;
+        var tally = new Tally();
         foreach (var file in files)
         {
             if (ct.IsCancellationRequested) break;
@@ -115,18 +101,18 @@ internal class SearchInFilesTool : ITool
                 {
                     // A PDF or DOCX is searched in its extracted text — read_file's, so a line reported here is the line it
                     // shows. Extraction is bounded per search: past its time, the rest are counted and said, never "no match".
-                    if (documentWatch.Elapsed > DocumentSearchBudget) { documentsNotSearched++; continue; }
+                    if (documentWatch.Elapsed > DocumentSearchBudget) { tally.DocumentsNotSearched++; continue; }
                     // An MSBuild binary log is read by replaying it (a dotnet run of up to a minute): a search never starts one,
                     // it searches a log already read and names the others.
                     if (file.EndsWith(".binlog", StringComparison.OrdinalIgnoreCase) && !Documents.AttachedDocuments.IsRead(file))
-                    { buildLogsNotReplayed++; continue; }
+                    { tally.BuildLogsNotReplayed++; continue; }
                     documentWatch.Start();
                     var extracted = Documents.AttachedDocuments.ForModel(file, ct);
                     documentWatch.Stop();
-                    if (extracted is null) { documentsWithoutText++; continue; }
+                    if (extracted is null) { tally.DocumentsWithoutText++; continue; }
                     // Read in part (a long event log keeps its newest events): what was left out is not searched.
-                    if (Documents.AttachedDocuments.Read(file, ct).StoppedAt > 0) documentsInPart.Add(relPath);
-                    documentsSearched++;
+                    if (Documents.AttachedDocuments.Read(file, ct).StoppedAt > 0) tally.DocumentsInPart.Add(relPath);
+                    tally.DocumentsSearched++;
                     lines = [.. extracted.Split('\n')];
                     // Inferpal's own header ("[Text extracted from …: images are not here.]") is not the document: never
                     // a match, its lines kept so the numbers stay read_file's.
@@ -136,7 +122,7 @@ internal class SearchInFilesTool : ITool
                 {
                     // A multi-megabyte file (a dump, a bundle) was loaded whole for a few truncated matches
                     // at best. Skipped — and said, since a silent skip reads as "not in the code".
-                    if (new FileInfo(file).Length > MaxSearchFileBytes) { skippedLarge++; continue; }
+                    if (new FileInfo(file).Length > MaxSearchFileBytes) { tally.SkippedLarge++; continue; }
                     // Decoded like the file an edit will rewrite: a line shown with "�" could not be quoted back.
                     lines = TextFileEncoding.ReadLines(file);
                     // A binary file's "lines" are noise, NULs included: said once, as grep does, never shown.
@@ -151,12 +137,12 @@ internal class SearchInFilesTool : ITool
                 {
                     if (!regex.IsMatch(lines[i]) && literal?.IsMatch(lines[i]) != true) continue;
                     var line = lines[i].Trim();
-                    if (line.Length > 400) line = line[..400] + "…";   // a minified line is not a result
+                    if (line.Length > MaxLineChars) line = line[..MaxLineChars] + "…";   // a minified line is not a result
                     results.Add($"{relPath}:{i + 1}: {line}");
                 }
             }
             catch (OperationCanceledException) { }
-            catch (Exception ex) { unreadable++; Diagnostics.Swallow("SearchInFilesTool.ReadFile", ex); }
+            catch (Exception ex) { tally.Unreadable++; Diagnostics.Swallow("SearchInFilesTool.ReadFile", ex); }
         }
 
         // ⚠ No file searched is not "no match": a filter for a language the project does not hold (`*.cs` in a
@@ -172,45 +158,82 @@ internal class SearchInFilesTool : ITool
             return Task.FromResult(none);
         }
 
+        // What reaches the model is what fits its context: past that the loop would cut the MIDDLE of the matches.
+        var shown = ToolOutputBudget.LinesThatFit(results);
+        var notes = Notes(results, shown, tally, singleFile ? null : WorkspaceScan.FirstWalkGap(path, root));
+        return Task.FromResult((results.Count == 0 ? Strings.NoResults : string.Join("\n", results.Take(shown))) + notes);
+    }
+
+    /// <summary>The most characters of a matching line shown: a minified line is not a result.</summary>
+    private const int MaxLineChars = 400;
+
+    /// <summary>The files named where the matches that did not fit the context are.</summary>
+    private const int FilesNamed = 20;
+
+    /// <summary>The documents named that were searched only in part.</summary>
+    private const int DocumentsNamed = 5;
+
+    /// <summary>What the walk could not search, counted as it goes, said under the matches.</summary>
+    private sealed class Tally
+    {
+        public int SkippedLarge, Unreadable, DocumentsSearched, DocumentsWithoutText, DocumentsNotSearched, BuildLogsNotReplayed;
+        public List<string> DocumentsInPart { get; } = [];
+    }
+
+    /// <summary>The pattern as a regular expression, and as its literal text when it parses as a regex too ("Text OR a
+    /// regular expression": <c>DoWork(x)</c> is meant as text as often as not); a pattern that does not parse is its text.</summary>
+    private static (Regex Regex, Regex? Literal) Matchers(string search)
+    {
+        try
+        {
+            var regex = new Regex(search, RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
+            return (regex, Regex.Escape(search) != search
+                ? new Regex(Regex.Escape(search), RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default)
+                : null);
+        }
+        catch { return (new Regex(Regex.Escape(search), RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default), null); }
+    }
+
+    /// <summary>Every reason the answer may be incomplete, each on its line under the matches.</summary>
+    private static string Notes(List<string> results, int shown, Tally tally, WorkspaceScan.WalkGap? gap)
+    {
         // Every reason the answer may be incomplete, said. The size skip already was; the RESULT
         // CAP was not, and it is the one that shapes a conclusion — a model asking "where is this
         // used?" reads exactly a hundred lines as the whole list and refactors on it.
         var notes = new System.Text.StringBuilder();
-        // What reaches the model is what fits its context: past that the loop would cut the MIDDLE of the matches.
-        var shown = ToolOutputBudget.LinesThatFit(results);
         if (shown < results.Count)
         {
             // Each result starts with its relative path and a colon ("src/a.cs:12: …", "img.bin: binary file matches").
             var elsewhere = results.Skip(shown).Select(r => r[..Math.Max(0, r.IndexOf(':'))])
                                    .Where(f => f.Length > 0).Distinct().ToList();
             notes.Append($"\n(showing the first {shown} of {results.Count} match(es) found — the rest would not fit the "
-                       + $"context; they are in: {string.Join(", ", elsewhere.Take(20))}"
-                       + (elsewhere.Count > 20 ? $", +{elsewhere.Count - 20} more file(s)" : "")
+                       + $"context; they are in: {string.Join(", ", elsewhere.Take(FilesNamed))}"
+                       + (elsewhere.Count > FilesNamed ? $", +{elsewhere.Count - FilesNamed} more file(s)" : "")
                        + " — search those files, or narrow the pattern)");
         }
         if (results.Count >= MaxResults)
             notes.Append($"\n(stopped at the first {MaxResults} match(es) — narrow the path or the "
                        + "pattern to see the rest; this is NOT the complete list)");
-        if (skippedLarge > 0)
-            notes.Append($"\n({skippedLarge} file(s) larger than {MaxSearchFileBytes / (1024 * 1024)} MB were not searched.)");
-        if (unreadable > 0)
-            notes.Append($"\n({unreadable} file(s) could not be read and were not searched.)");
-        if (documentsSearched > 0 && results.Count > 0)
-            notes.Append($"\n({documentsSearched} PDF/DOCX file(s) were searched in their extracted text; read_file shows them at "
+        if (tally.SkippedLarge > 0)
+            notes.Append($"\n({tally.SkippedLarge} file(s) larger than {MaxSearchFileBytes / (1024 * 1024)} MB were not searched.)");
+        if (tally.Unreadable > 0)
+            notes.Append($"\n({tally.Unreadable} file(s) could not be read and were not searched.)");
+        if (tally.DocumentsSearched > 0 && results.Count > 0)
+            notes.Append($"\n({tally.DocumentsSearched} PDF/DOCX file(s) were searched in their extracted text; read_file shows them at "
                        + "the same line numbers.)");
-        if (documentsInPart.Count > 0)
-            notes.Append($"\n({documentsInPart.Count} document(s) were searched only in part — their text is cut where read_file "
-                       + $"cuts it (an event log keeps its newest events): {string.Join(", ", documentsInPart.Take(5))}"
-                       + (documentsInPart.Count > 5 ? $", +{documentsInPart.Count - 5} more" : "")
+        if (tally.DocumentsInPart.Count > 0)
+            notes.Append($"\n({tally.DocumentsInPart.Count} document(s) were searched only in part — their text is cut where read_file "
+                       + $"cuts it (an event log keeps its newest events): {string.Join(", ", tally.DocumentsInPart.Take(DocumentsNamed))}"
+                       + (tally.DocumentsInPart.Count > DocumentsNamed ? $", +{tally.DocumentsInPart.Count - DocumentsNamed} more" : "")
                        + ". No match there is NOT \"absent from them\".)");
-        if (documentsWithoutText > 0)
-            notes.Append($"\n({documentsWithoutText} PDF/DOCX file(s) give no text to search (a scan, images, a password, or "
+        if (tally.DocumentsWithoutText > 0)
+            notes.Append($"\n({tally.DocumentsWithoutText} PDF/DOCX file(s) give no text to search (a scan, images, a password, or "
                        + "too large): read_file on one says which.)");
-        if (buildLogsNotReplayed > 0)
-            notes.Append($"\n({buildLogsNotReplayed} MSBuild binary log(s) (.binlog) were not searched: a search does not replay "
+        if (tally.BuildLogsNotReplayed > 0)
+            notes.Append($"\n({tally.BuildLogsNotReplayed} MSBuild binary log(s) (.binlog) were not searched: a search does not replay "
                        + "them — read_file on one replays it, and a search after that includes it. This is NOT \"absent from them\".)");
-        if (documentsNotSearched > 0)
-            notes.Append($"\n({documentsNotSearched} PDF/DOCX file(s) were not searched: reading documents stopped after "
+        if (tally.DocumentsNotSearched > 0)
+            notes.Append($"\n({tally.DocumentsNotSearched} PDF/DOCX file(s) were not searched: reading documents stopped after "
                        + $"{DocumentSearchBudget.TotalSeconds:0} s — search one by its path, or narrow file_pattern. This is NOT "
                        + "\"absent from them\".)");
         // ⚠ The last reason, and the only one whose files are never even ENUMERATED: a folder the
@@ -218,10 +241,10 @@ internal class SearchInFilesTool : ITool
         // express it — those files are absent from every total — so it names the folder instead.
         // The sentence belongs to WalkGap and is never written here: "cannot be listed" and "is a
         // link, not followed" send the reader to two different places.
-        if (!singleFile && WorkspaceScan.FirstWalkGap(path, root) is { } gap)
-            notes.Append($"\n({gap.Sentence()})");
+        if (gap is { } walkGap)
+            notes.Append($"\n({walkGap.Sentence()})");
+        return notes.ToString();
 
-        return Task.FromResult((results.Count == 0 ? Strings.NoResults : string.Join("\n", results.Take(shown))) + notes);
     }
 
     /// <summary>Time one search spends extracting PDF and DOCX text (each read once per version of the file, then kept):
