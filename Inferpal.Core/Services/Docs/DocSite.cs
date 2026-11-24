@@ -81,7 +81,7 @@ internal sealed record DocSite(
     /// <summary>Id a label with nothing sluggable gets.</summary>
     private const string FallbackId = "doc";
 
-    private static bool SameUrl(string a, string b) =>
+    internal static bool SameUrl(string a, string b) =>
         string.Equals(a.Trim().TrimEnd('/'), b.Trim().TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Parses the persisted JSON array; tolerant of malformed input (returns empty list).</summary>

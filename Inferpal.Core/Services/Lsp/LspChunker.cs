@@ -24,9 +24,6 @@ namespace Inferpal.Services.Lsp;
 /// </remarks>
 internal static class LspChunker
 {
-    /// <summary>Hard cap in estimated tokens: the code chunker's, 2× the RAG target (LSP symbols are already semantic).</summary>
-    private const int MaxChunkTokens = Rag.CodeChunker.MaxChunkTokens;
-
     // ── Public API ─────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -113,7 +110,7 @@ internal static class LspChunker
         {
             if (oneLiners.Count == 0) return;
             var name = oneLiners.Count == 1 ? oneLiners[0].Name : $"{oneLiners[0].Name}…{oneLiners[^1].Symbol.Name}";
-            TryAddChunk(name, oneLiners[0].Symbol.Range.Start.Line, oneLiners[^1].Symbol.Range.End.Line,
+            ChunkText.AddSymbol(name, oneLiners[0].Symbol.Range.Start.Line, oneLiners[^1].Symbol.Range.End.Line,
                         lines, filePath, relPath, chunks, minLines: 1);
             oneLiners.Clear();
         }
@@ -134,7 +131,7 @@ internal static class LspChunker
                 // (lines up to first child, capped at 10 lines)
                 var firstChildLine = sym.Children.Min(c => c.Range.Start.Line);
                 var headerEnd      = Math.Min(sym.Range.Start.Line + 10, firstChildLine);
-                TryAddChunk(sym.Name, sym.Range.Start.Line, headerEnd,
+                ChunkText.AddSymbol(sym.Name, sym.Range.Start.Line, headerEnd,
                             lines, filePath, relPath, chunks);
 
                 // Recurse into children with the container as parent context
@@ -149,74 +146,11 @@ internal static class LspChunker
             {
                 // Leaf symbol: emit the full range as one chunk
                 FlushOneLiners();
-                TryAddChunk(qualifiedName,
+                ChunkText.AddSymbol(qualifiedName,
                             sym.Range.Start.Line, sym.Range.End.Line,
                             lines, filePath, relPath, chunks);
             }
         }
         FlushOneLiners();
-    }
-
-    /// <summary>
-    /// Creates a <see cref="RagChunk"/> for the given 0-based line range and appends it
-    /// to <paramref name="chunks"/>. Skips trivial (≤ 1 line) or whitespace-only chunks.
-    /// </summary>
-    private static void TryAddChunk(
-        string   symbolName,
-        int      startLine0,   // 0-based (as returned by LSP)
-        int      endLine0,
-        string[] lines,
-        string   filePath,
-        string   relPath,
-        List<RagChunk> chunks,
-        int      minLines = 2)
-    {
-        if (endLine0 < startLine0 || startLine0 >= lines.Length) return;
-        endLine0 = Math.Min(endLine0, lines.Length - 1);
-
-        int lineCount = endLine0 - startLine0 + 1;
-        if (lineCount < minLines) return; // skip trivial single-line entries
-
-        // ⚠ Past the budget, the symbol is SPLIT into consecutive pieces — never SHRUNK until it
-        // fits, which indexes its tail nowhere: semantic search then cannot reach the end of a long
-        // TypeScript / Python / Go / Rust function, and nothing says so. Turning `lspEnabled` on
-        // would make the index WORSE than the regex tier, whose sliding window covers the whole
-        // file. The Roslyn tier states the same rule for the same reason.
-        var pieceStart = startLine0;
-        while (pieceStart <= endLine0)
-        {
-            var pieceEnd = pieceStart;
-            var tokens   = ChunkText.EstimateTokens(lines, pieceStart, pieceStart);
-            while (pieceEnd < endLine0 &&
-                   tokens + ChunkText.EstimateTokens(lines, pieceEnd + 1, pieceEnd + 1) <= MaxChunkTokens)
-                tokens += ChunkText.EstimateTokens(lines, ++pieceEnd, pieceEnd);
-
-            AddPiece(symbolName, pieceStart, pieceEnd, lines, filePath, relPath, chunks);
-            pieceStart = pieceEnd + 1;
-        }
-    }
-
-    private static void AddPiece(
-        string   symbolName,
-        int      startLine0,
-        int      endLine0,
-        string[] lines,
-        string   filePath,
-        string   relPath,
-        List<RagChunk> chunks)
-    {
-        var text = string.Join('\n', lines, startLine0, endLine0 - startLine0 + 1).Trim();
-        if (string.IsNullOrWhiteSpace(text)) return;
-
-        chunks.Add(new RagChunk
-        {
-            FilePath    = filePath,
-            RelPath     = relPath,
-            StartLine   = startLine0 + 1,   // convert to 1-based
-            EndLine     = endLine0   + 1,
-            Content     = text,
-            ContentHash = ChunkText.Hash(text),
-            TypeName    = symbolName,
-        });
     }
 }

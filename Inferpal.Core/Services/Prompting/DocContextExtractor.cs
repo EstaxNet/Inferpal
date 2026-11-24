@@ -420,5 +420,5 @@ internal static class DocContextExtractor
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     private static string TruncateSummary(string s, int maxLen) =>
-        s.Length <= maxLen ? s : s[..maxLen].TrimEnd() + "…";
+        s.Length <= maxLen ? s : SafeTruncate.Truncate(s, maxLen).TrimEnd() + "…";
 }

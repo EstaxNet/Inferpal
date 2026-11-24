@@ -140,7 +140,7 @@ internal static class FimCompletion
 
     // Where the character literal opened at `at` ends — 'x', '\n', '\'', 'A' —, or -1: a lone quote is an
     // apostrophe or a Rust lifetime, and a longer single-quoted text is not read as a literal.
-    private static int CharacterLiteralEnd(string text, int at)
+    internal static int CharacterLiteralEnd(string text, int at)
     {
         var n = at + 1;
         if (n >= text.Length || text[n] == '\n') return -1;

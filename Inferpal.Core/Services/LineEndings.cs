@@ -27,6 +27,14 @@ internal static class LineEndings
     }
 
     /// <summary>
+    /// <paramref name="rewrite"/>, a whole new text of the file that holds <paramref name="original"/>, in the file's own
+    /// line endings and ending on a break exactly when it did. An original without any line break says nothing about its
+    /// convention: the rewrite is kept as given.
+    /// </summary>
+    public static string AsIn(string original, string rewrite) =>
+        original.Contains('\n') ? WithFinalBreakOf(original, ToEol(rewrite, Dominant(original))) : rewrite;
+
+    /// <summary>
     /// <paramref name="rewrite"/> ending on a line break exactly when <paramref name="original"/> does — the break in
     /// the original's own convention.
     /// </summary>

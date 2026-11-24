@@ -22,7 +22,7 @@ internal readonly record struct RequestSize(int Tools, int SystemPrompt, int Ear
 
     public static RequestSize Of(IReadOnlyList<ChatMessageDto> messages, IReadOnlyList<ToolDefinition>? defs)
     {
-        var system = messages.Count > 0 && messages[0].Role == "system" ? 1 : 0;
+        var system = Agent.AgentOrchestrator.SystemPromptCount(messages);
         var last   = messages.Count > system ? 1 : 0;
         var (toolChars, mcpChars, mcpCount) = ToolChars(defs);
         return new(

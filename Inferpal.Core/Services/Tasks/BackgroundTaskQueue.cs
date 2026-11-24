@@ -300,7 +300,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         lock (_lock)
         {
             job = FindLocked(id);
-            if (job is null || !IsTerminal(job.State) || job.Read) return;
+            if (job is null || !job.State.IsTerminal() || job.Read) return;
             job.Read = true;
         }
         Persist(job);
@@ -475,7 +475,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         lock (_lock)
         {
             var job = FindLocked(id);
-            if (job is null || IsTerminal(job.State)) return false;
+            if (job is null || job.State.IsTerminal()) return false;
 
             // ⚠ "Queued" does not mean "still in _pending": the worker dequeues the job and only
             // flips it to Running AFTER the GPU gate opens (WaitForChatIdleAsync), so a job can sit
@@ -721,9 +721,6 @@ internal sealed class BackgroundTaskQueue : IDisposable
 
     // ── Helpers (all callers hold _lock) ────────────────────────────────────────
 
-    private static bool IsTerminal(BackgroundTaskState state) =>
-        state is BackgroundTaskState.Succeeded or BackgroundTaskState.Failed or BackgroundTaskState.Cancelled;
-
     private Job? FindLocked(string id) =>
         _current is not null && string.Equals(_current.Id, id, StringComparison.OrdinalIgnoreCase) ? _current
         : _pending.FirstOrDefault(j => string.Equals(j.Id, id, StringComparison.OrdinalIgnoreCase))
@@ -799,7 +796,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
                 dropped.Add(SnapshotLocked(job));
                 write.Add(job);
             }
-            if (_current is { } running && !IsTerminal(running.State))
+            if (_current is { } running && !running.State.IsTerminal())
             {
                 running.Cause = TaskEndCause.EditorClosed;
                 write.Add(running);

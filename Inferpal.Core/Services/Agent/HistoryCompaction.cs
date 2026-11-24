@@ -50,6 +50,10 @@ internal static class HistoryCompaction
     /// <summary>The prompt size past which the history is compacted: 80 % of the window.</summary>
     internal static int Trigger(int contextWindowSize) => contextWindowSize * 8 / 10;
 
+    /// <summary>The seconds <c>compactionTimeoutSeconds</c> gives a compaction, never under 10: the one reading of the
+    /// setting, for the summary's fuse, the conversation's and the run's.</summary>
+    internal static int CompactionSeconds(int configured) => Math.Max(10, configured);
+
     /// <summary>
     /// Decides whether the history must shrink before the next send. Triggers when the
     /// last prompt used more than 80% of <paramref name="contextWindowSize"/>; keeps the
@@ -181,7 +185,7 @@ internal static class HistoryCompaction
     /// writing time: the fuse bounds how long a compaction holds the question, and its cancellation teaches nothing.
     /// </remarks>
     public static TimeSpan SummaryTimeout(int configuredSeconds, SummarizeRequest request, TimeSpan? coldRead = null) =>
-        TimeSpan.FromSeconds(Math.Max(10, configuredSeconds)
+        TimeSpan.FromSeconds(CompactionSeconds(configuredSeconds)
                              + Math.Max(PrefillDeadline.Margin * (coldRead?.TotalSeconds ?? 0),
                                         AgentOrchestrator.EstimateTokens(request.Messages) / FuseReadTokensPerSecond));
 
@@ -543,7 +547,7 @@ internal sealed record HistorySummary(
 internal sealed class SummaryFuse(CancellationTokenSource cts, int configuredSeconds, Action<string>? onStep = null,
                                   Func<TimeSpan>? clock = null)
 {
-    private readonly TimeSpan _idle = TimeSpan.FromSeconds(Math.Max(10, configuredSeconds));
+    private readonly TimeSpan _idle = TimeSpan.FromSeconds(HistoryCompaction.CompactionSeconds(configuredSeconds));
     private readonly System.Diagnostics.Stopwatch _watch = System.Diagnostics.Stopwatch.StartNew();
     private readonly object _gate = new();
     private long _chars;
@@ -573,7 +577,7 @@ internal sealed class SummaryFuse(CancellationTokenSource cts, int configuredSec
             _nextSay = now + PrefillWait.Beat;
             // The product's own estimate, four characters to a token, reasoning included — rounded up, so a first chunk
             // of two characters never reads "about 0 tokens", as if nothing had come.
-            line = Strings.StatusCompactingProgress(RunSummary.Duration(now), (int)Math.Min(int.MaxValue, (_chars + 3) / 4));
+            line = Strings.StatusCompactingProgress(RunSummary.Duration(now), (int)Math.Min(int.MaxValue, (_chars + AgentOrchestrator.CharsPerToken - 1) / AgentOrchestrator.CharsPerToken));
         }
         onStep(line);
     }

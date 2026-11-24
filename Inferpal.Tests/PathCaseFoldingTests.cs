@@ -152,7 +152,7 @@ public class PathCaseFoldingTests
     [Theory]
     [InlineData("Inferpal.Core", "Services", "Execution", "FileHistoryService.cs", "Path.GetDirectoryName(full)")]
     [InlineData("Inferpal.Core", "Services", "Tools", "AnalyzeImpactTool.cs", "file.Equals(targetFile")]
-    [InlineData("Inferpal.Core", "Services", "Lsp", "CSharpSemanticIndex.cs", "path.StartsWith(root")]
+    [InlineData("Inferpal.Core", "Services", "PathComparer.cs", "path.StartsWith(prefix")]
     [InlineData("Inferpal.Core", "Services", "WorkspaceScan.cs", "path.StartsWith(r,")]
     [InlineData("Inferpal.Core", "Services", "Tools", "GetOpenEditorsTool.cs", "string.Equals(path, activePath")]
     [InlineData("Inferpal.Core", "Services", "Signals", "WorkspaceRootPin.cs", "string.Equals(activeSolutionDir, currentRoot")]

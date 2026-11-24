@@ -38,6 +38,11 @@ internal sealed class SemanticSearchTool : ITool
     /// <c>search_codebase</c> and <c>search_docs</c>: a default above what a call may ask is a request nobody can repeat.</summary>
     internal const int MaxTopK = 20;
 
+    /// <summary>How many results a search returns: the <c>top_k</c> the model asked for, clamped to the range and the clamp
+    /// said — or the person's <paramref name="setting"/>, never said (nothing was asked for).</summary>
+    internal static (int TopK, string? Notice) TopK(JsonElement args, int setting) =>
+        args.Has("top_k") ? ClampedArgument.Read(args, "top_k", setting, 1, MaxTopK) : (Math.Clamp(setting, 1, MaxTopK), null);
+
     public string Name => "search_codebase";
 
     /// <inheritdoc/>
@@ -123,15 +128,13 @@ internal sealed class SemanticSearchTool : ITool
         // — an InvalidOperationException, turning a correctable call into a tool failure.
         var query = args.Trimmed("query") ?? string.Empty;
         if (string.IsNullOrEmpty(query))
-            return new Answer("query is required.", 0, "query is required.");
+            return new Answer("Error: query is required.", 0, "query is required.");
 
         // ⚠ A silent clamp here shapes a CONCLUSION: asked for 25 and served 10, the header
         // still reads "top 10" and the model cannot tell a capped list from an exhausted one — it
         // concludes "this symbol appears in ten places". `ClampedArgument` says what it changed.
         // The absent case is NOT reported: `ragTopK` is the user's setting, nothing was asked for.
-        var (topK, topKNotice) = args.Has("top_k")
-            ? ClampedArgument.Read(args, "top_k", _config.RagTopK, 1, MaxTopK)
-            : (Math.Clamp(_config.RagTopK, 1, MaxTopK), null);
+        var (topK, topKNotice) = TopK(args, _config.RagTopK);
 
         // ── Guard: index not ready ────────────────────────────────────────────
         if (_index.ChunkCount == 0)
@@ -206,33 +209,16 @@ internal sealed class SemanticSearchTool : ITool
         sb.AppendLine($"*Index: {_index.ChunkCount} chunks — {_index.Status}*");
         sb.AppendLine();
 
-        var bodies    = new StringBuilder();
-        var locations = new StringBuilder();
-        var firstByLocation = 0;
-        for (int i = 0; i < results.Count; i++)
+        var (bodies, locations, firstByLocation) = RankedResultBudget.Lay(results.Select((hit, i) =>
         {
-            var hit = results[i];
             var chunk = hit.Chunk;
-
             var header = $"### [{i + 1}] `{chunk.RelPath}` — lines {chunk.StartLine}–{chunk.EndLine}";
             if (chunk.TypeName is not null)
                 header += $" · `{chunk.TypeName}`";
             if (RagResultPresentation.ShowsScore(hit.IsCosine, hit.Score))
                 header += $" · score {hit.Score:F3}";
-
-            // Truncate very long chunks to avoid overwhelming the context window
-            var display = RankedResultBudget.Shown(chunk.Content);
-            var entry = $"{header}\n```\n{display}\n```\n\n";
-
-            // In rank order: once one body does not fit, the rest go by location.
-            if (firstByLocation == 0 && (i == 0 || bodies.Length + entry.Length <= RankedResultBudget.BodyChars))
-                bodies.Append(entry);
-            else
-            {
-                if (firstByLocation == 0) firstByLocation = i + 1;
-                locations.AppendLine($"- {header[4..]}");
-            }
-        }
+            return ($"{header}\n```\n{RankedResultBudget.Shown(chunk.Content)}\n```\n\n", $"- {header[4..]}");
+        }).ToList());
 
         if (firstByLocation > 0)
             sb.AppendLine(RankedResultBudget.Note(firstByLocation, results.Count, "read them with read_file")).AppendLine();

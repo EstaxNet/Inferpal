@@ -42,7 +42,7 @@ internal class ListFilesTool : ITool
         if (File.Exists(path))
             return Task.FromResult($"'{path}' is a file, not a directory — read it with read_file.");
         if (!Directory.Exists(path))
-            return Task.FromResult(Strings.DirNotFound(path));
+            return Task.FromResult(ToolFailure.Said(Strings.DirNotFound(path)));
 
         // Lazy + excluded like the semantic index: on a node project root, GetFiles materialises
         // the whole tree and the 300 results shown are mostly node_modules/.git noise.
@@ -71,7 +71,7 @@ internal class ListFilesTool : ITool
         catch (Exception ex)
         {
             Diagnostics.Swallow("ListFilesTool.Enumerate", ex);
-            return Task.FromResult(Strings.DirNotFound(path));
+            return Task.FromResult(ToolFailure.Said(Strings.DirNotFound(path)));
         }
 
         var truncated = files.Count > limit;

@@ -60,7 +60,7 @@ internal static class RunRoot
         // (macOS's /var is /private/var), the editor gives the workspace as it was opened — compared as written, the two
         // never shared a prefix there, and every question for a copy failed.
         var inside = Path.GetRelativePath(Tools.PathSanitizer.Canonical(repo), Tools.PathSanitizer.Canonical(origin));
-        if (inside == ".." || inside.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) || Path.IsPathRooted(inside))
+        if (Tools.PathSanitizer.LeavesRoot(inside))
             throw new ArgumentException($"{workspace} is not in the repository {repository}.", nameof(workspace));
         var root = inside == "." ? top : Path.GetFullPath(Path.Join(top, inside));
         // The repository spelled as the workspace is — what its ignore files are declared under.

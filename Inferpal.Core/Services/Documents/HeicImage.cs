@@ -68,16 +68,10 @@ internal static class HeicImage
     private static (ProcessStartInfo? Psi, string? Missing) Command(string dir, string input, string output)
     {
         if (OperatingSystem.IsWindows())
-        {
-            var script = Path.Combine(dir, "heic.ps1");
-            // With a byte order mark: Windows PowerShell 5.1 reads a script without one in the ANSI code page.
-            File.WriteAllText(script, WindowsScript, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
-            return (Start(Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
-                          "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script, "-In", input, "-Out", output), null);
-        }
-        if (OperatingSystem.IsMacOS()) return (Start("/usr/bin/sips", "-s", "format", "jpeg", input, "--out", output), null);
+            return (ScriptProcess.WindowsPowerShell(dir, "heic.ps1", WindowsScript, "-In", input, "-Out", output), null);
+        if (OperatingSystem.IsMacOS()) return (ScriptProcess.Start("/usr/bin/sips", "-s", "format", "jpeg", input, "--out", output), null);
         foreach (var tool in new[] { "heif-dec", "heif-convert" })
-            if (OnPath(tool) is { } found) return (Start(found, input, output), null);
+            if (Shell.ShellLauncher.FindOnPath(tool) is { } found) return (ScriptProcess.Start(found, input, output), null);
         return (null, "this system has no HEIC decoder: install libheif (sudo apt install libheif-examples, "
                     + "sudo dnf install libheif-tools, or sudo pacman -S libheif)");
     }
@@ -95,21 +89,6 @@ internal static class HeicImage
         // carries another code — the advice names both, whatever the code.
         return "the system could not convert it" + (detail.Length > 0 ? ": " + SafeTruncate.Truncate(detail, 300) : string.Empty)
              + (windows ? ". A HEIC photo needs both \"HEIF Image Extensions\" and \"HEVC Video Extensions\" from the Microsoft Store" : string.Empty);
-    }
-
-    internal static string? OnPath(string name) =>
-        (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
-            .Select(folder => Path.Combine(folder, name)).FirstOrDefault(File.Exists);
-
-    internal static ProcessStartInfo Start(string file, params string[] args)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = file, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
-            StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8,
-        };
-        foreach (var a in args) psi.ArgumentList.Add(a);
-        return psi;
     }
 
     /// <summary>Windows: the image decoded by the system's imaging component (WinRT), its EXIF orientation applied, written

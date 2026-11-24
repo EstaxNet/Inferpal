@@ -397,7 +397,7 @@ internal sealed partial class QueryDataTool : ITool
                 }
                 grid.Add(last < 0 ? [] : buffer[..(last + 1)]);
                 if ((cells += last + 1) > MaxCells)
-                    throw new DocumentLimitException($"it holds more than {MaxCells:N0} cells; ask the user for a smaller extract");
+                    throw new DocumentLimitException(string.Create(CultureInfo.InvariantCulture, $"it holds more than {MaxCells:N0} cells; ask the user for a smaller extract"));
             }
             var sheet = reader.Name;
             var filled = grid.Select(r => r.Count(v => v.Length > 0)).ToList();
@@ -433,7 +433,7 @@ internal sealed partial class QueryDataTool : ITool
                     }
                     for (var c = range.FromColumn; c <= range.ToColumn; c++) grid[r][c] = value;
                 }
-                if (cells > MaxCells) throw new DocumentLimitException($"it holds more than {MaxCells:N0} cells; ask the user for a smaller extract");
+                if (cells > MaxCells) throw new DocumentLimitException(string.Create(CultureInfo.InvariantCulture, $"it holds more than {MaxCells:N0} cells; ask the user for a smaller extract"));
                 merged++;
             }
 
@@ -521,7 +521,7 @@ internal sealed partial class QueryDataTool : ITool
                 };
             }
             if ((cells += row.Count) > MaxCells)
-                throw new DocumentLimitException($"it holds more than {MaxCells:N0} values; ask the user for a smaller extract");
+                throw new DocumentLimitException(string.Create(CultureInfo.InvariantCulture, $"it holds more than {MaxCells:N0} values; ask the user for a smaller extract"));
             body.Add(row);
         }
 

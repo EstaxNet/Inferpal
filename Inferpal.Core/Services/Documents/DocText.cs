@@ -36,7 +36,7 @@ internal static class DocText
             ct.ThrowIfCancellationRequested();
             var read = System.Text.RegularExpressions.Regex.Replace(text.Replace("\r\n", "\n").Replace('\r', '\n'), @"\n{3,}", "\n\n").Trim();
             if (read.Length == 0) return new(string.Empty, 0, 0, DocumentProblem.NoText);
-            return new(read.Length > PdfText.MaxChars ? read[..PdfText.MaxChars] : read, 0, 0, DocumentProblem.None,
+            return new(PdfText.Capped(read), 0, 0, DocumentProblem.None,
                        read.Length > PdfText.MaxChars ? 1 : 0);
         }
         catch (Exception ex) when (ex.GetType().Name == "EncryptedFileException")

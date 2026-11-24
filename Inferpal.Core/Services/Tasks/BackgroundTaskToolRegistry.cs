@@ -29,15 +29,9 @@ internal sealed class BackgroundTaskToolRegistry(
     private readonly Execution.FileHistoryService? _history = (inner as Execution.ToolRegistry)?.History;
     private readonly string?        _startRoot   = currentRoot?.Invoke();
 
-    private bool WorkspaceChanged()
-    {
-        if (_currentRoot is null || string.IsNullOrWhiteSpace(_startRoot)) return false;
-        return !string.Equals(Trim(_startRoot), Trim(_currentRoot() ?? string.Empty),
-            PathComparer.Comparison);
-
-        static string Trim(string path) =>
-            path.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
-    }
+    // The queue's reader of the same question (PathComparer.SameDirectory): the two never disagree on a spelling.
+    private bool WorkspaceChanged() =>
+        _currentRoot is not null && !string.IsNullOrWhiteSpace(_startRoot) && !PathComparer.SameDirectory(_startRoot, _currentRoot());
 
     /// <summary>
     /// Additionally exposed when the task runs in <b>proposal mode</b>: the file

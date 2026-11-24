@@ -156,7 +156,7 @@ internal static class RepoCommandFiles
             ? ContinueHeader(text)
             : Governance.RulesService.ParseFrontMatter(text);
         string? Field(string key) =>
-            frontMatter.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v.Trim().Trim('\'', '"') : null;
+            Governance.RulesService.Field(frontMatter, key);
 
         if (format.Family == RepoInstructionFamily.Continue && file.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
             && !string.Equals(Field("invokable"), "true", StringComparison.OrdinalIgnoreCase))

@@ -45,7 +45,7 @@ internal sealed class PytestCoverage(string root, string folder, string python, 
     {
         Directory.CreateDirectory(outDir);
         var data = new Dictionary<string, string> { ["COVERAGE_FILE"] = Path.Combine(outDir, ".coverage") };
-        var (code, output, timedOut) = await CoverageTools.RunAsync(python, MeasureArgs(testFile), root, Deadline(testFile), ct, data);
+        var (code, output, timedOut) = await CoverageTools.RunAsync(python, MeasureArgs(testFile), root, CoverageTools.DeadlineFor(testFile), ct, data);
         var xml = Path.Combine(outDir, "coverage.xml");
         var (combineCode, combineOutput, _) = await CoverageTools.RunAsync(
             python, ["-m", "coverage", "combine"], root, TimeSpan.FromMinutes(2), ct, data);
@@ -65,9 +65,6 @@ internal sealed class PytestCoverage(string root, string folder, string python, 
 
     /// <summary>Passed means tests ran and none failed: a file pytest collects nothing from proves nothing.</summary>
     private static bool Passed(int code, string output) => code == 0 && !CoverageTools.Matches(NothingRan, output);
-
-    private static TimeSpan Deadline(string? testFile) =>
-        testFile is null ? CoverageTools.SuiteDeadline : CoverageTools.FileRunDeadline;
 
     public string NewTestPath(string sourceFile)
     {

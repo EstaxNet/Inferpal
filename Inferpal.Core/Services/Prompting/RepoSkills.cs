@@ -158,7 +158,7 @@ internal static class RepoSkills
 
                 var (frontMatter, _) = Governance.RulesService.ParseFrontMatter(text);
                 string? Field(string key) =>
-                    frontMatter.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v.Trim().Trim('\'', '"') : null;
+                    Governance.RulesService.Field(frontMatter, key);
                 if (Field("description") is not { } description) { skipped.Add(new(shown, SkillSkipReason.NoDescription)); continue; }
 
                 var name = Field("name") is { } n && TypableName.IsMatch(n) ? n : Path.GetFileName(dir).ToLowerInvariant();

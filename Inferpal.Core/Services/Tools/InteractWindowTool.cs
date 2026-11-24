@@ -112,13 +112,8 @@ internal sealed class InteractWindowTool : ITool
         if (clampNote is not null) notes.Insert(0, clampNote);
         // Checked before any step plays: a call never acts for a picture it cannot save.
         var root = _getWorkspaceRoot();
-        var (saveTo, saveRefusal) = CaptureSaving.Target(args.Str("save_to"), root);
+        var (saveTo, saveRefusal) = CaptureSaving.BeforeSteps(args.Str("save_to"), root, _history, _approval, "picture");
         if (saveRefusal is not null) return saveRefusal;
-        if (saveTo is not null && _history is null) return "Error: save_to is not available here: the picture cannot be saved.";
-        if (saveTo is not null && CaptureSaving.Unseen(_history!, root, saveTo) is { } unseen)
-            return "Error: save_to: " + unseen + " Nothing was played.";
-        if (saveTo is not null && _approval.Refuses("write_file", saveTo))
-            return $"Error: save_to: the person's rules refuse writing '{saveTo}'. Nothing was played.";
 
         var (pid, missing) = ViewWindowTool.Locate(_jobs, job);
         if (missing is not null) return missing;

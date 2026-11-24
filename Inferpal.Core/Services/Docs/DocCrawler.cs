@@ -59,7 +59,10 @@ internal sealed class DocCrawler
             ".pdf", ".zip", ".gz", ".tar", ".mp4", ".webm", ".woff", ".woff2", ".ttf",
         };
 
-    private static HttpClient CreateClient() => WebPageClient.Create(TimeSpan.FromSeconds(30));
+    /// <summary>How long one page of a documentation site is waited for.</summary>
+    private static TimeSpan RequestTimeout => TimeSpan.FromSeconds(30);
+
+    private static HttpClient CreateClient() => WebPageClient.Create(RequestTimeout);
 
     /// <summary>A single fetched documentation page.</summary>
     public readonly record struct Page(string Url, string Title, string Text);
@@ -73,7 +76,7 @@ internal sealed class DocCrawler
     /// <summary>Test seam: the transport and the SSRF guard, both replaced at once.</summary>
     internal DocCrawler(HttpMessageHandler? handler, Func<string, CancellationToken, Task<bool>>? isPrivate)
     {
-        _client    = handler is null ? _http : new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
+        _client    = handler is null ? _http : new HttpClient(handler) { Timeout = RequestTimeout };
         _isPrivate = isPrivate ?? (async (target, ct) =>
             FetchUrlTool.IsPrivateOrLoopback(target) || await FetchUrlTool.ResolvesToPrivateAsync(target, ct));
     }
@@ -299,7 +302,7 @@ internal sealed class DocCrawler
                 var collapsed = Regex.Replace(m.Groups[1].Value, @"\s+", " ", RegexOptions.None,
                                               RegexBudget.Default);
                 var title = WebUtility.HtmlDecode(collapsed).Trim();
-                if (title.Length > 0) return title.Length > 200 ? title[..200] : title;
+                if (title.Length > 0) return SafeTruncate.Truncate(title, 200);
             }
         }
         catch (RegexMatchTimeoutException ex) { Diagnostics.Swallow("DocCrawler.ExtractTitle", ex); }

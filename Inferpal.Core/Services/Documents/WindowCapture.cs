@@ -69,11 +69,7 @@ internal static class WindowCapture
 
     private static async Task<WindowReading> WindowsAsync(int rootPid, TimeSpan wait, string dir, CancellationToken ct)
     {
-        var script = Path.Combine(dir, "view.ps1");
-        // With a byte order mark: Windows PowerShell 5.1 reads a script without one in the ANSI code page.
-        await File.WriteAllTextAsync(script, WindowsScript, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true), ct);
-        var psi = Start(Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
-                        "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script,
+        var psi = ScriptProcess.WindowsPowerShell(dir, "view.ps1", WindowsScript,
                         "-RootPid", rootPid.ToString(CultureInfo.InvariantCulture), "-OutDir", dir,
                         "-WaitSeconds", ((int)wait.TotalSeconds).ToString(CultureInfo.InvariantCulture),
                         "-MaxNodes", MaxNodes.ToString(CultureInfo.InvariantCulture));
@@ -156,7 +152,7 @@ internal static class WindowCapture
         while (true)
         {
             var pids = (await TreeOfAsync(rootPid, ct)).ToHashSet();
-            var run = await ChildProcess.RunAsync(Start("/usr/bin/osascript", "-l", "JavaScript", script, "list",
+            var run = await ChildProcess.RunAsync(ScriptProcess.Start("/usr/bin/osascript", "-l", "JavaScript", script, "list",
                                                         string.Join(',', pids)), Margin, ct);
             if (run.TimedOut || run.ExitCode != 0)
                 return new([], "the list of windows could not be read: "
@@ -187,11 +183,11 @@ internal static class WindowCapture
             if (screen)
             {
                 var file = Path.Combine(dir, $"window{id}.png");
-                var shot = await ChildProcess.RunAsync(Start("/usr/sbin/screencapture", "-x", "-o", "-l" + id.ToString(CultureInfo.InvariantCulture), file), Margin, ct);
+                var shot = await ChildProcess.RunAsync(ScriptProcess.Start("/usr/sbin/screencapture", "-x", "-o", "-l" + id.ToString(CultureInfo.InvariantCulture), file), Margin, ct);
                 png = File.Exists(file) && new FileInfo(file).Length > 0 ? await File.ReadAllBytesAsync(file, ct) : null;
                 if (png is null) notes.Add($"the window \"{title}\" could not be captured: " + Why(shot));
             }
-            var tree = await ChildProcess.RunAsync(Start("/usr/bin/osascript", "-l", "JavaScript", script, "tree",
+            var tree = await ChildProcess.RunAsync(ScriptProcess.Start("/usr/bin/osascript", "-l", "JavaScript", script, "tree",
                                                          pid.ToString(CultureInfo.InvariantCulture), title,
                                                          MaxNodes.ToString(CultureInfo.InvariantCulture)), Margin, ct);
             var lines = tree.Stdout.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();
@@ -252,7 +248,7 @@ internal static class WindowCapture
                 var pids = (await TreeOfAsync(rootPid, ct)).ToHashSet();
                 found = [];
                 elsewhere = 0;
-                var list = await ChildProcess.RunAsync(Start("xprop", "-root", "_NET_CLIENT_LIST"), Margin, ct);
+                var list = await ChildProcess.RunAsync(ScriptProcess.Start("xprop", "-root", "_NET_CLIENT_LIST"), Margin, ct);
                 if (list.TimedOut || list.ExitCode != 0)
                     return new([], "the list of windows could not be read from the X server: " + Why(list), []);
                 // No window manager publishing its clients (WSLg's, a bare X server): no X window can be found this way.
@@ -260,7 +256,7 @@ internal static class WindowCapture
                 if (!listed) break;
                 foreach (var id in list.Stdout.Split('#').Skip(1).SelectMany(s => s.Split(',')).Select(s => s.Trim()).Where(s => s.StartsWith("0x")))
                 {
-                    var props = await ChildProcess.RunAsync(Start("xprop", "-id", id, "_NET_WM_PID", "WM_CLIENT_MACHINE", "_NET_WM_NAME",
+                    var props = await ChildProcess.RunAsync(ScriptProcess.Start("xprop", "-id", id, "_NET_WM_PID", "WM_CLIENT_MACHINE", "_NET_WM_NAME",
                                                                   "WM_WINDOW_ROLE", "_NET_WM_WINDOW_TYPE"), Margin, ct);
                     string? Value(string name) => props.Stdout.Split('\n')
                         .FirstOrDefault(l => l.StartsWith(name, StringComparison.Ordinal) && l.Contains('='))?.Split('=', 2)[1].Trim();
@@ -305,7 +301,7 @@ internal static class WindowCapture
                 if (composited)
                 {
                     var file = Path.Combine(dir, "window.xwd");
-                    var dump = await ChildProcess.RunAsync(Start("sh", "-c", "xwd -silent -id \"$1\" > \"$2\"", "sh", id, file), Margin, ct);
+                    var dump = await ChildProcess.RunAsync(ScriptProcess.Start("sh", "-c", "xwd -silent -id \"$1\" > \"$2\"", "sh", id, file), Margin, ct);
                     (png, width, height) = File.Exists(file) ? Xwd.ToPng(await File.ReadAllBytesAsync(file, ct)) : (null, 0, 0);
                     if (png is null) notes.Add($"the window \"{title}\" could not be captured: " + Why(dump));
                 }
@@ -323,7 +319,7 @@ internal static class WindowCapture
             var script = Path.Combine(dir, "atspi.py");
             await File.WriteAllTextAsync(script, LinuxTreeScript, ct);
             var pids = await TreeOfAsync(rootPid, ct);
-            var run = await ChildProcess.RunAsync(Start(python, script, string.Join(',', pids), MaxNodes.ToString(CultureInfo.InvariantCulture)), Margin, ct);
+            var run = await ChildProcess.RunAsync(ScriptProcess.Start(python, script, string.Join(',', pids), MaxNodes.ToString(CultureInfo.InvariantCulture)), Margin, ct);
             if (run.Stdout.Trim() == "NO_ATSPI")
                 notes.Add("the accessibility tree is not given: AT-SPI is not reachable from python3 (the package python3-gi and "
                         + "gir1.2-atspi-2.0, and the desktop's accessibility bus)");
@@ -360,7 +356,7 @@ internal static class WindowCapture
         var script = Path.Combine(dir, "composited.py");
         await File.WriteAllTextAsync(script, "import gi\ngi.require_version('Gdk', '3.0')\nfrom gi.repository import Gdk\n"
                                              + "print('YES' if Gdk.Screen.get_default().is_composited() else 'NO')\n", ct);
-        var run = await ChildProcess.RunAsync(Start(python, script), Margin, ct);
+        var run = await ChildProcess.RunAsync(ScriptProcess.Start(python, script), Margin, ct);
         return run.Stdout.Trim() == "YES";
     }
 
@@ -368,7 +364,7 @@ internal static class WindowCapture
     /// process whose parent died is given a new parent: a stale parent id cannot pull another tree in).</summary>
     internal static async Task<IReadOnlyList<int>> TreeOfAsync(int rootPid, CancellationToken ct)
     {
-        var run = await ChildProcess.RunAsync(Start("ps", "-A", "-o", "pid=", "-o", "ppid="), Margin, ct);
+        var run = await ChildProcess.RunAsync(ScriptProcess.Start("ps", "-A", "-o", "pid=", "-o", "ppid="), Margin, ct);
         var children = new Dictionary<int, List<int>>();
         foreach (var line in run.Stdout.Split('\n'))
         {
@@ -388,17 +384,6 @@ internal static class WindowCapture
     private static void Once(List<string> notes, string key, string note)
     {
         if (!notes.Any(n => n.Contains(key, StringComparison.Ordinal))) notes.Add(note);
-    }
-
-    internal static ProcessStartInfo Start(string file, params string[] args)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = file, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
-            StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8,
-        };
-        foreach (var a in args) psi.ArgumentList.Add(a);
-        return psi;
     }
 
     /// <summary>What every Windows script of the job's windows starts with: UI Automation, the window finder

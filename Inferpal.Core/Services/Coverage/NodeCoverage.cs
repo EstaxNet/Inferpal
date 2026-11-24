@@ -52,7 +52,7 @@ internal sealed class NodeCoverage(string root, string folder, NodeRunner runner
                                   .. include is null ? [] : new[] { $"--include={include}" }, "node", "--test", .. Optional(testFile)],
         };
         var (code, output, timedOut) = await CoverageTools.RunAsync(
-            "node", args, root, testFile is null ? CoverageTools.SuiteDeadline : CoverageTools.FileRunDeadline, ct);
+            "node", args, root, CoverageTools.DeadlineFor(testFile), ct);
         return new CoverageRun(CoberturaReport.Read(Path.Combine(outDir, "cobertura-coverage.xml"), root),
                                Passed(code, output), output, timedOut);
     }

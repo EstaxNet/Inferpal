@@ -62,7 +62,7 @@ internal sealed class UserShellTool(string name, string command, IApprovalServic
         // never said, which an "Always" or an allow rule given to the tool would carry. Such a call is asked every time.
         var addsACommand = !string.IsNullOrEmpty(extra) && extra.IndexOfAny(Execution.CommandLine.Metacharacters) >= 0;
         if (!await approval.RequestApprovalAsync(name, fullCmd, ct, forcePrompt: addsACommand))
-            return "Cancelled.";
+            return Localization.Strings.RunCancelled;
 
         try
         {

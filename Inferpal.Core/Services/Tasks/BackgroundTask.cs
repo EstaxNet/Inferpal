@@ -15,6 +15,13 @@ internal enum BackgroundTaskState
     Cancelled,
 }
 
+internal static class BackgroundTaskStates
+{
+    /// <summary>Whether a task in <paramref name="state"/> reached its end: nothing about it changes any more.</summary>
+    internal static bool IsTerminal(this BackgroundTaskState state) =>
+        state is BackgroundTaskState.Succeeded or BackgroundTaskState.Failed or BackgroundTaskState.Cancelled;
+}
+
 /// <summary>
 /// Immutable view of a background task, safe to hand to a front-end: the queue mutates its own
 /// state under a lock and never leaks the live object, so a VM can hold a snapshot across threads
@@ -76,9 +83,7 @@ internal sealed record BackgroundTaskSnapshot(
     internal IReadOnlyList<TaskProposal> PendingProposals => Proposals ?? [];
 
     /// <summary>True once the task reached a terminal state (nothing more will change).</summary>
-    internal bool IsFinished => State is BackgroundTaskState.Succeeded
-                                      or BackgroundTaskState.Failed
-                                      or BackgroundTaskState.Cancelled;
+    internal bool IsFinished => State.IsTerminal();
 
     /// <summary>Wall-clock time the task actually ran, or null while still queued.</summary>
     internal TimeSpan? Duration =>

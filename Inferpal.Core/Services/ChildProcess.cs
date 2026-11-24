@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 
 namespace Inferpal.Services;
 
@@ -48,6 +49,14 @@ internal readonly record struct ChildProcessResult(
 /// </remarks>
 internal static class ChildProcess
 {
+    /// <summary>Has a dotnet child (the CLI, MSBuild, NuGet, vstest) answer in English: its lines are read by their words,
+    /// which the SDK localizes — the CLI by <c>DOTNET_CLI_UI_LANGUAGE</c>, MSBuild's own messages by <c>VSLANG</c>.</summary>
+    internal static void DotnetInEnglish(ProcessStartInfo psi)
+    {
+        psi.Environment["DOTNET_CLI_UI_LANGUAGE"] = "en";
+        psi.Environment["VSLANG"] = "1033";
+    }
+
     /// <summary>
     /// Configures <paramref name="psi"/> so the child cannot inherit stdin, starts it, and closes
     /// the pipe.
@@ -266,7 +275,7 @@ internal static class ChildProcess
                 return _dropped == 0
                     ? string.Concat(_head.ToString(), _tail.ToString())
                     : string.Concat(_head.ToString(),
-                                    DropMarker.Replace("dropped", $"({_dropped:N0} chars) dropped"),
+                                    DropMarker.Replace("dropped", string.Create(CultureInfo.InvariantCulture, $"({_dropped:N0} chars) dropped")),
                                     _tail.ToString());
             }
         }

@@ -74,13 +74,11 @@ internal sealed class SearchDocsTool : ITool
         // — an InvalidOperationException, turning a correctable call into a tool failure.
         var query = args.Trimmed("query") ?? string.Empty;
         if (string.IsNullOrEmpty(query))
-            return "query is required.";
+            return "Error: query is required.";
 
         // Same reason as `search_codebase`: a number the model asked for and did not get is an
         // instruction overridden, and the report it shapes carries no trace of it.
-        var (topK, topKNotice) = args.Has("top_k")
-            ? ClampedArgument.Read(args, "top_k", _config.RagTopK, 1, SemanticSearchTool.MaxTopK)
-            : (Math.Clamp(_config.RagTopK, 1, SemanticSearchTool.MaxTopK), null);
+        var (topK, topKNotice) = SemanticSearchTool.TopK(args, _config.RagTopK);
 
         if (_docs.ChunkCount == 0)
             return Strings.DocsNotReady(_docs.Status);
@@ -116,29 +114,13 @@ internal sealed class SearchDocsTool : ITool
         sb.AppendLine($"## Documentation search: \"{query}\" ({modeLabel}, top {results.Count})");
         sb.AppendLine();
 
-        var bodies    = new StringBuilder();
-        var locations = new StringBuilder();
-        var firstByLocation = 0;
-        for (int i = 0; i < results.Count; i++)
+        var (bodies, locations, firstByLocation) = RankedResultBudget.Lay(results.Select((hit, i) =>
         {
-            var hit   = results[i];
             var chunk = hit.Chunk;
-
             var header = $"### [{i + 1}] {chunk.PageTitle}";
             if (RagResultPresentation.ShowsScore(hit.IsCosine, hit.Score)) header += $" · score {hit.Score:F3}";
-
-            var display = RankedResultBudget.Shown(chunk.Content);
-            var entry = $"{header}\n<{chunk.Url}>\n\n{display}\n\n";
-
-            // In rank order: once one body does not fit, the rest go by location (RankedResultBudget).
-            if (firstByLocation == 0 && (i == 0 || bodies.Length + entry.Length <= RankedResultBudget.BodyChars))
-                bodies.Append(entry);
-            else
-            {
-                if (firstByLocation == 0) firstByLocation = i + 1;
-                locations.AppendLine($"- {header[4..]} <{chunk.Url}>");
-            }
-        }
+            return ($"{header}\n<{chunk.Url}>\n\n{RankedResultBudget.Shown(chunk.Content)}\n\n", $"- {header[4..]} <{chunk.Url}>");
+        }).ToList());
 
         if (firstByLocation > 0)
             sb.AppendLine(RankedResultBudget.Note(firstByLocation, results.Count,

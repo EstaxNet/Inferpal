@@ -61,7 +61,8 @@ public sealed class UserShellToolArgsAndFolderTests : IDisposable
         var output = await new UserShellTool("lint", "npm run lint {args}", approval, new InferpalConfig(), () => _root)
             .ExecuteAsync(Args(extra), CancellationToken.None);
 
-        Assert.Equal("Cancelled.", output);   // refused: nothing ran
+        // Refused: nothing ran — and the loop reads it as the person's refusal, as it reads run_command's.
+        Assert.True(Inferpal.Services.Execution.ToolFailure.IsRefusal(output), output);
         Assert.Equal(forced, approval.Forced);
     }
 

@@ -174,7 +174,7 @@ internal static class OdfText
         var read = string.Join('\n', text.ToString().Split('\n').Select(l => l.TrimEnd('\t', ' '))).Trim();
         if (read.Split('\n').All(l => l.Length == 0 || l.StartsWith("# ", StringComparison.Ordinal) || l.StartsWith("## Slide", StringComparison.Ordinal) || l == "Notes:"))
             return new(string.Empty, slides, 0, DocumentProblem.NoText);
-        return new(read.Length > PdfText.MaxChars ? read[..PdfText.MaxChars] : read, slides, 0, DocumentProblem.None, stoppedAt);
+        return new(PdfText.Capped(read), slides, 0, DocumentProblem.None, stoppedAt);
     }
 
     /// <summary>The most a repeated cell or row is written: a repeat count in the file is not a promise of memory.</summary>

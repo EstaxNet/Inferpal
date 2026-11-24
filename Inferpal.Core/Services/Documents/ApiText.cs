@@ -197,10 +197,8 @@ internal static class ApiText
         if (Obj(har["log"])?["entries"] is not JsonArray entries) return null;
         var inv = CultureInfo.InvariantCulture;
         var requests = entries.Select(Obj).OfType<JsonObject>()
-            .Select((e, i) => (Index: i + 1, Entry: e, Status: Num(Obj(e["response"])?["status"]) is { } n && n is > 0 and < 1000 ? (int)n : 0))
+            .Select((e, i) => (Index: i + 1, Entry: e, Status: HttpStatus(Num(Obj(e["response"])?["status"]))))
             .ToList();
-        // No status, or none a server gives (an aborted request is written -1 or 0): unanswered, listed with the failed.
-        static bool Failed(int status) => status is 0 or >= 400;
         var failed = requests.Count(r => Failed(r.Status));
 
         var sb = new StringBuilder();
@@ -266,6 +264,13 @@ internal static class ApiText
 
     private static string Str(JsonNode? node) =>
         node is JsonValue v ? (v.TryGetValue<string>(out var s) ? s : v.ToString()) : string.Empty;
+
+    /// <summary>The status a server gave a recorded request (a HAR's, a Playwright trace's), or 0 for none: an aborted request
+    /// is written -1 or 0, and no server gives one past 999.</summary>
+    internal static int HttpStatus(double? written) => written is { } n && n is > 0 and < 1000 ? (int)n : 0;
+
+    /// <summary>No status (unanswered), or a failing one: listed with the failed.</summary>
+    internal static bool Failed(int status) => status is 0 or >= 400;
 
     private static double? Num(JsonNode? node) =>
         node is JsonValue v && (v.TryGetValue<double>(out var d) || double.TryParse(v.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out d))

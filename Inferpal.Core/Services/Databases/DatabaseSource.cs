@@ -155,22 +155,7 @@ internal static class DatabaseSources
 
     /// <summary>The value of <c>KEY=value</c> in a .env file: <c>export</c> allowed, quotes removed, a comment after an unquoted
     /// value cut.</summary>
-    internal static string? EnvKey(string text, string key)
-    {
-        foreach (var raw in text.Replace("\r\n", "\n").Split('\n'))
-        {
-            var line = raw.Trim();
-            if (line.StartsWith("export ", StringComparison.Ordinal)) line = line[7..].TrimStart();
-            var eq = line.IndexOf('=');
-            if (eq <= 0 || line.StartsWith('#') || !string.Equals(line[..eq].Trim(), key, StringComparison.Ordinal)) continue;
-            var value = line[(eq + 1)..].Trim();
-            // A quoted value ends at its closing quote: a comment may follow it.
-            if (value.Length >= 2 && value[0] is '"' or '\'' && value.IndexOf(value[0], 1) is var close and > 0) return value[1..close];
-            var comment = value.IndexOf(" #", StringComparison.Ordinal);
-            return comment >= 0 ? value[..comment].TrimEnd() : value;
-        }
-        return null;
-    }
+    internal static string? EnvKey(string text, string key) => DotEnv.Parse(text).TryGetValue(key, out var value) ? value : null;
 
     private static string Relative(string path, string? root)
     {

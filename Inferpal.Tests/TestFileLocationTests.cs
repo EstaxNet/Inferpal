@@ -264,4 +264,16 @@ public sealed class TestFileLocationTests : IDisposable
 
         Assert.Equal(Path.Combine(_root, "shop", "test_cart.py"), TestFilePathResolver.Resolve(source));
     }
+
+    [Theory]
+    [InlineData("<PropertyGroup><IsTestProject> true </IsTestProject></PropertyGroup>")]
+    [InlineData("<PropertyGroup>\n  <IsTestProject>\n    true\n  </IsTestProject>\n</PropertyGroup>")]
+    [InlineData("<PropertyGroup><IsTestProject>true</IsTestProject></PropertyGroup>")]   // reference arm
+    public void AProjectThatDeclaresItselfATestProject_IsOne_HoweverItsXmlIsSpaced(string properties)
+    {
+        // A name no test project convention gives, and no framework package: the declaration alone decides, read as
+        // /test coverage reads it.
+        var project = Write("checks/Lib.Checks.csproj", $"<Project Sdk=\"Microsoft.NET.Sdk\">{properties}</Project>");
+        Assert.True(TestFilePathResolver.IsTestProject(project));
+    }
 }

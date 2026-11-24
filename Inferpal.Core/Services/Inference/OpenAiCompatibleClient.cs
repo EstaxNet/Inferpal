@@ -1209,7 +1209,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // `suffix` outright — this completion is skipped, the next one asks again.
         if (llamaServer is null) { RecordFimFailure(); return; }
 
-        var stop = FimCompletion.Stops(suffix, ["\n\n\n"]);
+        var stop = FimCompletion.Stops(suffix, FimTemplate.FallbackStop);
         if (llamaServer == true)
             await StreamInlineAsync($"{Root}/infill",
                 new LlamaInfillRequest(m, prefix, suffix, maxTokens, temperature, Stream: true, Stop: stop),

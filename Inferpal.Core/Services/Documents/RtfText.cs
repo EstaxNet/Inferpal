@@ -154,7 +154,7 @@ internal static class RtfText
         Flush();
         var read = string.Join('\n', text.ToString().Split('\n').Select(l => l.TrimEnd('\t', ' '))).Trim();
         if (read.Length == 0) return new(string.Empty, 0, 0, DocumentProblem.NoText);
-        return new(read.Length > PdfText.MaxChars ? read[..PdfText.MaxChars] : read, 0, 0, DocumentProblem.None, stoppedAt);
+        return new(PdfText.Capped(read), 0, 0, DocumentProblem.None, stoppedAt);
     }
 
     /// <summary>The Windows code page of an RTF font charset; null for the symbol sets, which carry no text.</summary>

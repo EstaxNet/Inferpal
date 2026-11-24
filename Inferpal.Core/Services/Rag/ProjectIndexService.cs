@@ -1033,15 +1033,11 @@ internal sealed class ProjectIndexService : IDisposable
     {
         try
         {
-            var prefix = dirPath.TrimEnd('\\', '/');
             List<string> files;
             await _chunkLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                files = _chunksByFile.Keys
-                    .Where(p => p.Length > prefix.Length && p.StartsWith(prefix, PathComparer.Comparison)
-                                && p[prefix.Length] is '\\' or '/')
-                    .ToList();
+                files = _chunksByFile.Keys.Where(p => PathComparer.IsBelow(p, dirPath)).ToList();
             }
             finally { _chunkLock.Release(); }
 

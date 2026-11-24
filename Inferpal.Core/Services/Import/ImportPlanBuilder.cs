@@ -258,17 +258,7 @@ internal sealed class ImportPlanBuilder
         try
         {
             if (!File.Exists(path)) return _env;
-            foreach (var raw in TextFileEncoding.ReadText(path).Split('\n'))
-            {
-                var line = raw.Trim();
-                if (line.Length == 0 || line.StartsWith('#')) continue;
-                if (line.StartsWith("export ", StringComparison.Ordinal)) line = line[7..].TrimStart();
-                var eq = line.IndexOf('=');
-                if (eq <= 0) continue;
-                var value = line[(eq + 1)..].Trim();
-                if (value.Length >= 2 && (value[0] is '"' or '\'') && value[^1] == value[0]) value = value[1..^1];
-                _env[line[..eq].Trim()] = value;
-            }
+            _env = DotEnv.Parse(TextFileEncoding.ReadText(path));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

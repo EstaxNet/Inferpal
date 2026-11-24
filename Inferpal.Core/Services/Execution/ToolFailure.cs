@@ -44,11 +44,14 @@ internal static class ToolFailure
         result.StartsWith("Error:", StringComparison.Ordinal) || IsRefusal(result);
 
     /// <summary>Whether a tool's result is the person's refusal of its card: <see cref="CancelledByUser"/>, or the translated
-    /// refusal of the tools that answer one in words (<c>run_command</c>, <c>debug_control start</c>).</summary>
+    /// refusal of the tools that answer one in words (<c>run_command</c> and the person's own shell tools, the debugger's
+    /// start, breakpoint with code and evaluation).</summary>
     internal static bool IsRefusal(string result) =>
         result == CancelledByUser
         || string.Equals(result.Trim(), Localization.Strings.RunCancelled.Trim(), StringComparison.Ordinal)
-        || string.Equals(result.Trim(), Localization.Strings.DebugStartCancelled.Trim(), StringComparison.Ordinal);
+        || string.Equals(result.Trim(), Localization.Strings.DebugStartCancelled.Trim(), StringComparison.Ordinal)
+        || string.Equals(result.Trim(), Localization.Strings.DebugBreakpointCodeCancelled.Trim(), StringComparison.Ordinal)
+        || string.Equals(result.Trim(), Localization.Strings.DebugEvaluateCancelled.Trim(), StringComparison.Ordinal);
 
     /// <summary>
     /// A tool's failure in the form <see cref="IsFailure"/> reads: <paramref name="text"/> (often translated) behind the

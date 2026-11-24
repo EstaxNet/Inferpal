@@ -99,6 +99,11 @@ internal static class ShellStateProtocol
         return sb.ToString();
     }
 
+    /// <summary>The note after a command that <c>Select-Object -First</c> stopped: its -1 is no verdict of the command, and
+    /// the check verdict reads it so.</summary>
+    internal const string SelectFirstNote =
+        "[exit code -1: Select-Object -First stopped the command once it had its lines — the command did not run to completion]";
+
     /// <summary>
     /// The note that follows a command's output for a non-zero exit code.
     /// </summary>
@@ -111,8 +116,7 @@ internal static class ShellStateProtocol
     /// </remarks>
     internal static string ExitNote(ShellDialect dialect, string command, int exitCode) =>
         dialect == ShellDialect.PowerShell && exitCode == -1 && StoppedBySelectFirst.IsMatch(command)
-            ? "\n[exit code -1: Select-Object -First stopped the command once it had its lines — the command did not "
-              + "run to completion]"
+            ? "\n" + SelectFirstNote
             : $"\n[exit code {exitCode}]";
 
     private static readonly System.Text.RegularExpressions.Regex StoppedBySelectFirst = new(

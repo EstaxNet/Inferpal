@@ -164,7 +164,7 @@ internal static class DocumentText
             if (bytes.AsSpan().StartsWith("{\\rtf"u8)) kind = ".rtf";
             else if (PlainText(bytes) is { } plain)
                 return plain.Trim().Length == 0 ? new(string.Empty, 0, 0, DocumentProblem.NoText)
-                     : new(plain.Length > PdfText.MaxChars ? plain[..PdfText.MaxChars] : plain, 0, 0, DocumentProblem.None,
+                     : new(PdfText.Capped(plain), 0, 0, DocumentProblem.None,
                            plain.Length > PdfText.MaxChars ? 1 : 0);
         }
         try

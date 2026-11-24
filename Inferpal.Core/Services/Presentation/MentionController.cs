@@ -341,7 +341,7 @@ internal static class MentionController
     public static string RelLabel(string fullPath, string rootDir)
     {
         var rel = Path.GetRelativePath(rootDir, fullPath);
-        return rel.StartsWith("..", StringComparison.Ordinal)
+        return Tools.PathSanitizer.LeavesRoot(rel)
             ? (Path.GetDirectoryName(fullPath) ?? fullPath)
             : rel;
     }

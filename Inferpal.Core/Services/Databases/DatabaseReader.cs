@@ -362,7 +362,7 @@ internal static class DatabaseReader
             DateTimeOffset o => o.ToString("yyyy-MM-dd HH:mm:ss.FFFFFFFzzz", CultureInfo.InvariantCulture),
             _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
         };
-        if (text.Length > MaxCellChars) { text = text[..MaxCellChars] + "…"; cut++; }
+        if (text.Length > MaxCellChars) { text = SafeTruncate.Truncate(text, MaxCellChars) + "…"; cut++; }
         return Quoted(text);
     }
 }

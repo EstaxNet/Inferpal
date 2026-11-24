@@ -70,10 +70,7 @@ internal class WriteFileTool : ITool
         // ⚠ An existing file is rewritten in its OWN line endings, like apply_diff and the code actions: model output
         // is LF, and a CRLF file (Visual Studio's default) otherwise changed every line ending behind the approval
         // prompt — which compares lines with their "\r", so it showed a one-line change as a rewrite of every line.
-        // A file without a line break says nothing about its convention: the content is kept as given.
-        if (oldContent.Contains('\n'))
-            content = LineEndings.ToEol(content, LineEndings.Dominant(oldContent));
-        if (exists) content = LineEndings.WithFinalBreakOf(oldContent, content);
+        if (exists) content = LineEndings.AsIn(oldContent, content);
         if (exists && FileTarget.EncodingRefusal(path, content) is { } cannotHold) return cannotHold;
         if (await SyntaxGuard.RefusalAsync(path, exists ? oldContent : null, content, root, _history.CurrentRunId, ct) is { } broken) return ToolFailure.Said(broken);
 

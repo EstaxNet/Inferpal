@@ -46,7 +46,7 @@ internal class SearchInFilesTool : ITool
         // exist", on the most natural request there is — searching one file.
         var singleFile = File.Exists(path);
         if (!singleFile && !Directory.Exists(path))
-            return Task.FromResult(Strings.DirNotFound(path));
+            return Task.FromResult(ToolFailure.Said(Strings.DirNotFound(path)));
         var searchRoot = singleFile ? Path.GetDirectoryName(path)! : path;
 
         // ⚠ "Text OR a regular expression", so a pattern that parses as a regex may still be meant as text: read

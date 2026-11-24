@@ -145,21 +145,14 @@ internal sealed class InteractPageTool : ITool, IDisposable
         var (steps, notes, stepsError) = ReadSteps(args);
         if (stepsError is not null) return "Error: " + stepsError;
         // Checked before any step plays: a call never acts for a capture it cannot save.
-        var (saveTo, saveRefusal) = CaptureSaving.Target(args.Str("save_to"), _getWorkspaceRoot());
+        var (saveTo, saveRefusal) = CaptureSaving.BeforeSteps(args.Str("save_to"), _getWorkspaceRoot(), _history, _approval, "capture");
         var bodies = args.Bool("network_bodies", false);
         if (saveRefusal is not null) return saveRefusal;
-        if (saveTo is not null && _history is null) return "Error: save_to is not available here: the capture cannot be saved.";
-        if (saveTo is not null && CaptureSaving.Unseen(_history!, _getWorkspaceRoot(), saveTo) is { } unseen)
-            return "Error: save_to: " + unseen + " Nothing was played.";
-        // The person's write rules too, before any click: a capture they refuse to have written is no reason to act.
-        if (saveTo is not null && _approval.Refuses("write_file", saveTo))
-            return $"Error: save_to: the person's rules refuse writing '{saveTo}'. Nothing was played.";
 
         Target? target = null;
         if (!string.IsNullOrWhiteSpace(url))
         {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-                return $"Error: '{url}' is not an http or https URL. An HTML file of the workspace goes in path.";
+            if (ViewPageTool.PageUrl(url) is not { } uri) return ViewPageTool.NotAPageUrl(url);
             // ⚠ As view_page: localhost or a loopback address, never a name under .localhost the system may resolve elsewhere.
             if (!ViewPageTool.ServedHere(uri))
                 return $"Error: '{uri.Host}' is not this machine: interact_page uses pages served here (localhost, 127.0.0.1).";
@@ -175,11 +168,8 @@ internal sealed class InteractPageTool : ITool, IDisposable
                 PathSanitizer.AssertUnderRoot(file, root);
             }
             catch (ArgumentException ex) { return $"Error: {ex.Message}"; }
-            if (Directory.Exists(file)) return $"'{Path.GetFileName(file)}' is a folder: name an HTML file in it.";
-            if (!File.Exists(file)) return ToolFailure.Said(Localization.Strings.ToolFileNotFound(file));
-            if (Path.GetExtension(file).ToLowerInvariant() is not (".html" or ".htm" or ".xhtml" or ".svg"))
-                return $"'{Path.GetFileName(file)}' is not a page (HTML or SVG): read it with read_file.";
-            target = new Target(null, Path.GetRelativePath(root, file).Replace('\\', '/'), root, file);
+            if (ViewPageTool.NotAPage(file) is { } notAPage) return notAPage;
+            target =new Target(null, Path.GetRelativePath(root, file).Replace('\\', '/'), root, file);
         }
 
         await _gate.WaitAsync(ct);

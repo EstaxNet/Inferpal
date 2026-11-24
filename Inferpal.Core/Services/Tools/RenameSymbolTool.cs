@@ -119,7 +119,7 @@ internal sealed class RenameSymbolTool : ITool
         int? declaringLine = args.Has("declaring_line") ? args.Int("declaring_line", 0) : null;
 
         if (string.IsNullOrEmpty(oldName) || string.IsNullOrEmpty(newName))
-            return "old_name and new_name are required.";
+            return "Error: old_name and new_name are required.";
         if (oldName == newName)
             return "old_name and new_name are identical — nothing to do.";
         if (QualifiedRefusal(oldName, newName) is { } qualified)
@@ -522,8 +522,7 @@ internal sealed class RenameSymbolTool : ITool
 
     private static string UnreadRefusal(string oldName, string root, IReadOnlyList<string> unread)
     {
-        var named = string.Join(", ", unread.Take(5).Select(f => Path.GetRelativePath(root, f)))
-                  + (unread.Count > 5 ? $" and {unread.Count - 5} more" : string.Empty);
+        var named = NamedFew.Of(unread.Select(f => Path.GetRelativePath(root, f)).ToList());
         // The coverage line every scan of this tool carries (its description sends the model to it), then the refusal.
         return Strings.ScanUnreadable(unread.Count) + "\n\n"
              + $"Error: {unread.Count} C# file(s) could not be read ({named}): their uses of `{oldName}` cannot be found, "
@@ -534,8 +533,7 @@ internal sealed class RenameSymbolTool : ITool
 
     private static string OutsideRootRefusal(string oldName, string root, string workspace, List<string> outside)
     {
-        var named = string.Join(", ", outside.Take(5).Select(f => Path.GetRelativePath(workspace, f)))
-                  + (outside.Count > 5 ? $" and {outside.Count - 5} more" : string.Empty);
+        var named = NamedFew.Of(outside.Select(f => Path.GetRelativePath(workspace, f)).ToList());
         return $"Error: `{oldName}` is also used outside '{Path.GetRelativePath(workspace, root)}': {named}. Renaming inside "
              + "that folder only would leave those on the old name and break the build; nothing was renamed. Call again "
              + "without 'root' to rename across the whole workspace (with declaring_file when the name designates several "

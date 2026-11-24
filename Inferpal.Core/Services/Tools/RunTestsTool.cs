@@ -94,7 +94,7 @@ internal class RunTestsTool : ITool
         // ⚠ A runner the model named and this tool does not know is NAMED, never answered "no test runner detected —
         // set 'runner' explicitly": that is the remedy it just applied, and it reads "this project has no tests".
         if (forced is not null and not "auto" && ForcedRunner(forced) is null)
-            return $"Unknown runner '{forced}'. Use one of: auto, dotnet, pytest, npm, cargo, go — jest, vitest, mocha "
+            return $"Error: Unknown runner '{forced}'. Use one of: auto, dotnet, pytest, npm, cargo, go — jest, vitest, mocha "
                  + "and node --test run through npm.";
         var runner  = (forced is null or "auto") ? DetectRunner(workDir, path, root) : ForcedRunner(forced)!;
 
@@ -112,8 +112,8 @@ internal class RunTestsTool : ITool
             "dotnet" => await RunDotnetAsync(workDir, root, path, filter, budget, ct),
             "pytest" => await RunPytestAsync(workDir, root, path, filter, budget, ct),
             "npm"    => await RunNpmAsync(workDir, root, path, filter, budget, ct),
-            "cargo"  => await RunCargoAsync(workDir, path, filter, budget, ct),
-            "go"     => await RunGoAsync(workDir, path, filter, budget, ct),
+            "cargo"  => await RunCargoAsync(workDir, root, path, filter, budget, ct),
+            "go"     => await RunGoAsync(workDir, root, path, filter, budget, ct),
             _        => NoRunnerDetected(workDir, root),
         };
         return ClampedArgument.Above(timeoutNotice, budget.Wrap(report));
@@ -162,15 +162,9 @@ internal class RunTestsTool : ITool
         if (!Directory.Exists(folder) || FilesIn(folder).Count(IsDotnetProject) == 1) return null;
         if (GetDiagnosticsTool.FindProjectFile(folder) is not { } chosen) return null;
 
-        var solution = SolutionFiles.IsSolution(chosen);
-        var others = WorkspaceScan.ShallowestFirst(
-                (solution ? WorkspaceScan.EnumerateFiles(folder, "*").Where(SolutionFiles.IsSolution)
-                          : WorkspaceScan.EnumerateFiles(folder, "*.csproj"))
-                .Where(f => !PathComparer.Default.Equals(f, chosen)))
-            .Select(f => Path.GetRelativePath(folder, f).Replace('\\', '/'))
-            .ToList();
+        var others = GetDiagnosticsTool.OthersBeside(folder, chosen);
         var notRun = others.Count == 0 ? "" :
-            $"{NotRunNote}{string.Join(", ", others.Take(5))}{(others.Count > 5 ? $" and {others.Count - 5} more" : "")}"
+            $"{NotRunNote}{NamedFew.Of(others)}"
             + " — pass 'path' to run one.";
         return (chosen, $"{ClampedArgument.NotePrefix}{folder} holds no single solution or project, so this run used "
                       + $"{Path.GetRelativePath(folder, chosen).Replace('\\', '/')}.{notRun}\n\n");
@@ -207,8 +201,8 @@ internal class RunTestsTool : ITool
                                .Select(p => Path.GetRelativePath(root, p).Replace('\\', '/')).ToList();
         if (others.Count == 0) return null;
         return $"{ClampedArgument.NotePrefix}Only {Path.GetRelativePath(root, project).Replace('\\', '/')} ran, one test project of "
-             + $"{others.Count + 1} in {Path.GetFileName(whole)}.{NotRunNote}{string.Join(", ", others.Take(5))}"
-             + $"{(others.Count > 5 ? $" and {others.Count - 5} more" : "")} — omit 'path' to run the whole suite.\n\n";
+             + $"{others.Count + 1} in {Path.GetFileName(whole)}.{NotRunNote}{NamedFew.Of(others)}"
+             + " — omit 'path' to run the whole suite.\n\n";
 
         static bool IsReadableTestProject(string csproj)
         {
@@ -230,11 +224,7 @@ internal class RunTestsTool : ITool
         return args;
     }
 
-    private static readonly string[] DotnetProjectExtensions = [".csproj", ".fsproj", ".vbproj", ".proj"];
-
-    private static bool IsDotnetProject(string path) =>
-        SolutionFiles.IsSolution(path)
-        || DotnetProjectExtensions.Any(e => path.EndsWith(e, StringComparison.OrdinalIgnoreCase));
+    private static bool IsDotnetProject(string path) => SolutionFiles.IsSolution(path) || GetDiagnosticsTool.IsProjectFile(path);
 
     /// <summary>The files directly in <paramref name="dir"/>; none when it cannot be listed.</summary>
     private static IEnumerable<string> FilesIn(string dir)
@@ -353,7 +343,7 @@ internal class RunTestsTool : ITool
     {
         if (string.IsNullOrEmpty(root)) return false;
         var rel = Path.GetRelativePath(root, dir);
-        return !(rel == ".." || rel.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) || Path.IsPathRooted(rel));
+        return !PathSanitizer.LeavesRoot(rel);
     }
 
     /// <summary>The nearest of the run's folder and its parents, up to the workspace root, that holds one of <paramref name="markers"/>.</summary>
@@ -665,10 +655,11 @@ internal class RunTestsTool : ITool
         return null;
     }
 
-    private static async Task<string> RunCargoAsync(string workDir, string? path, string? filter, RunBudget budget, CancellationToken ct)
+    private static async Task<string> RunCargoAsync(string workDir, string? workspace, string? path, string? filter, RunBudget budget,
+                                                    CancellationToken ct)
     {
         // cargo searches up for Cargo.toml, but run from the crate/workspace root for predictability.
-        var root = FindUp(workDir, "Cargo.toml") ?? workDir;
+        var root = NearestWith(workDir, workspace, File.Exists, "Cargo.toml") ?? workDir;
         // ⚠ cargo reads an argument that starts with '-' as one of its options, and `--config=…runner="…"` names a program
         // it runs — this tool asks no approval. Refused before anything starts.
         if (filter is ['-', ..])
@@ -681,9 +672,10 @@ internal class RunTestsTool : ITool
         return PathDoesNotNarrow("cargo", path, root) + ParseCargoOutput(output, exitCode);
     }
 
-    private static async Task<string> RunGoAsync(string workDir, string? path, string? filter, RunBudget budget, CancellationToken ct)
+    private static async Task<string> RunGoAsync(string workDir, string? workspace, string? path, string? filter, RunBudget budget,
+                                                 CancellationToken ct)
     {
-        var root = FindUp(workDir, "go.mod") ?? workDir;
+        var root = NearestWith(workDir, workspace, File.Exists, "go.mod") ?? workDir;
         var (output, exitCode) = await RunProcessAsync("go", string.Empty, root, budget, ct, GoTestArguments(filter));
         return PathDoesNotNarrow("go", path, root) + ParseGoOutput(output, exitCode);
     }
@@ -1458,8 +1450,7 @@ internal class RunTestsTool : ITool
             // every red run fell through to the raw-log fallback — a truncated MSBuild wall instead
             // of test names and assert messages. Forcing the child's UI language keeps the parser
             // input deterministic on every locale.
-            psi.EnvironmentVariables["DOTNET_CLI_UI_LANGUAGE"] = "en";
-            psi.EnvironmentVariables["VSLANG"]                 = "1033";
+            ChildProcess.DotnetInEnglish(psi);
             foreach (var kv in environment ?? new Dictionary<string, string>()) psi.EnvironmentVariables[kv.Key] = kv.Value;
 
             var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(budget.Seconds), ct);
@@ -1534,8 +1525,7 @@ internal class RunTestsTool : ITool
     {
         // SolutionFiles recognises BOTH formats: a `path` pointing at a .slnx otherwise
         // picked the wrong runner.
-        if (SolutionFiles.IsSolution(path) || path.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
-            return "dotnet";
+        if (IsDotnetProject(path)) return "dotnet";
         // A test file names its language, whatever folder it sits in: tests/test_x.py has no pytest marker
         // beside it, and "No test runner detected" reads as "there are no tests".
         if (path.EndsWith(".py", StringComparison.OrdinalIgnoreCase)) return "pytest";
@@ -1551,7 +1541,7 @@ internal class RunTestsTool : ITool
         // dirs skipped — a vendored .sln under node_modules must not flip the runner to dotnet.
         if (WorkspaceScan.EnumerateFiles(workDir, "*.sln").Any()  ||
             WorkspaceScan.EnumerateFiles(workDir, "*.slnx").Any() ||
-            WorkspaceScan.EnumerateFiles(workDir, "*.csproj").Any())
+            WorkspaceScan.EnumerateFiles(workDir, "*.*proj").Any(GetDiagnosticsTool.IsProjectFile))
             return "dotnet";
 
         if (File.Exists(Path.Combine(workDir, "pytest.ini"))     ||
@@ -1563,10 +1553,10 @@ internal class RunTestsTool : ITool
         if (File.Exists(Path.Combine(workDir, "package.json")))
             return "npm";
 
-        if (FindUp(workDir, "Cargo.toml") is not null)
+        if (NearestWith(workDir, root, File.Exists, "Cargo.toml") is not null)
             return "cargo";
 
-        if (FindUp(workDir, "go.mod") is not null)
+        if (NearestWith(workDir, root, File.Exists, "go.mod") is not null)
             return "go";
 
         // A path below its project's root: the markers are in a parent folder, up to the workspace root.
@@ -1579,21 +1569,6 @@ internal class RunTestsTool : ITool
         }
 
         return "unknown";
-    }
-
-    // Walks up from <paramref name="startDir"/> looking for <paramref name="fileName"/>; returns the
-    // directory containing it, or <c>null</c>. Used to locate a Rust crate / Go module root from a
-    // nested working directory.
-    private static string? FindUp(string startDir, string fileName)
-    {
-        var dir = startDir;
-        for (int i = 0; i < 12 && !string.IsNullOrEmpty(dir); i++)
-        {
-            try { if (File.Exists(Path.Combine(dir, fileName))) return dir; }
-            catch { return null; }
-            dir = Path.GetDirectoryName(dir);
-        }
-        return null;
     }
 
     /// <summary>Where the runner starts: the path given, else the workspace root — never the working directory, which in

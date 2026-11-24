@@ -32,6 +32,26 @@ namespace Inferpal.Services.Tools;
 /// </remarks>
 internal sealed class ViewPageTool : ITool
 {
+    /// <summary><paramref name="url"/> as the absolute http or https address of a page, or <c>null</c>. view_page and
+    /// interact_page alike.</summary>
+    internal static Uri? PageUrl(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+            ? uri : null;
+
+    /// <summary>The refusal of a <c>url</c> that <see cref="PageUrl"/> does not read.</summary>
+    internal static string NotAPageUrl(string url) =>
+        $"Error: '{url}' is not an http or https URL. An HTML file of the workspace goes in path.";
+
+    /// <summary>Why the workspace file <paramref name="file"/> is no page to open — a folder, missing, not HTML or SVG —, or
+    /// <c>null</c>.</summary>
+    internal static string? NotAPage(string file)
+    {
+        if (Directory.Exists(file)) return $"'{Path.GetFileName(file)}' is a folder: name an HTML file in it.";
+        if (!File.Exists(file)) return ToolFailure.Said(Localization.Strings.ToolFileNotFound(file));
+        return Path.GetExtension(file).ToLowerInvariant() is ".html" or ".htm" or ".xhtml" or ".svg"
+            ? null : $"'{Path.GetFileName(file)}' is not a page (HTML or SVG): read it with read_file.";
+    }
+
     /// <summary>Whether <paramref name="uri"/> is a page served on this machine: localhost or a loopback address, never a
     /// name under <c>.localhost</c> — http_request forces such a name onto the loopback, a browser asks the system's
     /// resolver, which may answer with another machine. view_page and interact_page alike.</summary>
@@ -97,8 +117,7 @@ internal sealed class ViewPageTool : ITool
         Uri? servedUrl = null;
         if (!string.IsNullOrWhiteSpace(url))
         {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-                return $"Error: '{url}' is not an http or https URL. An HTML file of the workspace goes in path.";
+            if (PageUrl(url) is not { } uri) return NotAPageUrl(url);
             // ⚠ localhost or a loopback address, never a name under .localhost: http_request forces such a name onto the
             // loopback, a browser asks the system's resolver, which may answer with another machine.
             if (!ServedHere(uri))
@@ -119,12 +138,8 @@ internal sealed class ViewPageTool : ITool
             var root = servedRoot = _getWorkspaceRoot();
             var file = PathSanitizer.Sanitize(path, root);
             PathSanitizer.AssertUnderRoot(file, root);
-            if (Directory.Exists(file)) return $"'{Path.GetFileName(file)}' is a folder: name an HTML file in it.";
-            if (!File.Exists(file)) return ToolFailure.Said(Localization.Strings.ToolFileNotFound(file));
-            var extension = Path.GetExtension(file).ToLowerInvariant();
-            if (extension is not (".html" or ".htm" or ".xhtml" or ".svg"))
-                return $"'{Path.GetFileName(file)}' is not a page (HTML or SVG): read it with read_file.";
-            shown = Path.GetRelativePath(root, file).Replace('\\', '/');
+            if (NotAPage(file) is { } notAPage) return notAPage;
+            shown =Path.GetRelativePath(root, file).Replace('\\', '/');
             target = shown;   // resolved against the server's address once it listens
             subject = file;
         }

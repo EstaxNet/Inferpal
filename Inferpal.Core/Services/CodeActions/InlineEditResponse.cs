@@ -67,5 +67,9 @@ internal static class InlineEditResponse
         ".md", ".markdown", ".mdx", ".txt", ".rst", ".adoc",
     };
 
-    private static bool IsFence(string line) => line.TrimStart(' ', '\t').StartsWith("```", System.StringComparison.Ordinal);
+    // Backticks or tildes, as Markdown and the chat's parser read a fence; at any indent: models indent their fences
+    // when the code they rewrite is indented.
+    private static bool IsFence(string line) =>
+        line.TrimStart(' ', '\t') is var t
+        && (t.StartsWith("```", System.StringComparison.Ordinal) || t.StartsWith("~~~", System.StringComparison.Ordinal));
 }

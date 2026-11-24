@@ -60,6 +60,19 @@ public class TaskRootGuardTests
     }
 
     [Fact]
+    public async Task TheSameFolderSpelledAnotherWay_IsNoChangeOfWorkspace()
+    {
+        // The queue judges "has the workspace moved?" by PathComparer.SameDirectory: the task's tools must agree with it.
+        var root     = Path.Combine(Path.GetTempPath(), "inferpal-task", "solution-a");
+        var inner    = new CountingRegistry();
+        var registry = new BackgroundTaskToolRegistry(inner, currentRoot: () => root);
+
+        root = Path.Combine(Path.GetTempPath(), "inferpal-task", ".", "solution-a") + Path.DirectorySeparatorChar;
+
+        Assert.Equal("inner ran", await registry.ExecuteAsync("read_file", default, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task WithoutAKnownRoot_TheTaskRunsAsBefore()
     {
         var inner    = new CountingRegistry();

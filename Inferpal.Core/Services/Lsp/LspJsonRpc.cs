@@ -81,7 +81,7 @@ internal sealed class LspJsonRpc : IDisposable
     private async Task WriteAsync(LspRequest msg, CancellationToken ct)
     {
         var body   = JsonSerializer.SerializeToUtf8Bytes(msg, SerOpts);
-        var header = Encoding.ASCII.GetBytes($"Content-Length: {body.Length}\r\n\r\n");
+        var header = FrameHeaderReader.HeaderFor(body.Length);
 
         await _writeLock.WaitAsync(ct);
         try

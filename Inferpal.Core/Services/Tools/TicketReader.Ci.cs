@@ -409,7 +409,7 @@ internal static partial class TicketReader
     {
         text = text.Replace("\r\n", "\n").Trim();
         if (text.Length <= max) return text;
-        var keep = char.IsHighSurrogate(text[max - 1]) ? max - 1 : max;
-        return text[..keep] + $"\n[… {text.Length - keep} more characters {what} on its page]";
+        var kept = SafeTruncate.Truncate(text, max);
+        return kept + $"\n[… {text.Length - kept.Length} more characters {what} on its page]";
     }
 }

@@ -25,7 +25,8 @@ internal static class AttachmentCap
     {
         if (text.Length <= max) return new Capped(text, text.Length, text.Length, Cut: false);
         var lineEnd = text.LastIndexOf('\n', max);
-        var shown   = lineEnd > max / 2 ? lineEnd : max;
+        // At a line break, else at the cap: never between the two halves of a surrogate pair.
+        var shown   = lineEnd > max / 2 ? lineEnd : SafeTruncate.Truncate(text, max).Length;
         // For the model, in English like every structural marker; it names the tool that reads the rest.
         var marker = $"\n…(truncated: the first {shown.ToString("N0", CultureInfo.InvariantCulture)} of "
                    + $"{text.Length.ToString("N0", CultureInfo.InvariantCulture)} characters are attached; read_file reads the rest)";

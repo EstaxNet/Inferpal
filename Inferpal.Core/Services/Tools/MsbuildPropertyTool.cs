@@ -88,8 +88,7 @@ internal sealed class MsbuildPropertyTool(Execution.WorkspaceCodeConsent? consen
             if (projects.Count == 0) return GetDiagnosticsTool.NoProject;
             if (projects.Count > 1)
                 return "Error: the workspace has several projects; name one in 'project': " +
-                       string.Join(", ", projects.Take(10).Select(p => Path.GetRelativePath(root, p).Replace('\\', '/'))) +
-                       (projects.Count > 10 ? $" and {projects.Count - 10} more" : "") + ".";
+                       NamedFew.Of(projects.Select(p => Path.GetRelativePath(root, p).Replace('\\', '/')).ToList(), 10) + ".";
             project = projects[0];
         }
 
@@ -142,8 +141,7 @@ internal sealed class MsbuildPropertyTool(Execution.WorkspaceCodeConsent? consen
                 StandardErrorEncoding  = System.Text.Encoding.UTF8,
             };
             if (framework is not null) psi.ArgumentList.Add($"-p:TargetFramework={framework}");
-            psi.EnvironmentVariables["DOTNET_CLI_UI_LANGUAGE"] = "en";
-            psi.EnvironmentVariables["VSLANG"] = "1033";
+            ChildProcess.DotnetInEnglish(psi);
             // The exact name MSBuild reads (Traits.cs): Linux and macOS match an environment variable's name case-sensitively.
             psi.EnvironmentVariables["MsBuildLogPropertyTracking"] = "15";
             var run = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(BudgetSeconds), ct);
@@ -227,7 +225,7 @@ internal sealed class MsbuildPropertyTool(Execution.WorkspaceCodeConsent? consen
     {
         var full = file.Trim();
         var relative = Path.GetRelativePath(root, full);
-        if (!relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative)) return relative.Replace('\\', '/');
+        if (!PathSanitizer.LeavesRoot(relative)) return relative.Replace('\\', '/');
         var parts = full.Replace('\\', '/').Split('/');
         // …/<packages folder>/<id>/<version>/build/… — the global packages folder, wherever NUGET_PACKAGES puts it.
         var build = Array.FindLastIndex(parts, p => p is "build" or "buildTransitive" or "buildMultiTargeting");

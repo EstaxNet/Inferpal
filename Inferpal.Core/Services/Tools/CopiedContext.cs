@@ -33,9 +33,7 @@ internal static class CopiedContext
     /// tells the model: what was seen, that nothing was written, and what to send instead.</summary>
     internal static string Refusal(Copy copy, string shown)
     {
-        // Never cut between the two halves of a surrogate pair: a lone one is not valid text in the request.
-        var cut   = copy.First.Length > 80 && char.IsHighSurrogate(copy.First[79]) ? 79 : 80;
-        var first = copy.First.Length > 80 ? copy.First[..cut] + "…" : copy.First;
+        var first = copy.First.Length > 80 ? SafeTruncate.Truncate(copy.First, 80) + "…" : copy.First;
         var what = copy.Side switch
         {
             Side.Head => $"starts with {copy.Lines} lines that stay in the file before the text old_content matched",

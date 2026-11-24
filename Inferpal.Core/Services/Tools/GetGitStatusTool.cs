@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -141,7 +142,7 @@ internal class GetGitStatusTool : ITool
         sb.AppendLine();
 
         // ── log ───────────────────────────────────────────────────────────────
-        var log = await GitAsync("log --oneline -20", root, ct);
+        var log = await GitAsync(GitProcess.LogShaped + " log --oneline -20", root, ct);
         sb.AppendLine("=== git log --oneline -20 ===");
         // ⚠ Deliberately NOT gated: a repository with no commits yet answers 128 here (and to
         // `diff HEAD` below) because HEAD does not exist, and "(no commits)" is exactly right for
@@ -194,7 +195,7 @@ internal class GetGitStatusTool : ITool
             if (diffPath is not null)
             {
                 var relative = Path.GetRelativePath(root, diffPath).Replace('\\', '/');
-                if (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative))
+                if (PathSanitizer.LeavesRoot(relative))
                 {
                     var outside = $"Error: diff_path '{diffPath}' is outside the repository {root}.";
                     return new Report(sb.Append(outside).ToString(), State.Refused, outside);
@@ -314,7 +315,7 @@ internal class GetGitStatusTool : ITool
         var shown = diff[..cut];
 
         if (restricted)
-            return (shown, $"(diff cut at {cut:N0} of {diff.Length:N0} characters — the rest of these changes is not " +
+            return (shown, string.Create(CultureInfo.InvariantCulture, $"(diff cut at {cut:N0} of {diff.Length:N0} characters — the rest of these changes is not ") +
                            "shown: read the file itself with read_file)");
 
         var headers = DiffFileHeader.Matches(diff).Select(m => (m.Index, Path: m.Groups["path"].Value)).ToList();
@@ -328,7 +329,7 @@ internal class GetGitStatusTool : ITool
         }
 
         const int MaxNamed = 20;
-        var note = new StringBuilder($"(diff cut at {cut:N0} of {diff.Length:N0} characters.");
+        var note = new StringBuilder(string.Create(CultureInfo.InvariantCulture, $"(diff cut at {cut:N0} of {diff.Length:N0} characters."));
         if (cutShort is not null) note.Append($" Cut short: {cutShort}.");
         if (notShown.Count > 0)
         {

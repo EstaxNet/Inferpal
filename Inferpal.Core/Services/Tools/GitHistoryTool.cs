@@ -55,7 +55,7 @@ internal sealed class GitHistoryTool : ITool
     private const long MaxBytes = 2 * 1024 * 1024;
 
     /// <summary>Colour off: a user's <c>color.ui=always</c> would put escape codes in what the model reads.</summary>
-    private static readonly string[] NoColour = ["-c", "color.ui=never"];
+    private static readonly string[] LogShaped = GitProcess.LogShapedArgs;
 
     // A revision as git spells one: no space, never an option, nothing a shell would read.
     private static readonly Regex Revision = new(@"^[A-Za-z0-9][A-Za-z0-9._/@{}~^+-]{0,199}$",
@@ -91,7 +91,7 @@ internal sealed class GitHistoryTool : ITool
         var repo = GitProcess.WorkTreeOf(isFile ? Path.GetDirectoryName(target)! : Directory.Exists(target) ? target : workspace);
         if (repo is null) return Strings.GitNotRepo;
         var relative = Path.GetRelativePath(repo, target).Replace('\\', '/');
-        if (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative))
+        if (PathSanitizer.LeavesRoot(relative))
             return $"Error: '{target}' is outside the repository {repo}.";
         if (relative == ".") relative = string.Empty;
 
@@ -109,7 +109,7 @@ internal sealed class GitHistoryTool : ITool
     {
         var (count, notice) = ClampedArgument.Read(args, "max_count", DefaultCount, MinCount, MaxCount);
         // One more than asked: whether older commits exist is said, never guessed from a full page.
-        List<string> command = [.. NoColour, "log", "--date=short", "--format=%h %ad %an%x09%s", $"-n{count + 1}"];
+        List<string> command = [.. LogShaped, "log", "--date=short", "--format=%h %ad %an%x09%s", $"-n{count + 1}"];
         if (isFile) command.Add("--follow");
         if (relative.Length > 0) { command.Add("--"); command.Add(relative); }
         var (text, failure) = await RunAsync(command, repo, ct);
@@ -146,7 +146,7 @@ internal sealed class GitHistoryTool : ITool
         }
         // ⚠ HEAD, never the working tree: blaming the file on disk runs the clean filter its .gitattributes name, and
         // --no-textconv keeps the repository's textconv program from running. Uncommitted lines are therefore not covered.
-        var (text, failure) = await RunAsync([.. NoColour, "blame", "--no-textconv", "--date=short", "-L", $"{start},{end}", "HEAD", "--", relative], repo, ct);
+        var (text, failure) = await RunAsync([.. LogShaped, "blame", "--no-textconv", "--date=short", "-L", $"{start},{end}", "HEAD", "--", relative], repo, ct);
         if (failure is not null) return ClampedArgument.Above(notice, Strings.GitCommandFailed("blame", failure));
         var lines = text.TrimEnd().Split('\n').Select(l => l.TrimEnd('\r')).ToList();
         var fit = ToolOutputBudget.LinesThatFit(lines);
@@ -170,7 +170,7 @@ internal sealed class GitHistoryTool : ITool
             return $"Error: '{commit}' names no commit of this repository. Give a commit hash or a name such as HEAD~2.";
         List<string> command =
         [
-            .. NoColour, "-c", "diff.noprefix=false", "-c", "diff.mnemonicPrefix=false", "-c", "diff.relative=false",
+            .. LogShaped, "-c", "diff.noprefix=false", "-c", "diff.mnemonicPrefix=false", "-c", "diff.relative=false",
             "show", "--no-ext-diff", "--no-textconv", "--src-prefix=a/", "--dst-prefix=b/", "--date=short",
             "--format=commit %H%nAuthor: %an%nDate: %ad%n%n%B", "--stat", "--patch", sha,
         ];

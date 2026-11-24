@@ -68,8 +68,7 @@ internal static class RenameIntent
         var note = string.Empty;
         if (still.Count > 0)
         {
-            var named = string.Join(", ", still.Take(5).Select(p => Path.GetRelativePath(root, p)))
-                      + (still.Count > 5 ? $" and {still.Count - 5} more" : string.Empty);
+            var named = NamedFew.Of(still.Select(p => Path.GetRelativePath(root, p)).ToList());
             note = $"\n⚠ `{rename.Old}` still appears in {still.Count} file(s): {named}. If it is the same symbol, "
                  + (renameOffered ? $"{Call(rename)} renames every remaining occurrence in one call." : "rename it there too.");
         }

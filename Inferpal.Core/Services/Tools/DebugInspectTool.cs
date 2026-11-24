@@ -83,7 +83,7 @@ internal sealed class DebugInspectTool(IDebugSession session, IApprovalService a
         }
 
         if (!string.IsNullOrEmpty(action) && action != "state")
-            return $"Unknown action '{action}'. Valid: 'state' (default) or 'evaluate'.";
+            return $"Error: Unknown action '{action}'. Valid: 'state' (default) or 'evaluate'.";
 
         var paused = await session.GetStateAsync(ct);
         return paused is null ? NotPaused : DebugStateFormatter.Format(paused, root());

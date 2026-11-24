@@ -22,15 +22,15 @@ internal sealed class SignalTestDebugCapture : TestDebugCaptureBase
         await DebugCommandSignal.ChannelLock.WaitAsync(ct);
         try
         {
-            var request = new DebugCommandRequest(
-                Id:  Guid.NewGuid().ToString("N"),
-                Pid: System.Diagnostics.Process.GetCurrentProcess().Id,
-                Ts:  DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            var request = DebugCommandSignal.Stamped(new DebugCommandRequest(
+                Id:  "",
+                Pid: 0,
+                Ts:  0,
                 Op:  SignalDebugSession.OpCaptureTest,
                 Program: runnerDll,
                 Args:    [testDll, failingTestFqn],
                 Cwd:     cwd,
-                Root:    projectRoot);
+                Root:    projectRoot));
 
             var id = DebugCommandSignal.WriteRequest(request);
             if (id is null) return null;

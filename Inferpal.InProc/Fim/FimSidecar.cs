@@ -378,7 +378,7 @@ internal static class FimSidecar
     private static void Send(Stream stdin, string json)
     {
         var body   = Encoding.UTF8.GetBytes(json);
-        var header = Encoding.ASCII.GetBytes("Content-Length: " + body.Length + "\r\n\r\n");
+        var header = FrameHeaderReader.HeaderFor(body.Length);
         lock (stdin)
         {
             stdin.Write(header, 0, header.Length);

@@ -146,6 +146,25 @@ public class RunDiffReviewTests
         Assert.Equal(2, resets);   // once for the review, once before the held answer is given back
     }
 
+    /// <summary>A last turn that writes only a separator ("---", an invisible line in the chat) is no answer either, as the
+    /// chat reads it (ChatTurnPolicy.IsVisiblyEmpty): the held answer is given back.</summary>
+    [Fact]
+    public async Task AReviewThatEndsOnASeparatorAlone_GivesBackTheHeldAnswer()
+    {
+        var client = new ScriptedOllama(
+        [
+            Call(),
+            new("The rate is now 25%.", null, 0, 0),
+            new("---", null, 0, 0),
+        ]);
+        AgentResult result;
+        using (Inferpal.Services.Agent.RunDiffReview.Enter(() => { }))
+            result = await client.RunAgentAsync("m", [new("user", "Change the tax rate in pricing.py to 25%.")], new Writing(writes: true),
+                                                _ => { }, null, CancellationToken.None);
+
+        Assert.Equal("The rate is now 25%.", result.FinalResponse);
+    }
+
     /// <summary>Reference arm: outside a chat turn's scope (/tdd's fixes, /commit), the basic loop answers at once.</summary>
     [Fact]
     public async Task TheBasicLoop_OutsideAChatTurn_DoesNotReview()

@@ -138,7 +138,7 @@ internal static class DocChunker
         foreach (var l in lines)
         {
             var t = l.Trim();
-            if (t.Length > 0) return t.Length > 120 ? t[..120] : t;
+            if (t.Length > 0) return SafeTruncate.Truncate(t, 120);
         }
         return null;
     }

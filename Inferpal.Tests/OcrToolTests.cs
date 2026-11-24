@@ -96,4 +96,20 @@ public sealed class OcrToolTests : IDisposable
         Assert.Contains("holds text of its own", await Ocr("real.pdf"));
         Assert.Contains("is a folder", await Ocr("."));
     }
+
+    /// <summary>The OCR script exited, a child it left behind still holds its output: the reading returns, it never waits
+    /// for that child (nor past its budget), as every other run of a child process.</summary>
+    [Fact]
+    public void TheOcrRun_ReturnsWhenItsScriptExits_EvenIfABackgroundChildHoldsItsOutput()
+    {
+        var psi = OperatingSystem.IsWindows()
+            ? Inferpal.Services.Documents.ScriptProcess.Start("cmd.exe", "/c", "start /b ping -n 25 127.0.0.1 >nul & echo started")
+            : Inferpal.Services.Documents.ScriptProcess.Start("/bin/sh", "-c", "sleep 25 & echo started");
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var run = Inferpal.Services.Documents.PdfOcr.Run(psi, null, CancellationToken.None);
+
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(15), $"returned after {watch.Elapsed}");
+        Assert.Contains("started", run.Stdout, StringComparison.Ordinal);
+    }
 }

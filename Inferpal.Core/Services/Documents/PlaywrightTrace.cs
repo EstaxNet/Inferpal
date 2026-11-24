@@ -24,6 +24,9 @@ internal static class PlaywrightTrace
     /// <summary>The most entries a trace may declare: a trace holds a few files and its pictures; past it, the zip is not one.</summary>
     private const long MaxEntries = 100_000;
 
+    /// <summary>The most entries looked at, to recognize a trace and to read it; those past them are said not read.</summary>
+    private const int MaxEntriesRead = 10_000;
+
     /// <summary>The longest line parsed: longer ones are DOM snapshots or bodies, skipped.</summary>
     private const int MaxLine = 256 * 1024;
 
@@ -48,7 +51,7 @@ internal static class PlaywrightTrace
         try
         {
             using var zip = ZipFile.OpenRead(path);
-            return zip.Entries.Take(10_000).Any(e => IsTraceEntry(e.FullName));
+            return zip.Entries.Take(MaxEntriesRead).Any(e => IsTraceEntry(e.FullName));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or NotSupportedException)
         {
@@ -173,8 +176,8 @@ internal static class PlaywrightTrace
     {
         using var zip = ZipFile.OpenRead(path);
         // A zip may hold two entries of one name: the first is read.
-        var tooMany = zip.Entries.Count > 10_000;
-        var entries = zip.Entries.Take(10_000).GroupBy(e => e.FullName, StringComparer.Ordinal)
+        var tooMany = zip.Entries.Count > MaxEntriesRead;
+        var entries = zip.Entries.Take(MaxEntriesRead).GroupBy(e => e.FullName, StringComparer.Ordinal)
                                  .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
 
         string? title = null, version = null, browser = null, platform = null;
@@ -274,11 +277,11 @@ internal static class PlaywrightTrace
                 var snapshot = Prop(e, "snapshot");
                 var request = Prop(snapshot, "request");
                 var response = Prop(snapshot, "response");
-                var status = (int)(Num(response, "status") ?? 0);
+                var status = ApiText.HttpStatus(Num(response, "status"));
                 var failureText = Str(response, "_failureText");
                 var answer = status > 0 ? $"{status}{(Str(response, "statusText") is { Length: > 0 } text ? " " + OneLine(text, 60) : string.Empty)}"
                                         : "no response" + (failureText is { Length: > 0 } ? $" ({OneLine(failureText, 120)})" : string.Empty);
-                var flag = status is 0 or >= 400 ? "  ← failed" : string.Empty;
+                var flag = ApiText.Failed(status) ? "  ← failed" : string.Empty;
                 var duration = Num(snapshot, "time") is { } ms and >= 0 ? string.Create(CultureInfo.InvariantCulture, $" ({ms:0} ms)") : string.Empty;
                 // A start that does not read is no time: never the year 1 said as "+-63000000000 s".
                 DateTimeOffset? started = DateTimeOffset.TryParse(Str(snapshot, "startedDateTime"), CultureInfo.InvariantCulture,
@@ -435,7 +438,7 @@ internal static class PlaywrightTrace
         if (stopped.Count > 0)
             header.Append(CultureInfo.InvariantCulture,
                 $" Reading stopped after {MaxRead / (1024 * 1024)} MB decompressed in {string.Join(", ", stopped.Distinct().Take(5))}: the rest of it is not here.");
-        if (tooMany) header.Append(" The zip holds more than 10 000 entries: those past them are not read.");
+        if (tooMany) header.Append(CultureInfo.InvariantCulture, $" The zip holds more than {MaxEntriesRead:N0} entries: those past them are not read.");
         if (damaged.Count > 0) header.Append(" Damaged, not read whole: ").Append(string.Join(", ", damaged.Distinct().Take(5))).Append('.');
         header.Append(']');
         return new Reading(header + "\n\n" + sb.ToString().TrimEnd() + "\n", picture, pictureName);

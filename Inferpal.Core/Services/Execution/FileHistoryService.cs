@@ -1844,7 +1844,7 @@ internal class FileHistoryService
         // the other hand over for one folder — name two histories.
         var name  = Path.GetFileName(full);
         if (folds) name = name.ToLowerInvariant();
-        if (name.Length > 40) name = name[..(char.IsHighSurrogate(name[39]) ? 39 : 40)];   // never half a character
+        name = SafeTruncate.Truncate(name, 40);
         return name.Length == 0 ? hash : $"{name}-{hash}";
     }
 

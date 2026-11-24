@@ -241,7 +241,7 @@ internal static class ContextManager
                                             int systemTokens, int toolTokens, ISet<string> said, bool windowRead = true)
     {
         if (window <= 0) return null;
-        if (!windowRead && InferenceProviderFactory.KindOf(provider) != InferenceProviderFactory.Ollama) return null;
+        if (!WindowTrusted(windowRead, provider)) return null;
         var head = systemTokens + toolTokens;
         var share = (int)Math.Round(head * 100.0 / window);
         // Over the whole window the request is refused, and the refusal says why (MsgContextWontFit): one sentence, not two.
@@ -449,8 +449,12 @@ internal static class ContextManager
     /// Ollama's setting, which every request carries as <c>num_ctx</c>; 0 otherwise. A setting that only stands in for a
     /// window nobody could read never cuts the tools of a model that may well have far more.
     /// </summary>
-    internal static int CutWindow(int window, bool read, string provider) =>
-        read || InferenceProviderFactory.KindOf(provider) == InferenceProviderFactory.Ollama ? window : 0;
+    internal static int CutWindow(int window, bool read, string provider) => WindowTrusted(read, provider) ? window : 0;
+
+    /// <summary>Whether a window can be taken as the model's: one the server reported, or Ollama's setting, which every
+    /// request carries as <c>num_ctx</c>. Any other setting only stands in for a window nobody could read.</summary>
+    internal static bool WindowTrusted(bool read, string provider) =>
+        read || InferenceProviderFactory.KindOf(provider) == InferenceProviderFactory.Ollama;
 
     /// <summary>
     /// The registry an agent run sends: <paramref name="tools"/>, or the tools used most when every definition would take
@@ -492,7 +496,7 @@ internal static class ContextManager
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(Math.Max(10, config.CompactionTimeoutSeconds)));
+            cts.CancelAfter(TimeSpan.FromSeconds(HistoryCompaction.CompactionSeconds(config.CompactionTimeoutSeconds)));
 
             // The request is bounded by the SUMMARIZER's window: the utility model is not the chat model, and a server
             // may have loaded it with a smaller one.

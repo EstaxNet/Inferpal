@@ -222,12 +222,7 @@ internal sealed class SignalDebugSession : IDebugSession, IDebugRefusals
                         + "or a continue), which holds it until that command ends. Ask again once it has.");
         try
         {
-            var request = template with
-            {
-                Id  = Guid.NewGuid().ToString("N"),
-                Pid = System.Diagnostics.Process.GetCurrentProcess().Id,
-                Ts  = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-            };
+            var request = DebugCommandSignal.Stamped(template);
 
             var id = DebugCommandSignal.WriteRequest(request);
             if (id is null) return (null, "The debugger did not answer: the request could not be handed to Visual Studio.");

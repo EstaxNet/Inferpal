@@ -81,13 +81,9 @@ internal static class PdfOcr
 
     private static OcrReading Windows(string path, string? password, string dir, CancellationToken ct)
     {
-        var script = Path.Combine(dir, "ocr.ps1");
-        // With a byte order mark: Windows PowerShell 5.1 reads a script without one in the ANSI code page.
-        File.WriteAllText(script, WindowsScript, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
         var output = Path.Combine(dir, "text.txt");
-        var run = Run(Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
-                      ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script, "-Pdf", path, "-Out", output,
-                       "-MaxPages", MaxPages.ToString(CultureInfo.InvariantCulture)], password, ct);
+        var run = Run(ScriptProcess.WindowsPowerShell(dir, "ocr.ps1", WindowsScript, "-Pdf", path, "-Out", output,
+                                                      "-MaxPages", MaxPages.ToString(CultureInfo.InvariantCulture)), password, ct);
         if (run.Exit == 3)
             return new(OcrStatus.Unavailable, string.Empty, "Windows OCR", 0, 0,
                        "Windows has no OCR language installed: the person can add a language with its text recognition in Windows' language settings");
@@ -413,36 +409,17 @@ internal static class PdfOcr
 
     // ── Shared ──
 
-    private sealed record Ran(int Exit, string Stdout, string Stderr, bool TimedOut);
+    internal sealed record Ran(int Exit, string Stdout, string Stderr, bool TimedOut);
 
     /// <summary>A process run to its end or to <see cref="Budget"/> (tree killed); the password, when any, by the environment —
     /// never on a command line another process can read.</summary>
-    private static Ran Run(string file, IEnumerable<string> args, string? password, CancellationToken ct)
+    /// <remarks>⚠ Through <see cref="ChildProcess.RunAsync"/>: a child the script leaves behind holding its output is not
+    /// waited for. Waited for on the reader's own thread (no synchronization context), as the binlog replay is.</remarks>
+    internal static Ran Run(ProcessStartInfo psi, string? password, CancellationToken ct)
     {
-        var psi = new ProcessStartInfo
-        {
-            FileName = file, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, CreateNoWindow = true,
-            StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8,
-        };
-        foreach (var arg in args) psi.ArgumentList.Add(arg);
         if (!string.IsNullOrEmpty(password)) psi.Environment["INFERPAL_PDF_PASSWORD"] = password;
-        using var process = ChildProcess.Start(psi);
-        // No token on the reads: the pipes end when the process does, killed or not.
-        var stdout = process.StandardOutput.ReadToEndAsync();
-        var stderr = process.StandardError.ReadToEndAsync();
-        var until = DateTime.UtcNow + Budget;
-        var timedOut = false;
-        while (!process.WaitForExit(100))
-        {
-            if (!ct.IsCancellationRequested && DateTime.UtcNow <= until) continue;
-            try { process.Kill(entireProcessTree: true); } catch { /* already gone */ }
-            timedOut = true;
-            break;
-        }
-        process.WaitForExit();
-        ct.ThrowIfCancellationRequested();
-        // The process has exited: both reads are complete, nothing waits.
-        return new(timedOut ? -1 : process.ExitCode, stdout.GetAwaiter().GetResult(), stderr.GetAwaiter().GetResult(), timedOut);
+        var run = ChildProcess.RunAsync(psi, Budget, ct).GetAwaiter().GetResult();
+        return new(run.ExitCode, run.Stdout, run.Stderr, run.TimedOut);
     }
 
     /// <summary>A script's reading: the text it wrote page by page (kept when it was stopped), its LANG and PAGE lines.</summary>

@@ -258,12 +258,9 @@ internal sealed class CSharpSemanticIndex
 
         foreach (var index in indexes)
         {
-            // BELOW the root, not merely spelled like it: "C:\dev\App2\x.cs" starts with "C:\dev\App".
+            // Membership of a compilation: BELOW the root, the same rule as every other path question.
             var root = index._root.TrimEnd('\\', '/');
-            if (path.Length <= root.Length
-                // Membership of a compilation: the same rule as every other path question.
-                || !path.StartsWith(root, Services.PathComparer.Comparison)
-                || path[root.Length] is not ('\\' or '/')) continue;
+            if (!Services.PathComparer.IsBelow(path, root)) continue;
             // The full build's exclusions: a history snapshot (.inferpal/history/…_Foo.cs) or an obj/ file
             // added here became a second `class Foo`, and queries answered on the stale copy.
             if (WorkspaceScan.IsExcludedPath(path, root)) continue;
@@ -293,9 +290,7 @@ internal sealed class CSharpSemanticIndex
         foreach (var index in indexes)
         {
             var root = index._root.TrimEnd('\\', '/');
-            if (dirPath.Length <= root.Length
-                || !dirPath.StartsWith(root, Services.PathComparer.Comparison)
-                || dirPath[root.Length] is not ('\\' or '/')) continue;
+            if (!Services.PathComparer.IsBelow(dirPath, root)) continue;
             if (WorkspaceScan.IsExcludedPath(dirPath, root)) continue;
             try { index.UpdateDirectory(dirPath); }
             catch (Exception ex) { Diagnostics.Swallow("CSharpSemanticIndex.NotifyDirectoryChanged", ex); }
@@ -324,11 +319,7 @@ internal sealed class CSharpSemanticIndex
             // Not built yet: the first query reads the disk as it is.
             if (_compilation is null) return;
 
-            var prefix = dirPath.TrimEnd('\\', '/');
-            foreach (var known in _treesByPath.Keys
-                         .Where(p => p.Length > prefix.Length && p.StartsWith(prefix, Services.PathComparer.Comparison)
-                                     && p[prefix.Length] is '\\' or '/')
-                         .ToList())
+            foreach (var known in _treesByPath.Keys.Where(p => Services.PathComparer.IsBelow(p, dirPath)).ToList())
                 UpdateLocked(known);   // gone from disk → removed
 
             if (!Directory.Exists(dirPath)) return;
@@ -353,12 +344,6 @@ internal sealed class CSharpSemanticIndex
                     || k.StartsWith(folder + Path.AltDirectorySeparatorChar, PathComparer.Comparison))
                     _byRoot.Remove(key);
             }
-    }
-
-    /// <summary>Test seam: forget every cached workspace index.</summary>
-    internal static void ResetCacheForTests()
-    {
-        lock (_byRoot) _byRoot.Clear();
     }
 
     /// <summary>Files parsed into the compilation.</summary>

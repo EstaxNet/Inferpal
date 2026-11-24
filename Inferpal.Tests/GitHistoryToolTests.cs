@@ -122,6 +122,22 @@ public sealed class GitHistoryToolTests : IDisposable
         Assert.Contains("diff --git a/src/my file.cs b/src/my file.cs", report);
     }
 
+    [Fact]
+    public async Task APersonsColouredDiffs_DoNotColourWhatTheToolReads()
+    {
+        // color.diff=always colours a patch even with color.ui off: the escapes stood before "diff --git", and the filter
+        // that drops an excluded file's section by that header found nothing to cut.
+        Repo();
+        Assert.True(Git("config color.diff always") && Git("config color.ui always"), "`git config` failed: UNDECIDED.");
+
+        var shown = await RunAsync(new { commit = "HEAD~1" });
+        var log = await RunAsync(new { path = "src/my file.cs" });
+
+        Assert.DoesNotContain((char)27, shown);
+        Assert.DoesNotContain((char)27, log);
+        Assert.Contains("diff --git a/src/my file.cs b/src/my file.cs", shown);
+    }
+
     [Theory]
     [InlineData("--output=/tmp/x")]
     [InlineData("HEAD; rm -rf /")]
@@ -202,5 +218,18 @@ public sealed class GitHistoryToolTests : IDisposable
         Repo();
 
         await Assert.ThrowsAnyAsync<Exception>(() => RunAsync(new { path = "../.." }));
+    }
+
+    [Fact]
+    public async Task AFileOfTheRepositoryWhoseNameBeginsWithTwoDots_IsInIt()
+    {
+        // "..env.local" is a file of the root, not a path out of it: the one reader of "does it leave the root?" says so.
+        Repo();
+        Commit("..env.local", "KEY=1\n", "add the local env");
+
+        var report = await RunAsync(new { path = "..env.local" });
+
+        Assert.DoesNotContain("is outside the repository", report);
+        Assert.Contains("add the local env", report);
     }
 }

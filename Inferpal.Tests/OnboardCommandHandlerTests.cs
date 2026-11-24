@@ -382,7 +382,7 @@ public class OnboardCommandHandlerTests : IDisposable
         File.WriteAllText(Path.Combine(_root, "README.md"), "A fixture repository.");
 
         GitRunner git = (args, _) => Task.FromResult(
-            (args.StartsWith("log") ? "first commit\nsecond commit" : string.Empty, 0));
+            (args.Split(' ').Contains("log") ? "first commit\nsecond commit" : string.Empty, 0));
 
         var brief = await OnboardCommandHandler.BuildRepoBriefAsync(_root, git, CancellationToken.None);
 

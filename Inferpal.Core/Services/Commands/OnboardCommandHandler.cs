@@ -354,7 +354,7 @@ internal static class OnboardCommandHandler
         // (RunAsync appends stderr), so `fatal: …` was pasted under this heading and read as this
         // project's most recent commit. English on purpose, like the rest of the brief: its only
         // reader is the model.
-        var log = await git($"log --format=%s -n {MaxCommits}", ct);
+        var log = await git($"{GitProcess.LogShaped} log --format=%s -n {MaxCommits}", ct);
         sb.Append("\n## Recent commit subjects\n");
         if (log.ExitCode != 0)
             sb.Append("(unavailable — git said: ").Append(GitProcess.FirstLine(log.Output)).Append(")\n");

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -145,7 +146,7 @@ internal sealed class SystemKeychain
         if (!process.WaitForExit(CallTimeout))
         {
             try { process.Kill(entireProcessTree: true); } catch { /* already gone */ }
-            throw new TimeoutException($"{Path.GetFileName(file)} did not answer within {CallTimeout.TotalSeconds:N0} s.");
+            throw new TimeoutException(string.Create(CultureInfo.InvariantCulture, $"{Path.GetFileName(file)} did not answer within {CallTimeout.TotalSeconds:N0} s."));
         }
         process.WaitForExit();
         return new(process.ExitCode, stdout.GetAwaiter().GetResult(), stderr.GetAwaiter().GetResult());

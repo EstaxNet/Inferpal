@@ -210,8 +210,7 @@ internal static class FixPromptBuilder
     }
 
     /// <summary>Paths for a note: the first ten, and how many more — a note does not become the list it qualifies.</summary>
-    private static string Named(List<string> paths) =>
-        paths.Count <= 10 ? string.Join(", ", paths) : $"{string.Join(", ", paths.Take(10))} and {paths.Count - 10} more";
+    private static string Named(List<string> paths) => Tools.NamedFew.Of(paths, 10);
 
     /// <summary>
     /// A file that does not fit: its head, then the lines around each diagnostic, each window in its own

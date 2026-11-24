@@ -141,7 +141,7 @@ internal sealed class FimRpcLoop
                        + JsonSerializer.Serialize(text) + (failing ? ",\"failing\":true" : "")
                        + (notice is null ? "" : ",\"notice\":" + JsonSerializer.Serialize(notice)) + "}";
             var body   = Encoding.UTF8.GetBytes(json);
-            var header = Encoding.ASCII.GetBytes($"Content-Length: {body.Length}\r\n\r\n");
+            var header = FrameHeaderReader.HeaderFor(body.Length);
             lock (_output)
             {
                 _output.Write(header, 0, header.Length);

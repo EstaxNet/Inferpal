@@ -30,6 +30,24 @@ internal static class CaptureSaving
         return (path, null);
     }
 
+    /// <summary>
+    /// The file <paramref name="saveTo"/> names, or why the call is refused before any step plays: a call never acts for a
+    /// capture it cannot save — a bad name (<see cref="Target"/>), no history to back it up, a file the run has not seen
+    /// (<see cref="Unseen"/>), one the person's rules refuse writing.
+    /// </summary>
+    /// <param name="what">What is saved, as the refusals name it: "capture", "picture".</param>
+    internal static (string? Path, string? Refusal) BeforeSteps(string? saveTo, string root, FileHistoryService? history,
+                                                                IApprovalService approval, string what)
+    {
+        var (path, refusal) = Target(saveTo, root);
+        if (refusal is not null || path is null) return (null, refusal);
+        if (history is null) return (null, $"Error: save_to is not available here: the {what} cannot be saved.");
+        if (Unseen(history, root, path) is { } unseen) return (null, "Error: save_to: " + unseen + " Nothing was played.");
+        if (approval.Refuses("write_file", path))
+            return (null, $"Error: save_to: the person's rules refuse writing '{path}'. Nothing was played.");
+        return (path, null);
+    }
+
     /// <summary>The first words of every line <see cref="SaveAsync"/> says: the caller tells by them whether the save was
     /// answered at all.</summary>
     internal const string SavedPrefix = "The capture is saved to ", NotSavedPrefix = "The capture was not saved to ";

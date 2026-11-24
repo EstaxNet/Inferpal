@@ -26,6 +26,10 @@ internal sealed class FrameHeaderReader
     /// <summary>A header line longer than this is not a header line.</summary>
     internal const int MaxLineChars = 4 * 1024;
 
+    /// <summary>The header block that frames a body of <paramref name="bodyLength"/> bytes: the one writer of what this
+    /// class reads.</summary>
+    internal static byte[] HeaderFor(int bodyLength) => Encoding.ASCII.GetBytes("Content-Length: " + bodyLength + "\r\n\r\n");
+
     internal enum Outcome
     {
         /// <summary>The header block continues.</summary>

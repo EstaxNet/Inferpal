@@ -45,7 +45,7 @@ internal static class NotebookText
         }
         var read = text.ToString().Trim();
         if (read.Length == 0) return new(string.Empty, 0, 0, DocumentProblem.NoText);
-        return new(read.Length > PdfText.MaxChars ? read[..PdfText.MaxChars] : read, 0, 0, DocumentProblem.None, stoppedAt);
+        return new(PdfText.Capped(read), 0, 0, DocumentProblem.None, stoppedAt);
     }
 
     private static string Language(JsonElement root)

@@ -52,6 +52,9 @@ internal static class CoverageTools
     /// <summary>The whole suite, measured before and after: long suites exist; one that hangs is said, never waited for.</summary>
     internal static readonly TimeSpan SuiteDeadline = TimeSpan.FromMinutes(15);
 
+    /// <summary>The deadline of a measure: the suite's without a test file, a file's run with one.</summary>
+    internal static TimeSpan DeadlineFor(string? testFile) => testFile is null ? SuiteDeadline : FileRunDeadline;
+
     /// <summary>English and plain output, read the same everywhere; and no Python bytecode — pytest caches each test file it
     /// rewrites, and a file set aside would leave its <c>__pycache__</c> entry behind.</summary>
     private static readonly IReadOnlyDictionary<string, string> Environment = new Dictionary<string, string>

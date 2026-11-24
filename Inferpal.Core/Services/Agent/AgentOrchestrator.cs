@@ -265,9 +265,7 @@ internal sealed class AgentOrchestrator
 
         var tailChars = cap / 4;
         var head      = SafeTruncate.Truncate(result, cap - tailChars);
-        var tailStart = result.Length - tailChars;
-        if (char.IsLowSurrogate(result[tailStart])) tailStart++;   // never start on half a pair
-        var tail = result[tailStart..];
+        var tail      = SafeTruncate.Tail(result, tailChars);
         // ⚠ A result cut before is counted from what it WAS: its own mark falls in the middle, and the second count said
         // "of 8 180" for a 50 000-character output.
         var whole = CutMark.Match(result) is { Success: true } m && int.TryParse(m.Groups["of"].Value, out var was) && was > result.Length
@@ -318,7 +316,7 @@ internal sealed class AgentOrchestrator
     // answer). Tail-truncated: injected context (workspace, mentions) is prepended to the user
     // turn, so the actual question sits at the end.
     internal static string TaskSnippet(string task) =>
-        task.Length <= 400 ? task : "…" + task[^400..];
+        task.Length <= 400 ? task : "…" + SafeTruncate.Tail(task, 400);
 
     // Number of trailing messages the intra-run summary leaves out of what it summarizes (the most recent act/observe
     // cycle), and the placeholder that replaces an elided tool result.
@@ -354,9 +352,12 @@ internal sealed class AgentOrchestrator
     /// </para>
     /// </remarks>
     internal static int EstimateConversationTokens(IReadOnlyList<ChatMessageDto> messages) =>
-        messages.Count > 0 && messages[0].Role == "system"
-            ? EstimateTokens(messages.Skip(1))
-            : EstimateTokens(messages);
+        EstimateTokens(messages.Skip(SystemPromptCount(messages)));
+
+    /// <summary>How many messages at the head of <paramref name="messages"/> are the system prompt: 1 when the FIRST one is
+    /// a system message, else 0 (a history restored without a prompt keeps its first turn).</summary>
+    internal static int SystemPromptCount(IReadOnlyList<ChatMessageDto> messages) =>
+        messages.Count > 0 && messages[0].Role == "system" ? 1 : 0;
 
     /// <summary>The characters <see cref="EstimateTokens"/> counts — content plus tool-call payloads.
     /// Shared with <c>OpenAiCompatibleClient.EstimateRequestTokens</c>.</summary>
@@ -518,7 +519,7 @@ internal sealed class AgentOrchestrator
     /// </summary>
     /// <remarks>⚠ One reader for the summary and the elision: thresholds computed apart let the summary fire, or be
     /// skipped, on another budget than the elision it precedes.</remarks>
-    internal static (int Trigger, int Target) CompactionBudget(int window) => (window * 8 / 10, window * 7 / 10);
+    internal static (int Trigger, int Target) CompactionBudget(int window) => (HistoryCompaction.Trigger(window), window * 7 / 10);
 
     /// <summary>Where the last batch starts: the first message after the last assistant message of the run that called
     /// tools — its results — or, in a run without one, the last tool result.</summary>
@@ -631,7 +632,7 @@ internal sealed class AgentOrchestrator
         int    omitted;
         try
         {
-            var timeoutSec = Math.Max(10, _config.CompactionTimeoutSeconds);
+            var timeoutSec = HistoryCompaction.CompactionSeconds(_config.CompactionTimeoutSeconds);
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(timeoutSec));
 
@@ -809,7 +810,7 @@ internal sealed class AgentOrchestrator
     internal static int SynthesisDigestBudget(int window, int headChars, int instructionChars, double scale = 1.0)
     {
         if (window <= 0) return 24000;
-        var windowChars = (int)(window * 4 / Math.Max(1.0, scale));
+        var windowChars = (int)(window * CharsPerToken / Math.Max(1.0, scale));
         return Math.Clamp(windowChars - windowChars / 4 - headChars - instructionChars, 0, windowChars * 6 / 10);
     }
 
@@ -1462,7 +1463,7 @@ internal sealed class AgentOrchestrator
             else
             {
                 // ── No tool calls ─────────────────────────────────────────────
-                var visible = MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(turn.TextContent));
+                var visible = !ChatTurnPolicy.IsVisiblyEmpty(turn.TextContent);
 
                 // (1) Empty / think-only stall: the model returned nothing worth showing and has
                 //     done no work yet. The same ACT call usually succeeds on retry — this is a

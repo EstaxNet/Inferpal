@@ -559,7 +559,7 @@ internal sealed class PackageManagerLookup : IPackageLookup
         // Inferpal starts this command, not the user: no telemetry of the SDK, no banner, English output.
         psi.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
         psi.Environment["DOTNET_NOLOGO"]               = "1";
-        psi.Environment["DOTNET_CLI_UI_LANGUAGE"]      = "en";
+        ChildProcess.DotnetInEnglish(psi);
         psi.Environment["NO_UPDATE_NOTIFIER"]          = "1";
         try
         {

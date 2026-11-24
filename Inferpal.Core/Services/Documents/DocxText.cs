@@ -25,10 +25,7 @@ internal static class DocxText
         // A DOCX protected by a password is no zip but an encrypted OLE container: locked, unless the password opens it.
         if (OfficeCrypto.IsCompoundFile(bytes))
         {
-            // An encryption this reader does not open is said unreadable, never a password card no password can pass.
-            if (!OfficeCrypto.Opens(bytes)) return new(string.Empty, 0, 0, DocumentProblem.Unreadable);
-            if (password is null || OfficeCrypto.Decrypt(bytes, password, ct) is not { } package)
-                return new(string.Empty, 0, 0, DocumentProblem.Encrypted);
+            if (OfficeCrypto.Unlock(bytes, password, ct, out var shut) is not { } package) return new(string.Empty, 0, 0, shut);
             bytes = package;
         }
         using var zip = new ZipArchive(new MemoryStream(bytes), ZipArchiveMode.Read);

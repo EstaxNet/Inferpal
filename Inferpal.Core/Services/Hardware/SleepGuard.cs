@@ -44,7 +44,9 @@ internal sealed class SleepGuard
 
     private readonly IPlatform _platform;
     private readonly object _lock = new();
-    private readonly AsyncLocal<FlowLink?> _flow = new();
+    /// <summary>The holds this flow took and still holds, newest first — tokens, so that a task the turn started
+    /// knows which are alive.</summary>
+    private readonly AsyncLocal<FlowChain<HoldToken>?> _flow = new();
     private readonly HashSet<HoldToken> _live = [];
     private IDisposable? _held;
     private Timer? _releaseTimer;
@@ -72,10 +74,10 @@ internal sealed class SleepGuard
     public IDisposable Hold()
     {
         var hold = new HoldToken(this);
-        _flow.Value = new FlowLink(hold, _flow.Value);
         Step step;
         lock (_lock)
         {
+            _flow.Value = FlowChain<HoldToken>.Push(hold, _flow.Value, _live.Contains);
             _live.Add(hold);
             step = UpdateLocked();
         }
@@ -95,10 +97,10 @@ internal sealed class SleepGuard
         lock (_lock)
         {
             for (var link = _flow.Value; link is not null; link = link.Next)
-                if (_live.Contains(link.Hold))
+                if (_live.Contains(link.Item))
                 {
-                    link.Hold.Pauses++;
-                    mine.Add(link.Hold);
+                    link.Item.Pauses++;
+                    mine.Add(link.Item);
                 }
             if (mine.Count == 0) return NoOp.Instance;
             step = UpdateLocked();
@@ -246,9 +248,6 @@ internal sealed class SleepGuard
         try { held?.Dispose(); }
         catch (Exception ex) { Diagnostics.Swallow("SleepGuard.Release", ex); }
     }
-
-    /// <summary>The holds this flow took, newest first — tokens, so that a task the turn started knows which are alive.</summary>
-    private sealed record FlowLink(HoldToken Hold, FlowLink? Next);
 
     private sealed class HoldToken(SleepGuard owner) : IDisposable
     {

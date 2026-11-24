@@ -104,14 +104,7 @@ internal static class SyntaxGuard
         return string.Join("\n", reasons);
     }
 
-    private static string Shown(string path, string? root)
-    {
-        if (string.IsNullOrEmpty(root)) return path;
-        var relative = Path.GetRelativePath(root, path);
-        return relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative)
-            ? path
-            : relative.Replace('\\', '/');
-    }
+    private static string Shown(string path, string? root) => Governance.ContentExclusions.Shown(path, root);
 
     /// <summary>The first parse error of <paramref name="text"/> as <paramref name="path"/>'s language reads it, or
     /// <c>null</c>: none, a language not checked, or no answer from its parser.</summary>

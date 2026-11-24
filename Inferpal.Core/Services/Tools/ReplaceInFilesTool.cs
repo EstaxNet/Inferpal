@@ -101,7 +101,7 @@ internal sealed class ReplaceInFilesTool : ITool
         }
 
         var singleFile = File.Exists(path);
-        if (!singleFile && !Directory.Exists(path)) return Strings.DirNotFound(path);
+        if (!singleFile && !Directory.Exists(path)) return ToolFailure.Said(Strings.DirNotFound(path));
         var walkFailed = false;
         var walk = singleFile ? [path] : WorkspaceScan.EnumerateFiles(path, filePattern, out walkFailed);
         if (walkFailed)

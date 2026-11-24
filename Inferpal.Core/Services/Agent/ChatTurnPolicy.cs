@@ -411,7 +411,7 @@ internal static class ChatTurnPolicy
 
     /// <summary>Truncates a tool output for its result bubble (full output stays in the history).</summary>
     public static string BuildToolPreview(string output, int maxLength = 500) =>
-        output.Length > maxLength ? output[..maxLength] + Strings.MsgTruncated : output;
+        output.Length > maxLength ? SafeTruncate.Truncate(output, maxLength) + Strings.MsgTruncated : output;
 
     /// <summary>The heading the user's message carries when the product injected blocks ahead of it.</summary>
     public const string UserRequestHeader = "## User request";
@@ -653,7 +653,7 @@ internal static class ChatTurnPolicy
     /// <summary>Single-line preview: capped at <paramref name="max"/> chars (ellipsis added), newlines flattened.</summary>
     public static string OneLinePreview(string text, int max)
     {
-        var capped = text.Length > max ? text[..max] + "…" : text;
+        var capped = text.Length > max ? SafeTruncate.Truncate(text, max) + "…" : text;
         return capped.Replace('\n', ' ');
     }
 

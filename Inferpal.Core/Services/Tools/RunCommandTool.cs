@@ -14,6 +14,10 @@ namespace Inferpal.Services.Tools;
 /// </summary>
 internal sealed class RunCommandTool : ITool, IDisposable
 {
+    /// <summary>How the answer of a command started in the background begins: no verdict of the command, and the check
+    /// verdict reads it so.</summary>
+    internal const string BackgroundStarted = "Started background job '";
+
     private readonly IApprovalService _approval;
     private readonly ShellSession _session;
     private readonly BackgroundShellRegistry _background = new();
@@ -187,7 +191,7 @@ internal sealed class RunCommandTool : ITool, IDisposable
             // What the job changes after this call returns happens outside any watch: said by /undo-run, not promised.
             WorkTreeBracket.NoteUncovered(UncoveredReason.Background);
             return (vanished is null ? "" : ShellSession.VanishedNote(vanished, startCwd))
-                 + $"Started background job '{id}'. Use action='poll' id='{id}' to read its output, action='stop' id='{id}' to terminate it.";
+                 + $"{BackgroundStarted}{id}'. Use action='poll' id='{id}' to read its output, action='stop' id='{id}' to terminate it.";
         }
 
         if (repeat is { } measure) return await MeasureAsync(command, runIn, measure.Item1, measure.Item2, ct);

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Globalization;
+using System.Text.Json;
 using Inferpal.Config;
 using Inferpal.Models;
 using Inferpal.Services.Docs;
@@ -110,7 +111,7 @@ internal class ToolRegistry : IToolRegistry, IDisposable
     private (string? Run, Dictionary<string, (bool Exists, long Length, DateTime Written)> Files) _lastLook = (null, []);
 
     /// <summary>The tools that look at what an app shows.</summary>
-    private static readonly HashSet<string> LookTools = new(StringComparer.Ordinal)
+    internal static readonly HashSet<string> LookTools = new(StringComparer.Ordinal)
         { "view_page", "interact_page", "view_window", "interact_window" };
 
     /// <summary>What a person sees of an app: styles, markup, components, window layouts.</summary>
@@ -171,8 +172,8 @@ internal class ToolRegistry : IToolRegistry, IDisposable
             foreach (var side in new[] { backup, exists ? change.OriginalPath : null }.OfType<string>())
             {
                 var length = new FileInfo(side).Length;
-                if (length > RunDiffFileBytes) return $"(too large to show: {length / 1024:N0} KB)";
-                if (TextFileEncoding.IsBinaryFile(side)) return $"(binary, {length / 1024:N0} KB)";
+                if (length > RunDiffFileBytes) return string.Create(CultureInfo.InvariantCulture, $"(too large to show: {length / 1024:N0} KB)");
+                if (TextFileEncoding.IsBinaryFile(side)) return string.Create(CultureInfo.InvariantCulture, $"(binary, {length / 1024:N0} KB)");
             }
             var before = backup is null ? "" : await TextFileEncoding.ReadTextAsync(backup, ct);
             var after = exists ? await TextFileEncoding.ReadTextAsync(change.OriginalPath, ct) : "";

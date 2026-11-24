@@ -154,7 +154,7 @@ internal sealed class SystemPromptBuilder(InferpalConfig config, string? editorN
         try
         {
             var rel = Path.GetRelativePath(root, path);
-            if (rel.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(rel)) return null;
+            if (Tools.PathSanitizer.LeavesRoot(rel)) return null;
             return rel.Replace('\\', '/');
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException) { return null; }

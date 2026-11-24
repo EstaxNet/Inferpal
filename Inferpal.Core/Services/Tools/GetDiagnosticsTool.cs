@@ -63,14 +63,11 @@ internal class GetDiagnosticsTool : ITool
     private static readonly Regex _diagLine = new(
         @":\s*(error|warning)(?:\s+\w+)?\s*:", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
-    internal static bool OutputHasErrors(string output)
-    {
-        if (string.IsNullOrEmpty(output)) return false;
-        // These answers quote dotnet's own error line as their reason: read as a finding, the step goes red over code that
-        // was never compiled.
-        if (StoppedBeforeTheCompiler(UnderTheNote(output).Split('\n')[0].TrimEnd('\r'))) return false;
-        return _diagLine.IsMatch(output) || _panelLine.IsMatch(output);
-    }
+    /// <summary>Whether a step of <c>get_diagnostics</c> shows errors — the red step, the Fix button, ACP's "failed": exactly
+    /// when its verdict is <see cref="BuildVerdict.Errors"/>, the one reader the end-of-turn notice and <c>/fix-build</c>
+    /// share. A build stopped before the compiler, or killed at its budget, quotes error lines and is no finding; a build
+    /// that only warned is none either.</summary>
+    internal static bool OutputHasErrors(string output) => ReadVerdict(output) == BuildVerdict.Errors;
 
     private static bool StoppedBeforeTheCompiler(string firstLine) =>
         firstLine == CommandLineRefused || firstLine == NotRestored || firstLine == EnvironmentRefused;
@@ -82,11 +79,6 @@ internal class GetDiagnosticsTool : ITool
         var after = output.IndexOf("\n\n", StringComparison.Ordinal);
         return after < 0 ? string.Empty : output[(after + 2)..];
     }
-
-    // A diagnostic line of the editor panel (`rel(l,c): error ts 2304: …`): its source stands between the severity and
-    // the code, which the build's shape does not allow.
-    private static readonly Regex _panelLine = new(
-        @"\(\d+,\d+\):\s*(error|warning)\s", RegexOptions.IgnoreCase | RegexOptions.Compiled, RegexBudget.Default);
 
     // Errors only — warnings don't warrant auto-fix iterations.
     // Exposed as internal so SmartFixValidator can reuse without duplicating the pattern.
@@ -377,8 +369,7 @@ internal class GetDiagnosticsTool : ITool
             StandardErrorEncoding  = System.Text.Encoding.UTF8,
         };
         // In English, as for run_tests: NuGet Audit's lines are read by their words (VulnerablePackages).
-        psi.EnvironmentVariables["DOTNET_CLI_UI_LANGUAGE"] = "en";
-        psi.EnvironmentVariables["VSLANG"]                 = "1033";
+        ChildProcess.DotnetInEnglish(psi);
 
         // 90 s, after which the build tree is killed: abandoned instead, MSBuild node processes
         // outlive the turn that started them.
@@ -389,6 +380,17 @@ internal class GetDiagnosticsTool : ITool
 
     /// <summary>How the note above a build made by choice starts — <see cref="ReadVerdict"/> reads under it.</summary>
     internal const string NotBuiltPrefix = "(This build covered ";
+
+    /// <summary>The build targets of <paramref name="folder"/> other than <paramref name="chosen"/>, shallowest first,
+    /// relative to it: the other solutions when a solution was chosen (a solution builds its projects), the other projects
+    /// when a project was.</summary>
+    internal static List<string> OthersBeside(string folder, string chosen) =>
+        WorkspaceScan.ShallowestFirst(
+                (SolutionFiles.IsSolution(chosen) ? WorkspaceScan.EnumerateFiles(folder, "*").Where(SolutionFiles.IsSolution)
+                                                  : WorkspaceScan.EnumerateFiles(folder, "*.csproj"))
+                .Where(f => !PathComparer.Default.Equals(f, chosen)))
+            .Select(f => Path.GetRelativePath(folder, f).Replace('\\', '/'))
+            .ToList();
 
     /// <summary>
     /// The solutions — or, with none, the projects — of the workspace that a build of <paramref name="built"/> chosen by
@@ -404,15 +406,10 @@ internal class GetDiagnosticsTool : ITool
     {
         var start    = SearchStart(root);
         var solution = SolutionFiles.IsSolution(built);
-        var kind     = solution
-            ? WorkspaceScan.EnumerateFiles(start, "*").Where(SolutionFiles.IsSolution)
-            : WorkspaceScan.EnumerateFiles(start, "*.csproj");
-        var others = WorkspaceScan.ShallowestFirst(kind.Where(f => !PathComparer.Default.Equals(f, built)))
-                                  .Select(f => Path.GetRelativePath(start, f).Replace('\\', '/'))
-                                  .ToList();
+        var others = OthersBeside(start, built);
         if (others.Count == 0) return null;
 
-        var named = string.Join(", ", others.Take(5)) + (others.Count > 5 ? $" and {others.Count - 5} more" : "");
+        var named = NamedFew.Of(others);
         return NotBuiltPrefix + Path.GetFileName(built) + (solution ? "" : " and what it references")
              + $". Not built: {named} — pass 'path' to build one.)";
     }
@@ -426,7 +423,9 @@ internal class GetDiagnosticsTool : ITool
     /// <summary>What the tool answers for a path that is not a .NET solution or project: nothing was built.</summary>
     internal const string NotADotnetProject = "Error: get_diagnostics builds .NET solutions and projects, and this is neither";
 
-    private static bool IsProjectFile(string path) =>
+    /// <summary>A project file <c>dotnet build</c> and <c>dotnet test</c> take: C#, F#, Visual Basic, or a traversal
+    /// <c>.proj</c>.</summary>
+    internal static bool IsProjectFile(string path) =>
         Path.GetExtension(path).ToLowerInvariant() is ".csproj" or ".fsproj" or ".vbproj" or ".proj";
 
     /// <summary>The budget of one build, after which the tree is killed — named by the command deadline's settings hint.</summary>

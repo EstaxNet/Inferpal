@@ -829,7 +829,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
             {
                 // An interface it changed in an app it started, not looked at since: once, it looks before it answers.
                 if (reviewReset is not null && !lookAsked && i + 4 < maxIterations && !turn.CutAtLimit && !turn.StoppedRepeating
-                    && MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(turn.TextContent))
+                    && !ChatTurnPolicy.IsVisiblyEmpty(turn.TextContent)
                     && ModelPrompts.LookToolsOffered(tools.Definitions.Select(d => d.Function.Name)) is { Count: > 0 } looks
                     && tools.UnseenInterfaceChange() is { } unseen)
                 {
@@ -842,7 +842,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                 // An answer cut at the limit or stopped repeating is said as it is: its notice and Continue stay its own.
                 if (reviewReset is not null && !diffReviewed && i + 3 < maxIterations && tools.WritesInRun is > 0
                     && !turn.CutAtLimit && !turn.StoppedRepeating
-                    && MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(turn.TextContent))
+                    && !ChatTurnPolicy.IsVisiblyEmpty(turn.TextContent)
                     && await tools.RunDiffAsync(Math.Min(12_000, Math.Max(2_000, window / 2)), ct) is { Length: > 0 } runDiff)
                 {
                     diffReviewed = true;
@@ -858,7 +858,7 @@ internal abstract class InferenceProviderBase : IInferenceProvider
                 }
                 // The turn after a review that gives no answer leaves the one the review held — its narration emptied
                 // first, so no front-end keeps it as the answer.
-                if (heldTurn is not null && !MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(turn.TextContent)))
+                if (heldTurn is not null && ChatTurnPolicy.IsVisiblyEmpty(turn.TextContent))
                     return Held(heldTurn);
                 return new AgentResult(turn.TextContent, executions, messages, totalTokens, lastPromptEval,
                                        AnswerCut: turn.CutAtLimit, AnswerRepeating: turn.StoppedRepeating,

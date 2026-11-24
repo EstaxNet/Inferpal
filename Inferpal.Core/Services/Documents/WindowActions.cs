@@ -69,11 +69,7 @@ internal static class WindowActions
             ChildProcessResult run;
             if (OperatingSystem.IsWindows())
             {
-                var script = Path.Combine(dir, "act.ps1");
-                // With a byte order mark: Windows PowerShell 5.1 reads a script without one in the ANSI code page.
-                await File.WriteAllTextAsync(script, WindowsScript, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true), ct);
-                run = await ChildProcess.RunAsync(WindowCapture.Start(Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
-                    "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script,
+                run = await ChildProcess.RunAsync(ScriptProcess.WindowsPowerShell(dir, "act.ps1", WindowsScript,
                     "-RootPid", root, "-StepsFile", stepsFile, "-WaitSeconds", waitSeconds), budget, ct, Line);
             }
             else if (OperatingSystem.IsLinux())
@@ -82,13 +78,13 @@ internal static class WindowActions
                     return new([], "python3 is not installed: the window's controls cannot be reached (python3, python3-gi, gir1.2-atspi-2.0)");
                 var script = Path.Combine(dir, "act.py");
                 await File.WriteAllTextAsync(script, LinuxScript, ct);
-                run = await ChildProcess.RunAsync(WindowCapture.Start(python, script, root, stepsFile, waitSeconds), budget, ct, Line);
+                run = await ChildProcess.RunAsync(ScriptProcess.Start(python, script, root, stepsFile, waitSeconds), budget, ct, Line);
             }
             else if (OperatingSystem.IsMacOS())
             {
                 var script = Path.Combine(dir, "act.js");
                 await File.WriteAllTextAsync(script, MacScript, ct);
-                run = await ChildProcess.RunAsync(WindowCapture.Start("/usr/bin/osascript", "-l", "JavaScript", script, root, stepsFile, waitSeconds),
+                run = await ChildProcess.RunAsync(ScriptProcess.Start("/usr/bin/osascript", "-l", "JavaScript", script, root, stepsFile, waitSeconds),
                                                   budget, ct, Line);
             }
             else return new([], "this system has no way to act in a window");

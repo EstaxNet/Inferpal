@@ -155,4 +155,20 @@ public class SqlPlanTextTests
         Assert.True(text.Length <= 7000, text.Length.ToString());
         Assert.Contains("more]", text);
     }
+
+    [Fact]
+    public void APlanCutToFit_EndsOnItsCutNote_NeverOnTheRawNoteAfterIt()
+    {
+        // Ranked operators and "worth a look" past the budget: the text is cut at a line, and says it once.
+        var scans = string.Join(",", Enumerable.Range(0, 300).Select(i =>
+            $"{{ \"Node Type\": \"Seq Scan\", \"Parent Relationship\": \"Member\", \"Relation Name\": \"events_p{i}\", \"Total Cost\": 10, \"Plan Rows\": 5000, \"Actual Rows\": 5000, \"Actual Loops\": 1, \"Actual Total Time\": 3, \"Filter\": \"{new string('x', 5000)}\" }}"));
+        var plan = $"[{{ \"Plan\": {{ \"Node Type\": \"Append\", \"Total Cost\": 3000, \"Plan Rows\": 1500000, \"Actual Rows\": 1500000, \"Actual Loops\": 1, \"Actual Total Time\": 950, \"Plans\": [{scans}] }} }}]";
+        var text = SqlPlanText.Summarize("parts.json", plan, 1500)!;
+        Assert.EndsWith("\n[Cut to fit: read_file with start_line pages the raw plan.]", text);
+        Assert.DoesNotContain("[The raw plan:", text);
+        Assert.True(text.Length <= 1500, text.Length.ToString());
+
+        // A whole plan still points at the raw file.
+        Assert.EndsWith("\n[The raw plan: read_file with start_line.]", Read("pg-explain.json"));
+    }
 }

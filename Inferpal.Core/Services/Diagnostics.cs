@@ -200,7 +200,9 @@ internal static class Diagnostics
         if (trimmed.Length == 0 || trimmed.StartsWith("#", StringComparison.Ordinal)) return false;
 
         var excerpt = line.Trim();
-        if (excerpt.Length > MaxExcerptChars) excerpt = excerpt[..MaxExcerptChars] + "…";
+        // Never half a surrogate pair (SafeTruncate's rule: this file is also compiled into the net472 in-proc assembly).
+        if (excerpt.Length > MaxExcerptChars)
+            excerpt = excerpt[..(char.IsHighSurrogate(excerpt[MaxExcerptChars - 1]) ? MaxExcerptChars - 1 : MaxExcerptChars)] + "…";
         Record(context, $"{reason}: {excerpt}");
         return true;
     }

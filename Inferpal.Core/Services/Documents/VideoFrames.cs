@@ -200,11 +200,7 @@ internal static class VideoFrames
 
     private static async Task<(IReadOnlyList<Frame>?, TimeSpan, string?)> WindowsAsync(string dir, string input, CancellationToken ct)
     {
-        var script = Path.Combine(dir, "frames.ps1");
-        // With a byte order mark: Windows PowerShell 5.1 reads a script without one in the ANSI code page.
-        await File.WriteAllTextAsync(script, WindowsScript, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true), ct).ConfigureAwait(false);
-        var psi = HeicImage.Start(Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
-                                  "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script,
+        var psi = ScriptProcess.WindowsPowerShell(dir, "frames.ps1", WindowsScript,
                                   "-Video", input, "-Out", dir, "-Count", Count.ToString(CultureInfo.InvariantCulture));
         var run = await ChildProcess.RunAsync(psi, null, ct).ConfigureAwait(false);
         // ⚠ Only times come back on the console: the frames are where this code put them (dir/frameN.jpg), never a path
@@ -271,7 +267,7 @@ internal static class VideoFrames
     private static async Task<(IReadOnlyList<Frame>?, TimeSpan, string?)> FfmpegAsync(string dir, string input, CancellationToken ct)
     {
         // A graphical app's PATH lacks Homebrew's folders on macOS: they are looked in too.
-        static string? Find(string tool) => HeicImage.OnPath(tool)
+        static string? Find(string tool) => Shell.ShellLauncher.FindOnPath(tool)
             ?? new[] { "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin" }.Select(f => Path.Combine(f, tool)).FirstOrDefault(File.Exists);
         if (Find("ffmpeg") is not { } ffmpeg)
             return (null, TimeSpan.Zero, OperatingSystem.IsMacOS()
@@ -280,13 +276,13 @@ internal static class VideoFrames
         double seconds = 0;
         if (Find("ffprobe") is { } ffprobe)
         {
-            var probe = await ChildProcess.RunAsync(HeicImage.Start(ffprobe, "-v", "error", "-show_entries", "format=duration",
+            var probe = await ChildProcess.RunAsync(ScriptProcess.Start(ffprobe, "-v", "error", "-show_entries", "format=duration",
                                                                     "-of", "csv=p=0", input), null, ct).ConfigureAwait(false);
             _ = double.TryParse(probe.Stdout.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds);
         }
         // Frames at even times when the duration is known; once a second otherwise, at most ten minutes of them.
         var rate = seconds > 0 ? Count / seconds : 1.0;
-        var run = await ChildProcess.RunAsync(HeicImage.Start(ffmpeg, "-v", "error", "-y", "-i", input, "-vf",
+        var run = await ChildProcess.RunAsync(ScriptProcess.Start(ffmpeg, "-v", "error", "-y", "-i", input, "-vf",
                                                               "fps=" + rate.ToString("0.######", CultureInfo.InvariantCulture),
                                                               "-frames:v", seconds > 0 ? (Count + 1).ToString(CultureInfo.InvariantCulture) : "600",
                                                               Path.Combine(dir, "f%04d.png")), null, ct).ConfigureAwait(false);

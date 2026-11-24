@@ -35,7 +35,8 @@ public sealed class RunTestsRunnerKeywordTests : IDisposable
     {
         var report = await RunAsync(new { runner });
 
-        Assert.StartsWith($"Unknown runner '{runner}'. Use one of: auto, dotnet, pytest, npm, cargo, go", report);
+        Assert.StartsWith($"Error: Unknown runner '{runner}'. Use one of: auto, dotnet, pytest, npm, cargo, go", report);
+        Assert.True(Inferpal.Services.Execution.ToolFailure.IsFailure(report));   // a refused call, never a run
         Assert.DoesNotContain("No test runner detected", report);
     }
 
@@ -88,5 +89,38 @@ public sealed class RunTestsRunnerKeywordTests : IDisposable
         var report = await RunAsync(new { runner = "auto" });
 
         Assert.StartsWith("No test runner detected", report);
+    }
+
+    [Theory]
+    [InlineData("go.mod", "go")]
+    [InlineData("Cargo.toml", "cargo")]
+    public void AModuleFileAboveTheWorkspace_ChoosesNoRunner_NothingRunsOutsideIt(string marker, string runner)
+    {
+        // The person agreed to run the workspace's code: a go.mod in a folder above it is another project, and its
+        // tests would run with their working folder outside the workspace.
+        var workspace = Path.Combine(_dir, "tool");
+        Directory.CreateDirectory(workspace);
+        File.WriteAllText(Path.Combine(_dir, marker), "");
+        Assert.Equal("unknown", RunTestsTool.DetectRunner(workspace, null, workspace));
+
+        // Reference arm: the same file in the workspace, or above the asked path but still inside it, is its project.
+        var nested = Path.Combine(workspace, "pkg");
+        Directory.CreateDirectory(nested);
+        File.WriteAllText(Path.Combine(workspace, marker), "");
+        Assert.Equal(runner, RunTestsTool.DetectRunner(nested, nested, workspace));
+    }
+
+    [Theory]
+    [InlineData("tests/Lib.Tests.fsproj")]
+    [InlineData("tests/Lib.Tests.vbproj")]
+    [InlineData("tests/Lib.Tests.csproj")]   // reference arm
+    public void AnFSharpOrVisualBasicProject_IsRunByDotnet_AsACSharpOneIs(string project)
+    {
+        // dotnet test runs these projects: named by path, or the only kind of project in the folder.
+        Assert.Equal("dotnet", RunTestsTool.RunnerOfPath(project));
+        var file = Path.Combine(_dir, project.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        File.WriteAllText(file, "<Project Sdk=\"Microsoft.NET.Sdk\" />");
+        Assert.Equal("dotnet", RunTestsTool.DetectRunner(_dir, null, _dir));
     }
 }

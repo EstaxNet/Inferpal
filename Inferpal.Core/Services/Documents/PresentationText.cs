@@ -22,10 +22,7 @@ internal static class PresentationText
     {
         if (OfficeCrypto.IsCompoundFile(bytes))
         {
-            // An encryption this reader does not open is said unreadable, never a password card no password can pass.
-            if (!OfficeCrypto.Opens(bytes)) return new(string.Empty, 0, 0, DocumentProblem.Unreadable);
-            if (password is null || OfficeCrypto.Decrypt(bytes, password, ct) is not { } package)
-                return new(string.Empty, 0, 0, DocumentProblem.Encrypted);
+            if (OfficeCrypto.Unlock(bytes, password, ct, out var shut) is not { } package) return new(string.Empty, 0, 0, shut);
             bytes = package;
         }
         SpreadsheetText.RefuseInflatingPast(bytes);
@@ -65,7 +62,7 @@ internal static class PresentationText
         }
         if (order.Count == 0 || withoutText == order.Count) return new(string.Empty, order.Count, 0, DocumentProblem.NoText);
         var read = text.ToString().TrimEnd();
-        return new(read.Length > PdfText.MaxChars ? read[..PdfText.MaxChars] : read, order.Count, withoutText, DocumentProblem.None, stoppedAt);
+        return new(PdfText.Capped(read), order.Count, withoutText, DocumentProblem.None, stoppedAt);
     }
 
     private static string RelsOf(string part) =>

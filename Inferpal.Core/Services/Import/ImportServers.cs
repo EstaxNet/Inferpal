@@ -6,9 +6,10 @@ namespace Inferpal.Services.Import;
 /// <summary>A model server as Inferpal reaches it: one of its providers and the address.</summary>
 internal sealed record ImportServer(string Provider, string BaseUrl)
 {
-    /// <summary>The same server, whatever the trailing <c>/</c> or <c>/v1</c> and the case of the host.</summary>
+    /// <summary>The same server, whatever the trailing <c>/</c> or <c>/v1</c>, the case of the host, and the spelling of
+    /// this machine (<see cref="ServerScan.SameAddress"/>).</summary>
     public bool SameAs(string provider, string baseUrl) =>
-        InferenceProviderFactory.Canonical(provider) == Provider && ImportServers.Comparable(baseUrl) == ImportServers.Comparable(BaseUrl);
+        InferenceProviderFactory.Canonical(provider) == Provider && ServerScan.SameAddress(baseUrl, BaseUrl);
 }
 
 /// <summary>
@@ -96,13 +97,4 @@ internal static class ImportServers
     internal static string? Authority(string? url) =>
         Uri.TryCreate(url?.Trim(), UriKind.Absolute, out var uri) ? uri.Authority.ToLowerInvariant() : null;
 
-    /// <summary>An address as two spellings of one server compare: no trailing <c>/</c> or <c>/v1</c>, host lower-cased.</summary>
-    internal static string Comparable(string url)
-    {
-        var u = url.Trim().TrimEnd('/');
-        if (u.EndsWith("/v1", StringComparison.OrdinalIgnoreCase)) u = u[..^3];
-        return Uri.TryCreate(u, UriKind.Absolute, out var uri)
-            ? uri.GetLeftPart(UriPartial.Authority).ToLowerInvariant() + uri.AbsolutePath.TrimEnd('/')
-            : u.ToLowerInvariant();
-    }
 }

@@ -110,10 +110,10 @@ internal static class ColumnarData
             var rows = reader.RowGroups.Sum(g => g.RowCount);
             // Counted before anything is decoded: a small file can hold millions of rows of repeated values.
             if (rows * Math.Max(1, columns.Count) > maxCells)
-                throw new DocumentLimitException($"it holds {rows:N0} rows of {columns.Count} columns, more than {maxCells:N0} values; ask the user for a smaller extract");
+                throw new DocumentLimitException(string.Create(CultureInfo.InvariantCulture, $"it holds {rows:N0} rows of {columns.Count} columns, more than {maxCells:N0} values; ask the user for a smaller extract"));
             var declared = reader.Metadata?.RowGroups?.Sum(g => g.TotalByteSize) ?? 0;
             if (declared > MaxDecodedBytes)
-                throw new DocumentLimitException($"it declares {declared / (1024 * 1024):N0} MB once uncompressed; ask the user for a smaller extract");
+                throw new DocumentLimitException(string.Create(CultureInfo.InvariantCulture, $"it declares {declared / (1024 * 1024):N0} MB once uncompressed; ask the user for a smaller extract"));
             groups = reader.RowGroupCount;
         }
         var tally = new Tally();
@@ -190,7 +190,7 @@ internal static class ColumnarData
                     if (columns.Count > maxColumns) throw new DocumentLimitException($"it has more than {maxColumns} columns");
                 }
                 if ((cells += (long)batch.Length * Math.Max(1, columns.Count)) > maxCells)
-                    throw new DocumentLimitException($"it holds more than {maxCells:N0} values; ask the user for a smaller extract");
+                    throw new DocumentLimitException(string.Create(CultureInfo.InvariantCulture, $"it holds more than {maxCells:N0} values; ask the user for a smaller extract"));
                 var arrays = Enumerable.Range(0, batch.ColumnCount).Select(batch.Column).ToList();
                 for (var r = 0; r < batch.Length; r++)
                 {
@@ -370,7 +370,7 @@ internal static class ColumnarData
         protected override IMemoryOwner<byte> AllocateInternal(int length, out int bytesAllocated)
         {
             if (Interlocked.Add(ref _allocated, length) > budget)
-                throw new DocumentLimitException($"it declares more than {budget / (1024 * 1024):N0} MB once uncompressed; ask the user for a smaller extract");
+                throw new DocumentLimitException(string.Create(CultureInfo.InvariantCulture, $"it declares more than {budget / (1024 * 1024):N0} MB once uncompressed; ask the user for a smaller extract"));
             return base.AllocateInternal(length, out bytesAllocated);
         }
     }

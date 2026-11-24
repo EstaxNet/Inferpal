@@ -116,7 +116,7 @@ internal sealed class DebugControlTool(
             "step_into"        => await ResumeAsync(DebugStepKind.Into, ct),
             "step_out"         => await ResumeAsync(DebugStepKind.Out, ct),
             "stop"             => await StopAsync(ct),
-            _                  => $"Unknown action '{action}'. Valid: set_breakpoint, clear_breakpoint, "
+            _                  => $"Error: Unknown action '{action}'. Valid: set_breakpoint, clear_breakpoint, "
                                 + "list_breakpoints, start, continue, step_over, step_into, step_out, stop.",
         };
     }

@@ -16,8 +16,9 @@ internal static class FimTemplate
     /// <summary>A templated FIM prompt plus the stop tokens that bound the generated middle.</summary>
     internal readonly record struct FimSpec(string Prompt, string[] Stop, bool IsFim);
 
-    // Generic stop for the prefix-only fallback: three blank lines (mirrors the Ollama FIM path).
-    private static readonly string[] FallbackStop = ["\n\n\n"];
+    /// <summary>The stop of a completion no FIM token bounds: three blank lines — the prefix-only fallback here, Ollama's
+    /// suffix path and the compatible servers' completion.</summary>
+    internal static readonly string[] FallbackStop = ["\n\n\n"];
 
     /// <remarks>⚠ The family's tokens come from its profile (<see cref="Inference.ModelProfiles"/>), which gives them
     /// only to the families MEASURED to complete better with them: every Qwen model has <c>&lt;|fim_prefix|&gt;</c> in

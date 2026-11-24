@@ -41,13 +41,13 @@ public sealed class SemanticIndexInvalidationTests : IDisposable
     {
         TestRagStore.Redirect();
         Directory.CreateDirectory(_root);
-        CSharpSemanticIndex.ResetCacheForTests();
+        CSharpSemanticIndex.Forget(_root);
     }
 
     public void Dispose()
     {
         foreach (var s in _services) s.Dispose();
-        CSharpSemanticIndex.ResetCacheForTests();
+        CSharpSemanticIndex.Forget(_root);
         try { Directory.Delete(_root, recursive: true); } catch { }
     }
 

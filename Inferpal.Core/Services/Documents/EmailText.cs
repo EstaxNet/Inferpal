@@ -156,7 +156,7 @@ internal static class EmailText
         if (attachments.Count > 0) text.Append('\n').Append("Attachments (not included): ").Append(string.Join(", ", attachments)).Append('\n');
         var read = text.ToString().Trim();
         if (read.Length == 0) return new(string.Empty, 0, 0, DocumentProblem.NoText);
-        return new(read.Length > PdfText.MaxChars ? read[..PdfText.MaxChars] : read, 0, 0, DocumentProblem.None,
+        return new(PdfText.Capped(read), 0, 0, DocumentProblem.None,
                    read.Length > PdfText.MaxChars ? 1 : 0);
     }
 }

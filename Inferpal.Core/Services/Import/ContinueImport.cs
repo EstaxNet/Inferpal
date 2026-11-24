@@ -428,7 +428,7 @@ internal static class ContinueImport
         var url = Text(node["startUrl"]) ?? Text(node["url"]);
         if (url is null || !DocSite.IsValidHttpUrl(url)) { plan.Skip(path, ImportSkipCause.Empty); return; }
         var title = Text(node["title"]) ?? Text(node["name"]);
-        if (DocSite.Parse(plan.Context.Current.DocSitesJson).Any(s => ImportServers.Comparable(s.StartUrl) == ImportServers.Comparable(url)))
+        if (DocSite.Parse(plan.Context.Current.DocSitesJson).Any(s => DocSite.SameUrl(s.StartUrl, url)))
             plan.Skip(path, ImportSkipCause.AlreadyConfigured, url);
         else plan.Add(ImportItemKind.DocSite, new AddDocSite(title ?? url, url), [path]);
     }

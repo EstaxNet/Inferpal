@@ -270,6 +270,17 @@ public class InlineEditReindenterTests
     }
 
     [Fact]
+    public void ARustLifetime_IsNoCharacterLiteral_TheBraceAfterItOpensTheBody()
+    {
+        // 'a is a lifetime, as FimCompletion reads it: read as a literal running to the next quote, it hid "{" and the
+        // body was left at the function's own level.
+        Assert.Equal("    fn f<'a>(x: &'a str) {\n        x\n    }",
+                     R("    fn f<'a>(x: &'a str) {\n        x\n    }", "fn f<'a>(x: &'a str) {\nx\n}"));
+        // Reference arm: a real character literal still hides what it holds.
+        Assert.Equal("    var c = '{';\n    x", R("    var c = '{';\n    x", "var c = '{';\nx"));
+    }
+
+    [Fact]
     public void EmptyOrWhitespaceEdited_ReturnedAsIs()
     {
         Assert.Equal("", R("    code", ""));

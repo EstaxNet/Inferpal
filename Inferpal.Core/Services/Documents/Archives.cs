@@ -25,6 +25,18 @@ internal static class Archives
     /// <summary>The most bytes one entry gives out.</summary>
     internal const long MaxEntryBytes = 8L * 1024 * 1024;
 
+    /// <summary>Why an entry past <see cref="MaxEntryBytes"/> is not read out; <paramref name="inner"/> names it, or "it".</summary>
+    internal static string TooLarge(string? inner) =>
+        (inner is null ? "it" : $"'{inner}'") + $" is larger than {MaxEntryBytes / (1024 * 1024)} MB once read out";
+
+    /// <summary>Why an encrypted entry that a password opens still does not read.</summary>
+    private static string NotReadOut(ZipCryptOutcome outcome, string? inner) => outcome switch
+    {
+        ZipCryptOutcome.TooLarge    => TooLarge(inner),
+        ZipCryptOutcome.Unsupported => "its encryption or compression method is not one Inferpal reads",
+        _                           => "it could not be decrypted (damaged)",
+    };
+
     /// <summary>The most entries a listing reads.</summary>
     internal const int MaxEntries = 20_000;
 
@@ -139,10 +151,7 @@ internal static class Archives
         if (outcome == ZipCryptOutcome.WrongPassword) return false;
         if (outcome != ZipCryptOutcome.Opened)
         {
-            UnreadableAfterPassword[(archive, entry)] = outcome == ZipCryptOutcome.TooLarge
-                ? $"it is larger than {MaxEntryBytes / (1024 * 1024)} MB once read out"
-                : outcome == ZipCryptOutcome.Unsupported ? "its encryption or compression method is not one Inferpal reads"
-                : "it could not be decrypted (damaged)";
+            UnreadableAfterPassword[(archive, entry)] = NotReadOut(outcome, null);
             return null;
         }
         Passwords.GetOrAdd(archive, _ => new(StringComparer.Ordinal))[password] = 0;
@@ -173,13 +182,9 @@ internal static class Archives
                 if (outcome == ZipCryptOutcome.Opened) return (opened, null, false);
                 if (outcome != ZipCryptOutcome.WrongPassword) last = outcome;
             }
-            return last switch
-            {
-                ZipCryptOutcome.WrongPassword => (null, "it is protected by a password", true),
-                ZipCryptOutcome.TooLarge      => (null, $"'{inner}' is larger than {MaxEntryBytes / (1024 * 1024)} MB once read out", false),
-                ZipCryptOutcome.Unsupported   => (null, "its encryption or compression method is not one Inferpal reads", false),
-                _                             => (null, "it could not be decrypted (damaged)", false),
-            };
+            return last == ZipCryptOutcome.WrongPassword
+                ? (null, "it is protected by a password", true)
+                : (null, NotReadOut(last, inner), false);
         }
         var plain = ReadPlain(archive, inner, ct);
         return (plain.Bytes, plain.Problem, false);
@@ -226,7 +231,7 @@ internal static class Archives
         {
             ct.ThrowIfCancellationRequested();
             if (copy.Length + read > MaxEntryBytes)
-                return (null, $"'{inner}' is larger than {MaxEntryBytes / (1024 * 1024)} MB once read out");
+                return (null, TooLarge(inner));
             copy.Write(buffer, 0, read);
         }
         return (copy.ToArray(), null);

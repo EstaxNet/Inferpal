@@ -107,6 +107,11 @@ internal static class DebugCommandSignal
         catch { return false; }
     }
 
+    /// <summary><paramref name="request"/> under a new id, stamped by this process on the clock its reader judges its age
+    /// by (<see cref="SignalFile.Now"/>).</summary>
+    internal static DebugCommandRequest Stamped(DebugCommandRequest request) =>
+        request with { Id = Guid.NewGuid().ToString("N"), Pid = SignalFile.CurrentPid, Ts = SignalFile.Now.ToUnixTimeMilliseconds() };
+
     /// <summary>Publishes a request and returns its id, or <c>null</c> when it could not be written.</summary>
     internal static string? WriteRequest(DebugCommandRequest request)
     {

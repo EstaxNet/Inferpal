@@ -25,12 +25,12 @@ public sealed class RenameImplicitUsingsTests : IDisposable
     public RenameImplicitUsingsTests()
     {
         Directory.CreateDirectory(_root);
-        CSharpSemanticIndex.ResetCacheForTests();
+        CSharpSemanticIndex.Forget(_root);
     }
 
     public void Dispose()
     {
-        CSharpSemanticIndex.ResetCacheForTests();
+        CSharpSemanticIndex.Forget(_root);
         try { Directory.Delete(_root, recursive: true); } catch { }
     }
 

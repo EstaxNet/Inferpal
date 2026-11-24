@@ -36,6 +36,15 @@ internal static class PathComparer
     public static StringComparison Comparison =>
         OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
+    /// <summary>Whether <paramref name="path"/> is inside <paramref name="folder"/>: strictly below it, never merely
+    /// spelled like it ("C:\dev\App2\x.cs" starts with "C:\dev\App"). The text alone, no link resolved: what a path
+    /// reaches is <c>PathSanitizer</c>'s question.</summary>
+    public static bool IsBelow(string path, string folder)
+    {
+        var prefix = folder.TrimEnd('\\', '/');
+        return path.Length > prefix.Length && path.StartsWith(prefix, PathComparer.Comparison) && path[prefix.Length] is '\\' or '/';
+    }
+
     /// <summary>Whether two folders are the same — a trailing separator or, where the volume folds it, a different case
     /// changes nothing; two empty roots are the same "no workspace". The reader of "has the workspace root moved?" for the
     /// state that belongs to one root.</summary>

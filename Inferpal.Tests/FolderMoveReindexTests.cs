@@ -101,7 +101,7 @@ public sealed class FolderMoveReindexTests : IDisposable
     [Fact]
     public void TheCSharpIndex_FollowsAMovedFolder()
     {
-        CSharpSemanticIndex.ResetCacheForTests();
+        CSharpSemanticIndex.Forget(_root);
         var index = CSharpSemanticIndex.ForWorkspace(_root);
         index.Build();
         Assert.Contains("Old", index.FindReferences("Widget").Declaration!.RelPath);   // witness: indexed where it was
@@ -121,7 +121,7 @@ public sealed class FolderMoveReindexTests : IDisposable
     {
         var svc = IndexedService();
         await WaitUntilAsync(async () => await ChunksOf(svc, OldFile) > 0, "the initial pass indexed the file");
-        CSharpSemanticIndex.ResetCacheForTests();
+        CSharpSemanticIndex.Forget(_root);
         var index = CSharpSemanticIndex.ForWorkspace(_root);
         index.Build();
 

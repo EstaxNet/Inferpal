@@ -356,8 +356,8 @@ internal static partial class TicketReader
         // ⚠ A bot's review runs to tens of thousands of characters: past the bound, the cut is said.
         if (body.Length > MaxVerdictChars)
         {
-            var keep = char.IsHighSurrogate(body[MaxVerdictChars - 1]) ? MaxVerdictChars - 1 : MaxVerdictChars;
-            body = body[..keep] + $"\n[… {body.Length - keep} more characters of this review on the ticket's page]";
+            var kept = SafeTruncate.Truncate(body, MaxVerdictChars);
+            body = kept + $"\n[… {body.Length - kept.Length} more characters of this review on the ticket's page]";
         }
         return $"— {Author(r)}: {state ?? "commented"}{(body.Length > 0 ? $":\n{body}" : "")}";
     }

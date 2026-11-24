@@ -147,6 +147,20 @@ public sealed class ImportTests : IDisposable
 
     // ── Continue, config.yaml ───────────────────────────────────────────────
 
+    [Theory]
+    [InlineData("LOCAL_KEY=abc123 # my personal key\n")]
+    [InlineData("LOCAL_KEY=\"abc123\" # my personal key\n")]
+    [InlineData("LOCAL_KEY=old\nLOCAL_KEY=abc123\n")]   // set twice: the last value, as dotenv reads it
+    public void AnEnvValue_IsReadAsDotenvReadsIt_ItsCommentNeverSentAsTheKey(string env)
+    {
+        Directory.CreateDirectory(Path.Combine(_home, ".continue"));
+        File.WriteAllText(Path.Combine(_home, ".continue", ".env"), env);
+
+        var plan = ContinueImport.Read(Write("config.yaml", ContinueYaml), Context(NewConfig()));
+
+        Assert.Equal("abc123", Effect<SetBackend>(plan).ApiKey);
+    }
+
     [Fact]
     public void AContinueYaml_KeepsTheServerOfItsFirstChatModel_AndItsRoles_ThroughTheAnchor()
     {
@@ -285,6 +299,32 @@ public sealed class ImportTests : IDisposable
     /// title the user's own source held — another address —, the apply replaced that source while the card said
     /// "added". It takes a free id; the same address already there stays "already in place".
     /// </summary>
+    [Fact]
+    public void TheServerInPlace_SpelledLocalhostInsteadOf127001_IsNoChangeOfServer()
+    {
+        // localhost, 127.0.0.1 and [::1] are one machine (ServerScan.SameAddress): offered as a change, the apply replaced
+        // the server by itself, and an import without the key wiped the one in place.
+        var config = NewConfig();
+        var inPlace = "abc123";   // the value ReadYaml's .env gives: the same key, the same server
+        config.Provider = "openai-compatible";
+        config.BaseUrl  = "http://localhost:8080/v1";
+        config.ApiKey   = inPlace;
+        config.Save();
+
+        Assert.DoesNotContain(ReadYaml(config).Items, i => i.Effect is SetBackend);
+    }
+
+    [Fact]
+    public void ADocSourceAtAnotherVersionsAddress_IsAnotherSource_NotOneInPlace()
+    {
+        // A documentation address compares as a page's (DocSite.SameUrl): "/v1" is a version of the docs, never the
+        // server suffix a model address drops.
+        var config = NewConfig();
+        config.DocSitesJson = DocSite.Serialize([new DocSite("rust-v1", "Rust book v1", "https://doc.rust-lang.org/book/v1")]);
+
+        Assert.Contains(ReadYaml(config).Items, i => i.Effect is AddDocSite);
+    }
+
     [Fact]
     public void AnImportedDocSource_UnderTheTitleOfTheUsersOwn_IsAddedBesideIt()
     {

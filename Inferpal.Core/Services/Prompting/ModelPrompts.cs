@@ -103,7 +103,7 @@ internal static class ModelPrompts
         {
             var oneLine = string.Join(" ", description.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
             sb.Append("- ").Append(name).Append(": ")
-              .Append(oneLine.Length > SkillDescriptionChars ? oneLine[..SkillDescriptionChars] + "…" : oneLine).Append('\n');
+              .Append(oneLine.Length > SkillDescriptionChars ? SafeTruncate.Truncate(oneLine, SkillDescriptionChars) + "…" : oneLine).Append('\n');
         }
         return sb.ToString().TrimEnd();
     }
@@ -196,7 +196,7 @@ internal static class ModelPrompts
 
     /// <summary>The look tools a turn sends, for <see cref="AgentLookAfterInterfaceChange"/>; none: no look is asked for.</summary>
     public static IReadOnlyCollection<string> LookToolsOffered(IEnumerable<string> sent) =>
-        [.. sent.Where(n => n is "view_page" or "interact_page" or "view_window" or "interact_window")];
+        [.. sent.Where(Execution.ToolRegistry.LookTools.Contains)];
 
     /// <summary>Nudge when an ACT response is a new JSON plan instead of a tool call or an answer (AgentOrchestrator.LooksLikePlanEcho).</summary>
     public const string AgentPlanEchoNudge =

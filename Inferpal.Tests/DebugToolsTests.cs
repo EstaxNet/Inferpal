@@ -168,6 +168,19 @@ public class DebugToolsTests
     // ── Consent: the session, not the step ──────────────────────────────────────────
 
     [Fact]
+    public async Task AnUnknownAction_IsARefusedCall_NeverWorkDone()
+    {
+        var control = await Control(new FakeDebugSession(), new StubApproval(approve: true))
+            .ExecuteAsync(Args("""{"action":"jump"}"""), CancellationToken.None);
+        var inspect = await new DebugInspectTool(new FakeDebugSession(), new StubApproval(approve: true), () => TestPaths.P(@"C:\ws"))
+            .ExecuteAsync(Args("""{"action":"jump"}"""), CancellationToken.None);
+
+        Assert.True(ToolFailure.IsFailure(control), control);
+        Assert.True(ToolFailure.IsFailure(inspect), inspect);
+        Assert.Contains("Unknown action 'jump'", control);
+    }
+
+    [Fact]
     public async Task Start_WhenDenied_DoesNotLaunchTheProgram()
     {
         var session  = new FakeDebugSession();
@@ -375,6 +388,7 @@ public class DebugToolsTests
         Assert.Equal(1, refused.Calls);
         Assert.Equal("Purge() == 0  |  n={n}", refused.LastSubject);   // what the permission rules match
         Assert.Equal(Strings.DebugBreakpointCodeCancelled, result);
+        Assert.True(ToolFailure.IsFailure(result) && ToolFailure.IsRefusal(result));   // read as the person's refusal
         Assert.Empty(session.Breakpoints);
 
         // Reference arm: a breakpoint with neither asks nothing.
@@ -788,6 +802,7 @@ public class DebugToolsTests
         Assert.Equal("__import__('os').system('calc')", approval.LastSubject);
         Assert.Null(session.LastExpression);
         Assert.Equal(Strings.DebugEvaluateCancelled, result);
+        Assert.True(ToolFailure.IsFailure(result) && ToolFailure.IsRefusal(result));   // read as the person's refusal
         // Reading the state still asks nothing.
         await tool.ExecuteAsync(Args("""{}"""), CancellationToken.None);
         Assert.Equal(1, approval.Calls);

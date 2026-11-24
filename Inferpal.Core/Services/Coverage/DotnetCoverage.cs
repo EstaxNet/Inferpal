@@ -61,14 +61,14 @@ internal sealed class DotnetCoverage(string root, string target, IReadOnlyList<s
         if (dotnetCoverage is null)
         {
             test.AddRange(["--collect:XPlat Code Coverage", "--results-directory", outDir]);
-            (code, output, timedOut) = await CoverageTools.RunAsync("dotnet", test, root, Deadline(testFile), ct);
+            (code, output, timedOut) = await CoverageTools.RunAsync("dotnet", test, root, CoverageTools.DeadlineFor(testFile), ct);
         }
         else
         {
             var xml = Path.Combine(outDir, "coverage.cobertura.xml");
             (code, output, timedOut) = await CoverageTools.RunAsync(
                 dotnetCoverage, ["collect", "dotnet " + string.Join(' ', test.Select(Quote)), "-f", "cobertura", "-o", xml],
-                root, Deadline(testFile), ct);
+                root, CoverageTools.DeadlineFor(testFile), ct);
         }
         return new CoverageRun(Merged(outDir), Passed(code, output), output, timedOut);
     }
@@ -93,8 +93,6 @@ internal sealed class DotnetCoverage(string root, string target, IReadOnlyList<s
     }
 
     private static bool Passed(int code, string output) => code == 0 && !CoverageTools.Matches(NoTest, output);
-
-    private static TimeSpan Deadline(string? testFile) => testFile is null ? CoverageTools.SuiteDeadline : CoverageTools.FileRunDeadline;
 
     /// <summary>The classes a test file declares, as a filter: the new file's tests and nothing else.</summary>
     internal static string Filter(string testFile)

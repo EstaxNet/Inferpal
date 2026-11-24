@@ -63,7 +63,7 @@ internal static class SessionRecap
         var recap = MarkdownParser.StripThinkTags(result.FinalResponse);
         if (string.IsNullOrWhiteSpace(recap)) return new SessionRecapResult(null, null);
         // What was left out, as the conversation's messages and the summary held — never a head counted as messages.
-        var start = history.Count > 0 && history[0].Role == "system" ? 1 : 0;
+        var start = AgentOrchestrator.SystemPromptCount(history);
         var lost  = request.Omitted > 0
             ? HistoryCompaction.Omitted(history, new CompactionPlan(CompactionAction.Compact, start, history.Count - start, 0, 0), request.Omitted)
             : (Messages: 0, Summary: false);
@@ -79,7 +79,7 @@ internal static class SessionRecap
     internal static SummarizeRequest BuildRequest(
         IReadOnlyList<ChatMessageDto> history, string? previousRecap, int budgetChars)
     {
-        var turns = history.Count > 0 && history[0].Role == "system" ? history.Skip(1).ToList() : history.ToList();
+        var turns = history.Skip(AgentOrchestrator.SystemPromptCount(history)).ToList();
 
         // Model-facing and structural, like the transcript's own markers: not localized.
         var head = string.IsNullOrWhiteSpace(previousRecap)

@@ -865,7 +865,7 @@ internal class OllamaClient : InferenceProviderBase
                 Prompt:    prefix,
                 Suffix:    suffix,
                 Stream:    true,
-                Options:   new GenerateOptions(temperature, maxTokens, Stop: FimCompletion.Stops(suffix, ["\n\n\n"]), NumCtx: numCtx),
+                Options:   new GenerateOptions(temperature, maxTokens, Stop: FimCompletion.Stops(suffix, FimTemplate.FallbackStop), NumCtx: numCtx),
                 KeepAlive: ComputeKeepAlive());
 
         // 60 s bounds time-to-first-byte, then chunk inactivity (see SendChatAsync).

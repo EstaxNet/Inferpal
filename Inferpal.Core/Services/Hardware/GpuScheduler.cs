@@ -35,12 +35,10 @@ internal static class GpuScheduler
     private static int _chatLeases;
     /// <summary>Every lease held, paused or not: a turn is in flight while one is.</summary>
     private static readonly HashSet<Lease> _live = [];
-    private static readonly AsyncLocal<FlowLink?> _flow = new();
+    /// <summary>The leases this flow took and still holds, newest first.</summary>
+    private static readonly AsyncLocal<FlowChain<Lease>?> _flow = new();
     private static TaskCompletionSource<bool> _idleSignal = CompletedSignal();
     private static TaskCompletionSource<bool> _noTurnSignal = CompletedSignal();
-
-    /// <summary>One lease taken in a flow, and the ones taken before it there.</summary>
-    private sealed record FlowLink(Lease Lease, FlowLink? Next);
 
     private static TaskCompletionSource<bool> CompletedSignal()
     {
@@ -74,24 +72,13 @@ internal static class GpuScheduler
         var lease = new Lease(awake);
         lock (_lock)
         {
-            // The chain keeps the leases still held, not every one the flow ever took: a loop that takes one lease per
-            // step (a bench, an arena) would grow it without end.
-            _flow.Value = new FlowLink(lease, Held(_flow.Value));
+            _flow.Value = FlowChain<Lease>.Push(lease, _flow.Value, _live.Contains);
             var (busy, live) = (_chatLeases, _live.Count);
             _live.Add(lease);
             _chatLeases++;
             ChangedLocked(busy, live);
         }
         return lease;
-    }
-
-    /// <summary>The links of <paramref name="link"/> whose lease is still held, in their order.</summary>
-    private static FlowLink? Held(FlowLink? link)
-    {
-        if (link is null) return null;
-        var next = Held(link.Next);
-        if (!_live.Contains(link.Lease)) return next;
-        return ReferenceEquals(next, link.Next) ? link : link with { Next = next };
     }
 
     /// <summary>
@@ -114,7 +101,7 @@ internal static class GpuScheduler
         List<Lease> mine = [];
         lock (_lock)
             for (var link = _flow.Value; link is not null; link = link.Next)
-                if (_live.Contains(link.Lease)) mine.Add(link.Lease);
+                if (_live.Contains(link.Item)) mine.Add(link.Item);
         var token = new PauseToken(mine, asleep);
         if (mine.Count > 0) token.Arm(PauseGrace);
         return token;

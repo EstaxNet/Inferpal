@@ -70,6 +70,17 @@ internal static class GitProcess
     internal static TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(15);
 
     /// <summary>
+    /// The settings a <c>log</c>, <c>show</c> or <c>blame</c> that Inferpal reads runs under, put before the command: its
+    /// lines read the same whatever the person's configuration. <c>color.diff=always</c> colours a patch even with
+    /// <c>color.ui</c> off, and <c>log.showSignature</c> prints gpg's lines into the output — as subjects, or before the
+    /// <c>diff --git</c> headers the readers cut by. As <c>-c</c> settings, which an older git reads too.
+    /// </summary>
+    internal const string LogShaped = "-c color.ui=never -c color.diff=never -c log.showSignature=false";
+
+    /// <summary><see cref="LogShaped"/> as an argument list.</summary>
+    internal static string[] LogShapedArgs => LogShaped.Split(' ');
+
+    /// <summary>
     /// A <c>diff</c> in the one shape its readers parse — sections opened by <c>diff --git a/… b/…</c>, paths from the
     /// repository's top, no colour, no external tool — whatever the user's git configuration; any other command as is.
     /// </summary>

@@ -83,7 +83,7 @@ internal static class SlashTemplates
     /// was written for, when it was.</summary>
     public static string HintOf(UserSlashTemplate t)
     {
-        var hint = t.Hint ?? (t.Text.Length > 50 ? t.Text[..50] + "…" : t.Text);
+        var hint = t.Hint ?? (t.Text.Length > 50 ? SafeTruncate.Truncate(t.Text, 50) + "…" : t.Text);
         return t.Origin is null ? hint : hint + " · " + t.Origin;
     }
 }

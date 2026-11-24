@@ -110,6 +110,11 @@ internal static class RulesService
         return (block, afterFence >= 0 ? normalized[(afterFence + 1)..] : string.Empty);
     }
 
+    /// <summary>The value of <paramref name="key"/> in a parsed front matter, without its quotes; <c>null</c> when absent or
+    /// blank.</summary>
+    public static string? Field(IReadOnlyDictionary<string, string> frontMatter, string key) =>
+        frontMatter.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v) ? v.Trim().Trim('\'', '"') : null;
+
     /// <summary>
     /// Splits a leading <c>---</c>…<c>---</c> frontmatter block (if any) into a key/value map plus
     /// the remaining body. When no frontmatter is present, the map is empty and the body is the

@@ -43,9 +43,9 @@ internal static class GitCommitPolicy
     /// reason <c>get_git_status</c> does one file away: "truncated" alone cannot be weighed.
     /// </remarks>
     public static CappedDiff CapDiff(string context) =>
-        context.Length > MaxDiffChars
-            ? new(context[..MaxDiffChars] + $"\n…(truncated — {context.Length - MaxDiffChars} more characters)",
-                  MaxDiffChars, context.Length)
+        context.Length > MaxDiffChars && SafeTruncate.Truncate(context, MaxDiffChars) is var kept
+            ? new(kept + $"\n…(truncated — {context.Length - kept.Length} more characters)",
+                  kept.Length, context.Length)
             : new(context, context.Length, context.Length);
 
     public static string BuildStagedContext(string staged) =>

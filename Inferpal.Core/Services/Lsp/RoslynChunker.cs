@@ -14,8 +14,6 @@ namespace Inferpal.Services.Lsp;
 /// </summary>
 internal static class RoslynChunker
 {
-    /// <summary>Hard cap in estimated tokens: the code chunker's, 2× the RAG target.</summary>
-    private const int MaxChunkTokens = Rag.CodeChunker.MaxChunkTokens;
     private const int MinChunkLines  = 2;
 
     // ── Public API ─────────────────────────────────────────────────────────────
@@ -42,7 +40,7 @@ internal static class RoslynChunker
             // indexed its model, not one endpoint. They precede every type declaration, so one span covers them.
             var globals = root.ChildNodes().OfType<GlobalStatementSyntax>().ToList();
             if (globals.Count > 0 && chunks.Count > 0)
-                TryAddChunk("<top-level statements>",
+                ChunkText.AddSymbol("<top-level statements>",
                     NodeStartLine(globals[0]), NodeEndLine(globals[^1], lines),
                     lines, filePath, relPath, chunks);
 
@@ -113,7 +111,7 @@ internal static class RoslynChunker
             var typeStart  = NodeStartLine(typeDecl);
             var firstStart = StartLine(members[0]);
             var headerEnd  = Math.Min(typeStart + 12, firstStart - 1);
-            TryAddChunk(typeName, typeStart, headerEnd, lines, filePath, relPath, chunks);
+            ChunkText.AddSymbol(typeName, typeStart, headerEnd, lines, filePath, relPath, chunks);
 
             // One chunk per member — includes the member's XML doc trivia.
             // ⚠ A member on ONE line (a property, a field, an interface signature, an enum value, an expression-bodied
@@ -126,7 +124,7 @@ internal static class RoslynChunker
                 var name = oneLiners.Count == 1
                     ? $"{typeName}.{MemberName(oneLiners[0])}"
                     : $"{typeName}.{MemberName(oneLiners[0])}…{MemberName(oneLiners[^1])}";
-                TryAddChunk(name, StartLine(oneLiners[0]), NodeEndLine(oneLiners[^1], lines),
+                ChunkText.AddSymbol(name, StartLine(oneLiners[0]), NodeEndLine(oneLiners[^1], lines),
                             lines, filePath, relPath, chunks, minLines: 1);
                 oneLiners.Clear();
             }
@@ -136,67 +134,17 @@ internal static class RoslynChunker
                 var (start, end) = (StartLine(member), NodeEndLine(member, lines));
                 if (end - start + 1 < MinChunkLines) { oneLiners.Add(member); continue; }
                 FlushOneLiners();
-                TryAddChunk($"{typeName}.{MemberName(member)}", start, end, lines, filePath, relPath, chunks);
+                ChunkText.AddSymbol($"{typeName}.{MemberName(member)}", start, end, lines, filePath, relPath, chunks);
             }
             FlushOneLiners();
         }
         else
         {
             // Whole type as one chunk (empty class, enum with no members, a positional record on one line, etc.)
-            TryAddChunk(typeName,
+            ChunkText.AddSymbol(typeName,
                 NodeStartLine(typeDecl), NodeEndLine(typeDecl, lines),
                 lines, filePath, relPath, chunks, minLines: 1);
         }
-    }
-
-    // ── Chunk assembly ─────────────────────────────────────────────────────────
-
-    private static void TryAddChunk(
-        string symbolName,
-        int start0, int end0,
-        string[] lines,
-        string filePath,
-        string relPath,
-        List<RagChunk> chunks,
-        int minLines = MinChunkLines)
-    {
-        if (end0 < start0 || start0 >= lines.Length) return;
-        end0 = Math.Min(end0, lines.Length - 1);
-
-        int lineCount = end0 - start0 + 1;
-        if (lineCount < minLines) return;
-
-        // Hard cap: past the budget the member is SPLIT into consecutive pieces. ⚠ Shrunk until it
-        // fits instead, its tail is indexed nowhere — search never reaches the end of a long method.
-        var pieceStart = start0;
-        while (pieceStart <= end0)
-        {
-            var pieceEnd = pieceStart;
-            var tokens   = ChunkText.EstimateTokens(lines, pieceStart, pieceStart);
-            while (pieceEnd < end0 && tokens + ChunkText.EstimateTokens(lines, pieceEnd + 1, pieceEnd + 1) <= MaxChunkTokens)
-                tokens += ChunkText.EstimateTokens(lines, ++pieceEnd, pieceEnd);
-
-            AddPiece(symbolName, pieceStart, pieceEnd, lines, filePath, relPath, chunks);
-            pieceStart = pieceEnd + 1;
-        }
-    }
-
-    private static void AddPiece(
-        string symbolName, int start0, int end0, string[] lines, string filePath, string relPath, List<RagChunk> chunks)
-    {
-        var text = string.Join('\n', lines, start0, end0 - start0 + 1).Trim();
-        if (string.IsNullOrWhiteSpace(text)) return;
-
-        chunks.Add(new RagChunk
-        {
-            FilePath    = filePath,
-            RelPath     = relPath,
-            StartLine   = start0 + 1,   // 1-based
-            EndLine     = end0   + 1,
-            Content     = text,
-            ContentHash = ChunkText.Hash(text),
-            TypeName    = symbolName,
-        });
     }
 
     // ── Roslyn position helpers ────────────────────────────────────────────────

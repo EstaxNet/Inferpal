@@ -83,7 +83,7 @@ internal static class TestFilePathResolver
                 return null;
             var testsDir = Path.Combine(crateRoot, "tests");
             var relative = Path.GetRelativePath(testsDir, sourcePath);
-            if (!relative.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(relative)) return null;
+            if (!Tools.PathSanitizer.LeavesRoot(relative)) return null;
 
             var existing = Directory.Exists(testsDir)
                 ? WorkspaceScan.ShallowestFirst(WorkspaceScan.EnumerateFiles(testsDir, testFile))
@@ -112,7 +112,7 @@ internal static class TestFilePathResolver
         {
             if (!Path.GetExtension(testPath).Equals(".rs", StringComparison.OrdinalIgnoreCase)
                 || CargoCrateRoot(testPath) is not { } crateRoot
-                || Path.GetRelativePath(Path.Combine(crateRoot, "tests"), testPath).StartsWith("..", StringComparison.Ordinal))
+                || Tools.PathSanitizer.LeavesRoot(Path.GetRelativePath(Path.Combine(crateRoot, "tests"), testPath)))
                 return null;
 
             string? section = null, package = null, lib = null;
@@ -209,8 +209,7 @@ internal static class TestFilePathResolver
     // compiled into it and the build breaks ("'Fact' could not be found") — and the FooTests.cs that already exists
     // in the test project is never found, so a second one is created instead of that one being extended.
 
-    private static readonly string[] TestFrameworkMarkers =
-        ["xunit", "nunit", "mstest", "TUnit", "Microsoft.NET.Test.Sdk", "<IsTestProject>true"];
+    private static readonly string[] TestFrameworkMarkers = ["xunit", "nunit", "mstest", "TUnit"];
 
     /// <summary>
     /// The test file inside the test project that references the source's project: an existing one of that name,
@@ -328,7 +327,9 @@ internal static class TestFilePathResolver
             || name.EndsWith(".Specs", StringComparison.OrdinalIgnoreCase) || name.EndsWith("Tests", StringComparison.Ordinal))
             return true;
         var text = File.ReadAllText(csproj);
-        return TestFrameworkMarkers.Any(m => text.Contains(m, StringComparison.OrdinalIgnoreCase));
+        // The test SDK or the declaration, read as /test coverage reads them; then the framework packages.
+        return Coverage.DotnetCoverage.IsTestProject(text)
+            || TestFrameworkMarkers.Any(m => text.Contains(m, StringComparison.OrdinalIgnoreCase));
     }
 
     private static readonly Regex ProjectReference = new(

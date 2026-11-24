@@ -71,8 +71,7 @@ internal static class BinlogText
                                         $"-flp:v=minimal;performancesummary;encoding=utf-8;logfile={text}" })
                 psi.ArgumentList.Add(arg);
             // The replay's own words in English, as every dotnet the agent reads; the log's messages stay as written.
-            psi.Environment["DOTNET_CLI_UI_LANGUAGE"] = "en";
-            psi.Environment["VSLANG"] = "1033";
+            ChildProcess.DotnetInEnglish(psi);
             psi.Environment["DOTNET_CLI_TELEMETRY_OPTOUT"] = "1";
             psi.Environment["DOTNET_NOLOGO"] = "1";
 

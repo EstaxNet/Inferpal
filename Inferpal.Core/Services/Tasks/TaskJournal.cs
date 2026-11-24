@@ -60,8 +60,7 @@ internal sealed class TaskJournal(string path)
     {
         /// <summary>Whether the task reached a state nothing changes any more.</summary>
         [JsonIgnore]
-        public bool IsFinished => State is BackgroundTaskState.Succeeded or BackgroundTaskState.Failed
-                                        or BackgroundTaskState.Cancelled;
+        public bool IsFinished => State.IsTerminal();
     }
 
     /// <summary>A proposal as the journal keeps it.</summary>

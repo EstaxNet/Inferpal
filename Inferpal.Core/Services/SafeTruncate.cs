@@ -17,4 +17,14 @@ internal static class SafeTruncate
         if (n > 0 && char.IsHighSurrogate(s[n - 1])) n--;
         return s[..n];
     }
+
+    /// <summary>The last <paramref name="maxChars"/> chars of <paramref name="s"/>, one fewer when the cut would split a
+    /// surrogate pair. No prefix is added.</summary>
+    public static string Tail(string s, int maxChars)
+    {
+        if (s.Length <= maxChars) return s;
+        var start = s.Length - maxChars;
+        if (char.IsLowSurrogate(s[start])) start++;
+        return s[start..];
+    }
 }

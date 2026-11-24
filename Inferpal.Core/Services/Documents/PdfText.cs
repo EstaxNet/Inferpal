@@ -13,6 +13,8 @@ internal static class PdfText
     internal const int MaxPages = 5_000;
     /// <summary>Characters kept at most — far past what one attachment sends; past it, reading stops and says so.</summary>
     internal const int MaxChars = 2_000_000;
+    /// <summary><paramref name="read"/> cut to <see cref="MaxChars"/>, the cap every document reader keeps.</summary>
+    internal static string Capped(string read) => read.Length > MaxChars ? read[..MaxChars] : read;
     /// <summary>Content operators run in one document, forms drawn inside forms included: a form drawn a thousand times by
     /// itself, eight levels deep, would otherwise run forever.</summary>
     private const int MaxOperations = 20_000_000;

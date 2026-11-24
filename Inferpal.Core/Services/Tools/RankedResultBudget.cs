@@ -21,6 +21,30 @@ internal static class RankedResultBudget
     internal static string Shown(string content) =>
         content.Length > ResultBodyChars ? SafeTruncate.Truncate(content, ResultBodyChars) + "\n…(truncated)" : content;
 
+    /// <summary>
+    /// The ranked results laid out: in rank order, each <c>Entry</c> (its body) while the bodies fit
+    /// <see cref="BodyChars"/> — the first one always —, then from the first that does not, every result by its
+    /// <c>Location</c> line. <c>FirstByLocation</c>: the 1-based rank of the first listed by location, 0 when none is.
+    /// </summary>
+    internal static (string Bodies, string Locations, int FirstByLocation) Lay(IReadOnlyList<(string Entry, string Location)> ranked)
+    {
+        var bodies = new System.Text.StringBuilder();
+        var locations = new System.Text.StringBuilder();
+        var firstByLocation = 0;
+        for (var i = 0; i < ranked.Count; i++)
+        {
+            var (entry, location) = ranked[i];
+            if (firstByLocation == 0 && (i == 0 || bodies.Length + entry.Length <= BodyChars))
+                bodies.Append(entry);
+            else
+            {
+                if (firstByLocation == 0) firstByLocation = i + 1;
+                locations.AppendLine(location);
+            }
+        }
+        return (bodies.ToString(), locations.ToString(), firstByLocation);
+    }
+
     /// <summary>The line above the results when some are listed by location only.</summary>
     internal static string Note(int firstByLocation, int total, string remedy) =>
         $"(results {firstByLocation}–{total} are listed by location only, at the end: with their bodies this answer " +

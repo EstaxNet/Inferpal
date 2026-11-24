@@ -46,6 +46,21 @@ public class DiagnosticsVerdictExitCodeTests
     }
 
     [Fact]
+    public void AStepHasErrors_ExactlyWhenTheVerdictSaysErrors()
+    {
+        // A build killed at its budget carries the errors it had printed: no Fix button over a fragment of a build that
+        // never finished — the /fix-build loop reads it so. Nor over a build that only warned.
+        var killed = Interpret(new ChildProcessResult(-1, @"C:\ws\A.cs(3,13): error CS0103: The name 'c' does not exist [C:\ws\X.csproj]" + "\n",
+                                                      string.Empty, TimedOut: true), "X.csproj", 90);
+        var warned = Run(0, AWarning + "\n");
+
+        Assert.Equal(BuildVerdict.NotBuilt, ReadVerdict(killed));
+        Assert.False(OutputHasErrors(killed));
+        Assert.NotEqual(BuildVerdict.Errors, ReadVerdict(warned));
+        Assert.False(OutputHasErrors(warned));
+    }
+
+    [Fact]
     public void UnderTheNoteOfABuildMadeByChoice_ItIsNoFailedStepEither()
     {
         var said = NotBuiltPrefix + "App.csproj only.)\n\n" + Run(1, NotRestoredLine + "\n");

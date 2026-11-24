@@ -44,6 +44,9 @@ internal static class SqlPlanText
 
     private sealed record Plan(string Engine, bool Measured, double? TotalCost, List<Op> Ops, List<string> Look, string Head);
 
+    /// <summary>The note that ends a summary cut to fit its budget.</summary>
+    private const string Cut = "\n[Cut to fit: read_file with start_line pages the raw plan.]";
+
     /// <summary>The plan, <paramref name="text"/> read from <paramref name="name"/>, within <paramref name="budget"/>
     /// characters; <c>null</c> for any other file.</summary>
     internal static string? Summarize(string name, string text, int budget, CancellationToken ct = default)
@@ -54,7 +57,10 @@ internal static class SqlPlanText
         var plan = Read(text, lower.EndsWith(".sqlplan", StringComparison.Ordinal));
         ct.ThrowIfCancellationRequested();
         const string Raw = "\n[The raw plan: read_file with start_line.]";
-        return plan is null ? null : Render($"Query plan {name}", plan, budget - Raw.Length) + Raw;
+        if (plan is null) return null;
+        // A summary cut to fit already says where the raw plan is: one note, never both.
+        var summary = Render($"Query plan {name}", plan, budget - Raw.Length);
+        return summary.EndsWith(Cut, StringComparison.Ordinal) ? summary : summary + Raw;
     }
 
     /// <summary>A query's one cell holding a plan (PostgreSQL's <c>EXPLAIN (FORMAT JSON)</c>, MySQL's and MariaDB's
@@ -402,7 +408,6 @@ internal static class SqlPlanText
         var text = sb.ToString().TrimEnd();
         // Every part is bounded, the budget too: what passes it is cut at a line and said.
         if (text.Length <= budget) return text;
-        const string Cut = "\n[Cut to fit: read_file with start_line pages the raw plan.]";
         var at = text.LastIndexOf('\n', Math.Max(0, budget - Cut.Length));
         return text[..Math.Max(0, at)] + Cut;
     }

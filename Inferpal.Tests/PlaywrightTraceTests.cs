@@ -304,6 +304,20 @@ public class PlaywrightTraceTests
     }
 
     [Fact]
+    public void ARequestThatGotNoResponse_WrittenMinusOne_IsFailed_AsTheHarReaderSaysIt()
+    {
+        // Playwright writes -1 for every request that got no response, as a HAR does.
+        var path = Zip(new()
+        {
+            ["trace.trace"] = "{\"version\":10,\"type\":\"context-options\",\"wallTime\":1795462253039,\"monotonicTime\":500.0}",
+            ["trace.network"] = "{\"type\":\"resource-snapshot\",\"snapshot\":{\"request\":{\"method\":\"GET\",\"url\":\"http://x/api\"},"
+                              + "\"response\":{\"status\":-1,\"_failureText\":\"net::ERR_CONNECTION_REFUSED\"}}}",
+        });
+        try { Assert.Contains("GET http://x/api → no response (net::ERR_CONNECTION_REFUSED)  ← failed", PlaywrightTrace.Read(path, CancellationToken.None).Text); }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public void ARepeatedLine_OrPairOfLines_IsOneWithItsCount()
     {
         Assert.Equal(["a  (3 times)", "b"], PlaywrightTrace.Collapse(["a", "a", "a", "b"]));

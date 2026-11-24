@@ -167,13 +167,10 @@ internal static class InlineEditReindenter
 
             if (c == '\'')                                                                // char literal
             {
-                i++;
-                while (i < n)
-                {
-                    if (line[i] == '\\') { i += 2; continue; }
-                    if (line[i] == '\'') { i++; break; }
-                    i++;
-                }
+                // Read as the completion reads one: a lone quote is an apostrophe or a Rust lifetime ('a), never a
+                // literal running to the next quote — which hid the brace that opens the body.
+                var end = FimCompletion.CharacterLiteralEnd(line, i);
+                i = end < 0 ? i + 1 : end + 1;
                 continue;
             }
 

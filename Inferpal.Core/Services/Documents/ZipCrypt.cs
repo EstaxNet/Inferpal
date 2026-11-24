@@ -22,6 +22,10 @@ internal enum ZipCryptOutcome { Opened, WrongPassword, Unsupported, TooLarge, Da
 /// </remarks>
 internal static class ZipCrypt
 {
+    /// <summary>The most compressed bytes read for one entry: <see cref="Archives.MaxEntryBytes"/> and room for what stores it
+    /// (an encryption header, a stored entry that compression did not shrink).</summary>
+    private const long MaxCompressedBytes = Archives.MaxEntryBytes + 64 * 1024;
+
     /// <summary>Whether <paramref name="entry"/> of the zip at <paramref name="archive"/> is encrypted; false when it is not
     /// found or the archive cannot be read (its plain reading then says why).</summary>
     internal static bool IsEncrypted(string archive, string entry) => Find(archive, entry) is { Flags: var f } && (f & 1) != 0;
@@ -38,8 +42,8 @@ internal static class ZipCrypt
         var method = e.Method == 99 ? e.AesMethod : e.Method;
         if (e.Method == 99 && e.AesStrength is not (1 or 2 or 3)) return "its AES header is not one Inferpal reads";
         if (method is not (0 or 8)) return $"it is compressed with a method Inferpal does not read ({MethodName(method)}); extract it with an archive tool";
-        if (e.CompressedSize > Archives.MaxEntryBytes + 64 * 1024 || e.UncompressedSize > Archives.MaxEntryBytes)
-            return $"it is larger than {Archives.MaxEntryBytes / (1024 * 1024)} MB once read out";
+        if (e.CompressedSize > MaxCompressedBytes || e.UncompressedSize > Archives.MaxEntryBytes)
+            return Archives.TooLarge(null);
         return null;
     }
 
@@ -78,7 +82,7 @@ internal static class ZipCrypt
         try
         {
             if (Find(archive, entry) is not { } e) return (null, ZipCryptOutcome.NotFound);
-            if (e.CompressedSize > Archives.MaxEntryBytes + 64 * 1024) return (null, ZipCryptOutcome.TooLarge);
+            if (e.CompressedSize > MaxCompressedBytes) return (null, ZipCryptOutcome.TooLarge);
             using var f = File.OpenRead(archive);
             var local = new byte[30];
             f.Seek(e.LocalOffset, SeekOrigin.Begin);

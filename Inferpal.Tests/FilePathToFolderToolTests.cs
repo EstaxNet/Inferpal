@@ -52,7 +52,10 @@ public sealed class FilePathToFolderToolTests : IDisposable
     {
         // Reference arm.
         var missing = Path.Combine(_root, "nope");
-        Assert.Equal(Strings.DirNotFound(missing),
+        // Marked as a failure, as a missing file is: unmarked, the loop and the run's summary counted it as a search done.
+        Assert.Equal(Inferpal.Services.Execution.ToolFailure.Said(Strings.DirNotFound(missing)),
                      await new SearchInFilesTool(() => _root).ExecuteAsync(Args(new { path = missing, pattern = "x" }), CancellationToken.None));
+        Assert.True(Inferpal.Services.Execution.ToolFailure.IsFailure(
+            await new ListFilesTool(() => _root).ExecuteAsync(Args(new { path = missing }), CancellationToken.None)));
     }
 }

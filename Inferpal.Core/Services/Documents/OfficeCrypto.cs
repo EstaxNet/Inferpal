@@ -65,6 +65,17 @@ internal static class OfficeCrypto
         }
     }
 
+    /// <summary>
+    /// The package (the zip) inside an encrypted container, opened with the password the person typed — or <c>null</c> and why
+    /// it stays shut in <paramref name="shut"/>: an encryption this reader does not open is unreadable, never a password card
+    /// no password can pass; no password, or a wrong one, is encrypted.
+    /// </summary>
+    internal static byte[]? Unlock(byte[] file, string? password, CancellationToken ct, out DocumentProblem shut)
+    {
+        shut = !Opens(file) ? DocumentProblem.Unreadable : DocumentProblem.Encrypted;
+        return shut == DocumentProblem.Encrypted && password is not null ? Decrypt(file, password, ct) : null;
+    }
+
     /// <summary>The package (the zip) inside, decrypted with <paramref name="password"/>; null when the password does not
     /// open it, or the encryption is not one this reader opens.</summary>
     internal static byte[]? Decrypt(byte[] file, string password, CancellationToken ct)
