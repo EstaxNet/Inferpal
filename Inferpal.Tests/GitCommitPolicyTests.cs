@@ -77,6 +77,8 @@ public class GitCommitPolicyTests
     [InlineData("\"fix: bug\"",                              "fix: bug")]
     [InlineData("<think>hmm reasoning</think>fix: bug",      "fix: bug")]
     [InlineData("`\"fix: bug\"`",                            "fix: bug")]
+    [InlineData("```text\nfix: typo\n```",                   "fix: typo")]   // a fence that names its language
+    [InlineData("<think>x</think>\n```\nfix: typo\n```",     "fix: typo")]
     public void CleanProposal_StripsThinkTagsBackticksAndQuotes(string raw, string expected) =>
         Assert.Equal(expected, GitCommitPolicy.CleanProposal(raw));
 

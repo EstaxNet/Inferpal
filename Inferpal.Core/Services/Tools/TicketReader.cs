@@ -45,7 +45,7 @@ internal static partial class TicketReader
         var path = u.AbsolutePath;
         try
         {
-            if (u.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) || u.Host.Equals("www.github.com", StringComparison.OrdinalIgnoreCase))
+            if (IsGitHub(u.Host))
             {
                 if (GitHubPath.Match(path) is not { Success: true } m) return null;
                 var repo = $"https://api.github.com/repos/{m.Groups[1].Value}/{m.Groups[2].Value}";
@@ -605,6 +605,11 @@ internal static partial class TicketReader
     /// <summary>The most images of a ticket put in front of the model: the most a question may carry.</summary>
     internal const int MaxImages = Documents.ChatImages.MaxPerQuestion;
 
+    /// <summary>Whether <paramref name="host"/> is GitHub's: exactly, never a name that only ends like it
+    /// (<c>notgithub.com</c>).</summary>
+    internal static bool IsGitHub(string host) =>
+        host.Equals("github.com", StringComparison.OrdinalIgnoreCase) || host.Equals("www.github.com", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Whether <paramref name="image"/> is held by the ticket's own forge — its host, GitHub's attachment hosts and
     /// the storage GitHub's attachments redirect to.</summary>
     /// <remarks>⚠ Only those are fetched without a card, on EVERY hop of a redirect: an image elsewhere is an address the
@@ -614,7 +619,7 @@ internal static partial class TicketReader
         if (!Uri.TryCreate(image, UriKind.Absolute, out var i) || !Uri.TryCreate(ticketUrl, UriKind.Absolute, out var t)) return false;
         if (i.Scheme != "https" && !(i.Scheme == "http" && t.Scheme == "http")) return false;
         if (i.Host.Equals(t.Host, StringComparison.OrdinalIgnoreCase)) return true;
-        return t.Host.EndsWith("github.com", StringComparison.OrdinalIgnoreCase)
+        return IsGitHub(t.Host)
             && (i.Host.EndsWith(".githubusercontent.com", StringComparison.OrdinalIgnoreCase)
                 || i.Host.StartsWith("github-production-user-asset-", StringComparison.OrdinalIgnoreCase)
                    && i.Host.EndsWith(".s3.amazonaws.com", StringComparison.OrdinalIgnoreCase));

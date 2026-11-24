@@ -348,14 +348,7 @@ internal sealed class RagDatabase
 
     // ── Connection factory ────────────────────────────────────────────────────
 
-    private SqliteConnection OpenConnection()
-    {
-        var conn = new SqliteConnection($"Data Source={_dbPath}");
-        conn.Open();
-        // WAL for concurrent read/write; NORMAL sync = no fsync on every commit
-        conn.Execute("PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;");
-        return conn;
-    }
+    private SqliteConnection OpenConnection() => SqliteBootstrapper.OpenIndex(_dbPath);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 

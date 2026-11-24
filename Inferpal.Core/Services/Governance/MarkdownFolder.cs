@@ -42,12 +42,22 @@ internal static class MarkdownFolder
         var read    = new List<(string, string)>();
         var failed  = new List<string>();
 
+        // The repository the folder belongs to (<repo>/.inferpal/rules): what a link may not leave.
+        var parent     = Path.GetDirectoryName(Path.GetFullPath(dir).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        var repository = parent is not null && Path.GetFileName(parent).Equals(".inferpal", StringComparison.OrdinalIgnoreCase)
+            ? Path.GetDirectoryName(parent) ?? dir : dir;
         foreach (var file in Directory.EnumerateFiles(dir, "*.md", SearchOption.TopDirectoryOnly)
                                       .OrderBy(p => p, StringComparer.OrdinalIgnoreCase))
         {
             try
             {
-                read.Add((file, Tools.TextFileEncoding.ReadText(file)));   // hand-written: may be in the legacy code page
+                // A file the repository controls, read into the prompt: never through a link that leaves it, never past
+                // the cap of the repository's instructions (a cloned link to ~/.ssh/id_rsa would be a rule sent everywhere).
+                var (text, problem, detail) = RepoFile.Read(file, repository, Prompting.RepoInstructionReader.MaxFileBytes);
+                if (problem != RepoFileProblem.None)
+                    throw new IOException(problem == RepoFileProblem.LeavesTheRepository
+                        ? "its link leads out of the repository" : detail ?? problem.ToString());
+                read.Add((file, text!));   // hand-written: may be in the legacy code page
                 // ⚠ The SAME context as the note, otherwise the forget targets another slot and
                 // "once" becomes "once in the life of the process".
                 Diagnostics.Forget($"{context}({Path.GetFileName(file)})", file);

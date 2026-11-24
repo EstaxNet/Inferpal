@@ -316,13 +316,5 @@ internal sealed class DocsDatabase
 
     // ── Connection factory ──────────────────────────────────────────────────────
 
-    private SqliteConnection OpenConnection()
-    {
-        var conn = new SqliteConnection($"Data Source={_dbPath}");
-        conn.Open();
-        using var pragma = conn.CreateCommand();
-        pragma.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;";
-        pragma.ExecuteNonQuery();
-        return conn;
-    }
+    private SqliteConnection OpenConnection() => Rag.SqliteBootstrapper.OpenIndex(_dbPath);
 }

@@ -34,6 +34,22 @@ public class LmStudioDownloadTests
         Assert.Contains("/api/v1/models/download/status/job_1", server.Paths);
     }
 
+    [Theory]
+    [InlineData("Model not found", "HTTP 404: Model not found")]                       // a text answer says its text
+    [InlineData("""{"error":{"message":"no such model"}}""", "no such model")]          // a JSON one, its message
+    [InlineData("", "HTTP 404")]
+    public async Task ARefusedDownload_SaysWhatTheServerSaid_AsALoadDoes(string answer, string said)
+    {
+        using var server = new LoopbackHttpServer(p => p == "/api/v1/models/download" ? answer : null,
+                                                  p => p == "/api/v1/models/download" ? 404 : 200);
+        var statuses = new List<string>();
+
+        var ok = await Client(server).PullModelAsync("org/model", s => { lock (statuses) statuses.Add(s); }, CancellationToken.None);
+
+        Assert.False(ok);
+        Assert.Equal([said], statuses);
+    }
+
     [Fact]
     public async Task ADownloadJob_IsFollowedUntilItCompletes_WithItsProgress()
     {

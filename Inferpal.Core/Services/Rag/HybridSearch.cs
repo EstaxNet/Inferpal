@@ -131,6 +131,10 @@ internal sealed class Bm25Index
 /// </summary>
 internal static class ReciprocalRankFusion
 {
+    /// <summary>How many candidates each ranking (vector, lexical) brings to the fusion for <paramref name="topK"/>
+    /// results: the code index and the documentation index fuse the same way.</summary>
+    internal static int CandidatePool(int topK) => Math.Max(topK * 5, 50);
+
     public const int DefaultK = 60;
 
     /// <summary>Items ordered by descending fused score. <paramref name="rankings"/> are best-first lists.</summary>

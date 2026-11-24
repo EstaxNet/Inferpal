@@ -27,6 +27,10 @@ namespace Inferpal.Services.Signals;
 /// </remarks>
 internal static class SignalFile
 {
+    /// <summary>Whether a signal written <paramref name="age"/> ago still holds: not from the future (a clock set back), not
+    /// older than <paramref name="maxAge"/>.</summary>
+    internal static bool Fresh(TimeSpan age, TimeSpan maxAge) => age >= TimeSpan.Zero && age < maxAge;
+
     /// <summary>The folder this process's account keeps its signals in (<see cref="DefaultDirFor"/>).</summary>
     internal static readonly string DefaultDir = DefaultDirFor(
         Environment.OSVersion.Platform == PlatformID.Win32NT, Path.GetTempPath(), LocalData());

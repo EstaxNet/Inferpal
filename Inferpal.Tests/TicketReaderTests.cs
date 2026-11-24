@@ -169,6 +169,8 @@ public class TicketReaderTests
     [InlineData("https://gitlab.com/-/project/1/uploads/x/a.png", "https://gitlab.com/g/p/-/issues/1", true)]
     [InlineData("https://evil.example/a.png", "https://github.com/o/r/issues/1", false)]
     [InlineData("http://github.com/user-attachments/a.png", "https://github.com/o/r/issues/1", false)]
+    [InlineData("https://private-user-images.githubusercontent.com/1/a.png", "https://notgithub.com/o/r/issues/1", false)]   // a forge that only ENDS like github.com
+    [InlineData("https://private-user-images.githubusercontent.com/1/a.png", "https://www.github.com/o/r/issues/1", true)]
     public void OnlyTheForgesOwnImages_AreFetched(string image, string ticket, bool fetched) =>
         Assert.Equal(fetched, TicketReader.IsForgeImage(image, ticket));
 

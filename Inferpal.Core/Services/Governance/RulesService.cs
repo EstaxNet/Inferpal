@@ -250,10 +250,22 @@ internal static class RulesService
     /// </summary>
     internal static string GlobToRegex(string glob)
     {
+        static bool BracesInOrder(string glob)
+        {
+            var depth = 0;
+            foreach (var ch in glob)
+            {
+                if (ch == '{') depth++;
+                else if (ch == '}' && --depth < 0) return false;
+            }
+            return depth == 0;
+        }
+
         var sb = new StringBuilder("^");
         var braces = 0;
-        // Unbalanced braces are literal characters, as before: only a closed {…} is a set of alternatives.
-        var bracesBalanced = glob.Count(ch => ch == '{') == glob.Count(ch => ch == '}');
+        // Unbalanced braces are literal characters: only a closed {…} is a set of alternatives. Balanced in ORDER, not in
+        // count — `a}{b` counts one of each and, read as a set, compiles to no regex at all.
+        var bracesBalanced = BracesInOrder(glob);
         for (int i = 0; i < glob.Length; i++)
         {
             var c = glob[i];

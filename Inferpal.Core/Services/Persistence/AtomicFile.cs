@@ -202,10 +202,16 @@ internal static class AtomicFile
         {
             if (!File.Exists(path)) return null;
 
-            var aside = string.Create(System.Globalization.CultureInfo.InvariantCulture,
-                                      $"{path}.unreadable-{DateTime.Now:yyyyMMdd-HHmmss}.json");
-            if (File.Exists(aside)) return aside;   // already set aside within the same second
-            File.Copy(path, aside);
+            // Kept by its BYTES, as ConversationStore.SetAside keeps a session: a copy of the same bytes is reused, and a
+            // name another content took within the same second (or an hour the clock went back over) gets a suffix.
+            var bytes = File.ReadAllBytes(path);
+            var dir   = Path.GetDirectoryName(Path.GetFullPath(path))!;
+            foreach (var kept in Directory.EnumerateFiles(dir, Path.GetFileName(path) + ".unreadable-*"))
+                if (File.ReadAllBytes(kept).AsSpan().SequenceEqual(bytes)) return kept;
+            var stamp = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{path}.unreadable-{DateTime.Now:yyyyMMdd-HHmmss}");
+            var aside = stamp + ".json";
+            for (var n = 2; File.Exists(aside); n++) aside = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{stamp}-{n}.json");
+            File.WriteAllBytes(aside, bytes);
             return aside;
         }
         catch (Exception ex)

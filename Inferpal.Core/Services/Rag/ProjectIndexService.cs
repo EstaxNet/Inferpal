@@ -400,7 +400,7 @@ internal sealed class ProjectIndexService : IDisposable
         }
 
         // Candidate pool per side, kept wider than topK so the two rankings overlap enough for RRF.
-        var pool = Math.Max(topK * 5, 50);
+        var pool = ReciprocalRankFusion.CandidatePool(topK);
 
         // ── Vector side (cosine) ──────────────────────────────────────────
         // Indices into allChunks, best first; threshold filter preserved (Global Priority Guard).

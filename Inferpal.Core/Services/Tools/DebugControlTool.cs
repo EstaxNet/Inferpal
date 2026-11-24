@@ -28,6 +28,10 @@ internal sealed class DebugControlTool(
     Func<string> root,
     AgentBreakpoints? agentBreakpoints = null) : ITool
 {
+    /// <summary>What the debugger tools answer when no debugger can be reached from this editor.</summary>
+    internal const string NoDebugger = "No debugger is reachable from this editor session. Do not retry; reason from the "
+                                     + "source instead, or ask the user to run the program.";
+
     /// <summary>What this tool added; a breakpoint it did not add is the user's, and it stays.</summary>
     private readonly AgentBreakpoints _agent = agentBreakpoints ?? (session as AgentCleaningDebugSession)?.Agent ?? new();
 
@@ -94,8 +98,7 @@ internal sealed class DebugControlTool(
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         if (!session.IsAvailable)
-            return "No debugger is reachable from this editor session. Do not retry; reason from the "
-                 + "source instead, or ask the user to run the program.";
+            return NoDebugger;
 
         var action = args.Keyword("action");
         if (string.IsNullOrEmpty(action))

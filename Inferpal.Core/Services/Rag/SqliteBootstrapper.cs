@@ -22,6 +22,20 @@ namespace Inferpal.Services.Rag;
 /// </remarks>
 internal static class SqliteBootstrapper
 {
+    /// <summary>An index's database, open: WAL for concurrent reads and writes, NORMAL sync (no fsync on every commit) —
+    /// the code index and the documentation index alike.</summary>
+    internal static Microsoft.Data.Sqlite.SqliteConnection OpenIndex(string dbPath)
+    {
+        // The path as a VALUE: pasted into the string, a ';' in a folder's name starts another keyword.
+        var conn = new Microsoft.Data.Sqlite.SqliteConnection(
+            new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder { DataSource = dbPath }.ToString());
+        conn.Open();
+        using var pragma = conn.CreateCommand();
+        pragma.CommandText = "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;";
+        pragma.ExecuteNonQuery();
+        return conn;
+    }
+
     private static int _initialized;
 
     /// <summary>

@@ -186,6 +186,15 @@ public sealed class ChatRedesignTests : IDisposable
     // ── An approval card ────────────────────────────────────────────────────────
 
     [Fact]
+    public void AnEmptyNewFile_HasNoLine()
+    {
+        var path = Path.Combine(_dir, "empty.txt");
+        var card = ApprovalCard.Build(new ApprovalPrompt("write_file", path, path, new DiffInfo("", "", path), "the prompt"), _dir);
+        Assert.Equal(Strings.ApprovalLineCount(0), card.Meta);
+        Assert.Empty(card.Preview);
+    }
+
+    [Fact]
     public void ANewFile_ShowsItsFirstLines_AndHowManyMore()
     {
         var path = Path.Combine(_dir, "Tests", "CounterTests.cs");

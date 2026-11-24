@@ -32,6 +32,12 @@ namespace Inferpal.Services.Tools;
 /// </remarks>
 internal sealed class ViewPageTool : ITool
 {
+    /// <summary>Whether <paramref name="uri"/> is a page served on this machine: localhost or a loopback address, never a
+    /// name under <c>.localhost</c> — http_request forces such a name onto the loopback, a browser asks the system's
+    /// resolver, which may answer with another machine. view_page and interact_page alike.</summary>
+    internal static bool ServedHere(Uri uri) =>
+        HttpRequestTool.IsLoopback(uri) && !uri.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase);
+
     private readonly IApprovalService _approval;
     private readonly Func<string> _getWorkspaceRoot;
     private readonly ToolImageInbox _images;
@@ -95,7 +101,7 @@ internal sealed class ViewPageTool : ITool
                 return $"Error: '{url}' is not an http or https URL. An HTML file of the workspace goes in path.";
             // ⚠ localhost or a loopback address, never a name under .localhost: http_request forces such a name onto the
             // loopback, a browser asks the system's resolver, which may answer with another machine.
-            if (!HttpRequestTool.IsLoopback(uri) || uri.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase))
+            if (!ServedHere(uri))
                 return $"Error: '{uri.Host}' is not this machine: view_page looks at pages served here (localhost, 127.0.0.1). " +
                        "Read a page of the Internet with fetch_url.";
             target = uri.AbsoluteUri;

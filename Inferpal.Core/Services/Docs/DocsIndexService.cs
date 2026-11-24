@@ -634,7 +634,7 @@ internal sealed class DocsIndexService : IDisposable
         }
         finally { _chunkLock.Release(); }
 
-        var pool = Math.Max(topK * 5, 50);
+        var pool = Rag.ReciprocalRankFusion.CandidatePool(topK);
 
         List<(int Idx, float Cos)> vector = [];
         if (queryEmbedding is { Length: > 0 })

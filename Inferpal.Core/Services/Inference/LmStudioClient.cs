@@ -169,7 +169,6 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
     // round-trip on every agent iteration. Keyed by model so a mid-session model switch re-probes.
     private readonly object _ctxLock = new();
     private (string Model, int? Ctx, DateTime Until) _ctxCache;
-    private static readonly TimeSpan LoadedWindowLife = TimeSpan.FromSeconds(30);
     /// <summary>How long "listed, not loaded yet" is kept: long enough for one request's two reads, short enough to read
     /// the window the server loads the model with at the next one. Per instance, so a test can shorten it.</summary>
     internal TimeSpan NotLoadedLife { get; set; } = TimeSpan.FromSeconds(5);
@@ -213,7 +212,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             ctx = null;
         }
 
-        lock (_ctxLock) _ctxCache = (model, ctx, DateTime.UtcNow + LoadedWindowLife);
+        lock (_ctxLock) _ctxCache = (model, ctx, DateTime.UtcNow + LoadedWindowCacheLife);
         return ctx;
     }
 
@@ -229,7 +228,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         DropCachesIfReloaded();
         if (!fresh)
             lock (_nativeLock)
-                if (_nativeSnapshot is { } snapshot && DateTime.UtcNow - snapshot.At < TimeSpan.FromSeconds(30))
+                if (_nativeSnapshot is { } snapshot && DateTime.UtcNow - snapshot.At < LoadedWindowCacheLife)
                     return snapshot.Models ?? throw snapshot.Failure!;
         try
         {
@@ -608,7 +607,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
             var match = listed.FirstOrDefault(m => m.Loaded);
             if (match.Id is null) return (true, true, null, null, max);
             if (match.LoadedContextLength is { } window)
-                lock (_ctxLock) _ctxCache = (model, window, DateTime.UtcNow + LoadedWindowLife);
+                lock (_ctxLock) _ctxCache = (model, window, DateTime.UtcNow + LoadedWindowCacheLife);
             // ⚠ The model's key, which LM Studio names its single instance after: a variant asked without its suffix is
             // unloaded by the key the server lists, never by the name asked.
             return (true, true, match.Id, match.LoadedContextLength, max);
@@ -683,6 +682,13 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
         catch (JsonException) { return null; }
     }
 
+    /// <summary>What a refused request is said as: the server's <c>error</c> message, else its status with the text it
+    /// answered, cut short — a download refused as a load is, never its status alone when the server said why.</summary>
+    private static string RefusalOf(System.Net.HttpStatusCode status, string body) =>
+        TryExtractError(ParseErrorElement(body)) is { Length: > 0 } said ? SafeTruncate.Truncate(said, 300)
+        : body.Trim().Length > 0 ? $"HTTP {(int)status}: {SafeTruncate.Truncate(body.Trim(), 300)}"
+        : $"HTTP {(int)status}";
+
     /// <summary>The <c>error.message</c> of a server's answer, else its text cut short.</summary>
     private static string ErrorMessageOf(string body)
     {
@@ -740,7 +746,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
 
             if (!resp.IsSuccessStatusCode)
             {
-                onStatus(TryExtractError(ParseErrorElement(body)) ?? $"HTTP {(int)resp.StatusCode}");
+                onStatus(RefusalOf(resp.StatusCode, body));
                 return false;
             }
 
@@ -763,7 +769,7 @@ internal sealed class LmStudioClient : OpenAiCompatibleClient
                 var pollBody = await pollResp.Content.ReadAsStringAsync(ct);
                 if (!pollResp.IsSuccessStatusCode)
                 {
-                    onStatus(TryExtractError(ParseErrorElement(pollBody)) ?? $"HTTP {(int)pollResp.StatusCode}");
+                    onStatus(RefusalOf(pollResp.StatusCode, pollBody));
                     return false;
                 }
 

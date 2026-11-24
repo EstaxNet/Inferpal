@@ -161,7 +161,7 @@ internal sealed class InteractPageTool : ITool, IDisposable
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
                 return $"Error: '{url}' is not an http or https URL. An HTML file of the workspace goes in path.";
             // ⚠ As view_page: localhost or a loopback address, never a name under .localhost the system may resolve elsewhere.
-            if (!HttpRequestTool.IsLoopback(uri) || uri.Host.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase))
+            if (!ViewPageTool.ServedHere(uri))
                 return $"Error: '{uri.Host}' is not this machine: interact_page uses pages served here (localhost, 127.0.0.1).";
             target = new Target(uri, uri.AbsoluteUri, null, HttpRequestTool.Subject("GET", uri));
         }

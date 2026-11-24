@@ -15,6 +15,9 @@ namespace Inferpal.Services.Commands;
 /// </remarks>
 internal static class SnippetsCommandHandler
 {
+    /// <summary>The command's usage, said when an argument is not one it knows.</summary>
+    internal const string Usage = "/snippets [list | copy <n> | delete <n> | clear]";
+
     /// <summary>Outcome of a <c>/snippets</c> invocation.</summary>
     /// <param name="Message">Markdown message to show the user.</param>
     /// <param name="CopyToClipboard">When non-null, the caller must place this text on the clipboard.</param>
@@ -45,7 +48,7 @@ internal static class SnippetsCommandHandler
             int i;
             if (byId >= 0) i = byId;
             else if (int.TryParse(parts[2], out var n)) i = n - 1;
-            else return new(Strings.SlashUsage("/snippets [list | copy <n> | delete <n> | clear]"));
+            else return new(Strings.SlashUsage(Usage));
             var idx = i + 1;
             if (i < 0 || i >= snippets.Count)
                 return new(Strings.SnippetsNoSuch(idx));
@@ -57,7 +60,7 @@ internal static class SnippetsCommandHandler
         }
 
         if (sub != "list" || parts.Length > 2)
-            return new(Strings.SlashUsage("/snippets [list | copy <n> | delete <n> | clear]"));
+            return new(Strings.SlashUsage(Usage));
 
         // ⚠ "No snippets saved yet" and "that file did not open" both arrive here as an empty
         // list, and the first sentence ends by offering the gesture that WRITES — told to someone

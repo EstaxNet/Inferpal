@@ -204,7 +204,8 @@ internal static class ApprovalCard
         {
             if (created)
             {
-                var lines = diff.NewText.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
+                // An empty file has no line, as the run's review counts it (RunSummary.LineDelta).
+                var lines = diff.NewText.Length == 0 ? [] : diff.NewText.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
                 meta = Strings.ApprovalLineCount(lines.Length);
                 preview.AddRange(lines.Take(PreviewLines).Select(l => new ApprovalPreviewLine("add", l)));
                 more = Math.Max(0, lines.Length - PreviewLines);
@@ -293,7 +294,7 @@ internal static class ApprovalCard
         try
         {
             var relative = System.IO.Path.GetRelativePath(root, path);
-            return relative.StartsWith("..", StringComparison.Ordinal) || System.IO.Path.IsPathRooted(relative) ? path : relative;
+            return Tools.PathSanitizer.LeavesRoot(relative) ? path : relative;
         }
         catch (ArgumentException) { return path; }
     }

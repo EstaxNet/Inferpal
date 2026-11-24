@@ -78,7 +78,7 @@ internal static class ReplayCommandHandler
         {
             if (!Path.IsPathRooted(subject)) return subject;
             var rel = Path.GetRelativePath(root, subject);
-            return rel.StartsWith("..", StringComparison.Ordinal) ? subject : rel;
+            return Tools.PathSanitizer.LeavesRoot(rel) ? subject : rel;
         }
         catch { return subject; }
     }

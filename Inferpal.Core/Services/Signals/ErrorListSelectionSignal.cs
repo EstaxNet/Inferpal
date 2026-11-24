@@ -95,7 +95,7 @@ internal static class ErrorListSelectionSignal
             var ask = SignalFile.TryRead<ErrorListAsk>(RequestPath);
             if (ask is null || ask.Id == lastId || !SignalFile.WriterAlive(ask.Pid, ask.Ts)) return null;
             var age = SignalFile.Now - DateTimeOffset.FromUnixTimeMilliseconds(ask.Ts);
-            return age >= TimeSpan.Zero && age < MaxAge ? ask : null;
+            return SignalFile.Fresh(age, MaxAge) ? ask : null;
         }
         catch (Exception ex) { Diagnostics.Swallow("ErrorListSelectionSignal.TryTake", ex); return null; }
     }

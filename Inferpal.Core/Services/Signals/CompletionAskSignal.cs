@@ -52,7 +52,7 @@ internal static class CompletionAskSignal
             var ask = SignalFile.TryRead<CompletionAsk>(RequestPath);
             if (ask is null || ask.Id == lastId || !SignalFile.WriterAlive(ask.Pid, ask.Ts)) return null;
             var age = SignalFile.Now - DateTimeOffset.FromUnixTimeMilliseconds(ask.Ts);
-            return age >= TimeSpan.Zero && age < MaxAge ? ask : null;
+            return SignalFile.Fresh(age, MaxAge) ? ask : null;
         }
         catch (Exception ex) { Diagnostics.Swallow("CompletionAskSignal.TryTake", ex); return null; }
     }

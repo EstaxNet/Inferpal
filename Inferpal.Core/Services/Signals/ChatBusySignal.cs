@@ -134,6 +134,6 @@ internal static class ChatBusySignal
     private static bool IsFresh(ChatBusyState state)
     {
         var age = SignalFile.Now - DateTimeOffset.FromUnixTimeMilliseconds(state.Ts);
-        return age >= TimeSpan.Zero && age < MaxAge;
+        return SignalFile.Fresh(age, MaxAge);
     }
 }

@@ -46,8 +46,7 @@ internal sealed class DebugInspectTool(IDebugSession session, IApprovalService a
     public async Task<string> ExecuteAsync(JsonElement args, CancellationToken ct)
     {
         if (!session.IsAvailable)
-            return "No debugger is reachable from this editor session. Do not retry; reason from the "
-                 + "source instead, or ask the user to run the program.";
+            return DebugControlTool.NoDebugger;
 
         var action = args.Keyword("action");
 

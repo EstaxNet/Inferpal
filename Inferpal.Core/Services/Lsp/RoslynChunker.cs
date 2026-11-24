@@ -14,8 +14,8 @@ namespace Inferpal.Services.Lsp;
 /// </summary>
 internal static class RoslynChunker
 {
-    /// <summary>Hard cap in estimated tokens (chars / 4) — same as LspChunker (2× RAG target).</summary>
-    private const int MaxChunkTokens = 1000;
+    /// <summary>Hard cap in estimated tokens: the code chunker's, 2× the RAG target.</summary>
+    private const int MaxChunkTokens = Rag.CodeChunker.MaxChunkTokens;
     private const int MinChunkLines  = 2;
 
     // ── Public API ─────────────────────────────────────────────────────────────

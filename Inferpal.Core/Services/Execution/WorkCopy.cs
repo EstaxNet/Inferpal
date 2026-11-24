@@ -205,12 +205,22 @@ internal sealed class WorkCopy
         return paths;
     }
 
+    /// <summary>Why there is no HEAD to copy from: a git that refused found no repository with a commit; one that did not
+    /// answer, or did not start (absent from PATH), is said as such — never "not a repository".</summary>
+    internal static string NoHead(string? gitFailure) =>
+        gitFailure is { } f && (f.Contains("not a git repository", StringComparison.OrdinalIgnoreCase)
+                                || f.Contains("Needed a single revision", StringComparison.Ordinal)
+                                || f.Contains("unknown revision", StringComparison.Ordinal))
+            ? "this folder is not a git repository with a commit: a copy starts from the last commit"
+            : "git did not answer: " + gitFailure;
+
     /// <summary>Makes a copy of <paramref name="repository"/> at its HEAD on a new branch, held for <paramref name="editor"/>;
     /// the refusal says why there is none.</summary>
     internal static async Task<(WorkCopy? Copy, string? Refusal)> CreateAsync(string repository, CancellationToken ct, string editor = "")
     {
-        var head = await GitText(["rev-parse", "--verify", "HEAD"], repository, ct);
-        if (head is null) return (null, "this folder is not a git repository with a commit: a copy starts from the last commit");
+        var headRun = await GitProcess.CaptureBytesAsync(["rev-parse", "--verify", "HEAD"], repository, ct, MaxFileBytes);
+        if (headRun.Output is null) return (null, NoHead(headRun.Failure));
+        var head = System.Text.Encoding.UTF8.GetString(headRun.Output).Trim();
         var top = await GitText(["rev-parse", "--show-toplevel"], repository, ct);
         var root = Path.GetFullPath(top ?? repository);
 
@@ -434,7 +444,8 @@ internal sealed class WorkCopy
         return new(written, left);
     }
 
-    private static async Task<string?> GitText(string[] args, string workDir, CancellationToken ct)
+    /// <summary>What git printed, trimmed; <c>null</c> when it refused, did not answer or did not start.</summary>
+    internal static async Task<string?> GitText(string[] args, string workDir, CancellationToken ct)
     {
         var run = await GitProcess.CaptureBytesAsync(args, workDir, ct, MaxFileBytes);
         return run.Output is null ? null : Encoding.UTF8.GetString(run.Output).Trim();

@@ -256,7 +256,7 @@ internal static class ContentExclusions
         try
         {
             var relative = Path.GetRelativePath(root, path);
-            return relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative)
+            return Tools.PathSanitizer.LeavesRoot(relative)
                 ? path
                 : relative.Replace('\\', '/');
         }

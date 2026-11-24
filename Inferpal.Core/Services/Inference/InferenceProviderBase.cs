@@ -23,6 +23,13 @@ namespace Inferpal.Services.Inference;
 /// </remarks>
 internal abstract class InferenceProviderBase : IInferenceProvider
 {
+    /// <summary>How long one embedding request may take, whichever server answers it.</summary>
+    private protected static readonly TimeSpan EmbeddingDeadline = TimeSpan.FromSeconds(30);
+
+    /// <summary>What an embedding that ran out of <see cref="EmbeddingDeadline"/> is said as.</summary>
+    private protected static string EmbeddingNoAnswer =>
+        string.Create(System.Globalization.CultureInfo.InvariantCulture, $"no answer within {EmbeddingDeadline.TotalSeconds:0} s");
+
     /// <summary>
     /// The backend client. Deliberately <b>not</b> configured like the outbound-web clients, and
     /// the difference is worth stating because it looked like an oversight in the review that

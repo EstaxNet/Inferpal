@@ -121,7 +121,7 @@ internal static class BenchCommandHandler
                   : "—")
               .Append(" | ")
               .Append(r.VramBytes >= 0
-                  ? (r.VramBytes / 1073741824.0).ToString("0.0", CultureInfo.InvariantCulture) + " GB"
+                  ? (r.VramBytes / Inference.ModelCatalog.BytesPerGb).ToString("0.0", CultureInfo.InvariantCulture) + " GB"
                   : "—")
               .Append(" | ").Append(r.QualityScore).Append('/').Append(r.QualityMax)
               .AppendLine(" |");

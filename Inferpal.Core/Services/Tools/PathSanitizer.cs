@@ -17,6 +17,13 @@ internal sealed class NoWorkspaceRootException() : ArgumentException(PathSanitiz
 /// </summary>
 internal static class PathSanitizer
 {
+    /// <summary>Whether a path made relative to a root (<see cref="Path.GetRelativePath(string, string)"/>) leaves it: a
+    /// parent step (<c>..</c>, <c>../x</c>), or another drive (a rooted result). A file of the root whose name begins with two
+    /// dots (<c>..env.local</c>) does not.</summary>
+    internal static bool LeavesRoot(string relative) =>
+        relative == ".." || relative.StartsWith("../", StringComparison.Ordinal) || relative.StartsWith("..\\", StringComparison.Ordinal)
+        || Path.IsPathRooted(relative);
+
     /// <summary>
     /// Returns a normalised, absolute path, or throws <see cref="ArgumentException"/>
     /// with a localised message the LLM can read and act upon.
@@ -123,16 +130,11 @@ internal static class PathSanitizer
         // ⚠ Another machine is refused from the path's TEXT, before resolving its links: resolving them is a connection to
         // that host. One place for every built-in reader, whichever argument the path came in.
         if (Execution.NetworkPath.OutsideTheWorkspace(fullPath, workspaceRoot))
-            throw new ArgumentException(
-                $"Access denied: path is on another machine on the network, outside the workspace root.\n" +
-                $"  Requested : {fullPath}\n" +
-                $"  Workspace : {workspaceRoot}");
+            throw Denied("path is on another machine on the network, outside the workspace root", fullPath, workspaceRoot);
         // A local path whose link leads to another machine: refused from the link's own data, before resolving it.
         if (Execution.NetworkPath.LeadsOutside(fullPath, workspaceRoot))
-            throw new ArgumentException(
-                $"Access denied: a link on this path leads to another machine on the network ({Execution.NetworkPath.Landing(fullPath)}), outside the workspace root.\n" +
-                $"  Requested : {fullPath}\n" +
-                $"  Workspace : {workspaceRoot}");
+            throw Denied($"a link on this path leads to another machine on the network ({Execution.NetworkPath.Landing(fullPath)}), outside the workspace root",
+                         fullPath, workspaceRoot);
 
         // Compare link-resolved paths: Path.GetFullPath normalises ./ and ../ but follows no
         // symlink or junction, so a link planted inside the workspace would otherwise let a
@@ -147,11 +149,12 @@ internal static class PathSanitizer
         // For descendants, require the trailing separator so that "C:\proj\src"
         // doesn't accidentally prefix-match "C:\proj\src_other".
         if (!target.StartsWith(rootBare + Path.DirectorySeparatorChar, PathComparison))
-            throw new ArgumentException(
-                $"Access denied: path is outside the workspace root.\n" +
-                $"  Requested : {fullPath}\n" +
-                $"  Workspace : {workspaceRoot}");
+            throw Denied("path is outside the workspace root", fullPath, workspaceRoot);
     }
+
+    /// <summary>A path refused: why, then the path asked and the workspace — every refusal of the judge says both.</summary>
+    private static ArgumentException Denied(string why, string fullPath, string? workspaceRoot) =>
+        new($"Access denied: {why}.\n  Requested : {fullPath}\n  Workspace : {workspaceRoot}");
 
     /// <summary>
     /// For a WRITE: throws when the file, under another of its names (a hard link), lives outside the workspace — writing
@@ -169,9 +172,8 @@ internal static class PathSanitizer
             var reached = Canonical(name);
             if (!string.Equals(reached, rootReached, PathComparison)
                 && !reached.StartsWith(rootReached + Path.DirectorySeparatorChar, PathComparison))
-                throw new ArgumentException(
-                    $"Access denied: this file is also {name}, outside the workspace root (a hard link): writing it changes "
-                    + $"that file too.\n  Requested : {fullPath}\n  Workspace : {workspaceRoot}");
+                throw Denied($"this file is also {name}, outside the workspace root (a hard link): writing it changes that file too",
+                             fullPath, workspaceRoot);
         }
     }
 

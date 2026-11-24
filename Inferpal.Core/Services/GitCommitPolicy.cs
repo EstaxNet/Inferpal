@@ -123,8 +123,10 @@ internal static class GitCommitPolicy
     /// reasoning-model output doesn't land in the prompt), then wrapping backticks and
     /// quotes removed.
     /// </summary>
+    /// <remarks>Read as every reply turned into an artifact: the reasoning in front of it, then a fence wrapping it whole
+    /// (its language word with it: <c>```text</c>).</remarks>
     public static string CleanProposal(string? finalResponse) =>
-        MarkdownParser.StripThinkTags(finalResponse).Trim().Trim('`').Trim('"').Trim();
+        MarkdownParser.WithoutEnclosingFence(MarkdownParser.WithoutLeadingReasoning(finalResponse)).Trim().Trim('`').Trim('"').Trim();
 
     /// <summary>Escapes the message for interpolation inside <c>git commit -m "…"</c>.</summary>
     /// <remarks>Win32 argument parsing (MSVCRT rule): a backslash only escapes when it precedes a

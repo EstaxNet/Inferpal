@@ -123,7 +123,7 @@ internal static class InlineDiffPreviewSignal
             if (!SignalFile.WriterAlive(request.Pid, request.Ts)) return null;
 
             var age = SignalFile.Now - DateTimeOffset.FromUnixTimeMilliseconds(request.Ts);
-            return age >= TimeSpan.Zero && age < MaxAge ? request : null;
+            return SignalFile.Fresh(age, MaxAge) ? request : null;
         }
         catch { return null; }
     }

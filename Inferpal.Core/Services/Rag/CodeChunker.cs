@@ -27,7 +27,7 @@ internal static class CodeChunker
     private const int OverlapTokens = 100;
 
     /// <summary>Hard cap for a single method/symbol — 2× target to accommodate large methods.</summary>
-    private const int MaxChunkTokens = TargetChunkTokens * 2;
+    internal const int MaxChunkTokens = TargetChunkTokens * 2;
 
     /// <summary>Minimum chunk size — smaller fragments are skipped.</summary>
     private const int MinChunkLines = 4;

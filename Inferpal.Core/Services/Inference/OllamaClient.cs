@@ -505,7 +505,7 @@ internal class OllamaClient : InferenceProviderBase
         try
         {
             using var sendCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            sendCts.CancelAfter(TimeSpan.FromSeconds(30));
+            sendCts.CancelAfter(EmbeddingDeadline);
 
             // Ollama /api/embeddings uses "prompt" as the text field (legacy API)
             var requestBody = new { model, prompt = text };
@@ -550,7 +550,7 @@ internal class OllamaClient : InferenceProviderBase
             // Network error, HTTP error, JSON parse error, 30-s inner timeout, etc.
             // Record failure against the embedding breaker only — do NOT touch the chat breaker.
             RecordEmbeddingFailure();
-            NoteEmbeddingFailure(model, ex is OperationCanceledException ? "no answer within 30 s" : Diagnostics.RootMessage(ex));
+            NoteEmbeddingFailure(model, ex is OperationCanceledException ? EmbeddingNoAnswer : Diagnostics.RootMessage(ex));
             return null;
         }
     }
@@ -921,7 +921,10 @@ internal class OllamaClient : InferenceProviderBase
                     return;
                 }
 
-                var chunk = JsonSerializer.Deserialize<GenerateResponse>(line, _jsonOpts);
+                // A line that cannot be read is skipped, as the chat's stream skips it: never the end of the suggestion.
+                GenerateResponse? chunk;
+                try { chunk = JsonSerializer.Deserialize<GenerateResponse>(line, _jsonOpts); }
+                catch (JsonException) { continue; }
                 if (chunk is null) continue;
                 if (!string.IsNullOrEmpty(chunk.Response)) onToken(chunk.Response);
                 if (chunk.Done) break;

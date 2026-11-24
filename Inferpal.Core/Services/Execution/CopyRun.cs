@@ -87,20 +87,13 @@ internal sealed class CopyRun
     {
         // ⚠ No folder open: git would run where the process happens to be, and copy THAT repository.
         if (string.IsNullOrWhiteSpace(workspace))
-            return new CopyStart("no folder is open: a copy is made of the folder open in the editor", null, null, null);
+            return new CopyStart(NoFolder, null, null, null);
         var head = await GitProcess.CaptureBytesAsync(["rev-parse", "--verify", "--short", "HEAD"], workspace, ct, WorkCopy.MaxFileBytes);
         if (head.Output is null)
         {
-            // ⚠ A git that refused found nothing; one that did not answer, or did not start, is said as such — never "not a
-            // repository".
-            var notARepository = head.Failure is { } f && (f.Contains("not a git repository", StringComparison.OrdinalIgnoreCase)
-                                                          || f.Contains("Needed a single revision", StringComparison.Ordinal)
-                                                          || f.Contains("unknown revision", StringComparison.Ordinal));
-            return new CopyStart(notARepository
-                ? "this folder is not a git repository with a commit: a copy starts from the last commit"
-                : "git did not answer: " + head.Failure, null, null, null);
+            return new CopyStart(WorkCopy.NoHead(head.Failure), null, null, null);
         }
-        var branch = await GitText(["symbolic-ref", "--short", "-q", "HEAD"], workspace, ct);
+        var branch = await WorkCopy.GitText(["symbolic-ref", "--short", "-q", "HEAD"], workspace, ct);
         var uncommitted = await WorkCopy.UncommittedAsync(workspace, ct);
         return new CopyStart(null, Encoding.UTF8.GetString(head.Output).Trim(), string.IsNullOrEmpty(branch) ? null : branch, uncommitted);
     }
@@ -109,7 +102,7 @@ internal sealed class CopyRun
     /// why when it cannot.</summary>
     internal static async Task<(CopyRun? Run, string? Refusal)> StartAsync(string workspace, CancellationToken ct, string editor = "")
     {
-        if (string.IsNullOrWhiteSpace(workspace)) return (null, "no folder is open: a copy is made of the folder open in the editor");
+        if (string.IsNullOrWhiteSpace(workspace)) return (null, NoFolder);
         var (copy, refusal) = await WorkCopy.CreateAsync(workspace, ct, editor);
         return copy is null ? (null, refusal) : (new CopyRun(copy, workspace, leftBefore: false), null);
     }
@@ -222,9 +215,6 @@ internal sealed class CopyRun
         return (true, problem);
     }
 
-    private static async Task<string?> GitText(string[] args, string workDir, CancellationToken ct)
-    {
-        var run = await GitProcess.CaptureBytesAsync(args, workDir, ct, WorkCopy.MaxFileBytes);
-        return run.Output is null ? null : Encoding.UTF8.GetString(run.Output).Trim();
-    }
+    /// <summary>Why no copy is made with no folder open.</summary>
+    private const string NoFolder = "no folder is open: a copy is made of the folder open in the editor";
 }

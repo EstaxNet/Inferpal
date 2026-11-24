@@ -502,30 +502,10 @@ internal static class ChatModes
     /// the repository (a cloned link to <c>~/.ssh</c> would send its keys to the model as instructions).</summary>
     private static string? ReadBounded(string path, string source, string? confineTo, List<ChatModeNote> notes)
     {
-        try
-        {
-            if (confineTo is not null)
-            {
-                try { PathSanitizer.AssertUnderRoot(path, confineTo); }
-                catch (ArgumentException)
-                {
-                    notes.Add(new ChatModeNote(source, ChatModeNoteKind.LeavesTheRepository));
-                    return null;
-                }
-            }
-            var size = new FileInfo(path).Length;
-            if (size > MaxFileBytes)
-            {
-                notes.Add(new ChatModeNote(source, ChatModeNoteKind.Unreadable, $"{size} bytes, over {MaxFileBytes}"));
-                return null;
-            }
-            return TextFileEncoding.ReadText(path);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            notes.Add(new ChatModeNote(source, ChatModeNoteKind.Unreadable, ex.Message));
-            return null;
-        }
+        var (text, problem, detail) = RepoFile.Read(path, confineTo, MaxFileBytes);
+        if (problem == RepoFileProblem.LeavesTheRepository) notes.Add(new ChatModeNote(source, ChatModeNoteKind.LeavesTheRepository));
+        else if (problem != RepoFileProblem.None) notes.Add(new ChatModeNote(source, ChatModeNoteKind.Unreadable, detail));
+        return text;
     }
 
     private static string StemOf(string fileName) =>

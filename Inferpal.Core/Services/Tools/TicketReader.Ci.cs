@@ -32,7 +32,7 @@ internal static partial class TicketReader
         var root = $"{u.Scheme}://{u.Authority}";
         try
         {
-            if (u.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) || u.Host.Equals("www.github.com", StringComparison.OrdinalIgnoreCase))
+            if (IsGitHub(u.Host))
             {
                 if (GitHubRunPath.Match(u.AbsolutePath) is not { Success: true } m) return null;
                 var repo = $"https://api.github.com/repos/{m.Groups[1].Value}/{m.Groups[2].Value}";

@@ -15,6 +15,9 @@ namespace Inferpal.Services.Commands;
 /// </remarks>
 internal static class UndoRunCommandHandler
 {
+    /// <summary>The command's usage, said when an argument is not one it knows.</summary>
+    internal const string Usage = "/undo-run [list|review]";
+
     /// <param name="history">Session change tracker (<c>ToolRegistry.History</c>).</param>
     /// <param name="parts">Tokenised command; <c>parts[1] == "list"</c> switches to listing.</param>
     /// <param name="root">Project root used to shorten paths; may be null or empty.</param>
@@ -54,7 +57,7 @@ internal static class UndoRunCommandHandler
         {
             if (parts.Length < 3 || !int.TryParse(named[(colon + 1)..], System.Globalization.NumberStyles.None,
                                                   System.Globalization.CultureInfo.InvariantCulture, out var n) || n < 1)
-                return Strings.SlashUsage("/undo-run [list|review]");
+                return Strings.SlashUsage(Usage);
             (named, change) = (named[..colon], n);
         }
         // `/undo-run #<id> <file>`: that one file of that run, as the review card's Undo.
@@ -69,7 +72,7 @@ internal static class UndoRunCommandHandler
         }
         // Only a bare `/undo-run` (or a bar's) reverts. An argument it does not know — a typo of `list`, or a number
         // read as picking a run from the listing — must not revert the most recent run instead.
-        if (parts.Length >= 2 && named is null) return Strings.SlashUsage("/undo-run [list|review]");
+        if (parts.Length >= 2 && named is null) return Strings.SlashUsage(Usage);
 
         HistoryRun? run;
         if (named is not null)
@@ -320,9 +323,7 @@ internal static class UndoRunCommandHandler
         try
         {
             var rel = Path.GetRelativePath(root, path);
-            // Outside: "..", "../x", or another drive. A file of the root whose name starts with two dots is inside.
-            return rel == ".." || rel.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)
-                   || rel.StartsWith("../", StringComparison.Ordinal) || Path.IsPathRooted(rel) ? path : rel;
+            return Tools.PathSanitizer.LeavesRoot(rel) ? path : rel;
         }
         catch (Exception ex)
         {

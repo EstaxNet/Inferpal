@@ -167,7 +167,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
 
     // The loaded window changes only on (un)load: cached briefly per model, so the probe does not run on every agent
     // iteration — and a server that has neither endpoint costs two GETs per half-minute, not two per request.
-    private static readonly TimeSpan LoadedWindowCacheLife = TimeSpan.FromSeconds(30);
+    private protected static readonly TimeSpan LoadedWindowCacheLife = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Budget of the whole probe (both endpoints). Short, because it runs ahead of a request the user is waiting for
@@ -1042,7 +1042,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         try
         {
             using var sendCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            sendCts.CancelAfter(TimeSpan.FromSeconds(30));
+            sendCts.CancelAfter(EmbeddingDeadline);
 
             using var req = new HttpRequestMessage(HttpMethod.Post, $"{base_}/embeddings")
             {
@@ -1058,7 +1058,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
             return emb is { Length: > 0 } ? (emb, string.Empty, false) : (null, "the response held no vector", false);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (OperationCanceledException) { return (null, "no answer within 30 s", false); }
+        catch (OperationCanceledException) { return (null, EmbeddingNoAnswer, false); }
         catch (Exception ex) { return (null, Diagnostics.RootMessage(ex), false); }
     }
 
@@ -1225,8 +1225,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         FimRefused.TryGetValue(BaseV1 + "|" + model, out var until) && DateTime.UtcNow < until;
 
     /// <summary>The host root, under which llama-server serves <c>/props</c> and <c>/infill</c> (not under <c>/v1</c>).</summary>
-    private protected string Root =>
-        BaseV1.EndsWith("/v1", StringComparison.OrdinalIgnoreCase) ? BaseV1[..^3] : BaseV1;
+    private protected string Root => ProviderProbe.RootOf(BaseV1);
 
     /// <summary>
     /// Whether the server is llama-server; <c>null</c> when it does not say. ⚠ Only a definite answer is kept —

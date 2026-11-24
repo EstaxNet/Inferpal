@@ -24,8 +24,8 @@ namespace Inferpal.Services.Lsp;
 /// </remarks>
 internal static class LspChunker
 {
-    /// <summary>Hard cap in estimated tokens (chars / 4). LSP symbols are already semantic so we allow 2× the RAG target.</summary>
-    private const int MaxChunkTokens = 1000;
+    /// <summary>Hard cap in estimated tokens: the code chunker's, 2× the RAG target (LSP symbols are already semantic).</summary>
+    private const int MaxChunkTokens = Rag.CodeChunker.MaxChunkTokens;
 
     // ── Public API ─────────────────────────────────────────────────────────────
 

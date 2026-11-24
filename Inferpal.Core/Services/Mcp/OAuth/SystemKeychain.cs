@@ -124,9 +124,9 @@ internal sealed class SystemKeychain
         catch (FormatException) { throw new CryptographicException("The keychain holds something that is not Inferpal's key."); }
     }
 
-    private sealed record Ran(int Exit, string Stdout, string Stderr);
+    internal sealed record Ran(int Exit, string Stdout, string Stderr);
 
-    private static Ran Run(string file, IEnumerable<string> args, string? input)
+    internal static Ran Run(string file, IEnumerable<string> args, string? input)
     {
         var psi = new ProcessStartInfo
         {
@@ -134,7 +134,10 @@ internal sealed class SystemKeychain
             UseShellExecute = false, CreateNoWindow = true, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8,
         };
         foreach (var arg in args) psi.ArgumentList.Add(arg);
-        using var process = ChildProcess.Start(psi);
+        // ⚠ Not ChildProcess.Start: it closes the child's input at once, and the key is written there. Bound to the host's
+        // lifetime as every child of the Core.
+        using var process = Process.Start(psi)!;
+        ProcessLifetime.Bind(process);
         var stdout = process.StandardOutput.ReadToEndAsync();
         var stderr = process.StandardError.ReadToEndAsync();
         if (input is not null) process.StandardInput.Write(input);
