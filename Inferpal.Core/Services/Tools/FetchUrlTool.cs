@@ -10,7 +10,8 @@ namespace Inferpal.Services.Tools;
 
 internal class FetchUrlTool : ITool
 {
-    private const int MaxRedirects = 5;
+    /// <summary>Redirect hops followed per address, each one re-validated (fetch_url, the docs crawler).</summary>
+    internal const int MaxRedirects = 5;
 
     private readonly IApprovalService _approval;
 
@@ -154,7 +155,7 @@ internal class FetchUrlTool : ITool
             // so a TTL≈0 attacker can answer public here and private there (classic rebinding).
             // Pinning the validated IP via ConnectCallback would close it; today the approval
             // prompt upstream is the real boundary for the model's calls (FetchAsync: the person's own).
-            var check = IsPrivateOrLoopback(current) ? HostCheck.Private : await CheckHostAsync(current, ct);
+            var check = await GuardAsync(current, ct);
             if (check == HostCheck.Private)
                 throw new ArgumentException(
                     hop == 0
@@ -282,13 +283,12 @@ internal class FetchUrlTool : ITool
     }
 
     /// <summary>
-    /// Resolves the host NAME via DNS and returns <c>true</c> if any returned address is
-    /// private/loopback. Closes the DNS-rebinding gap that <see cref="IsPrivateOrLoopback"/>
-    /// (IP-literal only) leaves open. IP literals are already covered, so they are skipped here.
+    /// The two-stage guard every fetch of an address from outside goes through: the literal address
+    /// (<see cref="IsPrivateOrLoopback"/>), then the addresses its host NAME resolves to, which closes the
+    /// DNS-rebinding gap the literal check leaves open. A DNS failure or a malformed URI is not public: blocked.
     /// </summary>
-    internal static async Task<bool> ResolvesToPrivateAsync(string url, CancellationToken ct) =>
-        // DNS failure / malformed URI: block rather than risk an unvalidated request.
-        await CheckHostAsync(url, ct) != HostCheck.Public;
+    internal static async Task<HostCheck> GuardAsync(string url, CancellationToken ct) =>
+        IsPrivateOrLoopback(url) ? HostCheck.Private : await CheckHostAsync(url, ct);
 
     /// <summary>What the DNS check found — kept apart so a refusal names its cause.</summary>
     internal enum HostCheck { Public, Private, Unresolved }

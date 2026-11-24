@@ -132,7 +132,7 @@ internal static class ZipCrypt
         try
         {
             using var f = File.OpenRead(archive);
-            var tail = (int)Math.Min(f.Length, 66_000);
+            var tail = (int)Math.Min(f.Length, Archives.EndRecordReach);
             var buf = new byte[tail];
             f.Seek(-tail, SeekOrigin.End);
             f.ReadExactly(buf);

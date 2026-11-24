@@ -64,7 +64,10 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
         },
     };
 
-    private static readonly HashSet<string> Methods = new(StringComparer.Ordinal) { "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS" };
+    /// <summary>The methods a request may use, as a regular expression's alternatives.</summary>
+    internal const string MethodNames = "GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS";
+
+    private static readonly HashSet<string> Methods = new(MethodNames.Split('|'), StringComparer.Ordinal);
 
     // Headers that would change WHERE or HOW the request goes, not what it says: Host reroutes through local forward proxies
     // and virtual hosts, Upgrade opens a websocket (a debugger's port), the framing ones are the client's to write.
@@ -337,10 +340,7 @@ internal sealed class HttpRequestTool(IApprovalService approval, Func<string?>? 
               || charset?.StartsWith("utf-32", StringComparison.OrdinalIgnoreCase) == true) && TextFileEncoding.IsBinary(bytes))
             return sb.Append($"(binary body: {(cut ? "more than " : "")}{bytes.Length} bytes, {response.Content.Headers.ContentType?.MediaType ?? "no content type"})").ToString();
 
-        Encoding encoding;
-        try { encoding = charset is { Length: > 0 } ? Encoding.GetEncoding(charset) : Encoding.UTF8; }
-        catch (ArgumentException) { encoding = Encoding.UTF8; }
-        var text = encoding.GetString(bytes);
+        var text = WebPage.Decode(bytes.ToArray(), charset);
         if (graphQl != GraphQlAnswer.None)
         {
             // Judged on the whole answer read, before the cut below: a real schema is far past any page.

@@ -62,6 +62,14 @@ public class CohereFormatTests
         Assert.Equal("The Counter page now has a Reset button that sets the count back to zero.",
                      MarkdownParser.StripThinkTags(ThroughTheEnvelope(AnswerTurn, chunk)));
 
+    // A commit message, a PR description, an inline edit: their reader takes out a reasoning closed on its own line.
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4096)]
+    public void TheAnswer_ReadAsAnArtifact_LosesItsReasoning_Too(int chunk) =>
+        Assert.Equal("The Counter page now has a Reset button that sets the count back to zero.",
+                     MarkdownParser.WithoutLeadingReasoning(ThroughTheEnvelope(AnswerTurn, chunk)).Trim());
+
     [Fact]
     public void SeveralCallsInOneAction_AreAllRead()
     {

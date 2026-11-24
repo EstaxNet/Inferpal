@@ -153,7 +153,7 @@ internal class FileHistoryService
         try
         {
             var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(workspaceRoot));
-            var dir  = Path.Combine(AnchorOfFolder(root, root), ".inferpal", "history");
+            var dir  = ProjectHistoryOf(AnchorOfFolder(root, root));
             if (Directory.Exists(dir)) IgnoreInGit(dir);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
@@ -666,6 +666,8 @@ internal class FileHistoryService
         var bytes = await File.ReadAllBytesAsync(snapPath, ct);
         var (saved, preRestore) = await BackUpBeforeChangeAsync(targetPath, ct);
         if (!saved) return (false, string.Empty);
+        // A command deletes a folder with its files (`rm -rf`): giving a file back gives its folder back.
+        if (Path.GetDirectoryName(targetPath) is { Length: > 0 } folder) Directory.CreateDirectory(folder);
         // Past the backup, a Stop asked now must not leave the file half written: the write ends.
         await File.WriteAllBytesAsync(targetPath, bytes, CancellationToken.None);
         return (true, preRestore);
@@ -997,7 +999,7 @@ internal class FileHistoryService
 
     /// <summary>Where this instance writes its runs: beside the workspace's new snapshots.</summary>
     private string? RunsDirToWrite() => WorkspaceAnchor() is { } anchor
-        ? Path.Combine(OutsideProject?.Invoke() == true ? UserHistoryDir(anchor) : Path.Combine(anchor, ".inferpal", "history"),
+        ? Path.Combine(OutsideProject?.Invoke() == true ? UserHistoryDir(anchor) : ProjectHistoryOf(anchor),
                        RunManifest.Folder)
         : null;
 
@@ -1008,7 +1010,7 @@ internal class FileHistoryService
         try
         {
             if (WorkspaceAnchor() is not { } anchor) return files;
-            var dirs = new List<string> { Path.Combine(anchor, ".inferpal", "history", RunManifest.Folder) };
+            var dirs = new List<string> { Path.Combine(ProjectHistoryOf(anchor), RunManifest.Folder) };
             try { dirs.Add(Path.Combine(UserHistoryDir(anchor), RunManifest.Folder)); }
             catch (IOException) { }   // no user folder: the project's still is one
             foreach (var dir in dirs.Where(Directory.Exists).Distinct(PathComparer.Default))
@@ -1451,7 +1453,7 @@ internal class FileHistoryService
     {
         var path = change.OriginalPath;
         // Created by the run: one change by nature, given back whole.
-        if (change.SnapshotPath is null && !change.SnapshotFailed) return (PieceOutcome.WholeOnly, RunPieces.Whole.Created);
+        if (change.Created) return (PieceOutcome.WholeOnly, RunPieces.Whole.Created);
         if (change.SnapshotFailed || !File.Exists(change.SnapshotPath)) return (PieceOutcome.NoCopy, RunPieces.Whole.None);
         await _pieceGate.WaitAsync(ct);
         var pruneLater = new List<(string Dir, string Suffix)>();
@@ -1496,7 +1498,7 @@ internal class FileHistoryService
             lock (_runLock)
             {
                 run.NotePieces(path, new PieceMarks((marks?.Generation ?? 0) + 1, runCopy, [.. undone.Order()],
-                                                    [.. kept.Order()], Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes))));
+                                                    [.. kept.Order()], ContentHash(bytes)));
                 // A change given the run's version again: the run is no longer wholly undone.
                 if (outcome == PieceOutcome.Redone) run.ReopenUndo();
                 open = ReferenceEquals(run, _currentRun);
@@ -1554,6 +1556,10 @@ internal class FileHistoryService
     internal static bool AsTheUndoLeft(RunChange change) => change.SnapshotPath is { } before
         ? ContentHash(change.OriginalPath) is { Length: > 0 } now && now == ContentHash(before)
         : !change.SnapshotFailed && !File.Exists(change.OriginalPath);
+
+    /// <summary>The SHA-256 of <paramref name="bytes"/>, the hash a file's own (<see cref="ContentHash(string)"/>) is
+    /// compared with: both must stay one formula, or every mark reads as "changed since".</summary>
+    internal static string ContentHash(byte[] bytes) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
 
     /// <summary>The SHA-256 of <paramref name="path"/>'s bytes, "" for no file, <c>null</c> when it cannot be read.</summary>
     internal static string? ContentHash(string path)
@@ -1753,7 +1759,7 @@ internal class FileHistoryService
         var anchor = AnchorOf(filePath, WorkspaceRoot?.Invoke());
         return OutsideProject?.Invoke() == true
             ? (UserHistoryDir(anchor), anchor)
-            : (Path.Combine(anchor, ".inferpal", "history"), null);
+            : (ProjectHistoryOf(anchor), null);
     }
 
     /// <summary>
@@ -1766,7 +1772,7 @@ internal class FileHistoryService
     private IEnumerable<string> HistoryDirsOf(string filePath)
     {
         var anchor  = AnchorOf(filePath, WorkspaceRoot?.Invoke());
-        var project = Path.Combine(anchor, ".inferpal", "history");
+        var project = ProjectHistoryOf(anchor);
         string? user;
         try { user = UserHistoryDir(anchor); }
         catch (IOException) { user = null; }   // no user folder to read from: the project's still is one
@@ -1783,8 +1789,10 @@ internal class FileHistoryService
 
     /// <summary>The git root's <c>.inferpal/history</c>; outside git, the workspace root's when the file is under
     /// <paramref name="workspaceRoot"/>; else the file's own folder.</summary>
-    internal static string GetHistoryDir(string filePath, string? workspaceRoot = null) =>
-        Path.Combine(AnchorOf(filePath, workspaceRoot), ".inferpal", "history");
+    internal static string GetHistoryDir(string filePath, string? workspaceRoot = null) => ProjectHistoryOf(AnchorOf(filePath, workspaceRoot));
+
+    /// <summary>The history folder kept in the project at <paramref name="anchor"/>: <c>.inferpal/history</c>.</summary>
+    internal static string ProjectHistoryOf(string anchor) => Path.Combine(anchor, ".inferpal", "history");
 
     /// <summary>The folder a file's history belongs to: its git work tree; outside git, <paramref name="workspaceRoot"/>
     /// when the file is under it; else the file's own folder. One history per anchor, wherever it is kept.</summary>
@@ -1877,7 +1885,14 @@ internal class FileHistoryService
 /// was <em>created</em> during the run (no prior content — undo deletes it) — unless
 /// <see cref="SnapshotFailed"/> is set: the file existed but its snapshot could not be taken, so
 /// undo can neither restore nor delete it and reports it as failed.</summary>
-internal sealed record RunChange(string OriginalPath, string? SnapshotPath, bool SnapshotFailed = false);
+internal sealed record RunChange(string OriginalPath, string? SnapshotPath, bool SnapshotFailed = false)
+{
+    /// <summary>The run created the file: nothing to restore, undo deletes it. Never when the copy failed.</summary>
+    public bool Created => SnapshotPath is null && !SnapshotFailed;
+
+    /// <summary>The file existed and its copy is not there: never taken, or gone since.</summary>
+    public bool CopyMissing() => SnapshotFailed || SnapshotPath is { } copy && !File.Exists(copy);
+}
 
 /// <summary>One tool invocation in a run's journal (for <c>/replay</c>). <see cref="Subject"/> is the
 /// best-effort target extracted from the arguments (path, command, query…), <c>null</c> when none.

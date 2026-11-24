@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using static Inferpal.Services.JsonFields;
 using Inferpal.Services.Tools;
 
 namespace Inferpal.Services.Documents;
@@ -151,7 +152,7 @@ internal sealed class PageSession : IDisposable
             if (work is not null) Remove(work);
             served?.Dispose();
             if (ex is OperationCanceledException) throw;
-            return (null, "the browser's DevTools protocol failed: " + ex.Message);
+            return (null, ChromiumDevTools.ProtocolFailed + ex.Message);
         }
     }
 
@@ -178,29 +179,29 @@ internal sealed class PageSession : IDisposable
         switch (name)
         {
             case "Page.frameStartedLoading":
-                if (Text(p, "frameId") is { Length: > 0 } frame && frame == events.MainFrame) page.Record(MainFrameLoading);
+                if (Str(p, "frameId") is { Length: > 0 } frame && frame == events.MainFrame) page.Record(MainFrameLoading);
                 return;
             case "Runtime.consoleAPICalled":
                 var args = p.TryGetProperty("args", out var a) && a.ValueKind == JsonValueKind.Array
                     ? string.Join(" ", a.EnumerateArray().Select(Shown))
                     : "";
-                line = $"{Text(p, "type")}: {args}";
+                line = $"{Str(p, "type")}: {args}";
                 break;
             case "Runtime.exceptionThrown":
                 var details = p.GetProperty("exceptionDetails");
-                var description = details.TryGetProperty("exception", out var e) ? Text(e, "description") : "";
-                line = "error: uncaught " + (description.Length > 0 ? description.Split('\n')[0] : Text(details, "text"));
+                var description = details.TryGetProperty("exception", out var e) ? Str(e, "description") : "";
+                line = "error: uncaught " + (description.Length > 0 ? description.Split('\n')[0] : Str(details, "text"));
                 break;
             case "Log.entryAdded":
                 var entry = p.GetProperty("entry");
-                var url = Text(entry, "url");
-                line = $"{Text(entry, "level")}: {Text(entry, "text")}"
+                var url = Str(entry, "url");
+                line = $"{Str(entry, "level")}: {Str(entry, "text")}"
                      + (Uri.TryCreate(url, UriKind.Absolute, out var at) ? $" ({at.PathAndQuery})" : "");
                 break;
             case "Page.javascriptDialogOpening":
-                var kind = Text(p, "type");
-                lock (events) events.Dialogs.Add($"the page showed a {kind} \"{Cut(Text(p, "message"))}\": answered OK");
-                page.Post("Page.handleJavaScriptDialog", new { accept = true, promptText = Text(p, "defaultPrompt") });
+                var kind = Str(p, "type");
+                lock (events) events.Dialogs.Add($"the page showed a {kind} \"{Cut(Str(p, "message"))}\": answered OK");
+                page.Post("Page.handleJavaScriptDialog", new { accept = true, promptText = Str(p, "defaultPrompt") });
                 return;
         }
         if (line is null) return;
@@ -223,9 +224,6 @@ internal sealed class PageSession : IDisposable
     }
 
     private static bool IsError(string line) => line.StartsWith("error", StringComparison.Ordinal);
-
-    private static string Text(JsonElement e, string name) =>
-        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
 
     private static string Cut(string s)
     {
@@ -572,7 +570,7 @@ internal sealed class PageSession : IDisposable
         }
         if (evaluated.TryGetProperty("exceptionDetails", out var thrown))
             throw new PageScriptException("the page's script failed: "
-                + (thrown.TryGetProperty("exception", out var e) ? Text(e, "description").Split('\n')[0] : Text(thrown, "text")));
+                + (thrown.TryGetProperty("exception", out var e) ? Str(e, "description").Split('\n')[0] : Str(thrown, "text")));
         return evaluated.GetProperty("result").TryGetProperty("value", out var value) ? value.Clone() : default;
     }
 

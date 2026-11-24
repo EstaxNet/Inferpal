@@ -26,26 +26,42 @@ internal sealed class TextLoopDetector
     internal const int MinOccurrences  = 4;
     internal const int CheckEveryChars = 400;
 
-    private readonly StringBuilder _recent = new();
-    private int _sinceCheck;
+    private readonly LoopWindow _window = new();
 
     /// <summary>Whether the text, with <paramref name="delta"/> appended, now ends in a loop.</summary>
     public bool Repeats(string delta)
     {
-        if (string.IsNullOrEmpty(delta)) return false;
-        _recent.Append(delta);
-        if (_recent.Length > WindowChars) _recent.Remove(0, _recent.Length - WindowChars);
-
-        _sinceCheck += delta.Length;
-        if (_sinceCheck < CheckEveryChars || _recent.Length < TailChars * MinOccurrences) return false;
-        _sinceCheck = 0;
-
-        var text = _recent.ToString();
+        if (_window.Sample(delta) is not { } text) return false;
         var tail = text[^TailChars..];
         var count = 0;
         for (var i = text.IndexOf(tail, StringComparison.Ordinal); i >= 0;
              i = text.IndexOf(tail, i + 1, StringComparison.Ordinal))
             if (++count >= MinOccurrences) return true;
         return false;
+    }
+}
+
+/// <summary>
+/// The passage both loop detectors look at: the last <see cref="TextLoopDetector.WindowChars"/> characters, offered
+/// every <see cref="TextLoopDetector.CheckEveryChars"/> once long enough to hold the tail
+/// <see cref="TextLoopDetector.MinOccurrences"/> times.
+/// </summary>
+internal sealed class LoopWindow
+{
+    private readonly StringBuilder _recent = new();
+    private int _sinceCheck;
+
+    /// <summary>The passage with <paramref name="delta"/> appended when it is time to look at it; <c>null</c> otherwise.</summary>
+    public string? Sample(string delta)
+    {
+        if (string.IsNullOrEmpty(delta)) return null;
+        _recent.Append(delta);
+        if (_recent.Length > TextLoopDetector.WindowChars) _recent.Remove(0, _recent.Length - TextLoopDetector.WindowChars);
+
+        _sinceCheck += delta.Length;
+        if (_sinceCheck < TextLoopDetector.CheckEveryChars
+            || _recent.Length < TextLoopDetector.TailChars * TextLoopDetector.MinOccurrences) return null;
+        _sinceCheck = 0;
+        return _recent.ToString();
     }
 }

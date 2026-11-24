@@ -164,6 +164,18 @@ public sealed class DocumentTextTests : IDisposable
         Assert.Equal("Helloworld", Text(Pdf("BT /F1 12 Tf 72 720 Td [(Hello)-20(world)] TJ ET")));
     }
 
+    /// <summary>A tab, a form feed or a NUL separates an object's number from <c>obj</c> as a space does: PDF white space is
+    /// one set, the lexer's.</summary>
+    [Theory]
+    [InlineData("5\t0\tobj")]
+    [InlineData("5\f0 obj")]
+    public void AnObjectHeaderSpacedOtherwise_IsStillFound(string header)
+    {
+        var pdf = Encoding.Latin1.GetString(Pdf("BT /F1 12 Tf 72 720 Td (Spaced) Tj ET"));
+
+        Assert.Equal("Spaced", Text(Encoding.Latin1.GetBytes(pdf.Replace("5 0 obj", header, StringComparison.Ordinal))));
+    }
+
     [Fact]
     public void ACompressedStream_ReadsAsTheSameText()
     {

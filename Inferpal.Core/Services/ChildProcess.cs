@@ -49,6 +49,13 @@ internal readonly record struct ChildProcessResult(
 /// </remarks>
 internal static class ChildProcess
 {
+    private static readonly System.Text.RegularExpressions.Regex TerminalCodes =
+        new(@"\x1b\[[0-9;?]*[A-Za-z]", System.Text.RegularExpressions.RegexOptions.CultureInvariant, RegexBudget.Default);
+
+    /// <summary><paramref name="text"/> without a terminal's control sequences: colours, and cursor codes such as
+    /// <c>ESC[?25l</c> (a notebook's traceback, a test runner's trace, a CI log).</summary>
+    internal static string WithoutTerminalCodes(string text) => TerminalCodes.Replace(text, string.Empty);
+
     /// <summary>Has a dotnet child (the CLI, MSBuild, NuGet, vstest) answer in English: its lines are read by their words,
     /// which the SDK localizes — the CLI by <c>DOTNET_CLI_UI_LANGUAGE</c>, MSBuild's own messages by <c>VSLANG</c>.</summary>
     internal static void DotnetInEnglish(ProcessStartInfo psi)

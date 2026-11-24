@@ -82,6 +82,34 @@ public sealed class NotebookToolsTests : IDisposable
     }
 
     [Fact]
+    public void ACellNamedWithALeadingZero_IsTheCellEditNotebookEdits()
+    {
+        // edit_notebook reads "03" as the number 3: the same cell here, never "no cell '03'".
+        var report = RunNotebookTool.Report("analysis.ipynb", File.ReadAllBytes(Fixture("executed.ipynb")), only: "03");
+        Assert.Contains("after", report);
+        Assert.DoesNotContain("no cell", report);
+    }
+
+    [Fact]
+    public void ATracebacksTerminalCodes_AreAllRemoved()
+    {
+        // A cursor code ("ESC[?25l") is a terminal code like a colour: removed as the CI logs' reader removes it.
+        var notebook = JsonSerializer.Serialize(new
+        {
+            cells = new object[]
+            {
+                new { cell_type = "code", source = "x", execution_count = 1,
+                      outputs = new object[] { new { output_type = "error", ename = "E", evalue = "v", traceback = new[] { "\x1b[?25lboom\x1b[0m" } } } },
+            },
+        });
+
+        var report = RunNotebookTool.Report("n.ipynb", System.Text.Encoding.UTF8.GetBytes(notebook), only: null);
+
+        Assert.Contains("boom", report);
+        Assert.DoesNotContain("\x1b", report, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void AnUnknownCell_IsSaid_NeverNoOutput() =>
         Assert.Contains("no cell 'z9'", RunNotebookTool.Report("analysis.ipynb", File.ReadAllBytes(Fixture("executed.ipynb")), only: "z9"));
 

@@ -74,6 +74,21 @@ public sealed class OcrToolTests : IDisposable
         Assert.True(said.Contains("CS0246", StringComparison.Ordinal), said);
     }
 
+    /// <summary>A BMP's height is signed, and <c>int.MinValue</c> has none positive: read as the chat's attach reads it, the
+    /// picture is said unreadable — never an exception out of the tool.</summary>
+    [Fact]
+    public async Task ABitmapDeclaringAnImpossibleHeight_IsSaid()
+    {
+        var bytes = new byte[64];
+        bytes[0] = (byte)'B';
+        bytes[1] = (byte)'M';
+        BitConverter.GetBytes(100).CopyTo(bytes, 18);
+        BitConverter.GetBytes(int.MinValue).CopyTo(bytes, 22);
+        File.WriteAllBytes(Path.Combine(_root, "odd.bmp"), bytes);
+
+        Assert.Contains("unreadable", await Ocr("odd.bmp"));
+    }
+
     [Theory]
     [InlineData("error Cs0246: The type", "error CS0246: The type")]                 // the OCR's lowercase second letter
     [InlineData("MSb4019 and Netsdk1004", "MSB4019 and NETSDK1004")]

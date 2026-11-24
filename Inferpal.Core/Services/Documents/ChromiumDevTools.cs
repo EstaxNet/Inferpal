@@ -21,6 +21,9 @@ namespace Inferpal.Services.Documents;
 /// </remarks>
 internal static class ChromiumDevTools
 {
+    /// <summary>What a capture or a page session that the DevTools protocol failed says, before the protocol's reason.</summary>
+    internal const string ProtocolFailed = "the browser's DevTools protocol failed: ";
+
     /// <summary>The virtual time a page is given before its picture, by the protocol and by <c>--virtual-time-budget</c>.</summary>
     internal const int SettleMilliseconds = 3000;
 
@@ -107,7 +110,7 @@ internal static class ChromiumDevTools
         }
         catch (Exception ex) when (IsProtocolFailure(ex) || ex is DevToolsCallException)
         {
-            return (null, "the browser's DevTools protocol failed: " + ex.Message);
+            return (null, ProtocolFailed + ex.Message);
         }
     }
 

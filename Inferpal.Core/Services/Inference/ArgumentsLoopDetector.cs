@@ -31,22 +31,12 @@ internal sealed class ArgumentsLoopDetector
 {
     internal const int ExactRepeats = 3;
 
-    private readonly StringBuilder _recent = new();
-    private int _sinceCheck;
+    private readonly LoopWindow _window = new();
 
     /// <summary>Whether the arguments, with <paramref name="delta"/> appended, now repeat their own structure.</summary>
     public bool Repeats(string delta)
     {
-        if (string.IsNullOrEmpty(delta)) return false;
-        _recent.Append(delta);
-        if (_recent.Length > TextLoopDetector.WindowChars) _recent.Remove(0, _recent.Length - TextLoopDetector.WindowChars);
-
-        _sinceCheck += delta.Length;
-        if (_sinceCheck < TextLoopDetector.CheckEveryChars
-            || _recent.Length < TextLoopDetector.TailChars * TextLoopDetector.MinOccurrences) return false;
-        _sinceCheck = 0;
-
-        var text = _recent.ToString();
+        if (_window.Sample(delta) is not { } text) return false;
         var tail = text[^TextLoopDetector.TailChars..];
         int count = 0, last = -1, before = -1;
         for (var i = text.IndexOf(tail, StringComparison.Ordinal); i >= 0; i = text.IndexOf(tail, i + 1, StringComparison.Ordinal))

@@ -56,7 +56,7 @@ internal static class ApprovalRuleTable
             if (entry.Rule is { } rule)
                 rows.Add(Row(RuleSource.Team, rule.Decision == PermissionDecision.Allow, rule.Tool, rule.Pattern.ToString(),
                              rule.Decision == PermissionDecision.Allow ? RuleStatus.IgnoredAllow : RuleStatus.InForce, -1));
-            else if (!IsBlankOrComment(entry.Text) || !entry.IsString)
+            else if (!Diagnostics.IsBlankOrComment(entry.Text) || !entry.IsString)
                 rows.Add(Unreadable(RuleSource.Team, entry.Text, -1));
         }
 
@@ -64,7 +64,7 @@ internal static class ApprovalRuleTable
         for (var i = 0; i < lines.Length; i++)
         {
             var line = lines[i].Trim();
-            if (IsBlankOrComment(line)) continue;
+            if (Diagnostics.IsBlankOrComment(line)) continue;
             rows.Add(PermissionPolicy.ParseLine(line) is { } rule
                 ? Row(RuleSource.Machine, rule.Decision == PermissionDecision.Allow, rule.Tool, rule.Pattern.ToString(),
                       RuleStatus.InForce, i)
@@ -81,9 +81,6 @@ internal static class ApprovalRuleTable
         var line = $"{(allow ? "allow" : "deny")} {(string.IsNullOrWhiteSpace(tool) ? "*" : tool.Trim())} {pattern?.Trim()}";
         return PermissionPolicy.ParseLine(line) is null ? null : line;
     }
-
-    private static bool IsBlankOrComment(string line) =>
-        string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith('#');
 
     private static ApprovalRuleRow Row(RuleSource source, bool allow, string tool, string pattern, RuleStatus status, int line) =>
         new(source, allow, tool, pattern, status,

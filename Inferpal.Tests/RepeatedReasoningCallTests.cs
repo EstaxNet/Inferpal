@@ -54,6 +54,32 @@ public class RepeatedReasoningCallTests
         Assert.True(Feed(detector, reasoning, ReadCounter, 13));
     }
 
+    // Every form the parser reads ends with its own tag: a repeat is a repeat whatever the model's format.
+    [Theory]
+    [InlineData("<|tool_call>call:read_file{path:<|\"|>src/a.cs<|\"|>}<tool_call|>")]
+    [InlineData("<atem:function_calls>\n<atem:invoke name=\"read_file\">\n<atem:parameter name=\"path\">src/a.cs</atem:parameter>\n</atem:invoke>\n</atem:function_calls>")]
+    [InlineData("<|START_ACTION|>[{\"tool_call_id\": \"0\", \"tool_name\": \"read_file\", \"parameters\": {\"path\": \"src/a.cs\"}}]<|END_ACTION|>")]
+    [InlineData("<tool_call>{\"name\": \"read_file\", \"arguments\": {\"path\": \"src/a.cs\"}}</tool__call>")]
+    public void TheSameCallTwice_IsARepeat_InEveryFormTheParserReads(string call)
+    {
+        var detector  = new RepeatedCallDetector();
+        var reasoning = new StringBuilder();
+
+        Assert.False(Feed(detector, reasoning, call + " ", 5));
+        Assert.True(Feed(detector, reasoning, "Again. " + call, 5));
+    }
+
+    [Fact]
+    public void WithNoToolOffered_AQuotedCall_IsNoRepeat_AsTheRecoveryReadsIt()
+    {
+        // A commit message about the parser: the reasoning quotes a call twice. The recovery reads it as the answer
+        // (InlineToolCallParser.FromContent), so stopping the stream there would cut the answer off.
+        var detector  = new RepeatedCallDetector([]);
+        var reasoning = new StringBuilder("The parser reads " + Diagnostics + "and also " + Diagnostics);
+
+        Assert.False(detector.Repeats(reasoning));
+    }
+
     // ── The production client, a real socket ───────────────────────────────
 
     private sealed class Tools : IToolRegistry

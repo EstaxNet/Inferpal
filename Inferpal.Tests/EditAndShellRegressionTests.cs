@@ -153,6 +153,25 @@ public sealed class EditLineEndingAndRestoreTests : IDisposable
         Assert.Equal("v1", File.ReadAllText(file));
     }
 
+    /// <summary>A command deleted the file's folder (<c>rm -rf</c>): restore_file gives the folder back with the file, as
+    /// <c>/undo-run</c> does — it threw "could not find a part of the path".</summary>
+    [Fact]
+    public async Task RestoreFile_IntoAFolderACommandDeleted_GivesTheFolderBack()
+    {
+        Directory.CreateDirectory(Path.Combine(_base, ".git"));
+        var folder = Path.Combine(_base, "src", "util");
+        Directory.CreateDirectory(folder);
+        var file = Path.Combine(folder, "a.cs");
+        File.WriteAllText(file, "v1");
+        var history = new FileHistoryService();
+        var snap    = await history.SnapshotAsync(file, CancellationToken.None);
+        Directory.Delete(folder, recursive: true);
+
+        await RestoreAsync(new RestoreFileTool(new Approve(), history, () => _base), new { path = file, snapshot = snap });
+
+        Assert.Equal("v1", File.ReadAllText(file));
+    }
+
     /// <summary>Security witness: an arbitrary file outside the workspace is not a backup.</summary>
     [Fact]
     public async Task RestoreFile_AnArbitraryFileOutsideTheWorkspace_IsNotAcceptedAsASnapshot()

@@ -42,6 +42,16 @@ internal sealed record DocumentExtraction(string Text, int Pages, int PagesWitho
 /// </summary>
 internal static class DocumentText
 {
+    static DocumentText() => System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+    /// <summary>Bytes in the code page a document names (an RTF's <c>\ansicpg</c>, a message's code page); Latin-1, which
+    /// gives every byte back, when this runtime has no such code page.</summary>
+    internal static string InCodePage(byte[] bytes, int codePage)
+    {
+        try { return System.Text.Encoding.GetEncoding(codePage).GetString(bytes); }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException) { return System.Text.Encoding.Latin1.GetString(bytes); }
+    }
+
     /// <summary>The largest structured report (SARIF, a trace export, a plan, a coverage or load-test result…) read whole to
     /// summarize it: past it, its text is paged as it is.</summary>
     internal const int ReportMaxChars = 16_000_000;

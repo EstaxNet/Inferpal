@@ -229,7 +229,7 @@ internal class SearchInFilesTool : ITool
     internal static readonly TimeSpan DocumentSearchBudget = TimeSpan.FromSeconds(10);
 
     /// <summary>Largest file read line by line — past it the file is skipped and counted.</summary>
-    private const long MaxSearchFileBytes = 8 * 1024 * 1024;
+    internal const long MaxSearchFileBytes = 8 * 1024 * 1024;
 
     /// <summary>
     /// Matches returned at most. Reaching it is SAID: a truncated list read as a complete one is how

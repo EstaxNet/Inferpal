@@ -74,7 +74,7 @@ internal static class ChatTurnPolicy
     /// </summary>
     public static bool IsVisiblyEmpty(string? content)
     {
-        if (!MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(content)))
+        if (!MarkdownParser.HasPrintableAnswer(content))
             return true;
         var blocks = MarkdownParser.Parse(content ?? string.Empty);
         return blocks.Count == 0 || blocks.All(b => b.Type == "separator");

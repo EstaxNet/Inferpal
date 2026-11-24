@@ -22,6 +22,9 @@ internal sealed class DevToolsCallException(string message) : Exception(message)
 /// </remarks>
 internal sealed class DevToolsConnection : IDisposable
 {
+    /// <summary>The failure every call gets once the browser's connection is gone.</summary>
+    private static WebSocketException Ended(Exception why) => new("the browser's DevTools connection ended: " + why.Message);
+
     private readonly ClientWebSocket _socket;
     private readonly SemaphoreSlim _send = new(1, 1);
     private readonly ConcurrentDictionary<int, TaskCompletionSource<JsonElement>> _waiting = new();
@@ -95,7 +98,7 @@ internal sealed class DevToolsConnection : IDisposable
             lock (_seen)
             {
                 if (SeenSince(mark, eventName)) return;
-                if (_lost is { } lost) throw new WebSocketException("the browser's DevTools connection ended: " + lost.Message);
+                if (_lost is { } lost) throw Ended(lost);
                 arrived = _arrived.Task;
             }
             await arrived.WaitAsync(ct).ConfigureAwait(false);
@@ -112,7 +115,7 @@ internal sealed class DevToolsConnection : IDisposable
         _waiting[id] = answer;
         try
         {
-            if (Volatile.Read(ref _lost) is { } lost) throw new WebSocketException("the browser's DevTools connection ended: " + lost.Message);
+            if (Volatile.Read(ref _lost) is { } lost) throw Ended(lost);
             await SendAsync(id, method, parameters, ct).ConfigureAwait(false);
             return await answer.Task.WaitAsync(ct).ConfigureAwait(false);
         }
@@ -190,7 +193,7 @@ internal sealed class DevToolsConnection : IDisposable
             arrived = _arrived;
         }
         foreach (var waiting in _waiting.Values)
-            waiting.TrySetException(new WebSocketException("the browser's DevTools connection ended: " + why.Message));
+            waiting.TrySetException(Ended(why));
         arrived.TrySetResult();
     }
 

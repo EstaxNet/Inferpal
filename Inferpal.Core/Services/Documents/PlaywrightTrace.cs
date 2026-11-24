@@ -39,8 +39,6 @@ internal static class PlaywrightTrace
     /// <summary>What a trace reads as: its text, and the picture of the page at the failure (or at the end) when it has one.</summary>
     internal sealed record Reading(string Text, byte[]? Frame, string? FrameName);
 
-    private static readonly Regex Ansi = new(@"\x1B\[[0-9;]*[A-Za-z]", RegexOptions.CultureInvariant, RegexBudget.Default);
-
     /// <summary>Whether the file at <paramref name="path"/> is a zip holding a Playwright trace.</summary>
     internal static bool IsTrace(string path)
     {
@@ -148,7 +146,7 @@ internal static class PlaywrightTrace
     private static string Clean(string? text, int max = 2000)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
-        var plain = Ansi.Replace(text, string.Empty);
+        var plain = ChildProcess.WithoutTerminalCodes(text);
         var chars = plain.Select(ch => ch is '\n' or '\t' or '\r' ? ch : ch is '\u2028' or '\u2029' or '\u0085' ? '\n' : char.IsControl(ch) ? '?' : ch).ToArray();
         var cleaned = new string(chars).Replace("\r", string.Empty, StringComparison.Ordinal);
         return cleaned.Length > max ? cleaned[..max] + " …" : cleaned;

@@ -113,7 +113,7 @@ internal static class Archives
         }
         catch (Exception ex) when (Unreadable(ex))
         {
-            return (null, $"it could not be read as an archive ({ex.Message})");
+            return (null, NotAnArchive(ex.Message));
         }
         found.Sort((a, b) => string.CompareOrdinal(a.Path, b.Path));
         return (found, null);
@@ -183,7 +183,7 @@ internal static class Archives
                 if (outcome != ZipCryptOutcome.WrongPassword) last = outcome;
             }
             return last == ZipCryptOutcome.WrongPassword
-                ? (null, "it is protected by a password", true)
+                ? (null, PasswordProtected, true)
                 : (null, NotReadOut(last, inner), false);
         }
         var plain = ReadPlain(archive, inner, ct);
@@ -215,9 +215,9 @@ internal static class Archives
         }
         catch (Exception ex) when (Unreadable(ex))
         {
-            return (null, $"it could not be read as an archive ({ex.Message})");
+            return (null, NotAnArchive(ex.Message));
         }
-        return (null, $"it holds no entry '{inner}' — list its entries with list_files");
+        return (null, NoEntry(inner));
     }
 
     /// <summary>An entry's bytes, counted as they come out of the decoder: never more than <see cref="MaxEntryBytes"/>,
@@ -295,17 +295,16 @@ internal static class Archives
             if (opened is null)
             {
                 // Without a password, a failure on encrypted names asks for one; with one, it was the wrong one.
-                if (password is not null || failure is SharpCompress.Common.CryptographicException
-                    || failure?.Message.Contains("password", StringComparison.OrdinalIgnoreCase) == true)
+                if (password is not null || AsksForPassword(failure))
                     locked = true;
-                else damage = $"it could not be read as an archive ({failure?.Message})";
+                else damage = NotAnArchive(failure?.Message);
                 continue;
             }
             using (opened)
             {
                 var entry = entries.FirstOrDefault(e => e.Key is { } k && Safe(k) == inner);
                 if (entry is null)
-                    return (null, $"it holds no entry '{inner}' — list its entries with list_files", false, openedWith);
+                    return (null, NoEntry(inner), false, openedWith);
                 if (entry.IsEncrypted && password is null) { locked = true; continue; }
                 if (entry.IsSplitAfter || entry.VolumeIndexFirst != entry.VolumeIndexLast)
                     return (null, "it continues in another volume of a split archive — open the first volume with 7-Zip", false, openedWith);
@@ -335,7 +334,7 @@ internal static class Archives
                     else
                     {
                         // A solid RAR opens its entries only in order.
-                        plain = (null, $"it holds no entry '{inner}' — list its entries with list_files");
+                        plain = (null, NoEntry(inner));
                         using var reader = opened.ExtractAllEntries();
                         while (reader.MoveToNextEntry())
                         {
@@ -357,11 +356,11 @@ internal static class Archives
                     // An encrypted entry that does not decode with a password typed: the password is wrong. Otherwise the
                     // archive is damaged, password or not.
                     if (password is not null && entry.IsEncrypted) { locked = true; continue; }
-                    damage = $"it could not be read as an archive ({ex.Message})";
+                    damage = NotAnArchive(ex.Message);
                 }
             }
         }
-        return locked ? (null, "it is protected by a password", true, null) : (null, damage ?? "it could not be read", false, null);
+        return locked ? (null, PasswordProtected, true, null) : (null, damage ?? "it could not be read", false, null);
     }
 
     /// <summary>What a damaged or hostile archive throws while it is read: said as unreadable, never a crash.</summary>
@@ -383,6 +382,22 @@ internal static class Archives
         return null;
     }
 
+    /// <summary>What an archive that asks for a password is said to be.</summary>
+    private const string PasswordProtected = "it is protected by a password";
+
+    /// <summary>What an archive the reader refused is said to be, with the reader's reason.</summary>
+    private static string NotAnArchive(string? why) => $"it could not be read as an archive ({why})";
+
+    /// <summary>What an archive without <paramref name="inner"/> is said to hold, with the way to see what it holds.</summary>
+    private static string NoEntry(string inner) => $"it holds no entry '{inner}' — list its entries with list_files";
+
+    /// <summary>Whether the reader's failure says the archive asks for a password (encrypted entry names).</summary>
+    private static bool AsksForPassword(Exception? failure) =>
+        failure is SharpCompress.Common.CryptographicException || failure?.Message.Contains("password", StringComparison.OrdinalIgnoreCase) == true;
+
+    /// <summary>How far from a zip's end its end record can start: the 22-byte record and a comment of up to 65,535 bytes.</summary>
+    internal const int EndRecordReach = 66_000;
+
     /// <summary>The entry count a zip's end record declares (the Zip64 one when the classic field is saturated); 0 when it
     /// cannot be read — the open then says what is wrong.</summary>
     /// <remarks>⚠ Read before opening: a few megabytes can declare millions of directory records, all of them loaded, with
@@ -392,7 +407,7 @@ internal static class Archives
         try
         {
             using var f = File.OpenRead(archive);
-            var tail = (int)Math.Min(f.Length, 66_000);
+            var tail = (int)Math.Min(f.Length, EndRecordReach);
             var buf = new byte[tail];
             f.Seek(-tail, SeekOrigin.End);
             f.ReadExactly(buf);
@@ -440,7 +455,7 @@ internal static class Archives
         {
             var (opened, entries, _, failure) = OpenPacked(archive, [null, .. KeptPasswords(archive)]);
             if (opened is null)
-                throw failure is SharpCompress.Common.CryptographicException || failure?.Message.Contains("password", StringComparison.OrdinalIgnoreCase) == true
+                throw AsksForPassword(failure)
                     ? new InvalidDataException("even its entry names are protected by a password: reading one of its entries asks for it")
                     : failure ?? new InvalidDataException("it does not open");
             using (opened)

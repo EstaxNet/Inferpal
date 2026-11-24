@@ -206,8 +206,8 @@ internal sealed class TaskJournal(string path)
         }
         catch (JsonException) { }
         // Kept as it was before anything is written over it — and the numbers it gave stay given.
-        var aside = Path + ".unreadable-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture);
-        File.Copy(Path, aside, overwrite: true);
+        // No copy, no deletion: its reports may be the only copy.
+        var aside = Persistence.AtomicFile.PreserveAside(Path) ?? throw new IOException("the unreadable journal could not be set aside");
         File.Delete(Path);
         Diagnostics.Record("TaskJournal", "The background tasks journal could not be read; a copy is kept at " + aside);
         var given = System.Text.RegularExpressions.Regex.Matches(text, "\"(?:id\"\\s*:\\s*\"t|last\"\\s*:\\s*)(\\d{1,9})")

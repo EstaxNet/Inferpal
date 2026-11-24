@@ -19,6 +19,15 @@ internal static class ToolSchemas
         return name => cache.TryGetValue(name, out var known) ? known : cache[name] = Read(defs, name);
     }
 
+    /// <summary>The schema <paramref name="schema"/> declares for its property <paramref name="key"/>; <c>null</c> when it
+    /// declares none.</summary>
+    internal static JsonElement? Property(JsonElement? schema, string? key) =>
+        key is not null && schema is { ValueKind: JsonValueKind.Object } s
+        && s.TryGetProperty("properties", out var props) && props.ValueKind == JsonValueKind.Object
+        && props.TryGetProperty(key, out var p)
+            ? p
+            : null;
+
     private static JsonElement? Read(IReadOnlyList<ToolDefinition>? defs, string name) =>
         defs?.FirstOrDefault(d => d.Function.Name == name) is { } def
             ? JsonSerializer.SerializeToElement(def.Function.Parameters)

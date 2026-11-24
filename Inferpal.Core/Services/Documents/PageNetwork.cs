@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using static Inferpal.Services.JsonFields;
 
 namespace Inferpal.Services.Documents;
 
@@ -192,9 +193,6 @@ internal sealed class PageNetwork
 
     private static string OriginOf(string url) =>
         Uri.TryCreate(url, UriKind.Absolute, out var u) ? $"{u.Scheme}://{u.Authority}" : url;
-
-    private static string Str(JsonElement e, string name) =>
-        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
 
     private static double Num(JsonElement e, string name) =>
         e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.TryGetDouble(out var d) ? d : 0;

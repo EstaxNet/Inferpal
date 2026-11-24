@@ -442,7 +442,8 @@ internal class InferpalConfig
     public string RagEmbeddingApiKey { get; set; } = string.Empty;
 
     /// <summary>
-    /// Maximum number of chunks returned by a single <c>search_codebase</c> call (default 5, max 10).
+    /// Maximum number of chunks returned by a single <c>search_codebase</c> call (default 5, max
+    /// <see cref="Services.Tools.SemanticSearchTool.MaxTopK"/>).
     /// </summary>
     [JsonPropertyName("ragTopK")]
     public int RagTopK { get; set; } = 5;
@@ -913,7 +914,7 @@ internal class InferpalConfig
 
     public void Save()
     {
-        var path = SavePathForTests ?? EffectiveConfigPath;
+        var path = SaveFilePath;
 
         // ⚠ ONE read decides both the copy set aside and the merge: judged twice, a file held for an instant read as
         // readable by one and not by the other — kept aside for nothing, or merged over the factory values unkept.
@@ -1078,7 +1079,7 @@ internal class InferpalConfig
             var key = JsonNameOf(property);
             if (!System.Text.Json.Nodes.JsonNode.DeepEquals(Snapshot(this)[key], _baseline[key])) return mine;   // changed here
 
-            var path  = SavePathForTests ?? EffectiveConfigPath;
+            var path  = SaveFilePath;
             var stamp = StampOf(path);
             if (_fileSeen is not { } seen || seen.Path != path || seen.Stamp != stamp)
             {
@@ -1099,7 +1100,7 @@ internal class InferpalConfig
     /// For a decision on what the other window may have set since this copy was read.</summary>
     internal InferpalConfig? ReadFileNow()
     {
-        var path = SavePathForTests ?? EffectiveConfigPath;
+        var path = SaveFilePath;
         return File.Exists(path) && TryRead(path, out var onDisk, out _, out _) ? onDisk : null;
     }
 
@@ -1122,7 +1123,7 @@ internal class InferpalConfig
 
         var factory = Snapshot(new InferpalConfig())[key];
         if (!System.Text.Json.Nodes.JsonNode.DeepEquals(Snapshot(this)[key], factory)) return false;   // set here: it stands
-        if (!TryReadSnapshot(SavePathForTests ?? EffectiveConfigPath, out var onDisk)
+        if (!TryReadSnapshot(SaveFilePath, out var onDisk)
             || System.Text.Json.Nodes.JsonNode.DeepEquals(onDisk[key], factory))
             return false;
 
@@ -1141,7 +1142,7 @@ internal class InferpalConfig
     /// equals what this copy read — the other editor wrote another since — would be no change, and never written.</remarks>
     internal void TakeFromFile(params string[] properties)
     {
-        if (!TryReadSnapshot(SavePathForTests ?? EffectiveConfigPath, out var onDisk)) return;
+        if (!TryReadSnapshot(SaveFilePath, out var onDisk)) return;
         foreach (var property in properties)
         {
             var p = typeof(InferpalConfig).GetProperty(property)
@@ -1173,7 +1174,7 @@ internal class InferpalConfig
         if (!CollectionSettings.TryGetValue(key, out var shape))
             throw new ArgumentException($"{property} is not a collection setting.", nameof(property));
         // A copy built in code is its own truth, and an unreadable file has nothing to follow.
-        if (_baseline is null || !TryReadSnapshot(SavePathForTests ?? EffectiveConfigPath, out var onDisk)) return;
+        if (_baseline is null || !TryReadSnapshot(SaveFilePath, out var onDisk)) return;
 
         var mine = Snapshot(this)[key];
         var followed = System.Text.Json.Nodes.JsonNode.DeepEquals(mine, _baseline[key])
@@ -1206,7 +1207,7 @@ internal class InferpalConfig
         var key = JsonNameOf(property);
         if (!CollectionSettings.TryGetValue(key, out var shape) || shape != CollectionShape.Lines)
             throw new ArgumentException($"{property} is not a one-per-line setting.", nameof(property));
-        var path = SavePathForTests ?? EffectiveConfigPath;
+        var path = SaveFilePath;
         System.Text.Json.Nodes.JsonObject toWrite;
         if (TryReadSnapshot(path, out var onDisk)) toWrite = onDisk;
         else if (!File.Exists(path)) toWrite = Snapshot(new InferpalConfig());   // a fresh install: the factory values

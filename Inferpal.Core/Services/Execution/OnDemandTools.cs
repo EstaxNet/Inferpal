@@ -37,7 +37,7 @@ internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<in
     internal const double WindowShare = 0.10;
 
     /// <summary>The window assumed while none is known: the one the recommendations are measured at.</summary>
-    internal const int UnknownWindow = 32_768;
+    internal const int UnknownWindow = Inference.ContextWindowChoice.MeasuredCeiling;
 
     /// <summary>How many tools one search loads at most.</summary>
     internal const int MaxPerSearch = 5;
@@ -205,15 +205,7 @@ internal sealed class OnDemandTools(Func<IReadOnlyList<ITool>> mcpTools, Func<in
     }
 
     /// <summary>The characters of a tool's definition as a request sends it.</summary>
-    private static int Chars(ITool t)
-    {
-        try { return JsonSerializer.Serialize(ToolRegistry.DefinitionOf(t)).Length; }
-        catch (Exception ex)
-        {
-            Diagnostics.Swallow("OnDemandTools.Chars", ex);
-            return Inference.RequestSize.UnserializedToolChars;
-        }
-    }
+    private static int Chars(ITool t) => Inference.RequestSize.CharsOf(ToolRegistry.DefinitionOf(t));
 
     /// <summary>
     /// What <c>tool_search</c> tells the model: what it does, then the servers on demand and the names of their tools.

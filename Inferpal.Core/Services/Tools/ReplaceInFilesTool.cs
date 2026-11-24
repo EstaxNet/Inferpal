@@ -42,7 +42,7 @@ internal sealed class ReplaceInFilesTool : ITool
     /// <summary>Files the approval card shows a diff of; the rest are counted.</summary>
     private const int MaxFilesInPrompt = 8;
 
-    private const long MaxFileBytes = 8 * 1024 * 1024;
+    private const long MaxFileBytes = SearchInFilesTool.MaxSearchFileBytes;
 
     public string Name => "replace_in_files";
 

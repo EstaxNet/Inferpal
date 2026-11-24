@@ -110,20 +110,24 @@ internal static class ChatImages
         return read.Image is { } image ? read with { Image = image with { Video = detail } } : read;
     }
 
+    /// <summary>The size a BMP's header declares; <c>null</c> when <paramref name="bytes"/> is not a BMP. Its height is signed
+    /// (negative = drawn top-down), and <c>int.MinValue</c>, which has no positive value, reads as -1.</summary>
+    internal static (int Width, int Height)? BmpSize(byte[] bytes)
+    {
+        if (bytes.Length < 26 || bytes[0] != (byte)'B' || bytes[1] != (byte)'M') return null;
+        var rawHeight = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(22));
+        return (BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(18)), rawHeight == int.MinValue ? -1 : Math.Abs(rawHeight));
+    }
+
     /// <summary>The image in <paramref name="bytes"/>, named <paramref name="name"/>, or why it is not attached.</summary>
     internal static ChatImageRead Read(byte[] bytes, string name)
     {
         if (bytes.LongLength > MaxBytes)
             return new(null, Strings.ImageTooLarge(name, (int)(MaxBytes / (1024 * 1024))), null);
         var (mediaType, width, height) = Sniff(bytes);
-        var bmp = mediaType is null && bytes.Length >= 26 && bytes[0] == (byte)'B' && bytes[1] == (byte)'M';
-        if (bmp)
-        {
-            // A BMP's height is signed (negative = drawn top-down); int.MinValue has no positive value.
-            var rawHeight = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(22));
-            width  = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(18));
-            height = rawHeight == int.MinValue ? -1 : Math.Abs(rawHeight);
-        }
+        var bmpSize = mediaType is null ? BmpSize(bytes) : null;
+        var bmp = bmpSize is not null;
+        if (bmpSize is { } size) (width, height) = size;
         // A TIFF no server decodes: drawn here, sent as a PNG — its first page, the others said.
         if (mediaType is null && !bmp && TiffImage.Is(bytes))
         {

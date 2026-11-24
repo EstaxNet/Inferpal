@@ -39,7 +39,7 @@ internal sealed class PdfLexer(byte[] data, int position = 0)
     public int Position { get; set; } = position;
     public bool AtEnd => Position >= data.Length;
 
-    private static bool IsWhite(byte b) => b is 0 or 9 or 10 or 12 or 13 or 32;
+    internal static bool IsWhite(byte b) => b is 0 or 9 or 10 or 12 or 13 or 32;
     private static bool IsDelimiter(byte b) => b is (byte)'(' or (byte)')' or (byte)'<' or (byte)'>' or (byte)'[' or (byte)']'
                                                    or (byte)'{' or (byte)'}' or (byte)'/' or (byte)'%';
 
@@ -301,14 +301,14 @@ internal sealed class PdfDocument
             _ct.ThrowIfCancellationRequested();
             var end = at + 3;
             // "endobj" contains "obj"; an "obj" keyword stands alone and follows "<number> <number> ".
-            if (at >= 3 && _data[at - 1] is (byte)' ' or 10 or 13 && (end >= _data.Length || _data[end] is not ((byte)'e' or (byte)'s')))
+            if (at >= 3 && PdfLexer.IsWhite(_data[at - 1]) && (end >= _data.Length || _data[end] is not ((byte)'e' or (byte)'s')))
             {
                 var p = at - 1;
-                while (p > 0 && _data[p] is (byte)' ' or 10 or 13) p--;
+                while (p > 0 && PdfLexer.IsWhite(_data[p])) p--;
                 var genEnd = p;
                 while (p > 0 && _data[p] is >= (byte)'0' and <= (byte)'9') p--;
                 var genStart = p + 1;
-                while (p > 0 && _data[p] is (byte)' ' or 10 or 13) p--;
+                while (p > 0 && PdfLexer.IsWhite(_data[p])) p--;
                 var numEnd = p;
                 while (p >= 0 && _data[p] is >= (byte)'0' and <= (byte)'9') p--;
                 var numStart = p + 1;

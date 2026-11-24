@@ -252,7 +252,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         int known;
         lock (_lock)
         {
-            if (_disposed || _pending.Count + (_current is null ? 0 : 1) >= MaxPending) return null;
+            if (_disposed || Unfinished >= MaxPending) return null;
             known = _seq;
         }
         var job = new Job
@@ -273,7 +273,7 @@ internal sealed class BackgroundTaskQueue : IDisposable
         var refused = false;
         lock (_lock)
         {
-            if (_disposed || _pending.Count + (_current is null ? 0 : 1) >= MaxPending) refused = true;
+            if (_disposed || Unfinished >= MaxPending) refused = true;
             else
             {
                 job.Id = reserved ?? "t" + (_seq + 1);
@@ -459,8 +459,11 @@ internal sealed class BackgroundTaskQueue : IDisposable
     /// <summary>Count of tasks not yet finished (running + queued) — for the status line.</summary>
     internal int ActiveCount
     {
-        get { lock (_lock) return _pending.Count + (_current is null ? 0 : 1); }
+        get { lock (_lock) return Unfinished; }
     }
+
+    /// <summary>The tasks not yet finished (running + queued); read under <c>_lock</c>.</summary>
+    private int Unfinished => _pending.Count + (_current is null ? 0 : 1);
 
     // ── Cancellation ────────────────────────────────────────────────────────────
 

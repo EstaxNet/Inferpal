@@ -82,14 +82,18 @@ internal static class NotebookEdit
         }
     }
 
-    /// <summary>The cell named by its id (exact), else by its number from 1.</summary>
-    private static int Find(JsonArray cells, string cell)
+    /// <summary>The cell named by its id (exact), else by its number from 1 (<c>#3</c>, <c>03</c>); -1 for none. One rule for
+    /// the tool that edits a cell and the one that shows a cell's output.</summary>
+    internal static int Find(IReadOnlyList<string?> ids, string cell)
     {
-        for (var i = 0; i < cells.Count; i++)
-            if (cells[i] is JsonObject c && c["id"] is JsonValue id && id.TryGetValue<string>(out var s) && s == cell) return i;
-        return int.TryParse(cell.Trim().TrimStart('#'), NumberStyles.None, CultureInfo.InvariantCulture, out var n) && n >= 1 && n <= cells.Count
+        for (var i = 0; i < ids.Count; i++)
+            if (ids[i] == cell) return i;
+        return int.TryParse(cell.Trim().TrimStart('#'), NumberStyles.None, CultureInfo.InvariantCulture, out var n) && n >= 1 && n <= ids.Count
             ? n - 1 : -1;
     }
+
+    private static int Find(JsonArray cells, string cell) =>
+        Find([.. cells.Select(c => c is JsonObject o && o["id"] is JsonValue id && id.TryGetValue<string>(out var s) ? s : null)], cell);
 
     private static string Listing(JsonArray cells) =>
         string.Join("; ", cells.Select((c, i) =>

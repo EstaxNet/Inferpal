@@ -132,7 +132,7 @@ internal sealed class ArgumentsShapeWatcher(Func<string, JsonElement?> schemaOf)
                 if (top.ExpectValue)
                 {
                     top.ExpectValue = false;
-                    return Begin(c, Property(top.Schema, top.Key), top.Key ?? string.Empty, $"'{top.Key}'");
+                    return Begin(c, ToolSchemas.Property(top.Schema, top.Key), top.Key ?? string.Empty, $"'{top.Key}'");
                 }
                 if (c == ',') top.ExpectKey = true;
                 else if (c == '}') Pop();
@@ -177,13 +177,6 @@ internal sealed class ArgumentsShapeWatcher(Func<string, JsonElement?> schemaOf)
     private static string? TypeOf(JsonElement? schema) =>
         schema is { ValueKind: JsonValueKind.Object } s && s.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.String
             ? t.GetString()
-            : null;
-
-    private static JsonElement? Property(JsonElement? schema, string? key) =>
-        key is not null && schema is { ValueKind: JsonValueKind.Object } s
-        && s.TryGetProperty("properties", out var props) && props.ValueKind == JsonValueKind.Object
-        && props.TryGetProperty(key, out var p)
-            ? p
             : null;
 
     private static JsonElement? Items(JsonElement? schema) =>

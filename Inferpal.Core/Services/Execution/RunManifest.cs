@@ -19,6 +19,9 @@ namespace Inferpal.Services.Execution;
 /// </remarks>
 internal static class RunManifest
 {
+    /// <summary>The bytes of the key a manifest is signed with.</summary>
+    private const int KeyBytes = 32;
+
     /// <summary>The folder of a history folder the runs are kept in.</summary>
     internal const string Folder = "runs";
 
@@ -99,7 +102,7 @@ internal static class RunManifest
                                                 bufferSize: 1, FileOptions.DeleteOnClose);
                 // Made meanwhile by the process that held the lock first: that one is the key.
                 var now = File.Exists(path) ? File.ReadAllBytes(path) : [];
-                return now.Length == 32 ? now : Make(path, replace: true);
+                return now.Length == KeyBytes ? now : Make(path, replace: true);
             }
             catch (IOException) { Thread.Sleep(20); }
         }
@@ -115,7 +118,7 @@ internal static class RunManifest
         var temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
-            File.WriteAllBytes(temp, RandomNumberGenerator.GetBytes(32));
+            File.WriteAllBytes(temp, RandomNumberGenerator.GetBytes(KeyBytes));
             try { File.Move(temp, path, overwrite: replace); }
             catch (IOException) when (!replace && File.Exists(path)) { }   // made meanwhile: that one is the key
             return ReadKey(path);
@@ -136,7 +139,7 @@ internal static class RunManifest
             try
             {
                 var key = File.ReadAllBytes(path);
-                if (key.Length == 32) return key;
+                if (key.Length == KeyBytes) return key;
                 if (attempt >= KeyReadAttempts) return null;
             }
             catch (IOException) when (attempt < KeyReadAttempts) { }

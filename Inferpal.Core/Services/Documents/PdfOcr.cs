@@ -255,8 +255,7 @@ internal static class PdfOcr
             read++;
             // The size a picture declares, checked before anything decodes it: a JPEG header of a few bytes can ask for gigabytes.
             var (_, width, height) = ChatImages.Sniff(picture.Bytes);
-            if (width <= 0 && picture.Bytes is [(byte)'B', (byte)'M', ..] && picture.Bytes.Length >= 26)
-                (width, height) = (BitConverter.ToInt32(picture.Bytes, 18), Math.Abs(BitConverter.ToInt32(picture.Bytes, 22)));
+            if (width <= 0 && ChatImages.BmpSize(picture.Bytes) is { } bmp) (width, height) = bmp;
             if (width <= 0 || height <= 0 || (long)width * height > ChatImages.MaxPixels) { skipped.Add((picture.Page, "a page picture too large or unreadable")); continue; }
             PaddleOcrLine[] lines;
             int imageWidth;

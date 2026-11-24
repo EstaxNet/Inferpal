@@ -32,7 +32,7 @@ internal static class RewindCard
     {
         var question = Typed(plan.Question).Text;
         var shown    = question.ReplaceLineEndings(" ");
-        if (shown.Length > QuestionPreview) shown = shown[..QuestionPreview].TrimEnd() + "…";
+        if (shown.Length > QuestionPreview) shown = SafeTruncate.Truncate(shown, QuestionPreview).TrimEnd() + "…";
         var runIds = plan.Runs.Select(r => r.Id).ToList();
         if (plan.Refusal != RewindRefusal.None)
         {

@@ -354,6 +354,21 @@ public sealed class FollowSavedSettingsTests : IDisposable
     }
 
     [Fact]
+    public void ANewKindOfServer_LeavesItsRequestHeadersAside_WithIt()
+    {
+        // The headers belong to the server (a proxy's token): taken alone, the old server would receive the new one's.
+        new InferpalConfig { Provider = "ollama", BaseUrl = "http://localhost:11434", RequestHeaders = "Authorization: Bearer OLD" }.Save();
+        var vs = InferpalConfig.LoadOwnCopy();
+
+        WriteAsTheSettingsWindow(c => { c.Provider = "lmstudio"; c.BaseUrl = "http://proxy:1234"; c.RequestHeaders = "Authorization: Bearer NEW"; });
+        var follow = Services.Inference.SettingsFollow.Take(vs, OllamaClient());
+
+        Assert.True(follow.ServerChanged);
+        Assert.Equal("Authorization: Bearer OLD", vs.RequestHeaders);
+        Assert.DoesNotContain("requestHeaders", follow.Taken);
+    }
+
+    [Fact]
     public void AnUnreadableFile_TakesNothing_AndIsNotTheFactoryValues()
     {
         new InferpalConfig { PermissionRules = "deny run_command ^rm" }.Save();

@@ -143,8 +143,6 @@ internal sealed class RunNotebookTool(Execution.WorkspaceCodeConsent? consent, F
 
     private static readonly Regex KernelMissing = new(@"No such kernel named (?<name>[\w.-]+)", RegexOptions.CultureInvariant, RegexBudget.Default);
 
-    private static readonly Regex Ansi = new(@"\x1b\[[0-9;]*[A-Za-z]", RegexOptions.CultureInvariant, RegexBudget.Default);
-
     /// <summary>
     /// What the executed copy says: how many code cells ran, the first that failed with its traceback, and each code cell's
     /// output (or the one asked for). The first line is the verdict the step line reads (<c>RunSummary.StepStatus</c>).
@@ -159,6 +157,7 @@ internal sealed class RunNotebookTool(Execution.WorkspaceCodeConsent? consent, F
         var found = only is null;
         var failing = string.Empty;
         var body = new StringBuilder();
+        var askedAt = only is null ? -1 : NotebookEdit.Find([.. cells.Select(c => c.TryGetProperty("id", out var e) ? e.AsText() : null)], only);
         only = only?.Trim().TrimStart('#');
         for (var i = 0; i < cells.Count; i++)
         {
@@ -173,7 +172,7 @@ internal sealed class RunNotebookTool(Execution.WorkspaceCodeConsent? consent, F
             var outputs = cell.TryGetProperty("outputs", out var o) && o.ValueKind == JsonValueKind.Array ? o.EnumerateArray().ToList() : [];
             var error = outputs.FirstOrDefault(x => x.TryGetProperty("output_type", out var k) && k.AsText() == "error");
             if (failed is null && error.ValueKind == JsonValueKind.Object) failed = number;
-            var asked = only is null || only == id || only == number.ToString(CultureInfo.InvariantCulture);
+            var asked = only is null || i == askedAt;
             found |= asked;
             if (!asked || (outputs.Count == 0 && error.ValueKind != JsonValueKind.Object)) continue;
             var block = new StringBuilder($"\nCell {number}{(id is null ? "" : $" (id {id})")}:\n");
@@ -182,7 +181,7 @@ internal sealed class RunNotebookTool(Execution.WorkspaceCodeConsent? consent, F
                 // An error is said by its traceback, which ends with its name and message: never twice.
                 if (output.ValueKind == JsonValueKind.Object && output.TryGetProperty("traceback", out var tb) && tb.ValueKind == JsonValueKind.Array
                     && tb.GetArrayLength() > 0)
-                    block.Append(Ansi.Replace(string.Join("\n", tb.EnumerateArray().Select(l => l.AsText())), string.Empty).TrimEnd()).Append('\n');
+                    block.Append(ChildProcess.WithoutTerminalCodes(string.Join("\n", tb.EnumerateArray().Select(l => l.AsText()))).TrimEnd()).Append('\n');
                 else block.Append(NotebookText.Output(output).TrimEnd()).Append('\n');
             }
             if (failed == number) failing = block.ToString();

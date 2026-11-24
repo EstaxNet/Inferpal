@@ -47,7 +47,7 @@ internal static class RtfText
         void Flush()
         {
             if (pending.Count == 0) return;
-            text.Append(Decode(pending.ToArray(), state.CodePage == 0 ? defaultCodePage : state.CodePage));
+            text.Append(DocumentText.InCodePage(pending.ToArray(), state.CodePage == 0 ? defaultCodePage : state.CodePage));
             pending.Clear();
         }
 
@@ -164,12 +164,4 @@ internal static class RtfText
         177 => 1255, 178 => 1256, 186 => 1257, 204 => 1251, 222 => 874, 238 => 1250, 77 => 10000,
         _ => null,
     };
-
-    static RtfText() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-    private static string Decode(byte[] bytes, int codePage)
-    {
-        try { return Encoding.GetEncoding(codePage).GetString(bytes); }
-        catch (Exception ex) when (ex is ArgumentException or NotSupportedException) { return Encoding.Latin1.GetString(bytes); }
-    }
 }

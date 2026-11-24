@@ -86,12 +86,9 @@ internal static class DocText
         if (info.Obfuscated || info.Header.Length < 52) return null;
         var major = BitConverter.ToUInt16(info.Header, 0);
         var minor = BitConverter.ToUInt16(info.Header, 2);
-        Func<int, byte[]>? keyFor = (major, minor) switch
-        {
-            (1, 1) => BinaryRc4Key(info.Header, password),
-            ( >= 2 and <= 4, 2) => CryptoApiKey(info.Header, password),
-            _ => null,
-        };
+        Func<int, byte[]>? keyFor = (major, minor) == (1, 1) ? BinaryRc4Key(info.Header, password)
+                                  : OfficeCrypto.IsCryptoApiVersion(major, minor) ? CryptoApiKey(info.Header, password)
+                                  : null;
         if (keyFor is null) return null;
 
         using var source = RootStorage.Open(Expandable(bytes));

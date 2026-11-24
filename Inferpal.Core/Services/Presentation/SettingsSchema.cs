@@ -167,9 +167,9 @@ internal static class SettingsSchema
     /// "OpenAI-compatible (generic)", the schema "OpenAI-compatible") and nobody had seen it.</summary>
     public static readonly IReadOnlyList<SettingOption> Providers =
     [
-        new("ollama",            "Ollama"),
-        new("lmstudio",          "LM Studio"),
-        new("openai-compatible", "OpenAI-compatible (generic)"),
+        new(InferenceProviderFactory.Ollama,           "Ollama"),
+        new(InferenceProviderFactory.LmStudio,         "LM Studio"),
+        new(InferenceProviderFactory.OpenAiCompatible, "OpenAI-compatible (generic)"),
     ];
 
     /// <summary>Where completions run (<see cref="Inference.RoleServers"/>).</summary>

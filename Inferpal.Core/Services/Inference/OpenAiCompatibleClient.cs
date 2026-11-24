@@ -542,8 +542,10 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // What the response has streamed so far, every channel counted; past OutputBound the client stops reading.
         long received = 0;
         var  bounded  = false;
+        // The offered tools' schemas, by name: they type a value a call writes as text.
+        var  schemaOf      = ToolSchemas.Of(defs);
         // A call written twice in the reasoning: the model has decided and is looping — stop at the repeat.
-        var  loop     = new RepeatedCallDetector();
+        var  loop     = new RepeatedCallDetector(OfferedNames(tools), schemaOf);
         var  repeated = false;
         // Text going round in circles, in either channel: stopped, and said to be (StoppedRepeating).
         var  reasoningLoop = new TextLoopDetector();
@@ -553,7 +555,6 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         var  argumentsLoop = new ArgumentsLoopDetector();
         var  argsLooping   = false;
         // A structured call whose arguments can no longer become what its tool reads: stopped there, not minutes later.
-        var  schemaOf      = ToolSchemas.Of(defs);
         var  argsShape     = new ArgumentsShapeWatcher(schemaOf);
         string? brokenShape = null;
         // A model whose addressed messages the server streams as content (Muse Glimmer): reasoning split from answer.
@@ -826,7 +827,7 @@ internal class OpenAiCompatibleClient : InferenceProviderBase
         // content rather than raw length: a "\n\n"-only content (Length > 0 but nothing to show) must
         // not suppress recovery, or the answer is stranded in the live "💭" status preview while the
         // chat bubble is discarded as empty.
-        var contentPrintable = MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(contentText));
+        var contentPrintable = MarkdownParser.HasPrintableAnswer(contentText);
 
         // Fallback: some models emit the tool call as plain-text JSON in the content (see OllamaClient).
         if (toolCalls is null && contentBuilder.Length > 0)

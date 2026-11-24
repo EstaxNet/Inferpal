@@ -107,8 +107,7 @@ internal static class PromptedTools
                 foreach (var call in calls)
                 {
                     if (sb.Length > 0) sb.Append('\n');
-                    sb.Append("<tool_call>\n{\"name\": ").Append(JsonSerializer.Serialize(call.Function.Name))
-                      .Append(", \"arguments\": ").Append(ArgumentsObject(call.Function.Arguments)).Append("}\n</tool_call>");
+                    sb.Append(CallBlock(call.Function.Name, ArgumentsObject(call.Function.Arguments)));
                 }
                 text.Add(("assistant", sb.ToString()));
             }
@@ -164,6 +163,11 @@ internal static class PromptedTools
         static IEnumerable<object> Parts(object? c) => c as IEnumerable<object> ?? [new { type = "text", text = TextOf(c) }];
         return Parts(first).Concat(Parts(second)).ToList();
     }
+
+    /// <summary>A call written as text, the form the instructions teach and the parser reads back:
+    /// <paramref name="arguments"/> is a JSON object's text.</summary>
+    internal static string CallBlock(string name, string arguments) =>
+        "<tool_call>\n{\"name\": " + JsonSerializer.Serialize(name) + ", \"arguments\": " + arguments + "}\n</tool_call>";
 
     /// <summary>The call's arguments as a JSON object; the raw text quoted when it is not one.</summary>
     private static string ArgumentsObject(string arguments)

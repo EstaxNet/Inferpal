@@ -30,4 +30,18 @@ public sealed class ProtectedByLibreOfficeTests
         Assert.Equal(DocumentProblem.None, read.Problem);
         Assert.Contains(inside, read.Text);
     }
+
+    /// <summary>The standard encryption's header may say version 2.2, 3.2 or 4.2 (MS-OFFCRYPTO), as the reader of the same
+    /// header in a Word 97 file already takes it: 2.2 read as "unreadable", and no password was ever asked.</summary>
+    [Fact]
+    public void AStandardEncryptionHeaderOfVersion2_OpensAsItsOtherVersionsDo()
+    {
+        var bytes = File.ReadAllBytes(Path.Combine(WebviewRebuildTests.RepoRoot(), "Inferpal.Tests", "Fixtures", "documents", "budget-protege-lo.xlsx"));
+        var header = bytes.AsSpan().IndexOf(new byte[] { 3, 0, 2, 0, 0x24, 0, 0, 0 });
+        Assert.True(header > 0);
+        bytes[header] = 2;
+
+        Assert.Equal(DocumentProblem.Encrypted, DocumentText.Extract(bytes, ".xlsx").Problem);
+        Assert.Contains("Hébergement", DocumentText.Extract(bytes, ".xlsx", password: Password).Text);
+    }
 }

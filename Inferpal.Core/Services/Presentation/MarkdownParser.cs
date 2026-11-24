@@ -330,6 +330,9 @@ internal static class MarkdownParser
         return false;
     }
 
+    /// <summary>Whether <paramref name="s"/> still shows something once its inline reasoning is taken out.</summary>
+    public static bool HasPrintableAnswer(string? s) => HasPrintableText(StripThinkTags(s));
+
     public static IReadOnlyList<MarkdownBlockModel> Parse(string content)
     {
         if (string.IsNullOrWhiteSpace(content))

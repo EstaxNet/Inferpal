@@ -121,7 +121,7 @@ internal static class Rewind
                 files.Add(new RewindFile(path, RewindFileKind.Kept));
                 continue;
             }
-            if (touching.Any(t => t.Change.SnapshotFailed || t.Change.SnapshotPath is { } copy && !File.Exists(copy)))
+            if (touching.Any(t => t.Change.CopyMissing()))
                 return new RewindPlan(turn, question, runs, files, RewindRefusal.NoCopy, path);
             if (history.ChangedSinceRun(touching[0].Run, path, new HashSet<string>()))
                 return new RewindPlan(turn, question, runs, files, RewindRefusal.ChangedSince, path,

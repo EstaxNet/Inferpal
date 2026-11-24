@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using static Inferpal.Services.JsonFields;
 
 namespace Inferpal.Services.Documents;
 
@@ -415,7 +416,4 @@ internal static class ProfileText
             ? [.. a.EnumerateArray().Select(x => x.TryGetDouble(out var v) ? v : 0)] : [];
 
     private static int? Int(JsonElement e, string name) => e.TryGetProperty(name, out var v) && v.TryGetInt32(out var i) ? i : null;
-
-    private static string Str(JsonElement e, string name) =>
-        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
 }

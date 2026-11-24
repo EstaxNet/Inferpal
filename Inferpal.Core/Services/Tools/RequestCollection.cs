@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using static Inferpal.Services.JsonFields;
 
 namespace Inferpal.Services.Tools;
 
@@ -250,7 +251,7 @@ internal static partial class RequestCollection
         PathSanitizer.AssertUnderRoot(path, root);
         if (Governance.ContentExclusions.Of(path) is { } excluded)
             throw new InvalidOperationException($"{Path.GetFileName(path)} is kept out of AI tools by {excluded.Named}");
-        if (new FileInfo(path).Length > MaxFileBytes) throw new InvalidOperationException("it is larger than 4 MB");
+        if (new FileInfo(path).Length > MaxFileBytes) throw new InvalidOperationException($"it is larger than {MaxFileBytes / (1024 * 1024)} MB");
         return TextFileEncoding.ReadText(path);
     }
 
@@ -403,7 +404,7 @@ internal static partial class RequestCollection
     [GeneratedRegex(@"^(?:#|//)\s*@name\s+(.+)$")]
     private static partial Regex NameTag();
 
-    [GeneratedRegex(@"^(?:(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+)?(\S+?)(?:\s+HTTP/[\d.]+)?$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(?:(" + HttpRequestTool.MethodNames + @")\s+)?(\S+?)(?:\s+HTTP/[\d.]+)?$", RegexOptions.IgnoreCase)]
     private static partial Regex RequestLine();
 
     // ── Postman ──
@@ -584,7 +585,7 @@ internal static partial class RequestCollection
         foreach (var file in files)
         {
             var blocks = BruBlocks(ReadText(file, root));
-            var method = new[] { "get", "post", "put", "patch", "delete", "head", "options" }.FirstOrDefault(blocks.ContainsKey);
+            var method = HttpRequestTool.MethodNames.ToLowerInvariant().Split('|').FirstOrDefault(blocks.ContainsKey);
             if (method is null) continue;
             var http = Pairs(blocks[method]);
             var meta = blocks.TryGetValue("meta", out var mt) ? Pairs(mt) : new Dictionary<string, string>(StringComparer.Ordinal);
@@ -719,7 +720,4 @@ internal static partial class RequestCollection
 
     private static string ValueText(JsonElement e) =>
         e.TryGetProperty("value", out var v) ? v.ValueKind == JsonValueKind.String ? v.AsText() ?? "" : v.GetRawText() : "";
-
-    private static string Str(JsonElement e, string name) =>
-        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.AsText() ?? "" : "";
 }

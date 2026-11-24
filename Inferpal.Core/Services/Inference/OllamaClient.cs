@@ -430,7 +430,7 @@ internal class OllamaClient : InferenceProviderBase
         // Whatever the gate held is no call: the editor gets it now.
         shownStream.Finish(contentText);
         var noCall           = toolCalls is null || toolCalls.Count == 0;
-        var contentPrintable = MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(contentText));
+        var contentPrintable = MarkdownParser.HasPrintableAnswer(contentText);
 
         // Nothing written outside the reasoning: its call or its answer is in there — a thinking model cut by the bound
         // or a loop always ends this way. Returned empty, the user who watched it reason reads "not a single token".

@@ -30,8 +30,9 @@ namespace Inferpal.Services.Inference;
 /// Cohere's turn (North Mini Code, Command) is framed by markers: reasoning up to <c>&lt;|END_THINKING|&gt;</c> (the
 /// template writes the opening one), the answer in <c>&lt;|START_TEXT|&gt;</c>…<c>&lt;|END_TEXT|&gt;</c> (<c>&lt;|START_RESPONSE|&gt;</c>
 /// on Command A), calls in <c>&lt;|START_ACTION|&gt;</c>…<c>&lt;|END_ACTION|&gt;</c>. A server that does not know the format
-/// streams it all as content. The thinking markers become <c>&lt;think&gt;</c> / <c>&lt;/think&gt;</c> — a lone close is the
-/// template-opened reasoning every reader already takes out, the webview's own copy included — and the text markers
+/// streams it all as content. The thinking markers become <c>&lt;think&gt;</c> / <c>&lt;/think&gt;</c>, the close on its own
+/// line — a lone close is the template-opened reasoning every reader already takes out, the webview's own copy
+/// included, and a reply's reader (a commit message, an inline edit) only takes out a close alone on its line — and the text markers
 /// are dropped; the action block is left for <c>InlineToolCallParser</c>, which reads it for every model.
 /// </para>
 /// <para>
@@ -60,7 +61,7 @@ internal sealed class ChannelEnvelope
     /// <summary>Cohere's markers and what they become (see the remarks).</summary>
     private static readonly (string Marker, string Becomes)[] CohereMarkers =
     [
-        ("<|START_THINKING|>", "<think>"), ("<|END_THINKING|>", "</think>"),
+        ("<|START_THINKING|>", "<think>"), ("<|END_THINKING|>", "\n</think>\n"),
         ("<|START_TEXT|>", ""), ("<|END_TEXT|>", ""), ("<|START_RESPONSE|>", ""), ("<|END_RESPONSE|>", ""),
     ];
 
@@ -197,8 +198,7 @@ internal sealed class ChannelEnvelope
             return;
         }
         var name = _recipient!.StartsWith("functions.", StringComparison.Ordinal) ? _recipient["functions.".Length..] : _recipient;
-        answer.Append("<tool_call>\n{\"name\": ").Append(System.Text.Json.JsonSerializer.Serialize(name))
-              .Append(", \"arguments\": ").Append(body).Append("}\n</tool_call>");
+        answer.Append(PromptedTools.CallBlock(name, body));
     }
 
     private static bool IsJsonObject(string text)

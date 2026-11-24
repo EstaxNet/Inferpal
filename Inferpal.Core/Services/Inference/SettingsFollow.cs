@@ -83,6 +83,7 @@ internal static class SettingsFollow
             fileNow.Provider              = config.Provider;
             fileNow.BaseUrl               = config.BaseUrl;
             fileNow.ApiKey                = config.ApiKey;
+            fileNow.RequestHeaders        = config.RequestHeaders;
             fileNow.DefaultModel          = config.DefaultModel;
             fileNow.AgentModel            = config.AgentModel;
             fileNow.UtilityModel          = config.UtilityModel;

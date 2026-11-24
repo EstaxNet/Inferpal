@@ -50,7 +50,7 @@ internal static class EmailText
 
         var body = Text(root, 0x1000);
         if (string.IsNullOrWhiteSpace(body) && Binary(root, 0x1013) is { } htmlBytes)
-            body = Tools.FetchUrlTool.HtmlToText(Decode(htmlBytes, htmlCodePage));
+            body = Tools.FetchUrlTool.HtmlToText(DocumentText.InCodePage(htmlBytes, htmlCodePage));
         if (string.IsNullOrWhiteSpace(body) && Binary(root, 0x1009) is { } compressed && CompressedRtf.Decompress(compressed) is { } rtf)
             body = RtfText.Extract(rtf, ct).Text;
         ct.ThrowIfCancellationRequested();
@@ -92,7 +92,7 @@ internal static class EmailText
     private static string? String(Storage storage, int id, int codePage)
     {
         if (Read(storage, $"__substg1.0_{id:X4}001F") is { } unicode) return Encoding.Unicode.GetString(unicode).TrimEnd('\0');
-        if (Read(storage, $"__substg1.0_{id:X4}001E") is { } ansi) return Decode(ansi, codePage).TrimEnd('\0');
+        if (Read(storage, $"__substg1.0_{id:X4}001E") is { } ansi) return DocumentText.InCodePage(ansi, codePage).TrimEnd('\0');
         return null;
     }
 
@@ -132,13 +132,6 @@ internal static class EmailText
         return ticks <= 0 || ticks > DateTime.MaxValue.ToFileTimeUtc() ? null : DateTimeOffset.FromFileTime(ticks).ToUniversalTime();
     }
 
-    static EmailText() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-    private static string Decode(byte[] bytes, int codePage)
-    {
-        try { return Encoding.GetEncoding(codePage).GetString(bytes); }
-        catch (Exception ex) when (ex is ArgumentException or NotSupportedException) { return Encoding.Latin1.GetString(bytes); }
-    }
 
     private static DocumentExtraction Compose(string? subject, string? from, string? to, string? cc, DateTimeOffset? date,
                                               string body, IReadOnlyList<string> attachments, string? bcc)

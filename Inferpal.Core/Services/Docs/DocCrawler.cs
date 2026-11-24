@@ -23,9 +23,6 @@ internal sealed class DocCrawler
     /// <summary>Maximum link depth from the start URL.</summary>
     public const int MaxDepth = 3;
 
-    /// <summary>Redirect hops followed per page (each one re-validated).</summary>
-    private const int MaxRedirects = 5;
-
     /// <summary>Delay between successive page fetches (politeness).</summary>
     private static readonly TimeSpan FetchDelay = TimeSpan.FromMilliseconds(100);
 
@@ -77,8 +74,7 @@ internal sealed class DocCrawler
     internal DocCrawler(HttpMessageHandler? handler, Func<string, CancellationToken, Task<bool>>? isPrivate)
     {
         _client    = handler is null ? _http : new HttpClient(handler) { Timeout = RequestTimeout };
-        _isPrivate = isPrivate ?? (async (target, ct) =>
-            FetchUrlTool.IsPrivateOrLoopback(target) || await FetchUrlTool.ResolvesToPrivateAsync(target, ct));
+        _isPrivate = isPrivate ?? (async (target, ct) => await FetchUrlTool.GuardAsync(target, ct) != FetchUrlTool.HostCheck.Public);
     }
 
     /// <summary>
@@ -119,14 +115,14 @@ internal sealed class DocCrawler
     internal static bool IsRefusal(int status) => status is 401 or 403 or 429 || status >= 500;
 
     /// <summary>
-    /// GETs one page, following up to <see cref="MaxRedirects"/> redirects <b>manually</b> and
+    /// GETs one page, following up to <see cref="FetchUrlTool.MaxRedirects"/> redirects <b>manually</b> and
     /// re-validating every hop against the SSRF guard (literal private ranges + DNS resolution of
     /// host names). Returns null when the response is not HTML or the hop budget is spent.
     /// </summary>
     private async Task<(string Html, Uri FinalUrl)?> FetchPageAsync(Uri url, CancellationToken ct)
     {
         var current = url;
-        for (var hop = 0; hop <= MaxRedirects; hop++)
+        for (var hop = 0; hop <= FetchUrlTool.MaxRedirects; hop++)
         {
             var target = current.ToString();
             if (await _isPrivate(target, ct))
@@ -150,11 +146,10 @@ internal sealed class DocCrawler
                 return null;
             }
 
-            var mediaType = resp.Content.Headers.ContentType?.MediaType ?? string.Empty;
-            if (mediaType.Length > 0 && !mediaType.Contains("html", StringComparison.OrdinalIgnoreCase))
-                return null;
-
-            return (await Tools.WebPage.ReadTextAsync(resp.Content, ct), current);
+            // A page as fetch_url judges one: a type that names something else is not even read.
+            if (Tools.WebPage.IsHtmlByType(resp.Content.Headers.ContentType?.MediaType) == false) return null;
+            var page = await Tools.WebPage.ReadAsync(resp.Content, ct);
+            return page.Binary || !Tools.WebPage.IsHtml(page) ? null : (page.Text, current);
         }
         return null;   // redirect budget exhausted
     }

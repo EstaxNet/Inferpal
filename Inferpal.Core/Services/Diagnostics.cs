@@ -193,9 +193,7 @@ internal static class Diagnostics
         //  - net472 reference assemblies carry no [NotNullWhen] on IsNullOrWhiteSpace, so
         //    nullability flow does not pass through it and the dereference comes out as CS8602 -
         //    an error in Release only, where warnings are errors. Hence the explicit null test.
-        if (line is null) return false;
-        var trimmed = line.TrimStart();
-        if (trimmed.Length == 0 || trimmed.StartsWith("#", StringComparison.Ordinal)) return false;
+        if (line is null || IsBlankOrComment(line)) return false;
 
         var excerpt = line.Trim();
         // Never half a surrogate pair (SafeTruncate's rule: this file is also compiled into the net472 in-proc assembly).
@@ -203,6 +201,13 @@ internal static class Diagnostics
             excerpt = excerpt[..(char.IsHighSurrogate(excerpt[MaxExcerptChars - 1]) ? MaxExcerptChars - 1 : MaxExcerptChars)] + "…";
         Record(context, $"{reason}: {excerpt}");
         return true;
+    }
+
+    /// <summary>Whether a settings line is one the parsers skip normally: blank, or a <c>#</c> comment.</summary>
+    internal static bool IsBlankOrComment(string line)
+    {
+        var trimmed = line.TrimStart();
+        return trimmed.Length == 0 || trimmed.StartsWith("#", StringComparison.Ordinal);
     }
 
     /// <summary>

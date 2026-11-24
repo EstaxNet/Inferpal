@@ -307,7 +307,7 @@ internal static class ApprovalCard
     {
         if (paths.Count == 1) return Relative(paths[0], root);
         var names = string.Join(", ", paths.Select(p => Relative(p, root)));
-        return names.Length > SubjectChars ? names[..SubjectChars] + "…" : names;
+        return names.Length > SubjectChars ? SafeTruncate.Truncate(names, SubjectChars) + "…" : names;
     }
 
     /// <summary>The longest single line the card's header shows as its subject; a longer one goes to the preview.</summary>
@@ -316,6 +316,6 @@ internal static class ApprovalCard
     private static string FirstLine(string text)
     {
         var line = text.Replace("\r\n", "\n").Split('\n')[0];
-        return line.Length > SubjectChars ? line[..SubjectChars] + "…" : line;
+        return line.Length > SubjectChars ? SafeTruncate.Truncate(line, SubjectChars) + "…" : line;
     }
 }

@@ -42,6 +42,11 @@ namespace Inferpal.Services.Agent;
 /// </remarks>
 internal static class InlineToolCallParser
 {
+    /// <summary>Every tag that ends a call written between tags, in each form read here (Mistral's calls have none):
+    /// a watcher that waits for a call to end before parsing counts these.</summary>
+    internal static readonly Regex CallClosers =
+        new(@"<tool_call\|>|</tool_\w*>|</atem:function_calls>|<\|END_ACTION\|>", RegexOptions.Compiled, RegexBudget.Default);
+
     // The end of a call written between tags: </tool_call>, Gemma's <tool_call|>, or a misspelled </tool_…> — Gemma 4
     // under PromptedTools writes </tool__call>, or </tool_class> followed by </tool_call>. Matched strictly, the call
     // stays in the content, becomes the answer, and nothing runs.
@@ -148,7 +153,7 @@ internal static class InlineToolCallParser
     {
         var (calls, cleaned) = TryParse(content, offered.Contains, schemaOf);
         if (calls is not { Count: > 0 }) return (null, content);
-        if (offered.Count == 0 && MarkdownParser.HasPrintableText(MarkdownParser.StripThinkTags(cleaned)))
+        if (offered.Count == 0 && MarkdownParser.HasPrintableAnswer(cleaned))
             return (null, content);
         return (calls, cleaned);
     }
@@ -243,7 +248,7 @@ internal static class InlineToolCallParser
             }
             var json = GemmaCallArguments.ToJson(m.Groups[2].Value);
             calls.Add(json is null
-                ? new ToolCallDto(new ToolCallFunction(name, EmptyObject()) { UnparsedArguments = m.Groups[2].Value })
+                ? new ToolCallDto(new ToolCallFunction(name, ToolCallArguments.Empty()) { UnparsedArguments = m.Groups[2].Value })
                 : new ToolCallDto(new ToolCallFunction(name, ParseObject(json))));
             cleaned      = cleaned.Replace(m.Value, string.Empty);
             gemmaMatched = true;
@@ -304,7 +309,7 @@ internal static class InlineToolCallParser
 
         var name = LeadingNameRegex.Match(body);
         if (!name.Success) return false;
-        calls.Add(new ToolCallDto(new ToolCallFunction(name.Groups[1].Value, EmptyObject()) { UnparsedArguments = body }));
+        calls.Add(new ToolCallDto(new ToolCallFunction(name.Groups[1].Value, ToolCallArguments.Empty()) { UnparsedArguments = body }));
         return true;
     }
 
@@ -338,7 +343,7 @@ internal static class InlineToolCallParser
         catch (RegexMatchTimeoutException) { return null; }
 
         if (first is not { } call) return null;
-        return (new ToolCallDto(new ToolCallFunction(call.Name, EmptyObject()) { UnparsedArguments = content[call.Index..] }),
+        return (new ToolCallDto(new ToolCallFunction(call.Name, ToolCallArguments.Empty()) { UnparsedArguments = content[call.Index..] }),
                 content[..call.Index].Trim());
     }
 
@@ -441,7 +446,7 @@ internal static class InlineToolCallParser
         // guard that refuses to execute (`ExecuteToolSafeAsync`) already existed: it was only waiting
         // for this path to mark its calls.
         calls.Add(new ToolCallDto(
-            new ToolCallFunction(name!, EmptyObject()) { UnparsedArguments = RawArguments(obj) }));
+            new ToolCallFunction(name!, ToolCallArguments.Empty()) { UnparsedArguments = RawArguments(obj) }));
         return true;
     }
 
@@ -460,7 +465,7 @@ internal static class InlineToolCallParser
         var props = obj.EnumerateObject()
                        .Where(p => !CallKeys.Contains(p.Name, StringComparer.Ordinal)
                                 || (p.Name is not ("name" or "tool_name")
-                                    && schema is { ValueKind: JsonValueKind.Object } s && PropertySchema(s, p.Name) is not null))
+                                    && schema is { ValueKind: JsonValueKind.Object } s && ToolSchemas.Property(s, p.Name) is not null))
                        .ToList();
         return props.Count == 0
             ? null
@@ -502,7 +507,7 @@ internal static class InlineToolCallParser
 
         if (parameter.Replace(paramsBlock, string.Empty).Trim().Length > 0)
         {
-            calls.Add(new ToolCallDto(new ToolCallFunction(name, EmptyObject()) { UnparsedArguments = paramsBlock.Trim() }));
+            calls.Add(new ToolCallDto(new ToolCallFunction(name, ToolCallArguments.Empty()) { UnparsedArguments = paramsBlock.Trim() }));
             return true;
         }
 
@@ -526,7 +531,7 @@ internal static class InlineToolCallParser
         }
         catch (JsonException)
         {
-            calls.Add(new ToolCallDto(new ToolCallFunction(name, EmptyObject()) { UnparsedArguments = paramsBlock.Trim() }));
+            calls.Add(new ToolCallDto(new ToolCallFunction(name, ToolCallArguments.Empty()) { UnparsedArguments = paramsBlock.Trim() }));
         }
         return true;
     }
@@ -559,7 +564,7 @@ internal static class InlineToolCallParser
         if (toolSchema is not { ValueKind: JsonValueKind.Object } schema)
             return GuessedJson(text);
 
-        var types = DeclaredTypes(PropertySchema(schema, key));
+        var types = DeclaredTypes(ToolSchemas.Property(schema, key));
         if (types.Count == 0 || types.Contains("string"))
             return JsonSerializer.Serialize(text);
 
@@ -607,12 +612,6 @@ internal static class InlineToolCallParser
         }
         return JsonSerializer.Serialize(text);
     }
-
-    private static JsonElement? PropertySchema(JsonElement schema, string key) =>
-        schema.TryGetProperty("properties", out var props) && props.ValueKind == JsonValueKind.Object
-        && props.TryGetProperty(key, out var p)
-            ? p
-            : null;
 
     // The types a property schema allows: its "type" (a name or a list of names), and the types of its anyOf/oneOf.
     private static HashSet<string> DeclaredTypes(JsonElement? property)
@@ -698,7 +697,7 @@ internal static class InlineToolCallParser
                 }
                 catch (JsonException)
                 {
-                    calls.Add(new ToolCallDto(new ToolCallFunction(name, EmptyObject()) { UnparsedArguments = raw }));
+                    calls.Add(new ToolCallDto(new ToolCallFunction(name, ToolCallArguments.Empty()) { UnparsedArguments = raw }));
                 }
             }
             cleaned = cleaned.Replace(content[i..(end + 1)], string.Empty);
@@ -739,12 +738,6 @@ internal static class InlineToolCallParser
     private static JsonElement ParseObject(string json)
     {
         using var d = JsonDocument.Parse(json);
-        return d.RootElement.Clone();
-    }
-
-    private static JsonElement EmptyObject()
-    {
-        using var d = JsonDocument.Parse("{}");
         return d.RootElement.Clone();
     }
 

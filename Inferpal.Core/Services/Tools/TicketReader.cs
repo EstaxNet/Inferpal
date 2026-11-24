@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using static Inferpal.Services.JsonFields;
 
 namespace Inferpal.Services.Tools;
 
@@ -50,13 +51,13 @@ internal static partial class TicketReader
                 if (GitHubPath.Match(path) is not { Success: true } m) return null;
                 var repo = $"https://api.github.com/repos/{m.Groups[1].Value}/{m.Groups[2].Value}";
                 var n = int.Parse(m.Groups[4].Value, CultureInfo.InvariantCulture);
-                return new(Forge.GitHub, $"{repo}/issues/{n}", $"{repo}/issues/{n}/comments?per_page=100",
-                           $"{repo}/pulls/{n}/files?per_page=100", m.Groups[3].Value == "pull", n, 100,
-                           $"{repo}/pulls/{n}/comments?per_page=100", $"{repo}/pulls/{n}/reviews?per_page=100",
+                return new(Forge.GitHub, $"{repo}/issues/{n}", $"{repo}/issues/{n}/comments?per_page={PerPage}",
+                           $"{repo}/pulls/{n}/files?per_page={PerPage}", m.Groups[3].Value == "pull", n, PerPage,
+                           $"{repo}/pulls/{n}/comments?per_page={PerPage}", $"{repo}/pulls/{n}/reviews?per_page={PerPage}",
                            // The checks of the pull request's latest commit, by its ref: no call for its head's sha.
-                           $"{repo}/commits/refs/pull/{n}/head/check-runs?per_page=100&filter=latest", repo,
+                           $"{repo}/commits/refs/pull/{n}/head/check-runs?per_page={PerPage}&filter=latest", repo,
                            // External CI (Jenkins, CircleCI…) reports by commit statuses, never by checks.
-                           $"{repo}/commits/refs/pull/{n}/head/status?per_page=100");
+                           $"{repo}/commits/refs/pull/{n}/head/status?per_page={PerPage}");
             }
             if (GitLabPath.Match(path) is { Success: true } g)
             {
@@ -65,16 +66,16 @@ internal static partial class TicketReader
                 var n = int.Parse(g.Groups[3].Value, CultureInfo.InvariantCulture);
                 // Its comments by the page's own discussions.json: the API's notes ask for an account, even on a public
                 // project. ⚠ That page gives 20 discussions unless asked for more.
-                return new(Forge.GitLab, $"{project}/{kind}/{n}", $"{root}/{g.Groups[1].Value}/-/{kind}/{n}/discussions.json?per_page=100",
-                           $"{project}/merge_requests/{n}/diffs?per_page=100", kind == "merge_requests", n, 100);
+                return new(Forge.GitLab, $"{project}/{kind}/{n}", $"{root}/{g.Groups[1].Value}/-/{kind}/{n}/discussions.json?per_page={PerPage}",
+                           $"{project}/merge_requests/{n}/diffs?per_page={PerPage}", kind == "merge_requests", n, PerPage);
             }
             if (GiteaPath.Match(path) is { Success: true } t)
             {
                 var repo = $"{root}/api/v1/repos/{t.Groups[1].Value}/{t.Groups[2].Value}";
                 var n = int.Parse(t.Groups[4].Value, CultureInfo.InvariantCulture);
-                return new(Forge.Gitea, $"{repo}/issues/{n}", $"{repo}/issues/{n}/comments?limit=50",
-                           $"{repo}/pulls/{n}/files?limit=50", t.Groups[3].Value == "pulls", n, 50,
-                           Reviews: $"{repo}/pulls/{n}/reviews?limit=50");
+                return new(Forge.Gitea, $"{repo}/issues/{n}", $"{repo}/issues/{n}/comments?limit={GiteaPerPage}",
+                           $"{repo}/pulls/{n}/files?limit={GiteaPerPage}", t.Groups[3].Value == "pulls", n, GiteaPerPage,
+                           Reviews: $"{repo}/pulls/{n}/reviews?limit={GiteaPerPage}");
             }
         }
         catch (RegexMatchTimeoutException ex) { Diagnostics.Swallow("TicketReader.Parse", ex); }
@@ -442,7 +443,7 @@ internal static partial class TicketReader
         {
             // A pull request's files come with every patch: past the read limit, the list is said too large, not "failed".
             var why = Diagnostics.RootMessage(ex);
-            return ([], why.Contains("bytes", StringComparison.OrdinalIgnoreCase) || why.Contains("buffer", StringComparison.OrdinalIgnoreCase)
+            return ([], TooLarge(why)
                 ? $"the forge's answer is larger than {WebPage.MaxBytes / (1024 * 1024)} MB (its patches come with it)"
                 : why.TrimEnd('.'));
         }
@@ -520,10 +521,26 @@ internal static partial class TicketReader
         return "someone";
     }
 
+    /// <summary>The page a forge is asked for (GitHub's and GitLab's largest): a page that comes back full is said cut.</summary>
+    internal const int PerPage = 100;
+
+    /// <summary>Gitea's largest page.</summary>
+    internal const int GiteaPerPage = 50;
+
+    /// <summary>Whether a failed read says the forge's answer was past the read limit.</summary>
+    private static bool TooLarge(string why) =>
+        why.Contains("bytes", StringComparison.OrdinalIgnoreCase) || why.Contains("buffer", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Whether a GitLab pipeline or job in <paramref name="status"/> is still going.</summary>
+    private static bool GitLabGoing(string status) => status is "running" or "pending" or "created" or "preparing" or "waiting_for_resource";
+
+    /// <summary>A moment cut to the minute, in a form that reads the same in every culture.</summary>
+    private static string UtcMinute(DateTimeOffset at) => at.UtcDateTime.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture);
+
     /// <summary>A date as the forge gave it, cut to the minute, in a form that reads the same in every culture.</summary>
     private static string When(JsonElement e) =>
         DateTimeOffset.TryParse(Str(e, "created_at"), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var at)
-            ? at.UtcDateTime.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture)
+            ? UtcMinute(at)
             : "an unknown date";
 
     private static string FileLine(JsonElement f)
@@ -542,9 +559,6 @@ internal static partial class TicketReader
     }
 
     private static bool Flag(JsonElement e, string key) => e.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.True;
-
-    private static string Str(JsonElement e, string key) =>
-        e.ValueKind == JsonValueKind.Object && e.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String ? v.ToString() : "";
 
     // ![alt](url) and <img src="url">: the pictures a ticket shows, absolute or relative to its forge.
     private static readonly Regex MarkdownImage = new(@"!\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+""[^""]*"")?\s*\)", RegexOptions.CultureInvariant, RegexBudget.Default);

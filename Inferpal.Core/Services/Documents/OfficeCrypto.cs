@@ -55,7 +55,7 @@ internal static class OfficeCrypto
             if (Stream(root, "EncryptionInfo") is not { Length: >= 32 } info || Stream(root, "EncryptedPackage") is null) return false;
             var (major, minor) = (BitConverter.ToUInt16(info, 0), BitConverter.ToUInt16(info, 2));
             if (major == 4 && minor == 4) return true;
-            return major is 3 or 4 && minor == 2 && BitConverter.ToInt32(info, 12 + 8) is 0x660E or 0x660F or 0x6610;
+            return IsCryptoApiVersion(major, minor) && BitConverter.ToInt32(info, 12 + 8) is 0x660E or 0x660F or 0x6610;
         }
         catch (Exception ex) when (ex is IOException or FormatException or ArgumentException or NotSupportedException
                                        or InvalidDataException or InvalidOperationException)
@@ -64,6 +64,9 @@ internal static class OfficeCrypto
             return false;
         }
     }
+
+    /// <summary>The versions a standard or RC4 CryptoAPI encryption header may carry: 2.2, 3.2 or 4.2 (MS-OFFCRYPTO).</summary>
+    internal static bool IsCryptoApiVersion(ushort major, ushort minor) => major is >= 2 and <= 4 && minor == 2;
 
     /// <summary>
     /// The package (the zip) inside an encrypted container, opened with the password the person typed — or <c>null</c> and why
@@ -85,7 +88,7 @@ internal static class OfficeCrypto
         var package = Stream(root, "EncryptedPackage");
         if (info is null || package is null || info.Length < 8 || package.Length < 8) return null;
         var (major, minor) = (BitConverter.ToUInt16(info, 0), BitConverter.ToUInt16(info, 2));
-        if (major is 3 or 4 && minor == 2) return Standard(info, package, password, ct);   // Office 2007, and LibreOffice today
+        if (IsCryptoApiVersion(major, minor)) return Standard(info, package, password, ct);   // Office 2007, and LibreOffice today
         if (major != 4 || minor != 4) return null;   // agile is version 4.4
         var xml = new XmlDocument { XmlResolver = null };
         using (var reader = XmlReader.Create(new MemoryStream(info, 8, info.Length - 8),

@@ -57,6 +57,7 @@ public sealed class HttpRequestToolTests : IDisposable
             {
                 "/fail"  => (500, "System.NullReferenceException at OrdersController.Create line 42"),
                 "/moved" => (302, ""),
+                "/bom"   => (200, (char)0xFEFF + "{\"ok\":true}"),
                 _        => (200, "{\"ok\":true}"),
             };
             if (code == 302) c.Response.RedirectLocation = "http://example.com/elsewhere";
@@ -271,6 +272,16 @@ public sealed class HttpRequestToolTests : IDisposable
         var said = await Call(new NoopApproval(), new { url = $"http://0.0.0.0:{_port}/" });
         Assert.Contains("127.0.0.1", said);
         Assert.Empty(_received);
+    }
+
+    [Fact]
+    public async Task ABodyBehindAByteOrderMark_IsReadWithoutIt_AsAPageIs()
+    {
+        // Kept, the mark made a JSON answer unparseable: a GraphQL answer's errors line and its schema were lost.
+        var said = await Call(new NoopApproval(), new { url = Url("/bom") });
+
+        Assert.Contains("{\"ok\":true}", said);
+        Assert.DoesNotContain((char)0xFEFF, said);
     }
 
     [Fact]

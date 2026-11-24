@@ -56,6 +56,23 @@ public sealed class TaskJournalTests : IDisposable
         Assert.Fail($"Timed out waiting for: {what}");
     }
 
+    /// <summary>A journal unreadable twice within one second keeps both copies, as every other unreadable store does
+    /// (<c>AtomicFile.PreserveAside</c>): its reports may be the only copy, and the second used to overwrite the first.</summary>
+    [Fact]
+    public void AJournalUnreadableTwiceInOneSecond_KeepsBothCopies()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(File)!);
+        var journal = new TaskJournal(File);
+        System.IO.File.WriteAllText(File, "{ first broken");
+        var first = journal.Read().SetAside;
+        System.IO.File.WriteAllText(File, "{ second broken");
+        var second = journal.Read().SetAside;
+
+        Assert.NotEqual(first, second);
+        Assert.Equal("{ first broken", System.IO.File.ReadAllText(first!));
+        Assert.Equal("{ second broken", System.IO.File.ReadAllText(second!));
+    }
+
     [Fact]
     public async Task AFinishedTask_ComesBackAtTheNextStart_AndItsNumberIsNeverGivenAgain()
     {

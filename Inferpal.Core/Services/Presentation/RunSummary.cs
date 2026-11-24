@@ -218,7 +218,7 @@ internal static class RunSummary
         {
             var path    = change.OriginalPath;
             var exists  = File.Exists(path);
-            var created = change.SnapshotPath is null && !change.SnapshotFailed;
+            var created = change.Created;
             var copy    = change.SnapshotPath is { } snap && File.Exists(snap) ? snap : null;
             // A binary file is said by its kind and size: read as text, its "lines" mean nothing.
             if (RunBinary.Of(copy, exists ? path : null, created, pictures: false) is { } binary)

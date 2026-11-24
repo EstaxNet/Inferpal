@@ -23,6 +23,18 @@ internal readonly record struct RequestSize(int Tools, int SystemPrompt, int Ear
     /// <summary>The rough weight of a tool definition whose schema does not serialize, in characters.</summary>
     internal const int UnserializedToolChars = 400;
 
+    /// <summary>The characters of a tool's definition as a request sends it; <see cref="UnserializedToolChars"/> when it
+    /// does not serialize.</summary>
+    internal static int CharsOf(ToolDefinition d)
+    {
+        try { return JsonSerializer.Serialize(d).Length; }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("RequestSize.ToolChars", ex);
+            return UnserializedToolChars;
+        }
+    }
+
     public static RequestSize Of(IReadOnlyList<ChatMessageDto> messages, IReadOnlyList<ToolDefinition>? defs)
     {
         var system = Agent.AgentOrchestrator.SystemPromptCount(messages);
@@ -63,13 +75,7 @@ internal readonly record struct RequestSize(int Tools, int SystemPrompt, int Ear
         int all = 1 + defs.Count, mcp = 0, mcpCount = 0;   // the brackets and the commas between the definitions
         foreach (var d in defs)
         {
-            int chars;
-            try   { chars = JsonSerializer.Serialize(d).Length; }
-            catch (Exception ex)
-            {
-                Diagnostics.Swallow("RequestSize.ToolChars", ex);
-                chars = UnserializedToolChars;
-            }
+            var chars = CharsOf(d);
             all += chars;
             if (!Mcp.McpTool.IsMcpName(d.Function.Name)) continue;
             mcp += chars;

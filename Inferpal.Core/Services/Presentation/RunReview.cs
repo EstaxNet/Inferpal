@@ -64,8 +64,8 @@ internal static class RunReview
         {
             var path      = change.OriginalPath;
             var exists    = File.Exists(path);
-            var created   = change.SnapshotPath is null && !change.SnapshotFailed;
-            var noCopy    = change.SnapshotFailed || change.SnapshotPath is { } copy && !File.Exists(copy);
+            var created   = change.Created;
+            var noCopy    = change.CopyMissing();
             // A binary file: no lines, no diff, no changes one by one — its kind, its size, its pictures.
             var binary    = RunBinary.Of(noCopy ? null : change.SnapshotPath, exists ? path : null, created, pictures);
             var before    = binary is null && !noCopy && change.SnapshotPath is { } snap ? RunSummary.Read(snap) : string.Empty;

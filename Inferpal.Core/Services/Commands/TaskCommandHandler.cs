@@ -277,7 +277,7 @@ internal static class TaskCommandHandler
         d.TotalMinutes >= 1 ? $"{(int)d.TotalMinutes}m {d.Seconds}s" : Strings.Ui($"{d.TotalSeconds:0.0}s");
 
     private static string Truncate(string text, int max) =>
-        text.Length <= max ? text : text[..(max - 1)] + "…";
+        text.Length <= max ? text : SafeTruncate.Truncate(text, max - 1) + "…";
 
     /// <summary>Table cells and quotes are markdown: a pipe or newline in the objective would
     /// otherwise break the row it sits in.</summary>

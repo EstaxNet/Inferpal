@@ -58,7 +58,7 @@ internal static class ReplayCommandHandler
                 // as "🆕 created": the user concludes /undo-run will delete it, when it will report
                 // it as failed, and never learns that this file has no safety net at all.
                 sb.Append(change.SnapshotFailed   ? "\n  ⚠ "
-                        : change.SnapshotPath is null ? "\n  🆕 "
+                        : change.Created              ? "\n  🆕 "
                                                       : "\n  ✏ ")
                   .Append(Relativise(change.OriginalPath, root));
                 if (change.SnapshotFailed)

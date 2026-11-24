@@ -47,14 +47,17 @@ internal static class WebPage
     /// </summary>
     internal static bool IsHtml(WebText page)
     {
-        if (page.MediaType is { Length: > 0 } type && !type.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase))
-            return type.Equals("text/html", StringComparison.OrdinalIgnoreCase)
-                || type.Equals("application/xhtml+xml", StringComparison.OrdinalIgnoreCase);
+        if (IsHtmlByType(page.MediaType) is { } byType) return byType;
         var head = page.Text.AsSpan(0, Math.Min(page.Text.Length, 1024)).TrimStart();
         return head.StartsWith("<!doctype html", StringComparison.OrdinalIgnoreCase)
             || head.StartsWith("<html", StringComparison.OrdinalIgnoreCase)
             || head.Contains("<body", StringComparison.OrdinalIgnoreCase);
     }
+
+    /// <summary>What a media type says of a page; <c>null</c> when it says nothing (none, or a generic one): the text decides.</summary>
+    internal static bool? IsHtmlByType(string? mediaType) =>
+        mediaType is not { Length: > 0 } || mediaType.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase) ? null
+        : mediaType.Equals("text/html", StringComparison.OrdinalIgnoreCase) || mediaType.Equals("application/xhtml+xml", StringComparison.OrdinalIgnoreCase);
 
     internal static string Decode(byte[] bytes, string? headerCharset)
     {
