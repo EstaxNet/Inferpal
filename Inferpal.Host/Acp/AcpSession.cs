@@ -968,52 +968,11 @@ internal sealed class AcpSession : IAsyncDisposable
     {
         var (promptText, labels, attachedPaths) = await BuildPromptAsync(typed, content);
         var asked = inCopy ? "/run-copy " + typed : typed;
-        // Images go with the question when the model that answers sees them. An ACP client has no card to ask on: a model
-        // that does not see them is said to the person, and the model reads that they were left out.
         var images = content.Images ?? [];
         if (images.Count > 0)
         {
-            ImageCheckResult check;
-            var stop = new CancellationTokenSource();
-            lock (_gate) _imageCheckStop = stop;
-            try
-            {
-                check = await _link.InvokeWithParameterObjectAsync<ImageCheckResult>("image/check", new
-                {
-                    names = images.Select(i => i.Name).ToList(), model = _model, agentMode = _mode == AcpModes.Agent,
-                    modelOverridesRoles = _model is not null, images = images.ToList(),
-                }, stop.Token);
-            }
-            catch (OperationCanceledException) when (CancelRequested)
-            {
-                // Stopped while the images were read: nothing goes to the host.
-                StoppedBeforeTheHost(ChatTurnPolicy.BuildBubbleText(asked, labels));
-                return "cancelled";
-            }
-            finally
-            {
-                lock (_gate) _imageCheckStop = null;
-                stop.Dispose();
-            }
-            // Their text, read on this computer, goes instead of the images the model does not see (pari 108): matched by
-            // place (two images share a name); the model reads the file's name, the person the label.
-            var texts = check.Texts ?? [];
-            foreach (var text in texts)
-            {
-                promptText += $"\n\n## Attached: {text.Name}\n{text.ForModel}";
-                labels.Add(text.Label);
-            }
-            images = [.. images.Where((_, i) => texts.All(t => t.Index != i))];
-            if (check.Sees == false && (check.Texts?.Count ?? 0) > 0)
-                Notice("info", check.GoesTo, check.GoesTo + "\n\n");
-            if (check.Sees == false && images.Count > 0)
-            {
-                var said = check.Card is { } card ? card.Title + " — " + card.VisionModels : check.ChipWarning;
-                Notice("warning", said, said + "\n\n");
-                promptText += $"\n\n[{images.Count} image(s) were attached ({string.Join(", ", images.Select(i => i.Name))}); {check.Model} does not see images, so they were not sent.]";
-                images = [];
-            }
-            else labels.AddRange(images.Select(i => i.Name));
+            if (await WithImagesCheckedAsync(promptText, labels, images, asked) is not { } checkedImages) return "cancelled";
+            (promptText, images) = checkedImages;
         }
         // ⚠ A Stop that comes while the prompt is being built (attachments read, the host asked for each excerpt, a slash
         // command answered) finds no turn on the host to stop: chat/cancel does nothing there, and sent now, the whole
@@ -1057,6 +1016,73 @@ internal sealed class AcpSession : IAsyncDisposable
             throw AcpRpc.Error(AcpRpc.InternalError, error);
         }
 
+        ShowTurnEnd(result);
+        // What the run left in its copy, stopped too: the person applies it, keeps the copy for now, or discards it.
+        if (result.Copy is { } review) await ReviewCopyAsync(review);
+        await SaveAsync();
+        return StopReason(result);
+    }
+
+    /// <summary>
+    /// Images go with the question when the model that answers sees them. An ACP client has no card to ask on: a model
+    /// that does not see them is said to the person, and the model reads that they were left out.
+    /// </summary>
+    /// <param name="labels">The question's labels, completed here with what goes with it.</param>
+    /// <param name="asked">The question as its bubble shows it.</param>
+    /// <returns>The prompt and the images that go with it; <c>null</c> when a Stop came while the images were read —
+    /// nothing goes to the host then.</returns>
+    private async Task<(string Prompt, IReadOnlyList<ImageDto> Images)?> WithImagesCheckedAsync(
+        string promptText, List<string> labels, IReadOnlyList<ImageDto> images, string asked)
+    {
+        ImageCheckResult check;
+        var stop = new CancellationTokenSource();
+        lock (_gate) _imageCheckStop = stop;
+        try
+        {
+            check = await _link.InvokeWithParameterObjectAsync<ImageCheckResult>("image/check", new
+            {
+                names = images.Select(i => i.Name).ToList(), model = _model, agentMode = _mode == AcpModes.Agent,
+                modelOverridesRoles = _model is not null, images = images.ToList(),
+            }, stop.Token);
+        }
+        catch (OperationCanceledException) when (CancelRequested)
+        {
+            StoppedBeforeTheHost(ChatTurnPolicy.BuildBubbleText(asked, labels));
+            return null;
+        }
+        finally
+        {
+            lock (_gate) _imageCheckStop = null;
+            stop.Dispose();
+        }
+        // Their text, read on this computer, goes instead of the images the model does not see (pari 108): matched by
+        // place (two images share a name); the model reads the file's name, the person the label.
+        var texts = check.Texts ?? [];
+        foreach (var text in texts)
+        {
+            promptText += $"\n\n## Attached: {text.Name}\n{text.ForModel}";
+            labels.Add(text.Label);
+        }
+        images = [.. images.Where((_, i) => texts.All(t => t.Index != i))];
+        if (check.Sees == false && (check.Texts?.Count ?? 0) > 0)
+            Notice("info", check.GoesTo, check.GoesTo + "\n\n");
+        if (check.Sees == false && images.Count > 0)
+        {
+            var said = check.Card is { } card ? card.Title + " — " + card.VisionModels : check.ChipWarning;
+            Notice("warning", said, said + "\n\n");
+            promptText += $"\n\n[{images.Count} image(s) were attached ({string.Join(", ", images.Select(i => i.Name))}); {check.Model} does not see images, so they were not sent.]";
+            images = [];
+        }
+        else labels.AddRange(images.Select(i => i.Name));
+        return (promptText, images);
+    }
+
+    /// <summary>
+    /// What a turn that did not fail ends with, shown and kept: the answer the host settled on, the stop, the end notice,
+    /// what it left running, its run, the limits notice and the usage.
+    /// </summary>
+    private void ShowTurnEnd(ChatSendResult result)
+    {
         // The answer the host settled on, when the stream did not already show it: a run that only called tools, an
         // answer that came whole, the sentence for an empty reply — and always, after the agent's plan (_provisional).
         var answer = _provisional ? string.Empty : _stream.Sent.Trim();
@@ -1091,15 +1117,14 @@ internal sealed class AcpSession : IAsyncDisposable
         if (!result.Cancelled && _agent.TakeLimitsNotice() is { } limits) Notice("info", limits, "\n\n---\n" + limits);
         if (result.ContextWindow > 0)
             Update(new { sessionUpdate = "usage_update", used = Math.Max(0, result.NextTurnTokens), size = result.ContextWindow });
-        // What the run left in its copy, stopped too: the person applies it, keeps the copy for now, or discards it.
-        if (result.Copy is { } review) await ReviewCopyAsync(review);
-        await SaveAsync();
-
-        return result.Cancelled ? "cancelled"
-             : result.Ended == "iterationLimit" ? "max_turn_requests"
-             : result.Ended == "cut" ? "max_tokens"
-             : "end_turn";
     }
+
+    /// <summary>The ACP stop reason of a turn that did not fail.</summary>
+    private static string StopReason(ChatSendResult result) =>
+        result.Cancelled ? "cancelled"
+        : result.Ended == "iterationLimit" ? "max_turn_requests"
+        : result.Ended == "cut" ? "max_tokens"
+        : "end_turn";
 
     /// <summary>
     /// The prompt the host is sent: the message, what Inferpal could not read of it, and each attached file through the
@@ -1134,29 +1159,13 @@ internal sealed class AcpSession : IAsyncDisposable
                 labels.Add(Strings.ExcludedFromAi(shown, why.File, why.Line, why.Pattern));
                 continue;
             }
-            // ⚠ A linked file is read as every @file reads it: a binary file's bytes decoded as text spend the window on
-            // garbage the model reads as code, and a file of a gigabyte would be read whole into the process every thread
-            // shares. The client's buffer first, unsaved changes included, as read_file reads it here; else the disk.
             var body = given;
             if (body is null)
             {
-                string? notAttached = null, reason = null;
+                string? notAttached, reason;
                 try
                 {
-                    // A document (PDF, DOCX…) is read under the documents' own limit, not the text one, and its refusal
-                    // tells the model why it gave no text (a scan, a password) rather than "a binary file".
-                    var document = Services.Documents.DocumentText.Handles(path!);
-                    if (await MentionController.BinaryRefusalAsync(path!, CancellationToken.None) is { } binary)
-                        (notAttached, reason) = (binary, document && Services.Documents.AttachedDocuments.WhyNoText(path!) is { } noText ? noText : "a binary file");
-                    // A Playwright trace is a zip read as its test: never the client's buffer, never the text size limit.
-                    else if (Services.Documents.PlaywrightTrace.IsTrace(path!))
-                        body = await MentionController.FileMentionTextAsync(path!, null, CancellationToken.None);
-                    else if ((body = !document && new FileInfo(path!).Length > MentionController.MaxAttachedFileSize ? null
-                                 : await EditorBuffer(new PathNote(path), CancellationToken.None) is { } buffered
-                                     ? (buffered.Length > MentionController.MaxAttachedFileSize ? null : buffered)
-                                     : await MentionController.FileMentionTextAsync(path!, null, CancellationToken.None)) is null)
-                        (notAttached, reason) = (Strings.AcpAttachmentUnreadable(name, Strings.AttachFileTooLarge),
-                                                $"over {MentionController.MaxAttachedFileSize / 1024} KB");
+                    (body, notAttached, reason) = await ReadLinkedFileAsync(name, path!);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
@@ -1185,6 +1194,36 @@ internal sealed class AcpSession : IAsyncDisposable
         }
         if (left.Count > 0) labels.Add(Strings.AcpAttachmentsLeftOut(left.Count, MaxAttachedFiles, string.Join(", ", left)));
         return (prompt.ToString(), labels, attachedPaths);
+    }
+
+    /// <summary>
+    /// The text of a file the client linked by its path. ⚠ Read as every @file reads it: a binary file's bytes decoded as
+    /// text spend the window on garbage the model reads as code, and a file of a gigabyte would be read whole into the
+    /// process every thread shares. The client's buffer first, unsaved changes included, as read_file reads it here; else
+    /// the disk.
+    /// </summary>
+    /// <param name="name">The name the client gave the file, for the label of one that is not attached.</param>
+    /// <returns>The text; or, when the file is not attached, <c>NotAttached</c> — the label the person reads — and
+    /// <c>Reason</c>, what the model reads.</returns>
+    /// <exception cref="IOException">The file could not be read.</exception>
+    /// <exception cref="UnauthorizedAccessException">The file may not be read.</exception>
+    private async Task<(string? Body, string? NotAttached, string? Reason)> ReadLinkedFileAsync(string name, string path)
+    {
+        // A document (PDF, DOCX…) is read under the documents' own limit, not the text one, and its refusal
+        // tells the model why it gave no text (a scan, a password) rather than "a binary file".
+        var document = Services.Documents.DocumentText.Handles(path);
+        if (await MentionController.BinaryRefusalAsync(path, CancellationToken.None) is { } binary)
+            return (null, binary, document && Services.Documents.AttachedDocuments.WhyNoText(path) is { } noText ? noText : "a binary file");
+        // A Playwright trace is a zip read as its test: never the client's buffer, never the text size limit.
+        if (Services.Documents.PlaywrightTrace.IsTrace(path))
+            return (await MentionController.FileMentionTextAsync(path, null, CancellationToken.None), null, null);
+        var body = !document && new FileInfo(path).Length > MentionController.MaxAttachedFileSize ? null
+                 : await EditorBuffer(new PathNote(path), CancellationToken.None) is { } buffered
+                     ? (buffered.Length > MentionController.MaxAttachedFileSize ? null : buffered)
+                     : await MentionController.FileMentionTextAsync(path, null, CancellationToken.None);
+        return body is not null
+            ? (body, null, null)
+            : (null, Strings.AcpAttachmentUnreadable(name, Strings.AttachFileTooLarge), $"over {MentionController.MaxAttachedFileSize / 1024} KB");
     }
 
     private string Relative(string path)

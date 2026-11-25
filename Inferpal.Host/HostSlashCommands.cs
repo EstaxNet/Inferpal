@@ -165,36 +165,10 @@ internal sealed partial class HostServer
                     return new SlashCommandResult(true, null, [new SlashEffectDto("clearTranscript")]);
 
                 case SlashCommandId.Model:
-                    if (parts.Length < 2)
-                        return new SlashCommandResult(true, Strings.SlashModelCurrent(s.Config.DefaultModel));
-                    if (await ModelsCommandHandler.RefusedForChatAsync(s.Client, parts[1], cts.Token) is { } notForChat)
-                        return new SlashCommandResult(true, notForChat);
-                    s.Config.DefaultModel = parts[1];
-                    s.Config.Save();
-                    var switched = await ModelsCommandHandler.SwitchMessageAsync(s.Client, parts[1], cts.Token);
-                    // The window followed the model: measured again here, and re-read by the editor (its ring, an open
-                    // settings panel).
-                    return await RemeasuredAsync(s, await ContextWindowChoice.FollowAsync(s.Config, s.Client, parts[1], cts.Token),
-                                                 cts.Token) is { } window
-                        ? new SlashCommandResult(true, switched + "\n\n" + window,
-                            [new SlashEffectDto("stateChange", parts[1], "model"), new SlashEffectDto("configSaved")])
-                        : new SlashCommandResult(true, switched, [new SlashEffectDto("stateChange", parts[1], "model")]);
+                    return await HandleModelSlashAsync(s, parts, cts.Token);
 
                 case SlashCommandId.Tools:
-                {
-                    var result = ToolsCommandHandler.Handle(parts, s.Tools, s.Config, s.ToolsEnabled,
-                        ContextManager.NextTurnTools(s.Tools, s.PlanMode, CurrentMode(s)), s.ToolCutWindow, s.CutNamedTools);
-                    // The conversation's switch is the editor's to give back to a host started again: it is said.
-                    if (result.SessionTools is { } on)
-                    {
-                        s.ToolsEnabled = on;
-                        return new SlashCommandResult(true, result.Message,
-                            [new SlashEffectDto("stateChange", on ? "on" : "off", "tools")]);
-                    }
-                    if (!result.SaveConfig) return new SlashCommandResult(true, result.Message);
-                    await SaveAndApplyAsync(s, (s.Config.McpEnabled, s.Config.McpServersJson), cts.Token);
-                    return new SlashCommandResult(true, result.Message, [new SlashEffectDto("configSaved")]);
-                }
+                    return await HandleToolsSlashAsync(s, parts, cts.Token);
 
                 case SlashCommandId.Export:
                     return new SlashCommandResult(true, null, [new SlashEffectDto("exportRequest")]);
@@ -216,17 +190,7 @@ internal sealed partial class HostServer
                         s.Store, parts, DateTime.UtcNow, cts.Token));
 
                 case SlashCommandId.UndoRun:
-                {
-                    // The result bars of the runs it moved show them as they stand ("Run undone · N changes kept"): one
-                    // effect per run whose line changed, typed or from a bar's Undo.
-                    var history = s.Tools.History;
-                    var before  = history.Runs.GroupBy(r => r.Id).ToDictionary(g => g.Key, g => Services.Presentation.RunReview.UndoneBar(history, g.Last()));
-                    var text    = await UndoRunCommandHandler.HandleAsync(history, parts, s.RootDir, cts.Token);
-                    var moved   = history.Runs.GroupBy(r => r.Id).Select(g => (Id: g.Key, Line: Services.Presentation.RunReview.UndoneBar(history, g.Last())))
-                                          .Where(r => !before.TryGetValue(r.Id, out var was) || was != r.Line)
-                                          .Select(r => new SlashEffectDto("runUndone", r.Line, r.Id)).ToList();
-                    return new SlashCommandResult(true, text, moved.Count > 0 ? moved : null);
-                }
+                    return await HandleUndoRunSlashAsync(s, parts, cts.Token);
 
                 case SlashCommandId.PHistory:
                 {
@@ -300,39 +264,7 @@ internal sealed partial class HostServer
                 }
 
                 case SlashCommandId.Diagnostics:
-                {
-                    // On the VS Code side there is no in-process peer: both calls return "n/a"
-                    // and null, so nothing is shown. That is intended - staying quiet beats
-                    // reporting the state of the Visual Studio open next door.
-                    // The bundle names the backend state, as the Visual Studio one does with its status
-                    // line: a report sent for "nothing answers" must say whether anything answers.
-                    string? backend = null;
-                    if (parts.Any(p => p.Equals("export", StringComparison.OrdinalIgnoreCase)))
-                    {
-                        var reachable = false;
-                        try { reachable = await s.Client.CheckConnectionAsync(s.Config.BaseUrl, cts.Token); }
-                        catch (OperationCanceledException) { throw; }
-                        catch (Exception ex) { Diagnostics.Swallow("HostSlashCommands.DiagnosticsBackend", ex); }
-                        // A refused check is a running server: a report that says "unreachable" for a 401 sends
-                        // whoever reads it to look for a server that is down.
-                        backend = (reachable                                   ? "reachable"
-                                   : s.Client.ConnectionRefusal is { } refusal ? "refused the connection check: " + refusal
-                                   :                                             "unreachable")
-                                  + " (" + InferenceProviderFactory.DisplayName(s.Config.Provider) + ")";
-                    }
-
-                    var result = DiagnosticsCommandHandler.Handle(parts, new DiagnosticsExportContext(
-                        s.Config, "VS Code host",
-                        BackendStatus: backend,
-                        WorkspaceRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
-                        InProcHalf: InProcAliveSignal.DescribeForBundle(),
-                        McpServers: s.Mcp.DescribeForBundle(),
-                        WindowInUse: s.ContextWindowInUse),
-                        InProcAliveSignal.IsLoadedOrNull());
-                    return result.CopyToClipboard is { } bundle
-                        ? new SlashCommandResult(true, result.Message, [new SlashEffectDto("copyToClipboard", bundle)])
-                        : new SlashCommandResult(true, result.Message);
-                }
+                    return await HandleDiagnosticsSlashAsync(s, parts, cts.Token);
 
                 case SlashCommandId.Replay:
                     return new SlashCommandResult(true,
@@ -360,21 +292,7 @@ internal sealed partial class HostServer
                 }
 
                 case SlashCommandId.Xray:
-                {
-                    // The layers the NEXT question will carry — persona, template, rules of the active file,
-                    // switched-off sections: built from the root alone, /xray described another prompt than the
-                    // one sent, and than the panel shows.
-                    var sections = BuildPromptSections(s);
-                    return new SlashCommandResult(true, XRayCommandHandler.Handle(
-                        sections,
-                        AgentOrchestrator.EstimateConversationTokens(s.History),
-                        s.ContextWindowInUse,
-                        s.Config,
-                        toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s), s.ToolCutWindow, s.CutNamedTools),
-                        questionLayersInHistory: QuestionLayersInHistory(s),
-                        toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)),
-                        turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s))));
-                }
+                    return HandleXraySlash(s);
 
                 case SlashCommandId.Bench:
                 {
@@ -396,35 +314,7 @@ internal sealed partial class HostServer
                 }
 
                 case SlashCommandId.Tdd:
-                {
-                    // "Fix until green" loop. What Visual Studio keeps, this keeps: each test run as a
-                    // run_tests bubble (a status line is overwritten by the next step), and each fix
-                    // explanation — gathered ahead of the verdict, there being no assistant bubble to
-                    // stream into while a command runs.
-                    var fixes  = new List<string>();
-                    var activeFile = BuildActiveFileBlock(s);
-                    var result = await TddCommandHandler.HandleAsync(
-                        s.Client, s.Config, s.Tools,
-                        BuildSystemPromptText(s, withMode: false), parts,
-                        string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
-                        onProgress:   Step,
-                        onTestReport: (output, green) => Notify("chat/tool", new ToolNotice("run_tests", string.Empty, output, !green)),
-                        onStep:       Step,
-                        onToken:      null,
-                        onFixResult:  text =>
-                        {
-                            var visible = Inferpal.Services.Presentation.MarkdownParser.StripThinkTags(text);
-                            if (Inferpal.Services.Presentation.MarkdownParser.HasPrintableText(visible))
-                                lock (fixes) fixes.Add(visible);
-                        },
-                        cts.Token,
-                        s.TestCapture, s.Approval,
-                        activeFileContext: activeFile);
-                    lock (fixes)
-                        return new SlashCommandResult(true, fixes.Count == 0
-                            ? result.Message
-                            : string.Join("\n\n---\n\n", fixes.Append(result.Message)));
-                }
+                    return await HandleTddSlashAsync(s, parts, cts.Token);
 
                 case SlashCommandId.TestCoverage:
                     return new SlashCommandResult(true, await TestCoverageCommandHandler.HandleAsync(
@@ -432,90 +322,20 @@ internal sealed partial class HostServer
                         onProgress: Step, cts.Token));
 
                 case SlashCommandId.Task:
-                {
-                    // Detached run: deliberately NOT bound to this turn's token — the task keeps
-                    // going after the command that submitted it returns. Progress is not streamed
-                    // to the chat (it would interrupt what the user is doing); only the completion
-                    // notice is, and `/task <id>` shows the report.
-                    var task = TaskCommandHandler.Handle(TaskQueue(s), parts);
-
-                    // `/task apply <id> <n>`: the write goes through the real registry, so the
-                    // ordinary approval prompt appears and /undo-run covers it).
-                    if (task.Apply is { } proposal)
-                        try
-                        {
-                            return new SlashCommandResult(true,
-                                await TaskProposalApplication.ApplyAsync(
-                                    proposal, s.Tools, TaskProposalApplication.ReadCurrent, cts.Token,
-                                    beginRun: path => s.Tools.History.BeginRun(alreadyRead: path)));
-                        }
-                        finally
-                        {
-                            // As on the VS side: what is written after the application no longer
-                            // belongs to its run, otherwise /undo-run reverts it along with it.
-                            s.Tools.History.EndRun();
-                        }
-
-                    return new SlashCommandResult(true, task.Message);
-                }
+                    return await HandleTaskSlashAsync(s, parts, cts.Token);
 
                 case SlashCommandId.AgentStep:
-                    // Same texts as the VS toggle — and localized now. The previous comment read
-                    // "deliberately English, model-adjacent UX": the `/plan` next door, three lines
-                    // below, returns Strings.PlanModeOn in all ten languages. Two mode-toggle
-                    // messages, addressed to the user, in the same switch: the justification was
-                    // describing an oversight.
+                    // Same texts as the VS toggle, localized: addressed to the user, like /plan's below.
                     s.StepMode = !s.StepMode;
                     return new SlashCommandResult(true,
                         s.StepMode ? Strings.StepModeOn : Strings.StepModeOff,
                         [new SlashEffectDto("stateChange", s.StepMode ? "on" : "off", "stepMode")]);
 
                 case SlashCommandId.Plan:
-                {
-                    // Same handler as the VM: bare `/plan` toggles read-only plan mode, everything
-                    // else works on a file under .inferpal/plans/.
-                    var result = PlanCommandHandler.Handle(
-                        s.RootDir, parts,
-                        ChatTurnPolicy.LastAnswer(s.History),
-                        s.ActivePlan);
-
-                    if (result.ToggleMode)
-                    {
-                        s.PlanMode = !s.PlanMode;
-                        if (s.PlanMode) s.ModeName = null;   // one selector: Plan leaves the mode
-                        RefreshSystemMessage(s);
-                        return new SlashCommandResult(true,
-                            s.PlanMode ? Strings.PlanModeOn : Strings.PlanModeOff,
-                            [new SlashEffectDto("stateChange", s.PlanMode ? "on" : "off", "planMode")]);
-                    }
-
-                    if (result.SetActivePlan is { } active)
-                        s.ActivePlan = active.Length == 0 ? null : active;
-
-                    // `/plan save` wrote the file; opening it is the editor's job, as for /onboard.
-                    return result.OpenPath is { } path
-                        ? new SlashCommandResult(true, result.Message, [new SlashEffectDto("openFile", path)])
-                        : new SlashCommandResult(true, result.Message);
-                }
+                    return HandlePlanSlash(s, parts);
 
                 case SlashCommandId.Check:
-                {
-                    // Same handler as the VM, so the anchored findings are identical on both
-                    // sides. Progress uses the chat/step channel like /bench and /tdd.
-                    var result = await CheckCommandHandler.HandleAsync(
-                        s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
-                        git: GitProcess.For(s.RootDir),
-                        onProgress: Step,
-                        cts.Token);
-
-                    // `init` writes through the same helper as /rules|/checks|/prompts init.
-                    if (result.Scaffold is { } scaffold)
-                        return await HandleScaffoldSlashAsync(
-                            new RulesChecksPromptsCommandHandler.CommandListResult(null, scaffold),
-                            Strings.ChecksScaffolded, cts.Token);
-
-                    return new SlashCommandResult(true, result.Message);
-                }
+                    return await HandleCheckSlashAsync(s, parts, cts.Token);
 
                 case SlashCommandId.Pr:
                 {
@@ -527,61 +347,10 @@ internal sealed partial class HostServer
                 }
 
                 case SlashCommandId.Import:
-                {
-                    // The Core previews or applies; the host saves what it changed and hands the card to the editor
-                    // (its Markdown is what the agent protocol, which draws no card, shows).
-                    var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
-                    var result = ImportCommandHandler.Handle(parts, Inferpal.Services.Import.ImportContext.For(s.Config, s.RootDir),
-                                                             s.Config.SaveFilePath, DateTime.Now);
-                    if (result.SaveConfig) await SaveAndApplyAsync(s, mcpBefore, cts.Token);
-                    List<SlashEffectDto> saved = result.SaveConfig ? [new SlashEffectDto("configSaved")] : [];
-                    // Modes it wrote show in the editor's mode selector at once.
-                    if (result.ModesWritten) saved.Add(new SlashEffectDto("modesChanged"));
-                    return new SlashCommandResult(true, result.Message, saved, result.Card);
-                }
+                    return await HandleImportSlashAsync(s, parts, cts.Token);
 
                 case SlashCommandId.Onboard:
-                {
-                    // The profile itself is applied (index exclusions) or merely reported by the
-                    // Core; the host only performs the IO it decided on.
-                    var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
-                    var result = await OnboardCommandHandler.HandleAsync(
-                        s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
-                        git: GitProcess.For(s.RootDir),
-                        onProgress: Step,
-                        cts.Token);
-
-                    if (result.Scaffold is { } scaffold)
-                        return await HandleScaffoldSlashAsync(
-                            new RulesChecksPromptsCommandHandler.CommandListResult(null, scaffold),
-                            Strings.OnboardProfileScaffolded, cts.Token);
-
-                    if (result.SaveConfig) await SaveAndApplyAsync(s, mcpBefore, cts.Token);
-                    // ⚠ The extension keeps its own copy of some of these settings (the utility model) and pushes it back
-                    // at every host start: told nothing, it undoes the applied profile at the next restart, in silence.
-                    List<SlashEffectDto> saved = result.SaveConfig ? [new SlashEffectDto("configSaved")] : [];
-
-                    if (result.NewDefaultModel is { } model)
-                        return new SlashCommandResult(true, result.Message,
-                            [new SlashEffectDto("stateChange", model, "model"), .. saved]);
-
-                    if (result.Write is { } write)
-                    {
-                        // Shared with the VS window: backup of the replaced version, encoding-preserving write.
-                        var outcome = await Inferpal.Services.Execution.BackedUpFileWriter.WriteAsync(
-                            write.Path, write.Content, s.Tools.History, cts.Token);
-                        if (!outcome.Written)
-                            return new SlashCommandResult(true, Strings.FileNotReplacedNoBackup(write.Path));
-                        if (result.RefreshSystemPrompt) RefreshSystemMessage(s);
-                        var message = outcome.Snapshot.Length > 0
-                            ? result.Message + "\n\n" + Strings.FilePreviousVersionSaved(write.Path)
-                            : result.Message;
-                        return new SlashCommandResult(true, message,
-                            [new SlashEffectDto("openFile", write.Path)]);
-                    }
-
-                    return new SlashCommandResult(true, result.Message, saved);
-                }
+                    return await HandleOnboardSlashAsync(s, parts, cts.Token);
 
                 case SlashCommandId.Debug:
                 {
@@ -596,39 +365,10 @@ internal sealed partial class HostServer
                 }
 
                 case SlashCommandId.Commit:
-                {
-                    // Proposes only: the message lands in the input box behind `/commit-exec`, so
-                    // the user reads it before anything is committed.
-                    // No token streaming: `chat/token` feeds the assistant bubble of a chat turn,
-                    // and there is none open during a slash command. The status line carries the
-                    // wait, exactly like /bench and /tdd.
-                    Step(Strings.CommitProposingLabel);
-                    var proposal = await CommitCommandHandler.ProposeAsync(
-                        s.Client, s.Config, GitProcess.For(s.RootDir), onToken: null, cts.Token);
-
-                    if (proposal.Proposal is not { } proposed)
-                        return new SlashCommandResult(true, proposal.Message ?? proposal.Notice);
-
-                    var markdown = proposal.Notice is { } note
-                        ? note + "\n\n" + Strings.CommitConfirmHint
-                        : Strings.CommitConfirmHint;
-
-                    return new SlashCommandResult(true, markdown,
-                        [new SlashEffectDto("setPrompt", $"/commit-exec {proposed}")]);
-                }
+                    return await HandleCommitSlashAsync(s, cts.Token);
 
                 case SlashCommandId.CommitExec:
-                {
-                    var message = string.Join(" ", parts[1..]).Trim();
-                    if (string.IsNullOrWhiteSpace(message))
-                        return new SlashCommandResult(true, Strings.SlashUsage("/commit-exec <message>"));
-
-                    var run = await CommitCommandHandler.ExecuteAsync(
-                        message, GitProcess.ForCommit(s.RootDir), cts.Token);
-
-                    return new SlashCommandResult(true,
-                        (run.Ok ? "✅ `git commit`" : "❌ `git commit`") + "\n\n```\n" + run.Output + "\n```");
-                }
+                    return await HandleCommitExecSlashAsync(s, parts, cts.Token);
 
                 // The settings are the front-end's to open: VS Code shows its panel, an ACP thread the browser window.
                 case SlashCommandId.Settings:
@@ -677,6 +417,323 @@ internal sealed partial class HostServer
     }
 
     // ── Individual handlers ──────────────────────────────────────────────────────
+
+    /// <summary><c>/model [name]</c> — names the model in use, or switches to one the server serves for chat.</summary>
+    private static async Task<SlashCommandResult> HandleModelSlashAsync(HostSession s, string[] parts, CancellationToken ct)
+    {
+        if (parts.Length < 2)
+            return new SlashCommandResult(true, Strings.SlashModelCurrent(s.Config.DefaultModel));
+        if (await ModelsCommandHandler.RefusedForChatAsync(s.Client, parts[1], ct) is { } notForChat)
+            return new SlashCommandResult(true, notForChat);
+        s.Config.DefaultModel = parts[1];
+        s.Config.Save();
+        var switched = await ModelsCommandHandler.SwitchMessageAsync(s.Client, parts[1], ct);
+        // The window followed the model: measured again here, and re-read by the editor (its ring, an open
+        // settings panel).
+        return await RemeasuredAsync(s, await ContextWindowChoice.FollowAsync(s.Config, s.Client, parts[1], ct), ct) is { } window
+            ? new SlashCommandResult(true, switched + "\n\n" + window,
+                [new SlashEffectDto("stateChange", parts[1], "model"), new SlashEffectDto("configSaved")])
+            : new SlashCommandResult(true, switched, [new SlashEffectDto("stateChange", parts[1], "model")]);
+    }
+
+    /// <summary><c>/tools</c> — lists the tools, switches them for the conversation, or switches one in the settings.</summary>
+    private async Task<SlashCommandResult> HandleToolsSlashAsync(HostSession s, string[] parts, CancellationToken ct)
+    {
+        var result = ToolsCommandHandler.Handle(parts, s.Tools, s.Config, s.ToolsEnabled,
+            ContextManager.NextTurnTools(s.Tools, s.PlanMode, CurrentMode(s)), s.ToolCutWindow, s.CutNamedTools);
+        // The conversation's switch is the editor's to give back to a host started again: it is said.
+        if (result.SessionTools is { } on)
+        {
+            s.ToolsEnabled = on;
+            return new SlashCommandResult(true, result.Message,
+                [new SlashEffectDto("stateChange", on ? "on" : "off", "tools")]);
+        }
+        if (!result.SaveConfig) return new SlashCommandResult(true, result.Message);
+        await SaveAndApplyAsync(s, (s.Config.McpEnabled, s.Config.McpServersJson), ct);
+        return new SlashCommandResult(true, result.Message, [new SlashEffectDto("configSaved")]);
+    }
+
+    /// <summary>
+    /// <c>/undo-run</c> — the result bars of the runs it moved show them as they stand ("Run undone · N changes kept"):
+    /// one effect per run whose line changed, typed or from a bar's Undo.
+    /// </summary>
+    private static async Task<SlashCommandResult> HandleUndoRunSlashAsync(HostSession s, string[] parts, CancellationToken ct)
+    {
+        var history = s.Tools.History;
+        var before  = history.Runs.GroupBy(r => r.Id).ToDictionary(g => g.Key, g => Services.Presentation.RunReview.UndoneBar(history, g.Last()));
+        var text    = await UndoRunCommandHandler.HandleAsync(history, parts, s.RootDir, ct);
+        var moved   = history.Runs.GroupBy(r => r.Id).Select(g => (Id: g.Key, Line: Services.Presentation.RunReview.UndoneBar(history, g.Last())))
+                              .Where(r => !before.TryGetValue(r.Id, out var was) || was != r.Line)
+                              .Select(r => new SlashEffectDto("runUndone", r.Line, r.Id)).ToList();
+        return new SlashCommandResult(true, text, moved.Count > 0 ? moved : null);
+    }
+
+    /// <summary>
+    /// <c>/diagnostics</c> — the shared handler, given what this host knows. On the VS Code side there is no in-process
+    /// peer: both in-process calls return "n/a" and null, so nothing is shown — staying quiet beats reporting the state
+    /// of the Visual Studio open next door.
+    /// </summary>
+    private static async Task<SlashCommandResult> HandleDiagnosticsSlashAsync(HostSession s, string[] parts, CancellationToken ct)
+    {
+        var backend = parts.Any(part => part.Equals("export", StringComparison.OrdinalIgnoreCase))
+            ? await BackendForBundleAsync(s, ct)
+            : null;
+
+        var result = DiagnosticsCommandHandler.Handle(parts, new DiagnosticsExportContext(
+            s.Config, "VS Code host",
+            BackendStatus: backend,
+            WorkspaceRoot: string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
+            InProcHalf: InProcAliveSignal.DescribeForBundle(),
+            McpServers: s.Mcp.DescribeForBundle(),
+            WindowInUse: s.ContextWindowInUse),
+            InProcAliveSignal.IsLoadedOrNull());
+        return result.CopyToClipboard is { } bundle
+            ? new SlashCommandResult(true, result.Message, [new SlashEffectDto("copyToClipboard", bundle)])
+            : new SlashCommandResult(true, result.Message);
+    }
+
+    /// <summary>
+    /// The backend state an exported bundle names, as the Visual Studio one does with its status line: a report sent
+    /// for "nothing answers" must say whether anything answers.
+    /// </summary>
+    private static async Task<string> BackendForBundleAsync(HostSession s, CancellationToken ct)
+    {
+        var reachable = false;
+        try { reachable = await s.Client.CheckConnectionAsync(s.Config.BaseUrl, ct); }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { Diagnostics.Swallow("HostSlashCommands.DiagnosticsBackend", ex); }
+        // A refused check is a running server: a report that says "unreachable" for a 401 sends
+        // whoever reads it to look for a server that is down.
+        return (reachable                                   ? "reachable"
+                : s.Client.ConnectionRefusal is { } refusal ? "refused the connection check: " + refusal
+                :                                             "unreachable")
+               + " (" + InferenceProviderFactory.DisplayName(s.Config.Provider) + ")";
+    }
+
+    /// <summary>
+    /// <c>/xray</c> — the layers the NEXT question will carry: persona, template, rules of the active file,
+    /// switched-off sections. Built from the root alone, /xray would describe another prompt than the one sent, and
+    /// than the panel shows.
+    /// </summary>
+    private static SlashCommandResult HandleXraySlash(HostSession s) =>
+        new SlashCommandResult(true, XRayCommandHandler.Handle(
+            BuildPromptSections(s),
+            AgentOrchestrator.EstimateConversationTokens(s.History),
+            s.ContextWindowInUse,
+            s.Config,
+            toolTokens: ContextManager.NextTurnToolTokens(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s), s.ToolCutWindow, s.CutNamedTools),
+            questionLayersInHistory: QuestionLayersInHistory(s),
+            toolsOnDemand: ContextManager.NextTurnToolsOnDemand(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s)),
+            turnedOff: ContextManager.NextTurnTurnedOff(s.Tools, s.ToolsEnabled, s.PlanMode, CurrentMode(s))));
+
+    /// <summary>
+    /// <c>/tdd</c> — the "fix until green" loop. What Visual Studio keeps, this keeps: each test run as a
+    /// <c>run_tests</c> bubble (a status line is overwritten by the next step), and each fix explanation — gathered
+    /// ahead of the verdict, there being no assistant bubble to stream into while a command runs.
+    /// </summary>
+    private async Task<SlashCommandResult> HandleTddSlashAsync(HostSession s, string[] parts, CancellationToken ct)
+    {
+        var fixes  = new List<string>();
+        var activeFile = BuildActiveFileBlock(s);
+        var result = await TddCommandHandler.HandleAsync(
+            s.Client, s.Config, s.Tools,
+            BuildSystemPromptText(s, withMode: false), parts,
+            string.IsNullOrEmpty(s.RootDir) ? null : s.RootDir,
+            onProgress:   Step,
+            onTestReport: (output, green) => Notify("chat/tool", new ToolNotice("run_tests", string.Empty, output, !green)),
+            onStep:       Step,
+            onToken:      null,
+            onFixResult:  text =>
+            {
+                var visible = Inferpal.Services.Presentation.MarkdownParser.StripThinkTags(text);
+                if (Inferpal.Services.Presentation.MarkdownParser.HasPrintableText(visible))
+                    lock (fixes) fixes.Add(visible);
+            },
+            ct,
+            s.TestCapture, s.Approval,
+            activeFileContext: activeFile);
+        lock (fixes)
+            return new SlashCommandResult(true, fixes.Count == 0
+                ? result.Message
+                : string.Join("\n\n---\n\n", fixes.Append(result.Message)));
+    }
+
+    /// <summary>
+    /// <c>/task</c> — a detached run: deliberately NOT bound to the command's token, the task keeps going after the
+    /// command that submitted it returns. Progress is not streamed to the chat (it would interrupt what the user is
+    /// doing); only the completion notice is, and <c>/task &lt;id&gt;</c> shows the report.
+    /// </summary>
+    private async Task<SlashCommandResult> HandleTaskSlashAsync(HostSession s, string[] parts, CancellationToken ct)
+    {
+        var task = TaskCommandHandler.Handle(TaskQueue(s), parts);
+
+        // `/task apply <id> <n>`: the write goes through the real registry, so the
+        // ordinary approval prompt appears and /undo-run covers it).
+        if (task.Apply is { } proposal)
+            try
+            {
+                return new SlashCommandResult(true,
+                    await TaskProposalApplication.ApplyAsync(
+                        proposal, s.Tools, TaskProposalApplication.ReadCurrent, ct,
+                        beginRun: path => s.Tools.History.BeginRun(alreadyRead: path)));
+            }
+            finally
+            {
+                // As on the VS side: what is written after the application no longer
+                // belongs to its run, otherwise /undo-run reverts it along with it.
+                s.Tools.History.EndRun();
+            }
+
+        return new SlashCommandResult(true, task.Message);
+    }
+
+    /// <summary>
+    /// <c>/plan</c> — same handler as the VM: bare <c>/plan</c> toggles read-only plan mode, everything else works on a
+    /// file under <c>.inferpal/plans/</c>.
+    /// </summary>
+    private static SlashCommandResult HandlePlanSlash(HostSession s, string[] parts)
+    {
+        var result = PlanCommandHandler.Handle(
+            s.RootDir, parts,
+            ChatTurnPolicy.LastAnswer(s.History),
+            s.ActivePlan);
+
+        if (result.ToggleMode)
+        {
+            s.PlanMode = !s.PlanMode;
+            if (s.PlanMode) s.ModeName = null;   // one selector: Plan leaves the mode
+            RefreshSystemMessage(s);
+            return new SlashCommandResult(true,
+                s.PlanMode ? Strings.PlanModeOn : Strings.PlanModeOff,
+                [new SlashEffectDto("stateChange", s.PlanMode ? "on" : "off", "planMode")]);
+        }
+
+        if (result.SetActivePlan is { } active)
+            s.ActivePlan = active.Length == 0 ? null : active;
+
+        // `/plan save` wrote the file; opening it is the editor's job, as for /onboard.
+        return result.OpenPath is { } path
+            ? new SlashCommandResult(true, result.Message, [new SlashEffectDto("openFile", path)])
+            : new SlashCommandResult(true, result.Message);
+    }
+
+    /// <summary>
+    /// <c>/check</c> — same handler as the VM, so the anchored findings are identical on both sides. Progress uses the
+    /// chat/step channel like /bench and /tdd.
+    /// </summary>
+    private async Task<SlashCommandResult> HandleCheckSlashAsync(HostSession s, string[] parts, CancellationToken ct)
+    {
+        var result = await CheckCommandHandler.HandleAsync(
+            s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
+            git: GitProcess.For(s.RootDir),
+            onProgress: Step,
+            ct);
+
+        // `init` writes through the same helper as /rules|/checks|/prompts init.
+        if (result.Scaffold is { } scaffold)
+            return await HandleScaffoldSlashAsync(
+                new RulesChecksPromptsCommandHandler.CommandListResult(null, scaffold),
+                Strings.ChecksScaffolded, ct);
+
+        return new SlashCommandResult(true, result.Message);
+    }
+
+    /// <summary>
+    /// <c>/import</c> — the Core previews or applies; the host saves what it changed and hands the card to the editor
+    /// (its Markdown is what the agent protocol, which draws no card, shows).
+    /// </summary>
+    private async Task<SlashCommandResult> HandleImportSlashAsync(HostSession s, string[] parts, CancellationToken ct)
+    {
+        var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
+        var result = ImportCommandHandler.Handle(parts, Inferpal.Services.Import.ImportContext.For(s.Config, s.RootDir),
+                                                 s.Config.SaveFilePath, DateTime.Now);
+        if (result.SaveConfig) await SaveAndApplyAsync(s, mcpBefore, ct);
+        List<SlashEffectDto> saved = result.SaveConfig ? [new SlashEffectDto("configSaved")] : [];
+        // Modes it wrote show in the editor's mode selector at once.
+        if (result.ModesWritten) saved.Add(new SlashEffectDto("modesChanged"));
+        return new SlashCommandResult(true, result.Message, saved, result.Card);
+    }
+
+    /// <summary>
+    /// <c>/onboard</c> — the profile itself is applied (index exclusions) or merely reported by the Core; the host only
+    /// performs the IO it decided on.
+    /// </summary>
+    private async Task<SlashCommandResult> HandleOnboardSlashAsync(HostSession s, string[] parts, CancellationToken ct)
+    {
+        var mcpBefore = (s.Config.McpEnabled, s.Config.McpServersJson);
+        var result = await OnboardCommandHandler.HandleAsync(
+            s.Client, s.Config, s.RootDir ?? Directory.GetCurrentDirectory(), parts,
+            git: GitProcess.For(s.RootDir),
+            onProgress: Step,
+            ct);
+
+        if (result.Scaffold is { } scaffold)
+            return await HandleScaffoldSlashAsync(
+                new RulesChecksPromptsCommandHandler.CommandListResult(null, scaffold),
+                Strings.OnboardProfileScaffolded, ct);
+
+        if (result.SaveConfig) await SaveAndApplyAsync(s, mcpBefore, ct);
+        // ⚠ The extension keeps its own copy of some of these settings (the utility model) and pushes it back
+        // at every host start: told nothing, it undoes the applied profile at the next restart, in silence.
+        List<SlashEffectDto> saved = result.SaveConfig ? [new SlashEffectDto("configSaved")] : [];
+
+        if (result.NewDefaultModel is { } model)
+            return new SlashCommandResult(true, result.Message,
+                [new SlashEffectDto("stateChange", model, "model"), .. saved]);
+
+        if (result.Write is { } write)
+        {
+            // Shared with the VS window: backup of the replaced version, encoding-preserving write.
+            var outcome = await Inferpal.Services.Execution.BackedUpFileWriter.WriteAsync(
+                write.Path, write.Content, s.Tools.History, ct);
+            if (!outcome.Written)
+                return new SlashCommandResult(true, Strings.FileNotReplacedNoBackup(write.Path));
+            if (result.RefreshSystemPrompt) RefreshSystemMessage(s);
+            var message = outcome.Snapshot.Length > 0
+                ? result.Message + "\n\n" + Strings.FilePreviousVersionSaved(write.Path)
+                : result.Message;
+            return new SlashCommandResult(true, message,
+                [new SlashEffectDto("openFile", write.Path)]);
+        }
+
+        return new SlashCommandResult(true, result.Message, saved);
+    }
+
+    /// <summary>
+    /// <c>/commit</c> — proposes only: the message lands in the input box behind <c>/commit-exec</c>, so the user reads
+    /// it before anything is committed. No token streaming: <c>chat/token</c> feeds the assistant bubble of a chat turn,
+    /// and there is none open during a slash command. The status line carries the wait, exactly like /bench and /tdd.
+    /// </summary>
+    private async Task<SlashCommandResult> HandleCommitSlashAsync(HostSession s, CancellationToken ct)
+    {
+        Step(Strings.CommitProposingLabel);
+        var proposal = await CommitCommandHandler.ProposeAsync(
+            s.Client, s.Config, GitProcess.For(s.RootDir), onToken: null, ct);
+
+        if (proposal.Proposal is not { } proposed)
+            return new SlashCommandResult(true, proposal.Message ?? proposal.Notice);
+
+        var markdown = proposal.Notice is { } note
+            ? note + "\n\n" + Strings.CommitConfirmHint
+            : Strings.CommitConfirmHint;
+
+        return new SlashCommandResult(true, markdown,
+            [new SlashEffectDto("setPrompt", $"/commit-exec {proposed}")]);
+    }
+
+    /// <summary><c>/commit-exec &lt;message&gt;</c> — commits with the message the person read, and shows git's output.</summary>
+    private static async Task<SlashCommandResult> HandleCommitExecSlashAsync(HostSession s, string[] parts, CancellationToken ct)
+    {
+        var message = string.Join(" ", parts[1..]).Trim();
+        if (string.IsNullOrWhiteSpace(message))
+            return new SlashCommandResult(true, Strings.SlashUsage("/commit-exec <message>"));
+
+        var run = await CommitCommandHandler.ExecuteAsync(
+            message, GitProcess.ForCommit(s.RootDir), ct);
+
+        return new SlashCommandResult(true,
+            (run.Ok ? "✅ `git commit`" : "❌ `git commit`") + "\n\n```\n" + run.Output + "\n```");
+    }
 
     /// <summary>
     /// <c>/branch</c> — decided on the adapter's displayed transcript, never on the host's history,

@@ -136,34 +136,7 @@ internal sealed partial class HostServer : IDisposable
         // Completions and code search on a server of their own when the settings say so; the chat's client otherwise.
         var roles    = new RoleClients(client, config, _roleProviderFactory);
         var index    = new ProjectIndexService(client, config, lsp, () => roles.For(ServerRole.Search));
-        // Off Windows the default DPAPI protection is unavailable: the token store goes through the editor's own secret
-        // store (VS Code SecretStorage → OS keychain), or, for an adapter with none (an ACP client), through the system's
-        // keychain directly. Windows keeps DPAPI: no round-trip, and the file stays shared with the Visual Studio
-        // extension. No keychain at all → the store cannot protect, and signing in is refused before the browser.
-        var secrets  = OperatingSystem.IsWindows() || !p.Secrets ? null : new RpcSecretStore(rpc);
-        var keychain = OperatingSystem.IsWindows() || secrets is not null ? null : Services.Mcp.OAuth.SystemKeychain.ForThisSystem();
-        var tokens   = secrets is not null ? new McpTokenStore(McpTokenStore.DefaultPath, secrets.Protect, secrets.Unprotect)
-                     // A file of its own: the editor's store writes another format into DefaultPath, and each would set
-                     // the other's aside as unreadable — two editors erasing each other's sign-ins.
-                     : keychain is not null ? new McpTokenStore(Path.ChangeExtension(McpTokenStore.DefaultPath, ".keychain.dat"),
-                                                                keychain.Protect, keychain.Unprotect)
-                     : new McpTokenStore(McpTokenStore.DefaultPath);
-        // The repository's MCP servers start in its root, once the user agrees; the values they ask for are asked in
-        // the editor (input/request).
-        var mcp      = new McpToolService(config, approval, clientFactory: null, tokenStore: tokens,
-                                          workspaceRoot: () => p.RootDir,
-                                          askInput: (server, input, ct) => rpc.InvokeWithParameterObjectAsync<string?>("input/request", new
-                                          {
-                                              prompt   = Strings.McpRepoInputQuestion(server.Name, input.Description),
-                                              password = input.Password,
-                                              value    = input.Default,
-                                          }, ct));
-        // ⚠ Opened from here, the sign-in page of a host running remotely (VS Code Remote: SSH, WSL, a container) opened
-        // on that machine — or nowhere — and the sign-in waited out its five minutes. The editor opens it where the
-        // person is, and forwards the redirect back to this host.
-        if (p.OpenExternal)
-            mcp.OpenSignInPage = (url, redirect, ct) =>
-                rpc.InvokeWithParameterObjectAsync<string?>("env/openExternal", new { url, redirect }, ct);
+        var mcp      = CreateMcp(config, approval, McpTokens(rpc, p.Secrets), rpc, p);
         var docs     = new DocsIndexService(client, config, () => roles.For(ServerRole.Search));
         // A crawl's verdict reaches the conversation as a lasting notice: as progress (chat/step) it was shown only during
         // a turn, and /docs add, the settings page, /import answer before the crawl ends.
@@ -214,31 +187,12 @@ internal sealed partial class HostServer : IDisposable
             TestCapture  = p.Debug ? new RpcTestDebugCapture(rpc) : null,
             Debug        = debug,
         };
-        // ⚠ The file as this session last took it moves with what the session writes itself: left behind, a setting
-        // the thread saved (a pin, /hardware budget, /onboard apply) and the settings window then put back was never
-        // followed — the file's value equalled the old one, and the thread kept its own for the rest of its life.
-        // The keys it did not write keep their old value, so a change the window made meanwhile is still followed.
         var followed = _session;
         tools.WindowInUse = () => followed.ContextWindowInUse;
-        config.Saved += () =>
-        {
-            // To the session's own value: a merged one holds the other editor's items, still to follow.
-            var own = config.SnapshotNow();
-            foreach (var key in config.LastSaved.Keys) followed.FileSettings[key] = own[key]?.DeepClone();
-        };
+        FollowOwnSaves(followed);
         ApplyFoldersOutOfReach(_session, p.OtherFolders);
         ResetHistory(_session);
-
-        // As in Visual Studio: with RAG on, the workspace is indexed without being asked. No adapter
-        // calls `index/start`, so without this `search_codebase` and the per-turn auto-context stayed
-        // empty for the whole session.
-        // ⚠ Not the settings window's host: it SHOWS the index. Its pass walked and embedded the folder it was opened in
-        // (the home folder from there), and opened from a thread it ran a second indexer on the thread's database.
-        if (config.RagEnabled && !string.IsNullOrEmpty(p.RootDir))
-        {
-            if (p.IndexesTheFolder) index.StartIndexing(p.RootDir);
-            else _ = ShowSavedIndexAsync(index, p.RootDir);
-        }
+        IndexOnOpen(index, config, p);
 
         var caps = client.Capabilities;
         return new InitializeResult(
@@ -250,6 +204,82 @@ internal sealed partial class HostServer : IDisposable
             // What the COMPLETION's server can do: ghost text runs there, which may not be the chat's.
             Fim:             roles.For(ServerRole.Completion).Capabilities.Fim,
             KeepAlive:       caps.KeepAlive);
+    }
+
+    /// <summary>
+    /// Where this host keeps MCP sign-ins. Off Windows the default DPAPI protection is unavailable: the token store goes
+    /// through the editor's own secret store (VS Code SecretStorage → OS keychain), or, for an adapter with none (an ACP
+    /// client), through the system's keychain directly. Windows keeps DPAPI: no round-trip, and the file stays shared with
+    /// the Visual Studio extension. No keychain at all → the store cannot protect, and signing in is refused before the
+    /// browser.
+    /// </summary>
+    /// <param name="editorSecrets">The adapter declared a secret store of its own (<c>secrets/*</c>).</param>
+    private static McpTokenStore McpTokens(JsonRpc rpc, bool editorSecrets)
+    {
+        var secrets  = OperatingSystem.IsWindows() || !editorSecrets ? null : new RpcSecretStore(rpc);
+        var keychain = OperatingSystem.IsWindows() || secrets is not null ? null : Services.Mcp.OAuth.SystemKeychain.ForThisSystem();
+        return secrets is not null ? new McpTokenStore(McpTokenStore.DefaultPath, secrets.Protect, secrets.Unprotect)
+             // A file of its own: the editor's store writes another format into DefaultPath, and each would set
+             // the other's aside as unreadable — two editors erasing each other's sign-ins.
+             : keychain is not null ? new McpTokenStore(Path.ChangeExtension(McpTokenStore.DefaultPath, ".keychain.dat"),
+                                                        keychain.Protect, keychain.Unprotect)
+             : new McpTokenStore(McpTokenStore.DefaultPath);
+    }
+
+    /// <summary>
+    /// The session's MCP servers. The repository's start in its root, once the user agrees; the values they ask for are
+    /// asked in the editor (<c>input/request</c>).
+    /// </summary>
+    private static McpToolService CreateMcp(InferpalConfig config, RpcApprovalService approval, McpTokenStore tokens,
+                                            JsonRpc rpc, InitializeParams p)
+    {
+        var mcp = new McpToolService(config, approval, clientFactory: null, tokenStore: tokens,
+                                     workspaceRoot: () => p.RootDir,
+                                     askInput: (server, input, ct) => rpc.InvokeWithParameterObjectAsync<string?>("input/request", new
+                                     {
+                                         prompt   = Strings.McpRepoInputQuestion(server.Name, input.Description),
+                                         password = input.Password,
+                                         value    = input.Default,
+                                     }, ct));
+        // ⚠ Opened from here, the sign-in page of a host running remotely (VS Code Remote: SSH, WSL, a container) would
+        // open on that machine — or nowhere — and the sign-in would wait out its five minutes. The editor opens it where
+        // the person is, and forwards the redirect back to this host.
+        if (p.OpenExternal)
+            mcp.OpenSignInPage = (url, redirect, ct) =>
+                rpc.InvokeWithParameterObjectAsync<string?>("env/openExternal", new { url, redirect }, ct);
+        return mcp;
+    }
+
+    /// <summary>
+    /// ⚠ The file as this session last took it moves with what the session writes itself: left behind, a setting the
+    /// thread saved (a pin, /hardware budget, /onboard apply) and the settings window then put back would never be
+    /// followed — the file's value would equal the old one, and the thread would keep its own for the rest of its life.
+    /// The keys it did not write keep their old value, so a change the window made meanwhile is still followed.
+    /// </summary>
+    private static void FollowOwnSaves(HostSession followed)
+    {
+        var config = followed.Config;
+        config.Saved += () =>
+        {
+            // To the session's own value: a merged one holds the other editor's items, still to follow.
+            var own = config.SnapshotNow();
+            foreach (var key in config.LastSaved.Keys) followed.FileSettings[key] = own[key]?.DeepClone();
+        };
+    }
+
+    /// <summary>
+    /// As in Visual Studio: with RAG on, the workspace is indexed without being asked. No adapter calls
+    /// <c>index/start</c>, so without this <c>search_codebase</c> and the per-turn auto-context stay empty for the whole
+    /// session. ⚠ Not the settings window's host: it SHOWS the index. Its pass would walk and embed the folder it was
+    /// opened in (the home folder from there), and, opened from a thread, run a second indexer on the thread's database.
+    /// </summary>
+    private static void IndexOnOpen(ProjectIndexService index, InferpalConfig config, InitializeParams p)
+    {
+        if (config.RagEnabled && !string.IsNullOrEmpty(p.RootDir))
+        {
+            if (p.IndexesTheFolder) index.StartIndexing(p.RootDir);
+            else _ = ShowSavedIndexAsync(index, p.RootDir);
+        }
     }
 
     /// <summary>
@@ -574,10 +604,8 @@ internal sealed partial class HostServer : IDisposable
         // Mirror of the streamed text: returned as the partial answer on cancellation.
         var streamed = new StringBuilder();
         void OnToken(string t) { reasoning?.Flush(); streamed.Append(t); Notify("chat/token", new { text = t }); }
-        // ⚠ The reasoning channel was relayed RAW, one notification per delta - thousands of
-        // JSON-RPC messages over stdio for one thinking phase of a reasoning model - and the
-        // adapter threw the text away. Both halves were wrong: nothing bounded the rate, and what
-        // it carried was read by nobody. ThinkingPreview (the same one the Visual Studio window
+        // ⚠ The reasoning channel is never relayed raw: one notification per delta is thousands of JSON-RPC messages over
+        // stdio for one thinking phase of a reasoning model. ThinkingPreview (the same one the Visual Studio window
         // uses) accumulates, bounds the memory, and emits at most every 120 ms.
         var thinking = new ThinkingPreview();
 
@@ -631,13 +659,14 @@ internal sealed partial class HostServer : IDisposable
             if (p.Images is { Count: > 0 } images)
                 s.History[^1] = s.History[^1] with { Images = [.. images.Take(Services.Documents.ChatImages.MaxPerQuestion).Select(i => i.Data)] };
             questionKept = true;
-            // ⚠ Sent once the question carrying it is in the history: set when the block was BUILT, a Stop during the
-            // auto-context build that follows dropped the question — block included — and no later question had it.
+            // ⚠ Marked sent only once the question carrying it is in the history: marked when the block is built, a Stop
+            // during the auto-context build that follows would drop the question — block included — and no later
+            // question would carry it.
             if (!string.IsNullOrEmpty(workspace)) s.WorkspaceContextSent = true;
 
             // The session-scoped `/tools off` switch forces plain chat, like the VS VM.
             // ⚠ A code action answers from the code it was given, without tools — as in Visual Studio. Sent with
-            // them, `/explain` planned, called tools and raised approval prompts.
+            // them, `/explain` plans, calls tools and raises approval prompts.
             // The mode the person picked for the conversation: its tools, model, effort and instructions — never with a
             // code action, and it excludes Agent and Plan (one selector).
             var mode      = p.CodeAction ? null : TurnMode(s);
@@ -660,98 +689,11 @@ internal sealed partial class HostServer : IDisposable
                 Notify("host/notice", new { text = modeNotice, severity = "warning" });
             }
 
-            // Pre-send context check.
-            // It did not exist here. The history was never bounded: it grew until it went past the
-            // model's num_ctx, and it was the backend that dropped its head - system prompt
-            // included - in silence. And the settings panel offered compactionEnabled,
-            // contextWindowKeepTurns and compactionTimeoutSeconds, three controls with no effect.
-            // Same service as the Visual Studio window, same order: after the user message.
-            var windowBefore = s.ContextWindowInUse;
-            var turnToolTokens = Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, useTools, s.PlanMode, mode);
-            // The question as typed (or a command's prompt): the tools it names are never cut by a small window, for the
-            // rest of the conversation.
-            // ⚠ The typed query when the client sends one, even empty: the prompt then carries the attachments' bodies. A
-            // held mode's instructions are words the person chose too.
-            // The tools opened for this question are named too: a small window cuts the tools no question named.
-            if (p.OpenTools is { Count: > 0 } opened) s.CutNamedTools = [.. s.CutNamedTools.Union(opened)];
-            if (turnToolTokens > 0)
-                s.CutNamedTools = [.. s.CutNamedTools.Union(SmallWindowToolRegistry.NamedIn(
-                    string.Join("\n", [p.Query ?? p.Prompt, .. p.Notes ?? [], mode?.Instructions]), s.Tools.BuiltInNames))];
-            var named = s.CutNamedTools;
-            var ctxDecision = await Services.Agent.ContextManager.PrepareAsync(
-                s.History, s.Config, s.Client, s.LastPromptTokens,
-                onStep: Step,
-                ct: cts.Token, model: model,
-                toolTokens: turnToolTokens,
-                keptToolTokens: () => Services.Agent.ContextManager.NextTurnKeptToolTokens(s.Tools, useTools, s.PlanMode, mode, named));
-            s.LastContextWindow     = ctxDecision.Window;
-            s.LastContextWindowRead = ctxDecision.WindowRead;
-            // The load first, as in Visual Studio: the window it could not have is why the tools are cut.
-            if (ctxDecision.WindowNotice is { } loadNotice) Notify("host/notice", new { text = loadNotice, severity = "warning" });
-            // A window too small for every definition: the turn sends the tools used most, said once.
-            if (ctxDecision.ToolsCut
-                && Services.Agent.ContextManager.ToolsCutNotice(s.RootDir, model, ctxDecision.Window,
-                       Services.Agent.ContextManager.NextTurnTools(s.Tools, s.PlanMode, mode), named,
-                       Services.Agent.ContextManager.ToolsCutModeKey(s.PlanMode, mode), s.Config.Provider, s.Config.ContextWindowSize,
-                       s.HeadShareSaid) is { } cutNotice)
-                Notify("host/notice", new { text = cutNotice, severity = "warning" });
-            // The prompt was built above, against the window known then: when this check reveals another one — the
-            // first question, a model loaded smaller since — its files are re-budgeted before anything is sent.
-            if (ctxDecision.Window > 0 && ctxDecision.Window != windowBefore)
-            {
-                RefreshSystemPrompt(s);
-                ActiveFileContext.Restore(s.History, BuildActiveFileBlock(s));   // the block too: built for that window
-            }
-
-            // What every request of the turn carries before the conversation, against the window just measured — after
-            // the prompt was rebuilt for it (the Visual Studio window says it at the same point, before any compaction).
-            // The tools the turn was planned for: after a cut, the kept ones.
-            if (Services.Agent.ContextManager.HeadShareNotice(s.RootDir, model, s.Config.Provider, ctxDecision.Window, s.Config.ContextWindowSize,
-                    s.History is [{ Role: "system" } system, ..] ? Services.Agent.AgentOrchestrator.EstimateTokens([system]) : 0,
-                    ctxDecision.ToolTokens, s.HeadShareSaid, ctxDecision.WindowRead) is { } headNotice)
-                Notify("host/notice", new { text = headNotice, severity = "warning" });
-
-            if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)
-            {
-                // The summary it then holds is kept with the conversation: a restore rebuilds this history, not every turn.
-                s.Summary = Services.Agent.HistoryCompaction.Apply(s.History, ctxDecision.Plan,
-                    ctxDecision.Outcome == Services.Agent.ContextOutcome.Compacted ? ctxDecision.Summary : null, s.Summary);
-                // The one moment the session summary joins the system message: the turns it covers have just left.
-                s.RecapInSystem = s.OodaSummary;
-                RefreshSystemPrompt(s);
-                // And the question being asked gets the active file's block back if the turns just dropped carried it.
-                ActiveFileContext.Restore(s.History, BuildActiveFileBlock(s));
-
-                // ⚠ Measured, never zeroed: 0 is the measure of a first turn, which the next check reads as "nothing to
-                // decide". A turn stopped after this point ends without a count of its own, and the next question —
-                // whatever its attachments — went out with no context check, under a gauge showing the tools alone.
-                // The Visual Studio window measures the history it is about to send the same way.
-                s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
-                // ⚠ All three outcomes went out as the SAME collapsed bubble: "your conversation
-                // lost turns, with no summary" looked exactly like a successful compaction. The VS
-                // window has always told them apart; the rule now lives in ContextDecision, and
-                // HasErrors opens the bubble on the webview side.
-                if (s.CompactionEvents)
-                    Notify("chat/compaction", new CompactionNote(
-                        Failed:   ctxDecision.Outcome == Services.Agent.ContextOutcome.CompactionFellBack,
-                        Summary:  ctxDecision.ShownSummary,
-                        Notice:   ctxDecision.Notice,
-                        Degraded: ctxDecision.IsDegraded));
-                else
-                    Notify("chat/tool", new ToolNotice(
-                        ToolNoticeTitle.ContextCompact, string.Empty, ctxDecision.Notice, ctxDecision.IsDegraded));
-            }
+            var (ctxDecision, named) = await PrepareTurnContextAsync(s, p, model, mode, useTools, cts.Token);
 
             if (agentMode)
             {
-                // Plan mode restricts to read-only tools; step mode pauses after each call.
-                IToolRegistry effectiveTools = s.Tools;
-                if (s.PlanMode) effectiveTools = new PlanModeToolRegistry(effectiveTools);
-                if (ctxDecision.ToolsCut) effectiveTools = new SmallWindowToolRegistry(effectiveTools, ctxDecision.Window, named);
-                if (s.ToolEvents) effectiveTools = Announced(effectiveTools, s.Tools);
-                if (s.StepMode) effectiveTools = new StepModeToolRegistry(effectiveTools, tok => PauseForStepAsync(s, tok));
-                // What its plan made room for, cut or not: the loop does not decide the cut again.
-                effectiveTools = SmallWindowToolRegistry.MarkDecided(effectiveTools);
+                var effectiveTools = TurnTools(s, s.Tools, ctxDecision, named);
 
                 // Only the question and one answer outlive the run, as in Visual Studio: its internal
                 // transcript (plan prompt, plan JSON, step instructions, tool calls and results) bloats
@@ -822,12 +764,7 @@ internal sealed partial class HostServer : IDisposable
             {
                 // Chat mode keeps its tools, as in Visual Studio: the basic tool loop, without the
                 // plan. Only `/tools off` and a code action are chat without tools.
-                IToolRegistry chatTools = ChatModes.ToolsFor(s.Tools, mode, RootOf(s));
-                if (s.PlanMode) chatTools = new PlanModeToolRegistry(chatTools);
-                if (ctxDecision.ToolsCut) chatTools = new SmallWindowToolRegistry(chatTools, ctxDecision.Window, named);
-                if (s.ToolEvents) chatTools = Announced(chatTools, s.Tools);
-                if (s.StepMode) chatTools = new StepModeToolRegistry(chatTools, tok => PauseForStepAsync(s, tok));
-                chatTools = SmallWindowToolRegistry.MarkDecided(chatTools);   // as the agent path
+                var chatTools = TurnTools(s, ChatModes.ToolsFor(s.Tools, mode, RootOf(s)), ctxDecision, named);
 
                 // Same durable history as the agent path: the question and the answer the user saw.
                 var durable = new List<ChatMessageDto>(s.History);
@@ -898,8 +835,8 @@ internal sealed partial class HostServer : IDisposable
             // turn — no compaction before the next question, however long the conversation — so it is estimated,
             // as the two paths above and Visual Studio do.
             // ⚠ And a reported count is the prompt that was SENT: the answer just appended is not in it, and the next
-            // question carries it. Measured without it, a long answer (a /review, an /explain) left the conversation
-            // past the window before compaction looked — refused, or its head cut by the server.
+            // question carries it. Measured without it, a long answer (a /review, an /explain) leaves the conversation
+            // past the window before compaction looks — refused, or its head cut by the server.
             s.LastPromptTokens = turn.PromptTokens > 0
                 ? turn.PromptTokens + (said.Length > 0 ? Services.Agent.AgentOrchestrator.EstimateTokens([s.History[^1]]) : 0)
                 : Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
@@ -954,6 +891,109 @@ internal sealed partial class HostServer : IDisposable
             EndSteering(s, steering, notes, questionKept);
             ReleaseTurn(cts);
         }
+    }
+
+    /// <summary>
+    /// The pre-send context check, after the question joined the history — same service as the Visual Studio window, same
+    /// order. Without it the history grows past the model's window and the server drops its head, system prompt included,
+    /// in silence. Measures the window the answering model is loaded with, says what it decided (a load it could not
+    /// have, tools cut, the share of the head), re-budgets the prompt for a window it reveals, and compacts.
+    /// </summary>
+    /// <returns>The decision, and the tool names the questions named as they stood for it: a note steered in later does
+    /// not change what this turn was planned for.</returns>
+    private async Task<(ContextDecision Decision, IReadOnlyCollection<string> Named)> PrepareTurnContextAsync(
+        HostSession s, ChatSendParams p, string model, ChatMode? mode, bool useTools, CancellationToken ct)
+    {
+        var windowBefore = s.ContextWindowInUse;
+        var turnToolTokens = Services.Agent.ContextManager.NextTurnToolTokens(s.Tools, useTools, s.PlanMode, mode);
+        // The question as typed (or a command's prompt): the tools it names are never cut by a small window, for the
+        // rest of the conversation.
+        // ⚠ The typed query when the client sends one, even empty: the prompt then carries the attachments' bodies. A
+        // held mode's instructions are words the person chose too.
+        // The tools opened for this question are named too: a small window cuts the tools no question named.
+        if (p.OpenTools is { Count: > 0 } opened) s.CutNamedTools = [.. s.CutNamedTools.Union(opened)];
+        if (turnToolTokens > 0)
+            s.CutNamedTools = [.. s.CutNamedTools.Union(SmallWindowToolRegistry.NamedIn(
+                string.Join("\n", [p.Query ?? p.Prompt, .. p.Notes ?? [], mode?.Instructions]), s.Tools.BuiltInNames))];
+        var named = s.CutNamedTools;
+        var ctxDecision = await Services.Agent.ContextManager.PrepareAsync(
+            s.History, s.Config, s.Client, s.LastPromptTokens,
+            onStep: Step,
+            ct: ct, model: model,
+            toolTokens: turnToolTokens,
+            keptToolTokens: () => Services.Agent.ContextManager.NextTurnKeptToolTokens(s.Tools, useTools, s.PlanMode, mode, named));
+        s.LastContextWindow     = ctxDecision.Window;
+        s.LastContextWindowRead = ctxDecision.WindowRead;
+        // The load first, as in Visual Studio: the window it could not have is why the tools are cut.
+        if (ctxDecision.WindowNotice is { } loadNotice) Notify("host/notice", new { text = loadNotice, severity = "warning" });
+        // A window too small for every definition: the turn sends the tools used most, said once.
+        if (ctxDecision.ToolsCut
+            && Services.Agent.ContextManager.ToolsCutNotice(s.RootDir, model, ctxDecision.Window,
+                   Services.Agent.ContextManager.NextTurnTools(s.Tools, s.PlanMode, mode), named,
+                   Services.Agent.ContextManager.ToolsCutModeKey(s.PlanMode, mode), s.Config.Provider, s.Config.ContextWindowSize,
+                   s.HeadShareSaid) is { } cutNotice)
+            Notify("host/notice", new { text = cutNotice, severity = "warning" });
+        // The prompt was built before, against the window known then: when this check reveals another one — the
+        // first question, a model loaded smaller since — its files are re-budgeted before anything is sent.
+        if (ctxDecision.Window > 0 && ctxDecision.Window != windowBefore)
+        {
+            RefreshSystemPrompt(s);
+            ActiveFileContext.Restore(s.History, BuildActiveFileBlock(s));   // the block too: built for that window
+        }
+
+        // What every request of the turn carries before the conversation, against the window just measured — after
+        // the prompt was rebuilt for it (the Visual Studio window says it at the same point, before any compaction).
+        // The tools the turn was planned for: after a cut, the kept ones.
+        if (Services.Agent.ContextManager.HeadShareNotice(s.RootDir, model, s.Config.Provider, ctxDecision.Window, s.Config.ContextWindowSize,
+                s.History is [{ Role: "system" } system, ..] ? Services.Agent.AgentOrchestrator.EstimateTokens([system]) : 0,
+                ctxDecision.ToolTokens, s.HeadShareSaid, ctxDecision.WindowRead) is { } headNotice)
+            Notify("host/notice", new { text = headNotice, severity = "warning" });
+
+        if (ctxDecision.Outcome != Services.Agent.ContextOutcome.None)
+        {
+            // The summary it then holds is kept with the conversation: a restore rebuilds this history, not every turn.
+            s.Summary = Services.Agent.HistoryCompaction.Apply(s.History, ctxDecision.Plan,
+                ctxDecision.Outcome == Services.Agent.ContextOutcome.Compacted ? ctxDecision.Summary : null, s.Summary);
+            // The one moment the session summary joins the system message: the turns it covers have just left.
+            s.RecapInSystem = s.OodaSummary;
+            RefreshSystemPrompt(s);
+            // And the question being asked gets the active file's block back if the turns just dropped carried it.
+            ActiveFileContext.Restore(s.History, BuildActiveFileBlock(s));
+
+            // ⚠ Measured, never zeroed: 0 is the measure of a first turn, which the next check reads as "nothing to
+            // decide". A turn stopped after this point ends without a count of its own, and the next question —
+            // whatever its attachments — would go out with no context check, under a gauge showing the tools alone.
+            // The Visual Studio window measures the history it is about to send the same way.
+            s.LastPromptTokens = Services.Agent.AgentOrchestrator.EstimateTokens(s.History);
+            // ⚠ The three outcomes are told apart (ContextDecision), as in the Visual Studio window: "your conversation
+            // lost turns, with no summary" must not look like a successful compaction. HasErrors opens the bubble on the
+            // webview side.
+            if (s.CompactionEvents)
+                Notify("chat/compaction", new CompactionNote(
+                    Failed:   ctxDecision.Outcome == Services.Agent.ContextOutcome.CompactionFellBack,
+                    Summary:  ctxDecision.ShownSummary,
+                    Notice:   ctxDecision.Notice,
+                    Degraded: ctxDecision.IsDegraded));
+            else
+                Notify("chat/tool", new ToolNotice(
+                    ToolNoticeTitle.ContextCompact, string.Empty, ctxDecision.Notice, ctxDecision.IsDegraded));
+        }
+
+        return (ctxDecision, named);
+    }
+
+    /// <summary>
+    /// The registry a turn's tool loop calls, agent or chat alike: plan mode restricts it to read-only tools, a window
+    /// too small for every definition cuts it, the calls are announced to the adapter, step mode pauses after each
+    /// call — and it is marked as decided: what the turn's plan made room for, cut or not, the loop does not decide again.
+    /// </summary>
+    private IToolRegistry TurnTools(HostSession s, IToolRegistry tools, ContextDecision ctxDecision, IReadOnlyCollection<string> named)
+    {
+        if (s.PlanMode) tools = new PlanModeToolRegistry(tools);
+        if (ctxDecision.ToolsCut) tools = new SmallWindowToolRegistry(tools, ctxDecision.Window, named);
+        if (s.ToolEvents) tools = Announced(tools, s.Tools);
+        if (s.StepMode) tools = new StepModeToolRegistry(tools, tok => PauseForStepAsync(s, tok));
+        return SmallWindowToolRegistry.MarkDecided(tools);
     }
 
     /// <summary>

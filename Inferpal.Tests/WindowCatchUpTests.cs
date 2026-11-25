@@ -256,8 +256,10 @@ public sealed class WindowCatchUpTests : IDisposable
     [Fact]
     public void TheHost_FollowsTheModelOnSlashModel_AndAcpCatchesUpAtTheSessionsStart()
     {
-        var model = Member(Cs("Inferpal.Host", "HostSlashCommands.cs"), "case SlashCommandId.Model:", "case SlashCommandId.Tools:");
-        Assert.Contains("ContextWindowChoice.FollowAsync(s.Config, s.Client, parts[1], cts.Token)", model);
+        var slash = Cs("Inferpal.Host", "HostSlashCommands.cs");
+        Assert.Contains("HandleModelSlashAsync(s, parts, cts.Token)", Member(slash, "case SlashCommandId.Model:", "case SlashCommandId.Tools:"));
+        var model = Member(slash, "private static async Task<SlashCommandResult> HandleModelSlashAsync");
+        Assert.Contains("ContextWindowChoice.FollowAsync(s.Config, s.Client, parts[1], ct)", model);
 
         var acp = Member(Cs("Inferpal.Host", "Acp", "AcpSession.cs"), "private async Task AdoptDefaultModelAsync");
         var adopt   = acp.IndexOf("\"models/adoptDefault\"", StringComparison.Ordinal);
