@@ -276,7 +276,7 @@ internal static class WindowActions
         $deadline = (Get-Date).AddSeconds($WaitSeconds)
         $look = Look
         while ($look.wins.Count -eq 0 -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 200; $look = Look }
-        if ($look.wins.Count -eq 0) { Say "REFUSED the app shows no window after $WaitSeconds s"; [Environment]::Exit(0) }
+        if ($look.wins.Count -eq 0) { Say "REFUSED the app shows no window after $WaitSeconds s ($(Why-None $RootPid))"; [Environment]::Exit(0) }
         $steps = @()
         # ⚠ PowerShell 5.1 hands a JSON array down a pipeline as ONE object: parsed as an argument, it stays an array.
         $raw = Get-Content -Raw -Encoding UTF8 $StepsFile

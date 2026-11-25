@@ -159,4 +159,20 @@ public sealed class InteractWindowWindowsTests(ITestOutputHelper output) : IDisp
         var probe = await Call(tool, new { job, steps = new object[] { new { action = "wait_for", control = "#2", timeout_ms = 500 } } });
         Assert.True(probe.Contains("1. wait_for 2: NOT DONE — 2 did not appear (a file dialog is open, whose contents are never searched)"), probe);
     }
+
+    /// <summary>Steps for an app that shows no window are refused, and the refusal says what the look saw: the job's
+    /// processes, and their windows left out.</summary>
+    [Fact]
+    public async Task StepsForAJobWithNoWindow_AreRefused_WithWhatTheLookSaw()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var job = _jobs.Start("Start-Sleep -Seconds 30", "app", _dir.FullName);
+        var tool = new InteractWindowTool(_jobs, new ToolImageInbox(), new Yes(), () => _dir.FullName, new FileHistoryService());
+
+        var said = await Call(tool, new { job, wait = 1, steps = new object[] { new { action = "click", control = "Order" } } });
+        output.WriteLine(said);
+
+        Assert.Contains("the app shows no window after 1 s", said);
+        Assert.Matches(ViewWindowWindowsTests.SawNoWindow, said);
+    }
 }

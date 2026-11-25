@@ -78,4 +78,23 @@ public sealed class ViewWindowWindowsTests : IDisposable
         Assert.True(lime > pixels.Length / 3 / 4, $"only {lime} lime pixels: the app's window is not on the picture.\n{said}");
         Assert.Equal(0, red);
     }
+
+    /// <summary>"No window" alone does not say whether the job's processes were found, or their windows found and left out
+    /// (hidden, cloaked, owned without a title): the look says which, with the processes and windows it counted.</summary>
+    [Fact]
+    public async Task AJobWithNoWindow_SaysWhatTheLookSaw_ItsProcessesAndTheirWindows()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        var job = _jobs.Start("Start-Sleep -Seconds 30", "app", _dir.FullName);
+
+        var said = await new ViewWindowTool(_jobs, new ToolImageInbox())
+            .ExecuteAsync(JsonSerializer.SerializeToElement(new { job, wait = 1 }), CancellationToken.None);
+
+        Assert.Contains($"{job} shows no window after 1 s", said);
+        Assert.Matches(SawNoWindow, said);
+    }
+
+    /// <summary>What a look that found no window says it saw.</summary>
+    internal const string SawNoWindow = @"[1-9]\d* process\(es\) in the job's tree, (no top-level window|\d+ top-level window\(s\): "
+                                        + @"\d+ shown, \d+ hidden, \d+ cloaked, \d+ owned without a title, \d+ not responding)";
 }

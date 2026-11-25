@@ -80,7 +80,8 @@ internal static class WindowCapture
         foreach (var line in run.Stdout.Split('\n').Select(l => l.Trim()).Where(l => l.StartsWith('{')))
         {
             if (Parse(line) is { } window) windows.Add(window);
-            else if (ErrorOf(line) is { } error) notes.Add("a window could not be read: " + error);
+            else if (TextOf(line, "error") is { } error) notes.Add("a window could not be read: " + error);
+            else if (TextOf(line, "none") is { } none) notes.Add("what the look saw: " + none);
         }
         if (run.TimedOut)
             notes.Add($"the look was stopped after {budget.TotalSeconds:0} s: windows after the last one shown may be missing");
@@ -127,13 +128,14 @@ internal static class WindowCapture
             ? window with { Png = null, Tree = [], FileDialog = true }
             : window;
 
-    /// <summary>A script's <c>{"error": "…"}</c> line: a window it could not read.</summary>
-    private static string? ErrorOf(string json)
+    /// <summary>The text of a script's one-field line: <c>{"error": "…"}</c>, a window it could not read; <c>{"none": "…"}</c>,
+    /// what it saw when it found no window.</summary>
+    private static string? TextOf(string json, string name)
     {
         try
         {
             using var doc = JsonDocument.Parse(json);
-            return doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty("error", out var e)
+            return doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty(name, out var e)
                 ? SafeTruncate.Truncate(e.GetString() ?? "", 300) : null;
         }
         catch (JsonException) { return null; }
@@ -387,8 +389,9 @@ internal static class WindowCapture
     }
 
     /// <summary>What every Windows script of the job's windows starts with: UI Automation, the window finder
-    /// (<c>InferpalWin.Windows</c>) and the job's process tree (<c>Get-Tree</c>, a child only if born after its parent) — one
-    /// reader for looking at the windows and acting in them (<see cref="WindowActions"/>).</summary>
+    /// (<c>InferpalWin.Windows</c>), the job's process tree (<c>Get-Tree</c>, a child only if born after its parent) and what a
+    /// look that found no window saw (<c>Why-None</c>) — one reader for looking at the windows and acting in them
+    /// (<see cref="WindowActions"/>).</summary>
     internal const string WindowsSetup = """
         $ErrorActionPreference = 'Stop'
         [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
@@ -407,6 +410,7 @@ internal static class WindowCapture
             [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr h);
             [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr h, uint flags);
             [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint cmd);
+            [DllImport("user32.dll")] public static extern bool IsHungAppWindow(IntPtr h);
             [DllImport("user32.dll")] public static extern int GetWindowTextLength(IntPtr h);
             [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
             [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint flags);
@@ -424,6 +428,26 @@ internal static class WindowCapture
                     return true;
                 }, IntPtr.Zero);
                 return found;
+            }
+            // The top-level windows of the tree, counted by what kept each out of Windows; those it keeps are "shown" — a window
+            // that came after the look's last pass, or one whose controls could not be read. And those not responding: the
+            // system shows a ghost of such a window while the window stays visible.
+            public static string LeftOut(HashSet<uint> pids) {
+                int all = 0, hidden = 0, cloaked = 0, untitled = 0, hung = 0;
+                EnumWindows((h, l) => {
+                    uint pid; GetWindowThreadProcessId(h, out pid);
+                    if (!pids.Contains(pid)) return true;
+                    all++;
+                    if (IsHungAppWindow(h)) hung++;
+                    int c; DwmGetWindowAttribute(h, 14, out c, 4);
+                    if (!IsWindowVisible(h)) hidden++;
+                    else if (c != 0) cloaked++;
+                    else if (GetWindow(h, 4) != IntPtr.Zero && GetWindowTextLength(h) == 0) untitled++;
+                    return true;
+                }, IntPtr.Zero);
+                return all == 0 ? "no top-level window"
+                     : all + " top-level window(s): " + (all - hidden - cloaked - untitled) + " shown, " + hidden + " hidden, "
+                       + cloaked + " cloaked, " + untitled + " owned without a title, " + hung + " not responding";
             }
         }
         '@
@@ -482,11 +506,23 @@ internal static class WindowCapture
             return , $pids
         }
 
+        # Why a look found no window, said with the "no window" it explains: the job's process gone, or the processes of its
+        # tree and their windows the finder left out. Alone, "no window" reads the same for an app that has not started and
+        # for a window the finder passed over.
+        function Why-None([int]$root) {
+            try {
+                if (-not (Get-Process -Id $root -ErrorAction SilentlyContinue)) { return "the job's process $root has ended" }
+                $tree = Get-Tree $root
+                return ("{0} process(es) in the job's tree, {1}" -f $tree.Count, [InferpalWin]::LeftOut($tree))
+            } catch { return "the job's processes could not be listed: " + $_.Exception.Message }
+        }
+
         """;
 
     /// <summary>Windows: every visible window of the process tree — top-level, or owned and titled (a dialog) — rendered by
     /// <c>PrintWindow</c> and cropped to the frame the screen shows (no shadow), with its UI Automation tree in window
-    /// coordinates. One JSON line per window; a window that could not be read gives an <c>{"error"}</c> line.</summary>
+    /// coordinates. One JSON line per window; a window that could not be read gives an <c>{"error"}</c> line, and a wait that
+    /// ended with no window a <c>{"none"}</c> line, what the look saw.</summary>
     private const string WindowsScript =
         """
         param([int]$RootPid, [string]$OutDir, [int]$WaitSeconds = 20, [int]$MaxNodes = 400)
@@ -529,6 +565,7 @@ internal static class WindowCapture
             if ($windows.Count -gt 0 -or (Get-Date) -gt $deadline) { break }
             Start-Sleep -Milliseconds 500
         }
+        if ($windows.Count -eq 0) { [pscustomobject]@{ none = (Why-None $RootPid) } | ConvertTo-Json -Compress }
         # A window that just appeared may not have painted yet.
         if ($windows.Count -gt 0) { Start-Sleep -Milliseconds 800 }
         $i = 0
