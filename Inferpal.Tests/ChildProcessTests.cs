@@ -57,27 +57,44 @@ public class ChildProcessTests
 
     /// <summary>A caller that reports what the child does hears each line while it runs — the first before the child ends —
     /// the last one without its line break too, and the captured output stays the same.</summary>
+    /// <remarks>Judged on a signal, never on a clock: the child writes its second line only once the first was heard, and
+    /// writes <c>late</c> instead when nobody heard it while it ran. A gap measured between the two lines also shrinks when
+    /// a loaded machine delivers the first one late, and reads as lines heard only at the end.</remarks>
     [Fact]
     public async Task EachLineOfTheOutput_IsHeardWhileTheChildRuns()
     {
-        var heard = new List<(string Line, TimeSpan At)>();
-        var psi = OperatingSystem.IsWindows()
-            ? new ProcessStartInfo("powershell.exe")
-              {
-                  ArgumentList = { "-NoProfile", "-NonInteractive", "-Command",
-                                   "[Console]::Out.WriteLine('one'); [Console]::Out.Flush(); Start-Sleep -Milliseconds 1500; [Console]::Out.Write('two')" },
-              }
-            : new ProcessStartInfo("/bin/sh") { ArgumentList = { "-c", "echo one; sleep 1.5; printf two" } };
-        var watch = Stopwatch.StartNew();
-        var result = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(30), CancellationToken.None,
-                                                 line => heard.Add((line, watch.Elapsed)));
+        var dir = Directory.CreateTempSubdirectory("inferpal-childlines-");
+        try
+        {
+            var signal = Path.Combine(dir.FullName, "heard");
+            var heard = new List<string>();
+            var psi = OperatingSystem.IsWindows()
+                ? new ProcessStartInfo("powershell.exe")
+                  {
+                      ArgumentList = { "-NoProfile", "-NonInteractive", "-Command",
+                                       "[Console]::Out.WriteLine('one'); [Console]::Out.Flush(); "
+                                       + $"$end = (Get-Date).AddSeconds(20); while (-not (Test-Path '{signal}') -and (Get-Date) -lt $end) {{ Start-Sleep -Milliseconds 50 }}; "
+                                       + $"if (Test-Path '{signal}') {{ [Console]::Out.Write('two') }} else {{ [Console]::Out.Write('late') }}" },
+                  }
+                : new ProcessStartInfo("/bin/sh")
+                  {
+                      ArgumentList = { "-c", $"echo one; i=0; while [ ! -e '{signal}' ] && [ $i -lt 400 ]; do sleep 0.05; i=$((i+1)); done; "
+                                           + $"if [ -e '{signal}' ]; then printf two; else printf late; fi" },
+                  };
+            var result = await ChildProcess.RunAsync(psi, TimeSpan.FromSeconds(30), CancellationToken.None, line =>
+            {
+                lock (heard) heard.Add(line);
+                if (line == "one") File.WriteAllText(signal, "");
+            });
 
-        Assert.Equal(["one", "two"], heard.Select(h => h.Line));
-        // Judged on the gap the child leaves between its lines, never on how fast it started: heard at the end only, both
-        // lines would come together.
-        Assert.True(heard[1].At - heard[0].At > TimeSpan.FromSeconds(1), $"the lines came {heard[1].At - heard[0].At} apart: only once the child had ended");
-        Assert.Contains("one", result.Stdout);
-        Assert.Contains("two", result.Stdout);
+            Assert.Equal(["one", "two"], heard);
+            Assert.Contains("one", result.Stdout);
+            Assert.Contains("two", result.Stdout);
+        }
+        finally
+        {
+            try { dir.Delete(recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        }
     }
 
     // ── RunAsync: the two properties seven private copies did not agree on ──────────
