@@ -32,7 +32,7 @@ public sealed class MentionUrlCommitTests : IDisposable
 
     private async Task<string> Git(string args)
     {
-        var (output, exit) = await GitProcess.RunAsync(args, _repo, CancellationToken.None);
+        var (output, exit) = await FixtureGit.RunAsync(args, _repo);
         Assert.True(exit == 0, $"git {args}: {output}");
         return output.Trim();
     }

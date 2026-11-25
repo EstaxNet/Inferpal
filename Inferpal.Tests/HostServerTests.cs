@@ -3378,7 +3378,7 @@ public partial class HostServerTests
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         async Task Git(string args) =>
-            Assert.Equal(0, (await Services.GitProcess.RunAsync(args, h.RootDir, CancellationToken.None)).ExitCode);
+            Assert.Equal(0, (await FixtureGit.RunAsync(args, h.RootDir)).ExitCode);
         await Git("init -q -b main");
         await Git("config user.email t@example.test");
         await Git("config user.name t");
@@ -3498,7 +3498,7 @@ public partial class HostServerTests
         using var h = CreateHarness();
         await h.InitializeAsync().WaitAsync(TimeSpan.FromMilliseconds(TimeoutMs));
         async Task Git(string args) =>
-            Assert.Equal(0, (await Services.GitProcess.RunAsync(args, h.RootDir, CancellationToken.None)).ExitCode);
+            Assert.Equal(0, (await FixtureGit.RunAsync(args, h.RootDir)).ExitCode);
         await Git("init -q -b main");
         await Git("config user.email t@example.test");
         await Git("config user.name t");
@@ -5276,7 +5276,7 @@ public partial class HostServerTests
         var repo = Path.Combine(h.RootDir, "repo");
         Directory.CreateDirectory(repo);
         async Task Git(string args) =>
-            Assert.Equal(0, (await Services.GitProcess.RunAsync(args, repo, CancellationToken.None)).ExitCode);
+            Assert.Equal(0, (await FixtureGit.RunAsync(args, repo)).ExitCode);
         await Git("init -q -b main");
         await Git("config user.email t@example.test");
         await Git("config user.name t");
@@ -5303,7 +5303,7 @@ public partial class HostServerTests
     {
         Directory.CreateDirectory(repo);
         async Task Git(string args) =>
-            Assert.Equal(0, (await Services.GitProcess.RunAsync(args, repo, CancellationToken.None)).ExitCode);
+            Assert.Equal(0, (await FixtureGit.RunAsync(args, repo)).ExitCode);
         await Git("init -q -b main");
         await Git("config user.email t@example.test");
         await Git("config user.name t");

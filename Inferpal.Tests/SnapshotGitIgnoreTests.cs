@@ -24,7 +24,7 @@ public class SnapshotGitIgnoreTests : IDisposable
 
     private async Task<string> GitAsync(string args)
     {
-        var (output, exit) = await GitProcess.RunAsync(args, _repo, CancellationToken.None);
+        var (output, exit) = await FixtureGit.RunAsync(args, _repo);
         Assert.True(exit == 0, $"git {args} failed ({exit}): {output} — this test is UNDECIDED, not green.");
         return output;
     }

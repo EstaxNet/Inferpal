@@ -34,7 +34,7 @@ public sealed class CheckTargetTests : IDisposable
 
     private async Task<string> Git(string args)
     {
-        var (output, exit) = await GitProcess.RunAsync(args, _repo, CancellationToken.None);
+        var (output, exit) = await FixtureGit.RunAsync(args, _repo);
         Assert.True(exit == 0, $"git {args}: {output}");
         return output.Trim();
     }
@@ -193,8 +193,7 @@ public sealed class CheckTargetTests : IDisposable
         try
         {
             var url = new Uri(_repo).AbsoluteUri;
-            var (output, exit) = await GitProcess.RunAsync($"clone -q --depth 1 --branch main {url} \"{clone}\"", null,
-                                                           CancellationToken.None);
+            var (output, exit) = await FixtureGit.RunAsync($"clone -q --depth 1 --branch main {url} \"{clone}\"", null);
             Assert.True(exit == 0, output);
             var head = (await GitProcess.RunAsync("rev-parse HEAD", clone, CancellationToken.None)).Output.Trim();
             var result = await CheckCommandHandler.HandleAsync(new FakeInferenceProvider(), new InferpalConfig(), clone,
@@ -342,8 +341,7 @@ public sealed class CheckTargetTests : IDisposable
         try
         {
             var url = new Uri(_repo).AbsoluteUri;
-            var (output, exit) = await GitProcess.RunAsync($"clone -q --depth 1 --no-single-branch --branch lone {url} \"{clone}\"",
-                                                           null, CancellationToken.None);
+            var (output, exit) = await FixtureGit.RunAsync($"clone -q --depth 1 --no-single-branch --branch lone {url} \"{clone}\"", null);
             Assert.True(exit == 0, output);
             Assert.Equal("true", (await GitProcess.RunAsync("rev-parse --is-shallow-repository", clone,
                                                             CancellationToken.None)).Output.Trim());   // WITNESS

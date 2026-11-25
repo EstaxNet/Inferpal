@@ -103,7 +103,7 @@ public sealed class RootGitIgnoreUntouchedTests : IDisposable
     [Fact]
     public async Task AfterIndexingAndASnapshot_GitListsNoBackup_AndTheRootHasNoGitIgnore()
     {
-        var (_, initExit) = await GitProcess.RunAsync("init -q", _root, CancellationToken.None);
+        var (_, initExit) = await FixtureGit.RunAsync("init -q", _root);
         Assert.True(initExit == 0, "`git init` failed: this test is UNDECIDED, not green.");
         await IndexAsync();
         var source = Path.Combine(_root, "appsettings.json");
@@ -128,7 +128,7 @@ public sealed class RootGitIgnoreUntouchedTests : IDisposable
     [Fact]
     public async Task AnOldHistoryWithoutItsRule_GetsIt_WhenTheWorkspaceOpens()
     {
-        var (_, initExit) = await GitProcess.RunAsync("init -q", _root, CancellationToken.None);
+        var (_, initExit) = await FixtureGit.RunAsync("init -q", _root);
         Assert.True(initExit == 0, "`git init` failed: this test is UNDECIDED, not green.");
         var history = Path.Combine(_root, ".inferpal", "history");
         Directory.CreateDirectory(history);

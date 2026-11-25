@@ -28,7 +28,7 @@ public sealed class GitCommitBudgetTests : IDisposable
     }
 
     private async Task Git(string args) =>
-        Assert.Equal(0, (await GitProcess.RunAsync(args, _repo, CancellationToken.None)).ExitCode);
+        Assert.Equal(0, (await FixtureGit.RunAsync(args, _repo)).ExitCode);
 
     private string HookRuns => Path.Combine(_repo, ".git", "hook-runs");
 

@@ -34,7 +34,7 @@ public sealed class CheckWithoutChecksTests : IDisposable
 
     private async Task Git(string args)
     {
-        var (output, exit) = await GitProcess.RunAsync(args, _repo, CancellationToken.None);
+        var (output, exit) = await FixtureGit.RunAsync(args, _repo);
         Assert.True(exit == 0, $"git {args}: {output}");
     }
 
