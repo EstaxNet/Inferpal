@@ -52,9 +52,8 @@ public sealed class FirstRunScanTests
         using var page = new LoopbackHttpServer(_ => null);    // answers 404 everywhere: a web server, not ours
         var notOurs = await ServerScan.ExamineAsync(page.BaseUrl, null, null, Create, CancellationToken.None);
 
-        using var closed = ClosedPort();
-        var silent = await ServerScan.ExamineAsync($"http://127.0.0.1:{((IPEndPoint)closed.LocalEndPoint!).Port}", null, null, Create,
-                                                   CancellationToken.None);
+        using var closed = LoopbackPorts.Refusing(out var closedPort);
+        var silent = await ServerScan.ExamineAsync($"http://127.0.0.1:{closedPort}", null, null, Create, CancellationToken.None);
 
         Assert.Equal(ServerPlaceOutcome.NotAModelServer, notOurs.Outcome);
         Assert.Equal(ServerPlaceOutcome.NothingListening, silent.Outcome);
@@ -301,13 +300,4 @@ public sealed class FirstRunScanTests
     [InlineData("pulling manifest (100%) ", 100)]
     public void APullStatus_GivesItsPercentage(string status, int? percent) =>
         Assert.Equal(percent, HostServer.PercentOf(status));
-
-    /// <summary>A loopback port nothing listens on, held for the test: bound and never listening, it refuses connections,
-    /// and no test running beside this one can take it. A port released before the probe can be.</summary>
-    private static Socket ClosedPort()
-    {
-        var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-        return socket;
-    }
 }
