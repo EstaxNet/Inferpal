@@ -65,24 +65,9 @@ internal sealed class GhostTextPackage : AsyncPackage
         // loaded fine. Do not move them above the `SwitchToMainThreadAsync`.
         var dbgService = await GetServiceAsync(typeof(SVsShellDebugger));
         var dteService = await GetServiceAsync(typeof(SDTE));
-        var shellDbg   = dbgService as IVsDebugger;
         var dte        = dteService as EnvDTE.DTE;
 
-        // Chat auto-scroll: the tool window is Remote UI (XAML lives in devenv's visual
-        // tree), so only this in-process side can call BringIntoView/ScrollToEnd on it.
-        try { ChatAutoScroller.Initialize(); } catch { /* non-critical */ }
-        // A protected PDF's password, typed on the chat's card: Remote UI binds no PasswordBox, only this side reads one.
-        try { PasswordBoxRelay.Initialize(); } catch { /* non-critical: the card then says to type the password first */ }
-        // A file dropped on the chat window: only this side sees the drop, for the same reason.
-        try
-        {
-            ChatDropTarget.Initialize(() =>
-            {
-                try { return dte?.Solution?.FullName is { Length: > 0 } sln ? System.IO.Path.GetDirectoryName(sln) : null; }
-                catch (Exception ex) { Diagnostics.Swallow("ChatDrop.Solution", ex); return null; }
-            });
-        }
-        catch (Exception ex) { Diagnostics.Swallow("ChatDrop.Init", ex); }
+        InitializeChatWindowSide(dte);
 
         // The chat, open at the last close, is reopened from here: Visual Studio no longer recreates it from its layout.
         JoinableTaskFactory.RunAsync(() => ChatWindowRestore.ReopenAsync(this, DisposalToken)).FileAndForget("Inferpal/ChatRestore");
@@ -110,26 +95,57 @@ internal sealed class GhostTextPackage : AsyncPackage
         }
         catch { /* non-critical */ }
 
+        StartDebugDriver(dbgService, dteService);
+    }
+
+    /// <summary>
+    /// The chat window's devenv side: the tool window is Remote UI (its XAML lives in devenv's visual tree), so only this
+    /// in-process side reaches its controls. Each part is non-critical. UI thread only.
+    /// </summary>
+    private static void InitializeChatWindowSide(EnvDTE.DTE? dte)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        // Chat auto-scroll: only this side can call BringIntoView/ScrollToEnd on it.
+        try { ChatAutoScroller.Initialize(); } catch { /* non-critical */ }
+        // A protected PDF's password, typed on the chat's card: Remote UI binds no PasswordBox, only this side reads one.
+        try { PasswordBoxRelay.Initialize(); } catch { /* non-critical: the card then says to type the password first */ }
+        // A file dropped on the chat window: only this side sees the drop, for the same reason.
         try
         {
-            // Serves the host's debugger requests so `/debug` can
-            // set breakpoints, run and step. Requires the DTE — without it there is nothing to
-            // drive.
-            //
-            // ⚠ Every outcome is recorded, and that is the whole point: `Diagnostics.Swallow`
-            // writes to the IN-PROC ring while `/diagnostics` reads the out-of-process host's, so a
-            // driver that never started is otherwise unobservable by anyone. `/tdd` gates its
-            // debugger capture on this driver and degrades silently without it. A capability that
-            // can be absent must say so itself.
-            // Four branches because there are four distinct failures, and "the service did not
-            // answer" and "it answered something else" are not repaired in the same place: the
-            // first is a thread or package problem, the second an interop binding problem.
-            // Conflating them costs a full restart round trip to find out.
+            ChatDropTarget.Initialize(() =>
+            {
+                try { return dte?.Solution?.FullName is { Length: > 0 } sln ? System.IO.Path.GetDirectoryName(sln) : null; }
+                catch (Exception ex) { Diagnostics.Swallow("ChatDrop.Solution", ex); return null; }
+            });
+        }
+        catch (Exception ex) { Diagnostics.Swallow("ChatDrop.Init", ex); }
+    }
+
+    /// <summary>
+    /// Serves the host's debugger requests so <c>/debug</c> can set breakpoints, run and step. Requires the DTE — without
+    /// it there is nothing to drive. UI thread only (the driver subscribes to debugger events there).
+    /// </summary>
+    /// <remarks>
+    /// ⚠ Every outcome is recorded, and that is the whole point: <c>Diagnostics.Swallow</c> writes to the IN-PROC ring
+    /// while <c>/diagnostics</c> reads the out-of-process host's, so a driver that never started is otherwise unobservable
+    /// by anyone. <c>/tdd</c> gates its debugger capture on this driver and degrades silently without it. A capability
+    /// that can be absent must say so itself. Four branches because there are four distinct failures, and "the service did
+    /// not answer" and "it answered something else" are not repaired in the same place: the first is a thread or package
+    /// problem, the second an interop binding problem. Conflating them costs a full restart round trip to find out.
+    /// </remarks>
+    /// <param name="dbgService">What <c>SVsShellDebugger</c> answered.</param>
+    /// <param name="dteService">What <c>SDTE</c> answered.</param>
+    private void StartDebugDriver(object? dbgService, object? dteService)
+    {
+        try
+        {
+            // Inside the try: even a call off the UI thread is an outcome recorded, never a silent fault.
+            ThreadHelper.ThrowIfNotOnUIThread();
             if (dbgService is null)
                 Services.Signals.InProcAliveSignal.RecordDebuggerUnavailable("VS debugger service unavailable");
-            else if (shellDbg is null)
+            else if (dbgService is not IVsDebugger shellDbg)
                 Services.Signals.InProcAliveSignal.RecordDebuggerUnavailable("VS debugger service is not IVsDebugger");
-            else if (dte is null)
+            else if (dteService is not EnvDTE.DTE dte)
                 Services.Signals.InProcAliveSignal.RecordDebuggerUnavailable(
                     dteService is null ? "DTE automation unavailable" : "DTE service is not EnvDTE.DTE");
             else

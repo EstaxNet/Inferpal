@@ -800,11 +800,23 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
         try { threadId = dbg.CurrentThread?.ID ?? 0; }
         catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.Thread", ex); }
 
-        // Frame ids are the 1-based position in this stack, which is also how a later `evaluate`
-        // addresses a frame. They are meaningful only until execution resumes — which is fine,
-        // because so is everything else in this snapshot.
+        var (frames, captured) = CaptureFrames(dbg);
+        var (locals, localsFrameId) = CaptureLocals(dbg, frames, captured);
+
+        return new DebugStopState(reason, threadId, frames, locals, exception, localsFrameId);
+    }
+
+    /// <summary>
+    /// The paused thread's call stack, its first <see cref="MaxFrames"/> frames, with the same frames unwrapped to tell
+    /// the selected one later. Frame ids are the 1-based position in this stack, which is also how a later
+    /// <c>evaluate</c> addresses a frame. They are meaningful only until execution resumes — which is fine, because so is
+    /// everything else in this snapshot. Empty when the stack cannot be read. UI thread only.
+    /// </summary>
+    private static (List<DebugFrame> Frames, List<object> Captured) CaptureFrames(EnvDTE.Debugger dbg)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
         var frames = new List<DebugFrame>();
-        var captured = new List<object>();   // the same frames, unwrapped, to identify the selected one
+        var captured = new List<object>();
         try
         {
             var index = 0;
@@ -829,10 +841,20 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             }
         }
         catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.StackFrames", ex); }
+        return (frames, captured);
+    }
 
-        // ⚠ The locals are those of the frame the IDE has SELECTED, which is not the top of the
-        // stack (Just My Code, a user click, or our own Evaluate scoping an expression). Name it,
-        // or the renderer would attribute a runtime frame's variables to the user's code.
+    /// <summary>
+    /// The locals of the frame the IDE has SELECTED, its first <see cref="MaxLocals"/>, and that frame's id in
+    /// <paramref name="frames"/>. ⚠ The selected frame is not the top of the stack (Just My Code, a user click, or our own
+    /// Evaluate scoping an expression): named, or the renderer would attribute a runtime frame's variables to the user's
+    /// code. Empty when the locals cannot be read. UI thread only.
+    /// </summary>
+    /// <param name="captured">The frames of <paramref name="frames"/>, unwrapped, in the same order.</param>
+    private static (List<DebugVariable> Locals, int? FrameId) CaptureLocals(
+        EnvDTE.Debugger dbg, List<DebugFrame> frames, List<object> captured)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
         var locals = new List<DebugVariable>();
         int? localsFrameId = null;
         try
@@ -854,8 +876,7 @@ internal sealed class VsDebugDriver : IVsDebuggerEvents, IDisposable
             }
         }
         catch (Exception ex) { Services.Diagnostics.Swallow("VsDebugDriver.Locals", ex); }
-
-        return new DebugStopState(reason, threadId, frames, locals, exception, localsFrameId);
+        return (locals, localsFrameId);
     }
 
     /// <returns>The value, or the debugger's words for why there is none (<c>Refusal</c>, null when it gave none).</returns>

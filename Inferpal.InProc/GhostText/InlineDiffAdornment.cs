@@ -200,49 +200,12 @@ internal sealed class InlineDiffAdornment
             var anchorBox    = LineBoxes.Of(anchorLine);   // rows from its text, not from the space CodeLens adds above it
 
             // 1. Red-tinted highlight over each removed/replaced line still in view.
-            double? removedBottom = null;
-            for (var l = 0; l < hunk.OldLines.Count; l++)
-            {
-                var lineStart = snapshot.GetLineFromLineNumber(
-                    Math.Min(snapshot.GetLineNumberFromPosition(anchor) + l, snapshot.LineCount - 1));
-                var viewLine = TryGetViewLine(lineStart.Start);
-                if (viewLine is null) continue;
-                var removed  = LineBoxes.Of(viewLine);
-
-                var rect = new System.Windows.Shapes.Rectangle
-                {
-                    Width            = Math.Max(_view.ViewportWidth, viewLine.Width),
-                    Height           = removed.TextHeight,
-                    Fill             = RemovedBg,
-                    IsHitTestVisible = false,
-                };
-                Canvas.SetLeft(rect, _view.ViewportLeft);
-                Canvas.SetTop(rect, removed.TextTop);
-                _layer.AddAdornment(AdornmentPositioningBehavior.TextRelative,
-                    new SnapshotSpan(lineStart.Start, 0), null, rect, null);
-                removedBottom = removed.TextBottom;
-            }
+            var removedBottom = PaintRemovedLines(snapshot, anchor, hunk);
 
             // 2. Green ghost lines for the added text, below the removed block: under the last removed line's own text,
             // since a line inside the block may carry CodeLens space too; at the anchor's text when nothing is removed.
-            var addedTop = removedBottom ?? anchorBox.RowTop(hunk.OldLines.Count);
-            for (var l = 0; l < hunk.NewLines.Count; l++)
-            {
-                var block = new TextBlock
-                {
-                    Text             = hunk.NewLines[l],
-                    Foreground       = AddedFg,
-                    Background       = AddedBg,
-                    FontFamily       = family,
-                    FontSize         = fontSize,
-                    MinWidth         = _view.ViewportWidth,
-                    IsHitTestVisible = false,
-                };
-                Canvas.SetLeft(block, _view.ViewportLeft);
-                Canvas.SetTop(block, addedTop + l * anchorBox.TextHeight);
-                _layer.AddAdornment(AdornmentPositioningBehavior.TextRelative,
-                    new SnapshotSpan(anchor, 0), null, block, null);
-            }
+            PaintAddedLines(hunk, anchor, removedBottom ?? anchorBox.RowTop(hunk.OldLines.Count), anchorBox.TextHeight,
+                            family, fontSize);
 
             // 3. ✓/✗ buttons at the hunk's first line (plus ✓✓/✗✗ on the first undecided hunk).
             var panel = BuildButtonPanel(hunk.Index, includeAllButtons: first, fontSize);
@@ -252,6 +215,60 @@ internal sealed class InlineDiffAdornment
                 new SnapshotSpan(anchor, 0), null, panel, null);
 
             first = false;
+        }
+    }
+
+    /// <summary>A red-tinted highlight over each line <paramref name="hunk"/> removes or replaces that is in view.</summary>
+    /// <returns>The bottom of the last highlighted line's own text — where the added lines start; <c>null</c> when none
+    /// is in view.</returns>
+    private double? PaintRemovedLines(ITextSnapshot snapshot, SnapshotPoint anchor, DiffHunk hunk)
+    {
+        double? removedBottom = null;
+        for (var l = 0; l < hunk.OldLines.Count; l++)
+        {
+            var lineStart = snapshot.GetLineFromLineNumber(
+                Math.Min(snapshot.GetLineNumberFromPosition(anchor) + l, snapshot.LineCount - 1));
+            var viewLine = TryGetViewLine(lineStart.Start);
+            if (viewLine is null) continue;
+            var removed  = LineBoxes.Of(viewLine);
+
+            var rect = new System.Windows.Shapes.Rectangle
+            {
+                Width            = Math.Max(_view.ViewportWidth, viewLine.Width),
+                Height           = removed.TextHeight,
+                Fill             = RemovedBg,
+                IsHitTestVisible = false,
+            };
+            Canvas.SetLeft(rect, _view.ViewportLeft);
+            Canvas.SetTop(rect, removed.TextTop);
+            _layer.AddAdornment(AdornmentPositioningBehavior.TextRelative,
+                new SnapshotSpan(lineStart.Start, 0), null, rect, null);
+            removedBottom = removed.TextBottom;
+        }
+        return removedBottom;
+    }
+
+    /// <summary>The text <paramref name="hunk"/> adds, as green ghost lines from <paramref name="top"/>, one
+    /// <paramref name="lineHeight"/> apart, anchored to the hunk's first line.</summary>
+    private void PaintAddedLines(DiffHunk hunk, SnapshotPoint anchor, double top, double lineHeight,
+                                 FontFamily family, double fontSize)
+    {
+        for (var l = 0; l < hunk.NewLines.Count; l++)
+        {
+            var block = new TextBlock
+            {
+                Text             = hunk.NewLines[l],
+                Foreground       = AddedFg,
+                Background       = AddedBg,
+                FontFamily       = family,
+                FontSize         = fontSize,
+                MinWidth         = _view.ViewportWidth,
+                IsHitTestVisible = false,
+            };
+            Canvas.SetLeft(block, _view.ViewportLeft);
+            Canvas.SetTop(block, top + l * lineHeight);
+            _layer.AddAdornment(AdornmentPositioningBehavior.TextRelative,
+                new SnapshotSpan(anchor, 0), null, block, null);
         }
     }
 

@@ -128,18 +128,7 @@ internal sealed class GhostTextController
     /// <param name="asked">The key's request, when the person asked: an empty answer is then said, not kept quiet.</param>
     private async Task TriggerAsync(CompletionAsk? asked = null)
     {
-        CancellationToken token;
-        CancellationTokenSource? prev;
-        lock (_gate)
-        {
-            prev  = _cts;
-            _cts  = new CancellationTokenSource();
-            token = _cts.Token;
-        }
-        // Cancel outside the lock to avoid running callbacks while holding it.
-        // (net472 has no CancelAsync(); the registered callback is a single Send on a pipe.)
-        if (prev is not null)
-            await Task.Run(() => prev.Cancel()).ConfigureAwait(false);
+        var token = await NextRequestTokenAsync().ConfigureAwait(false);
 
         try
         {
@@ -180,19 +169,51 @@ internal sealed class GhostTextController
                 return;
             }
 
-            // Fire-and-forget UI dispatch — result intentionally discarded (VSTHRD110: _ =).
-            _ = _dispatcher.InvokeAsync(() =>
-            {
-                if (token.IsCancellationRequested) return;
-                // Discard if the buffer changed since we triggered.
-                if (!ReferenceEquals(_view.TextBuffer.CurrentSnapshot, snapshot)) return;
-                _adornment.Show(completion, anchor);
-                // Asked for while the list is open: Tab goes to the list, and the key is what takes the suggestion.
-                if (asked is not null && CompletionActive()) CompletionAskWatcher.Say(asked.ListHint);
-            });
+            ShowWhileCurrent(completion, anchor, snapshot, token, asked);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { Services.Diagnostics.Swallow("GhostText.Trigger", ex); }
+    }
+
+    /// <summary>
+    /// The token of a new request; the request before it is cancelled — outside the lock, so its callbacks never run while
+    /// the lock is held (net472 has no CancelAsync(); the registered callback is a single Send on a pipe).
+    /// </summary>
+    private async Task<CancellationToken> NextRequestTokenAsync()
+    {
+        CancellationToken token;
+        CancellationTokenSource? prev;
+        lock (_gate)
+        {
+            prev  = _cts;
+            _cts  = new CancellationTokenSource();
+            token = _cts.Token;
+        }
+        if (prev is not null)
+            await Task.Run(() => prev.Cancel()).ConfigureAwait(false);
+        return token;
+    }
+
+    /// <summary>
+    /// Shows <paramref name="completion"/> at <paramref name="anchor"/> on the editor's thread, unless the request was
+    /// cancelled or the buffer moved on from <paramref name="snapshot"/> meanwhile: a suggestion made for another text is
+    /// never shown. Fire-and-forget.
+    /// </summary>
+    /// <param name="asked">The key's request, when the person asked: while the completion list is open Tab goes to the
+    /// list, and the key is what takes the suggestion — said.</param>
+    private void ShowWhileCurrent(string completion, SnapshotPoint anchor, ITextSnapshot snapshot, CancellationToken token,
+                                  CompletionAsk? asked)
+    {
+        // Result intentionally discarded (VSTHRD110: _ =).
+        _ = _dispatcher.InvokeAsync(() =>
+        {
+            if (token.IsCancellationRequested) return;
+            // Discard if the buffer changed since we triggered.
+            if (!ReferenceEquals(_view.TextBuffer.CurrentSnapshot, snapshot)) return;
+            _adornment.Show(completion, anchor);
+            // Asked for while the list is open: Tab goes to the list, and the key is what takes the suggestion.
+            if (asked is not null && CompletionActive()) CompletionAskWatcher.Say(asked.ListHint);
+        });
     }
 
     /// <summary>How many lines of context the FIM prompt keeps on each side of the caret — within the character caps

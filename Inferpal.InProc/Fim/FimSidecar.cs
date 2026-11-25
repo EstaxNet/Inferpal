@@ -141,20 +141,7 @@ internal static class FimSidecar
         _pending[id] = tcs;
         try
         {
-            var payload = new StringBuilder()
-                .Append("{\"jsonrpc\":\"2.0\",\"id\":").Append(id)
-                .Append(",\"method\":\"fim/complete\",\"params\":{")
-                .Append("\"prefix\":").Append(JsonSerializer.Serialize(prefix))
-                .Append(",\"suffix\":").Append(JsonSerializer.Serialize(suffix))
-                .Append(",\"maxTokens\":").Append(maxTokens)
-                .Append(",\"temperature\":")
-                .Append(temperature.ToString("R", CultureInfo.InvariantCulture))
-                .Append(",\"model\":").Append(model is null ? "null" : JsonSerializer.Serialize(model))
-                .Append(",\"path\":").Append(path is null ? "null" : JsonSerializer.Serialize(path))
-                .Append("}}")
-                .ToString();
-
-            Send(stdin, payload);
+            Send(stdin, CompleteRequest(id, prefix, suffix, maxTokens, temperature, model, path));
 
             string? raw;
             using (var budget = new CancellationTokenSource(CallTimeout))
@@ -194,6 +181,23 @@ internal static class FimSidecar
         finally { _pending.TryRemove(id, out _); }
     }
 
+    /// <summary>The <c>fim/complete</c> request the sidecar reads: a JSON-RPC 2.0 message, its temperature written in the
+    /// invariant culture (a decimal comma would break the JSON).</summary>
+    private static string CompleteRequest(int id, string prefix, string suffix, int maxTokens, double temperature,
+                                          string? model, string? path) =>
+        new StringBuilder()
+            .Append("{\"jsonrpc\":\"2.0\",\"id\":").Append(id)
+            .Append(",\"method\":\"fim/complete\",\"params\":{")
+            .Append("\"prefix\":").Append(JsonSerializer.Serialize(prefix))
+            .Append(",\"suffix\":").Append(JsonSerializer.Serialize(suffix))
+            .Append(",\"maxTokens\":").Append(maxTokens)
+            .Append(",\"temperature\":")
+            .Append(temperature.ToString("R", CultureInfo.InvariantCulture))
+            .Append(",\"model\":").Append(model is null ? "null" : JsonSerializer.Serialize(model))
+            .Append(",\"path\":").Append(path is null ? "null" : JsonSerializer.Serialize(path))
+            .Append("}}")
+            .ToString();
+
     /// <summary>Stops the sidecar. Called from the package <c>Dispose</c>; safe to repeat.</summary>
     internal static void Shutdown() => Recycle();
 
@@ -219,13 +223,21 @@ internal static class FimSidecar
         if (_process != null)
         {
             // Died on its own since the last request: a failure to hold the door for, not a cue to
-            // start again at once — a sidecar that dies at start-up was relaunched on every pause in
-            // typing, and nothing said why.
+            // start again at once — a sidecar that dies at start-up would be relaunched on every pause in
+            // typing, and nothing would say why.
             NoteDeathLocked(_process);
             RecycleLocked();
         }
-        if (!_startGate.MayTry()) return false;
+        return _startGate.MayTry() && LaunchLocked(configStamp);
+    }
 
+    /// <summary>
+    /// Starts a sidecar for <paramref name="configStamp"/>'s configuration, its read loop and its stderr wired; a start
+    /// that fails says why in the channel the user can read, and holds the door (a missing executable for good, anything
+    /// else for a cooldown). Under <c>_gate</c>.
+    /// </summary>
+    private static bool LaunchLocked(long configStamp)
+    {
         var dir = DirectoryOverride
                   ?? Path.GetDirectoryName(typeof(FimSidecar).Assembly.Location)
                   ?? ".";
