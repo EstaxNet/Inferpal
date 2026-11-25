@@ -33,6 +33,8 @@ internal sealed class BackgroundShellRegistry : IDisposable
         public int ReadOffset;
         public volatile bool Exited;
         public int? ExitCode;
+        // The grace a first look at the end gives the output was spent: a later poll reads what came meanwhile, never waits.
+        public volatile bool GraceSpent;
         public readonly object Lock = new();
         // Set once both redirected streams have delivered their last line (a null line ends each).
         public readonly CountdownEvent StreamsEnded = new(2);
@@ -48,13 +50,17 @@ internal sealed class BackgroundShellRegistry : IDisposable
     private readonly object _lock = new();
     private int _seq;
 
-    /// <summary>How many jobs that ended without being polled are kept, the most recent ones.</summary>
+    /// <summary>How many jobs that ended, their output drained, are kept for a poll, the most recent ones. A job that ended
+    /// with its output still open (a server it left running holds it) is kept apart from this count, polled or not, so
+    /// poll and stop still reach it.</summary>
     /// <remarks>⚠ Unbounded, each kept its process handle and up to <see cref="MaxBufferChars"/> of output until the
     /// session ended.</remarks>
     internal int MaxEndedKept { get; init; } = 20;
 
     /// <summary>Result of a <c>poll</c>: the output produced since the previous poll, plus status.</summary>
-    public readonly record struct PollResult(bool Found, string NewOutput, bool Running, int? ExitCode);
+    /// <param name="OutputPending">The job ended, yet its output is still open — a process it started holds it, or a
+    /// loaded machine delivers its last lines late: more may come, and the job is kept for the poll that reads it.</param>
+    public readonly record struct PollResult(bool Found, string NewOutput, bool Running, int? ExitCode, bool OutputPending = false);
 
     /// <summary>
     /// Launches <paramref name="script"/> in a detached powershell, registers it under a short id
@@ -139,7 +145,8 @@ internal sealed class BackgroundShellRegistry : IDisposable
 
     /// <summary>
     /// Returns the output produced since the previous poll and the job status. When the job has
-    /// exited and all of its output has been drained, it is removed from the registry.
+    /// exited and all of its output has been drained, it is removed from the registry; exited with its output still open,
+    /// it stays, so the output that comes after its end is not lost.
     /// </summary>
     public PollResult Poll(string id)
     {
@@ -154,10 +161,16 @@ internal sealed class BackgroundShellRegistry : IDisposable
         // The Exited event can fire before the async stdout/stderr callbacks have delivered the
         // last lines: wait for those redirected streams to END, or the tail of the output is lost.
         // ⚠ Not WaitForExit(2000): with a timeout it returns at once for an exited process, the streams not waited
-        // for. ⚠ Bounded: a background process the job started holds the pipes open for as long as it lives, and the
-        // parameterless WaitForExit() blocked this poll — synchronously — until then.
-        if (exited)
+        // for. ⚠ Bounded, once per job: a background process the job started holds the pipes open for as long as it
+        // lives, and the parameterless WaitForExit() blocked this poll — synchronously — until then.
+        if (exited && !job.GraceSpent)
+        {
+            job.GraceSpent = true;
             try { job.StreamsEnded.Wait(ChildProcess.PipeGraceAfterExit); } catch (ObjectDisposedException) { }
+        }
+        // Judged BEFORE the read: streams that end after it leave their last lines to the next poll, never to a job removed.
+        bool drained;
+        try { drained = job.StreamsEnded.IsSet; } catch (ObjectDisposedException) { drained = true; }
 
         string chunk;
         int? exit;
@@ -167,14 +180,15 @@ internal sealed class BackgroundShellRegistry : IDisposable
             job.ReadOffset = job.Buffer.Length;
             exit   = job.ExitCode;
         }
-        if (exited)
+        // Removed once its output is drained only: removed at its end, the lines that come after it would be lost for good.
+        if (exited && drained)
         {
             lock (_lock) _jobs.Remove(id);
             try { job.Process.Dispose(); } catch { }
             job.StreamsEnded.Dispose();
         }
 
-        return new PollResult(true, chunk, !exited, exit);
+        return new PollResult(true, chunk, !exited, exit, OutputPending: exited && !drained);
     }
 
     /// <summary>Terminates a background job (whole process tree) and removes it. Returns false if unknown.</summary>

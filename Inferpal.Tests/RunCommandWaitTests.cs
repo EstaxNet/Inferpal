@@ -15,10 +15,11 @@ public sealed class RunCommandWaitTests
 {
     private static JsonElement Args(object o) => JsonSerializer.SerializeToElement(o);
 
-    private static async Task<(RunCommandTool Tool, string Id)> StartAsync(string command)
+    private static async Task<(RunCommandTool Tool, string Id)> StartAsync(string command, string? folder = null)
     {
         var tool = new RunCommandTool(new NoopApproval(), new InferpalConfig(), () => Path.GetTempPath());
-        var started = await tool.ExecuteAsync(Args(new { command, background = true }), default);
+        var started = await tool.ExecuteAsync(Args(folder is null ? new { command, background = true }
+                                                                  : (object)new { command, background = true, working_directory = folder }), default);
         return (tool, Regex.Match(started, "background job '([^']+)'").Groups[1].Value);
     }
 
@@ -76,6 +77,41 @@ public sealed class RunCommandWaitTests
             var said = await tool.ExecuteAsync(Args(new { action = "wait", id, until = "listening", timeout_seconds = WaitBudget }), default);
             Assert.Contains("finished (exit code 3) before 'listening' appeared", said);
             Assert.Contains("port in use", said);
+        }
+    }
+
+    /// <summary>
+    /// A job that ends while a process it started still writes to its output — or whose last lines a loaded machine
+    /// delivers after its end: what comes after the end is read too, never lost to the first look at it. The process here
+    /// writes about 6 s after it started, just before the job ends: past the grace a first look at the end gives the output
+    /// (2 s) even when that look comes late, within the time a wait reads on after the end.
+    /// </summary>
+    [Fact]
+    public async Task OutputThatComesAfterTheJobEnded_IsReadToo()
+    {
+        var dir = Directory.CreateTempSubdirectory("inferpal-wait-tail-");
+        try
+        {
+            string command;
+            if (OperatingSystem.IsWindows())
+            {
+                File.WriteAllText(Path.Combine(dir.FullName, "late.cmd"), "@echo off\r\nping -n 7 127.0.0.1 >nul\r\necho late tail\r\n");
+                // `start /b` runs the batch file on the job's output, under `cmd /K`, which ends at its input's end: the
+                // registry closes every job's input.
+                command = "cmd /c start /b late.cmd; exit 3";
+            }
+            else command = "sh -c '(sleep 6; echo late tail) &'; exit 3";
+            var (tool, id) = await StartAsync(command, dir.FullName);
+            using (tool)
+            {
+                var said = await tool.ExecuteAsync(Args(new { action = "wait", id, until = "listening", timeout_seconds = WaitBudget }), default);
+                Assert.Contains("finished (exit code 3) before 'listening' appeared", said);
+                Assert.Contains("late tail", said);
+            }
+        }
+        finally
+        {
+            try { dir.Delete(recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
         }
     }
 

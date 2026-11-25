@@ -264,7 +264,8 @@ internal sealed class RunCommandTool : ITool, IDisposable
                 var r = _background.Poll(id);
                 if (!r.Found) return $"Error: no background job '{id}' (it may have finished and been drained already, or ended "
                                    + "unpolled among too many others: the oldest are let go).";
-                var status = r.Running ? "still running" : $"finished (exit code {r.ExitCode?.ToString() ?? "unknown"})";
+                var status = r.Running ? "still running"
+                           : $"finished (exit code {r.ExitCode?.ToString() ?? "unknown"})" + (r.OutputPending ? OutputStillOpen : "");
                 var body   = string.IsNullOrEmpty(r.NewOutput) ? "(no new output)" : r.NewOutput.TrimEnd();
                 return $"[job '{id}' — {status}]\n{body}";
             }
@@ -299,6 +300,14 @@ internal sealed class RunCommandTool : ITool, IDisposable
     /// <summary>The most output a wait keeps (its newest), whatever the job prints meanwhile.</summary>
     internal const int MaxWaitKept = 200_000;
 
+    /// <summary>How long a wait reads a job's output after its end while that output stays open — a process the job started
+    /// writing on, or last lines a loaded machine delivers late. Bounded: a server the job left running holds the output for
+    /// as long as it lives, and the wait says the end then, with the way to read the rest.</summary>
+    internal static readonly TimeSpan DrainAfterExit = TimeSpan.FromSeconds(10);
+
+    /// <summary>What a report of a job that ended says while its output is still open.</summary>
+    private const string OutputStillOpen = "; its output is still open: anything a process it started writes later can be read with poll";
+
     /// <summary>
     /// <c>action='wait'</c>: the job's new output up to the first line that holds <c>until</c>, or up to its end, or to the
     /// deadline — said as such, never as a failure: a server slower than the wait is still starting.
@@ -315,6 +324,7 @@ internal sealed class RunCommandTool : ITool, IDisposable
         var seen = new StringBuilder();
         var scanned = 0;   // what was already searched: each read is searched once, never the whole output again
         var dropped = 0;
+        DateTime? endSeen = null;
         // Waiting on a job computes nothing: completion and indexing of the whole account may use the GPU meanwhile.
         using var paused = Hardware.GpuScheduler.PauseThisFlow();
         string Kept() => (dropped > 0 ? $"(the first {dropped} characters of its output were let go)\n" : string.Empty) + seen.ToString().TrimEnd();
@@ -345,9 +355,20 @@ internal sealed class RunCommandTool : ITool, IDisposable
                 scanned = Math.Max(0, scanned - cut);
             }
             if (!r.Running)
+            {
+                // Its output still open after its end: what comes is read for a while (DrainAfterExit), never lost to the
+                // first look at the end — the cause of a failure is often its last line.
+                endSeen ??= DateTime.UtcNow;
+                if (r.OutputPending && DateTime.UtcNow - endSeen < DrainAfterExit && DateTime.UtcNow < deadline)
+                {
+                    await Task.Delay(250, ct);
+                    continue;
+                }
                 return ClampedArgument.Above(notice,
-                    $"[job '{id}' — finished (exit code {r.ExitCode?.ToString() ?? "unknown"}) before '{until}' appeared]\n"
+                    $"[job '{id}' — finished (exit code {r.ExitCode?.ToString() ?? "unknown"}) before '{until}' appeared"
+                    + (r.OutputPending ? OutputStillOpen : "") + "]\n"
                     + (seen.Length == 0 ? "(no new output)" : Kept()));
+            }
             if (DateTime.UtcNow >= deadline)
                 return ClampedArgument.Above(notice,
                     $"[job '{id}' — still running; '{until}' has not appeared after {seconds} s (it may still be starting: wait again, "
