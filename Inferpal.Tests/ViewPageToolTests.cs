@@ -216,10 +216,7 @@ public sealed class ViewPageToolTests : IDisposable
     private async Task CapturesAsExpected(CaptureBrowser browser, bool mustStart)
     {
         // Another service of this machine, which the page must not reach: it counts what it is asked.
-        var other = new System.Net.HttpListener();
-        var otherPort = FreePort();
-        other.Prefixes.Add($"http://127.0.0.1:{otherPort}/");
-        other.Start();
+        var (other, otherPort) = LoopbackPorts.StartHttpListener();
         var asked = 0;
         _ = Task.Run(async () =>
         {
@@ -241,15 +238,6 @@ public sealed class ViewPageToolTests : IDisposable
         {
             try { other.Stop(); other.Close(); } catch { /* teardown never throws (TeardownDoesNotThrowTests) */ }
         }
-    }
-
-    private static int FreePort()
-    {
-        var l = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
-        l.Start();
-        var port = ((System.Net.IPEndPoint)l.LocalEndpoint).Port;
-        l.Stop();
-        return port;
     }
 
     private static async Task CapturesAsExpected(CaptureBrowser browser, string url, bool mustStart)

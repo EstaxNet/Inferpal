@@ -1,6 +1,5 @@
 using System.IO;
 using System.Net;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using Inferpal.Config;
@@ -18,18 +17,13 @@ namespace Inferpal.Tests;
 public sealed class RequestCollectionTests : IDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("inferpal-collections-").FullName;
-    private readonly HttpListener _server = new();
+    private readonly HttpListener _server;
     private readonly int _port;
     private readonly List<string> _received = [];
 
     public RequestCollectionTests()
     {
-        var l = new TcpListener(IPAddress.Loopback, 0);
-        l.Start();
-        _port = ((IPEndPoint)l.LocalEndpoint).Port;
-        l.Stop();
-        _server.Prefixes.Add($"http://127.0.0.1:{_port}/");
-        _server.Start();
+        (_server, _port) = LoopbackPorts.StartHttpListener();
         _ = ServeAsync();
     }
 

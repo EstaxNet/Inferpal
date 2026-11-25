@@ -28,16 +28,14 @@ namespace Inferpal.Tests;
 [Collection("Diagnostics")]   // clears and reads the static ring: another class clearing it in parallel turned it red
 public sealed class OAuthRedirectTests : IDisposable
 {
-    private readonly HttpListener _listener = new();
+    private readonly HttpListener _listener;
     private readonly List<string> _hits = [];
     private readonly string _prefix;
 
     public OAuthRedirectTests()
     {
-        var port = FreePort();
+        (_listener, var port) = LoopbackPorts.StartHttpListener();
         _prefix  = $"http://127.0.0.1:{port}/";
-        _listener.Prefixes.Add(_prefix);
-        _listener.Start();
         _ = Task.Run(ServeAsync);
     }
 
@@ -55,13 +53,6 @@ public sealed class OAuthRedirectTests : IDisposable
     {
         try { _listener.Stop(); } catch { }
         try { ((IDisposable)_listener).Dispose(); } catch { }
-    }
-
-    private static int FreePort()
-    {
-        using var probe = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
-        probe.Start();
-        return ((IPEndPoint)probe.LocalEndpoint).Port;
     }
 
     private async Task ServeAsync()

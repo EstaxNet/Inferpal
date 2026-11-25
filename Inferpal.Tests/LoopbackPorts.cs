@@ -30,13 +30,18 @@ internal static class LoopbackPorts
         }
     }
 
-    /// <summary>A loopback port nothing listens on, held bound (never listening) until the socket is disposed: no other test
-    /// can take it meanwhile, and a connection to it is refused.</summary>
+    /// <summary>A loopback port nothing listens on, a connection to it refused. Held bound (never listening) until the socket
+    /// is disposed, so no other test can take it meanwhile — except on macOS, whose stack (BSD's) drops a connection to a
+    /// bound socket that does not listen instead of refusing it: the request would wait out its deadline. There the port is
+    /// released at once, free at the time of asking.</summary>
     internal static Socket Refusing(out int port)
     {
         var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         socket.Bind(new IPEndPoint(IPAddress.Loopback, 0));
         port = ((IPEndPoint)socket.LocalEndPoint!).Port;
+        // shortcut: on macOS another test may take the port before the request; a held port that refuses needs a listener
+        // that resets, if this ever turns red there.
+        if (OperatingSystem.IsMacOS()) socket.Dispose();
         return socket;
     }
 
