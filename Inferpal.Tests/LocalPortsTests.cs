@@ -21,18 +21,35 @@ public sealed class LocalPortsTests
         try
         {
             var port = ((IPEndPoint)listener.LocalEndpoint).Port;
-            var (listeners, processes) = await LocalPorts.SnapshotAsync(port, default);
+            var (listeners, processes) = await ReadableSnapshotAsync(port);
             Assert.Contains(listeners, l => l.Pid == Environment.ProcessId);
 
-            Assert.True(await LocalPorts.ServedByAsync(port, [Environment.ProcessId], default));
-            Assert.False(await LocalPorts.ServedByAsync(port, [int.MaxValue - 7], default));   // reference arm, end to end
-            // An ancestor of the listener (the app under the job's shell), judged on the snapshot already taken: each new
-            // one is a system query, slow on a busy machine.
+            // Judged on the snapshot taken: each new one is a system query, slow on a busy machine.
+            Assert.True(LocalPorts.Served(listeners, [Environment.ProcessId], processes));
+            Assert.False(LocalPorts.Served(listeners, [int.MaxValue - 7], processes));   // reference arm
+            // An ancestor of the listener (the app under the job's shell).
             if (processes.TryGetValue(Environment.ProcessId, out var self) && self.Parent > 0 && processes.ContainsKey(self.Parent))
                 Assert.True(LocalPorts.Served(listeners, [self.Parent], processes));
-            Assert.False(await LocalPorts.ServedByAsync(port, [], default));
+            Assert.False(LocalPorts.Served(listeners, [], processes));
+            // End to end, the system now answering warm: the entry the tools call reads it itself — and its reference arm.
+            Assert.True(await LocalPorts.ServedByAsync(port, [Environment.ProcessId], default));
+            Assert.False(await LocalPorts.ServedByAsync(port, [int.MaxValue - 7], default));
         }
         finally { listener.Stop(); }
+    }
+
+    /// <summary>
+    /// The snapshot, taken again once when the system could not be read within the reader's budget — a cold query of the
+    /// system on a loaded machine (the Windows CI runner) answers past it, and the reader gives nothing then, by design. The
+    /// subject here is what the reader makes of the system, not how fast a busy machine answers; read twice in vain is said
+    /// as that.
+    /// </summary>
+    private static async Task<(IReadOnlyList<Listener> Listeners, IReadOnlyDictionary<int, ProcessEntry> Processes)> ReadableSnapshotAsync(int port)
+    {
+        var snapshot = await LocalPorts.SnapshotAsync(port, default);
+        if (snapshot.Processes.Count == 0) snapshot = await LocalPorts.SnapshotAsync(port, default);
+        Assert.True(snapshot.Processes.Count > 0, "the system could not be read, twice, within the reader's budget");
+        return snapshot;
     }
 
     private static readonly DateTime T = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
