@@ -166,29 +166,18 @@ internal partial class InferpalToolWindowData
                 MentionSuggestions.Clear();
                 MentionSuggestions.Add(Typed());
                 HasMentionSuggestions = true;
-                var catCts = _mentionCts = new CancellationTokenSource();
-                _ = Task.Run(async () =>
+                SearchAfterPause(ct => MentionController.FindCommitsAsync(root, q, ct), found =>
                 {
-                    try
+                    MentionSuggestions.Clear();
+                    MentionSuggestions.Add(Typed());
+                    foreach (var c in found)
                     {
-                        await Task.Delay(120, catCts.Token);
-                        var found = await MentionController.FindCommitsAsync(root, q, catCts.Token);
-                        if (catCts.IsCancellationRequested) return;
-                        Post(() =>
-                        {
-                            MentionSuggestions.Clear();
-                            MentionSuggestions.Add(Typed());
-                            foreach (var c in found)
-                            {
-                                var sha = c.Sha;
-                                MentionSuggestions.Add(new MentionSuggestion(
-                                    c.Short, c.Subject, text, sub, ct => SelectCommitMentionAsync(sha, ct)));
-                            }
-                            HasMentionSuggestions = true;
-                        });
+                        var sha = c.Sha;
+                        MentionSuggestions.Add(new MentionSuggestion(
+                            c.Short, c.Subject, text, sub, ct => SelectCommitMentionAsync(sha, ct)));
                     }
-                    catch (OperationCanceledException) { }
-                }, catCts.Token);
+                    HasMentionSuggestions = true;
+                });
                 return;
             }
 
@@ -198,27 +187,20 @@ internal partial class InferpalToolWindowData
                 var ql         = committed.Query.Trim().ToLowerInvariant();
                 var openForCat = _contextHolder.GetOpenPaths();
                 var isFolder   = committed.Category == "folder";
-                var catCts     = _mentionCts = new CancellationTokenSource();
-                _ = Task.Run(async () =>
+                SearchAfterPause(ct =>
                 {
-                    try
-                    {
-                        await Task.Delay(120, catCts.Token);
-                        var root  = FindProjectRoot(openForCat);
-                        var paths = isFolder
-                            ? MentionController.FindFolders(root, ql, catCts.Token)
-                            : MentionController.FindFiles(root, ql, catCts.Token);
-                        if (catCts.IsCancellationRequested) return;
-                        Post(() =>
-                        {
-                            MentionSuggestions.Clear();
-                            foreach (var s in BuildPathSuggestions(paths, root, isFolder, text, sub))
-                                MentionSuggestions.Add(s);
-                            HasMentionSuggestions = MentionSuggestions.Count > 0;
-                        });
-                    }
-                    catch (OperationCanceledException) { }
-                }, catCts.Token);
+                    var root  = FindProjectRoot(openForCat);
+                    var paths = isFolder
+                        ? MentionController.FindFolders(root, ql, ct)
+                        : MentionController.FindFiles(root, ql, ct);
+                    return Task.FromResult((Paths: paths, Root: root));
+                }, found =>
+                {
+                    MentionSuggestions.Clear();
+                    foreach (var s in BuildPathSuggestions(found.Paths, found.Root, isFolder, text, sub))
+                        MentionSuggestions.Add(s);
+                    HasMentionSuggestions = MentionSuggestions.Count > 0;
+                });
                 return;
             }
 
@@ -256,26 +238,18 @@ internal partial class InferpalToolWindowData
                 HasMentionSuggestions = MentionSuggestions.Count > 0;
                 var categoryCount  = MentionSuggestions.Count;
                 var openFilePaths  = _contextHolder.GetOpenPaths();
-                var cts            = _mentionCts = new CancellationTokenSource();
-                _ = Task.Run(async () =>
+                SearchAfterPause(ct =>
                 {
-                    try
-                    {
-                        await Task.Delay(120, cts.Token);
-                        var root      = FindProjectRoot(openFilePaths);
-                        var filePaths = MentionController.FindFiles(root, queryLower, cts.Token);
-                        if (cts.IsCancellationRequested) return;
-                        Post(() =>
-                        {
-                            while (MentionSuggestions.Count > categoryCount)
-                                MentionSuggestions.RemoveAt(MentionSuggestions.Count - 1);
-                            foreach (var s in BuildPathSuggestions(filePaths, root, folders: false, text, sub))
-                                MentionSuggestions.Add(s);
-                            HasMentionSuggestions = MentionSuggestions.Count > 0;
-                        });
-                    }
-                    catch (OperationCanceledException) { }
-                }, cts.Token);
+                    var root = FindProjectRoot(openFilePaths);
+                    return Task.FromResult((Paths: MentionController.FindFiles(root, queryLower, ct), Root: root));
+                }, found =>
+                {
+                    while (MentionSuggestions.Count > categoryCount)
+                        MentionSuggestions.RemoveAt(MentionSuggestions.Count - 1);
+                    foreach (var s in BuildPathSuggestions(found.Paths, found.Root, folders: false, text, sub))
+                        MentionSuggestions.Add(s);
+                    HasMentionSuggestions = MentionSuggestions.Count > 0;
+                });
                 return;
             }
 
@@ -287,6 +261,30 @@ internal partial class InferpalToolWindowData
                 }
                 return;
         }
+    }
+
+    /// <summary>How long typing pauses before a mention's search starts: each keystroke cancels the search before it.</summary>
+    private const int MentionSearchPauseMs = 120;
+
+    /// <summary>
+    /// Runs <paramref name="search"/> off the UI thread once typing pauses (<see cref="MentionSearchPauseMs"/>), and
+    /// <paramref name="show"/>s what it found on the VM context — unless a later keystroke cancelled it meanwhile
+    /// (<c>_mentionCts</c>, cancelled by the next <see cref="TriggerMentionSearch"/>).
+    /// </summary>
+    private void SearchAfterPause<T>(Func<CancellationToken, Task<T>> search, Action<T> show)
+    {
+        var cts = _mentionCts = new CancellationTokenSource();
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(MentionSearchPauseMs, cts.Token);
+                var found = await search(cts.Token);
+                if (cts.IsCancellationRequested) return;
+                Post(() => show(found));
+            }
+            catch (OperationCanceledException) { }
+        }, cts.Token);
     }
 
     /// <summary>Wraps ranked paths from <see cref="MentionController"/> into popup suggestion items.</summary>
@@ -321,6 +319,20 @@ internal partial class InferpalToolWindowData
         await AttachInstantAsync(cat.Kind, ct);
     }
 
+    /// <summary>
+    /// A mention a tool served, judged on its state, never on its text: a notice when there is nothing to attach (no root
+    /// to map, no repository or no change, a pane not read…), the chip otherwise — never both, never an empty chip.
+    /// </summary>
+    private async Task AttachOrSayAsync(MentionOutcome outcome)
+    {
+        if (outcome.Notice is not null)
+        {
+            await NotifyMentionAsync(outcome.Notice);
+            return;
+        }
+        await RunOnVMContextAsync(() => AddAttachment(outcome.Label!, outcome.Content!));
+    }
+
     private async Task AttachInstantAsync(MentionKind kind, CancellationToken ct)
     {
         try
@@ -345,28 +357,14 @@ internal partial class InferpalToolWindowData
                     break;
                 }
                 case MentionKind.Tree:
-                {
                     // Decided on whether there was a root to map: none is a notice, not a chip.
-                    var tree = MentionController.TreeMention(await _tools.ProjectMap.TryGenerateMapAsync(ct), "🌲 @tree");
-                    if (tree.Notice is not null)
-                    {
-                        await NotifyMentionAsync(tree.Notice);
-                        return;
-                    }
-                    await RunOnVMContextAsync(() => AddAttachment(tree.Label!, tree.Content!));
+                    await AttachOrSayAsync(MentionController.TreeMention(await _tools.ProjectMap.TryGenerateMapAsync(ct), "🌲 @tree"));
                     break;
-                }
                 case MentionKind.Diff:
                 {
                     // Decided on the report's state: no repository, git refusing or no change is a notice, not a chip.
                     var report = await _tools.GitStatus.ReportAsync(null, includeDiff: true, diffPath: null, ct);
-                    var diff   = MentionController.DiffMention(report, "📊 @diff");
-                    if (diff.Notice is not null)
-                    {
-                        await NotifyMentionAsync(diff.Notice);
-                        return;
-                    }
-                    await RunOnVMContextAsync(() => AddAttachment(diff.Label!, diff.Content!));
+                    await AttachOrSayAsync(MentionController.DiffMention(report, "📊 @diff"));
                     break;
                 }
                 case MentionKind.Problems:
@@ -375,13 +373,7 @@ internal partial class InferpalToolWindowData
                     string diags;
                     using (Services.Execution.PackageCheck.ThePersonsOwnCalls())
                         diags = await _tools.ExecuteAsync("get_diagnostics", MentionArgs(), ct);
-                    var problems = MentionController.ProblemsMention(diags, "⚠ @problems");
-                    if (problems.Notice is not null)
-                    {
-                        await NotifyMentionAsync(problems.Notice);
-                        return;
-                    }
-                    await RunOnVMContextAsync(() => AddAttachment(problems.Label!, problems.Content!));
+                    await AttachOrSayAsync(MentionController.ProblemsMention(diags, "⚠ @problems"));
                     break;
                 }
                 case MentionKind.Output:
@@ -389,14 +381,8 @@ internal partial class InferpalToolWindowData
                     // Read inside devenv — a tool window's text does not cross to this process —, asked through a file.
                     var answer = await Services.Signals.OutputPaneSignal.AskAsync(Services.Signals.OutputPaneSignal.AnswerBudget, ct);
                     // The package serves the request: without it loaded, waiting again changes nothing — said apart.
-                    var output = MentionController.OutputMention(answer, "▤ @output",
-                                                                 Services.Signals.InProcAliveSignal.TryRead() is { HasPackage: true });
-                    if (output.Notice is not null)
-                    {
-                        await NotifyMentionAsync(output.Notice);
-                        return;
-                    }
-                    await RunOnVMContextAsync(() => AddAttachment(output.Label!, output.Content!));
+                    await AttachOrSayAsync(MentionController.OutputMention(answer, "▤ @output",
+                                                                           Services.Signals.InProcAliveSignal.TryRead() is { HasPackage: true }));
                     break;
                 }
                 case MentionKind.Debugger:

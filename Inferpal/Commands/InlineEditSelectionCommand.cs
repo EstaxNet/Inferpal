@@ -100,46 +100,15 @@ internal class InlineEditSelectionCommand : Command
         // Instruction received → switch dialog to spinner mode.
         dlg.SwitchToLoading();
 
-        // ── 4. Call Ollama ────────────────────────────────────────────────────
-        var model    = ResolveModel();
-        var messages = BuildMessages(originalCode, instruction);
-
-        ChatTurnResult result;
-        // Closing the spinner cancels the generation, or the edit lands anyway once the model answers.
-        using (var generation = CancellationTokenSource.CreateLinkedTokenSource(ct, dlg.CancelledByUser))
-        {
-            try
-            {
-                // The model's wait in the spinner window while the server reads the prompt.
-                using (ModelWaitScope.Open(dlg.ShowWait))
-                    result = await _client.SendChatAsync(
-                        model, messages, EmptyToolRegistry.Instance, onToken: null, generation.Token, TaskComplexity.Quick);
-            }
-            catch (OperationCanceledException)
-            {
-                // Closed by the user, or VS cancelled the command: nothing to apply, nothing to say.
-                return;
-            }
-            catch (Exception ex)
-            {
-                Diagnostics.Swallow("InlineEdit.Generate", ex);
-                await ShowFailureAsync(ex.Message, ct);
-                return;
-            }
-            finally
-            {
-                // Always close the spinner, even on error/cancel.
-                dlg.CloseFromThread();
-            }
-        }
+        // ── 4. Call the model ─────────────────────────────────────────────────
+        var model = ResolveModel();
+        if (await GenerateAsync(dlg, model, BuildMessages(originalCode, instruction), ct) is not { } result) return;
         if (dlg.CancelledByUser.IsCancellationRequested) return;
 
-        // ⚠ The SAME funnel as the slash commands and the host, and it was not always: this command
-        // did `Reindent(Clean(reply))` and applied it, so it missed the document's line endings, the
-        // no-change sentinel, the named empty reply — and the two steps whose comment cites THIS
-        // command's gesture. A click in the margin plus Shift+Down selects the line with its ending,
-        // `Clean` trims it, and the next line moved up against the one just edited; the unchanged
-        // echo, differing by that single byte, was applied instead of being reported.
+        // ⚠ The SAME funnel as the slash commands and the host: the document's line endings, the no-change sentinel, the
+        // named empty reply. Applied without it, a click in the margin plus Shift+Down selects the line with its ending, a
+        // trimmed reply moves the next line up against the one just edited, and the unchanged echo, differing by that
+        // single byte, is applied instead of being reported.
         var finished = CodeActionPipeline.Finish(
             result, originalCode, view.Document.Text.CopyToString(),
             reindent: true, model, _client.ServerAddress, view.Document.Uri.LocalPath);
@@ -155,12 +124,53 @@ internal class InlineEditSelectionCommand : Command
             await ShowFailureAsync(finished.FailureDetail, ct);
             return;
         }
-        var editedCode = finished.EditedCode!;
-
         // ── 5. Apply the edit ─────────────────────────────────────────────────
-        // ⚠ Through the preview when "Show the change before applying it" is on — the box of THIS command's settings
-        // section, which it applied past. The rewrite is computed from the text the range was read from: a file changed
-        // since is refused by the renderer (drifted), never patched at offsets that moved.
+        await ApplyAsync(view, docText, editStart, editEnd, editRange, finished.EditedCode!, ct);
+    }
+
+    /// <summary>
+    /// Asks the model for the edit while the dialog shows its spinner, and closes the dialog whatever happens. Closing the
+    /// spinner cancels the generation, or the edit lands anyway once the model answers.
+    /// </summary>
+    /// <returns>The model's reply; <c>null</c> when there is nothing to apply — closed by the user or VS cancelling the
+    /// command (nothing to say), or a failure (said).</returns>
+    private async Task<ChatTurnResult?> GenerateAsync(
+        InlineEditInputWindow dlg, string model, List<ChatMessageDto> messages, CancellationToken ct)
+    {
+        using var generation = CancellationTokenSource.CreateLinkedTokenSource(ct, dlg.CancelledByUser);
+        try
+        {
+            // The model's wait in the spinner window while the server reads the prompt.
+            using (ModelWaitScope.Open(dlg.ShowWait))
+                return await _client.SendChatAsync(
+                    model, messages, EmptyToolRegistry.Instance, onToken: null, generation.Token, TaskComplexity.Quick);
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Diagnostics.Swallow("InlineEdit.Generate", ex);
+            await ShowFailureAsync(ex.Message, ct);
+            return null;
+        }
+        finally
+        {
+            // Always close the spinner, even on error/cancel.
+            dlg.CloseFromThread();
+        }
+    }
+
+    /// <summary>
+    /// Applies <paramref name="editedCode"/> over <paramref name="editRange"/>. ⚠ Through the preview when "Show the change
+    /// before applying it" is on — the box of THIS command's settings section. The rewrite is computed from the text the
+    /// range was read from (<paramref name="docText"/>): a file changed since is refused by the renderer (drifted), never
+    /// patched at offsets that moved.
+    /// </summary>
+    private async Task ApplyAsync(ITextViewSnapshot view, string docText, int editStart, int editEnd, TextRange editRange,
+                                  string editedCode, CancellationToken ct)
+    {
         try
         {
             if (await InPlaceCodeEdit.TryPreviewAsync(

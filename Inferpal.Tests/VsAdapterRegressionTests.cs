@@ -295,13 +295,17 @@ public class VsAdapterRegressionTests
 
     /// <summary>Edit with AI swallowed a model failure and an edit failure without a word: the user saw
     /// the spinner vanish and nothing change.</summary>
+    /// <remarks>Read over the whole command, not one method: the generation and the edit are methods of their own, and a
+    /// catch moved out of the method read would leave the rule.</remarks>
     [Fact]
     public void InlineEdit_NeverFailsInSilence()
     {
-        var run = Method("Inferpal/Commands/InlineEditSelectionCommand.cs", "ExecuteCommandAsync");
+        Method("Inferpal/Commands/InlineEditSelectionCommand.cs", "ExecuteCommandAsync");   // witness: still the command
+        var path = Path.Combine(RepoRoot(), "Inferpal/Commands/InlineEditSelectionCommand.cs");
+        var command = CSharpSyntaxTree.ParseText(ConventionCoverageTests.CodeOnly(path)).GetRoot();
 
-        var catches = run.DescendantNodes().OfType<CatchClauseSyntax>().ToList();
-        Assert.NotEmpty(catches);
+        var catches = command.DescendantNodes().OfType<CatchClauseSyntax>().ToList();
+        Assert.True(catches.Count >= 3, $"only {catches.Count} catch clause(s) read: the dialog, the generation and the edit each have theirs");
 
         var mute = catches
             .Where(c => c.Declaration?.Type.ToString() != "OperationCanceledException" && !Calls(c.Block, "Swallow"))

@@ -630,13 +630,7 @@ internal partial class InferpalToolWindowData
                 // Start a change-tracking run so this turn's file writes can be reverted via /undo-run.
                 turnRunId = _tools.History.BeginRun();
                 jobsMark  = _tools.Jobs?.Mark();
-                effectiveTools = ChatModes.ToolsFor(_tools, turnMode, _indexService.RootDir);
-                if (_planMode)      effectiveTools = new Services.Execution.PlanModeToolRegistry(effectiveTools);
-                // A window too small for every definition: the tools used most, as the context check planned.
-                if (toolsCutAt > 0) effectiveTools = new Services.Execution.SmallWindowToolRegistry(effectiveTools, toolsCutAt, _cutNamedTools);
-                if (_agentStepMode) effectiveTools = new Services.Execution.StepModeToolRegistry(effectiveTools, PauseForStepAsync);
-                // What its plan made room for, cut or not: the loops do not decide the cut again.
-                effectiveTools = Services.Execution.SmallWindowToolRegistry.MarkDecided(effectiveTools);
+                effectiveTools = TurnTools(turnMode, toolsCutAt);
             }
 
             // Common result variables filled by whichever path runs.
@@ -658,30 +652,6 @@ internal partial class InferpalToolWindowData
             // Set true once tool bubbles have been streamed live (below), so the final
             // render pass skips re-inserting them and avoids duplicates.
             bool liveToolBubbles = false;
-
-            // Builds the permanent result bubble for a finished tool execution
-            // (shared by the live stream below and the final render pass).
-            ChatMessageItem BuildToolBubble(ToolExecution exec)
-            {
-                var preview  = Services.Agent.ChatTurnPolicy.BuildToolPreview(exec.Output);
-                // Errors start open: the red output is the point of the step.
-                var toolItem = ChatMessageItem.ToolMsg(exec.Name, Strings.MsgToolOutput(exec.Input, preview),
-                                                       _config.ToolBubblesExpanded || exec.HasErrors);
-                toolItem.StepSubject = Services.Presentation.RunSummary.Subject(exec.Input);
-                if (Services.Presentation.RunSummary.StepStatus(exec.Name, exec.Output) is { } status)
-                    (toolItem.StepStatus, toolItem.StepStatusFailed) = status;
-                // Auto mode let it through without a card: said on the step.
-                if (exec.Auto) (toolItem.StepAuto, toolItem.StepAutoTip) = (Strings.StepAuto, Strings.StepAutoTip);
-                // Approvals are decided on the file at every call: the badge follows it at every step, not only at the next save.
-                AutoMode = _config.SharedSecurityAlertsDisabled;
-                toolItem.HasErrors   = exec.HasErrors;
-                if (exec.Diff is not null)
-                    toolItem.InitDiff(exec.Diff);
-                if (exec.HasErrors)
-                    toolItem.InitFixCallback(exec.Output, rawErrors => Post(() => Prompt = BuildFixPrompt(rawErrors)));
-                ApplyItemTheme(toolItem);
-                return toolItem;
-            }
 
             // Inserts a tool-result bubble live, above the live status / streaming bubbles
             // so completed tools stack in chronological order while the agent keeps working.
@@ -1048,6 +1018,49 @@ internal partial class InferpalToolWindowData
             if (Services.Agent.ChatTurnPolicy.AnnouncesEnd(_config, DateTime.UtcNow - sendStart))
                 NotifyAgentComplete();
         }
+    }
+
+    /// <summary>
+    /// The registry a turn's tool loop calls, agent or chat alike: the held mode's tools, restricted to read-only in plan
+    /// mode, cut to the tools used most by a window too small for every definition (as the context check planned), paused
+    /// after each call in step mode — and marked as decided: what the turn's plan made room for, cut or not, the loops do
+    /// not decide again. The host builds its counterpart (<c>HostServer.TurnTools</c>), which also announces the calls to
+    /// its adapter and takes the mode's tools at its call site.
+    /// </summary>
+    /// <param name="toolsCutAt">The window the context check cut the tools for; 0 when nothing is cut.</param>
+    private IToolRegistry TurnTools(ChatMode? turnMode, int toolsCutAt)
+    {
+        IToolRegistry effectiveTools = ChatModes.ToolsFor(_tools, turnMode, _indexService.RootDir);
+        if (_planMode)      effectiveTools = new Services.Execution.PlanModeToolRegistry(effectiveTools);
+        if (toolsCutAt > 0) effectiveTools = new Services.Execution.SmallWindowToolRegistry(effectiveTools, toolsCutAt, _cutNamedTools);
+        if (_agentStepMode) effectiveTools = new Services.Execution.StepModeToolRegistry(effectiveTools, PauseForStepAsync);
+        return Services.Execution.SmallWindowToolRegistry.MarkDecided(effectiveTools);
+    }
+
+    /// <summary>
+    /// The permanent result bubble of a finished tool execution — the live stream inserts it as the run goes, the final
+    /// render pass when nothing streamed. On the VM context.
+    /// </summary>
+    private ChatMessageItem BuildToolBubble(ToolExecution exec)
+    {
+        var preview  = Services.Agent.ChatTurnPolicy.BuildToolPreview(exec.Output);
+        // Errors start open: the red output is the point of the step.
+        var toolItem = ChatMessageItem.ToolMsg(exec.Name, Strings.MsgToolOutput(exec.Input, preview),
+                                               _config.ToolBubblesExpanded || exec.HasErrors);
+        toolItem.StepSubject = Services.Presentation.RunSummary.Subject(exec.Input);
+        if (Services.Presentation.RunSummary.StepStatus(exec.Name, exec.Output) is { } status)
+            (toolItem.StepStatus, toolItem.StepStatusFailed) = status;
+        // Auto mode let it through without a card: said on the step.
+        if (exec.Auto) (toolItem.StepAuto, toolItem.StepAutoTip) = (Strings.StepAuto, Strings.StepAutoTip);
+        // Approvals are decided on the file at every call: the badge follows it at every step, not only at the next save.
+        AutoMode = _config.SharedSecurityAlertsDisabled;
+        toolItem.HasErrors   = exec.HasErrors;
+        if (exec.Diff is not null)
+            toolItem.InitDiff(exec.Diff);
+        if (exec.HasErrors)
+            toolItem.InitFixCallback(exec.Output, rawErrors => Post(() => Prompt = BuildFixPrompt(rawErrors)));
+        ApplyItemTheme(toolItem);
+        return toolItem;
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]

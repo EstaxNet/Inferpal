@@ -97,13 +97,15 @@ internal sealed class VsWindowHarness : IDisposable
     }
 
     /// <summary>Waits for what a turn does on another thread, within the budget a test that waits gets.</summary>
-    /// <remarks>The window's context writes <c>Messages</c> while this reads it: a read it interrupted is a read to do again.</remarks>
+    /// <remarks>The window's context writes <c>Messages</c> while this reads it: a read it interrupted is a read to do again —
+    /// an enumeration the write invalidated, or an index read past an item the write removed (<c>LastOrDefault</c> walks a
+    /// list by index).</remarks>
     public static async Task UntilAsync(Func<bool> done)
     {
         bool Now()
         {
             try { return done(); }
-            catch (InvalidOperationException) { return false; }
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentOutOfRangeException) { return false; }
         }
         for (var i = 0; i < 300 && !Now(); i++) await Task.Delay(100);
         Assert.True(Now(), "what the test waits for never came");
