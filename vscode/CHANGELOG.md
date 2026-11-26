@@ -3,6 +3,28 @@
 All notable changes to the Inferpal VS Code extension. The extension and the Visual Studio
 extension share one engine and one version number.
 
+## 1.9.4
+
+The agent works from the evidence: the review on your pull request, the CI run that went red, the three versions behind
+a merge conflict, the commit that brought a line in, and the files your tools leave behind.
+
+- **A pull request's review**, thread by thread with its file and line, open, resolved or outdated (GitHub does not say which are resolved); asked to address
+  it, the agent takes the threads in turn and names the ones it left.
+- **A red CI run**: a GitHub Actions run or job, a GitLab pipeline or job, or a GitHub pull request's checks read as
+  what failed.
+- **Merge conflicts with their base**: the operation, each side's last commit and the common base of every block; an
+  edit that would leave the markers broken is refused.
+- **When a line arrived**: the agent searches the history for the commits that added or removed a text; blame skips the
+  commits listed in `.git-blame-ignore-revs`.
+- **Read as what they mean**: JSON and logfmt logs (filtered by level and time), vulnerability reports and SBOMs,
+  network captures (`.pcap`, `.pcapng`), Playwright traces, OTLP, Jaeger and Zipkin traces, coverage reports (lcov,
+  Cobertura, JaCoCo) and k6 or JMeter load test results.
+- **What a run leaves running** shows under the answer with **Stop**.
+- **GraphQL** in `http_request`: queries with variables and the server's schema; a mutation always asks first.
+- **Fixed**: a background command's last lines are no longer lost after it ends; a GitLab merge request reads all its
+  discussions; many smaller fixes across the model servers, git, `/commit`, `/import`, `run_tests` and the file
+  readers (the release notes on GitHub list the ones you are most likely to have met).
+
 ## 1.9.3
 
 The agent checks its own work before it answers, reads the files your tools leave behind as what they mean, and helps

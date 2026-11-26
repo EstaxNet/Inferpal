@@ -948,8 +948,16 @@ internal partial class ChatMessageItem : NotifyPropertyChangedObject
         set
         {
             SetProperty(ref _isStreaming, value);
+            // No parse in the frame the bubble is inserted in: Remote UI drops a block added to a collection that crosses
+            // in the same frame, and a short answer that came in one chunk stayed an empty bubble.
+            if (value) _lastStreamParse = DateTime.UtcNow;
             if (!value && Role == "assistant")
+            {
+                // The end sends every block again: one dropped on the way would otherwise stay missing, since the keys
+                // say it is shown.
+                _blockKeys.Clear();
                 ParseMarkdown();
+            }
         }
     }
 

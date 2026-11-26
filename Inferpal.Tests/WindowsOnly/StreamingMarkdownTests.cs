@@ -15,8 +15,13 @@ public class StreamingMarkdownTests
     {
         var item = new ChatMessageItem { Role = "assistant", IsStreaming = true };
 
+        // Not in the frame the bubble is inserted in: Remote UI drops a block added in that frame (an empty bubble).
+        item.Content = "Order 1194";
+        Assert.False(item.HasBlocks);
+
+        await Task.Delay(ChatMessageItem.StreamParseEvery + TimeSpan.FromMilliseconds(60));
         item.Content = "Order 1194 is still **awaiting payment**.";
-        Assert.True(item.HasBlocks);                                     // drawn at once, not at the end
+        Assert.True(item.HasBlocks);                                     // drawn as it streams, not at the end
         var first = Assert.Single(item.Blocks);
         Assert.DoesNotContain("**", first.Text, StringComparison.Ordinal);
 
@@ -30,7 +35,19 @@ public class StreamingMarkdownTests
         Assert.Equal(2, item.Blocks.Count);
         item.IsStreaming = false;                                        // the end parses whatever is left
         Assert.Equal(3, item.Blocks.Count);
-        Assert.Same(first, item.Blocks[0]);
+        // ...and sends every block again: one Visual Studio dropped on the way would otherwise stay missing.
+        Assert.NotSame(first, item.Blocks[0]);
+        Assert.Equal(first.Text, item.Blocks[0].Text);
+    }
+
+    [Fact]
+    public void AShortAnswerInOneChunk_IsDrawnAtTheEnd()
+    {
+        var item = new ChatMessageItem { Role = "assistant", IsStreaming = true };
+        item.Content = "\n\n42";
+        Assert.False(item.HasBlocks);
+        item.IsStreaming = false;
+        Assert.Equal("42", Assert.Single(item.Blocks).Text);
     }
 
     [Fact]

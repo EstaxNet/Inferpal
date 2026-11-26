@@ -12,7 +12,7 @@ With [Ollama](https://ollama.com), [LM Studio](https://lmstudio.ai), llama.cpp, 
 
 *"Capture the cart with two teas in it, for the README." It starts the app, clicks through it and saves the picture. Replayed in VS Code.*
 
-> **1.9.3 · 22 Nov 2026** — the agent reviews its own diff and looks at your app again before it answers · the result bar says whether a fix is proven or guessed · it reads profiles, crash reports, query plans, Terraform plans and a dozen other files your tools leave · **Help me choose** picks its tools, and auto mode says what it risks. [Full changelog](https://github.com/EstaxNet/Inferpal/releases/tag/v1.9.3)
+> **1.9.4 · 26 Nov 2026** — the agent works through a pull request's review and a red CI run · it resolves a merge conflict knowing what each side meant, and finds in the history when a line arrived · it reads JSON logs, vulnerability reports and SBOMs, network captures, Playwright and OpenTelemetry traces, coverage and load-test results · what a run leaves running shows under the answer, with Stop. [Full changelog](https://github.com/EstaxNet/Inferpal/releases/tag/v1.9.4)
 
 ## See it work
 
@@ -63,14 +63,14 @@ The model runs on a server you choose, on this computer or a GPU machine you own
 | 12 – 16 GB | Gemma 4 12B, or Ternary Bonsai 2 27B (slower) |
 | 8 GB | Granite 4.2 8B |
 
-Any model that calls tools works. [Every measurement](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/models.md#by-graphics-card)
+Any model that calls tools works. [Every measurement](https://github.com/EstaxNet/Inferpal/blob/v1.9.4/docs/models.md#by-graphics-card)
 
 ## Get started
 
 1. Install a model server — [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai).
 2. Open **Inferpal** from the activity bar. It finds your server and picks a model, or offers to install one.
 
-[Getting started](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/getting-started.md) · Right-click a test, a problem, a debugger stop or a file for a ready-made action · [Everything it can do](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/features.md): 44 built-in tools, 50+ commands, 10 languages
+[Getting started](https://github.com/EstaxNet/Inferpal/blob/v1.9.4/docs/getting-started.md) · Right-click a test, a problem, a debugger stop or a file for a ready-made action · [Everything it can do](https://github.com/EstaxNet/Inferpal/blob/v1.9.4/docs/features.md): 44 built-in tools, 50+ commands, 10 languages
 
 ## Right-click, and it's on it
 
@@ -97,7 +97,7 @@ The spec is a PDF, the test data lives in a spreadsheet, the error is on a scree
 | A file protected by a password | Attach it as usual | A card asks you for the password; the model gets the text, never the password |
 | A question about a flow or a design | Ask for a diagram | A Mermaid diagram drawn in the chat, its code one click away |
 
-Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks, e-mails (`.eml`, `.msg`), Windows event logs (`.evtx`), MSBuild binary logs (`.binlog`), network captures (`.pcap`, `.pcapng`), diagrams (`.drawio`, `.vsdx`), CPU profiles, Lighthouse reports, query plans, crash reports, Terraform plans, SARIF, patches, OpenAPI specifications, `.har` captures and issue or pull request links are read too, each first as what matters in it, by you and by the agent's `read_file` and `search_in_files`. A Playwright `trace.zip` reads as its failure, steps, console and network, by you and by `read_file`; a distributed trace (OpenTelemetry, Jaeger, Zipkin) as its errors, slow path and spans, a coverage report (lcov, Cobertura, JaCoCo) as its uncovered lines, and a load test result (k6, JMeter) as its thresholds, errors and percentiles per request, by `read_file`. Nothing is installed for it and nothing leaves your machine. A scanned PDF is read by OCR; a file too large to read says so instead of sending noise. Every format, in one table: [File formats](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/file-formats.md).
+Word (`.docx`, `.doc`), Excel (`.xlsx`, `.xls`, `.xlsb`), PowerPoint, OpenDocument, RTF, Jupyter notebooks, e-mails (`.eml`, `.msg`), Windows event logs (`.evtx`), MSBuild binary logs (`.binlog`), network captures (`.pcap`, `.pcapng`), diagrams (`.drawio`, `.vsdx`), CPU profiles, Lighthouse reports, query plans, crash reports, Terraform plans, SARIF, patches, OpenAPI specifications, `.har` captures and issue or pull request links are read too, each first as what matters in it, by you and by the agent's `read_file` and `search_in_files`. A Playwright `trace.zip` reads as its failure, steps, console and network, by you and by `read_file`; a distributed trace (OpenTelemetry, Jaeger, Zipkin) as its errors, slow path and spans, a coverage report (lcov, Cobertura, JaCoCo) as its uncovered lines, and a load test result (k6, JMeter) as its thresholds, errors and percentiles per request, by `read_file`. Nothing is installed for it and nothing leaves your machine. A scanned PDF is read by OCR; a file too large to read says so instead of sending noise. Every format, in one table: [File formats](https://github.com/EstaxNet/Inferpal/blob/v1.9.4/docs/file-formats.md).
 
 When the model that will answer does not see images, the text written in the image goes instead, read on your computer by Inferpal's OCR; only a picture with no text gets a card that offers one of your server that does, or sending without it. A large image is scaled down to 1920 × 1080 first, and said.
 
@@ -149,7 +149,7 @@ Ask in plain words, for example *"add argument validation to this method and cov
 
 ## Also in the box
 
-- **44 built-in tools**: files, text and semantic search, build and tests, shell with background jobs, git, the editor, the debugger, compiler-backed analysis and symbol rename, web search and page fetch. Add any **MCP** server's tools and your own shell commands. See the [reference](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/tools.md).
+- **44 built-in tools**: files, text and semantic search, build and tests, shell with background jobs, git, the editor, the debugger, compiler-backed analysis and symbol rename, web search and page fetch. Add any **MCP** server's tools and your own shell commands. See the [reference](https://github.com/EstaxNet/Inferpal/blob/v1.9.4/docs/tools.md).
 - **Semantic code search** across your workspace, with an embedding model installed (keyword search without one). The most relevant code is added to each question, and suggested as chips while you type.
 - **Reviews and Git text.** `/check` reviews your diff, a branch or a commit, and anchors every finding to a line. `/commit` drafts the commit message, and `/pr-description` writes the pull request description. Give the agent a pull request link and it works through the review thread by thread, then names what it left; give it a red CI run and it reads which jobs failed, and why.
 - **Typed mentions**: `@file` `@folder` `@code` `@diff` `@commit` `@problems` `@debugger` `@clipboard` `@tree` `@url` `@terminal`, or drop files from your file manager on the chat with Shift held. **@Docs** indexes a documentation site with `/docs add <url>`.
@@ -159,8 +159,8 @@ Ask in plain words, for example *"add argument validation to this method and cov
 - **Your repository's agent setup, read as it is.** It reads `AGENTS.md`, `CLAUDE.md`, the Copilot and Cursor instruction files, and your project rules. It honours `.aiignore`-style files.
 - **Background and debug sessions.** `/task` investigates in the background while you work. `/debug` drives a debug session once you approve it.
 - **Context you can see.** A gauge shows how full the model's window is, and `/xray` shows what fills it.
-- **One engine, every editor.** The same agent runs in [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs), with shared settings and conversations, so you can start in one editor and finish in the other. It is also an [Agent Client Protocol](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/acp.md) agent for Zed, the JetBrains IDEs, Qt Creator, Neovim and Emacs.
-- **50+ slash commands** and an interface in 10 languages. See the [slash commands](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/slash-commands.md).
+- **One engine, every editor.** The same agent runs in [Visual Studio](https://marketplace.visualstudio.com/items?itemName=EstaxNet.inferpal-vs), with shared settings and conversations, so you can start in one editor and finish in the other. It is also an [Agent Client Protocol](https://github.com/EstaxNet/Inferpal/blob/v1.9.4/docs/acp.md) agent for Zed, the JetBrains IDEs, Qt Creator, Neovim and Emacs.
+- **50+ slash commands** and an interface in 10 languages. See the [slash commands](https://github.com/EstaxNet/Inferpal/blob/v1.9.4/docs/slash-commands.md).
 
 ---
 
@@ -178,9 +178,9 @@ Ask in plain words, for example *"add argument validation to this method and cov
 
 **Which server should I use?** Ollama gets every feature, including per-model memory figures, downloads from the chat and unloading idle models. LM Studio runs everything except per-model memory figures, unloading idle models and `/models delete`. Other OpenAI-compatible servers (llama-server, vLLM) run the chat, the agent and the search. They also run inline completions if the server can complete around the cursor.
 
-**Can the model run on another machine?** Yes. Point the server address at it, as described in [Remote inference](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/remote-inference.md). Behind a reverse proxy that asks for a password or a token, give it its credentials in *Settings → Server and models*.
+**Can the model run on another machine?** Yes. Point the server address at it, as described in [Remote inference](https://github.com/EstaxNet/Inferpal/blob/v1.9.4/docs/remote-inference.md). Behind a reverse proxy that asks for a password or a token, give it its credentials in *Settings → Server and models*.
 
-**Does it work with Remote - WSL, Remote - SSH or Dev Containers?** Yes, when the other side is x64 Linux (there is no build for ARM Linux or Alpine): Inferpal runs on the other side, next to your files. There, `localhost` is WSL, the remote machine or the container — Inferpal says so when a local address does not answer, with the address to use instead ([details](https://github.com/EstaxNet/Inferpal/blob/v1.9.3/docs/remote-inference.md#5-vs-code-connected-to-wsl-ssh-or-a-container)).
+**Does it work with Remote - WSL, Remote - SSH or Dev Containers?** Yes, when the other side is x64 Linux (there is no build for ARM Linux or Alpine): Inferpal runs on the other side, next to your files. There, `localhost` is WSL, the remote machine or the container — Inferpal says so when a local address does not answer, with the address to use instead ([details](https://github.com/EstaxNet/Inferpal/blob/v1.9.4/docs/remote-inference.md#5-vs-code-connected-to-wsl-ssh-or-a-container)).
 
 **Does it work offline?** Yes, with a local server. Only web search and page fetch need the internet.
 
